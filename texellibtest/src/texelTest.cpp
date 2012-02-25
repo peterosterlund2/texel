@@ -4,12 +4,13 @@
 
 #include "moveTest.hpp"
 
-void runSuite(const std::string& suiteName, const cute::suite& s) {
+void
+runSuite(const SuiteBase& suite) {
     cute::ide_listener lis;
-    cute::makeRunner(lis)(s, suiteName.c_str());
+    cute::makeRunner(lis)(suite.getSuite(), suite.getName().c_str());
 }
 
 int main(){
-    runSuite("moveTest", make_suite_moveTest());
+    runSuite(MoveTest());
     return 0;
 }

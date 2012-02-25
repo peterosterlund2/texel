@@ -1,4 +1,8 @@
-#include "cute_suite.h"
+#include "suiteBase.hpp"
 
-extern cute::suite make_suite_moveTest();
+class MoveTest : public SuiteBase {
+public:
+    std::string getName() const { return "moveTest"; }
 
+    cute::suite getSuite() const;
+};

@@ -36,7 +36,8 @@ void testEquals() {
     ASSERT(m1.equals(m5));
 }
 
-cute::suite make_suite_moveTest(){
+cute::suite
+MoveTest::getSuite() const {
 	cute::suite s;
     s.push_back(CUTE(testMoveConstructor));
     s.push_back(CUTE(testEquals));
