@@ -13,7 +13,7 @@
  */
 #if 0
 public class HumanPlayer implements Player {
-    private String lastCmd = "";
+    private std::string lastCmd = "";
     private BufferedReader in;
 
     public HumanPlayer() {
@@ -21,11 +21,11 @@ public class HumanPlayer implements Player {
     }
 
     @Override
-    public String getCommand(Position pos, boolean drawOffer, List<Position> history) {
+    public std::string getCommand(Position pos, bool drawOffer, List<Position> history) {
         try {
-            String color = pos.whiteMove ? "white" : "black";
+            std::string color = pos.whiteMove ? "white" : "black";
             System.out.print(String.format("Enter move (%s):", color));
-            String moveStr = in.readLine();
+            std::string moveStr = in.readLine();
             if (moveStr == null)
                 return "quit";
             if (moveStr.length() == 0) {
@@ -40,16 +40,16 @@ public class HumanPlayer implements Player {
     }
     
     @Override
-    public boolean isHumanPlayer() {
+    public bool isHumanPlayer() {
         return true;
     }
     
     @Override
-    public void useBook(boolean bookOn) {
+    public void useBook(bool bookOn) {
     }
 
     @Override
-    public void timeLimit(int minTimeLimit, int maxTimeLimit, boolean randomMode) {
+    public void timeLimit(int minTimeLimit, int maxTimeLimit, bool randomMode) {
     }
 
     @Override

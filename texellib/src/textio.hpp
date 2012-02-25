@@ -8,21 +8,28 @@
 #ifndef TEXTIO_HPP_
 #define TEXTIO_HPP_
 
+#include <string>
+
+#include "chessParseError.hpp"
+#include "position.hpp"
+#include "moveGen.hpp"
+
+
 /**
- *
+ * Conversion between text and binary formats.
  */
-#if 0
-public class TextIO {
-    static public final String startPosFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+class TextIO {
+public:
+    static const std::string startPosFEN;
 
     /** Parse a FEN string and return a chess Position object. */
-    public static final Position readFEN(String fen) throws ChessParseError {
-        Position pos = new Position();
+    static Position readFEN(const std::string& fen) throw(ChessParseError) {
+        Position pos;
+#if 0
         String[] words = fen.split(" ");
-        if (words.length < 2) {
+        if (words.length < 2)
             throw new ChessParseError("Too few spaces");
-        }
-        
+
         // Piece placement
         int row = 7;
         int col = 0;
@@ -38,18 +45,18 @@ public class TextIO {
                 case '7': col += 7; break;
                 case '8': col += 8; break;
                 case '/': row--; col = 0; break;
-                case 'P': safeSetPiece(pos, col, row, Piece.WPAWN);   col++; break;
-                case 'N': safeSetPiece(pos, col, row, Piece.WKNIGHT); col++; break;
-        case 'B': safeSetPiece(pos, col, row, Piece.WBISHOP); col++; break;
-        case 'R': safeSetPiece(pos, col, row, Piece.WROOK);   col++; break;
-        case 'Q': safeSetPiece(pos, col, row, Piece.WQUEEN);  col++; break;
-        case 'K': safeSetPiece(pos, col, row, Piece.WKING);   col++; break;
-        case 'p': safeSetPiece(pos, col, row, Piece.BPAWN);   col++; break;
-        case 'n': safeSetPiece(pos, col, row, Piece.BKNIGHT); col++; break;
-        case 'b': safeSetPiece(pos, col, row, Piece.BBISHOP); col++; break;
-        case 'r': safeSetPiece(pos, col, row, Piece.BROOK);   col++; break;
-        case 'q': safeSetPiece(pos, col, row, Piece.BQUEEN);  col++; break;
-        case 'k': safeSetPiece(pos, col, row, Piece.BKING);   col++; break;
+                case 'P': safeSetPiece(pos, col, row, Piece::WPAWN);   col++; break;
+                case 'N': safeSetPiece(pos, col, row, Piece::WKNIGHT); col++; break;
+        case 'B': safeSetPiece(pos, col, row, Piece::WBISHOP); col++; break;
+        case 'R': safeSetPiece(pos, col, row, Piece::WROOK);   col++; break;
+        case 'Q': safeSetPiece(pos, col, row, Piece::WQUEEN);  col++; break;
+        case 'K': safeSetPiece(pos, col, row, Piece::WKING);   col++; break;
+        case 'p': safeSetPiece(pos, col, row, Piece::BPAWN);   col++; break;
+        case 'n': safeSetPiece(pos, col, row, Piece::BKNIGHT); col++; break;
+        case 'b': safeSetPiece(pos, col, row, Piece::BBISHOP); col++; break;
+        case 'r': safeSetPiece(pos, col, row, Piece::BROOK);   col++; break;
+        case 'q': safeSetPiece(pos, col, row, Piece::BQUEEN);  col++; break;
+        case 'k': safeSetPiece(pos, col, row, Piece::BKING);   col++; break;
                 default: throw new ChessParseError("Invalid piece");
             }
         }
@@ -65,16 +72,16 @@ public class TextIO {
                 char c = words[2].charAt(i);
                 switch (c) {
                     case 'K':
-                        castleMask |= (1 << Position.H1_CASTLE);
+                        castleMask |= (1 << Position::H1_CASTLE);
                         break;
                     case 'Q':
-                        castleMask |= (1 << Position.A1_CASTLE);
+                        castleMask |= (1 << Position::A1_CASTLE);
                         break;
                     case 'k':
-                        castleMask |= (1 << Position.H8_CASTLE);
+                        castleMask |= (1 << Position::H8_CASTLE);
                         break;
                     case 'q':
-                        castleMask |= (1 << Position.A8_CASTLE);
+                        castleMask |= (1 << Position::A8_CASTLE);
                         break;
                     case '-':
                         break;
@@ -112,10 +119,10 @@ public class TextIO {
         int bKings = 0;
         for (int x = 0; x < 8; x++) {
             for (int y = 0; y < 8; y++) {
-                int p = pos.getPiece(Position.getSquare(x, y));
-                if (p == Piece.WKING) {
+                int p = pos.getPiece(Position::getSquare(x, y));
+                if (p == Piece::WKING) {
                     wKings++;
-                } else if (p == Piece.BKING) {
+                } else if (p == Piece::BKING) {
                     bKings++;
                 }
             }
@@ -130,26 +137,27 @@ public class TextIO {
         // Make sure king can not be captured
         Position pos2 = new Position(pos);
         pos2.setWhiteMove(!pos.whiteMove);
-        if (MoveGen.inCheck(pos2)) {
+        if (MoveGen::inCheck(pos2)) {
             throw new ChessParseError("King capture possible");
         }
 
         fixupEPSquare(pos);
-
+#endif
         return pos;
     }
 
     /** Remove pseudo-legal EP square if it is not legal, ie would leave king in check. */
-    public static final void fixupEPSquare(Position pos) {
+    static void fixupEPSquare(Position& pos) {
+#if 0
         int epSquare = pos.getEpSquare();
         if (epSquare >= 0) {
-            MoveGen.MoveList moves = MoveGen.instance.pseudoLegalMoves(pos);
-            MoveGen.removeIllegal(pos, moves);
-            boolean epValid = false;
+            MoveGen::MoveList moves = MoveGen::instance.pseudoLegalMoves(pos);
+            MoveGen::removeIllegal(pos, moves);
+            bool epValid = false;
             for (int mi = 0; mi < moves.size; mi++) {
                 Move m = moves.m[mi];
-                if (m.to == epSquare) {
-                    if (pos.getPiece(m.from) == (pos.whiteMove ? Piece.WPAWN : Piece.BPAWN)) {
+                if (m.to() == epSquare) {
+                    if (pos.getPiece(m.from()) == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) {
                         epValid = true;
                         break;
                     }
@@ -159,27 +167,30 @@ public class TextIO {
                 pos.setEpSquare(-1);
             }
         }
+#endif
     }
 
-    private static final void safeSetPiece(Position pos, int col, int row, int p) throws ChessParseError {
+private:
+    static void safeSetPiece(Position& pos, int col, int row, int p) throw(ChessParseError) {
         if (row < 0) throw new ChessParseError("Too many rows");
         if (col > 7) throw new ChessParseError("Too many columns");
-        if ((p == Piece.WPAWN) || (p == Piece.BPAWN)) {
+        if ((p == Piece::WPAWN) || (p == Piece::BPAWN)) {
             if ((row == 0) || (row == 7))
                 throw new ChessParseError("Pawn on first/last rank");
         }
-        pos.setPiece(Position.getSquare(col, row), p);
+        pos.setPiece(Position::getSquare(col, row), p);
     }
-    
+public:
     /** Return a FEN string corresponding to a chess Position object. */
-    public static final String toFEN(Position pos) {
+    static std::string toFEN(const Position& pos) {
+#if 0
         StringBuilder ret = new StringBuilder();
         // Piece placement
         for (int r = 7; r >=0; r--) {
             int numEmpty = 0;
             for (int c = 0; c < 8; c++) {
-                int p = pos.getPiece(Position.getSquare(c, r));
-                if (p == Piece.EMPTY) {
+                int p = pos.getPiece(Position::getSquare(c, r));
+                if (p == Piece::EMPTY) {
                     numEmpty++;
                 } else {
                     if (numEmpty > 0) {
@@ -187,18 +198,18 @@ public class TextIO {
                         numEmpty = 0;
                     }
                     switch (p) {
-                        case Piece.WKING:   ret.append('K'); break;
-                        case Piece.WQUEEN:  ret.append('Q'); break;
-                        case Piece.WROOK:   ret.append('R'); break;
-                        case Piece.WBISHOP: ret.append('B'); break;
-                        case Piece.WKNIGHT: ret.append('N'); break;
-                        case Piece.WPAWN:   ret.append('P'); break;
-                        case Piece.BKING:   ret.append('k'); break;
-                        case Piece.BQUEEN:  ret.append('q'); break;
-                        case Piece.BROOK:   ret.append('r'); break;
-                        case Piece.BBISHOP: ret.append('b'); break;
-                        case Piece.BKNIGHT: ret.append('n'); break;
-                        case Piece.BPAWN:   ret.append('p'); break;
+                        case Piece::WKING:   ret.append('K'); break;
+                        case Piece::WQUEEN:  ret.append('Q'); break;
+                        case Piece::WROOK:   ret.append('R'); break;
+                        case Piece::WBISHOP: ret.append('B'); break;
+                        case Piece::WKNIGHT: ret.append('N'); break;
+                        case Piece::WPAWN:   ret.append('P'); break;
+                        case Piece::BKING:   ret.append('k'); break;
+                        case Piece::BQUEEN:  ret.append('q'); break;
+                        case Piece::BROOK:   ret.append('r'); break;
+                        case Piece::BBISHOP: ret.append('b'); break;
+                        case Piece::BKNIGHT: ret.append('n'); break;
+                        case Piece::BPAWN:   ret.append('p'); break;
                         default: throw new RuntimeException();
                     }
                 }
@@ -213,7 +224,7 @@ public class TextIO {
         ret.append(pos.whiteMove ? " w " : " b ");
 
         // Castling rights
-        boolean anyCastle = false;
+        bool anyCastle = false;
         if (pos.h1Castle()) {
             ret.append('K');
             anyCastle = true;
@@ -233,13 +244,13 @@ public class TextIO {
         if (!anyCastle) {
             ret.append('-');
         }
-        
+
         // En passant target square
         {
             ret.append(' ');
             if (pos.getEpSquare() >= 0) {
-                int x = Position.getX(pos.getEpSquare());
-                int y = Position.getY(pos.getEpSquare());
+                int x = Position::getX(pos.getEpSquare());
+                int y = Position::getY(pos.getEpSquare());
                 ret.append((char)(x + 'a'));
                 ret.append((char)(y + '1'));
             } else {
@@ -254,8 +265,10 @@ public class TextIO {
         ret.append(pos.fullMoveCounter);
 
         return ret.toString();
+#endif
+        return "";
     }
-    
+
     /**
      * Convert a chess move to human readable form.
      * @param pos      The chess position.
@@ -263,43 +276,49 @@ public class TextIO {
      * @param longForm If true, use long notation, eg Ng1-f3.
      *                 Otherwise, use short notation, eg Nf3
      */
-    public static final String moveToString(Position pos, Move move, boolean longForm) {
-        MoveGen.MoveList moves = MoveGen.instance.pseudoLegalMoves(pos);
-        MoveGen.removeIllegal(pos, moves);
+    static std::string moveToString(const Position& pos, const Move& move, bool longForm) {
+#if 0
+        MoveGen::MoveList moves = MoveGen::instance.pseudoLegalMoves(pos);
+        MoveGen::removeIllegal(pos, moves);
         return moveToString(pos, move, longForm, moves);
+#endif
+        return "";
     }
-    private static final String moveToString(Position pos, Move move, boolean longForm, MoveGen.MoveList moves) {
+private:
+    static std::string moveToString(const Position& pos, const Move& move, bool longForm,
+                                    const MoveGen::MoveList& moves) {
+#if 0
         StringBuilder ret = new StringBuilder();
-        int wKingOrigPos = Position.getSquare(4, 0);
-        int bKingOrigPos = Position.getSquare(4, 7);
-        if (move.from == wKingOrigPos && pos.getPiece(wKingOrigPos) == Piece.WKING) {
+        int wKingOrigPos = Position::getSquare(4, 0);
+        int bKingOrigPos = Position::getSquare(4, 7);
+        if (move.from == wKingOrigPos && pos.getPiece(wKingOrigPos) == Piece::WKING) {
             // Check white castle
-            if (move.to == Position.getSquare(6, 0)) {
+            if (move.to == Position::getSquare(6, 0)) {
                     ret.append("O-O");
-            } else if (move.to == Position.getSquare(2, 0)) {
+            } else if (move.to == Position::getSquare(2, 0)) {
                 ret.append("O-O-O");
             }
-        } else if (move.from == bKingOrigPos && pos.getPiece(bKingOrigPos) == Piece.BKING) {
+        } else if (move.from == bKingOrigPos && pos.getPiece(bKingOrigPos) == Piece::BKING) {
             // Check white castle
-            if (move.to == Position.getSquare(6, 7)) {
+            if (move.to == Position::getSquare(6, 7)) {
                 ret.append("O-O");
-            } else if (move.to == Position.getSquare(2, 7)) {
+            } else if (move.to == Position::getSquare(2, 7)) {
                 ret.append("O-O-O");
             }
         }
         if (ret.length() == 0) {
             int p = pos.getPiece(move.from);
             ret.append(pieceToChar(p));
-            int x1 = Position.getX(move.from);
-            int y1 = Position.getY(move.from);
-            int x2 = Position.getX(move.to);
-            int y2 = Position.getY(move.to);
+            int x1 = Position::getX(move.from);
+            int y1 = Position::getY(move.from);
+            int x2 = Position::getX(move.to);
+            int y2 = Position::getY(move.to);
             if (longForm) {
                 ret.append((char)(x1 + 'a'));
                 ret.append((char) (y1 + '1'));
                 ret.append(isCapture(pos, move) ? 'x' : '-');
             } else {
-                if (p == (pos.whiteMove ? Piece.WPAWN : Piece.BPAWN)) {
+                if (p == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) {
                     if (isCapture(pos, move)) {
                         ret.append((char) (x1 + 'a'));
                     }
@@ -313,9 +332,9 @@ public class TextIO {
                             break;
                         if ((pos.getPiece(m.from) == p) && (m.to == move.to)) {
                             numSameTarget++;
-                            if (Position.getX(m.from) == x1)
+                            if (Position::getX(m.from) == x1)
                                 numSameFile++;
-                            if (Position.getY(m.from) == y1)
+                            if (Position::getY(m.from) == y1)
                                 numSameRow++;
                         }
                     }
@@ -336,15 +355,15 @@ public class TextIO {
             }
             ret.append((char) (x2 + 'a'));
             ret.append((char) (y2 + '1'));
-            if (move.promoteTo != Piece.EMPTY) {
+            if (move.promoteTo != Piece::EMPTY) {
                 ret.append(pieceToChar(move.promoteTo));
             }
         }
         UndoInfo ui = new UndoInfo();
-        if (MoveGen.givesCheck(pos, move)) {
+        if (MoveGen::givesCheck(pos, move)) {
             pos.makeMove(move, ui);
-            MoveGen.MoveList nextMoves = MoveGen.instance.pseudoLegalMoves(pos);
-            MoveGen.removeIllegal(pos, nextMoves);
+            MoveGen::MoveList nextMoves = MoveGen::instance.pseudoLegalMoves(pos);
+            MoveGen::removeIllegal(pos, nextMoves);
             if (nextMoves.size == 0) {
                 ret.append('#');
             } else {
@@ -354,27 +373,30 @@ public class TextIO {
         }
 
         return ret.toString();
+#endif
+        return "";
     }
 
+public:
     /** Convert a move object to UCI string format. */
-    public static final String moveToUCIString(Move m) {
-        String ret = squareToString(m.from);
-        ret += squareToString(m.to);
-        switch (m.promoteTo) {
-            case Piece.WQUEEN:
-            case Piece.BQUEEN:
+    static std::string moveToUCIString(const Move& m) {
+        std::string ret = squareToString(m.from());
+        ret += squareToString(m.to());
+        switch (m.promoteTo()) {
+            case Piece::WQUEEN:
+            case Piece::BQUEEN:
                 ret += "q";
                 break;
-            case Piece.WROOK:
-            case Piece.BROOK:
+            case Piece::WROOK:
+            case Piece::BROOK:
                 ret += "r";
                 break;
-            case Piece.WBISHOP:
-            case Piece.BBISHOP:
+            case Piece::WBISHOP:
+            case Piece::BBISHOP:
                 ret += "b";
                 break;
-            case Piece.WKNIGHT:
-            case Piece.BKNIGHT:
+            case Piece::WKNIGHT:
+            case Piece::BKNIGHT:
                 ret += "n";
                 break;
             default:
@@ -387,22 +409,24 @@ public class TextIO {
      * Convert a string to a Move object.
      * @return A move object, or null if move has invalid syntax
      */
-    public static final Move uciStringToMove(String move) {
+    static Move uciStringToMove(const std::string& move) {
+#if 0
+        // FIXME!! Handle Move == null
         Move m = null;
         if ((move.length() < 4) || (move.length() > 5))
             return m;
-        int fromSq = TextIO.getSquare(move.substring(0, 2));
-        int toSq   = TextIO.getSquare(move.substring(2, 4));
+        int fromSq = TextIO::getSquare(move.substring(0, 2));
+        int toSq   = TextIO::getSquare(move.substring(2, 4));
         if ((fromSq < 0) || (toSq < 0)) {
             return m;
         }
         char prom = ' ';
-        boolean white = true;
+        bool white = true;
         if (move.length() == 5) {
             prom = move.charAt(4);
-            if (Position.getY(toSq) == 7) {
+            if (Position::getY(toSq) == 7) {
                 white = true;
-            } else if (Position.getY(toSq) == 0) {
+            } else if (Position::getY(toSq) == 0) {
                 white = false;
             } else {
                 return m;
@@ -411,31 +435,33 @@ public class TextIO {
         int promoteTo;
         switch (prom) {
             case ' ':
-                promoteTo = Piece.EMPTY;
+                promoteTo = Piece::EMPTY;
                 break;
             case 'q':
-                promoteTo = white ? Piece.WQUEEN : Piece.BQUEEN;
+                promoteTo = white ? Piece::WQUEEN : Piece::BQUEEN;
                 break;
             case 'r':
-                promoteTo = white ? Piece.WROOK : Piece.BROOK;
+                promoteTo = white ? Piece::WROOK : Piece::BROOK;
                 break;
             case 'b':
-                promoteTo = white ? Piece.WBISHOP : Piece.BBISHOP;
+                promoteTo = white ? Piece::WBISHOP : Piece::BBISHOP;
                 break;
             case 'n':
-                promoteTo = white ? Piece.WKNIGHT : Piece.BKNIGHT;
+                promoteTo = white ? Piece::WKNIGHT : Piece::BKNIGHT;
                 break;
             default:
                 return m;
         }
-        m = new Move(fromSq, toSq, promoteTo);
-        return m;
+        return Move(fromSq, toSq, promoteTo);
+#endif
+        return Move(0,0,0);
     }
 
-    private static final boolean isCapture(Position pos, Move move) {
-        if (pos.getPiece(move.to) == Piece.EMPTY) {
-            int p = pos.getPiece(move.from);
-            if ((p == (pos.whiteMove ? Piece.WPAWN : Piece.BPAWN)) && (move.to == pos.getEpSquare())) {
+private:
+    static bool isCapture(const Position& pos, const Move& move) {
+        if (pos.getPiece(move.to()) == Piece::EMPTY) {
+            int p = pos.getPiece(move.from());
+            if ((p == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) && (move.to() == pos.getEpSquare())) {
                 return true;
             } else {
                 return false;
@@ -445,26 +471,28 @@ public class TextIO {
         }
     }
 
+public:
     /**
      * Convert a chess move string to a Move object.
      * Any prefix of the string representation of a valid move counts as a legal move string,
      * as long as the string only matches one valid move.
      */
-    public static final Move stringToMove(Position pos, String strMove) {
+    static Move stringToMove(const Position& pos, const std::string& strMove) {
+#if 0
         strMove = strMove.replaceAll("=", "");
         Move move = null;
         if (strMove.length() == 0)
             return move;
-        MoveGen.MoveList moves = MoveGen.instance.pseudoLegalMoves(pos);
-        MoveGen.removeIllegal(pos, moves);
+        MoveGen::MoveList moves = MoveGen::instance.pseudoLegalMoves(pos);
+        MoveGen::removeIllegal(pos, moves);
         {
             char lastChar = strMove.charAt(strMove.length() - 1);
             if ((lastChar == '#') || (lastChar == '+')) {
-                MoveGen.MoveList subMoves = new MoveGen.MoveList();
+                MoveGen::MoveList subMoves = new MoveGen::MoveList();
                 int len = 0;
                 for (int mi = 0; mi < moves.size; mi++) {
                     Move m = moves.m[mi];
-                    String str1 = TextIO.moveToString(pos, m, true, moves);
+                    String str1 = TextIO::moveToString(pos, m, true, moves);
                     if (str1.charAt(str1.length() - 1) == lastChar) {
                         subMoves.m[len++] = m;
                     }
@@ -479,8 +507,8 @@ public class TextIO {
             // Search for full match
             for (int mi = 0; mi < moves.size; mi++) {
                 Move m = moves.m[mi];
-                String str1 = normalizeMoveString(TextIO.moveToString(pos, m, true, moves));
-                String str2 = normalizeMoveString(TextIO.moveToString(pos, m, false, moves));
+                String str1 = normalizeMoveString(TextIO::moveToString(pos, m, true, moves));
+                String str2 = normalizeMoveString(TextIO::moveToString(pos, m, false, moves));
                 if (i == 0) {
                     if (strMove.equals(str1) || strMove.equals(str2)) {
                         return m;
@@ -493,14 +521,14 @@ public class TextIO {
                 }
             }
         }
-        
+
         for (int i = 0; i < 2; i++) {
             // Search for unique substring match
             for (int mi = 0; mi < moves.size; mi++) {
                 Move m = moves.m[mi];
-                String str1 = normalizeMoveString(TextIO.moveToString(pos, m, true));
-                String str2 = normalizeMoveString(TextIO.moveToString(pos, m, false));
-                boolean match;
+                String str1 = normalizeMoveString(TextIO::moveToString(pos, m, true));
+                String str2 = normalizeMoveString(TextIO::moveToString(pos, m, false));
+                bool match;
                 if (i == 0) {
                     match = (str1.startsWith(strMove) || str2.startsWith(strMove));
                 } else {
@@ -519,87 +547,88 @@ public class TextIO {
                 return move;
         }
         return move;
+#endif
+        return Move(0, 0, 0);
     }
 
     /**
      * Convert a string, such as "e4" to a square number.
      * @return The square number, or -1 if not a legal square.
      */
-    public static final int getSquare(String s) {
-        int x = s.charAt(0) - 'a';
-        int y = s.charAt(1) - '1';
+    static int getSquare(std::string s) {
+        int x = s[0] - 'a';
+        int y = s[1] - '1';
         if ((x < 0) || (x > 7) || (y < 0) || (y > 7))
             return -1;
-        return Position.getSquare(x, y);
+        return Position::getSquare(x, y);
     }
 
     /**
      * Convert a square number to a string, such as "e4".
      */
-    public static final String squareToString(int square) {
-        StringBuilder ret = new StringBuilder();
-        int x = Position.getX(square);
-        int y = Position.getY(square);
-        ret.append((char) (x + 'a'));
-        ret.append((char) (y + '1'));
-        return ret.toString();
+    static std::string squareToString(int square) {
+        std::string ret;
+        int x = Position::getX(square);
+        int y = Position::getY(square);
+        ret += (char)(x + 'a');
+        ret += (char) (y + '1');
+        return ret;
     }
 
     /**
      * Create an ascii representation of a position.
      */
-    public static final String asciiBoard(Position pos) {
-        StringBuilder ret = new StringBuilder(400);
-        String nl = String.format("%n");
-        ret.append("    +----+----+----+----+----+----+----+----+"); ret.append(nl);
+    static std::string asciiBoard(const Position& pos) {
+        std::string ret;
+        ret += "    +----+----+----+----+----+----+----+----+\n";
         for (int y = 7; y >= 0; y--) {
-            ret.append("    |");
+            ret += "    |";
             for (int x = 0; x < 8; x++) {
-                ret.append(' ');
-                int p = pos.getPiece(Position.getSquare(x, y));
-                if (p == Piece.EMPTY) {
-                    boolean dark = Position.darkSquare(x, y);
+                ret += ' ';
+                int p = pos.getPiece(Position::getSquare(x, y));
+                if (p == Piece::EMPTY) {
+                    bool dark = Position::darkSquare(x, y);
                     ret.append(dark ? ".. |" : "   |");
                 } else {
-                    ret.append(Piece.isWhite(p) ? ' ' : '*');
-                    String pieceName = pieceToChar(p);
+                    ret += Piece::isWhite(p) ? ' ' : '*';
+                    std::string pieceName = pieceToChar(p);
                     if (pieceName.length() == 0)
                         pieceName = "P";
-                    ret.append(pieceName);
-                    ret.append(" |");
+                    ret += pieceName;
+                    ret += " |";
                 }
             }
-            ret.append(nl);
-            ret.append("    +----+----+----+----+----+----+----+----+");
-            ret.append(nl);
+            ret +=("\n    +----+----+----+----+----+----+----+----+\n");
         }
-        return ret.toString();
+        return ret;
     }
 
+private:
     /**
      * Convert move string to lower case and remove special check/mate symbols.
      */
-    private static final String normalizeMoveString(String str) {
+    static std::string normalizeMoveString(const std::string& str) {
+#if 0
         if (str.length() > 0) {
             char lastChar = str.charAt(str.length() - 1);
             if ((lastChar == '#') || (lastChar == '+')) {
                 str = str.substring(0, str.length() - 1);
             }
         }
+#endif
         return str;
     }
-    
-    private final static String pieceToChar(int p) {
+
+    static std::string pieceToChar(int p) {
         switch (p) {
-            case Piece.WQUEEN:  case Piece.BQUEEN:  return "Q";
-            case Piece.WROOK:   case Piece.BROOK:   return "R";
-            case Piece.WBISHOP: case Piece.BBISHOP: return "B";
-            case Piece.WKNIGHT: case Piece.BKNIGHT: return "N";
-            case Piece.WKING:   case Piece.BKING:   return "K";
+            case Piece::WQUEEN:  case Piece::BQUEEN:  return "Q";
+            case Piece::WROOK:   case Piece::BROOK:   return "R";
+            case Piece::WBISHOP: case Piece::BBISHOP: return "B";
+            case Piece::WKNIGHT: case Piece::BKNIGHT: return "N";
+            case Piece::WKING:   case Piece::BKING:   return "K";
         }
         return "";
     }
 };
-#endif
 
 #endif /* TEXTIO_HPP_ */

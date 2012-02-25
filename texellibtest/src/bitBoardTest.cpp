@@ -16,13 +16,13 @@
 static void
 testKingAttacks() {
 #if 0
-    assertEquals(5, Long.bitCount(BitBoard.kingAttacks[TextIO.getSquare("g1")]));
-    assertEquals(3, Long.bitCount(BitBoard.kingAttacks[TextIO.getSquare("h1")]));
-    assertEquals(3, Long.bitCount(BitBoard.kingAttacks[TextIO.getSquare("a1")]));
-    assertEquals(5, Long.bitCount(BitBoard.kingAttacks[TextIO.getSquare("a2")]));
-    assertEquals(3, Long.bitCount(BitBoard.kingAttacks[TextIO.getSquare("h8")]));
-    assertEquals(5, Long.bitCount(BitBoard.kingAttacks[TextIO.getSquare("a6")]));
-    assertEquals(8, Long.bitCount(BitBoard.kingAttacks[TextIO.getSquare("b2")]));
+    ASSERT_EQUAL(5, Long.bitCount(BitBoard.kingAttacks[TextIO::getSquare("g1")]));
+    ASSERT_EQUAL(3, Long.bitCount(BitBoard.kingAttacks[TextIO::getSquare("h1")]));
+    ASSERT_EQUAL(3, Long.bitCount(BitBoard.kingAttacks[TextIO::getSquare("a1")]));
+    ASSERT_EQUAL(5, Long.bitCount(BitBoard.kingAttacks[TextIO::getSquare("a2")]));
+    ASSERT_EQUAL(3, Long.bitCount(BitBoard.kingAttacks[TextIO::getSquare("h8")]));
+    ASSERT_EQUAL(5, Long.bitCount(BitBoard.kingAttacks[TextIO::getSquare("a6")]));
+    ASSERT_EQUAL(8, Long.bitCount(BitBoard.kingAttacks[TextIO::getSquare("b2")]));
 #endif
 }
 
@@ -30,16 +30,16 @@ testKingAttacks() {
 static void
 testKnightAttacks() {
 #if 0
-    assertEquals(3, Long.bitCount(BitBoard.knightAttacks[TextIO.getSquare("g1")]));
-    assertEquals(2, Long.bitCount(BitBoard.knightAttacks[TextIO.getSquare("a1")]));
-    assertEquals(2, Long.bitCount(BitBoard.knightAttacks[TextIO.getSquare("h1")]));
-    assertEquals(4, Long.bitCount(BitBoard.knightAttacks[TextIO.getSquare("h6")]));
-    assertEquals(4, Long.bitCount(BitBoard.knightAttacks[TextIO.getSquare("b7")]));
-    assertEquals(8, Long.bitCount(BitBoard.knightAttacks[TextIO.getSquare("c6")]));
-    assertEquals((1L<<TextIO.getSquare("e2")) |
-		 (1L<<TextIO.getSquare("f3")) |
-		 (1L<<TextIO.getSquare("h3")),
-		 BitBoard.knightAttacks[TextIO.getSquare("g1")]);
+    ASSERT_EQUAL(3, Long.bitCount(BitBoard.knightAttacks[TextIO::getSquare("g1")]));
+    ASSERT_EQUAL(2, Long.bitCount(BitBoard.knightAttacks[TextIO::getSquare("a1")]));
+    ASSERT_EQUAL(2, Long.bitCount(BitBoard.knightAttacks[TextIO::getSquare("h1")]));
+    ASSERT_EQUAL(4, Long.bitCount(BitBoard.knightAttacks[TextIO::getSquare("h6")]));
+    ASSERT_EQUAL(4, Long.bitCount(BitBoard.knightAttacks[TextIO::getSquare("b7")]));
+    ASSERT_EQUAL(8, Long.bitCount(BitBoard.knightAttacks[TextIO::getSquare("c6")]));
+    ASSERT_EQUAL((1ULL<<TextIO::getSquare("e2")) |
+		 (1ULL<<TextIO::getSquare("f3")) |
+		 (1ULL<<TextIO::getSquare("h3")),
+		 BitBoard.knightAttacks[TextIO::getSquare("g1")]);
 #endif
 }
 
@@ -52,25 +52,25 @@ testSquaresBetween() {
 	for (int sq2 = 0; sq2 < 64; sq2++) {
 	    int d = BitBoard.getDirection(sq1, sq2);
 	    if (d == 0) {
-		assertEquals(0, BitBoard.squaresBetween[sq1][sq2]);
+		ASSERT_EQUAL(0, BitBoard.squaresBetween[sq1][sq2]);
 	    } else {
-		int dx = Position.getX(sq1) - Position.getX(sq2);
-		int dy = Position.getY(sq1) - Position.getY(sq2);
+		int dx = Position::getX(sq1) - Position::getX(sq2);
+		int dy = Position::getY(sq1) - Position::getY(sq2);
 		if (Math.abs(dx * dy) == 2) { // Knight direction
-		    assertEquals(0, BitBoard.squaresBetween[sq1][sq2]);
+		    ASSERT_EQUAL(0, BitBoard.squaresBetween[sq1][sq2]);
 		} else {
 		    if ((Math.abs(dx) > 1) || (Math.abs(dy) > 1)) {
-			assertTrue(BitBoard.squaresBetween[sq1][sq2] != 0);
+			ASSERT(BitBoard.squaresBetween[sq1][sq2] != 0);
 		    } else {
-			assertEquals(0, BitBoard.squaresBetween[sq1][sq2]);
+			ASSERT_EQUAL(0, BitBoard.squaresBetween[sq1][sq2]);
 		    }
 		}
 	    }
 	}
     }
 
-    assertEquals(0x0040201008040200L, BitBoard.squaresBetween[0][63]);
-    assertEquals(0x000000001C000000L, BitBoard.squaresBetween[TextIO.getSquare("b4")][TextIO.getSquare("f4")]);
+    ASSERT_EQUAL(0x0040201008040200L, BitBoard.squaresBetween[0][63]);
+    ASSERT_EQUAL(0x000000001C000000L, BitBoard.squaresBetween[TextIO::getSquare("b4")][TextIO::getSquare("f4")]);
 #endif
 }
 
@@ -80,8 +80,8 @@ testSquaresBetween() {
  */
 static int computeDirection(int from, int to) {
 #if 0
-    int dx = Position.getX(to) - Position.getX(from);
-    int dy = Position.getY(to) - Position.getY(from);
+    int dx = Position::getX(to) - Position::getX(from);
+    int dy = Position::getY(to) - Position::getY(from);
     if (dx == 0) {                   // Vertical rook direction
 	if (dy == 0) return 0;
 	return (dy > 0) ? 8 : -8;
@@ -101,7 +101,7 @@ testGetDirection() {
 #if 0
     for (int from = 0; from < 64; from++) {
 	for (int to = 0; to < 64; to++) {
-	    assertEquals(computeDirection(from, to), BitBoard.getDirection(from, to));
+	    ASSERT_EQUAL(computeDirection(from, to), BitBoard.getDirection(from, to));
 	}
     }
 #endif
@@ -111,8 +111,8 @@ static void
 testTrailingZeros() {
 #if 0
     for (int i = 0; i < 64; i++) {
-	long mask = 1L << i;
-	assertEquals(i, BitBoard.numberOfTrailingZeros(mask));
+	U64 mask = 1ULL << i;
+	ASSERT_EQUAL(i, BitBoard.numberOfTrailingZeros(mask));
     }
 #endif
 }

@@ -8,20 +8,28 @@
 #ifndef CHESSPARSEERROR_HPP_
 #define CHESSPARSEERROR_HPP_
 
+#include <exception>
+#include <string>
+
 /**
  * Exception class to represent parse errors in FEN or algebraic notation.
  */
-#if 0
-public class ChessParseError extends Exception {
-    private static final long serialVersionUID = -6051856171275301175L;
-    public ChessParseError() {
+class ChessParseError : public std::exception {
+public:
+    ChessParseError();
+
+    ~ChessParseError() throw() {}
+
+    ChessParseError(const std::string& msg) : msg_(msg)
+    {
     }
-    public ChessParseError(String msg) {
-        super(msg);
+
+    virtual const char* what() const throw() {
+        return msg_.c_str();
     }
+
+private:
+    std::string msg_;
 };
-#endif
-
-
 
 #endif /* CHESSPARSEERROR_HPP_ */

@@ -34,7 +34,7 @@ public class KillerTable {
     final public void addKiller(int ply, Move m) {
         if (ply >= ktList.length)
             return;
-        int move = (short)(m.from + (m.to << 6) + (m.promoteTo << 12));
+        int move = (short)(m.from() + (m.to() << 6) + (m.promoteTo() << 12));
         KTEntry ent = ktList[ply];
         if (move != ent.move0) {
             ent.move1 = ent.move0;
@@ -51,7 +51,7 @@ public class KillerTable {
      * The score is 0 otherwise.
      */
     final public int getKillerScore(int ply, Move m) {
-        int move = (short)(m.from + (m.to << 6) + (m.promoteTo << 12));
+        int move = (short)(m.from() + (m.to() << 6) + (m.promoteTo() << 12));
         if (ply < ktList.length) {
             KTEntry ent = ktList[ply];
             if (move == ent.move0) {

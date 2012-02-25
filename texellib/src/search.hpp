@@ -20,7 +20,7 @@ public class Search {
     Evaluate eval;
     KillerTable kt;
     History ht;
-    long[] posHashList;         // List of hashes for previous positions up to the last "zeroing" move.
+    U64[] posHashList;         // List of hashes for previous positions up to the last "zeroing" move.
     int posHashListSize;        // Number of used entries in posHashList
     int posHashFirstNew;        // First entry in posHashList that has not been played OTB.
     TranspositionTable tt;
@@ -29,11 +29,11 @@ public class Search {
     private static final class SearchTreeInfo {
         UndoInfo undoInfo;
         Move hashMove;         // Temporary storage for local hashMove variable
-        boolean allowNullMove; // Don't allow two null-moves in a row
+        bool allowNullMove; // Don't allow two null-moves in a row
         Move bestMove;         // Copy of the best found move at this ply
         Move currentMove;      // Move currently being searched
         int lmr;               // LMR reduction amount
-        long nodeIdx;
+        U64 nodeIdx;
         SearchTreeInfo() {
             undoInfo = new UndoInfo();
             hashMove = new Move(0, 0, 0);
@@ -47,14 +47,14 @@ public class Search {
     long tStart;            // Time when search started
     long minTimeMillis;     // Minimum recommended thinking time
     long maxTimeMillis;     // Maximum allowed thinking time
-    boolean searchNeedMoreTime; // True if negaScout should use up to maxTimeMillis time.
+    bool searchNeedMoreTime; // True if negaScout should use up to maxTimeMillis time.
     private long maxNodes;  // Maximum number of nodes to search (approximately)
     int nodesToGo;          // Number of nodes until next time check
     public int nodesBetweenTimeCheck = 5000; // How often to check remaining time
 
     // Reduced strength variables
     private int strength = 1000; // Strength (0-1000)
-    boolean weak = false;        // Set to strength < 1000
+    bool weak = false;        // Set to strength < 1000
     long randomSeed = 0;
 
     // Search statistics stuff
@@ -64,19 +64,19 @@ public class Search {
     int[] nodesDepthVec;
     long totalNodes;
     long tLastStats;        // Time when notifyStats was last called
-    boolean verbose;
+    bool verbose;
     
     public final static int MATE0 = 32000;
 
     public final static int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
     int q0Eval; // Static eval score at first level of quiescence search 
 
-    public Search(Position pos, long[] posHashList, int posHashListSize, TranspositionTable tt) {
-        this.pos = new Position(pos);
-        this.moveGen = new MoveGen();
-        this.posHashList = posHashList;
-        this.posHashListSize = posHashListSize;
-        this.tt = tt;
+    public Search(Position pos, U64[] posHashList, int posHashListSize, TranspositionTable tt) {
+        this->pos = new Position(pos);
+        this->moveGen = new MoveGen();
+        this->posHashList = posHashList;
+        this->posHashListSize = posHashListSize;
+        this->tt = tt;
         eval = new Evaluate();
         kt = new KillerTable();
         ht = new History();
@@ -94,10 +94,9 @@ public class Search {
     }
 
     static final class StopSearch extends Exception {
-        private static final long serialVersionUID = -5546906604987117015L;
         public StopSearch() {
         }
-        public StopSearch(String msg) {
+        public StopSearch(const std::string& msg) {
             super(msg);
         }
     }
@@ -109,13 +108,13 @@ public class Search {
         public void notifyDepth(int depth);
         public void notifyCurrMove(Move m, int moveNr);
         public void notifyPV(int depth, int score, int time, long nodes, int nps,
-                boolean isMate, boolean upperBound, boolean lowerBound, ArrayList<Move> pv);
+                bool isMate, bool upperBound, bool lowerBound, ArrayList<Move> pv);
         public void notifyStats(long nodes, int nps, int time);
     }
 
     Listener listener;
     public void setListener(Listener listener) {
-        this.listener = listener;
+        this->listener = listener;
     }
 
     private final static class MoveInfo {
@@ -160,13 +159,13 @@ public class Search {
     final public void setStrength(int strength, long randomSeed) {
         if (strength < 0) strength = 0;
         if (strength > 1000) strength = 1000;
-        this.strength = strength;
+        this->strength = strength;
         weak = strength < 1000;
-        this.randomSeed = randomSeed;
+        this->randomSeed = randomSeed;
     }
 
-    final public Move iterativeDeepening(MoveGen.MoveList scMovesIn,
-            int maxDepth, long initialMaxNodes, boolean verbose) {
+    final public Move iterativeDeepening(MoveGen::MoveList scMovesIn,
+            int maxDepth, long initialMaxNodes, bool verbose) {
         tStart = System.currentTimeMillis();
 //        log = TreeLogger.getWriter("/home/petero/treelog.dmp", pos);
         totalNodes = 0;
@@ -177,7 +176,7 @@ public class Search {
         {
             // If strength is < 10%, only include a subset of the root moves.
             // At least one move is always included though.
-            boolean[] includedMoves = new boolean[scMovesIn.size];
+            bool[] includedMoves = new bool[scMovesIn.size];
             long rndL = pos.zobristHash() ^ randomSeed;
             includedMoves[(int)(Math.abs(rndL) % scMovesIn.size)] = true;
             int nIncludedMoves = 1;
@@ -202,9 +201,9 @@ public class Search {
         nodesToGo = 0;
         Position origPos = new Position(pos);
         int bestScoreLastIter = 0;
-        boolean firstIteration = true;
+        bool firstIteration = true;
         Move bestMove = scMoves[0].move;
-        this.verbose = verbose;
+        this->verbose = verbose;
         if ((maxDepth < 0) || (maxDepth > 100)) {
             maxDepth = 100;
         }
@@ -219,7 +218,7 @@ public class Search {
             int alpha = firstIteration ? -Search.MATE0 : Math.max(bestScoreLastIter - aspirationDelta, -Search.MATE0);
             int bestScore = -Search.MATE0;
             UndoInfo ui = new UndoInfo();
-            boolean needMoreTime = false;
+            bool needMoreTime = false;
             for (int mi = 0; mi < scMoves.length; mi++) {
                 searchNeedMoreTime = (mi > 0);
                 Move m = scMoves[mi].move;
@@ -228,7 +227,7 @@ public class Search {
                 }
                 nodes = qNodes = 0;
                 posHashList[posHashListSize++] = pos.zobristHash();
-                boolean givesCheck = MoveGen.givesCheck(pos, m);
+                bool givesCheck = MoveGen::givesCheck(pos, m);
                 int beta;
                 if (firstIteration) {
                     beta = Search.MATE0;
@@ -237,8 +236,8 @@ public class Search {
                 }
 
                 int lmrS = 0;
-                boolean isCapture = (pos.getPiece(m.to) != Piece.EMPTY);
-                boolean isPromotion = (m.promoteTo != Piece.EMPTY);
+                bool isCapture = (pos.getPiece(m.to) != Piece::EMPTY);
+                bool isPromotion = (m.promoteTo != Piece::EMPTY);
                 if ((depthS >= 3*plyScale) && !isCapture && !isPromotion) {
                     if (!givesCheck && !passedPawnPush(pos, m)) {
                         if (mi >= 3)
@@ -249,7 +248,7 @@ public class Search {
                 long qNodes0 = qNodes;
                 System.out.printf("%2d %5s %5d %5d %6s %6s ",
                         mi, "-", alpha, beta, "-", "-");
-                System.out.printf("%-6s...\n", TextIO.moveToUCIString(m)); */
+                System.out.printf("%-6s...\n", TextIO::moveToUCIString(m)); */
                 pos.makeMove(m, ui);
                 SearchTreeInfo sti = searchTreeInfo[0];
                 sti.currentMove = m;
@@ -282,7 +281,7 @@ public class Search {
                             needMoreTime = true;
                         bestMove = m;
                         if (verbose)
-                            System.out.printf("%-6s %6d %6d %6d >=\n", TextIO.moveToString(pos, m, false),
+                            System.out.printf("%-6s %6d %6d %6d >=\n", TextIO::moveToString(pos, m, false),
                                     score, nodes, qNodes);
                         notifyPV(depthS/plyScale, score, false, true, m);
                         nodes = qNodes = 0;
@@ -301,7 +300,7 @@ public class Search {
                         retryDelta = Search.MATE0 * 2;
                         needMoreTime = searchNeedMoreTime = true;
                         if (verbose)
-                            System.out.printf("%-6s %6d %6d %6d <=\n", TextIO.moveToString(pos, m, false),
+                            System.out.printf("%-6s %6d %6d %6d <=\n", TextIO::moveToString(pos, m, false),
                                     score, nodes, qNodes);
                         notifyPV(depthS/plyScale, score, true, false, m);
                         nodes = qNodes = 0;
@@ -314,12 +313,12 @@ public class Search {
                     }
                 }
                 if (verbose || ((listener != null) && !firstIteration)) {
-                    boolean havePV = false;
-                    String PV = "";
+                    bool havePV = false;
+		    std::string PV = "";
                     if ((score > alpha) || (mi == 0)) {
                         havePV = true;
                         if (verbose) {
-                            PV = TextIO.moveToString(pos, m, false) + " ";
+                            PV = TextIO::moveToString(pos, m, false) + " ";
                             pos.makeMove(m, ui);
                             PV += tt.extractPV(pos);
                             pos.unMakeMove(m, ui);
@@ -328,9 +327,9 @@ public class Search {
                     if (verbose) {
 /*                        System.out.printf("%2d %5d %5d %5d %6d %6d ",
                                 mi, score, alpha, beta, nodes-nodes0, qNodes-qNodes0);
-                        System.out.printf("%-6s\n", TextIO.moveToUCIString(m)); */
+                        System.out.printf("%-6s\n", TextIO::moveToUCIString(m)); */
                         System.out.printf("%-6s %6d %6d %6d%s %s\n",
-                                TextIO.moveToString(pos, m, false), score,
+                                TextIO::moveToString(pos, m, false), score,
                                 nodes, qNodes, (score > alpha ? " *" : ""), PV);
                     }
                     if (havePV && !firstIteration) {
@@ -405,9 +404,9 @@ public class Search {
         return bestMove;
     }
 
-    private final void notifyPV(int depth, int score, boolean uBound, boolean lBound, Move m) {
+    private final void notifyPV(int depth, int score, bool uBound, bool lBound, Move m) {
         if (listener != null) {
-            boolean isMate = false;
+            bool isMate = false;
             if (score > MATE0 / 2) {
                 isMate = true;
                 score = (MATE0 - score) / 2;
@@ -433,14 +432,14 @@ public class Search {
         tLastStats = tNow;
     }
 
-    private static final Move emptyMove = new Move(0, 0, Piece.EMPTY, 0);
+    private static final Move emptyMove = new Move(0, 0, Piece::EMPTY, 0);
 
     /** 
      * Main recursive search algorithm.
      * @return Score for the side to make a move, in position given by "pos".
      */
     final public int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
-                               final boolean inCheck) throws StopSearch {
+                               final bool inCheck) throws StopSearch {
         if (log != null) {
             SearchTreeInfo sti = searchTreeInfo[ply-1];
             long idx = log.logNodeStart(sti.nodeIdx, sti.currentMove, alpha, beta, ply, depth/plyScale);
@@ -464,18 +463,18 @@ public class Search {
             if (ply < 20) nodesPlyVec[ply]++;
             if (depth < 20*plyScale) nodesDepthVec[depth/plyScale]++;
         }
-        final long hKey = pos.historyHash();
+        final U64 hKey = pos.historyHash();
 
         // Draw tests
         if (canClaimDraw50(pos)) {
-            if (MoveGen.canTakeKing(pos)) {
+            if (MoveGen::canTakeKing(pos)) {
                 int score = MATE0 - ply;
                 if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, TTEntry.T_EXACT, UNKNOWN_SCORE, hKey);
                 return score;
             }
             if (inCheck) {
-                MoveGen.MoveList moves = moveGen.pseudoLegalMoves(pos);
-                MoveGen.removeIllegal(pos, moves);
+                MoveGen::MoveList moves = moveGen.pseudoLegalMoves(pos);
+                MoveGen::removeIllegal(pos, moves);
                 if (moves.size == 0) {            // Can't claim draw if already check mated.
                     int score = -(MATE0-(ply+1));
                     if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, TTEntry.T_EXACT, UNKNOWN_SCORE, hKey);
@@ -511,7 +510,7 @@ public class Search {
                         hashMove = sti.hashMove;
                         ent.getMove(hashMove);
                         if ((hashMove != null) && (hashMove.from != hashMove.to))
-                            if (pos.getPiece(hashMove.to) == Piece.EMPTY)
+                            if (pos.getPiece(hashMove.to) == Piece::EMPTY)
                                 kt.addKiller(ply, hashMove);
                     }
                     if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, ent.type, evalScore, hKey);
@@ -561,7 +560,7 @@ public class Search {
         // Reverse futility pruning
         if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) && 
             (Math.abs(alpha) <= MATE0 / 2) && (Math.abs(beta) <= MATE0 / 2)) {
-            boolean mtrlOk;
+            bool mtrlOk;
             if (pos.whiteMove) {
                 mtrlOk = (pos.wMtrl > pos.wMtrlPawns) && (pos.wMtrlPawns > 0);
             } else {
@@ -589,12 +588,12 @@ public class Search {
         sti.currentMove = emptyMove;
         if (    (depth >= 3*plyScale) && !inCheck && sti.allowNullMove &&
                 (Math.abs(beta) <= MATE0 / 2)) {
-            if (MoveGen.canTakeKing(pos)) {
+            if (MoveGen::canTakeKing(pos)) {
                 int score = MATE0 - ply;
                 if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry.T_EXACT, evalScore, hKey);
                 return score;
             }
-            boolean nullOk;
+            bool nullOk;
             if (pos.whiteMove) {
                 nullOk = (pos.wMtrl > pos.wMtrlPawns) && (pos.wMtrlPawns > 0);
             } else {
@@ -639,7 +638,7 @@ public class Search {
             }
         }
 
-        boolean futilityPrune = false;
+        bool futilityPrune = false;
         int futilityScore = alpha;
         if (!inCheck && (depth < 5*plyScale) && (posExtend == 0)) {
             if ((Math.abs(alpha) <= MATE0 / 2) && (Math.abs(beta) <= MATE0 / 2)) {
@@ -657,7 +656,7 @@ public class Search {
         }
 
         if ((depth > 4*plyScale) && ((hashMove == null) || (hashMove.from == hashMove.to))) {
-            boolean isPv = beta > alpha + 1;
+            bool isPv = beta > alpha + 1;
             if (isPv || (depth > 8 * plyScale)) {
                 // No hash move. Try internal iterative deepening.
                 long savedNodeIdx = sti.nodeIdx;
@@ -674,13 +673,13 @@ public class Search {
 
         // Start searching move alternatives
         // FIXME! Try hash move before generating move list.
-        MoveGen.MoveList moves;
+        MoveGen::MoveList moves;
         if (inCheck)
             moves = moveGen.checkEvasions(pos);
         else 
             moves = moveGen.pseudoLegalMoves(pos);
-        boolean seeDone = false;
-        boolean hashMoveSelected = true;
+        bool seeDone = false;
+        bool hashMoveSelected = true;
         if (!selectHashMove(moves, hashMove)) {
             scoreMoveList(moves, ply);
             seeDone = true;
@@ -688,7 +687,7 @@ public class Search {
         }
 
         UndoInfo ui = sti.undoInfo;
-        boolean haveLegalMoves = false;
+        bool haveLegalMoves = false;
         int illegalScore = -(MATE0-(ply+1));
         int b = beta;
         int bestScore = illegalScore;
@@ -703,20 +702,20 @@ public class Search {
                 selectBest(moves, mi);
             }
             Move m = moves.m[mi];
-            if (pos.getPiece(m.to) == (pos.whiteMove ? Piece.BKING : Piece.WKING)) {
+            if (pos.getPiece(m.to) == (pos.whiteMove ? Piece::BKING : Piece::WKING)) {
                 moveGen.returnMoveList(moves);
                 int score = MATE0-ply;
                 if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry.T_EXACT, evalScore, hKey);
                 return score;       // King capture
             }
             int newCaptureSquare = -1;
-            boolean isCapture = (pos.getPiece(m.to) != Piece.EMPTY);
-            boolean isPromotion = (m.promoteTo != Piece.EMPTY);
+            bool isCapture = (pos.getPiece(m.to) != Piece::EMPTY);
+            bool isPromotion = (m.promoteTo != Piece::EMPTY);
             int sVal = Integer.MIN_VALUE;
             // FIXME! Test extending pawn pushes to 7:th rank
-            boolean mayReduce = (m.score < 53) && (!isCapture || m.score < 0) && !isPromotion;
-            boolean givesCheck = MoveGen.givesCheck(pos, m); 
-            boolean doFutility = false;
+            bool mayReduce = (m.score < 53) && (!isCapture || m.score < 0) && !isPromotion;
+            bool givesCheck = MoveGen::givesCheck(pos, m); 
+            bool doFutility = false;
             if (mayReduce && haveLegalMoves && !givesCheck && !passedPawnPush(pos, m)) {
                 int moveCountLimit;
                 if (depth <= plyScale)          moveCountLimit = 3;
@@ -791,7 +790,7 @@ public class Search {
                             mi, "-", alpha, beta, "-", "-");
                     for (int i = 0; i < ply; i++)
                         System.out.printf("      ");
-                    System.out.printf("%-6s...\n", TextIO.moveToUCIString(m));
+                    System.out.printf("%-6s...\n", TextIO::moveToUCIString(m));
                 } */
                 sti.lmr = lmr;
                 score = -negaScout(-b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
@@ -806,7 +805,7 @@ public class Search {
                             mi, score, alpha, beta, nodes-nodes0, qNodes-qNodes0);
                     for (int i = 0; i < ply; i++)
                         System.out.printf("      ");
-                    System.out.printf("%-6s\n", TextIO.moveToUCIString(m));
+                    System.out.printf("%-6s\n", TextIO::moveToUCIString(m));
                 }*/
                 posHashListSize--;
                 pos.unMakeMove(m, ui);
@@ -828,12 +827,12 @@ public class Search {
                 sti.bestMove.promoteTo = m.promoteTo;
             }
             if (alpha >= beta) {
-                if (pos.getPiece(m.to) == Piece.EMPTY) {
+                if (pos.getPiece(m.to) == Piece::EMPTY) {
                     kt.addKiller(ply, m);
                     ht.addSuccess(pos, m, depth/plyScale);
                     for (int mi2 = mi - 1; mi2 >= 0; mi2--) {
                         Move m2 = moves.m[mi2];
-                        if (pos.getPiece(m2.to) == Piece.EMPTY)
+                        if (pos.getPiece(m2.to) == Piece::EMPTY)
                             ht.addFail(pos, m2, depth/plyScale);
                     }
                 }
@@ -862,19 +861,19 @@ public class Search {
     }
 
     /** Return true if move m2 was made possible by move m1. */
-    private final boolean relatedMoves(Move m1, Move m2) {
-        if ((m1.from == m1.to) || (m2.from == m2.to))
+    private final bool relatedMoves(Move m1, Move m2) {
+        if ((m1.from() == m1.to()) || (m2.from() == m2.to()))
             return false;
-        if ((m1.to == m2.from) || (m1.from == m2.to) ||
-            ((BitBoard.squaresBetween[m2.from][m2.to] & (1L << m1.from)) != 0))
+        if ((m1.to() == m2.from()) || (m1.from() == m2.to()) ||
+            ((BitBoard.squaresBetween[m2.from][m2.to] & (1ULL << m1.from())) != 0))
             return true;
         return false;
     }
 
     /** Return true if move should be skipped in order to make engine play weaker. */
-    private final boolean weakPlaySkipMove(Position pos, Move m, int ply) {
-        long rndL = pos.zobristHash() ^ Position.psHashKeys[0][m.from] ^
-                    Position.psHashKeys[0][m.to] ^ randomSeed;
+    private final bool weakPlaySkipMove(Position pos, Move m, int ply) {
+        long rndL = pos.zobristHash() ^ Position::psHashKeys[0][m.from()] ^
+                    Position::psHashKeys[0][m.to()] ^ randomSeed;
         double rnd = ((rndL & 0x7fffffffffffffffL) % 1000000000) / 1e9;
 
         double s = strength * 1e-3;
@@ -882,7 +881,7 @@ public class Search {
         double effPly = ply * Evaluate.interpolate(pos.wMtrl + pos.bMtrl, 0, 30, Evaluate.qV * 4, 100) * 1e-2;
         double t = effPly + offs;
         double p = 1/(1+Math.exp(t)); // Probability to "see" move
-        boolean easyMove = ((pos.getPiece(m.to) != Piece.EMPTY) ||
+        bool easyMove = ((pos.getPiece(m.to) != Piece::EMPTY) ||
                             (ply < 2) || (searchTreeInfo[ply-2].currentMove.to == m.from));
         if (easyMove)
             p = 1-(1-p)*(1-p);
@@ -891,18 +890,18 @@ public class Search {
         return false;
     }
 
-    private static final boolean passedPawnPush(Position pos, Move m) {
+    private static final bool passedPawnPush(Position pos, Move m) {
         int p = pos.getPiece(m.from);
         if (pos.whiteMove) {
-            if (p != Piece.WPAWN)
+            if (p != Piece::WPAWN)
                 return false;
-            if ((BitBoard.wPawnBlockerMask[m.to] & pos.pieceTypeBB[Piece.BPAWN]) != 0)
+            if ((BitBoard.wPawnBlockerMask[m.to] & pos.pieceTypeBB[Piece::BPAWN]) != 0)
                 return false;
             return m.to >= 40;
         } else {
-            if (p != Piece.BPAWN)
+            if (p != Piece::BPAWN)
                 return false;
-            if ((BitBoard.bPawnBlockerMask[m.to] & pos.pieceTypeBB[Piece.WPAWN]) != 0)
+            if ((BitBoard.bPawnBlockerMask[m.to] & pos.pieceTypeBB[Piece::WPAWN]) != 0)
                 return false;
             return m.to <= 23;
         }
@@ -911,7 +910,7 @@ public class Search {
     /**
      * Quiescence search. Only non-losing captures are searched.
      */
-    final private int quiesce(int alpha, int beta, int ply, int depth, final boolean inCheck) {
+    final private int quiesce(int alpha, int beta, int ply, int depth, final bool inCheck) {
         int score;
         if (inCheck) {
             score = -(MATE0 - (ply+1));
@@ -926,7 +925,7 @@ public class Search {
         }
         if (score >= beta) {
             if ((depth == 0) && (score < MATE0 - ply)) {
-                if (MoveGen.canTakeKing(pos)) {
+                if (MoveGen::canTakeKing(pos)) {
                     // To make stale-mate detection work
                     score = MATE0 - ply;
                 }
@@ -937,8 +936,8 @@ public class Search {
         if (score > alpha)
             alpha = score;
         int bestScore = score;
-        final boolean tryChecks = (depth > -3);
-        MoveGen.MoveList moves;
+        final bool tryChecks = (depth > -3);
+        MoveGen::MoveList moves;
         if (inCheck) {
             moves = moveGen.checkEvasions(pos);
         } else if (tryChecks) {
@@ -955,20 +954,20 @@ public class Search {
                 selectBest(moves, mi);
             }
             Move m = moves.m[mi];
-            if (pos.getPiece(m.to) == (pos.whiteMove ? Piece.BKING : Piece.WKING)) {
+            if (pos.getPiece(m.to) == (pos.whiteMove ? Piece::BKING : Piece::WKING)) {
                 moveGen.returnMoveList(moves);
                 return MATE0-ply;       // King capture
             }
-            boolean givesCheck = false;
-            boolean givesCheckComputed = false;
+            bool givesCheck = false;
+            bool givesCheckComputed = false;
             if (inCheck) {
                 // Allow all moves
             } else {
-                if ((pos.getPiece(m.to) == Piece.EMPTY) && (m.promoteTo == Piece.EMPTY)) {
+                if ((pos.getPiece(m.to) == Piece::EMPTY) && (m.promoteTo == Piece::EMPTY)) {
                     // Non-capture
                     if (!tryChecks)
                         continue;
-                    givesCheck = MoveGen.givesCheck(pos, m);
+                    givesCheck = MoveGen::givesCheck(pos, m);
                     givesCheckComputed = true;
                     if (!givesCheck)
                         continue;
@@ -984,7 +983,7 @@ public class Search {
                         if ((pos.wMtrlPawns > 0) && (pos.wMtrl > capt + pos.wMtrlPawns) &&
                             (pos.bMtrlPawns > 0) && (pos.bMtrl > capt + pos.bMtrlPawns)) {
                             if (depth -1 > -4) {
-                                givesCheck = MoveGen.givesCheck(pos, m);
+                                givesCheck = MoveGen::givesCheck(pos, m);
                                 givesCheckComputed = true;
                             }
                             if (!givesCheck) {
@@ -999,10 +998,10 @@ public class Search {
 
             if (!givesCheckComputed) {
                 if (depth - 1 > -4) {
-                    givesCheck = MoveGen.givesCheck(pos, m);
+                    givesCheck = MoveGen::givesCheck(pos, m);
                 }
             }
-            final boolean nextInCheck = (depth - 1) > -4 ? givesCheck : false;
+            final bool nextInCheck = (depth - 1) > -4 ? givesCheck : false;
 
             pos.makeMove(m, ui); 
             qNodes++;
@@ -1034,7 +1033,7 @@ public class Search {
     }
 
     /** Return true if SEE(m) < 0. */
-    final public boolean negSEE(Move m) {
+    final public bool negSEE(Move m) {
         int p0 = Evaluate.pieceValue[pos.getPiece(m.from)];
         int p1 = Evaluate.pieceValue[pos.getPiece(m.to)];
         if (p1 >= p0)
@@ -1063,36 +1062,36 @@ public class Search {
         int nCapt = 1;                  // Number of entries in captures[]
 
         pos.makeSEEMove(m, seeUi);
-        boolean white = pos.whiteMove;
+        bool white = pos.whiteMove;
         int valOnSquare = Evaluate.pieceValue[pos.getPiece(square)];
-        long occupied = pos.whiteBB | pos.blackBB;
+        U64 occupied = pos.whiteBB | pos.blackBB;
         while (true) {
             int bestValue = Integer.MAX_VALUE;
-            long atk;
+            U64 atk;
             if (white) {
-                atk = BitBoard.bPawnAttacks[square] & pos.pieceTypeBB[Piece.WPAWN] & occupied;
+                atk = BitBoard.bPawnAttacks[square] & pos.pieceTypeBB[Piece::WPAWN] & occupied;
                 if (atk != 0) {
                     bestValue = Evaluate.pV;
                 } else {
-                    atk = BitBoard.knightAttacks[square] & pos.pieceTypeBB[Piece.WKNIGHT] & occupied;
+                    atk = BitBoard.knightAttacks[square] & pos.pieceTypeBB[Piece::WKNIGHT] & occupied;
                     if (atk != 0) {
                         bestValue = Evaluate.nV;
                     } else {
-                        long bAtk = BitBoard.bishopAttacks(square, occupied) & occupied;
-                        atk = bAtk & pos.pieceTypeBB[Piece.WBISHOP];
+                        U64 bAtk = BitBoard.bishopAttacks(square, occupied) & occupied;
+                        atk = bAtk & pos.pieceTypeBB[Piece::WBISHOP];
                         if (atk != 0) {
                             bestValue = Evaluate.bV;
                         } else {
-                            long rAtk = BitBoard.rookAttacks(square, occupied) & occupied;
-                            atk = rAtk & pos.pieceTypeBB[Piece.WROOK];
+                            U64 rAtk = BitBoard.rookAttacks(square, occupied) & occupied;
+                            atk = rAtk & pos.pieceTypeBB[Piece::WROOK];
                             if (atk != 0) {
                                 bestValue = Evaluate.rV;
                             } else {
-                                atk = (bAtk | rAtk) & pos.pieceTypeBB[Piece.WQUEEN];
+                                atk = (bAtk | rAtk) & pos.pieceTypeBB[Piece::WQUEEN];
                                 if (atk != 0) {
                                     bestValue = Evaluate.qV;
                                 } else {
-                                    atk = BitBoard.kingAttacks[square] & pos.pieceTypeBB[Piece.WKING] & occupied;
+                                    atk = BitBoard.kingAttacks[square] & pos.pieceTypeBB[Piece::WKING] & occupied;
                                     if (atk != 0) {
                                         bestValue = kV;
                                     } else {
@@ -1104,29 +1103,29 @@ public class Search {
                     }
                 }
             } else {
-                atk = BitBoard.wPawnAttacks[square] & pos.pieceTypeBB[Piece.BPAWN] & occupied;
+                atk = BitBoard.wPawnAttacks[square] & pos.pieceTypeBB[Piece::BPAWN] & occupied;
                 if (atk != 0) {
                     bestValue = Evaluate.pV;
                 } else {
-                    atk = BitBoard.knightAttacks[square] & pos.pieceTypeBB[Piece.BKNIGHT] & occupied;
+                    atk = BitBoard.knightAttacks[square] & pos.pieceTypeBB[Piece::BKNIGHT] & occupied;
                     if (atk != 0) {
                         bestValue = Evaluate.nV;
                     } else {
-                        long bAtk = BitBoard.bishopAttacks(square, occupied) & occupied;
-                        atk = bAtk & pos.pieceTypeBB[Piece.BBISHOP];
+                        U64 bAtk = BitBoard.bishopAttacks(square, occupied) & occupied;
+                        atk = bAtk & pos.pieceTypeBB[Piece::BBISHOP];
                         if (atk != 0) {
                             bestValue = Evaluate.bV;
                         } else {
-                            long rAtk = BitBoard.rookAttacks(square, occupied) & occupied;
-                            atk = rAtk & pos.pieceTypeBB[Piece.BROOK];
+                            U64 rAtk = BitBoard.rookAttacks(square, occupied) & occupied;
+                            atk = rAtk & pos.pieceTypeBB[Piece::BROOK];
                             if (atk != 0) {
                                 bestValue = Evaluate.rV;
                             } else {
-                                atk = (bAtk | rAtk) & pos.pieceTypeBB[Piece.BQUEEN];
+                                atk = (bAtk | rAtk) & pos.pieceTypeBB[Piece::BQUEEN];
                                 if (atk != 0) {
                                     bestValue = Evaluate.qV;
                                 } else {
-                                    atk = BitBoard.kingAttacks[square] & pos.pieceTypeBB[Piece.BKING] & occupied;
+                                    atk = BitBoard.kingAttacks[square] & pos.pieceTypeBB[Piece::BKING] & occupied;
                                     if (atk != 0) {
                                         bestValue = kV;
                                     } else {
@@ -1158,13 +1157,13 @@ public class Search {
      * Compute scores for each move in a move list, using SEE, killer and history information.
      * @param moves  List of moves to score.
      */
-    final void scoreMoveList(MoveGen.MoveList moves, int ply) {
+    final void scoreMoveList(MoveGen::MoveList moves, int ply) {
         scoreMoveList(moves, ply, 0);
     }
-    final void scoreMoveList(MoveGen.MoveList moves, int ply, int startIdx) {
+    final void scoreMoveList(MoveGen::MoveList moves, int ply, int startIdx) {
         for (int i = startIdx; i < moves.size; i++) {
             Move m = moves.m[i];
-            boolean isCapture = (pos.getPiece(m.to) != Piece.EMPTY) || (m.promoteTo != Piece.EMPTY);
+            bool isCapture = (pos.getPiece(m.to) != Piece::EMPTY) || (m.promoteTo != Piece::EMPTY);
             int score = 0;
             if (isCapture) {
                 int seeScore = isCapture ? signSEE(m) : 0;
@@ -1189,7 +1188,7 @@ public class Search {
             m.score = score;
         }
     }
-    private final void scoreMoveListMvvLva(MoveGen.MoveList moves) {
+    private final void scoreMoveListMvvLva(MoveGen::MoveList moves) {
         for (int i = 0; i < moves.size; i++) {
             Move m = moves.m[i];
             int v = pos.getPiece(m.to);
@@ -1201,7 +1200,7 @@ public class Search {
     /**
      * Find move with highest score and move it to the front of the list.
      */
-    final static void selectBest(MoveGen.MoveList moves, int startIdx) {
+    final static void selectBest(MoveGen::MoveList moves, int startIdx) {
         int bestIdx = startIdx;
         int bestScore = moves.m[bestIdx].score;
         for (int i = startIdx + 1; i < moves.size; i++) {
@@ -1219,7 +1218,7 @@ public class Search {
     }
 
     /** If hashMove exists in the move list, move the hash move to the front of the list. */
-    final static boolean selectHashMove(MoveGen.MoveList moves, Move hashMove) {
+    final static bool selectHashMove(MoveGen::MoveList moves, Move hashMove) {
         if (hashMove == null) {
             return false;
         }
@@ -1235,11 +1234,11 @@ public class Search {
         return false;
     }
 
-    public final static boolean canClaimDraw50(Position pos) {
+    public final static bool canClaimDraw50(Position pos) {
         return (pos.halfMoveClock >= 100);
     }
     
-    public final static boolean canClaimDrawRep(Position pos, long[] posHashList, int posHashListSize, int posHashFirstNew) {
+    public final static bool canClaimDrawRep(Position pos, U64[] posHashList, int posHashListSize, int posHashFirstNew) {
         int reps = 0;
         for (int i = posHashListSize - 4; i >= 0; i -= 2) {
             if (pos.zobristHash() == posHashList[i]) {

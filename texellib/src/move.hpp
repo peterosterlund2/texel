@@ -14,10 +14,7 @@
 class Move {
 public:
     /** Create a move object. */
-    Move(int from, int to, int promoteTo);
-
-    /** Create a move object. */
-    Move(int from, int to, int promoteTo, int score);
+    Move(int from, int to, int promoteTo, int score = 0);
 
     /** Copy constructor. */
     Move(const Move& m);
@@ -55,14 +52,6 @@ private:
     /** Score. */
     int score_;
 };
-
-inline
-Move::Move(int from, int to, int promoteTo) {
-    from_ = from;
-    to_ = to;
-    promoteTo_ = promoteTo;
-    score_ = 0;
-}
 
 inline
 Move::Move(int from, int to, int promoteTo, int score) {

@@ -14,7 +14,7 @@
 #if 0
 public class TranspositionTable {
     static final public class TTEntry {
-        long key;               // Zobrist hash key
+        U64 key;               // Zobrist hash key
         private short move;     // from + (to<<6) + (promote<<12)
         private short score;    // Score from search
         private short depthSlot; // Search depth (bit 0-14) and hash slot (bit 15).
@@ -24,12 +24,12 @@ public class TranspositionTable {
         // FIXME!!! Test storing both upper and lower bound in each hash entry.
 
         static public final int T_EXACT = 0;   // Exact score
-        static public final int T_GE = 1;      // True score >= this.score
-        static public final int T_LE = 2;      // True score <= this.score
+        static public final int T_GE = 1;      // True score >= this->score
+        static public final int T_LE = 2;      // True score <= this->score
         static public final int T_EMPTY = 3;   // Empty hash slot
         
         /** Return true if this object is more valuable than the other, false otherwise. */
-        public final boolean betterThan(TTEntry other, int currGen) {
+        public final bool betterThan(TTEntry other, int currGen) {
             if ((generation == currGen) != (other.generation == currGen)) {
                 return generation == currGen;   // Old entries are less valuable
             }
@@ -43,7 +43,7 @@ public class TranspositionTable {
         }
 
         /** Return true if entry is good enough to spend extra time trying to avoid overwriting it. */
-        public final boolean valuable(int currGen) {
+        public final bool valuable(int currGen) {
             if (generation != currGen)
                 return false;
             return (type == T_EXACT) || (getDepth() > 3 * Search.plyScale);
@@ -55,7 +55,7 @@ public class TranspositionTable {
             m.promoteTo = (move >> 12) & 15;
         }
         public final void setMove(Move move) {
-            this.move = (short)(move.from + (move.to << 6) + (move.promoteTo << 12));
+            this->move = (short)(move.from + (move.to << 6) + (move.promoteTo << 12));
         }
         
         /** Get the score from the hash entry, and convert from "mate in x" to "mate at ply". */
@@ -76,7 +76,7 @@ public class TranspositionTable {
             } else if (score < -(Search.MATE0 - 1000)) {
                 score -= ply;
             }
-            this.score = (short)score;
+            this->score = (short)score;
         }
 
         /** Get depth from the hash entry. */
@@ -119,7 +119,7 @@ public class TranspositionTable {
         generation = 0;
     }
 
-    public final void insert(long key, Move sm, int type, int ply, int depth, int evalScore) {
+    public final void insert(U64 key, Move sm, int type, int ply, int depth, int evalScore) {
         if (depth < 0) depth = 0;
         int idx0 = h0(key);
         int idx1 = h1(key);
@@ -149,7 +149,7 @@ public class TranspositionTable {
                 }
             }
         }
-        boolean doStore = true;
+        bool doStore = true;
         if ((ent.key == key) && (ent.getDepth() > depth) && (ent.type == type)) {
             if (type == TTEntry.T_EXACT) {
                 doStore = false;
@@ -173,7 +173,7 @@ public class TranspositionTable {
     }
 
     /** Retrieve an entry from the hash table corresponding to "pos". */
-    public final TTEntry probe(long key) {
+    public final TTEntry probe(U64 key) {
         int idx0 = h0(key);
         TTEntry ent = table[idx0];
         if (ent.key == key) {
@@ -212,7 +212,7 @@ public class TranspositionTable {
         m = new Move(m);
         ArrayList<Move> ret = new ArrayList<Move>();
         UndoInfo ui = new UndoInfo();
-        List<Long> hashHistory = new ArrayList<Long>();
+        List<U64> hashHistory = new ArrayList<U64>();
         MoveGen moveGen = new MoveGen();
         while (true) {
             ret.add(m);
@@ -227,9 +227,9 @@ public class TranspositionTable {
             }
             m = new Move(0,0,0);
             ent.getMove(m);
-            MoveGen.MoveList moves = moveGen.pseudoLegalMoves(pos);
-            MoveGen.removeIllegal(pos, moves);
-            boolean contains = false;
+            MoveGen::MoveList moves = moveGen.pseudoLegalMoves(pos);
+            MoveGen::removeIllegal(pos, moves);
+            bool contains = false;
             for (int mi = 0; mi < moves.size; mi++)
                 if (moves.m[mi].equals(m)) {
                     contains = true;
@@ -245,12 +245,12 @@ public class TranspositionTable {
     public final String extractPV(Position pos) {
         StringBuilder ret = new StringBuilder(100);
         pos = new Position(pos);    // To avoid modifying the input parameter
-        boolean first = true;
+        bool first = true;
         TTEntry ent = probe(pos.historyHash());
         UndoInfo ui = new UndoInfo();
-        ArrayList<Long> hashHistory = new ArrayList<Long>();
-        boolean repetition = false;
-        MoveGen moveGen = MoveGen.instance;
+        ArrayList<U64> hashHistory = new ArrayList<U64>();
+        bool repetition = false;
+        MoveGen moveGen = MoveGen::instance;
         while (ent.type != TTEntry.T_EMPTY) {
             String type = "";
             if (ent.type == TTEntry.T_LE) {
@@ -260,9 +260,9 @@ public class TranspositionTable {
             }
             Move m = new Move(0,0,0);
             ent.getMove(m);
-            MoveGen.MoveList moves = moveGen.pseudoLegalMoves(pos);
-            MoveGen.removeIllegal(pos, moves);
-            boolean contains = false;
+            MoveGen::MoveList moves = moveGen.pseudoLegalMoves(pos);
+            MoveGen::removeIllegal(pos, moves);
+            bool contains = false;
             for (int mi = 0; mi < moves.size; mi++)
                 if (moves.m[mi].equals(m)) {
                     contains = true;
@@ -270,7 +270,7 @@ public class TranspositionTable {
                 }
             if  (!contains)
                 break;
-            String moveStr = TextIO.moveToString(pos, m, false);
+            String moveStr = TextIO::moveToString(pos, m, false);
             if (repetition)
                 break;
             if (!first) {
@@ -320,11 +320,11 @@ public class TranspositionTable {
         }
     }
     
-    private final int h0(long key) {
+    private final int h0(U64 key) {
         return (int)(key & (table.length - 1));
     }
     
-    private final int h1(long key) {
+    private final int h1(U64 key) {
         return (int)((key >> 32) & (table.length - 1));
     }
 }

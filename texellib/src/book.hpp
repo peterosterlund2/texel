@@ -17,24 +17,24 @@ public class Book {
         Move move;
         int count;
         BookEntry(Move move) {
-            this.move = move;
+            this->move = move;
             count = 1;
         }
     }
     private static Map<Long, List<BookEntry>> bookMap;
     private static Random rndGen;
     private static int numBookMoves = -1;
-    private boolean verbose;
+    private bool verbose;
 
-    public Book(boolean verbose) {
-        this.verbose = verbose;
+    public Book(bool verbose) {
+        this->verbose = verbose;
     }
 
     private final void initBook() {
         if (numBookMoves >= 0)
             return;
-        long t0 = System.currentTimeMillis();
-        bookMap = new HashMap<Long, List<BookEntry>>();
+        U64 t0 = System.currentTimeMillis();
+        bookMap = new HashMap<U64, List<BookEntry>>();
         rndGen = new SecureRandom();
         rndGen.setSeed(System.currentTimeMillis());
         numBookMoves = 0;
@@ -49,7 +49,7 @@ public class Book {
                     buf.add(tmpBuf[i]);
             }
             inStream.close();
-            Position startPos = TextIO.readFEN(TextIO.startPosFEN);
+            Position startPos = TextIO::readFEN(TextIO::startPosFEN);
             Position pos = new Position(startPos);
             UndoInfo ui = new UndoInfo();
             int len = buf.size();
@@ -60,7 +60,7 @@ public class Book {
                 if (move == 0) {
                     pos = new Position(startPos);
                 } else {
-                    boolean bad = ((move >> 15) & 1) != 0;
+                    bool bad = ((move >> 15) & 1) != 0;
                     int prom = (move >> 12) & 7;
                     Move m = new Move(move & 63, (move >> 6) & 63,
                                       promToPiece(prom, pos.whiteMove));
@@ -76,7 +76,7 @@ public class Book {
             throw new RuntimeException();
         }
         if (verbose) {
-            long t1 = System.currentTimeMillis();
+            U64 t1 = System.currentTimeMillis();
             System.out.printf("Book moves:%d (parse time:%.3f)%n", numBookMoves,
                     (t1 - t0) / 1000.0);
         }
@@ -109,12 +109,12 @@ public class Book {
             return null;
         }
         
-        MoveGen.MoveList legalMoves = new MoveGen().pseudoLegalMoves(pos);
-        MoveGen.removeIllegal(pos, legalMoves);
+        MoveGen::MoveList legalMoves = new MoveGen().pseudoLegalMoves(pos);
+        MoveGen::removeIllegal(pos, legalMoves);
         int sum = 0;
         for (int i = 0; i < bookMoves.size(); i++) {
             BookEntry be = bookMoves.get(i);
-            boolean contains = false;
+            bool contains = false;
             for (int mi = 0; mi < legalMoves.size; mi++)
                 if (legalMoves.m[mi].equals(be.move)) {
                     contains = true;
@@ -147,13 +147,13 @@ public class Book {
     }
 
     /** Return a string describing all book moves. */
-    public final String getAllBookMoves(Position pos) {
+    public final std::string getAllBookMoves(const Position& pos) {
         initBook();
         StringBuilder ret = new StringBuilder();
         List<BookEntry> bookMoves = bookMap.get(pos.zobristHash());
         if (bookMoves != null) {
             for (BookEntry be : bookMoves) {
-                String moveStr = TextIO.moveToString(pos, be.move, false);
+		std::string moveStr = TextIO::moveToString(pos, be.move, false);
                 ret.append(moveStr);
                 ret.append("(");
                 ret.append(be.count);
@@ -182,7 +182,7 @@ public class Book {
             InputStreamReader inFile = new InputStreamReader(inStream);
             BufferedReader inBuf = new BufferedReader(inFile);
             LineNumberReader lnr = new LineNumberReader(inBuf);
-            String line;
+	    std::string line;
             while ((line = lnr.readLine()) != null) {
                 if (line.startsWith("#") || (line.length() == 0)) {
                     continue;
@@ -204,23 +204,23 @@ public class Book {
     }
 
     /** Add a sequence of moves, starting from the initial position, to the binary opening book. */
-    private static boolean addBookLine(String line, List<Byte> binBook) throws ChessParseError {
-        Position pos = TextIO.readFEN(TextIO.startPosFEN);
+    private static bool addBookLine(const std::string& line, List<Byte> binBook) throws ChessParseError {
+        Position pos = TextIO::readFEN(TextIO::startPosFEN);
         UndoInfo ui = new UndoInfo();
         String[] strMoves = line.split(" ");
-        for (String strMove : strMoves) {
+        for (std::string strMove : strMoves) {
 //            System.out.printf("Adding move:%s\n", strMove);
             int bad = 0;
             if (strMove.endsWith("?")) {
                 strMove = strMove.substring(0, strMove.length() - 1);
                 bad = 1;
             }
-            Move m = TextIO.stringToMove(pos, strMove);
+            Move m = TextIO::stringToMove(pos, strMove);
             if (m == null) {
                 return false;
             }
             int prom = pieceToProm(m.promoteTo);
-            int val = m.from + (m.to << 6) + (prom << 12) + (bad << 15);
+            int val = m.from + (m.to() << 6) + (prom << 12) + (bad << 15);
             binBook.add((byte)(val >> 8));
             binBook.add((byte)(val & 255));
             pos.makeMove(m, ui);
@@ -232,26 +232,26 @@ public class Book {
 
     private static int pieceToProm(int p) {
         switch (p) {
-        case Piece.WQUEEN: case Piece.BQUEEN:
+        case Piece::WQUEEN: case Piece::BQUEEN:
             return 1;
-        case Piece.WROOK: case Piece.BROOK:
+        case Piece::WROOK: case Piece::BROOK:
             return 2;
-        case Piece.WBISHOP: case Piece.BBISHOP:
+        case Piece::WBISHOP: case Piece::BBISHOP:
             return 3;
-        case Piece.WKNIGHT: case Piece.BKNIGHT:
+        case Piece::WKNIGHT: case Piece::BKNIGHT:
             return 4;
         default:
             return 0;
         }
     }
     
-    private static int promToPiece(int prom, boolean whiteMove) {
+    private static int promToPiece(int prom, bool whiteMove) {
         switch (prom) {
-        case 1: return whiteMove ? Piece.WQUEEN : Piece.BQUEEN;
-        case 2: return whiteMove ? Piece.WROOK  : Piece.BROOK;
-        case 3: return whiteMove ? Piece.WBISHOP : Piece.BBISHOP;
-        case 4: return whiteMove ? Piece.WKNIGHT : Piece.BKNIGHT;
-        default: return Piece.EMPTY;
+        case 1: return whiteMove ? Piece::WQUEEN : Piece::BQUEEN;
+        case 2: return whiteMove ? Piece::WROOK  : Piece::BROOK;
+        case 3: return whiteMove ? Piece::WBISHOP : Piece::BBISHOP;
+        case 4: return whiteMove ? Piece::WKNIGHT : Piece::BKNIGHT;
+        default: return Piece::EMPTY;
         }
     }
 };

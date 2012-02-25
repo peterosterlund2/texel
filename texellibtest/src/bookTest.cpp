@@ -15,8 +15,7 @@
      */
     @Test
     public void testGetBookMove() throws ChessParseError {
-        System.out.println("getBookMove");
-        Position pos = TextIO.readFEN(TextIO.startPosFEN);
+        Position pos = TextIO::readFEN(TextIO::startPosFEN);
         Book book = new Book(true);
         Move move = book.getBookMove(pos);
         checkValid(pos, move);
@@ -27,30 +26,29 @@
      */
     @Test
     public void testGetAllBookMoves() throws ChessParseError {
-        System.out.println("getAllBookMoves");
-        Position pos = TextIO.readFEN(TextIO.startPosFEN);
+        Position pos = TextIO::readFEN(TextIO::startPosFEN);
         Book book = new Book(true);
-        String moveListString = book.getAllBookMoves(pos);
+        std::string moveListString = book.getAllBookMoves(pos);
         String[] strMoves = moveListString.split("\\([0-9]*\\) ");
-        assertTrue(strMoves.length > 1);
+        ASSERT(strMoves.length > 1);
         for (String strMove : strMoves) {
-            Move m = TextIO.stringToMove(pos, strMove);
+            Move m = TextIO::stringToMove(pos, strMove);
             checkValid(pos, m);
         }
     }
 
     /** Check that move is a legal move in position pos. */
     private void checkValid(Position pos, Move move) {
-        assertTrue(move != null);
-        MoveGen.MoveList moveList = new MoveGen().pseudoLegalMoves(pos);
-        MoveGen.removeIllegal(pos, moveList);
-        boolean contains = false;
+        ASSERT(move != null);
+        MoveGen::MoveList moveList = new MoveGen().pseudoLegalMoves(pos);
+        MoveGen::removeIllegal(pos, moveList);
+        bool contains = false;
         for (int mi = 0; mi < moveList.size; mi++)
             if (moveList.m[mi].equals(move)) {
                 contains = true;
                 break;
             }
-        assertTrue(contains);
+        ASSERT(contains);
     }
 #endif
 

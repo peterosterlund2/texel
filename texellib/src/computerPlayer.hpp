@@ -13,11 +13,11 @@
  */
 #if 0
 public class ComputerPlayer implements Player {
-    public static final String engineName;
+    public static final std::string engineName;
 
     static {
-        String name = "CuckooChess 1.13a8";
-        String m = System.getProperty("sun.arch.data.model");
+        std::string name = "CuckooChess 1.13a8";
+        std::string m = System.getProperty("sun.arch.data.model");
         if ("32".equals(m))
             name += " 32-bit";
         else if ("64".equals(m))
@@ -29,11 +29,11 @@ public class ComputerPlayer implements Player {
     int maxTimeMillis;
     int maxDepth;
     int maxNodes;
-    public boolean verbose;
+    public bool verbose;
     TranspositionTable tt;
     Book book;
-    boolean bookEnabled;
-    boolean randomMode;
+    bool bookEnabled;
+    bool randomMode;
     Search currentSearch;
 
     public ComputerPlayer() {
@@ -54,13 +54,13 @@ public class ComputerPlayer implements Player {
     
     Search.Listener listener;
     public void setListener(Search.Listener listener) {
-        this.listener = listener;
+        this->listener = listener;
     }
 
     @Override
-    public String getCommand(Position pos, boolean drawOffer, List<Position> history) {
+    public std::string getCommand(Position pos, bool drawOffer, List<Position> history) {
         // Create a search object
-        long[] posHashList = new long[200 + history.size()];
+        U64[] posHashList = new U64[200 + history.size()];
         int posHashListSize = 0;
         for (Position p : history) {
             posHashList[posHashListSize++] = p.zobristHash();
@@ -69,8 +69,8 @@ public class ComputerPlayer implements Player {
         Search sc = new Search(pos, posHashList, posHashListSize, tt);
 
         // Determine all legal moves
-        MoveGen.MoveList moves = new MoveGen().pseudoLegalMoves(pos);
-        MoveGen.removeIllegal(pos, moves);
+        MoveGen::MoveList moves = new MoveGen().pseudoLegalMoves(pos);
+        MoveGen::removeIllegal(pos, moves);
         sc.scoreMoveList(moves, 0);
 
         // Test for "game over"
@@ -83,7 +83,7 @@ public class ComputerPlayer implements Player {
             Move bookMove = book.getBookMove(pos);
             if (bookMove != null) {
                 System.out.printf("Book moves: %s\n", book.getAllBookMoves(pos));
-                return TextIO.moveToString(pos, bookMove, false);
+                return TextIO::moveToString(pos, bookMove, false);
             }
         }
         
@@ -102,11 +102,11 @@ public class ComputerPlayer implements Player {
         }
         currentSearch = null;
 //        tt.printStats();
-        String strMove = TextIO.moveToString(pos, bestM, false);
+        std::string strMove = TextIO::moveToString(pos, bestM, false);
 
         // Claim draw if appropriate
         if (bestM.score <= 0) {
-            String drawClaim = canClaimDraw(pos, posHashList, posHashListSize, bestM);
+            std::string drawClaim = canClaimDraw(pos, posHashList, posHashListSize, bestM);
             if (drawClaim != "")
                 strMove = drawClaim;
         }
@@ -117,14 +117,14 @@ public class ComputerPlayer implements Player {
      * @param move The move that may have to be made before claiming draw.
      * @return The draw string that claims the draw, or empty string if draw claim not valid.
      */
-    private String canClaimDraw(Position pos, long[] posHashList, int posHashListSize, Move move) {
-        String drawStr = "";
+    private std::string canClaimDraw(Position pos, U64[] posHashList, int posHashListSize, Move move) {
+        std::string drawStr = "";
         if (Search.canClaimDraw50(pos)) {
             drawStr = "draw 50";
         } else if (Search.canClaimDrawRep(pos, posHashList, posHashListSize, posHashListSize)) {
             drawStr = "draw rep";
         } else {
-            String strMove = TextIO.moveToString(pos, move, false);
+            std::string strMove = TextIO::moveToString(pos, move, false);
             posHashList[posHashListSize++] = pos.zobristHash();
             UndoInfo ui = new UndoInfo();
             pos.makeMove(move, ui);
@@ -139,24 +139,24 @@ public class ComputerPlayer implements Player {
     }
 
     @Override
-    public boolean isHumanPlayer() {
+    public bool isHumanPlayer() {
         return false;
     }
 
     @Override
-    public void useBook(boolean bookOn) {
+    public void useBook(bool bookOn) {
         bookEnabled = bookOn;
     }
 
     @Override
-    public void timeLimit(int minTimeLimit, int maxTimeLimit, boolean randomMode) {
+    public void timeLimit(int minTimeLimit, int maxTimeLimit, bool randomMode) {
         if (randomMode) {
             minTimeLimit = 0;
             maxTimeLimit = 0;
         }
         minTimeMillis = minTimeLimit;
         maxTimeMillis = maxTimeLimit;
-        this.randomMode = randomMode;
+        this->randomMode = randomMode;
         if (currentSearch != null) {
             currentSearch.timeLimit(minTimeLimit, maxTimeLimit);
         }
@@ -168,15 +168,15 @@ public class ComputerPlayer implements Player {
     }
 
     /** Search a position and return the best move and score. Used for test suite processing. */
-    public TwoReturnValues<Move, String> searchPosition(Position pos, int maxTimeMillis) {
+    public TwoReturnValues<Move, std::string> searchPosition(Position pos, int maxTimeMillis) {
         // Create a search object
-        long[] posHashList = new long[200];
+        U64[] posHashList = new U64[200];
         tt.nextGeneration();
         Search sc = new Search(pos, posHashList, 0, tt);
         
         // Determine all legal moves
-        MoveGen.MoveList moves = new MoveGen().pseudoLegalMoves(pos);
-        MoveGen.removeIllegal(pos, moves);
+        MoveGen::MoveList moves = new MoveGen().pseudoLegalMoves(pos);
+        MoveGen::removeIllegal(pos, moves);
         sc.scoreMoveList(moves, 0);
 
         // Find best move using iterative deepening
@@ -184,7 +184,7 @@ public class ComputerPlayer implements Player {
         Move bestM = sc.iterativeDeepening(moves, -1, -1, false);
 
         // Extract PV
-        String PV = TextIO.moveToString(pos, bestM, false) + " ";
+        std::string PV = TextIO::moveToString(pos, bestM, false) + " ";
         UndoInfo ui = new UndoInfo();
         pos.makeMove(bestM, ui);
         PV += tt.extractPV(pos);
@@ -193,10 +193,10 @@ public class ComputerPlayer implements Player {
 //        tt.printStats();
 
         // Return best move and PV
-        return new TwoReturnValues<Move, String>(bestM, PV);
+        return new TwoReturnValues<Move, std::string>(bestM, PV);
     }
 
-    private Move findSemiRandomMove(Search sc, MoveGen.MoveList moves) {
+    private Move findSemiRandomMove(Search sc, MoveGen::MoveList moves) {
         sc.timeLimit(minTimeMillis, maxTimeMillis);
         Move bestM = sc.iterativeDeepening(moves, 1, maxNodes, verbose);
         int bestScore = bestM.score;

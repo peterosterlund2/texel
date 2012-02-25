@@ -9,7 +9,7 @@
 #define PARAMETERS_HPP_
 
 #if 0
-public class Parameters {
+class Parameters {
     public static enum Type {
         CHECK,
         SPIN,
@@ -19,20 +19,20 @@ public class Parameters {
     }
 
     public static class ParamBase {
-        public String name;
+        public std::string name;
         public Type type;
-        public boolean visible;
+        public bool visible;
     }
 
     public static final class CheckParam extends ParamBase {
-        public boolean value;
-        public boolean defaultValue;
-        CheckParam(String name, boolean visible, boolean def) {
-            this.name = name;
-            this.type = Type.CHECK;
-            this.visible = visible;
-            this.value = def;
-            this.defaultValue = def;
+        public bool value;
+        public bool defaultValue;
+        CheckParam(const std::string& name, bool visible, bool def) {
+            this->name = name;
+            this->type = Type.CHECK;
+            this->visible = visible;
+            this->value = def;
+            this->defaultValue = def;
         }
     }
 
@@ -41,68 +41,69 @@ public class Parameters {
         public int maxValue;
         public int value;
         public int defaultValue;
-        SpinParam(String name, boolean visible, int minV, int maxV, int def) {
-            this.name = name;
-            this.type = Type.SPIN;
-            this.visible = visible;
-            this.minValue = minV;
-            this.maxValue = maxV;
-            this.value = def;
-            this.defaultValue = def;
+        SpinParam(const std::string& name, bool visible, int minV, int maxV, int def) {
+            this->name = name;
+            this->type = Type.SPIN;
+            this->visible = visible;
+            this->minValue = minV;
+            this->maxValue = maxV;
+            this->value = def;
+            this->defaultValue = def;
         }
     }
 
     public static final class ComboParam extends ParamBase {
-        public String[] allowedValues;
-        public String value;
-        public String defaultValue;
-        ComboParam(String name, boolean visible, String[] allowed, String def) {
-            this.name = name;
-            this.type = Type.COMBO;
-            this.visible = visible;
-            this.allowedValues = allowed;
-            this.value = def;
-            this.defaultValue = def;
+        public std::string[] allowedValues;
+        public std::string value;
+        public std::string defaultValue;
+        ComboParam(const std::string& name, bool visible, std::string[] allowed,
+		   const std::string& def) {
+            this->name = name;
+            this->type = Type.COMBO;
+            this->visible = visible;
+            this->allowedValues = allowed;
+            this->value = def;
+            this->defaultValue = def;
         }
     }
 
     public static final class ButtonParam extends ParamBase {
-        ButtonParam(String name, boolean visible) {
-            this.name = name;
-            this.type = Type.BUTTON;
-            this.visible = visible;
+        ButtonParam(const std::string& name, bool visible) {
+            this->name = name;
+            this->type = Type.BUTTON;
+            this->visible = visible;
         }
     }
 
     public static final class StringParam extends ParamBase {
-        public String value;
-        public String defaultValue;
-        StringParam(String name, boolean visible, String def) {
-            this.name = name;
-            this.type = Type.STRING;
-            this.visible = visible;
-            this.value = def;
-            this.defaultValue = def;
+        public std::string value;
+        public std::string defaultValue;
+        StringParam(const std::string& name, bool visible, const std::string& def) {
+            this->name = name;
+            this->type = Type.STRING;
+            this->visible = visible;
+            this->value = def;
+            this->defaultValue = def;
         }
     }
 
     public static Parameters instance() {
         return inst;
     }
-    public final String[] getParamNames() {
-        ArrayList<String> parNames = new ArrayList<String>();
-        for (Map.Entry<String, ParamBase> e : params.entrySet())
+    public final std::string[] getParamNames() {
+        ArrayList<std::string> parNames = new ArrayList<std::string>();
+        for (Map.Entry<std::string, ParamBase> e : params.entrySet())
             if (e.getValue().visible)
                 parNames.add(e.getKey());
-        return parNames.toArray(new String[parNames.size()]);
+        return parNames.toArray(new std::string[parNames.size()]);
     }
 
-    public final ParamBase getParam(String name) {
+    public final ParamBase getParam(const std::string& name) {
         return params.get(name);
     }
 
     private static final Parameters inst = new Parameters();
-    private Map<String, ParamBase> params = new TreeMap<String, ParamBase>();
+    private Map<std::string, ParamBase> params = new TreeMap<std::string, ParamBase>();
 
     private Parameters() {
         addPar(new SpinParam("qV", false, -200, 200, 0));
@@ -116,18 +117,18 @@ public class Parameters {
         params.put(p.name.toLowerCase(), p);
     }
 
-    final boolean getBooleanPar(String name) {
+    final bool getBooleanPar(const std::string& name) {
         return ((CheckParam)params.get(name.toLowerCase())).value;
     }
-    final int getIntPar(String name) {
+    final int getIntPar(const std::string& name) {
         int ret = ((SpinParam)params.get(name.toLowerCase())).value;
         return ret;
     }
-    final String getStringPar(String name) {
+    final String getStringPar(const std::string& name) {
         return ((StringParam)params.get(name.toLowerCase())).value;
     }
 
-    public final void set(String name, String value) {
+    public final void set(const std::string& name, const std::string& value) {
         ParamBase p = params.get(name.toLowerCase());
         if (p == null)
             return;
@@ -152,7 +153,7 @@ public class Parameters {
         }
         case COMBO: {
             ComboParam cp = (ComboParam)p;
-            for (String allowed : cp.allowedValues)
+            for (std::string allowed : cp.allowedValues)
                 if (allowed.toLowerCase().equals(value.toLowerCase())) {
                     cp.value = allowed;
                     break;
