@@ -8,19 +8,20 @@
 #ifndef HISTORY_HPP_
 #define HISTORY_HPP_
 
+#include "piece.hpp"
+#include "position.hpp"
+
 /**
  * Implements the relative history heuristic.
  */
-#if 0
-public final class History {
-    private final int countSuccess[][];
-    private final int countFail[][];
-    private final int score[][];
+class History {
+private:
+    int countSuccess[Piece::nPieceTypes][64];
+    int countFail[Piece::nPieceTypes][64];
+    mutable int score[Piece::nPieceTypes][64];
 
-    public History() {
-        countSuccess = new int[Piece::nPieceTypes][64];
-        countFail = new int[Piece::nPieceTypes][64];
-        score = new int[Piece::nPieceTypes][64];
+public:
+    History() {
         for (int p = 0; p < Piece::nPieceTypes; p++) {
             for (int sq = 0; sq < 64; sq++) {
                 countSuccess[p][sq] = 0;
@@ -31,7 +32,7 @@ public final class History {
     }
 
     /** Record move as a success. */
-    public final void addSuccess(const Position& pos, const Move& m, int depth) {
+    void addSuccess(const Position& pos, const Move& m, int depth) {
         int p = pos.getPiece(m.from());
         int cnt = depth;
         int val = countSuccess[p][m.to()] + cnt;
@@ -44,7 +45,7 @@ public final class History {
     }
 
     /** Record move as a failure. */
-    public final void addFail(const Position& pos, const Move& m, int depth) {
+    void addFail(const Position& pos, const Move& m, int depth) {
         int p = pos.getPiece(m.from());
         int cnt = depth;
         countFail[p][m.to()] += cnt;
@@ -52,7 +53,7 @@ public final class History {
     }
 
     /** Get a score between 0 and 49, depending of the success/fail ratio of the move. */
-    public final int getHistScore(const Position& pos, const Move& m) {
+    int getHistScore(const Position& pos, const Move& m) const {
         int p = pos.getPiece(m.from());
         int ret = score[p][m.to()];
         if (ret >= 0)
@@ -61,13 +62,11 @@ public final class History {
         int fail = countFail[p][m.to()];
         if (succ + fail > 0) {
             ret = succ * 49 / (succ + fail);
-        } else {
+        } else
             ret = 0;
-        }
         score[p][m.to()] = ret;
         return ret;
     }
 };
-#endif
 
 #endif /* HISTORY_HPP_ */

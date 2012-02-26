@@ -8,34 +8,34 @@
 #ifndef KILLERTABLE_HPP_
 #define KILLERTABLE_HPP_
 
+#include "util.hpp"
+#include "move.hpp"
+#include <assert.h>
+
+
 /**
  * Implement a table of killer moves for the killer heuristic.
  */
-#if 0
-public class KillerTable {
+class KillerTable {
+private:
     /** There is one KTEntry for each ply in the search tree. */
-    static final class KTEntry {
-        public KTEntry() {
-            move0 = move1 = 0;
-        }
+    struct KTEntry {
+        KTEntry() : move0(0), move1(0) { }
         int move0;
         int move1;
-    }
-    KTEntry[] ktList;
+    };
+    KTEntry ktList[200];
 
+public:
     /** Create an empty killer table. */
-    public KillerTable() {
-        ktList = new KTEntry[200];
-        for (int i = 0; i < ktList.length; i++)
-            ktList[i] = new KTEntry();
-    }
+    KillerTable() { }
 
     /** Add a killer move to the table. Moves are replaced on an LRU basis. */
-    final public void addKiller(int ply, const Move& m) {
-        if (ply >= ktList.length)
+    void addKiller(int ply, const Move& m) {
+        if (ply >= (int)COUNT_OF(ktList))
             return;
         int move = (short)(m.from() + (m.to() << 6) + (m.promoteTo() << 12));
-        KTEntry ent = ktList[ply];
+        KTEntry& ent = ktList[ply];
         if (move != ent.move0) {
             ent.move1 = ent.move0;
             ent.move0 = move;
@@ -50,18 +50,18 @@ public class KillerTable {
      * The score is 1 for secondary hit at ply - 2.
      * The score is 0 otherwise.
      */
-    final public int getKillerScore(int ply, const Move& m) {
+    int getKillerScore(int ply, const Move& m) const {
         int move = (short)(m.from() + (m.to() << 6) + (m.promoteTo() << 12));
-        if (ply < ktList.length) {
-            KTEntry ent = ktList[ply];
+        if (ply < (int)COUNT_OF(ktList)) {
+            const KTEntry& ent = ktList[ply];
             if (move == ent.move0) {
                 return 4;
             } else if (move == ent.move1) {
                 return 3;
             }
         }
-        if ((ply - 2 >= 0) && (ply - 2 < ktList.length)) {
-            KTEntry ent = ktList[ply - 2];
+        if ((ply - 2 >= 0) && (ply - 2 < (int)COUNT_OF(ktList))) {
+            const KTEntry& ent = ktList[ply - 2];
             if (move == ent.move0) {
                 return 2;
             } else if (move == ent.move1) {
@@ -71,8 +71,6 @@ public class KillerTable {
         return 0;
     }
 };
-#endif
-
 
 
 #endif /* KILLERTABLE_HPP_ */

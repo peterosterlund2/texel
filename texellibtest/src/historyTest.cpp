@@ -6,17 +6,17 @@
  */
 
 #include "historyTest.hpp"
+#include "history.hpp"
+#include "textio.hpp"
 
 #include "cute.h"
 
-#include "history.hpp"
 
 /**
  * Test of getHistScore method, of class History.
  */
 static void
 testGetHistScore() {
-#if 0
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     History hs;
     Move m1 = TextIO::stringToMove(pos, "e4");
@@ -42,7 +42,6 @@ testGetHistScore() {
     hs.addSuccess(pos, m2, 1);
     ASSERT_EQUAL(2 * 49 / 4, hs.getHistScore(pos, m1));
     ASSERT_EQUAL(1 * 49 / 1, hs.getHistScore(pos, m2));
-#endif
 }
 
 cute::suite
