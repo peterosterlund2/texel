@@ -887,7 +887,7 @@ public:
         if (isInCheck) {
             kingAtks |= pos.pieceTypeBB[pos.whiteMove ? Piece::BKNIGHT : Piece::WKNIGHT];
             for (int mi = 0; mi < moveList.size; mi++) {
-                Move m = moveList.m[mi];
+                const Move& m = moveList.m[mi];
                 bool legal;
                 if ((m.from() != kSq) && ((kingAtks & (1ULL<<m.to())) == 0) && (m.to() != epSquare)) {
                     legal = false;
@@ -903,7 +903,7 @@ public:
             }
         } else {
             for (int mi = 0; mi < moveList.size; mi++) {
-                Move m = moveList.m[mi];
+                const Move& m = moveList.m[mi];
                 bool legal;
                 if ((m.from() != kSq) && ((kingAtks & (1ULL<<m.from())) == 0) && (m.to() != epSquare)) {
                     legal = true;

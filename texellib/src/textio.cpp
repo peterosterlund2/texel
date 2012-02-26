@@ -7,6 +7,8 @@
 
 #include "textio.hpp"
 #include "moveGen.hpp"
+#include "util.hpp"
+#include <assert.h>
 
 const std::string TextIO::startPosFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -115,14 +117,14 @@ TextIO::readFEN(const std::string& fen) {
 
 void
 TextIO::fixupEPSquare(Position& pos) {
-#if 0
     int epSquare = pos.getEpSquare();
     if (epSquare >= 0) {
-        MoveGen::MoveList moves = MoveGen::instance.pseudoLegalMoves(pos);
+        MoveGen::MoveList moves;
+        MoveGen::instance().pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         bool epValid = false;
         for (int mi = 0; mi < moves.size; mi++) {
-            Move m = moves.m[mi];
+            const Move& m = moves.m[mi];
             if (m.to() == epSquare) {
                 if (pos.getPiece(m.from()) == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) {
                     epValid = true;
@@ -133,14 +135,12 @@ TextIO::fixupEPSquare(Position& pos) {
         if (!epValid)
             pos.setEpSquare(-1);
     }
-#endif
 }
 
 
 std::string
 TextIO::toFEN(const Position& pos) {
-#if 0
-    StringBuilder ret = new StringBuilder();
+    std::string ret;
     // Piece placement
     for (int r = 7; r >=0; r--) {
         int numEmpty = 0;
@@ -150,91 +150,75 @@ TextIO::toFEN(const Position& pos) {
                 numEmpty++;
             } else {
                 if (numEmpty > 0) {
-                    ret.append(numEmpty);
+                    ret += numEmpty;
                     numEmpty = 0;
                 }
                 switch (p) {
-                    case Piece::WKING:   ret.append('K'); break;
-                    case Piece::WQUEEN:  ret.append('Q'); break;
-                    case Piece::WROOK:   ret.append('R'); break;
-                    case Piece::WBISHOP: ret.append('B'); break;
-                    case Piece::WKNIGHT: ret.append('N'); break;
-                    case Piece::WPAWN:   ret.append('P'); break;
-                    case Piece::BKING:   ret.append('k'); break;
-                    case Piece::BQUEEN:  ret.append('q'); break;
-                    case Piece::BROOK:   ret.append('r'); break;
-                    case Piece::BBISHOP: ret.append('b'); break;
-                    case Piece::BKNIGHT: ret.append('n'); break;
-                    case Piece::BPAWN:   ret.append('p'); break;
+                    case Piece::WKING:   ret += 'K'; break;
+                    case Piece::WQUEEN:  ret += 'Q'; break;
+                    case Piece::WROOK:   ret += 'R'; break;
+                    case Piece::WBISHOP: ret += 'B'; break;
+                    case Piece::WKNIGHT: ret += 'N'; break;
+                    case Piece::WPAWN:   ret += 'P'; break;
+                    case Piece::BKING:   ret += 'k'; break;
+                    case Piece::BQUEEN:  ret += 'q'; break;
+                    case Piece::BROOK:   ret += 'r'; break;
+                    case Piece::BBISHOP: ret += 'b'; break;
+                    case Piece::BKNIGHT: ret += 'n'; break;
+                    case Piece::BPAWN:   ret += 'p'; break;
                     default: assert(false);
                 }
             }
         }
-        if (numEmpty > 0) {
-            ret.append(numEmpty);
-        }
-        if (r > 0) {
-            ret.append('/');
-        }
+        if (numEmpty > 0)
+            ret += numEmpty;
+        if (r > 0)
+            ret += '/';
     }
-    ret.append(pos.whiteMove ? " w " : " b ");
+    ret += (pos.whiteMove ? " w " : " b ");
 
     // Castling rights
     bool anyCastle = false;
     if (pos.h1Castle()) {
-        ret.append('K');
+        ret += 'K';
         anyCastle = true;
     }
     if (pos.a1Castle()) {
-        ret.append('Q');
+        ret += 'Q';
         anyCastle = true;
     }
     if (pos.h8Castle()) {
-        ret.append('k');
+        ret += 'k';
         anyCastle = true;
     }
     if (pos.a8Castle()) {
-        ret.append('q');
+        ret += 'q';
         anyCastle = true;
     }
     if (!anyCastle) {
-        ret.append('-');
+        ret += '-';
     }
 
     // En passant target square
     {
-        ret.append(' ');
+        ret += ' ';
         if (pos.getEpSquare() >= 0) {
             int x = Position::getX(pos.getEpSquare());
             int y = Position::getY(pos.getEpSquare());
-            ret.append((char)(x + 'a'));
-            ret.append((char)(y + '1'));
+            ret += ((char)(x + 'a'));
+            ret += ((char)(y + '1'));
         } else {
-            ret.append('-');
+            ret += '-';
         }
     }
 
     // Move counters
-    ret.append(' ');
-    ret.append(pos.halfMoveClock);
-    ret.append(' ');
-    ret.append(pos.fullMoveCounter);
+    ret += ' ';
+    ret += pos.halfMoveClock;
+    ret += ' ';
+    ret += pos.fullMoveCounter;
 
-    return ret.toString();
-#endif
-    return "";
-}
-
-static std::string moveToString(const Position& pos, const Move& move, bool longForm, const MoveGen::MoveList& moves);
-
-std::string
-TextIO::moveToString(const Position& pos, const Move& move, bool longForm) {
-#if 0
-    MoveGen::MoveList moves = MoveGen::instance.pseudoLegalMoves(pos);
-    MoveGen::removeIllegal(pos, moves);
-    return moveToString(pos, move, longForm, moves);
-#endif
-    return "";
+    return ret;
 }
 
 std::string
@@ -266,20 +250,18 @@ TextIO::moveToUCIString(const Move& m) {
 
 Move
 TextIO::uciStringToMove(const std::string& move) {
-#if 0
-    // FIXME!! Handle Move == null
-    Move m = null;
+    Move m;
     if ((move.length() < 4) || (move.length() > 5))
         return m;
-    int fromSq = TextIO::getSquare(move.substring(0, 2));
-    int toSq   = TextIO::getSquare(move.substring(2, 4));
+    int fromSq = TextIO::getSquare(move.substr(0, 2));
+    int toSq   = TextIO::getSquare(move.substr(2, 4));
     if ((fromSq < 0) || (toSq < 0)) {
         return m;
     }
     char prom = ' ';
     bool white = true;
     if (move.length() == 5) {
-        prom = move.charAt(4);
+        prom = move[4];
         if (Position::getY(toSq) == 7) {
             white = true;
         } else if (Position::getY(toSq) == 0) {
@@ -309,28 +291,147 @@ TextIO::uciStringToMove(const std::string& move) {
             return m;
     }
     return Move(fromSq, toSq, promoteTo);
-#endif
-    return Move(0,0,0);
+}
+
+static bool
+isCapture(const Position& pos, const Move& move) {
+    if (pos.getPiece(move.to()) != Piece::EMPTY)
+        return true;
+    int p = pos.getPiece(move.from());
+    return (p == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) &&
+           (move.to() == pos.getEpSquare());
+}
+
+static std::string
+pieceToChar(int p) {
+    switch (p) {
+        case Piece::WQUEEN:  case Piece::BQUEEN:  return "Q";
+        case Piece::WROOK:   case Piece::BROOK:   return "R";
+        case Piece::WBISHOP: case Piece::BBISHOP: return "B";
+        case Piece::WKNIGHT: case Piece::BKNIGHT: return "N";
+        case Piece::WKING:   case Piece::BKING:   return "K";
+    }
+    return "";
+}
+
+static std::string
+moveToString(Position& pos, const Move& move, bool longForm, const MoveGen::MoveList& moves) {
+    std::string ret;
+    int wKingOrigPos = Position::getSquare(4, 0);
+    int bKingOrigPos = Position::getSquare(4, 7);
+    if (move.from() == wKingOrigPos && pos.getPiece(wKingOrigPos) == Piece::WKING) {
+        // Check white castle
+        if (move.to() == Position::getSquare(6, 0)) {
+            ret += "O-O";
+        } else if (move.to() == Position::getSquare(2, 0)) {
+            ret += "O-O-O";
+        }
+    } else if (move.from() == bKingOrigPos && pos.getPiece(bKingOrigPos) == Piece::BKING) {
+        // Check white castle
+        if (move.to() == Position::getSquare(6, 7)) {
+            ret += "O-O";
+        } else if (move.to() == Position::getSquare(2, 7)) {
+            ret += "O-O-O";
+        }
+    }
+    if (ret.length() == 0) {
+        int p = pos.getPiece(move.from());
+        ret += pieceToChar(p);
+        int x1 = Position::getX(move.from());
+        int y1 = Position::getY(move.from());
+        int x2 = Position::getX(move.to());
+        int y2 = Position::getY(move.to());
+        if (longForm) {
+            ret += (char)(x1 + 'a');
+            ret += (char)(y1 + '1');
+            ret += isCapture(pos, move) ? 'x' : '-';
+        } else {
+            if (p == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) {
+                if (isCapture(pos, move))
+                    ret += (char)(x1 + 'a');
+            } else {
+                int numSameTarget = 0;
+                int numSameFile = 0;
+                int numSameRow = 0;
+                for (int mi = 0; mi < moves.size; mi++) {
+                    const Move& m = moves.m[mi];
+                    if (m.isEmpty())
+                        break;
+                    if ((pos.getPiece(m.from()) == p) && (m.to() == move.to())) {
+                        numSameTarget++;
+                        if (Position::getX(m.from()) == x1)
+                            numSameFile++;
+                        if (Position::getY(m.from()) == y1)
+                            numSameRow++;
+                    }
+                }
+                if (numSameTarget < 2) {
+                    // No file/row info needed
+                } else if (numSameFile < 2) {
+                    ret += (char)(x1 + 'a');   // Only file info needed
+                } else if (numSameRow < 2) {
+                    ret += (char)(y1 + '1');   // Only row info needed
+                } else {
+                    ret += (char) (x1 + 'a');   // File and row info needed
+                    ret += (char) (y1 + '1');
+                }
+            }
+            if (isCapture(pos, move))
+                ret += 'x';
+        }
+        ret += (char)(x2 + 'a');
+        ret += (char)(y2 + '1');
+        if (move.promoteTo() != Piece::EMPTY)
+            ret += pieceToChar(move.promoteTo());
+    }
+    UndoInfo ui;
+    if (MoveGen::givesCheck(pos, move)) {
+        pos.makeMove(move, ui);
+        MoveGen::MoveList nextMoves;
+        MoveGen::instance().pseudoLegalMoves(pos, nextMoves);
+        MoveGen::removeIllegal(pos, nextMoves);
+        if (nextMoves.size == 0)
+            ret += '#';
+        else
+            ret += '+';
+        pos.unMakeMove(move, ui);
+    }
+
+    return ret;
+}
+
+std::string
+TextIO::moveToString(const Position& pos, const Move& move, bool longForm) {
+    MoveGen::MoveList moves;
+    MoveGen::instance().pseudoLegalMoves(pos, moves);
+    Position tmpPos(pos);
+    MoveGen::removeIllegal(tmpPos, moves);
+    return ::moveToString(tmpPos, move, longForm, moves);
 }
 
 Move
-TextIO::stringToMove(const Position& pos, const std::string& strMove) {
+TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
 #if 0
-    strMove = strMove.replaceAll("=", "");
-    Move move = null;
+    std::string strMove = strMoveIn.replaceAll("=", "");
+#else
+    std::string strMove = strMoveIn;
+#endif
+    Move move;
     if (strMove.length() == 0)
         return move;
-    MoveGen::MoveList moves = MoveGen::instance.pseudoLegalMoves(pos);
-    MoveGen::removeIllegal(pos, moves);
+    MoveGen::MoveList moves;
+    MoveGen::instance().pseudoLegalMoves(pos, moves);
+    Position tmpPos(pos);
+    MoveGen::removeIllegal(tmpPos, moves);
     {
-        char lastChar = strMove.charAt(strMove.length() - 1);
+        char lastChar = strMove[strMove.length() - 1];
         if ((lastChar == '#') || (lastChar == '+')) {
             MoveGen::MoveList subMoves;
             int len = 0;
             for (int mi = 0; mi < moves.size; mi++) {
-                Move m = moves.m[mi];
-                String str1 = TextIO::moveToString(pos, m, true, moves);
-                if (str1.charAt(str1.length() - 1) == lastChar) {
+                const Move& m = moves.m[mi];
+                std::string str1 = ::moveToString(pos, m, true, moves);
+                if (str1[str1.length() - 1] == lastChar) {
                     subMoves.m[len++] = m;
                 }
             }
@@ -343,18 +444,16 @@ TextIO::stringToMove(const Position& pos, const std::string& strMove) {
     for (int i = 0; i < 2; i++) {
         // Search for full match
         for (int mi = 0; mi < moves.size; mi++) {
-            Move m = moves.m[mi];
-            String str1 = normalizeMoveString(TextIO::moveToString(pos, m, true, moves));
-            String str2 = normalizeMoveString(TextIO::moveToString(pos, m, false, moves));
+            const Move& m = moves.m[mi];
+            std::string str1 = normalizeMoveString(::moveToString(pos, m, true, moves));
+            std::string str2 = normalizeMoveString(::moveToString(pos, m, false, moves));
             if (i == 0) {
-                if (strMove.equals(str1) || strMove.equals(str2)) {
+                if ((strMove == str1) || (strMove == str2))
                     return m;
-                }
             } else {
-                if (strMove.toLowerCase().equals(str1.toLowerCase()) ||
-                        strMove.toLowerCase().equals(str2.toLowerCase())) {
+                if ((toLowerCase(strMove) == toLowerCase(str1)) ||
+                    (toLowerCase(strMove) == toLowerCase(str2)))
                     return m;
-                }
             }
         }
     }
@@ -362,30 +461,28 @@ TextIO::stringToMove(const Position& pos, const std::string& strMove) {
     for (int i = 0; i < 2; i++) {
         // Search for unique substring match
         for (int mi = 0; mi < moves.size; mi++) {
-            Move m = moves.m[mi];
-            String str1 = normalizeMoveString(TextIO::moveToString(pos, m, true));
-            String str2 = normalizeMoveString(TextIO::moveToString(pos, m, false));
+            const Move& m = moves.m[mi];
+            std::string str1 = normalizeMoveString(TextIO::moveToString(pos, m, true));
+            std::string str2 = normalizeMoveString(TextIO::moveToString(pos, m, false));
             bool match;
             if (i == 0) {
-                match = (str1.startsWith(strMove) || str2.startsWith(strMove));
+                match = startsWith(str1, strMove) || startsWith(str2, strMove);
             } else {
-                match = (str1.toLowerCase().startsWith(strMove.toLowerCase()) ||
-                        str2.toLowerCase().startsWith(strMove.toLowerCase()));
+                match = startsWith(toLowerCase(str1), toLowerCase(strMove)) ||
+                        startsWith(toLowerCase(str2), toLowerCase(strMove));
             }
             if (match) {
-                if (move != null) {
-                    return null; // More than one match, not ok
+                if (!move.isEmpty()) {
+                    return Move(); // More than one match, not ok
                 } else {
                     move = m;
                 }
             }
         }
-        if (move != null)
+        if (!move.isEmpty())
             return move;
     }
     return move;
-#endif
-    return Move(0, 0, 0);
 }
 
 std::string
@@ -417,90 +514,3 @@ TextIO::asciiBoard(const Position& pos) {
     return ret;
 }
 
-static std::string
-moveToString(const Position& pos, const Move& move, bool longForm, const MoveGen::MoveList& moves) {
-#if 0
-    StringBuilder ret = new StringBuilder();
-    int wKingOrigPos = Position::getSquare(4, 0);
-    int bKingOrigPos = Position::getSquare(4, 7);
-    if (move.from == wKingOrigPos && pos.getPiece(wKingOrigPos) == Piece::WKING) {
-        // Check white castle
-        if (move.to == Position::getSquare(6, 0)) {
-                ret.append("O-O");
-        } else if (move.to == Position::getSquare(2, 0)) {
-            ret.append("O-O-O");
-        }
-    } else if (move.from == bKingOrigPos && pos.getPiece(bKingOrigPos) == Piece::BKING) {
-        // Check white castle
-        if (move.to == Position::getSquare(6, 7)) {
-            ret.append("O-O");
-        } else if (move.to == Position::getSquare(2, 7)) {
-            ret.append("O-O-O");
-        }
-    }
-    if (ret.length() == 0) {
-        int p = pos.getPiece(move.from);
-        ret.append(pieceToChar(p));
-        int x1 = Position::getX(move.from);
-        int y1 = Position::getY(move.from);
-        int x2 = Position::getX(move.to);
-        int y2 = Position::getY(move.to);
-        if (longForm) {
-            ret.append((char)(x1 + 'a'));
-            ret.append((char) (y1 + '1'));
-            ret.append(isCapture(pos, move) ? 'x' : '-');
-        } else {
-            if (p == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) {
-                if (isCapture(pos, move))
-                    ret.append((char) (x1 + 'a'));
-            } else {
-                int numSameTarget = 0;
-                int numSameFile = 0;
-                int numSameRow = 0;
-                for (int mi = 0; mi < moves.size; mi++) {
-                    Move m = moves.m[mi];
-                    if (m == null)
-                        break;
-                    if ((pos.getPiece(m.from) == p) && (m.to == move.to)) {
-                        numSameTarget++;
-                        if (Position::getX(m.from) == x1)
-                            numSameFile++;
-                        if (Position::getY(m.from) == y1)
-                            numSameRow++;
-                    }
-                }
-                if (numSameTarget < 2) {
-                    // No file/row info needed
-                } else if (numSameFile < 2) {
-                    ret.append((char) (x1 + 'a'));   // Only file info needed
-                } else if (numSameRow < 2) {
-                    ret.append((char) (y1 + '1'));   // Only row info needed
-                } else {
-                    ret.append((char) (x1 + 'a'));   // File and row info needed
-                    ret.append((char) (y1 + '1'));
-                }
-            }
-            if (isCapture(pos, move))
-                ret.append('x');
-        }
-        ret.append((char) (x2 + 'a'));
-        ret.append((char) (y2 + '1'));
-        if (move.promoteTo != Piece::EMPTY)
-            ret.append(pieceToChar(move.promoteTo));
-    }
-    UndoInfo ui;
-    if (MoveGen::givesCheck(pos, move)) {
-        pos.makeMove(move, ui);
-        MoveGen::MoveList nextMoves = MoveGen::instance.pseudoLegalMoves(pos);
-        MoveGen::removeIllegal(pos, nextMoves);
-        if (nextMoves.size == 0) {
-            ret.append('#');
-        } else {
-            ret.append('+');
-        }
-        pos.unMakeMove(move, ui);
-    }
-
-    return ret.toString();
-#endif
-}

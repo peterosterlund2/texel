@@ -57,7 +57,7 @@ public:
      * Any prefix of the string representation of a valid move counts as a legal move string,
      * as long as the string only matches one valid move.
      */
-    static Move stringToMove(const Position& pos, const std::string& strMove);
+    static Move stringToMove(Position& pos, const std::string& strMove);
 
     /**
      * Convert a string, such as "e4" to a square number.
@@ -78,14 +78,10 @@ public:
 private:
     static void safeSetPiece(Position& pos, int col, int row, int p);
 
-    static bool isCapture(const Position& pos, const Move& move);
-
     /**
      * Convert move string to lower case and remove special check/mate symbols.
      */
     static std::string normalizeMoveString(const std::string& str);
-
-    static std::string pieceToChar(int p);
 };
 
 inline int
@@ -120,37 +116,15 @@ TextIO::safeSetPiece(Position& pos, int col, int row, int p) {
     pos.setPiece(Position::getSquare(col, row), p);
 }
 
-inline bool
-TextIO::isCapture(const Position& pos, const Move& move) {
-    if (pos.getPiece(move.to()) != Piece::EMPTY)
-        return true;
-    int p = pos.getPiece(move.from());
-    return (p == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) &&
-           (move.to() == pos.getEpSquare());
-}
-
 inline std::string
-TextIO::normalizeMoveString(const std::string& str) {
-#if 0
+TextIO::normalizeMoveString(const std::string& strIn) {
+    std::string str(strIn);
     if (str.length() > 0) {
-        char lastChar = str.charAt(str.length() - 1);
+        char lastChar = str[str.length() - 1];
         if ((lastChar == '#') || (lastChar == '+'))
-            str = str.substring(0, str.length() - 1);
+            str = str.substr(0, str.length() - 1);
     }
-#endif
     return str;
-}
-
-inline std::string
-TextIO::pieceToChar(int p) {
-    switch (p) {
-        case Piece::WQUEEN:  case Piece::BQUEEN:  return "Q";
-        case Piece::WROOK:   case Piece::BROOK:   return "R";
-        case Piece::WBISHOP: case Piece::BBISHOP: return "B";
-        case Piece::WKNIGHT: case Piece::BKNIGHT: return "N";
-        case Piece::WKING:   case Piece::BKING:   return "K";
-    }
-    return "";
 }
 
 #endif /* TEXTIO_HPP_ */

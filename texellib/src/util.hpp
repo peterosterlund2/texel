@@ -10,6 +10,7 @@
 
 #include <stddef.h>
 #include <string>
+#include <cstdlib>
 #include <sstream>
 #include <vector>
 
@@ -41,10 +42,31 @@ stringSplit(const std::string& str, std::vector<std::string>& out)
 
 /** Convert a string to a number. Return 0 on failure. */
 template <typename T>
-T str2Num(const std::string& str) {
+inline T
+str2Num(const std::string& str) {
     std::stringstream ss(str);
     T result;
     return ss >> result ? result : 0;
 }
+
+/** Convert string to lower case. */
+inline std::string
+toLowerCase(std::string str) {
+  for (int i = 0; i < (int)str.length(); i++)
+    str[i] = std::tolower(str[i]);
+  return str;
+}
+
+inline bool
+startsWith(const std::string& str, const std::string& startsWith) {
+    int N = startsWith.length();
+    if ((int)str.length() < N)
+        return false;
+    for (int i = 0; i < N; i++)
+        if (str[i] != startsWith[i])
+            return false;
+    return true;
+}
+
 
 #endif /* UTIL_HPP_ */

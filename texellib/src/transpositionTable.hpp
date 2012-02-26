@@ -258,7 +258,7 @@ public class TranspositionTable {
             } else if (ent.type == TTEntry.T_GE) {
                 type = ">";
             }
-            Move m = new Move(0,0,0);
+            Move m;
             ent.getMove(m);
             MoveGen::MoveList moves = moveGen.pseudoLegalMoves(pos);
             MoveGen::removeIllegal(pos, moves);

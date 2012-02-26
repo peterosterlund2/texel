@@ -16,7 +16,7 @@
     @Test
     public void testAddKiller() {
         KillerTable kt = new KillerTable();
-        Move m = new Move(TextIO::getSquare("b1"), TextIO::getSquare("b5"), Piece::EMPTY);
+        Move m(TextIO::getSquare("b1"), TextIO::getSquare("b5"), Piece::EMPTY);
         kt.addKiller(3, m);
         kt.addKiller(7, m);
         kt.addKiller(3, m);

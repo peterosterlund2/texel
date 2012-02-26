@@ -35,10 +35,7 @@ public class Search {
         int lmr;               // LMR reduction amount
         U64 nodeIdx;
         SearchTreeInfo() {
-            undoInfo = new UndoInfo();
-            hashMove = new Move(0, 0, 0);
             allowNullMove = true;
-            bestMove = new Move(0, 0, 0);
         }
     }
     SearchTreeInfo[] searchTreeInfo;
@@ -72,8 +69,8 @@ public class Search {
     int q0Eval; // Static eval score at first level of quiescence search 
 
     public Search(const Position& pos, U64[] posHashList, int posHashListSize, TranspositionTable tt) {
-        this->pos = new Position(pos);
-        this->moveGen = new MoveGen();
+        this->pos = pos;
+        this->moveGen = MoveGen();
         this->posHashList = posHashList;
         this->posHashListSize = posHashListSize;
         this->tt = tt;
@@ -164,7 +161,7 @@ public class Search {
         this->randomSeed = randomSeed;
     }
 
-    final public Move iterativeDeepening(MoveGen::MoveList scMovesIn,
+    final public Move iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             int maxDepth, long initialMaxNodes, bool verbose) {
         tStart = System.currentTimeMillis();
 //        log = TreeLogger.getWriter("/home/petero/treelog.dmp", pos);
@@ -192,7 +189,7 @@ public class Search {
             scMoves = new MoveInfo[nIncludedMoves];
             for (int mi = 0, len = 0; mi < scMovesIn.size; mi++) {
                 if (includedMoves[mi]) {
-                    Move m = scMovesIn.m[mi];
+                    const Move& m = scMovesIn.m[mi];
                     scMoves[len++] = new MoveInfo(m, 0);
                 }
             }
@@ -221,7 +218,7 @@ public class Search {
             bool needMoreTime = false;
             for (int mi = 0; mi < scMoves.length; mi++) {
                 searchNeedMoreTime = (mi > 0);
-                Move m = scMoves[mi].move;
+                const Move& m = scMoves[mi].move;
                 if ((listener != null) && (System.currentTimeMillis() - tStart >= 1000)) {
                     listener.notifyCurrMove(m, mi + 1);
                 }
@@ -701,7 +698,7 @@ public class Search {
             if ((mi > 0) || !hashMoveSelected) {
                 selectBest(moves, mi);
             }
-            Move m = moves.m[mi];
+            const Move& m = moves.m[mi];
             if (pos.getPiece(m.to) == (pos.whiteMove ? Piece::BKING : Piece::WKING)) {
                 moveGen.returnMoveList(moves);
                 int score = MATE0-ply;
@@ -953,7 +950,7 @@ public class Search {
                 // so spending more effort on move ordering is probably wasted time.
                 selectBest(moves, mi);
             }
-            Move m = moves.m[mi];
+            const Move& m = moves.m[mi];
             if (pos.getPiece(m.to) == (pos.whiteMove ? Piece::BKING : Piece::WKING)) {
                 moveGen.returnMoveList(moves);
                 return MATE0-ply;       // King capture
@@ -1162,7 +1159,7 @@ public class Search {
     }
     final void scoreMoveList(MoveGen::MoveList moves, int ply, int startIdx) {
         for (int i = startIdx; i < moves.size; i++) {
-            Move m = moves.m[i];
+            const Move& m = moves.m[i];
             bool isCapture = (pos.getPiece(m.to) != Piece::EMPTY) || (m.promoteTo != Piece::EMPTY);
             int score = 0;
             if (isCapture) {
@@ -1190,7 +1187,7 @@ public class Search {
     }
     private final void scoreMoveListMvvLva(MoveGen::MoveList moves) {
         for (int i = 0; i < moves.size; i++) {
-            Move m = moves.m[i];
+            const Move& m = moves.m[i];
             int v = pos.getPiece(m.to);
             int a = pos.getPiece(m.from);
             m.score = Evaluate::pieceValue[v] * 10000 - Evaluate::pieceValue[a];
@@ -1211,7 +1208,7 @@ public class Search {
             }
         }
         if (bestIdx != startIdx) {
-            Move m = moves.m[startIdx];
+            const Move& m = moves.m[startIdx];
             moves.m[startIdx] = moves.m[bestIdx];
             moves.m[bestIdx] = m;
         }
@@ -1223,7 +1220,7 @@ public class Search {
             return false;
         }
         for (int i = 0; i < moves.size; i++) {
-            Move m = moves.m[i];
+            const Move& m = moves.m[i];
             if (m.equals(hashMove)) {
                 moves.m[i] = moves.m[0];
                 moves.m[0] = m;

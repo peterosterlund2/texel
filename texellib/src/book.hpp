@@ -62,8 +62,8 @@ public class Book {
                 } else {
                     bool bad = ((move >> 15) & 1) != 0;
                     int prom = (move >> 12) & 7;
-                    Move m = new Move(move & 63, (move >> 6) & 63,
-                                      promToPiece(prom, pos.whiteMove));
+                    Move m(move & 63, (move >> 6) & 63,
+                           promToPiece(prom, pos.whiteMove));
                     if (!bad)
                         addToBook(pos, m);
                     pos.makeMove(m, ui);
@@ -108,7 +108,7 @@ public class Book {
         if (bookMoves == null) {
             return null;
         }
-        
+
         MoveGen::MoveList legalMoves = new MoveGen().pseudoLegalMoves(pos);
         MoveGen::removeIllegal(pos, legalMoves);
         int sum = 0;
@@ -174,7 +174,7 @@ public class Book {
         out.write(binBookA);
         out.close();
     }
-    
+
     public static List<Byte> createBinBook() {
         List<Byte> binBook = new ArrayList<Byte>(0);
         try {
@@ -216,9 +216,8 @@ public class Book {
                 bad = 1;
             }
             Move m = TextIO::stringToMove(pos, strMove);
-            if (m == null) {
+            if (m.isEmpty())
                 return false;
-            }
             int prom = pieceToProm(m.promoteTo);
             int val = m.from + (m.to() << 6) + (prom << 12) + (bad << 15);
             binBook.add((byte)(val >> 8));
@@ -244,7 +243,7 @@ public class Book {
             return 0;
         }
     }
-    
+
     private static int promToPiece(int prom, bool whiteMove) {
         switch (prom) {
         case 1: return whiteMove ? Piece::WQUEEN : Piece::BQUEEN;

@@ -401,7 +401,7 @@
             MoveGen::removeIllegal(pos, moves);
         ArrayList<std::string> strMoves = new ArrayList<std::string>();
         for (int mi = 0; mi < moves.size; mi++) {
-            Move m = moves.m[mi];
+            const Move& m = moves.m[mi];
             std::string mStr = TextIO::moveToUCIString(m);
             strMoves.add(mStr);
         }
@@ -479,7 +479,7 @@
             MoveGen::removeIllegal(pos, moves);
         ArrayList<std::string> strMoves = new ArrayList<std::string>();
         for (int mi = 0; mi < moves.size; mi++) {
-            Move m = moves.m[mi];
+            const Move& m = moves.m[mi];
             std::string mStr = TextIO::moveToUCIString(m);
             strMoves.add(mStr);
         }
@@ -494,7 +494,7 @@
             MoveGen::removeIllegal(pos, moves);
         ArrayList<std::string> strMoves = new ArrayList<std::string>();
         for (int mi = 0; mi < moves.size; mi++) {
-            Move m = moves.m[mi];
+            const Move& m = moves.m[mi];
             std::string mStr = TextIO::moveToUCIString(m);
             strMoves.add(mStr);
         }

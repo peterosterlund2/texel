@@ -45,9 +45,8 @@ public class Game {
         }
 
         Move m = TextIO::stringToMove(pos, str);
-        if (m == null) {
+        if (m.isEmpty())
             return false;
-        }
 
         UndoInfo ui = new UndoInfo();
         pos.makeMove(m, ui);
@@ -109,10 +108,9 @@ public class Game {
      * Get the last played move, or null if no moves played yet.
      */
     public Move getLastMove() {
-        Move m = null;
-        if (currentMove > 0) {
+        Move m;
+        if (currentMove > 0)
             m = moveList.get(currentMove - 1);
-        }
         return m;
     }
 
@@ -427,16 +425,15 @@ public class Game {
     private bool handleDrawCmd(std::string drawCmd) {
         if (drawCmd.startsWith("rep") || drawCmd.startsWith("50")) {
             bool rep = drawCmd.startsWith("rep");
-            Move m = null;
+            Move m;
             std::string ms = drawCmd.substring(drawCmd.indexOf(" ") + 1);
-            if (ms.length() > 0) {
+            if (ms.length() > 0)
                 m = TextIO::stringToMove(pos, ms);
-            }
             bool valid;
             if (rep) {
                 valid = false;
                 List<Position> oldPositions = new ArrayList<Position>();
-                if (m != null) {
+                if (!m.isEmpty()) {
                     UndoInfo ui = new UndoInfo();
                     Position tmpPos = new Position(pos);
                     tmpPos.makeMove(m, ui);
@@ -459,9 +456,9 @@ public class Game {
                     valid = true;
                 }
             } else {
-                Position tmpPos = new Position(pos);
-                if (m != null) {
-                    UndoInfo ui = new UndoInfo();
+                Position tmpPos(pos);
+                if (!m.isEmpty()) {
+                    UndoInfo ui;
                     tmpPos.makeMove(m, ui);
                 }
                 valid = tmpPos.halfMoveClock >= 100;
@@ -547,7 +544,7 @@ public class Game {
         }
         UndoInfo ui = new UndoInfo();
         for (int mi = 0; mi < moves.size; mi++) {
-            Move m = moves.m[mi];
+            const Move& m = moves.m[mi];
             pos.makeMove(m, ui);
             nodes += perfT(moveGen, pos, depth - 1);
             pos.unMakeMove(m, ui);
