@@ -534,7 +534,7 @@ public class Game {
         return false;
     }
 
-    final static long perfT(MoveGen moveGen, Position pos, int depth) {
+    final static long perfT(MoveGen& moveGen, const Position& pos, int depth) {
         if (depth == 0)
             return 1;
         long nodes = 0;

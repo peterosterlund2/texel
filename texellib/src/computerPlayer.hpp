@@ -58,7 +58,7 @@ public class ComputerPlayer implements Player {
     }
 
     @Override
-    public std::string getCommand(Position pos, bool drawOffer, List<Position> history) {
+    public std::string getCommand(const Position& pos, bool drawOffer, List<Position> history) {
         // Create a search object
         U64[] posHashList = new U64[200 + history.size()];
         int posHashListSize = 0;
@@ -117,7 +117,7 @@ public class ComputerPlayer implements Player {
      * @param move The move that may have to be made before claiming draw.
      * @return The draw string that claims the draw, or empty string if draw claim not valid.
      */
-    private std::string canClaimDraw(Position pos, U64[] posHashList, int posHashListSize, Move move) {
+    private std::string canClaimDraw(const Position& pos, U64[] posHashList, int posHashListSize, Move move) {
         std::string drawStr = "";
         if (Search.canClaimDraw50(pos)) {
             drawStr = "draw 50";
@@ -168,7 +168,7 @@ public class ComputerPlayer implements Player {
     }
 
     /** Search a position and return the best move and score. Used for test suite processing. */
-    public TwoReturnValues<Move, std::string> searchPosition(Position pos, int maxTimeMillis) {
+    public TwoReturnValues<Move, std::string> searchPosition(const Position& pos, int maxTimeMillis) {
         // Create a search object
         U64[] posHashList = new U64[200];
         tt.nextGeneration();

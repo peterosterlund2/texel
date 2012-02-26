@@ -407,7 +407,7 @@
     }
 
     /** Return static evaluation score for white, regardless of whose turn it is to move. */
-    final static int evalWhite(Position pos) {
+    final static int evalWhite(const Position& pos) {
         Evaluate eval = new Evaluate();
         int ret = eval.evalPos(pos);
         Position symPos = swapColors(pos);
@@ -419,7 +419,7 @@
         return ret;
     }
 
-    final static Position swapColors(Position pos) {
+    final static Position swapColors(const Position& pos) {
         Position sym = new Position();
         sym.whiteMove = !pos.whiteMove;
         for (int x = 0; x < 8; x++) {
@@ -450,7 +450,7 @@
     }
 
     /** Compute change in eval score for white after making "moveStr" in position "pos". */
-    private final int moveScore(Position pos, const std::string& moveStr) {
+    private final int moveScore(const Position& pos, const std::string& moveStr) {
         int score1 = evalWhite(pos);
         Position tmpPos = new Position(pos);
         UndoInfo ui = new UndoInfo();

@@ -385,7 +385,7 @@
         ASSERT(evList.contains("b7c6"));
     }
 
-    private List<std::string> getMoveList(Position pos, bool onlyLegal) {
+    private List<std::string> getMoveList(const Position& pos, bool onlyLegal) {
         Position swap = EvaluateTest.swapColors(pos);
         List<std::string> swapList = getMoveList0(swap, onlyLegal);
         List<std::string> ret = getMoveList0(pos, onlyLegal);
@@ -394,7 +394,7 @@
         return ret;
     }
 
-    private List<std::string> getMoveList0(Position pos, bool onlyLegal) {
+    private List<std::string> getMoveList0(const Position& pos, bool onlyLegal) {
         MoveGen moveGen = new MoveGen();
         MoveGen::MoveList moves = moveGen.pseudoLegalMoves(pos);
         if (onlyLegal)
@@ -468,7 +468,7 @@
         return strMoves;
     }
 
-    private List<std::string> getCaptureList(Position pos, bool includeChecks, bool onlyLegal) {
+    private List<std::string> getCaptureList(const Position& pos, bool includeChecks, bool onlyLegal) {
         MoveGen::MoveList moves;
         if (includeChecks) {
             moves = new MoveGen().pseudoLegalCapturesAndChecks(pos);
@@ -486,7 +486,7 @@
         return strMoves;
     }
 
-    private List<std::string> getCheckEvasions(Position pos, bool onlyLegal) {
+    private List<std::string> getCheckEvasions(const Position& pos, bool onlyLegal) {
         if (!MoveGen::inCheck(pos))
             return null;
         MoveGen::MoveList moves = new MoveGen().checkEvasions(pos);

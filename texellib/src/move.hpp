@@ -13,11 +13,17 @@
 /** Represents a chess move. */
 class Move {
 public:
+    /** Create empty move object. */
+    Move() : from_(0), to_(0), promoteTo_(0), score_(0) { }
+
     /** Create a move object. */
     Move(int from, int to, int promoteTo, int score = 0);
 
     /** Copy constructor. */
     Move(const Move& m);
+
+    /** Set move properties. */
+    void setMove(int from, int to, int promoteTo, int score);
 
     class SortByScore {
     public:
@@ -30,9 +36,12 @@ public:
     int to() const;
     int promoteTo() const;
 
+    bool isEmpty() const { return (from_ == 0) && (to_ == 0); }
 
     /** Note that score is not included in the comparison. */
     bool equals(const Move& other) const;
+
+    bool operator==(const Move& other) const;
 
     int hashCode() const;
 
@@ -69,6 +78,15 @@ Move::Move(const Move& m) {
     score_ = m.score_;
 }
 
+inline void
+Move::setMove(int from, int to, int promoteTo, int score)
+{
+    from_ = from;
+    to_ = to;
+    promoteTo_ = promoteTo;
+    score_ = score;
+}
+
 inline int
 Move::from() const {
     return from_;
@@ -93,6 +111,11 @@ Move::equals(const Move& other) const {
     if (promoteTo_ != other.promoteTo_)
         return false;
     return true;
+}
+
+inline bool
+Move::operator==(const Move& other) const {
+    return (*this).equals(other);
 }
 
 inline int

@@ -38,7 +38,7 @@
     }
 
     /** Check that move is a legal move in position pos. */
-    private void checkValid(Position pos, Move move) {
+    private void checkValid(const Position& pos, const Move& move) {
         ASSERT(move != null);
         MoveGen::MoveList moveList = new MoveGen().pseudoLegalMoves(pos);
         MoveGen::removeIllegal(pos, moveList);

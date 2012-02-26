@@ -83,7 +83,7 @@ public class Book {
     }
 
     /** Add a move to a position in the opening book. */
-    private final void addToBook(Position pos, Move moveToAdd) {
+    private final void addToBook(const Position& pos, Move moveToAdd) {
         List<BookEntry> ent = bookMap.get(pos.zobristHash());
         if (ent == null) {
             ent = new ArrayList<BookEntry>();
@@ -102,7 +102,7 @@ public class Book {
     }
 
     /** Return a random book move for a position, or null if out of book. */
-    public final Move getBookMove(Position pos) {
+    public final Move getBookMove(const Position& pos) {
         initBook();
         List<BookEntry> bookMoves = bookMap.get(pos.zobristHash());
         if (bookMoves == null) {

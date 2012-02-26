@@ -27,7 +27,7 @@ public final class TreeLogger {
     }
 
     /** Get a logger object set up for writing to a log file. */
-    public static final TreeLogger getWriter(String filename, Position pos) {
+    public static final TreeLogger getWriter(String filename, const Position& pos) {
         try {
             TreeLogger log = new TreeLogger();
             log.os = new FileOutputStream(filename);
@@ -40,7 +40,7 @@ public final class TreeLogger {
         }
     }
 
-    private final void writeHeader(Position pos) {
+    private final void writeHeader(const Position& pos) {
         try {
             byte[] fen = TextIO::toFEN(pos).getBytes();
             bos.write((byte)(fen.length));
@@ -124,7 +124,7 @@ public final class TreeLogger {
      * @param depth        Search parameter
      * @return node index
      */
-    final U64 logNodeStart(U64 parentIndex, Move m, int alpha, int beta, int ply, int depth) {
+    final U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) {
         bb.putInt  ( 0, (int)-1);
         bb.putInt  ( 4, (int)parentIndex);
         bb.putShort( 8, (short)(m.from + (m.to << 6) + (m.promoteTo << 12)));

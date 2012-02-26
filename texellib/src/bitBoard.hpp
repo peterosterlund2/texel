@@ -9,7 +9,7 @@
 #define BITBOARD_HPP_
 
 #include <inttypes.h>
-#include "types.hpp"
+#include "util.hpp"
 
 class BitBoard {
 public:
@@ -92,7 +92,7 @@ public:
     }
 
     /** Initialize static data. */
-    static void initialize();
+    static void staticInitialize();
 
 private:
     static U64* rTables[64];

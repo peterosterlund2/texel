@@ -133,7 +133,7 @@ public:
      * @return The evaluation score, measured in centipawns.
      *         Positive values are good for the side to make the next move.
      */
-    final public int evalPos(Position pos) {
+    final public int evalPos(const Position& pos) {
         int score = pos.wMtrl - pos.bMtrl;
 
         wKingAttacks = bKingAttacks = 0;
@@ -169,12 +169,12 @@ public:
     }
 
     /** Compute white_material - black_material. */
-    static final int material(Position pos) {
+    static final int material(const Position& pos) {
         return pos.wMtrl - pos.bMtrl;
     }
 
     /** Compute score based on piece square tables. Positive values are good for white. */
-    private final int pieceSquareEval(Position pos) {
+    private final int pieceSquareEval(const Position& pos) {
         int score = 0;
         final int wMtrl = pos.wMtrl;
         final int bMtrl = pos.bMtrl;
@@ -284,7 +284,7 @@ public:
     }
 
     /** Implement the "when ahead trade pieces, when behind trade pawns" rule. */
-    private final int tradeBonus(Position pos) {
+    private final int tradeBonus(const Position& pos) {
         final int wM = pos.wMtrl;
         final int bM = pos.bMtrl;
         final int wPawn = pos.wMtrlPawns;
@@ -315,7 +315,7 @@ public:
     }
 
     /** Score castling ability. */
-    private final int castleBonus(Position pos) {
+    private final int castleBonus(const Position& pos) {
         if (pos.getCastleMask() == 0) return 0;
 
         final int k1 = kt1b[7*8+6] - kt1b[7*8+4];
@@ -343,7 +343,7 @@ public:
         return wBonus - bBonus;
     }
 
-    private final int pawnBonus(Position pos) {
+    private final int pawnBonus(const Position& pos) {
         U64 key = pos.pawnZobristHash();
         PawnHashData phd = pawnHash[(int)key & (pawnHash.length - 1)];
         if (phd.key != key)
@@ -414,7 +414,7 @@ public:
     }
 
     /** Compute pawn hash data for pos. */
-    private final void computePawnHashData(Position pos, PawnHashData ph) {
+    private final void computePawnHashData(const Position& pos, PawnHashData ph) {
         int score = 0;
 
         // Evaluate double pawns and pawn islands
@@ -502,7 +502,7 @@ public:
     }
 
     /** Compute rook bonus. Rook on open/half-open file. */
-    private final int rookBonus(Position pos) {
+    private final int rookBonus(const Position& pos) {
         int score = 0;
         final U64 wPawns = pos.pieceTypeBB[Piece::WPAWN];
         final U64 bPawns = pos.pieceTypeBB[Piece::BPAWN];
@@ -547,7 +547,7 @@ public:
     }
 
     /** Compute bishop evaluation. */
-    private final int bishopEval(Position pos, int oldScore) {
+    private final int bishopEval(const Position& pos, int oldScore) {
         int score = 0;
         final U64 occupied = pos.whiteBB | pos.blackBB;
         U64 wBishops = pos.pieceTypeBB[Piece::WBISHOP];
@@ -626,7 +626,7 @@ public:
         return score;
     }
 
-    private int threatBonus(Position pos) {
+    private int threatBonus(const Position& pos) {
         int score = 0;
 
         // Sum values for all black pieces under attack
@@ -674,7 +674,7 @@ public:
     }
 
     /** Compute king safety for both kings. */
-    private final int kingSafety(Position pos) {
+    private final int kingSafety(const Position& pos) {
         final int minM = rV + bV;
         final int m = (pos.wMtrl - pos.wMtrlPawns + pos.bMtrl - pos.bMtrlPawns) / 2;
         if (m <= minM)
@@ -730,7 +730,7 @@ public:
         }
     }
 
-    private final int kingSafetyKPPart(Position pos) {
+    private final int kingSafetyKPPart(const Position& pos) {
         // FIXME!!! Try non-linear king safety
         final U64 key = pos.pawnZobristHash() ^ pos.kingZobristHash();
         KingSafetyHashData ksh = kingSafetyHash[(int)key & (kingSafetyHash.length - 1)];
@@ -805,7 +805,7 @@ public:
     }
 
     /** Implements special knowledge for some endgame situations. */
-    private final int endGameEval(Position pos, int oldScore) {
+    private final int endGameEval(const Position& pos, int oldScore) {
         int score = oldScore;
         if (pos.wMtrl + pos.bMtrl > 6 * rV)
             return score;

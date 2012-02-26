@@ -31,7 +31,7 @@ public final class History {
     }
 
     /** Record move as a success. */
-    public final void addSuccess(Position pos, Move m, int depth) {
+    public final void addSuccess(const Position& pos, const Move& m, int depth) {
         int p = pos.getPiece(m.from());
         int cnt = depth;
         int val = countSuccess[p][m.to()] + cnt;
@@ -44,7 +44,7 @@ public final class History {
     }
 
     /** Record move as a failure. */
-    public final void addFail(Position pos, Move m, int depth) {
+    public final void addFail(const Position& pos, const Move& m, int depth) {
         int p = pos.getPiece(m.from());
         int cnt = depth;
         countFail[p][m.to()] += cnt;
@@ -52,7 +52,7 @@ public final class History {
     }
 
     /** Get a score between 0 and 49, depending of the success/fail ratio of the move. */
-    public final int getHistScore(Position pos, Move m) {
+    public final int getHistScore(const Position& pos, const Move& m) {
         int p = pos.getPiece(m.from());
         int ret = score[p][m.to()];
         if (ret >= 0)

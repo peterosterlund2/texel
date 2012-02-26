@@ -71,7 +71,7 @@ public class Search {
     public final static int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
     int q0Eval; // Static eval score at first level of quiescence search 
 
-    public Search(Position pos, U64[] posHashList, int posHashListSize, TranspositionTable tt) {
+    public Search(const Position& pos, U64[] posHashList, int posHashListSize, TranspositionTable tt) {
         this->pos = new Position(pos);
         this->moveGen = new MoveGen();
         this->posHashList = posHashList;
@@ -106,7 +106,7 @@ public class Search {
      */
     public interface Listener {
         public void notifyDepth(int depth);
-        public void notifyCurrMove(Move m, int moveNr);
+        public void notifyCurrMove(const Move& m, int moveNr);
         public void notifyPV(int depth, int score, int time, long nodes, int nps,
                 bool isMate, bool upperBound, bool lowerBound, ArrayList<Move> pv);
         public void notifyStats(long nodes, int nps, int time);
@@ -120,7 +120,7 @@ public class Search {
     private final static class MoveInfo {
         Move move;
         long nodes;
-        MoveInfo(Move m, int n) { move = m;  nodes = n; }
+        MoveInfo(cont Move& m, int n) { move = m;  nodes = n; }
         public static final class SortByScore implements Comparator<MoveInfo> {
             public int compare(MoveInfo mi1, MoveInfo mi2) {
                 if ((mi1 == null) && (mi2 == null))
@@ -404,7 +404,7 @@ public class Search {
         return bestMove;
     }
 
-    private final void notifyPV(int depth, int score, bool uBound, bool lBound, Move m) {
+    private final void notifyPV(int depth, int score, bool uBound, bool lBound, const Move& m) {
         if (listener != null) {
             bool isMate = false;
             if (score > MATE0 / 2) {
@@ -871,7 +871,7 @@ public class Search {
     }
 
     /** Return true if move should be skipped in order to make engine play weaker. */
-    private final bool weakPlaySkipMove(Position pos, Move m, int ply) {
+    private final bool weakPlaySkipMove(const Position& pos, const Move& m, int ply) {
         long rndL = pos.zobristHash() ^ Position::psHashKeys[0][m.from()] ^
                     Position::psHashKeys[0][m.to()] ^ randomSeed;
         double rnd = ((rndL & 0x7fffffffffffffffL) % 1000000000) / 1e9;
@@ -890,7 +890,7 @@ public class Search {
         return false;
     }
 
-    private static final bool passedPawnPush(Position pos, Move m) {
+    private static final bool passedPawnPush(const Position& pos, const Move& m) {
         int p = pos.getPiece(m.from);
         if (pos.whiteMove) {
             if (p != Piece::WPAWN)
@@ -1024,7 +1024,7 @@ public class Search {
     }
 
     /** Return >0, 0, <0, depending on the sign of SEE(m). */
-    final public int signSEE(Move m) {
+    final public int signSEE(const Move& m) {
         int p0 = Evaluate::pieceValue[pos.getPiece(m.from)];
         int p1 = Evaluate::pieceValue[pos.getPiece(m.to)];
         if (p0 < p1)
@@ -1033,7 +1033,7 @@ public class Search {
     }
 
     /** Return true if SEE(m) < 0. */
-    final public bool negSEE(Move m) {
+    final public bool negSEE(const Move& m) {
         int p0 = Evaluate::pieceValue[pos.getPiece(m.from)];
         int p1 = Evaluate::pieceValue[pos.getPiece(m.to)];
         if (p1 >= p0)
@@ -1048,7 +1048,7 @@ public class Search {
      * Static exchange evaluation function.
      * @return SEE score for m. Positive value is good for the side that makes the first move.
      */
-    final public int SEE(Move m) {
+    final public int SEE(const Move& m) {
         final int kV = Evaluate::kV;
         
         final int square = m.to;
@@ -1234,11 +1234,12 @@ public class Search {
         return false;
     }
 
-    public final static bool canClaimDraw50(Position pos) {
+    public final static bool canClaimDraw50(const Position& pos) {
         return (pos.halfMoveClock >= 100);
     }
     
-    public final static bool canClaimDrawRep(Position pos, U64[] posHashList, int posHashListSize, int posHashFirstNew) {
+    public final static bool canClaimDrawRep(const Position& pos, U64[] posHashList,
+					     int posHashListSize, int posHashFirstNew) {
         int reps = 0;
         for (int i = posHashListSize - 4; i >= 0; i -= 2) {
             if (pos.zobristHash() == posHashList[i]) {

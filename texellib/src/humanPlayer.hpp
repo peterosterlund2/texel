@@ -21,7 +21,7 @@ public class HumanPlayer implements Player {
     }
 
     @Override
-    public std::string getCommand(Position pos, bool drawOffer, List<Position> history) {
+    public std::string getCommand(const Position& pos, bool drawOffer, List<Position> history) {
         try {
             std::string color = pos.whiteMove ? "white" : "black";
             System.out.print(String.format("Enter move (%s):", color));

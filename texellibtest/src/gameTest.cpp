@@ -390,7 +390,7 @@
         doTestPerfT(game.pos, 4, new U64[]{48,2039,97862,4085603,193690690});
     }
 
-    private void doTestPerfT(Position pos, int maxDepth, U64[] expectedNodeCounts) {
+    private void doTestPerfT(const Position& pos, int maxDepth, U64[] expectedNodeCounts) {
         for (int d = 1; d <= maxDepth; d++) {
             MoveGen moveGen = new MoveGen();
             U64 t0 = System.nanoTime();

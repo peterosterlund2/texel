@@ -31,7 +31,7 @@ public class KillerTable {
     }
 
     /** Add a killer move to the table. Moves are replaced on an LRU basis. */
-    final public void addKiller(int ply, Move m) {
+    final public void addKiller(int ply, const Move& m) {
         if (ply >= ktList.length)
             return;
         int move = (short)(m.from() + (m.to() << 6) + (m.promoteTo() << 12));
@@ -50,7 +50,7 @@ public class KillerTable {
      * The score is 1 for secondary hit at ply - 2.
      * The score is 0 otherwise.
      */
-    final public int getKillerScore(int ply, Move m) {
+    final public int getKillerScore(int ply, const Move& m) {
         int move = (short)(m.from() + (m.to() << 6) + (m.promoteTo() << 12));
         if (ply < ktList.length) {
             KTEntry ent = ktList[ply];

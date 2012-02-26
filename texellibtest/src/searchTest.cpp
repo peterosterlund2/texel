@@ -197,7 +197,7 @@
         ASSERT_EQUAL(Search.MATE0-18, bestM.score);
     }
 
-    private Move idSearch(Search sc, int maxDepth) {
+    private Move idSearch(Search& sc, int maxDepth) {
         MoveGen::MoveList moves = MoveGen().pseudoLegalMoves(sc.pos);
         MoveGen::removeIllegal(sc.pos, moves);
         sc.scoreMoveList(moves, 0);
@@ -207,7 +207,7 @@
     }
 
     /** Compute SEE(m) and assure that signSEE and negSEE give matching results. */
-    private int getSEE(Search sc, Move m) {
+    private int getSEE(Search& sc, const Move& m) {
         int see = sc.SEE(m);
         bool neg = sc.negSEE(m);
         ASSERT_EQUAL(neg, see < 0);

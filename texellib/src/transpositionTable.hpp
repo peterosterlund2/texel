@@ -49,7 +49,7 @@ public class TranspositionTable {
             return (type == T_EXACT) || (getDepth() > 3 * Search.plyScale);
         }
 
-        public final void getMove(Move m) {
+        public final void getMove(const Move& m) {
             m.from = move & 63;
             m.to = (move >> 6) & 63;
             m.promoteTo = (move >> 12) & 15;
@@ -207,7 +207,7 @@ public class TranspositionTable {
     /**
      * Extract a list of PV moves, starting from "rootPos" and first move "m".
      */
-    public final ArrayList<Move> extractPVMoves(Position rootPos, Move m) {
+    public final ArrayList<Move> extractPVMoves(const Position& rootPos, const Move& m) {
         Position pos = new Position(rootPos);
         m = new Move(m);
         ArrayList<Move> ret = new ArrayList<Move>();
@@ -242,7 +242,7 @@ public class TranspositionTable {
     }
 
     /** Extract the PV starting from pos, using hash entries, both exact scores and bounds. */
-    public final String extractPV(Position pos) {
+    public final String extractPV(const Position& pos) {
         StringBuilder ret = new StringBuilder(100);
         pos = new Position(pos);    // To avoid modifying the input parameter
         bool first = true;

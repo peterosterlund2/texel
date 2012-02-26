@@ -169,16 +169,10 @@ static U64 addBishopRays(int x, int y, U64 occupied, bool inner) {
     return mask;
 }
 
-class BitBoardInitializer {
-public:
-    BitBoardInitializer() {
-        BitBoard::initialize();
-    }
-};
-static BitBoardInitializer bbInit;
+static StaticInitializer<BitBoard> bbInit;
 
 void
-BitBoard::initialize() {
+BitBoard::staticInitialize() {
     // Compute king attacks
     for (int sq = 0; sq < 64; sq++) {
         U64 m = 1ULL << sq;

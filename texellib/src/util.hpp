@@ -1,12 +1,12 @@
 /*
- * types.hpp
+ * util.hpp
  *
- *  Created on: Feb 25, 2012
+ *  Created on: Feb 26, 2012
  *      Author: petero
  */
 
-#ifndef TYPES_HPP_
-#define TYPES_HPP_
+#ifndef UTIL_HPP_
+#define UTIL_HPP_
 
 #include <stddef.h>
 #include <string>
@@ -19,6 +19,15 @@ typedef signed char byte;
 template <typename T, size_t N> char (&_ArraySizeHelper(T(&array)[N]))[N];
 #define COUNT_OF(array) (sizeof(_ArraySizeHelper(array)))
 
+
+/** Helper class to perform static initialization of a class T. */
+template <typename T>
+class StaticInitializer {
+public:
+    StaticInitializer() {
+        T::staticInitialize();
+    }
+};
 
 /** Split a string using " " as delimiter. Append words to out. */
 inline void
@@ -38,4 +47,4 @@ T str2Num(const std::string& str) {
     return ss >> result ? result : 0;
 }
 
-#endif /* TYPES_HPP_ */
+#endif /* UTIL_HPP_ */
