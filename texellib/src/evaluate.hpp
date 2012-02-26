@@ -10,6 +10,7 @@
 
 #include "parameters.hpp"
 #include "piece.hpp"
+#include "position.hpp"
 
 /**
  * Position evaluation routines.
@@ -59,8 +60,6 @@ public:
     static int kt1w[64], qt1w[64], rt1w[64], bt1w[64], nt1w[64], pt1w[64];
     static int kt2w[64], bt2w[64], nt2w[64], pt2w[64];
 
-private:
-
 public:
     static const int* psTab1[Piece::nPieceTypes];
     static const int* psTab2[Piece::nPieceTypes];
@@ -71,60 +70,34 @@ public:
     static const int bishMobScore[];
     static const int queenMobScore[];
 
-#if 0
-    private static final class PawnHashData {
+private:
+    struct PawnHashData {
+        PawnHashData();
         U64 key;
-        int score;         // Positive score means good for white
+        int score;            // Positive score means good for white
         short passedBonusW;
         short passedBonusB;
         U64 passedPawnsW;     // The most advanced passed pawns for each file
         U64 passedPawnsB;
-    }
-    static final PawnHashData[] pawnHash;
-    static {
-        final int numEntries = 1<<16;
-        pawnHash = new PawnHashData[numEntries];
-        for (int i = 0; i < numEntries; i++) {
-            PawnHashData phd = new PawnHashData();
-            phd.key = -1; // Non-zero to avoid collision for positions with no pawns
-            phd.score = 0;
-            pawnHash[i] = phd;
-        }
-    }
+    };
+    static std::vector<PawnHashData> pawnHash;
 
-    static byte[] kpkTable = null;
-    static byte[] krkpTable = null;
+    static const byte kpkTable[2*32*64*48/8];
+    static const byte krkpTable[2*32*48*8];
 
     // King safety variables
-    private U64 wKingZone, bKingZone;       // Squares close to king that are worth attacking
-    private int wKingAttacks, bKingAttacks; // Number of attacks close to white/black king
-    private U64 wAttacksBB, bAttacksBB;
-    private U64 wPawnAttacks, bPawnAttacks; // Squares attacked by white/black pawns
+    U64 wKingZone, bKingZone;       // Squares close to king that are worth attacking
+    int wKingAttacks, bKingAttacks; // Number of attacks close to white/black king
+    U64 wAttacksBB, bAttacksBB;
+    U64 wPawnAttacks, bPawnAttacks; // Squares attacked by white/black pawns
 
+public:
     /** Constructor. */
-    public Evaluate() {
-        if (kpkTable == null)
-            kpkTable = readTable("/kpk.bitbase", 2*32*64*48/8);
-        if (krkpTable == null)
-            krkpTable = readTable("/krkp.winmasks", 2*32*48*8);
-    }
-
-    private byte[] readTable(const std::string& resource, int length) {
-        byte[] table = new byte[2*32*64*48/8];
-        InputStream inStream = getClass().getResourceAsStream(resource);
-        try {
-            int off = 0;
-            while (off < table.length) {
-                int len = inStream.read(table, off, table.length - off);
-                if (len < 0)
-                    throw new RuntimeException();
-                off += len;
-            }
-            inStream.close();
-            return table;
-        } catch (IOException e) {
-            throw new RuntimeException();
-        }
+    Evaluate()
+        : wKingZone(0), bKingZone(0),
+          wKingAttacks(0), bKingAttacks(0),
+          wAttacksBB(0), bAttacksBB(0),
+          wPawnAttacks(0), bPawnAttacks(0) {
     }
 
     /**
@@ -133,20 +106,20 @@ public:
      * @return The evaluation score, measured in centipawns.
      *         Positive values are good for the side to make the next move.
      */
-    final public int evalPos(const Position& pos) {
+    int evalPos(const Position& pos) {
         int score = pos.wMtrl - pos.bMtrl;
 
         wKingAttacks = bKingAttacks = 0;
         wKingZone = BitBoard::kingAttacks[pos.getKingSq(true)]; wKingZone |= wKingZone << 8;
-        bKingZone = BitBoard::kingAttacks[pos.getKingSq(false)]; bKingZone |= bKingZone >>> 8;
+        bKingZone = BitBoard::kingAttacks[pos.getKingSq(false)]; bKingZone |= bKingZone >> 8;
         wAttacksBB = bAttacksBB = 0L;
 
         U64 pawns = pos.pieceTypeBB[Piece::WPAWN];
         wPawnAttacks = ((pawns & BitBoard::maskBToHFiles) << 7) |
                        ((pawns & BitBoard::maskAToGFiles) << 9);
         pawns = pos.pieceTypeBB[Piece::BPAWN];
-        bPawnAttacks = ((pawns & BitBoard::maskBToHFiles) >>> 9) |
-                       ((pawns & BitBoard::maskAToGFiles) >>> 7);
+        bPawnAttacks = ((pawns & BitBoard::maskBToHFiles) >> 9) |
+                       ((pawns & BitBoard::maskAToGFiles) >> 7);
 
         score += pieceSquareEval(pos);
         score += pawnBonus(pos);
@@ -169,58 +142,61 @@ public:
     }
 
     /** Compute white_material - black_material. */
-    static final int material(const Position& pos) {
+    static int material(const Position& pos) {
         return pos.wMtrl - pos.bMtrl;
     }
 
+    static void staticInitialize();
+
+private:
     /** Compute score based on piece square tables. Positive values are good for white. */
-    private final int pieceSquareEval(const Position& pos) {
+    int pieceSquareEval(const Position& pos) {
         int score = 0;
-        final int wMtrl = pos.wMtrl;
-        final int bMtrl = pos.bMtrl;
-        final int wMtrlPawns = pos.wMtrlPawns;
-        final int bMtrlPawns = pos.bMtrlPawns;
+        const int wMtrl = pos.wMtrl;
+        const int bMtrl = pos.bMtrl;
+        const int wMtrlPawns = pos.wMtrlPawns;
+        const int bMtrlPawns = pos.bMtrlPawns;
 
         // Kings
         {
-            final int t1 = qV + 2 * rV + 2 * bV;
-            final int t2 = rV;
+            const int t1 = qV + 2 * rV + 2 * bV;
+            const int t2 = rV;
             {
-                final int k1 = pos.psScore1[Piece::WKING];
-                final int k2 = pos.psScore2[Piece::WKING];
-                final int t = bMtrl - bMtrlPawns;
+                const int k1 = pos.psScore1[Piece::WKING];
+                const int k2 = pos.psScore2[Piece::WKING];
+                const int t = bMtrl - bMtrlPawns;
                 score += interpolate(t, t2, k2, t1, k1);
             }
             {
-                final int k1 = pos.psScore1[Piece::BKING];
-                final int k2 = pos.psScore2[Piece::BKING];
-                final int t = wMtrl - wMtrlPawns;
+                const int k1 = pos.psScore1[Piece::BKING];
+                const int k2 = pos.psScore2[Piece::BKING];
+                const int t = wMtrl - wMtrlPawns;
                 score -= interpolate(t, t2, k2, t1, k1);
             }
         }
 
         // Pawns
         {
-            final int t1 = qV + 2 * rV + 2 * bV;
-            final int t2 = rV;
+            const int t1 = qV + 2 * rV + 2 * bV;
+            const int t2 = rV;
             int wp1 = pos.psScore1[Piece::WPAWN];
             int wp2 = pos.psScore2[Piece::WPAWN];
             if ((wp1 != 0) || (wp2 != 0)) {
-                final int tw = bMtrl - bMtrlPawns;
+                const int tw = bMtrl - bMtrlPawns;
                 score += interpolate(tw, t2, wp2, t1, wp1);
             }
             int bp1 = pos.psScore1[Piece::BPAWN];
             int bp2 = pos.psScore2[Piece::BPAWN];
             if ((bp1 != 0) || (bp2 != 0)) {
-                final int tb = wMtrl - wMtrlPawns;
+                const int tb = wMtrl - wMtrlPawns;
                 score -= interpolate(tb, t2, bp2, t1, bp1);
             }
         }
 
         // Knights
         {
-            final int t1 = qV + 2 * rV + 1 * bV + 1 * nV + 6 * pV;
-            final int t2 = nV + 8 * pV;
+            const int t1 = qV + 2 * rV + 1 * bV + 1 * nV + 6 * pV;
+            const int t2 = nV + 8 * pV;
             int n1 = pos.psScore1[Piece::WKNIGHT];
             int n2 = pos.psScore2[Piece::WKNIGHT];
             if ((n1 != 0) || (n2 != 0)) {
@@ -241,7 +217,7 @@ public:
 
         // Queens
         {
-            final U64 occupied = pos.whiteBB | pos.blackBB;
+            const U64 occupied = pos.whiteBB | pos.blackBB;
             score += pos.psScore1[Piece::WQUEEN];
             U64 m = pos.pieceTypeBB[Piece::WQUEEN];
             while (m != 0) {
@@ -268,14 +244,14 @@ public:
         {
             int r1 = pos.psScore1[Piece::WROOK];
             if (r1 != 0) {
-                final int nP = bMtrlPawns / pV;
-                final int s = r1 * Math.min(nP, 6) / 6;
+                const int nP = bMtrlPawns / pV;
+                const int s = r1 * std::min(nP, 6) / 6;
                 score += s;
             }
             r1 = pos.psScore1[Piece::BROOK];
             if (r1 != 0) {
-                final int nP = wMtrlPawns / pV;
-                final int s = r1 * Math.min(nP, 6) / 6;
+                const int nP = wMtrlPawns / pV;
+                const int s = r1 * std::min(nP, 6) / 6;
                 score -= s;
             }
         }
@@ -284,12 +260,12 @@ public:
     }
 
     /** Implement the "when ahead trade pieces, when behind trade pawns" rule. */
-    private final int tradeBonus(const Position& pos) {
-        final int wM = pos.wMtrl;
-        final int bM = pos.bMtrl;
-        final int wPawn = pos.wMtrlPawns;
-        final int bPawn = pos.bMtrlPawns;
-        final int deltaScore = wM - bM;
+    int tradeBonus(const Position& pos) {
+        const int wM = pos.wMtrl;
+        const int bM = pos.bMtrl;
+        const int wPawn = pos.wMtrlPawns;
+        const int bPawn = pos.bMtrlPawns;
+        const int deltaScore = wM - bM;
 
         int pBonus = 0;
         pBonus += interpolate((deltaScore > 0) ? wPawn : bPawn, 0, -30 * deltaScore / 100, 6 * pV, 0);
@@ -298,34 +274,20 @@ public:
         return pBonus;
     }
 
-    private static final int[] castleFactor;
-    static {
-        castleFactor = new int[256];
-        for (int i = 0; i < 256; i++) {
-            int h1Dist = 100;
-            bool h1Castle = (i & (1<<7)) != 0;
-            if (h1Castle)
-                h1Dist = 2 + BitBoard::bitCount(i & 0x0000000000000060L); // f1,g1
-            int a1Dist = 100;
-            bool a1Castle = (i & 1) != 0;
-            if (a1Castle)
-                a1Dist = 2 + BitBoard::bitCount(i & 0x000000000000000EL); // b1,c1,d1
-            castleFactor[i] = 1024 / Math.min(a1Dist, h1Dist);
-        }
-    }
+    static int castleFactor[256];
 
     /** Score castling ability. */
-    private final int castleBonus(const Position& pos) {
+    int castleBonus(const Position& pos) {
         if (pos.getCastleMask() == 0) return 0;
 
-        final int k1 = kt1b[7*8+6] - kt1b[7*8+4];
-        final int k2 = kt2b[7*8+6] - kt2b[7*8+4];
-        final int t1 = qV + 2 * rV + 2 * bV;
-        final int t2 = rV;
-        final int t = pos.bMtrl - pos.bMtrlPawns;
-        final int ks = interpolate(t, t2, k2, t1, k1);
+        const int k1 = kt1b[7*8+6] - kt1b[7*8+4];
+        const int k2 = kt2b[7*8+6] - kt2b[7*8+4];
+        const int t1 = qV + 2 * rV + 2 * bV;
+        const int t2 = rV;
+        const int t = pos.bMtrl - pos.bMtrlPawns;
+        const int ks = interpolate(t, t2, k2, t1, k1);
 
-        final int castleValue = ks + rt1b[7*8+5] - rt1b[7*8+7];
+        const int castleValue = ks + rt1b[7*8+5] - rt1b[7*8+7];
         if (castleValue <= 0)
             return 0;
 
@@ -333,30 +295,30 @@ public:
         int tmp = (int) (occupied & 0x6E);
         if (pos.a1Castle()) tmp |= 1;
         if (pos.h1Castle()) tmp |= (1 << 7);
-        final int wBonus = (castleValue * castleFactor[tmp]) >> 10;
+        const int wBonus = (castleValue * castleFactor[tmp]) >> 10;
 
-        tmp = (int) ((occupied >>> 56) & 0x6E);
+        tmp = (int) ((occupied >> 56) & 0x6E);
         if (pos.a8Castle()) tmp |= 1;
         if (pos.h8Castle()) tmp |= (1 << 7);
-        final int bBonus = (castleValue * castleFactor[tmp]) >> 10;
+        const int bBonus = (castleValue * castleFactor[tmp]) >> 10;
 
         return wBonus - bBonus;
     }
 
-    private final int pawnBonus(const Position& pos) {
+    int pawnBonus(const Position& pos) {
         U64 key = pos.pawnZobristHash();
-        PawnHashData phd = pawnHash[(int)key & (pawnHash.length - 1)];
+        PawnHashData& phd = pawnHash[(int)key & (pawnHash.size() - 1)];
         if (phd.key != key)
             computePawnHashData(pos, phd);
         int score = phd.score;
 
-        final int hiMtrl = qV + rV;
+        const int hiMtrl = qV + rV;
         score += interpolate(pos.bMtrl - pos.bMtrlPawns, 0, 2 * phd.passedBonusW, hiMtrl, phd.passedBonusW);
         score -= interpolate(pos.wMtrl - pos.wMtrlPawns, 0, 2 * phd.passedBonusB, hiMtrl, phd.passedBonusB);
 
         // Passed pawns are more dangerous if enemy king is far away
         int mtrlNoPawns;
-        final int highMtrl = qV + rV;
+        const int highMtrl = qV + rV;
         U64 m = phd.passedPawnsW;
         if (m != 0) {
             mtrlNoPawns = pos.bMtrl - pos.bMtrlPawns;
@@ -368,10 +330,10 @@ public:
                     int sq = BitBoard::numberOfTrailingZeros(m);
                     int x = Position::getX(sq);
                     int y = Position::getY(sq);
-                    int pawnDist = Math.min(5, 7 - y);
-                    int kingDistX = Math.abs(kingX - x);
-                    int kingDistY = Math.abs(kingY - 7);
-                    int kingDist = Math.max(kingDistX, kingDistY);
+                    int pawnDist = std::min(5, 7 - y);
+                    int kingDistX = std::abs(kingX - x);
+                    int kingDistY = std::abs(kingY - 7);
+                    int kingDist = std::max(kingDistX, kingDistY);
                     int kScore = kingDist * 4;
                     if (kingDist > pawnDist) kScore += (kingDist - pawnDist) * (kingDist - pawnDist);
                     score += interpolate(mtrlNoPawns, 0, kScore, highMtrl, 0);
@@ -394,10 +356,10 @@ public:
                     int sq = BitBoard::numberOfTrailingZeros(m);
                     int x = Position::getX(sq);
                     int y = Position::getY(sq);
-                    int pawnDist = Math.min(5, y);
-                    int kingDistX = Math.abs(kingX - x);
-                    int kingDistY = Math.abs(kingY - 0);
-                    int kingDist = Math.max(kingDistX, kingDistY);
+                    int pawnDist = std::min(5, y);
+                    int kingDistX = std::abs(kingX - x);
+                    int kingDistY = std::abs(kingY - 0);
+                    int kingDist = std::max(kingDistX, kingDistY);
                     int kScore = kingDist * 4;
                     if (kingDist > pawnDist) kScore += (kingDist - pawnDist) * (kingDist - pawnDist);
                     score -= interpolate(mtrlNoPawns, 0, kScore, highMtrl, 0);
@@ -414,22 +376,22 @@ public:
     }
 
     /** Compute pawn hash data for pos. */
-    private final void computePawnHashData(const Position& pos, PawnHashData ph) {
+    void computePawnHashData(const Position& pos, PawnHashData& ph) {
         int score = 0;
 
         // Evaluate double pawns and pawn islands
         U64 wPawns = pos.pieceTypeBB[Piece::WPAWN];
         U64 wPawnFiles = BitBoard::southFill(wPawns) & 0xff;
         int wDouble = BitBoard::bitCount(wPawns) - BitBoard::bitCount(wPawnFiles);
-        int wIslands = BitBoard::bitCount(((~wPawnFiles) >>> 1) & wPawnFiles);
-        int wIsolated = BitBoard::bitCount(~(wPawnFiles<<1) & wPawnFiles & ~(wPawnFiles>>>1));
+        int wIslands = BitBoard::bitCount(((~wPawnFiles) >> 1) & wPawnFiles);
+        int wIsolated = BitBoard::bitCount(~(wPawnFiles<<1) & wPawnFiles & ~(wPawnFiles>>1));
 
 
         U64 bPawns = pos.pieceTypeBB[Piece::BPAWN];
         U64 bPawnFiles = BitBoard::southFill(bPawns) & 0xff;
         int bDouble = BitBoard::bitCount(bPawns) - BitBoard::bitCount(bPawnFiles);
-        int bIslands = BitBoard::bitCount(((~bPawnFiles) >>> 1) & bPawnFiles);
-        int bIsolated = BitBoard::bitCount(~(bPawnFiles<<1) & bPawnFiles & ~(bPawnFiles>>>1));
+        int bIslands = BitBoard::bitCount(((~bPawnFiles) >> 1) & bPawnFiles);
+        int bIsolated = BitBoard::bitCount(~(bPawnFiles<<1) & bPawnFiles & ~(bPawnFiles>>1));
 
         score -= (wDouble - bDouble) * 25;
         score -= (wIslands - bIslands) * 15;
@@ -439,24 +401,24 @@ public:
         // can't be guarded by friendly pawns, can advance, but can't advance without
         // being captured by an enemy pawn.
         U64 wPawnAttacks = (((wPawns & BitBoard::maskBToHFiles) << 7) |
-                             ((wPawns & BitBoard::maskAToGFiles) << 9));
-        U64 bPawnAttacks = (((bPawns & BitBoard::maskBToHFiles) >>> 9) |
-                             ((bPawns & BitBoard::maskAToGFiles) >>> 7));
-        U64 wBackward = wPawns & ~((wPawns | bPawns) >>> 8) & (bPawnAttacks >>> 8) &
-                         ~BitBoard::northFill(wPawnAttacks);
-        wBackward &= (((wPawns & BitBoard::maskBToHFiles) >>> 9) |
-                      ((wPawns & BitBoard::maskAToGFiles) >>> 7));
+                            ((wPawns & BitBoard::maskAToGFiles) << 9));
+        U64 bPawnAttacks = (((bPawns & BitBoard::maskBToHFiles) >> 9) |
+                            ((bPawns & BitBoard::maskAToGFiles) >> 7));
+        U64 wBackward = wPawns & ~((wPawns | bPawns) >> 8) & (bPawnAttacks >> 8) &
+                        ~BitBoard::northFill(wPawnAttacks);
+        wBackward &= (((wPawns & BitBoard::maskBToHFiles) >> 9) |
+                      ((wPawns & BitBoard::maskAToGFiles) >> 7));
         wBackward &= ~BitBoard::northFill(bPawnFiles);
         U64 bBackward = bPawns & ~((wPawns | bPawns) << 8) & (wPawnAttacks << 8) &
-                         ~BitBoard::southFill(bPawnAttacks);
+                        ~BitBoard::southFill(bPawnAttacks);
         bBackward &= (((bPawns & BitBoard::maskBToHFiles) << 7) |
                       ((bPawns & BitBoard::maskAToGFiles) << 9));
         bBackward &= ~BitBoard::northFill(wPawnFiles);
         score -= (BitBoard::bitCount(wBackward) - BitBoard::bitCount(bBackward)) * 15;
 
         // Evaluate passed pawn bonus, white
-        U64 passedPawnsW = wPawns & ~BitBoard::southFill(bPawns | bPawnAttacks | (wPawns >>> 8));
-        final int[] ppBonus = {-1,24,26,30,36,47,64,-1};
+        U64 passedPawnsW = wPawns & ~BitBoard::southFill(bPawns | bPawnAttacks | (wPawns >> 8));
+        static const int ppBonus[] = {-1,24,26,30,36,47,64,-1};
         int passedBonusW = 0;
         if (passedPawnsW != 0) {
             U64 guardedPassedW = passedPawnsW & (((wPawns & BitBoard::maskBToHFiles) << 7) |
@@ -464,7 +426,7 @@ public:
             passedBonusW += 15 * BitBoard::bitCount(guardedPassedW);
             U64 m = passedPawnsW;
             while (m != 0) {
-                int sq = Long .numberOfTrailingZeros(m);
+                int sq = BitBoard::numberOfTrailingZeros(m);
                 int y = Position::getY(sq);
                 passedBonusW += ppBonus[y];
                 m &= m-1;
@@ -475,12 +437,12 @@ public:
         U64 passedPawnsB = bPawns & ~BitBoard::northFill(wPawns | wPawnAttacks | (bPawns << 8));
         int passedBonusB = 0;
         if (passedPawnsB != 0) {
-            U64 guardedPassedB = passedPawnsB & (((bPawns & BitBoard::maskBToHFiles) >>> 9) |
-                                                  ((bPawns & BitBoard::maskAToGFiles) >>> 7));
+            U64 guardedPassedB = passedPawnsB & (((bPawns & BitBoard::maskBToHFiles) >> 9) |
+                                                  ((bPawns & BitBoard::maskAToGFiles) >> 7));
             passedBonusB += 15 * BitBoard::bitCount(guardedPassedB);
             U64 m = passedPawnsB;
             while (m != 0) {
-                int sq = Long .numberOfTrailingZeros(m);
+                int sq = BitBoard::numberOfTrailingZeros(m);
                 int y = Position::getY(sq);
                 passedBonusB += ppBonus[7-y];
                 m &= m-1;
@@ -489,9 +451,9 @@ public:
 
         // Connected passed pawn bonus. Seems logical but doesn't help in tests
 //        if (passedPawnsW != 0)
-//            passedBonusW += 15 * BitBoard::bitCount(passedPawnsW & ((passedPawnsW & BitBoard::maskBToHFiles) >>> 1));
+//            passedBonusW += 15 * BitBoard::bitCount(passedPawnsW & ((passedPawnsW & BitBoard::maskBToHFiles) >> 1));
 //        if (passedPawnsB != 0)
-//            passedBonusB += 15 * BitBoard::bitCount(passedPawnsB & ((passedPawnsB & BitBoard::maskBToHFiles) >>> 1));
+//            passedBonusB += 15 * BitBoard::bitCount(passedPawnsB & ((passedPawnsB & BitBoard::maskBToHFiles) >> 1));
 
         ph.key = pos.pawnZobristHash();
         ph.score = score;
@@ -502,15 +464,15 @@ public:
     }
 
     /** Compute rook bonus. Rook on open/half-open file. */
-    private final int rookBonus(const Position& pos) {
+    int rookBonus(const Position& pos) {
         int score = 0;
-        final U64 wPawns = pos.pieceTypeBB[Piece::WPAWN];
-        final U64 bPawns = pos.pieceTypeBB[Piece::BPAWN];
-        final U64 occupied = pos.whiteBB | pos.blackBB;
+        const U64 wPawns = pos.pieceTypeBB[Piece::WPAWN];
+        const U64 bPawns = pos.pieceTypeBB[Piece::BPAWN];
+        const U64 occupied = pos.whiteBB | pos.blackBB;
         U64 m = pos.pieceTypeBB[Piece::WROOK];
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
-            final int x = Position::getX(sq);
+            const int x = Position::getX(sq);
             if ((wPawns & BitBoard::maskFile[x]) == 0) { // At least half-open file
                 score += (bPawns & BitBoard::maskFile[x]) == 0 ? 25 : 12;
             }
@@ -521,14 +483,14 @@ public:
                 bKingAttacks += BitBoard::bitCount(atk & bKingZone);
             m &= m-1;
         }
-        U64 r7 = (pos.pieceTypeBB[Piece::WROOK] >>> 48) & 0x00ffL;
+        U64 r7 = (pos.pieceTypeBB[Piece::WROOK] >> 48) & 0x00ffULL;
         if (((r7 & (r7 - 1)) != 0) &&
-            ((pos.pieceTypeBB[Piece::BKING] & 0xff00000000000000L) != 0))
+            ((pos.pieceTypeBB[Piece::BKING] & 0xff00000000000000ULL) != 0))
             score += 30; // Two rooks on 7:th row
         m = pos.pieceTypeBB[Piece::BROOK];
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
-            final int x = Position::getX(sq);
+            const int x = Position::getX(sq);
             if ((bPawns & BitBoard::maskFile[x]) == 0) {
                 score -= (wPawns & BitBoard::maskFile[x]) == 0 ? 25 : 12;
             }
@@ -547,9 +509,9 @@ public:
     }
 
     /** Compute bishop evaluation. */
-    private final int bishopEval(const Position& pos, int oldScore) {
+    int bishopEval(const Position& pos, int oldScore) {
         int score = 0;
-        final U64 occupied = pos.whiteBB | pos.blackBB;
+        const U64 occupied = pos.whiteBB | pos.blackBB;
         U64 wBishops = pos.pieceTypeBB[Piece::WBISHOP];
         U64 bBishops = pos.pieceTypeBB[Piece::BBISHOP];
         if ((wBishops | bBishops) == 0)
@@ -584,11 +546,11 @@ public:
 
         // Bishop pair bonus
         if (numWhite == 2) {
-            final int numPawns = pos.wMtrlPawns / pV;
+            const int numPawns = pos.wMtrlPawns / pV;
             score += 28 + (8 - numPawns) * 3;
         }
         if (numBlack == 2) {
-            final int numPawns = pos.bMtrlPawns / pV;
+            const int numPawns = pos.bMtrlPawns / pV;
             score -= 28 + (8 - numPawns) * 3;
         }
 
@@ -596,37 +558,37 @@ public:
 
         if ((numWhite == 1) && (numBlack == 1) && (whiteDark != blackDark) &&
             (pos.wMtrl - pos.wMtrlPawns == pos.bMtrl - pos.bMtrlPawns)) {
-            final int penalty = (oldScore + score) / 2;
-            final int loMtrl = 2 * bV;
-            final int hiMtrl = 2 * (qV + rV + bV);
+            const int penalty = (oldScore + score) / 2;
+            const int loMtrl = 2 * bV;
+            const int hiMtrl = 2 * (qV + rV + bV);
             int mtrl = pos.wMtrl + pos.bMtrl - pos.wMtrlPawns - pos.bMtrlPawns;
             score -= interpolate(mtrl, loMtrl, penalty, hiMtrl, 0);
         }
 
         // Penalty for bishop trapped behind pawn at a2/h2/a7/h7
         if (((wBishops | bBishops) & 0x0081000000008100L) != 0) {
-            if ((pos.squares[48] == Piece::WBISHOP) && // a7
-                (pos.squares[41] == Piece::BPAWN) &&
-                (pos.squares[50] == Piece::BPAWN))
+            if ((pos.getPiece(48) == Piece::WBISHOP) && // a7
+                (pos.getPiece(41) == Piece::BPAWN) &&
+                (pos.getPiece(50) == Piece::BPAWN))
                 score -= pV * 3 / 2;
-            if ((pos.squares[55] == Piece::WBISHOP) && // h7
-                (pos.squares[46] == Piece::BPAWN) &&
-                (pos.squares[53] == Piece::BPAWN))
+            if ((pos.getPiece(55) == Piece::WBISHOP) && // h7
+                (pos.getPiece(46) == Piece::BPAWN) &&
+                (pos.getPiece(53) == Piece::BPAWN))
                 score -= (pos.pieceTypeBB[Piece::WQUEEN] != 0) ? pV : pV * 3 / 2;
-            if ((pos.squares[8] == Piece::BBISHOP) &&  // a2
-                (pos.squares[17] == Piece::WPAWN) &&
-                (pos.squares[10] == Piece::WPAWN))
+            if ((pos.getPiece(8)  == Piece::BBISHOP) &&  // a2
+                (pos.getPiece(17) == Piece::WPAWN) &&
+                (pos.getPiece(10) == Piece::WPAWN))
                 score += pV * 3 / 2;
-            if ((pos.squares[15] == Piece::BBISHOP) && // h2
-                (pos.squares[22] == Piece::WPAWN) &&
-                (pos.squares[13] == Piece::WPAWN))
+            if ((pos.getPiece(15) == Piece::BBISHOP) && // h2
+                (pos.getPiece(22) == Piece::WPAWN) &&
+                (pos.getPiece(13) == Piece::WPAWN))
                 score += (pos.pieceTypeBB[Piece::BQUEEN] != 0) ? pV : pV * 3 / 2;
         }
 
         return score;
     }
 
-    private int threatBonus(const Position& pos) {
+    int threatBonus(const Position& pos) {
         int score = 0;
 
         // Sum values for all black pieces under attack
@@ -645,7 +607,7 @@ public:
         int tmp = 0;
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
-            tmp += pieceValue[pos.squares[sq]];
+            tmp += pieceValue[pos.getPiece(sq)];
             m &= m-1;
         }
         score += tmp + tmp * tmp / qV;
@@ -666,7 +628,7 @@ public:
         tmp = 0;
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
-            tmp += pieceValue[pos.squares[sq]];
+            tmp += pieceValue[pos.getPiece(sq)];
             m &= m-1;
         }
         score -= tmp + tmp * tmp / qV;
@@ -674,12 +636,12 @@ public:
     }
 
     /** Compute king safety for both kings. */
-    private final int kingSafety(const Position& pos) {
-        final int minM = rV + bV;
-        final int m = (pos.wMtrl - pos.wMtrlPawns + pos.bMtrl - pos.bMtrlPawns) / 2;
+    int kingSafety(const Position& pos) {
+        const int minM = rV + bV;
+        const int m = (pos.wMtrl - pos.wMtrlPawns + pos.bMtrl - pos.bMtrlPawns) / 2;
         if (m <= minM)
             return 0;
-        final int maxM = qV + 2 * rV + 2 * bV + 2 * nV;
+        const int maxM = qV + 2 * rV + 2 * bV + 2 * nV;
         int score = kingSafetyKPPart(pos);
         if (Position::getY(pos.wKingSq) == 0) {
             if (((pos.pieceTypeBB[Piece::WKING] & 0x60L) != 0) && // King on f1 or g1
@@ -710,30 +672,21 @@ public:
             }
         }
         score += (bKingAttacks - wKingAttacks) * 4;
-        final int kSafety = interpolate(m, minM, 0, maxM, score);
+        const int kSafety = interpolate(m, minM, 0, maxM, score);
         return kSafety;
     }
 
-    private static final class KingSafetyHashData {
+    struct KingSafetyHashData {
+        KingSafetyHashData() : key((U64)-1), score(0) { }
         U64 key;
         int score;
-    }
-    private static final KingSafetyHashData[] kingSafetyHash;
-    static {
-        final int numEntries = 1 << 15;
-        kingSafetyHash = new KingSafetyHashData[numEntries];
-        for (int i = 0; i < numEntries; i++) {
-            KingSafetyHashData ksh = new KingSafetyHashData();
-            ksh.key = -1;
-            ksh.score = 0;
-            kingSafetyHash[i] = ksh;
-        }
-    }
+    };
+    static std::vector<KingSafetyHashData> kingSafetyHash;
 
-    private final int kingSafetyKPPart(const Position& pos) {
+    int kingSafetyKPPart(const Position& pos) {
         // FIXME!!! Try non-linear king safety
-        final U64 key = pos.pawnZobristHash() ^ pos.kingZobristHash();
-        KingSafetyHashData ksh = kingSafetyHash[(int)key & (kingSafetyHash.length - 1)];
+        const U64 key = pos.pawnZobristHash() ^ pos.kingZobristHash();
+        KingSafetyHashData ksh = kingSafetyHash[(int)key & (kingSafetyHash.size() - 1)];
         if (ksh.key != key) {
             int score = 0;
             U64 wPawns = pos.pieceTypeBB[Piece::WPAWN];
@@ -743,7 +696,7 @@ public:
                 int halfOpenFiles = 0;
                 if (Position::getY(pos.wKingSq) < 2) {
                     U64 shelter = 1ULL << Position::getX(pos.wKingSq);
-                    shelter |= ((shelter & BitBoard::maskBToHFiles) >>> 1) |
+                    shelter |= ((shelter & BitBoard::maskBToHFiles) >> 1) |
                                ((shelter & BitBoard::maskAToGFiles) << 1);
                     shelter <<= 8;
                     safety += 3 * BitBoard::bitCount(wPawns & shelter);
@@ -763,9 +716,9 @@ public:
                         halfOpenFiles += 25 * BitBoard::bitCount(bOpen & 0xe7);
                         halfOpenFiles += 10 * BitBoard::bitCount(bOpen & 0x18);
                     }
-                    safety = Math.min(safety, 8);
+                    safety = std::min(safety, 8);
                 }
-                final int kSafety = (safety - 9) * 15 - halfOpenFiles;
+                const int kSafety = (safety - 9) * 15 - halfOpenFiles;
                 score += kSafety;
             }
             {
@@ -773,14 +726,14 @@ public:
                 int halfOpenFiles = 0;
                 if (Position::getY(pos.bKingSq) >= 6) {
                     U64 shelter = 1ULL << (56 + Position::getX(pos.bKingSq));
-                    shelter |= ((shelter & BitBoard::maskBToHFiles) >>> 1) |
+                    shelter |= ((shelter & BitBoard::maskBToHFiles) >> 1) |
                                ((shelter & BitBoard::maskAToGFiles) << 1);
-                    shelter >>>= 8;
+                    shelter >>= 8;
                     safety += 3 * BitBoard::bitCount(bPawns & shelter);
-                    safety -= 2 * BitBoard::bitCount(wPawns & (shelter | (shelter >>> 8)));
-                    shelter >>>= 8;
+                    safety -= 2 * BitBoard::bitCount(wPawns & (shelter | (shelter >> 8)));
+                    shelter >>= 8;
                     safety += 2 * BitBoard::bitCount(bPawns & shelter);
-                    shelter >>>= 8;
+                    shelter >>= 8;
                     safety -= BitBoard::bitCount(wPawns & shelter);
 
                     U64 wOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(wPawns)) & 0xff;
@@ -793,9 +746,9 @@ public:
                         halfOpenFiles += 25 * BitBoard::bitCount(bOpen & 0xe7);
                         halfOpenFiles += 10 * BitBoard::bitCount(bOpen & 0x18);
                     }
-                    safety = Math.min(safety, 8);
+                    safety = std::min(safety, 8);
                 }
-                final int kSafety = (safety - 9) * 15 - halfOpenFiles;
+                const int kSafety = (safety - 9) * 15 - halfOpenFiles;
                 score -= kSafety;
             }
             ksh.key = key;
@@ -805,14 +758,14 @@ public:
     }
 
     /** Implements special knowledge for some endgame situations. */
-    private final int endGameEval(const Position& pos, int oldScore) {
+    int endGameEval(const Position& pos, int oldScore) {
         int score = oldScore;
         if (pos.wMtrl + pos.bMtrl > 6 * rV)
             return score;
-        final int wMtrlPawns = pos.wMtrlPawns;
-        final int bMtrlPawns = pos.bMtrlPawns;
-        final int wMtrlNoPawns = pos.wMtrl - wMtrlPawns;
-        final int bMtrlNoPawns = pos.bMtrl - bMtrlPawns;
+        const int wMtrlPawns = pos.wMtrlPawns;
+        const int bMtrlPawns = pos.bMtrlPawns;
+        const int wMtrlNoPawns = pos.wMtrl - wMtrlPawns;
+        const int bMtrlNoPawns = pos.bMtrl - bMtrlPawns;
 
         bool handled = false;
         if ((wMtrlPawns + bMtrlPawns == 0) && (wMtrlNoPawns < rV) && (bMtrlNoPawns < rV)) {
@@ -835,9 +788,9 @@ public:
                 handled = true;
             } else if ((pos.bMtrl == bV) && (pos.pieceTypeBB[Piece::BBISHOP] != 0)) {
                 score /= 8;
-                final int kSq = pos.getKingSq(false);
-                final int x = Position::getX(kSq);
-                final int y = Position::getY(kSq);
+                const int kSq = pos.getKingSq(false);
+                const int x = Position::getX(kSq);
+                const int y = Position::getY(kSq);
                 if ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq) != 0) {
                     score += (7 - distToH1A8[7-y][7-x]) * 7;
                 } else {
@@ -862,9 +815,9 @@ public:
                 handled = true;
             } else if ((pos.wMtrl == bV) && (pos.pieceTypeBB[Piece::WBISHOP] != 0)) {
                 score /= 8;
-                final int kSq = pos.getKingSq(true);
-                final int x = Position::getX(kSq);
-                final int y = Position::getY(kSq);
+                const int kSq = pos.getKingSq(true);
+                const int x = Position::getX(kSq);
+                const int y = Position::getY(kSq);
                 if ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq) != 0) {
                     score -= (7 - distToH1A8[7-y][7-x]) * 7;
                 } else {
@@ -906,9 +859,9 @@ public:
                     } else if ((wKnights == 1) && (wBishops == 1) && (wMtrlNoPawns == nV + bV) && (bMtrlNoPawns == 0)) {
                         score /= 10;
                         score += nV + bV + 300;
-                        final int kSq = pos.getKingSq(false);
-                        final int x = Position::getX(kSq);
-                        final int y = Position::getY(kSq);
+                        const int kSq = pos.getKingSq(false);
+                        const int x = Position::getX(kSq);
+                        const int y = Position::getY(kSq);
                         if ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq) != 0) {
                             score += (7 - distToH1A8[7-y][7-x]) * 10;
                         } else {
@@ -959,9 +912,9 @@ public:
                     } else if ((bKnights == 1) && (bBishops == 1) && (bMtrlNoPawns == nV + bV) && (wMtrlNoPawns == 0)) {
                         score /= 10;
                         score -= nV + bV + 300;
-                        final int kSq = pos.getKingSq(true);
-                        final int x = Position::getX(kSq);
-                        final int y = Position::getY(kSq);
+                        const int kSq = pos.getKingSq(true);
+                        const int x = Position::getX(kSq);
+                        const int y = Position::getY(kSq);
                         if ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq) != 0) {
                             score -= (7 - distToH1A8[7-y][7-x]) * 10;
                         } else {
@@ -985,11 +938,11 @@ public:
         // FIXME! KRBKR is very hard to draw
     }
 
-    private static final int evalKQKP(int wKing, int wQueen, int bKing, int bPawn) {
+    static int evalKQKP(int wKing, int wQueen, int bKing, int bPawn) {
         bool canWin = false;
         if (((1ULL << bKing) & 0xFFFF) == 0) {
             canWin = true; // King doesn't support pawn
-        } else if (Math.abs(Position::getX(bPawn) - Position::getX(bKing)) > 2) {
+        } else if (std::abs(Position::getX(bPawn) - Position::getX(bKing)) > 2) {
             canWin = true; // King doesn't support pawn
         } else {
             switch (bPawn) {
@@ -1011,15 +964,15 @@ public:
             }
         }
 
-        final int dist = Math.max(Math.abs(Position::getX(wKing)-Position::getX(bPawn)),
-                                  Math.abs(Position::getY(wKing)-Position::getY(bPawn)));
+        const int dist = std::max(std::abs(Position::getX(wKing)-Position::getX(bPawn)),
+                                  std::abs(Position::getY(wKing)-Position::getY(bPawn)));
         int score = qV - pV - 20 * dist;
         if (!canWin)
             score /= 50;
         return score;
     }
 
-    private static final int kpkEval(int wKing, int bKing, int wPawn, bool whiteMove) {
+    static int kpkEval(int wKing, int bKing, int wPawn, bool whiteMove) {
         if (Position::getX(wKing) >= 4) { // Mirror X
             wKing ^= 7;
             bKing ^= 7;
@@ -1038,7 +991,7 @@ public:
         return qV - pV / 4 * (7-Position::getY(wPawn));
     }
 
-    private static final int krkpEval(int wKing, int bKing, int bPawn, bool whiteMove) {
+    static int krkpEval(int wKing, int bKing, int bPawn, bool whiteMove) {
         if (Position::getX(bKing) >= 4) { // Mirror X
             wKing ^= 7;
             bKing ^= 7;
@@ -1063,7 +1016,7 @@ public:
      * Interpolate between (x1,y1) and (x2,y2).
      * If x < x1, return y1, if x > x2 return y2. Otherwise, use linear interpolation.
      */
-    static final int interpolate(int x, int x1, int y1, int x2, int y2) {
+    static int interpolate(int x, int x1, int y1, int x2, int y2) {
         if (x > x2) {
             return y2;
         } else if (x < x1) {
@@ -1072,7 +1025,16 @@ public:
             return (x - x1) * (y2 - y1) / (x2 - x1) + y1;
         }
     }
-#endif
 };
+
+inline
+Evaluate::PawnHashData::PawnHashData()
+    : key((U64)-1), // Non-zero to avoid collision for positions with no pawns
+      score(0),
+      passedBonusW(0),
+      passedBonusB(0),
+      passedPawnsW(0),
+      passedPawnsB(0) {
+}
 
 #endif /* EVALUATE_HPP_ */

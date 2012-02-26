@@ -8,24 +8,32 @@
 #ifndef GAME_HPP_
 #define GAME_HPP_
 
+#include "move.hpp"
+#include "undoInfo.hpp"
+
+#include <vector>
+
 /**
  *
  */
+class Game {
+protected:
+    std::vector<Move> moveList;
+    std::vector<UndoInfo> uiInfoList;
+    std::vector<bool> drawOfferList;
+    int currentMove;
 #if 0
-public class Game {
-    protected List<Move> moveList = null;
-    protected List<UndoInfo> uiInfoList = null;
-    List<bool> drawOfferList = null;
-    protected int currentMove;
+private:
     bool pendingDrawOffer;
     GameState drawState;
     std::string drawStateMoveStr; // Move required to claim DRAW_REP or DRAW_50
     GameState resignState;
-    public Position pos = null;
-    protected Player whitePlayer;
-    protected Player blackPlayer;
-    
-    public Game(Player whitePlayer, Player blackPlayer) {
+public:
+    Position pos = null;
+    Player whitePlayer;
+    Player blackPlayer;
+
+    Game(Player whitePlayer, Player blackPlayer) {
         this->whitePlayer = whitePlayer;
         this->blackPlayer = blackPlayer;
         handleCommand("new");
@@ -37,12 +45,10 @@ public class Game {
      * @return True if str was understood, false otherwise.
      */
     public bool processString(const std::string& str) {
-        if (handleCommand(str)) {
+        if (handleCommand(str))
             return true;
-        }
-        if (getGameState() != GameState.ALIVE) {
+        if (getGameState() != GameState.ALIVE)
             return false;
-        }
 
         Move m = TextIO::stringToMove(pos, str);
         if (m.isEmpty())
@@ -87,7 +93,7 @@ public class Game {
             {
                 std::string ret = "Game over, draw by 50 move rule!";
                 if ((drawStateMoveStr != null) && (drawStateMoveStr.length() > 0)) {
-                    ret = ret + " [" + drawStateMoveStr + "]";  
+                    ret = ret + " [" + drawStateMoveStr + "]";
                 }
                 return ret;
             }
@@ -156,13 +162,12 @@ public class Game {
      * @return True if the current player has the option to accept a draw offer.
      */
     public bool haveDrawOffer() {
-        if (currentMove > 0) {
+        if (currentMove > 0)
             return drawOfferList.get(currentMove - 1);
-        } else {
+        else
             return false;
-        }
     }
-    
+
     /**
      * Handle a special command.
      * @param moveStr  The command to handle
@@ -293,7 +298,7 @@ public class Game {
 
     public List<std::string> getPosHistory() {
         List<std::string> ret = new ArrayList<std::string>();
-        
+
         Position pos = new Position(this->pos);
         for (int i = currentMove; i > 0; i--) {
             pos.unMakeMove(moveList.get(i - 1), uiInfoList.get(i - 1));
@@ -382,7 +387,7 @@ public class Game {
         }
         return ret.toString();
     }
-    
+
     public final std::string getPGNResultString() {
         std::string gameResult = "*";
         switch (getGameState()) {
@@ -551,9 +556,8 @@ public class Game {
         }
         return nodes;
     }
-};
 #endif
-
+};
 
 
 #endif /* GAME_HPP_ */

@@ -397,7 +397,6 @@
 cute::suite
 GameTest::getSuite() const {
     cute::suite s;
-//    s.push_back(CUTE());
 #if 0
     s.push_back(CUTE(testHaveDrawOffer));
     s.push_back(CUTE(testDraw50));

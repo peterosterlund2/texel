@@ -6,6 +6,7 @@
  */
 
 #include "evaluate.hpp"
+#include <vector>
 
 int Evaluate::pieceValue[Piece::nPieceTypes] = {
     0,
@@ -124,22 +125,44 @@ int Evaluate::bt2w[64];
 int Evaluate::nt2w[64];
 int Evaluate::pt2w[64];
 
-#if 0
-    static {
-        for (int i = 0; i < 64; i++) {
-            kt1w[i] = kt1b[63-i];
-            qt1w[i] = qt1b[63-i];
-            rt1w[i] = rt1b[63-i];
-            bt1w[i] = bt1b[63-i];
-            nt1w[i] = nt1b[63-i];
-            pt1w[i] = pt1b[63-i];
-            kt2w[i] = kt2b[63-i];
-            bt2w[i] = bt2b[63-i];
-            nt2w[i] = nt2b[63-i];
-            pt2w[i] = pt2b[63-i];
-        }
+int Evaluate::castleFactor[256];
+std::vector<Evaluate::PawnHashData> Evaluate::pawnHash;
+std::vector<Evaluate::KingSafetyHashData> Evaluate::kingSafetyHash;
+
+
+static StaticInitializer<Evaluate> evInit;
+
+void
+Evaluate::staticInitialize() {
+    for (int i = 0; i < 64; i++) {
+        kt1w[i] = kt1b[63-i];
+        qt1w[i] = qt1b[63-i];
+        rt1w[i] = rt1b[63-i];
+        bt1w[i] = bt1b[63-i];
+        nt1w[i] = nt1b[63-i];
+        pt1w[i] = pt1b[63-i];
+        kt2w[i] = kt2b[63-i];
+        bt2w[i] = bt2b[63-i];
+        nt2w[i] = nt2b[63-i];
+        pt2w[i] = pt2b[63-i];
     }
-#endif
+
+    pawnHash.resize(1<<16);
+
+    for (int i = 0; i < 256; i++) {
+        int h1Dist = 100;
+        bool h1Castle = (i & (1<<7)) != 0;
+        if (h1Castle)
+            h1Dist = 2 + BitBoard::bitCount(i & 0x0000000000000060L); // f1,g1
+        int a1Dist = 100;
+        bool a1Castle = (i & 1) != 0;
+        if (a1Castle)
+            a1Dist = 2 + BitBoard::bitCount(i & 0x000000000000000EL); // b1,c1,d1
+        castleFactor[i] = 1024 / std::min(a1Dist, h1Dist);
+    }
+
+    kingSafetyHash.resize(1 << 15);
+}
 
 static const int empty[64] = { 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
                                0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,

@@ -14,7 +14,6 @@
 #include "undoInfo.hpp"
 #include "bitBoard.hpp"
 #include "piece.hpp"
-#include "evaluate.hpp"
 #include <algorithm>
 #include <iostream>
 
@@ -29,11 +28,11 @@ class Position {
 private:
     int squares[64];
 
+public:
     // Piece square table scores
     short psScore1[Piece::nPieceTypes];
     short psScore2[Piece::nPieceTypes];
 
-public:
     // Bitboards
     U64 pieceTypeBB[Piece::nPieceTypes];
     U64 whiteBB, blackBB;
@@ -67,26 +66,7 @@ public:
     int bMtrlPawns;         // Total value of all black pawns
 
     /** Initialize board to empty position. */
-    Position() {
-        for (int i = 0; i < 64; i++)
-            squares[i] = Piece::EMPTY;
-        for (int i = 0; i < Piece::nPieceTypes; i++) {
-            psScore1[i] = 0;
-            psScore2[i] = 0;
-            pieceTypeBB[i] = 0;
-        }
-        whiteBB = blackBB = 0;
-        whiteMove = true;
-        castleMask = 0;
-        epSquare = -1;
-        halfMoveClock = 0;
-        fullMoveCounter = 1;
-        hashKey = computeZobristHash();
-        pHashKey = 0;
-        wKingSq = bKingSq = -1;
-        wMtrl = bMtrl = -Evaluate::kV;
-        wMtrlPawns = bMtrlPawns = 0;
-    }
+    Position();
 
     bool equals(const Position& other) const {
         if (!drawRuleEquals(other))
@@ -157,69 +137,8 @@ public:
         return squares[square];
     }
 
-
     /** Set a square to a piece value. */
-    void setPiece(int square, int piece) {
-        int removedPiece = squares[square];
-        squares[square] = piece;
-
-        // Update hash key
-        hashKey ^= psHashKeys[removedPiece][square];
-        hashKey ^= psHashKeys[piece][square];
-
-        // Update bitboards
-        const U64 sqMask = 1ULL << square;
-        pieceTypeBB[removedPiece] &= ~sqMask;
-        pieceTypeBB[piece] |= sqMask;
-
-        if (removedPiece != Piece::EMPTY) {
-            int pVal = Evaluate::pieceValue[removedPiece];
-            if (Piece::isWhite(removedPiece)) {
-                wMtrl -= pVal;
-                whiteBB &= ~sqMask;
-                if (removedPiece == Piece::WPAWN) {
-                    wMtrlPawns -= pVal;
-                    pHashKey ^= psHashKeys[Piece::WPAWN][square];
-                }
-            } else {
-                bMtrl -= pVal;
-                blackBB &= ~sqMask;
-                if (removedPiece == Piece::BPAWN) {
-                    bMtrlPawns -= pVal;
-                    pHashKey ^= psHashKeys[Piece::BPAWN][square];
-                }
-            }
-        }
-
-        if (piece != Piece::EMPTY) {
-            int pVal = Evaluate::pieceValue[piece];
-            if (Piece::isWhite(piece)) {
-                wMtrl += pVal;
-                whiteBB |= sqMask;
-                if (piece == Piece::WPAWN) {
-                    wMtrlPawns += pVal;
-                    pHashKey ^= psHashKeys[Piece::WPAWN][square];
-                }
-                if (piece == Piece::WKING)
-                    wKingSq = square;
-            } else {
-                bMtrl += pVal;
-                blackBB |= sqMask;
-                if (piece == Piece::BPAWN) {
-                    bMtrlPawns += pVal;
-                    pHashKey ^= psHashKeys[Piece::BPAWN][square];
-                }
-                if (piece == Piece::BKING)
-                    bKingSq = square;
-            }
-        }
-
-        // Update piece/square table scores
-        psScore1[removedPiece] -= Evaluate::psTab1[removedPiece][square];
-        psScore2[removedPiece] -= Evaluate::psTab2[removedPiece][square];
-        psScore1[piece]        += Evaluate::psTab1[piece][square];
-        psScore2[piece]        += Evaluate::psTab2[piece][square];
-    }
+    void setPiece(int square, int piece);
 
     /**
      * Set a square to a piece value.
@@ -529,35 +448,7 @@ public:
 
 private:
     /** Move a non-pawn piece to an empty square. */
-    void movePieceNotPawn(int from, int to) {
-        const int piece = squares[from];
-        hashKey ^= psHashKeys[piece][from];
-        hashKey ^= psHashKeys[piece][to];
-        hashKey ^= psHashKeys[Piece::EMPTY][from];
-        hashKey ^= psHashKeys[Piece::EMPTY][to];
-
-        squares[from] = Piece::EMPTY;
-        squares[to] = piece;
-
-        const U64 sqMaskF = 1ULL << from;
-        const U64 sqMaskT = 1ULL << to;
-        pieceTypeBB[piece] &= ~sqMaskF;
-        pieceTypeBB[piece] |= sqMaskT;
-        if (Piece::isWhite(piece)) {
-            whiteBB &= ~sqMaskF;
-            whiteBB |= sqMaskT;
-            if (piece == Piece::WKING)
-                wKingSq = to;
-        } else {
-            blackBB &= ~sqMaskF;
-            blackBB |= sqMaskT;
-            if (piece == Piece::BKING)
-                bKingSq = to;
-        }
-
-        psScore1[piece] += Evaluate::psTab1[piece][to] - Evaluate::psTab1[piece][from];
-        psScore2[piece] += Evaluate::psTab2[piece][to] - Evaluate::psTab2[piece][from];
-    }
+    void movePieceNotPawn(int from, int to);
 
     void removeCastleRights(int square) {
         if (square == getSquare(0, 0)) {
