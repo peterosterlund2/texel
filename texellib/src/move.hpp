@@ -25,6 +25,8 @@ public:
     /** Set move properties. */
     void setMove(int from, int to, int promoteTo, int score);
 
+    void setScore(int score);
+
     class SortByScore {
     public:
         bool operator()(const Move& m1, const Move& m2) const {
@@ -35,6 +37,7 @@ public:
     int from() const;
     int to() const;
     int promoteTo() const;
+    int score() const;
 
     bool isEmpty() const { return (from_ == 0) && (to_ == 0); }
 
@@ -87,6 +90,11 @@ Move::setMove(int from, int to, int promoteTo, int score)
     score_ = score;
 }
 
+inline void
+Move::setScore(int score) {
+    score_ = score;
+}
+
 inline int
 Move::from() const {
     return from_;
@@ -100,6 +108,11 @@ Move::to() const {
 inline int
 Move::promoteTo() const {
     return promoteTo_;
+}
+
+inline int
+Move::score() const {
+    return score_;
 }
 
 inline bool

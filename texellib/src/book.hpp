@@ -8,28 +8,39 @@
 #ifndef BOOK_HPP_
 #define BOOK_HPP_
 
+#include "move.hpp"
+#include "util.hpp"
+
+#include <map>
+#include <vector>
+
+
 /**
  * Implements an opening book.
  */
-#if 0
-public class Book {
-    public static class BookEntry {
+class Book {
+public:
+    struct BookEntry {
         Move move;
         int count;
-        BookEntry(Move move) {
-            this->move = move;
+        BookEntry(const Move& m) {
+            move = m;
             count = 1;
         }
-    }
-    private static Map<Long, List<BookEntry>> bookMap;
-    private static Random rndGen;
-    private static int numBookMoves = -1;
-    private bool verbose;
+    };
 
-    public Book(bool verbose) {
+private:
+    static std::map<U64, std::vector<BookEntry> > bookMap;
+//    static Random rndGen;
+    static int numBookMoves;
+    bool verbose;
+
+public:
+    Book(bool verbose) {
         this->verbose = verbose;
     }
 
+#if 0
     private final void initBook() {
         if (numBookMoves >= 0)
             return;
@@ -254,9 +265,7 @@ public class Book {
         default: return Piece::EMPTY;
         }
     }
-};
 #endif
-
-
+};
 
 #endif /* BOOK_HPP_ */

@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 
 typedef unsigned long U64;
 typedef signed char byte;
@@ -74,6 +75,20 @@ startsWith(const std::string& str, const std::string& startsWith) {
         if (str[i] != startsWith[i])
             return false;
     return true;
+}
+
+
+/** Return true if vector v contains element e. */
+template <typename T>
+inline bool
+contains(const std::vector<T>& v, const T& e) {
+    return std::find(v.begin(), v.end(), e) != v.end();
+}
+
+/** Return true if vector v contains element e converted to a string. */
+inline bool
+contains(const std::vector<std::string> v, const char* e) {
+    return contains(v, std::string(e));
 }
 
 

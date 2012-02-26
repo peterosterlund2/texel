@@ -9,11 +9,14 @@
 #define SEARCH_HPP_
 
 /**
- *
+ * Implements the nega-scout search algorithm.
  */
+class Search {
+public:
+    static const int MATE0 = 32000;
+    static const int plyScale = 8; // Fractional ply resolution
+
 #if 0
-public class Search {
-    final static int plyScale = 8; // Fractional ply resolution
 
     Position pos;
     Evaluate eval;
@@ -61,8 +64,6 @@ public class Search {
     long totalNodes;
     long tLastStats;        // Time when notifyStats was last called
     bool verbose;
-
-    public final static int MATE0 = 32000;
 
     public final static int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
     int q0Eval; // Static eval score at first level of quiescence search
@@ -258,11 +259,11 @@ public class Search {
                 posHashListSize--;
                 pos.unMakeMove(m, ui);
                 {
-                    int type = TTEntry.T_EXACT;
+                    int type = TTEntry::T_EXACT;
                     if (score <= alpha) {
-                        type = TTEntry.T_LE;
+                        type = TTEntry::T_LE;
                     } else if (score >= beta) {
-                        type = TTEntry.T_GE;
+                        type = TTEntry::T_GE;
                     }
                     m.score = score;
                     tt.insert(pos.historyHash(), m, type, 0, depthS, UNKNOWN_SCORE);
@@ -464,7 +465,7 @@ public class Search {
         if (canClaimDraw50(pos)) {
             if (MoveGen::canTakeKing(pos)) {
                 int score = MATE0 - ply;
-                if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, TTEntry.T_EXACT, UNKNOWN_SCORE, hKey);
+                if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, TTEntry::T_EXACT, UNKNOWN_SCORE, hKey);
                 return score;
             }
             if (inCheck) {
@@ -472,15 +473,15 @@ public class Search {
                 MoveGen::removeIllegal(pos, moves);
                 if (moves.size == 0) {            // Can't claim draw if already check mated.
                     int score = -(MATE0-(ply+1));
-                    if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, TTEntry.T_EXACT, UNKNOWN_SCORE, hKey);
+                    if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, TTEntry::T_EXACT, UNKNOWN_SCORE, hKey);
                     return score;
                 }
             }
-            if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, 0, TTEntry.T_EXACT, UNKNOWN_SCORE, hKey);
+            if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, 0, TTEntry::T_EXACT, UNKNOWN_SCORE, hKey);
             return 0;
         }
         if (canClaimDrawRep(pos, posHashList, posHashListSize, posHashFirstNew)) {
-            if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, 0, TTEntry.T_EXACT, UNKNOWN_SCORE, hKey);
+            if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, 0, TTEntry::T_EXACT, UNKNOWN_SCORE, hKey);
             return 0;            // No need to test for mate here, since it would have been
                                  // discovered the first time the position came up.
         }
@@ -490,15 +491,15 @@ public class Search {
         TTEntry ent = tt.probe(hKey);
         Move hashMove = null;
         SearchTreeInfo sti = searchTreeInfo[ply];
-        if (ent.type != TTEntry.T_EMPTY) {
+        if (ent.type != TTEntry::T_EMPTY) {
             int score = ent.getScore(ply);
             evalScore = ent.evalScore;
             int plyToMate = MATE0 - Math.abs(score);
             int eDepth = ent.getDepth();
             if ((beta == alpha + 1) && ((eDepth >= depth) || (eDepth >= plyToMate*plyScale))) {
-                if (    (ent.type == TTEntry.T_EXACT) ||
-                        (ent.type == TTEntry.T_GE) && (score >= beta) ||
-                        (ent.type == TTEntry.T_LE) && (score <= alpha)) {
+                if (    (ent.type == TTEntry::T_EXACT) ||
+                        (ent.type == TTEntry::T_GE) && (score >= beta) ||
+                        (ent.type == TTEntry::T_LE) && (score <= alpha)) {
                     if (score >= beta) {
                         hashMove = sti.hashMove;
                         ent.getMove(hashMove);
@@ -520,11 +521,11 @@ public class Search {
         if (depth + posExtend <= 0) {
             q0Eval = evalScore;
             int score = quiesce(alpha, beta, ply, 0, inCheck);
-            int type = TTEntry.T_EXACT;
+            int type = TTEntry::T_EXACT;
             if (score <= alpha) {
-                type = TTEntry.T_LE;
+                type = TTEntry::T_LE;
             } else if (score >= beta) {
-                type = TTEntry.T_GE;
+                type = TTEntry::T_GE;
             }
             emptyMove.score = score;
             tt.insert(hKey, emptyMove, type, ply, depth, q0Eval);
@@ -543,8 +544,8 @@ public class Search {
                 int score = quiesce(alpha-razorMargin, beta-razorMargin, ply, 0, inCheck);
                 if (score <= alpha-razorMargin) {
                     emptyMove.score = score;
-                    tt.insert(hKey, emptyMove, TTEntry.T_LE, ply, depth, q0Eval);
-                    if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry.T_LE, q0Eval, hKey);
+                    tt.insert(hKey, emptyMove, TTEntry::T_LE, ply, depth, q0Eval);
+                    if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry::T_LE, q0Eval, hKey);
                     return score;
                 }
             }
@@ -569,8 +570,8 @@ public class Search {
                     evalScore = eval.evalPos(pos);
                 if (evalScore - margin >= beta) {
                     emptyMove.score = evalScore - margin;
-                    tt.insert(hKey, emptyMove, TTEntry.T_GE, ply, depth, evalScore);
-                    if (log != null) log.logNodeEnd(sti.nodeIdx, evalScore - margin, TTEntry.T_GE, evalScore, hKey);
+                    tt.insert(hKey, emptyMove, TTEntry::T_GE, ply, depth, evalScore);
+                    if (log != null) log.logNodeEnd(sti.nodeIdx, evalScore - margin, TTEntry::T_GE, evalScore, hKey);
                     return evalScore - margin;
                 }
             }
@@ -583,7 +584,7 @@ public class Search {
                 (Math.abs(beta) <= MATE0 / 2)) {
             if (MoveGen::canTakeKing(pos)) {
                 int score = MATE0 - ply;
-                if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry.T_EXACT, evalScore, hKey);
+                if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry::T_EXACT, evalScore, hKey);
                 return score;
             }
             bool nullOk;
@@ -612,8 +613,8 @@ public class Search {
                     if (score > MATE0 / 2)
                         score = beta;
                     emptyMove.score = score;
-                    tt.insert(hKey, emptyMove, TTEntry.T_GE, ply, depth, evalScore);
-                    if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry.T_GE, evalScore, hKey);
+                    tt.insert(hKey, emptyMove, TTEntry::T_GE, ply, depth, evalScore);
+                    if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry::T_GE, evalScore, hKey);
                     return score;
                 } else {
                     if ((searchTreeInfo[ply-1].lmr > 0) && (depth < 5*plyScale)) {
@@ -623,7 +624,7 @@ public class Search {
                             // if the threat move was made possible by a reduced
                             // move on the previous ply, the reduction was unsafe.
                             // Return alpha to trigger a non-reduced re-search.
-                            if (log != null) log.logNodeEnd(sti.nodeIdx, alpha, TTEntry.T_LE, evalScore, hKey);
+                            if (log != null) log.logNodeEnd(sti.nodeIdx, alpha, TTEntry::T_LE, evalScore, hKey);
                             return alpha;
                         }
                     }
@@ -657,7 +658,7 @@ public class Search {
                 negaScout(alpha, beta, ply, newDepth, -1, inCheck);
                 sti.nodeIdx = savedNodeIdx;
                 ent = tt.probe(hKey);
-                if (ent.type != TTEntry.T_EMPTY) {
+                if (ent.type != TTEntry::T_EMPTY) {
                     hashMove = sti.hashMove;
                     ent.getMove(hashMove);
                 }
@@ -697,7 +698,7 @@ public class Search {
             const Move& m = moves.m[mi];
             if (pos.getPiece(m.to) == (pos.whiteMove ? Piece::BKING : Piece::WKING)) {
                 int score = MATE0-ply;
-                if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry.T_EXACT, evalScore, hKey);
+                if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry::T_EXACT, evalScore, hKey);
                 return score;       // King capture
             }
             int newCaptureSquare = -1;
@@ -828,23 +829,23 @@ public class Search {
                             ht.addFail(pos, m2, depth/plyScale);
                     }
                 }
-                tt.insert(hKey, m, TTEntry.T_GE, ply, depth, evalScore);
-                if (log != null) log.logNodeEnd(sti.nodeIdx, alpha, TTEntry.T_GE, evalScore, hKey);
+                tt.insert(hKey, m, TTEntry::T_GE, ply, depth, evalScore);
+                if (log != null) log.logNodeEnd(sti.nodeIdx, alpha, TTEntry::T_GE, evalScore, hKey);
                 return alpha;
             }
             b = alpha + 1;
         }
         if (!haveLegalMoves && !inCheck) {
-            if (log != null) log.logNodeEnd(sti.nodeIdx, 0, TTEntry.T_EXACT, evalScore, hKey);
+            if (log != null) log.logNodeEnd(sti.nodeIdx, 0, TTEntry::T_EXACT, evalScore, hKey);
             return 0;       // Stale-mate
         }
         if (bestMove >= 0) {
-            tt.insert(hKey, moves.m[bestMove], TTEntry.T_EXACT, ply, depth, evalScore);
-            if (log != null) log.logNodeEnd(sti.nodeIdx, bestScore, TTEntry.T_EXACT, evalScore, hKey);
+            tt.insert(hKey, moves.m[bestMove], TTEntry::T_EXACT, ply, depth, evalScore);
+            if (log != null) log.logNodeEnd(sti.nodeIdx, bestScore, TTEntry::T_EXACT, evalScore, hKey);
         } else {
             emptyMove.score = bestScore;
-            tt.insert(hKey, emptyMove, TTEntry.T_LE, ply, depth, evalScore);
-            if (log != null) log.logNodeEnd(sti.nodeIdx, bestScore, TTEntry.T_LE, evalScore, hKey);
+            tt.insert(hKey, emptyMove, TTEntry::T_LE, ply, depth, evalScore);
+            if (log != null) log.logNodeEnd(sti.nodeIdx, bestScore, TTEntry::T_LE, evalScore, hKey);
         }
         return bestScore;
     }
@@ -1246,7 +1247,7 @@ public class Search {
             nodesDepthVec[i] = 0;
         }
     }
-};
 #endif
+};
 
 #endif /* SEARCH_HPP_ */

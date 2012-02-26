@@ -81,9 +81,9 @@ testMakeMove() {
     ASSERT_EQUAL(Piece::WPAWN, pos.getPiece(Position::getSquare(4,3)));
     ASSERT(!pos.equals(origPos));
     int castleMask = (1 << Position::A1_CASTLE) |
-            (1 << Position::H1_CASTLE) |
-            (1 << Position::A8_CASTLE) |
-            (1 << Position::H8_CASTLE);
+                     (1 << Position::H1_CASTLE) |
+                     (1 << Position::A8_CASTLE) |
+                     (1 << Position::H8_CASTLE);
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     pos.unMakeMove(move, ui);
     ASSERT_EQUAL(pos.whiteMove, true);
@@ -112,7 +112,7 @@ testMakeMove() {
     ASSERT_EQUAL(Piece::WROOK, pos.getPiece(Position::getSquare(5,0)));
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(7,0)));
     castleMask = (1 << Position::A8_CASTLE) |
-            (1 << Position::H8_CASTLE);
+                 (1 << Position::H8_CASTLE);
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     ASSERT_EQUAL(-1, pos.getEpSquare());
     pos.unMakeMove(move, ui);
@@ -122,7 +122,7 @@ testMakeMove() {
     move = Move(Position::getSquare(4, 0), Position::getSquare(4,1), Piece::EMPTY);
     pos.makeMove(move, ui);
     castleMask = (1 << Position::A8_CASTLE) |
-            (1 << Position::H8_CASTLE);
+                 (1 << Position::H8_CASTLE);
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     ASSERT_EQUAL(-1, pos.getEpSquare());
     pos.unMakeMove(move, ui);
@@ -132,8 +132,8 @@ testMakeMove() {
     move = Move(Position::getSquare(7, 0), Position::getSquare(6,0), Piece::EMPTY);
     pos.makeMove(move, ui);
     castleMask = (1 << Position::A1_CASTLE) |
-            (1 << Position::A8_CASTLE) |
-            (1 << Position::H8_CASTLE);
+                 (1 << Position::A8_CASTLE) |
+                 (1 << Position::H8_CASTLE);
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     ASSERT_EQUAL(-1, pos.getEpSquare());
     pos.unMakeMove(move, ui);
@@ -155,8 +155,8 @@ testMakeMove() {
     move = Move(Position::getSquare(6,2), Position::getSquare(7,0), Piece::EMPTY);
     pos.makeMove(move, ui);
     castleMask = (1 << Position::A1_CASTLE) |
-            (1 << Position::A8_CASTLE) |
-            (1 << Position::H8_CASTLE);
+                 (1 << Position::A8_CASTLE) |
+                 (1 << Position::H8_CASTLE);
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     ASSERT_EQUAL(-1, pos.getEpSquare());
     pos.unMakeMove(move, ui);
@@ -170,7 +170,7 @@ testCastleMask() {
     Move m = TextIO::stringToMove(pos, "Kxf2");
     pos.makeMove(m, ui);
     int castleMask = (1 << Position::A8_CASTLE) |
-            (1 << Position::H8_CASTLE);
+                     (1 << Position::H8_CASTLE);
     ASSERT_EQUAL(castleMask, pos.getCastleMask());
 }
 

@@ -8,48 +8,49 @@
 #ifndef COMPUTERPLAYER_HPP_
 #define COMPUTERPLAYER_HPP_
 
+#include "player.hpp"
+#include "transpositionTable.hpp"
+#include "book.hpp"
+#include "search.hpp"
+
+#include <string>
+
 /**
  * A computer algorithm player.
  */
-#if 0
-public class ComputerPlayer implements Player {
-    public static final std::string engineName;
-
-    static {
-        std::string name = "Texel 1.00";
-        std::string m = System.getProperty("sun.arch.data.model");
-        if ("32".equals(m))
-            name += " 32-bit";
-        else if ("64".equals(m))
-            name += " 64-bit";
-        engineName = name;
-    }
+class ComputerPlayer : public Player {
+private:
 
     int minTimeMillis;
     int maxTimeMillis;
     int maxDepth;
     int maxNodes;
-    public bool verbose;
     TranspositionTable tt;
     Book book;
     bool bookEnabled;
     bool randomMode;
     Search currentSearch;
 
-    public ComputerPlayer() {
+public:
+    static std::string engineName;
+    bool verbose;
+
+    ComputerPlayer()
+        : tt(15),
+          book(verbose)
+    {
         minTimeMillis = 10000;
         maxTimeMillis = 10000;
         maxDepth = 100;
         maxNodes = -1;
         verbose = true;
-        setTTLogSize(15);
-        book = new Book(verbose);
         bookEnabled = true;
         randomMode = false;
     }
 
-    public void setTTLogSize(int logSize) {
-        tt = new TranspositionTable(logSize);
+#if 0
+    void setTTLogSize(int logSize) {
+        tt = TranspositionTable(logSize); // FIXME!! Resize
     }
 
     Search.Listener listener;
@@ -197,7 +198,13 @@ public class ComputerPlayer implements Player {
         // Return best move and PV
         return new TwoReturnValues<Move, std::string>(bestM, PV);
     }
+#endif
 
+    /** Initialize static data. */
+    static void staticInitialize();
+
+#if 0
+private:
     private Move findSemiRandomMove(Search sc, MoveGen::MoveList moves) {
         sc.timeLimit(minTimeMillis, maxTimeMillis);
         Move bestM = sc.iterativeDeepening(moves, 1, maxNodes, verbose);
@@ -229,9 +236,8 @@ public class ComputerPlayer implements Player {
     }
 
     // FIXME!!! Test Botvinnik-Markoff extension
-};
 #endif
-
+};
 
 
 #endif /* COMPUTERPLAYER_HPP_ */

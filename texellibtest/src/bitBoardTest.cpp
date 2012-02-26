@@ -36,9 +36,9 @@ testKnightAttacks() {
     ASSERT_EQUAL(4, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("b7")]));
     ASSERT_EQUAL(8, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("c6")]));
     ASSERT_EQUAL((1ULL<<TextIO::getSquare("e2")) |
-		 (1ULL<<TextIO::getSquare("f3")) |
-		 (1ULL<<TextIO::getSquare("h3")),
-		 BitBoard::knightAttacks[TextIO::getSquare("g1")]);
+                 (1ULL<<TextIO::getSquare("f3")) |
+                 (1ULL<<TextIO::getSquare("h3")),
+                 BitBoard::knightAttacks[TextIO::getSquare("g1")]);
 }
 
 /** Test of squaresBetween[][], of class BitBoard. */
@@ -46,24 +46,24 @@ static void
 testSquaresBetween() {
     // Tests that the set of nonzero elements is correct
     for (int sq1 = 0; sq1 < 64; sq1++) {
-	for (int sq2 = 0; sq2 < 64; sq2++) {
-	    int d = BitBoard::getDirection(sq1, sq2);
-	    if (d == 0) {
-		ASSERT_EQUAL(0, BitBoard::squaresBetween[sq1][sq2]);
-	    } else {
-		int dx = Position::getX(sq1) - Position::getX(sq2);
-		int dy = Position::getY(sq1) - Position::getY(sq2);
-		if (std::abs(dx * dy) == 2) { // Knight direction
-		    ASSERT_EQUAL(0, BitBoard::squaresBetween[sq1][sq2]);
-		} else {
-		    if ((std::abs(dx) > 1) || (std::abs(dy) > 1)) {
-			ASSERT(BitBoard::squaresBetween[sq1][sq2] != 0);
-		    } else {
-			ASSERT_EQUAL(0, BitBoard::squaresBetween[sq1][sq2]);
-		    }
-		}
-	    }
-	}
+        for (int sq2 = 0; sq2 < 64; sq2++) {
+            int d = BitBoard::getDirection(sq1, sq2);
+            if (d == 0) {
+                ASSERT_EQUAL(0, BitBoard::squaresBetween[sq1][sq2]);
+            } else {
+                int dx = Position::getX(sq1) - Position::getX(sq2);
+                int dy = Position::getY(sq1) - Position::getY(sq2);
+                if (std::abs(dx * dy) == 2) { // Knight direction
+                    ASSERT_EQUAL(0, BitBoard::squaresBetween[sq1][sq2]);
+                } else {
+                    if ((std::abs(dx) > 1) || (std::abs(dy) > 1)) {
+                        ASSERT(BitBoard::squaresBetween[sq1][sq2] != 0);
+                    } else {
+                        ASSERT_EQUAL(0, BitBoard::squaresBetween[sq1][sq2]);
+                    }
+                }
+            }
+        }
     }
 
     ASSERT_EQUAL(0x0040201008040200ULL, BitBoard::squaresBetween[0][63]);

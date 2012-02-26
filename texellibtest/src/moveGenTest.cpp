@@ -15,17 +15,6 @@
 
 template <typename T>
 static bool
-contains(const std::vector<T>& v, const T& e) {
-    return std::find(v.begin(), v.end(), e) != v.end();
-}
-
-static bool
-contains(const std::vector<std::string> v, const char* e) {
-    return contains(v, std::string(e));
-}
-
-template <typename T>
-static bool
 containsAll(const std::vector<T> v, const std::vector<T>& e) {
     for (size_t i = 0; i < e.size(); i++)
         if (!contains(v, e[i]))

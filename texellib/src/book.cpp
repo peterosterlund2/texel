@@ -6,3 +6,6 @@
  */
 
 #include "book.hpp"
+
+
+int Book::numBookMoves = -1;

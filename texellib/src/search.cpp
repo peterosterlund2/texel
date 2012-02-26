@@ -6,3 +6,6 @@
  */
 
 #include "search.hpp"
+
+const int Search::MATE0;
+const int Search::plyScale;

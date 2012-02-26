@@ -578,10 +578,10 @@ public final class TreeLogger {
                 int subTreeNodes = (se.endIndex - ee.startIndex - 1) / 2;
                 String type;
                 switch (ee.scoreType) {
-                case TTEntry.T_EXACT: type = "= "; break;
-                case TTEntry.T_GE   : type = ">="; break;
-                case TTEntry.T_LE   : type = "<="; break;
-                default             : type = "  "; break;
+                case TTEntry::T_EXACT: type = "= "; break;
+                case TTEntry::T_GE   : type = ">="; break;
+                case TTEntry::T_LE   : type = "<="; break;
+                default              : type = "  "; break;
                 }
                 System.out.printf(" s:%s%6d e:%6d sub:%d", type, ee.score, ee.evalScore,
                                                             subTreeNodes);
