@@ -420,6 +420,17 @@ static void testKRKP() {
     ASSERT(evalWhite(pos) < drawish);
 }
 
+static void testKPK() {
+    const int pV = Evaluate::pV;
+    const int rV = Evaluate::rV;
+    const int winScore = rV - pV;
+    const int drawish = (pV + rV) / 20;
+    Position pos = TextIO::readFEN("8/8/8/3k4/8/8/3PK3/8 w - - 0 1");
+    ASSERT(evalWhite(pos) > winScore);
+    pos.whiteMove = !pos.whiteMove;
+    ASSERT(evalWhite(pos) < drawish);
+}
+
 static void testCantWin() {
     Position pos = TextIO::readFEN("8/8/8/3k4/3p4/3K4/4N3/8 w - - 0 1");
     int score1 = evalWhite(pos);
@@ -478,6 +489,7 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testTrappedBishop));
     s.push_back(CUTE(testKQKP));
     s.push_back(CUTE(testKRKP));
+    s.push_back(CUTE(testKPK));
     s.push_back(CUTE(testCantWin));
     return s;
 }
