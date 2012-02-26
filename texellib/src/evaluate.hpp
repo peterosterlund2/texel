@@ -137,16 +137,16 @@ public:
         int score = pos.wMtrl - pos.bMtrl;
 
         wKingAttacks = bKingAttacks = 0;
-        wKingZone = BitBoard.kingAttacks[pos.getKingSq(true)]; wKingZone |= wKingZone << 8;
-        bKingZone = BitBoard.kingAttacks[pos.getKingSq(false)]; bKingZone |= bKingZone >>> 8;
+        wKingZone = BitBoard::kingAttacks[pos.getKingSq(true)]; wKingZone |= wKingZone << 8;
+        bKingZone = BitBoard::kingAttacks[pos.getKingSq(false)]; bKingZone |= bKingZone >>> 8;
         wAttacksBB = bAttacksBB = 0L;
 
         U64 pawns = pos.pieceTypeBB[Piece::WPAWN];
-        wPawnAttacks = ((pawns & BitBoard.maskBToHFiles) << 7) |
-                       ((pawns & BitBoard.maskAToGFiles) << 9);
+        wPawnAttacks = ((pawns & BitBoard::maskBToHFiles) << 7) |
+                       ((pawns & BitBoard::maskAToGFiles) << 9);
         pawns = pos.pieceTypeBB[Piece::BPAWN];
-        bPawnAttacks = ((pawns & BitBoard.maskBToHFiles) >>> 9) |
-                       ((pawns & BitBoard.maskAToGFiles) >>> 7);
+        bPawnAttacks = ((pawns & BitBoard::maskBToHFiles) >>> 9) |
+                       ((pawns & BitBoard::maskAToGFiles) >>> 7);
 
         score += pieceSquareEval(pos);
         score += pawnBonus(pos);
@@ -245,21 +245,21 @@ public:
             score += pos.psScore1[Piece::WQUEEN];
             U64 m = pos.pieceTypeBB[Piece::WQUEEN];
             while (m != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(m);
-                U64 atk = BitBoard.rookAttacks(sq, occupied) | BitBoard.bishopAttacks(sq, occupied);
+                int sq = BitBoard::numberOfTrailingZeros(m);
+                U64 atk = BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied);
                 wAttacksBB |= atk;
-                score += queenMobScore[Long.bitCount(atk & ~(pos.whiteBB | bPawnAttacks))];
-                bKingAttacks += Long.bitCount(atk & bKingZone) * 2;
+                score += queenMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB | bPawnAttacks))];
+                bKingAttacks += BitBoard::bitCount(atk & bKingZone) * 2;
                 m &= m-1;
             }
             score -= pos.psScore1[Piece::BQUEEN];
             m = pos.pieceTypeBB[Piece::BQUEEN];
             while (m != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(m);
-                U64 atk = BitBoard.rookAttacks(sq, occupied) | BitBoard.bishopAttacks(sq, occupied);
+                int sq = BitBoard::numberOfTrailingZeros(m);
+                U64 atk = BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied);
                 bAttacksBB |= atk;
-                score -= queenMobScore[Long.bitCount(atk & ~(pos.blackBB | wPawnAttacks))];
-                wKingAttacks += Long.bitCount(atk & wKingZone) * 2;
+                score -= queenMobScore[BitBoard::bitCount(atk & ~(pos.blackBB | wPawnAttacks))];
+                wKingAttacks += BitBoard::bitCount(atk & wKingZone) * 2;
                 m &= m-1;
             }
         }
@@ -305,11 +305,11 @@ public:
             int h1Dist = 100;
             bool h1Castle = (i & (1<<7)) != 0;
             if (h1Castle)
-                h1Dist = 2 + Long.bitCount(i & 0x0000000000000060L); // f1,g1
+                h1Dist = 2 + BitBoard::bitCount(i & 0x0000000000000060L); // f1,g1
             int a1Dist = 100;
             bool a1Castle = (i & 1) != 0;
             if (a1Castle)
-                a1Dist = 2 + Long.bitCount(i & 0x000000000000000EL); // b1,c1,d1
+                a1Dist = 2 + BitBoard::bitCount(i & 0x000000000000000EL); // b1,c1,d1
             castleFactor[i] = 1024 / Math.min(a1Dist, h1Dist);
         }
     }
@@ -365,7 +365,7 @@ public:
                 int kingX = Position::getX(kingPos);
                 int kingY = Position::getY(kingPos);
                 while (m != 0) {
-                    int sq = BitBoard.numberOfTrailingZeros(m);
+                    int sq = BitBoard::numberOfTrailingZeros(m);
                     int x = Position::getX(sq);
                     int y = Position::getY(sq);
                     int pawnDist = Math.min(5, 7 - y);
@@ -391,7 +391,7 @@ public:
                 int kingX = Position::getX(kingPos);
                 int kingY = Position::getY(kingPos);
                 while (m != 0) {
-                    int sq = BitBoard.numberOfTrailingZeros(m);
+                    int sq = BitBoard::numberOfTrailingZeros(m);
                     int x = Position::getX(sq);
                     int y = Position::getY(sq);
                     int pawnDist = Math.min(5, y);
@@ -419,17 +419,17 @@ public:
 
         // Evaluate double pawns and pawn islands
         U64 wPawns = pos.pieceTypeBB[Piece::WPAWN];
-        U64 wPawnFiles = BitBoard.southFill(wPawns) & 0xff;
-        int wDouble = Long.bitCount(wPawns) - Long.bitCount(wPawnFiles);
-        int wIslands = Long.bitCount(((~wPawnFiles) >>> 1) & wPawnFiles);
-        int wIsolated = Long.bitCount(~(wPawnFiles<<1) & wPawnFiles & ~(wPawnFiles>>>1));
+        U64 wPawnFiles = BitBoard::southFill(wPawns) & 0xff;
+        int wDouble = BitBoard::bitCount(wPawns) - BitBoard::bitCount(wPawnFiles);
+        int wIslands = BitBoard::bitCount(((~wPawnFiles) >>> 1) & wPawnFiles);
+        int wIsolated = BitBoard::bitCount(~(wPawnFiles<<1) & wPawnFiles & ~(wPawnFiles>>>1));
 
 
         U64 bPawns = pos.pieceTypeBB[Piece::BPAWN];
-        U64 bPawnFiles = BitBoard.southFill(bPawns) & 0xff;
-        int bDouble = Long.bitCount(bPawns) - Long.bitCount(bPawnFiles);
-        int bIslands = Long.bitCount(((~bPawnFiles) >>> 1) & bPawnFiles);
-        int bIsolated = Long.bitCount(~(bPawnFiles<<1) & bPawnFiles & ~(bPawnFiles>>>1));
+        U64 bPawnFiles = BitBoard::southFill(bPawns) & 0xff;
+        int bDouble = BitBoard::bitCount(bPawns) - BitBoard::bitCount(bPawnFiles);
+        int bIslands = BitBoard::bitCount(((~bPawnFiles) >>> 1) & bPawnFiles);
+        int bIsolated = BitBoard::bitCount(~(bPawnFiles<<1) & bPawnFiles & ~(bPawnFiles>>>1));
 
         score -= (wDouble - bDouble) * 25;
         score -= (wIslands - bIslands) * 15;
@@ -438,30 +438,30 @@ public:
         // Evaluate backward pawns, defined as a pawn that guards a friendly pawn,
         // can't be guarded by friendly pawns, can advance, but can't advance without
         // being captured by an enemy pawn.
-        U64 wPawnAttacks = (((wPawns & BitBoard.maskBToHFiles) << 7) |
-                             ((wPawns & BitBoard.maskAToGFiles) << 9));
-        U64 bPawnAttacks = (((bPawns & BitBoard.maskBToHFiles) >>> 9) |
-                             ((bPawns & BitBoard.maskAToGFiles) >>> 7));
+        U64 wPawnAttacks = (((wPawns & BitBoard::maskBToHFiles) << 7) |
+                             ((wPawns & BitBoard::maskAToGFiles) << 9));
+        U64 bPawnAttacks = (((bPawns & BitBoard::maskBToHFiles) >>> 9) |
+                             ((bPawns & BitBoard::maskAToGFiles) >>> 7));
         U64 wBackward = wPawns & ~((wPawns | bPawns) >>> 8) & (bPawnAttacks >>> 8) &
-                         ~BitBoard.northFill(wPawnAttacks);
-        wBackward &= (((wPawns & BitBoard.maskBToHFiles) >>> 9) |
-                      ((wPawns & BitBoard.maskAToGFiles) >>> 7));
-        wBackward &= ~BitBoard.northFill(bPawnFiles);
+                         ~BitBoard::northFill(wPawnAttacks);
+        wBackward &= (((wPawns & BitBoard::maskBToHFiles) >>> 9) |
+                      ((wPawns & BitBoard::maskAToGFiles) >>> 7));
+        wBackward &= ~BitBoard::northFill(bPawnFiles);
         U64 bBackward = bPawns & ~((wPawns | bPawns) << 8) & (wPawnAttacks << 8) &
-                         ~BitBoard.southFill(bPawnAttacks);
-        bBackward &= (((bPawns & BitBoard.maskBToHFiles) << 7) |
-                      ((bPawns & BitBoard.maskAToGFiles) << 9));
-        bBackward &= ~BitBoard.northFill(wPawnFiles);
-        score -= (Long.bitCount(wBackward) - Long.bitCount(bBackward)) * 15;
+                         ~BitBoard::southFill(bPawnAttacks);
+        bBackward &= (((bPawns & BitBoard::maskBToHFiles) << 7) |
+                      ((bPawns & BitBoard::maskAToGFiles) << 9));
+        bBackward &= ~BitBoard::northFill(wPawnFiles);
+        score -= (BitBoard::bitCount(wBackward) - BitBoard::bitCount(bBackward)) * 15;
 
         // Evaluate passed pawn bonus, white
-        U64 passedPawnsW = wPawns & ~BitBoard.southFill(bPawns | bPawnAttacks | (wPawns >>> 8));
+        U64 passedPawnsW = wPawns & ~BitBoard::southFill(bPawns | bPawnAttacks | (wPawns >>> 8));
         final int[] ppBonus = {-1,24,26,30,36,47,64,-1};
         int passedBonusW = 0;
         if (passedPawnsW != 0) {
-            U64 guardedPassedW = passedPawnsW & (((wPawns & BitBoard.maskBToHFiles) << 7) |
-                                                  ((wPawns & BitBoard.maskAToGFiles) << 9));
-            passedBonusW += 15 * Long.bitCount(guardedPassedW);
+            U64 guardedPassedW = passedPawnsW & (((wPawns & BitBoard::maskBToHFiles) << 7) |
+                                                  ((wPawns & BitBoard::maskAToGFiles) << 9));
+            passedBonusW += 15 * BitBoard::bitCount(guardedPassedW);
             U64 m = passedPawnsW;
             while (m != 0) {
                 int sq = Long .numberOfTrailingZeros(m);
@@ -472,12 +472,12 @@ public:
         }
 
         // Evaluate passed pawn bonus, black
-        U64 passedPawnsB = bPawns & ~BitBoard.northFill(wPawns | wPawnAttacks | (bPawns << 8));
+        U64 passedPawnsB = bPawns & ~BitBoard::northFill(wPawns | wPawnAttacks | (bPawns << 8));
         int passedBonusB = 0;
         if (passedPawnsB != 0) {
-            U64 guardedPassedB = passedPawnsB & (((bPawns & BitBoard.maskBToHFiles) >>> 9) |
-                                                  ((bPawns & BitBoard.maskAToGFiles) >>> 7));
-            passedBonusB += 15 * Long.bitCount(guardedPassedB);
+            U64 guardedPassedB = passedPawnsB & (((bPawns & BitBoard::maskBToHFiles) >>> 9) |
+                                                  ((bPawns & BitBoard::maskAToGFiles) >>> 7));
+            passedBonusB += 15 * BitBoard::bitCount(guardedPassedB);
             U64 m = passedPawnsB;
             while (m != 0) {
                 int sq = Long .numberOfTrailingZeros(m);
@@ -489,9 +489,9 @@ public:
 
         // Connected passed pawn bonus. Seems logical but doesn't help in tests
 //        if (passedPawnsW != 0)
-//            passedBonusW += 15 * Long.bitCount(passedPawnsW & ((passedPawnsW & BitBoard.maskBToHFiles) >>> 1));
+//            passedBonusW += 15 * BitBoard::bitCount(passedPawnsW & ((passedPawnsW & BitBoard::maskBToHFiles) >>> 1));
 //        if (passedPawnsB != 0)
-//            passedBonusB += 15 * Long.bitCount(passedPawnsB & ((passedPawnsB & BitBoard.maskBToHFiles) >>> 1));
+//            passedBonusB += 15 * BitBoard::bitCount(passedPawnsB & ((passedPawnsB & BitBoard::maskBToHFiles) >>> 1));
 
         ph.key = pos.pawnZobristHash();
         ph.score = score;
@@ -509,16 +509,16 @@ public:
         final U64 occupied = pos.whiteBB | pos.blackBB;
         U64 m = pos.pieceTypeBB[Piece::WROOK];
         while (m != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(m);
+            int sq = BitBoard::numberOfTrailingZeros(m);
             final int x = Position::getX(sq);
-            if ((wPawns & BitBoard.maskFile[x]) == 0) { // At least half-open file
-                score += (bPawns & BitBoard.maskFile[x]) == 0 ? 25 : 12;
+            if ((wPawns & BitBoard::maskFile[x]) == 0) { // At least half-open file
+                score += (bPawns & BitBoard::maskFile[x]) == 0 ? 25 : 12;
             }
-            U64 atk = BitBoard.rookAttacks(sq, occupied);
+            U64 atk = BitBoard::rookAttacks(sq, occupied);
             wAttacksBB |= atk;
-            score += rookMobScore[Long.bitCount(atk & ~(pos.whiteBB | bPawnAttacks))];
+            score += rookMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB | bPawnAttacks))];
             if ((atk & bKingZone) != 0)
-                bKingAttacks += Long.bitCount(atk & bKingZone);
+                bKingAttacks += BitBoard::bitCount(atk & bKingZone);
             m &= m-1;
         }
         U64 r7 = (pos.pieceTypeBB[Piece::WROOK] >>> 48) & 0x00ffL;
@@ -527,16 +527,16 @@ public:
             score += 30; // Two rooks on 7:th row
         m = pos.pieceTypeBB[Piece::BROOK];
         while (m != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(m);
+            int sq = BitBoard::numberOfTrailingZeros(m);
             final int x = Position::getX(sq);
-            if ((bPawns & BitBoard.maskFile[x]) == 0) {
-                score -= (wPawns & BitBoard.maskFile[x]) == 0 ? 25 : 12;
+            if ((bPawns & BitBoard::maskFile[x]) == 0) {
+                score -= (wPawns & BitBoard::maskFile[x]) == 0 ? 25 : 12;
             }
-            U64 atk = BitBoard.rookAttacks(sq, occupied);
+            U64 atk = BitBoard::rookAttacks(sq, occupied);
             bAttacksBB |= atk;
-            score -= rookMobScore[Long.bitCount(atk & ~(pos.blackBB | wPawnAttacks))];
+            score -= rookMobScore[BitBoard::bitCount(atk & ~(pos.blackBB | wPawnAttacks))];
             if ((atk & wKingZone) != 0)
-                wKingAttacks += Long.bitCount(atk & wKingZone);
+                wKingAttacks += BitBoard::bitCount(atk & wKingZone);
             m &= m-1;
         }
         r7 = pos.pieceTypeBB[Piece::BROOK] & 0xff00L;
@@ -556,29 +556,29 @@ public:
             return 0;
         U64 m = wBishops;
         while (m != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(m);
-            U64 atk = BitBoard.bishopAttacks(sq, occupied);
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            U64 atk = BitBoard::bishopAttacks(sq, occupied);
             wAttacksBB |= atk;
-            score += bishMobScore[Long.bitCount(atk & ~(pos.whiteBB | bPawnAttacks))];
+            score += bishMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB | bPawnAttacks))];
             if ((atk & bKingZone) != 0)
-                bKingAttacks += Long.bitCount(atk & bKingZone);
+                bKingAttacks += BitBoard::bitCount(atk & bKingZone);
             m &= m-1;
         }
         m = bBishops;
         while (m != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(m);
-            U64 atk = BitBoard.bishopAttacks(sq, occupied);
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            U64 atk = BitBoard::bishopAttacks(sq, occupied);
             bAttacksBB |= atk;
-            score -= bishMobScore[Long.bitCount(atk & ~(pos.blackBB | wPawnAttacks))];
+            score -= bishMobScore[BitBoard::bitCount(atk & ~(pos.blackBB | wPawnAttacks))];
             if ((atk & wKingZone) != 0)
-                wKingAttacks += Long.bitCount(atk & wKingZone);
+                wKingAttacks += BitBoard::bitCount(atk & wKingZone);
             m &= m-1;
         }
 
-        bool whiteDark  = (pos.pieceTypeBB[Piece::WBISHOP] & BitBoard.maskDarkSq ) != 0;
-        bool whiteLight = (pos.pieceTypeBB[Piece::WBISHOP] & BitBoard.maskLightSq) != 0;
-        bool blackDark  = (pos.pieceTypeBB[Piece::BBISHOP] & BitBoard.maskDarkSq ) != 0;
-        bool blackLight = (pos.pieceTypeBB[Piece::BBISHOP] & BitBoard.maskLightSq) != 0;
+        bool whiteDark  = (pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq ) != 0;
+        bool whiteLight = (pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskLightSq) != 0;
+        bool blackDark  = (pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq ) != 0;
+        bool blackLight = (pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskLightSq) != 0;
         int numWhite = (whiteDark ? 1 : 0) + (whiteLight ? 1 : 0);
         int numBlack = (blackDark ? 1 : 0) + (blackLight ? 1 : 0);
 
@@ -632,8 +632,8 @@ public:
         // Sum values for all black pieces under attack
         U64 m = pos.pieceTypeBB[Piece::WKNIGHT];
         while (m != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(m);
-            wAttacksBB |= BitBoard.knightAttacks[sq];
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            wAttacksBB |= BitBoard::knightAttacks[sq];
             m &= m-1;
         }
         wAttacksBB &= (pos.pieceTypeBB[Piece::BKNIGHT] |
@@ -644,7 +644,7 @@ public:
         m = wAttacksBB & pos.blackBB & ~pos.pieceTypeBB[Piece::BKING];
         int tmp = 0;
         while (m != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(m);
+            int sq = BitBoard::numberOfTrailingZeros(m);
             tmp += pieceValue[pos.squares[sq]];
             m &= m-1;
         }
@@ -653,8 +653,8 @@ public:
         // Sum values for all white pieces under attack
         m = pos.pieceTypeBB[Piece::BKNIGHT];
         while (m != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(m);
-            bAttacksBB |= BitBoard.knightAttacks[sq];
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            bAttacksBB |= BitBoard::knightAttacks[sq];
             m &= m-1;
         }
         bAttacksBB &= (pos.pieceTypeBB[Piece::WKNIGHT] |
@@ -665,7 +665,7 @@ public:
         m = bAttacksBB & pos.whiteBB & ~pos.pieceTypeBB[Piece::WKING];
         tmp = 0;
         while (m != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(m);
+            int sq = BitBoard::numberOfTrailingZeros(m);
             tmp += pieceValue[pos.squares[sq]];
             m &= m-1;
         }
@@ -684,28 +684,28 @@ public:
         if (Position::getY(pos.wKingSq) == 0) {
             if (((pos.pieceTypeBB[Piece::WKING] & 0x60L) != 0) && // King on f1 or g1
                 ((pos.pieceTypeBB[Piece::WROOK] & 0xC0L) != 0) && // Rook on g1 or h1
-                ((pos.pieceTypeBB[Piece::WPAWN] & BitBoard.maskFile[6]) != 0) &&
-                ((pos.pieceTypeBB[Piece::WPAWN] & BitBoard.maskFile[7]) != 0)) {
+                ((pos.pieceTypeBB[Piece::WPAWN] & BitBoard::maskFile[6]) != 0) &&
+                ((pos.pieceTypeBB[Piece::WPAWN] & BitBoard::maskFile[7]) != 0)) {
                 score -= 6 * 15;
             } else
             if (((pos.pieceTypeBB[Piece::WKING] & 0x6L) != 0) && // King on b1 or c1
                 ((pos.pieceTypeBB[Piece::WROOK] & 0x3L) != 0) && // Rook on a1 or b1
-                ((pos.pieceTypeBB[Piece::WPAWN] & BitBoard.maskFile[0]) != 0) &&
-                ((pos.pieceTypeBB[Piece::WPAWN] & BitBoard.maskFile[1]) != 0)) {
+                ((pos.pieceTypeBB[Piece::WPAWN] & BitBoard::maskFile[0]) != 0) &&
+                ((pos.pieceTypeBB[Piece::WPAWN] & BitBoard::maskFile[1]) != 0)) {
                 score -= 6 * 15;
             }
         }
         if (Position::getY(pos.bKingSq) == 7) {
             if (((pos.pieceTypeBB[Piece::BKING] & 0x6000000000000000L) != 0) && // King on f8 or g8
                 ((pos.pieceTypeBB[Piece::BROOK] & 0xC000000000000000L) != 0) && // Rook on g8 or h8
-                ((pos.pieceTypeBB[Piece::BPAWN] & BitBoard.maskFile[6]) != 0) &&
-                ((pos.pieceTypeBB[Piece::BPAWN] & BitBoard.maskFile[7]) != 0)) {
+                ((pos.pieceTypeBB[Piece::BPAWN] & BitBoard::maskFile[6]) != 0) &&
+                ((pos.pieceTypeBB[Piece::BPAWN] & BitBoard::maskFile[7]) != 0)) {
                 score += 6 * 15;
             } else
             if (((pos.pieceTypeBB[Piece::BKING] & 0x600000000000000L) != 0) && // King on b8 or c8
                 ((pos.pieceTypeBB[Piece::BROOK] & 0x300000000000000L) != 0) && // Rook on a8 or b8
-                ((pos.pieceTypeBB[Piece::BPAWN] & BitBoard.maskFile[0]) != 0) &&
-                ((pos.pieceTypeBB[Piece::BPAWN] & BitBoard.maskFile[1]) != 0)) {
+                ((pos.pieceTypeBB[Piece::BPAWN] & BitBoard::maskFile[0]) != 0) &&
+                ((pos.pieceTypeBB[Piece::BPAWN] & BitBoard::maskFile[1]) != 0)) {
                 score += 6 * 15;
             }
         }
@@ -743,25 +743,25 @@ public:
                 int halfOpenFiles = 0;
                 if (Position::getY(pos.wKingSq) < 2) {
                     U64 shelter = 1ULL << Position::getX(pos.wKingSq);
-                    shelter |= ((shelter & BitBoard.maskBToHFiles) >>> 1) |
-                               ((shelter & BitBoard.maskAToGFiles) << 1);
+                    shelter |= ((shelter & BitBoard::maskBToHFiles) >>> 1) |
+                               ((shelter & BitBoard::maskAToGFiles) << 1);
                     shelter <<= 8;
-                    safety += 3 * Long.bitCount(wPawns & shelter);
-                    safety -= 2 * Long.bitCount(bPawns & (shelter | (shelter << 8)));
+                    safety += 3 * BitBoard::bitCount(wPawns & shelter);
+                    safety -= 2 * BitBoard::bitCount(bPawns & (shelter | (shelter << 8)));
                     shelter <<= 8;
-                    safety += 2 * Long.bitCount(wPawns & shelter);
+                    safety += 2 * BitBoard::bitCount(wPawns & shelter);
                     shelter <<= 8;
-                    safety -= Long.bitCount(bPawns & shelter);
+                    safety -= BitBoard::bitCount(bPawns & shelter);
 
-                    U64 wOpen = BitBoard.southFill(shelter) & (~BitBoard.southFill(wPawns)) & 0xff;
+                    U64 wOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(wPawns)) & 0xff;
                     if (wOpen != 0) {
-                        halfOpenFiles += 25 * Long.bitCount(wOpen & 0xe7);
-                        halfOpenFiles += 10 * Long.bitCount(wOpen & 0x18);
+                        halfOpenFiles += 25 * BitBoard::bitCount(wOpen & 0xe7);
+                        halfOpenFiles += 10 * BitBoard::bitCount(wOpen & 0x18);
                     }
-                    U64 bOpen = BitBoard.southFill(shelter) & (~BitBoard.southFill(bPawns)) & 0xff;
+                    U64 bOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(bPawns)) & 0xff;
                     if (bOpen != 0) {
-                        halfOpenFiles += 25 * Long.bitCount(bOpen & 0xe7);
-                        halfOpenFiles += 10 * Long.bitCount(bOpen & 0x18);
+                        halfOpenFiles += 25 * BitBoard::bitCount(bOpen & 0xe7);
+                        halfOpenFiles += 10 * BitBoard::bitCount(bOpen & 0x18);
                     }
                     safety = Math.min(safety, 8);
                 }
@@ -773,25 +773,25 @@ public:
                 int halfOpenFiles = 0;
                 if (Position::getY(pos.bKingSq) >= 6) {
                     U64 shelter = 1ULL << (56 + Position::getX(pos.bKingSq));
-                    shelter |= ((shelter & BitBoard.maskBToHFiles) >>> 1) |
-                               ((shelter & BitBoard.maskAToGFiles) << 1);
+                    shelter |= ((shelter & BitBoard::maskBToHFiles) >>> 1) |
+                               ((shelter & BitBoard::maskAToGFiles) << 1);
                     shelter >>>= 8;
-                    safety += 3 * Long.bitCount(bPawns & shelter);
-                    safety -= 2 * Long.bitCount(wPawns & (shelter | (shelter >>> 8)));
+                    safety += 3 * BitBoard::bitCount(bPawns & shelter);
+                    safety -= 2 * BitBoard::bitCount(wPawns & (shelter | (shelter >>> 8)));
                     shelter >>>= 8;
-                    safety += 2 * Long.bitCount(bPawns & shelter);
+                    safety += 2 * BitBoard::bitCount(bPawns & shelter);
                     shelter >>>= 8;
-                    safety -= Long.bitCount(wPawns & shelter);
+                    safety -= BitBoard::bitCount(wPawns & shelter);
 
-                    U64 wOpen = BitBoard.southFill(shelter) & (~BitBoard.southFill(wPawns)) & 0xff;
+                    U64 wOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(wPawns)) & 0xff;
                     if (wOpen != 0) {
-                        halfOpenFiles += 25 * Long.bitCount(wOpen & 0xe7);
-                        halfOpenFiles += 10 * Long.bitCount(wOpen & 0x18);
+                        halfOpenFiles += 25 * BitBoard::bitCount(wOpen & 0xe7);
+                        halfOpenFiles += 10 * BitBoard::bitCount(wOpen & 0x18);
                     }
-                    U64 bOpen = BitBoard.southFill(shelter) & (~BitBoard.southFill(bPawns)) & 0xff;
+                    U64 bOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(bPawns)) & 0xff;
                     if (bOpen != 0) {
-                        halfOpenFiles += 25 * Long.bitCount(bOpen & 0xe7);
-                        halfOpenFiles += 10 * Long.bitCount(bOpen & 0x18);
+                        halfOpenFiles += 25 * BitBoard::bitCount(bOpen & 0xe7);
+                        halfOpenFiles += 10 * BitBoard::bitCount(bOpen & 0x18);
                     }
                     safety = Math.min(safety, 8);
                 }
@@ -820,16 +820,16 @@ public:
             return 0;
         }
         if (!handled && (pos.wMtrl == qV) && (pos.bMtrl == pV) && (pos.pieceTypeBB[Piece::WQUEEN] != 0)) {
-            int wk = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::WKING]);
-            int wq = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::WQUEEN]);
-            int bk = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::BKING]);
-            int bp = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
+            int wk = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WKING]);
+            int wq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WQUEEN]);
+            int bk = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BKING]);
+            int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
             score = evalKQKP(wk, wq, bk, bp);
             handled = true;
         }
         if (!handled && (pos.wMtrl == rV) && (pos.pieceTypeBB[Piece::WROOK] != 0)) {
             if (pos.bMtrl == pV) {
-                int bp = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
+                int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
                 score = krkpEval(pos.getKingSq(true), pos.getKingSq(false),
                         bp, pos.whiteMove);
                 handled = true;
@@ -838,7 +838,7 @@ public:
                 final int kSq = pos.getKingSq(false);
                 final int x = Position::getX(kSq);
                 final int y = Position::getY(kSq);
-                if ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard.maskDarkSq) != 0) {
+                if ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq) != 0) {
                     score += (7 - distToH1A8[7-y][7-x]) * 7;
                 } else {
                     score += (7 - distToH1A8[7-y][x]) * 7;
@@ -847,16 +847,16 @@ public:
             }
         }
         if (!handled && (pos.bMtrl == qV) && (pos.wMtrl == pV) && (pos.pieceTypeBB[Piece::BQUEEN] != 0)) {
-            int bk = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::BKING]);
-            int bq = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::BQUEEN]);
-            int wk = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::WKING]);
-            int wp = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
+            int bk = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BKING]);
+            int bq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BQUEEN]);
+            int wk = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WKING]);
+            int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
             score = -evalKQKP(63-bk, 63-bq, 63-wk, 63-wp);
             handled = true;
         }
         if (!handled && (pos.bMtrl == rV) && (pos.pieceTypeBB[Piece::BROOK] != 0)) {
             if (pos.wMtrl == pV) {
-                int wp = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
+                int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
                 score = -krkpEval(63-pos.getKingSq(false), 63-pos.getKingSq(true),
                         63-wp, !pos.whiteMove);
                 handled = true;
@@ -865,7 +865,7 @@ public:
                 final int kSq = pos.getKingSq(true);
                 final int x = Position::getX(kSq);
                 final int y = Position::getY(kSq);
-                if ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard.maskDarkSq) != 0) {
+                if ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq) != 0) {
                     score -= (7 - distToH1A8[7-y][7-x]) * 7;
                 } else {
                     score -= (7 - distToH1A8[7-y][x]) * 7;
@@ -884,13 +884,13 @@ public:
             } else if ((pos.pieceTypeBB[Piece::WROOK] | pos.pieceTypeBB[Piece::WKNIGHT] |
                         pos.pieceTypeBB[Piece::WQUEEN]) == 0) {
                 // Check for rook pawn + wrong color bishop
-                if (((pos.pieceTypeBB[Piece::WPAWN] & BitBoard.maskBToHFiles) == 0) &&
-                    ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard.maskLightSq) == 0) &&
+                if (((pos.pieceTypeBB[Piece::WPAWN] & BitBoard::maskBToHFiles) == 0) &&
+                    ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskLightSq) == 0) &&
                     ((pos.pieceTypeBB[Piece::BKING] & 0x0303000000000000ULL) != 0)) {
                     return 0;
                 } else
-                if (((pos.pieceTypeBB[Piece::WPAWN] & BitBoard.maskAToGFiles) == 0) &&
-                    ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard.maskDarkSq) == 0) &&
+                if (((pos.pieceTypeBB[Piece::WPAWN] & BitBoard::maskAToGFiles) == 0) &&
+                    ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq) == 0) &&
                     ((pos.pieceTypeBB[Piece::BKING] & 0xC0C0000000000000ULL) != 0)) {
                     return 0;
                 }
@@ -899,8 +899,8 @@ public:
         if (!handled) {
             if (bMtrlPawns == 0) {
                 if (wMtrlNoPawns - bMtrlNoPawns > bV) {
-                    int wKnights = Long.bitCount(pos.pieceTypeBB[Piece::WKNIGHT]);
-                    int wBishops = Long.bitCount(pos.pieceTypeBB[Piece::WBISHOP]);
+                    int wKnights = BitBoard::bitCount(pos.pieceTypeBB[Piece::WKNIGHT]);
+                    int wBishops = BitBoard::bitCount(pos.pieceTypeBB[Piece::WBISHOP]);
                     if ((wKnights == 2) && (wMtrlNoPawns == 2 * nV) && (bMtrlNoPawns == 0)) {
                         score /= 50;    // KNNK is a draw
                     } else if ((wKnights == 1) && (wBishops == 1) && (wMtrlNoPawns == nV + bV) && (bMtrlNoPawns == 0)) {
@@ -909,7 +909,7 @@ public:
                         final int kSq = pos.getKingSq(false);
                         final int x = Position::getX(kSq);
                         final int y = Position::getY(kSq);
-                        if ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard.maskDarkSq) != 0) {
+                        if ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq) != 0) {
                             score += (7 - distToH1A8[7-y][7-x]) * 10;
                         } else {
                             score += (7 - distToH1A8[7-y][x]) * 10;
@@ -919,7 +919,7 @@ public:
                     }
                     handled = true;
                 } else if ((wMtrlNoPawns + bMtrlNoPawns == 0) && (wMtrlPawns == pV)) { // KPK
-                    int wp = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
+                    int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
                     score = kpkEval(pos.getKingSq(true), pos.getKingSq(false),
                                     wp, pos.whiteMove);
                     handled = true;
@@ -937,13 +937,13 @@ public:
             } else if ((pos.pieceTypeBB[Piece::BROOK] | pos.pieceTypeBB[Piece::BKNIGHT] |
                         pos.pieceTypeBB[Piece::BQUEEN]) == 0) {
                 // Check for rook pawn + wrong color bishop
-                if (((pos.pieceTypeBB[Piece::BPAWN] & BitBoard.maskBToHFiles) == 0) &&
-                    ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard.maskDarkSq) == 0) &&
+                if (((pos.pieceTypeBB[Piece::BPAWN] & BitBoard::maskBToHFiles) == 0) &&
+                    ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq) == 0) &&
                     ((pos.pieceTypeBB[Piece::WKING] & 0x0303ULL) != 0)) {
                     return 0;
                 } else
-                if (((pos.pieceTypeBB[Piece::BPAWN] & BitBoard.maskAToGFiles) == 0) &&
-                    ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard.maskLightSq) == 0) &&
+                if (((pos.pieceTypeBB[Piece::BPAWN] & BitBoard::maskAToGFiles) == 0) &&
+                    ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskLightSq) == 0) &&
                     ((pos.pieceTypeBB[Piece::WKING] & 0xC0C0ULL) != 0)) {
                     return 0;
                 }
@@ -952,8 +952,8 @@ public:
         if (!handled) {
             if (wMtrlPawns == 0) {
                 if (bMtrlNoPawns - wMtrlNoPawns > bV) {
-                    int bKnights = Long.bitCount(pos.pieceTypeBB[Piece::BKNIGHT]);
-                    int bBishops = Long.bitCount(pos.pieceTypeBB[Piece::BBISHOP]);
+                    int bKnights = BitBoard::bitCount(pos.pieceTypeBB[Piece::BKNIGHT]);
+                    int bBishops = BitBoard::bitCount(pos.pieceTypeBB[Piece::BBISHOP]);
                     if ((bKnights == 2) && (bMtrlNoPawns == 2 * nV) && (wMtrlNoPawns == 0)) {
                         score /= 50;    // KNNK is a draw
                     } else if ((bKnights == 1) && (bBishops == 1) && (bMtrlNoPawns == nV + bV) && (wMtrlNoPawns == 0)) {
@@ -962,7 +962,7 @@ public:
                         final int kSq = pos.getKingSq(true);
                         final int x = Position::getX(kSq);
                         final int y = Position::getY(kSq);
-                        if ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard.maskDarkSq) != 0) {
+                        if ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq) != 0) {
                             score -= (7 - distToH1A8[7-y][7-x]) * 10;
                         } else {
                             score -= (7 - distToH1A8[7-y][x]) * 10;
@@ -972,7 +972,7 @@ public:
                     }
                     handled = true;
                 } else if ((wMtrlNoPawns + bMtrlNoPawns == 0) && (bMtrlPawns == pV)) { // KPK
-                    int bp = BitBoard.numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
+                    int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
                     score = -kpkEval(63-pos.getKingSq(false), 63-pos.getKingSq(true),
                                      63-bp, !pos.whiteMove);
                     handled = true;

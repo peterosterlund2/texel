@@ -9,11 +9,12 @@
 #define TEXTIO_HPP_
 
 #include <string>
+#include <vector>
 
 #include "chessParseError.hpp"
 #include "position.hpp"
 #include "moveGen.hpp"
-
+#include "types.hpp"
 
 /**
  * Conversion between text and binary formats.
@@ -23,18 +24,18 @@ public:
     static const std::string startPosFEN;
 
     /** Parse a FEN string and return a chess Position object. */
-    static Position readFEN(const std::string& fen) throw(ChessParseError) {
+    static Position readFEN(const std::string& fen) {
         Position pos;
-#if 0
-        String[] words = fen.split(" ");
-        if (words.length < 2)
-            throw new ChessParseError("Too few spaces");
+        std::vector<std::string> words;
+        stringSplit(fen, words);
+        if (words.size() < 2)
+            throw ChessParseError("Too few spaces");
 
         // Piece placement
         int row = 7;
         int col = 0;
-        for (int i = 0; i < words[0].length(); i++) {
-            char c = words[0].charAt(i);
+        for (int i = 0; i < (int)words[0].length(); i++) {
+            char c = words[0][i];
             switch (c) {
                 case '1': col += 1; break;
                 case '2': col += 2; break;
@@ -47,72 +48,54 @@ public:
                 case '/': row--; col = 0; break;
                 case 'P': safeSetPiece(pos, col, row, Piece::WPAWN);   col++; break;
                 case 'N': safeSetPiece(pos, col, row, Piece::WKNIGHT); col++; break;
-        case 'B': safeSetPiece(pos, col, row, Piece::WBISHOP); col++; break;
-        case 'R': safeSetPiece(pos, col, row, Piece::WROOK);   col++; break;
-        case 'Q': safeSetPiece(pos, col, row, Piece::WQUEEN);  col++; break;
-        case 'K': safeSetPiece(pos, col, row, Piece::WKING);   col++; break;
-        case 'p': safeSetPiece(pos, col, row, Piece::BPAWN);   col++; break;
-        case 'n': safeSetPiece(pos, col, row, Piece::BKNIGHT); col++; break;
-        case 'b': safeSetPiece(pos, col, row, Piece::BBISHOP); col++; break;
-        case 'r': safeSetPiece(pos, col, row, Piece::BROOK);   col++; break;
-        case 'q': safeSetPiece(pos, col, row, Piece::BQUEEN);  col++; break;
-        case 'k': safeSetPiece(pos, col, row, Piece::BKING);   col++; break;
-                default: throw new ChessParseError("Invalid piece");
+                case 'B': safeSetPiece(pos, col, row, Piece::WBISHOP); col++; break;
+                case 'R': safeSetPiece(pos, col, row, Piece::WROOK);   col++; break;
+                case 'Q': safeSetPiece(pos, col, row, Piece::WQUEEN);  col++; break;
+                case 'K': safeSetPiece(pos, col, row, Piece::WKING);   col++; break;
+                case 'p': safeSetPiece(pos, col, row, Piece::BPAWN);   col++; break;
+                case 'n': safeSetPiece(pos, col, row, Piece::BKNIGHT); col++; break;
+                case 'b': safeSetPiece(pos, col, row, Piece::BBISHOP); col++; break;
+                case 'r': safeSetPiece(pos, col, row, Piece::BROOK);   col++; break;
+                case 'q': safeSetPiece(pos, col, row, Piece::BQUEEN);  col++; break;
+                case 'k': safeSetPiece(pos, col, row, Piece::BKING);   col++; break;
+                default: throw ChessParseError("Invalid piece");
             }
         }
-        if (words[1].length() == 0) {
-            throw new ChessParseError("Invalid side");
-        }
-        pos.setWhiteMove(words[1].charAt(0) == 'w');
+        if (words[1].length() == 0)
+            throw ChessParseError("Invalid side");
+        pos.setWhiteMove(words[1][0] == 'w');
 
         // Castling rights
         int castleMask = 0;
-        if (words.length > 2) {
-            for (int i = 0; i < words[2].length(); i++) {
-                char c = words[2].charAt(i);
+        if (words.size() > 2) {
+            for (int i = 0; i < (int)words[2].length(); i++) {
+                char c = words[2][i];
                 switch (c) {
-                    case 'K':
-                        castleMask |= (1 << Position::H1_CASTLE);
-                        break;
-                    case 'Q':
-                        castleMask |= (1 << Position::A1_CASTLE);
-                        break;
-                    case 'k':
-                        castleMask |= (1 << Position::H8_CASTLE);
-                        break;
-                    case 'q':
-                        castleMask |= (1 << Position::A8_CASTLE);
-                        break;
-                    case '-':
-                        break;
-                    default:
-                        throw new ChessParseError("Invalid castling flags");
+                    case 'K': castleMask |= (1 << Position::H1_CASTLE); break;
+                    case 'Q': castleMask |= (1 << Position::A1_CASTLE); break;
+                    case 'k': castleMask |= (1 << Position::H8_CASTLE); break;
+                    case 'q': castleMask |= (1 << Position::A8_CASTLE); break;
+                    case '-': break;
+                    default: throw ChessParseError("Invalid castling flags");
                 }
             }
         }
         pos.setCastleMask(castleMask);
 
-        if (words.length > 3) {
+        if (words.size() > 3) {
             // En passant target square
-            String epString = words[3];
-            if (!epString.equals("-")) {
-                if (epString.length() < 2) {
-                    throw new ChessParseError("Invalid en passant square");
-                }
+            const std::string& epString = words[3];
+            if (epString != "-") {
+                if (epString.length() < 2)
+                    throw ChessParseError("Invalid en passant square");
                 pos.setEpSquare(getSquare(epString));
             }
         }
 
-        try {
-            if (words.length > 4) {
-                pos.halfMoveClock = Integer.parseInt(words[4]);
-            }
-            if (words.length > 5) {
-                pos.fullMoveCounter = Integer.parseInt(words[5]);
-            }
-        } catch (NumberFormatException nfe) {
-            // Ignore errors here, since the fields are optional
-        }
+        if (words.size() > 4)
+            pos.halfMoveClock = str2Num<int>(words[4]);
+        if (words.size() > 5)
+            pos.fullMoveCounter = str2Num<int>(words[5]);
 
         // Each side must have exactly one king
         int wKings = 0;
@@ -127,22 +110,18 @@ public:
                 }
             }
         }
-        if (wKings != 1) {
-            throw new ChessParseError("White must have exactly one king");
-        }
-        if (bKings != 1) {
-            throw new ChessParseError("Black must have exactly one king");
-        }
+        if (wKings != 1)
+            throw ChessParseError("White must have exactly one king");
+        if (bKings != 1)
+            throw ChessParseError("Black must have exactly one king");
 
         // Make sure king can not be captured
-        Position pos2 = new Position(pos);
+        Position pos2(pos);
         pos2.setWhiteMove(!pos.whiteMove);
-        if (MoveGen::inCheck(pos2)) {
-            throw new ChessParseError("King capture possible");
-        }
+        if (MoveGen::inCheck(pos2))
+            throw ChessParseError("King capture possible");
 
         fixupEPSquare(pos);
-#endif
         return pos;
     }
 
@@ -171,13 +150,12 @@ public:
     }
 
 private:
-    static void safeSetPiece(Position& pos, int col, int row, int p) throw(ChessParseError) {
-        if (row < 0) throw new ChessParseError("Too many rows");
-        if (col > 7) throw new ChessParseError("Too many columns");
-        if ((p == Piece::WPAWN) || (p == Piece::BPAWN)) {
+    static void safeSetPiece(Position& pos, int col, int row, int p) {
+        if (row < 0) throw ChessParseError("Too many rows");
+        if (col > 7) throw ChessParseError("Too many columns");
+        if ((p == Piece::WPAWN) || (p == Piece::BPAWN))
             if ((row == 0) || (row == 7))
-                throw new ChessParseError("Pawn on first/last rank");
-        }
+                throw ChessParseError("Pawn on first/last rank");
         pos.setPiece(Position::getSquare(col, row), p);
     }
 public:
@@ -210,7 +188,7 @@ public:
                         case Piece::BBISHOP: ret.append('b'); break;
                         case Piece::BKNIGHT: ret.append('n'); break;
                         case Piece::BPAWN:   ret.append('p'); break;
-                        default: throw new RuntimeException();
+                        default: assert(false);
                     }
                 }
             }
@@ -359,7 +337,7 @@ private:
                 ret.append(pieceToChar(move.promoteTo));
             }
         }
-        UndoInfo ui = new UndoInfo();
+        UndoInfo ui;
         if (MoveGen::givesCheck(pos, move)) {
             pos.makeMove(move, ui);
             MoveGen::MoveList nextMoves = MoveGen::instance.pseudoLegalMoves(pos);
@@ -488,7 +466,7 @@ public:
         {
             char lastChar = strMove.charAt(strMove.length() - 1);
             if ((lastChar == '#') || (lastChar == '+')) {
-                MoveGen::MoveList subMoves = new MoveGen::MoveList();
+                MoveGen::MoveList subMoves;
                 int len = 0;
                 for (int mi = 0; mi < moves.size; mi++) {
                     Move m = moves.m[mi];
@@ -555,7 +533,7 @@ public:
      * Convert a string, such as "e4" to a square number.
      * @return The square number, or -1 if not a legal square.
      */
-    static int getSquare(std::string s) {
+    static int getSquare(const std::string& s) {
         int x = s[0] - 'a';
         int y = s[1] - '1';
         if ((x < 0) || (x > 7) || (y < 0) || (y > 7))

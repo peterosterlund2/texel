@@ -13,24 +13,22 @@
  */
 class Piece {
 public:
-    enum PieceType {
-        EMPTY = 0,
-        WKING = 1,
-        WQUEEN = 2,
-        WROOK = 3,
-        WBISHOP = 4,
-        WKNIGHT = 5,
-        WPAWN = 6,
+    static const int EMPTY = 0;
+    static const int WKING = 1;
+    static const int WQUEEN = 2;
+    static const int WROOK = 3;
+    static const int WBISHOP = 4;
+    static const int WKNIGHT = 5;
+    static const int WPAWN = 6;
 
-        BKING = 7,
-        BQUEEN = 8,
-        BROOK = 9,
-        BBISHOP = 10,
-        BKNIGHT = 11,
-        BPAWN = 12,
+    static const int BKING = 7;
+    static const int BQUEEN = 8;
+    static const int BROOK = 9;
+    static const int BBISHOP = 10;
+    static const int BKNIGHT = 11;
+    static const int BPAWN = 12;
 
-        nPieceTypes = 13
-    };
+    static const int nPieceTypes = 13;
 
     /**
      * Return true if p is a white piece, false otherwise.

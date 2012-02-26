@@ -516,18 +516,18 @@ public class Game {
         if (pos.pieceTypeBB[Piece::BQUEEN] != 0) return false;
         if (pos.pieceTypeBB[Piece::BROOK]  != 0) return false;
         if (pos.pieceTypeBB[Piece::BPAWN]  != 0) return false;
-        int wb = Long.bitCount(pos.pieceTypeBB[Piece::WBISHOP]);
-        int wn = Long.bitCount(pos.pieceTypeBB[Piece::WKNIGHT]);
-        int bb = Long.bitCount(pos.pieceTypeBB[Piece::BBISHOP]);
-        int bn = Long.bitCount(pos.pieceTypeBB[Piece::BKNIGHT]);
+        int wb = BitBoard::bitCount(pos.pieceTypeBB[Piece::WBISHOP]);
+        int wn = BitBoard::bitCount(pos.pieceTypeBB[Piece::WKNIGHT]);
+        int bb = BitBoard::bitCount(pos.pieceTypeBB[Piece::BBISHOP]);
+        int bn = BitBoard::bitCount(pos.pieceTypeBB[Piece::BKNIGHT]);
         if (wb + wn + bb + bn <= 1) {
             return true;    // King + bishop/knight vs king is draw
         }
         if (wn + bn == 0) {
             // Only bishops. If they are all on the same color, the position is a draw.
             U64 bMask = pos.pieceTypeBB[Piece::WBISHOP] | pos.pieceTypeBB[Piece::BBISHOP];
-            if (((bMask & BitBoard.maskDarkSq) == 0) ||
-                ((bMask & BitBoard.maskLightSq) == 0))
+            if (((bMask & BitBoard::maskDarkSq) == 0) ||
+                ((bMask & BitBoard::maskLightSq) == 0))
                 return true;
         }
 

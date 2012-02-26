@@ -9,6 +9,8 @@
 #define MOVEGEN_HPP_
 
 #include "move.hpp"
+#include "position.hpp"
+#include "types.hpp"
 
 /**
  *
@@ -55,8 +57,8 @@ public:
             // Queen moves
             U64 squares = pos.pieceTypeBB[Piece::WQUEEN];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = (BitBoard.rookAttacks(sq, occupied) | BitBoard.bishopAttacks(sq, occupied)) & ~pos.whiteBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & ~pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -64,8 +66,8 @@ public:
             // Rook moves
             squares = pos.pieceTypeBB[Piece::WROOK];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.rookAttacks(sq, occupied) & ~pos.whiteBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -73,8 +75,8 @@ public:
             // Bishop moves
             squares = pos.pieceTypeBB[Piece::WBISHOP];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.bishopAttacks(sq, occupied) & ~pos.whiteBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -82,7 +84,7 @@ public:
             // King moves
             {
                 int sq = pos.getKingSq(true);
-                U64 m = BitBoard.kingAttacks[sq] & ~pos.whiteBB;
+                U64 m = BitBoard::kingAttacks[sq] & ~pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 final int k0 = 4;
                 if (sq == k0) {
@@ -108,8 +110,8 @@ public:
             // Knight moves
             U64 knights = pos.pieceTypeBB[Piece::WKNIGHT];
             while (knights != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(knights);
-                U64 m = BitBoard.knightAttacks[sq] & ~pos.whiteBB;
+                int sq = BitBoard::numberOfTrailingZeros(knights);
+                U64 m = BitBoard::knightAttacks[sq] & ~pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 knights &= knights-1;
             }
@@ -118,22 +120,22 @@ public:
             U64 pawns = pos.pieceTypeBB[Piece::WPAWN];
             U64 m = (pawns << 8) & ~occupied;
             if (addPawnMovesByMask(moveList, pos, m, -8, true)) return moveList;
-            m = ((m & BitBoard.maskRow3) << 8) & ~occupied;
+            m = ((m & BitBoard::maskRow3) << 8) & ~occupied;
             addPawnDoubleMovesByMask(moveList, pos, m, -16);
 
             int epSquare = pos.getEpSquare();
             U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-            m = (pawns << 7) & BitBoard.maskAToGFiles & (pos.blackBB | epMask);
+            m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.blackBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, -7, true)) return moveList;
 
-            m = (pawns << 9) & BitBoard.maskBToHFiles & (pos.blackBB | epMask);
+            m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.blackBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, -9, true)) return moveList;
         } else {
             // Queen moves
             U64 squares = pos.pieceTypeBB[Piece::BQUEEN];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = (BitBoard.rookAttacks(sq, occupied) | BitBoard.bishopAttacks(sq, occupied)) & ~pos.blackBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & ~pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -141,8 +143,8 @@ public:
             // Rook moves
             squares = pos.pieceTypeBB[Piece::BROOK];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.rookAttacks(sq, occupied) & ~pos.blackBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -150,8 +152,8 @@ public:
             // Bishop moves
             squares = pos.pieceTypeBB[Piece::BBISHOP];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.bishopAttacks(sq, occupied) & ~pos.blackBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -159,7 +161,7 @@ public:
             // King moves
             {
                 int sq = pos.getKingSq(false);
-                U64 m = BitBoard.kingAttacks[sq] & ~pos.blackBB;
+                U64 m = BitBoard::kingAttacks[sq] & ~pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 final int k0 = 60;
                 if (sq == k0) {
@@ -185,8 +187,8 @@ public:
             // Knight moves
             U64 knights = pos.pieceTypeBB[Piece::BKNIGHT];
             while (knights != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(knights);
-                U64 m = BitBoard.knightAttacks[sq] & ~pos.blackBB;
+                int sq = BitBoard::numberOfTrailingZeros(knights);
+                U64 m = BitBoard::knightAttacks[sq] & ~pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 knights &= knights-1;
             }
@@ -195,15 +197,15 @@ public:
             U64 pawns = pos.pieceTypeBB[Piece::BPAWN];
             U64 m = (pawns >>> 8) & ~occupied;
             if (addPawnMovesByMask(moveList, pos, m, 8, true)) return moveList;
-            m = ((m & BitBoard.maskRow6) >>> 8) & ~occupied;
+            m = ((m & BitBoard::maskRow6) >>> 8) & ~occupied;
             addPawnDoubleMovesByMask(moveList, pos, m, 16);
 
             int epSquare = pos.getEpSquare();
             U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-            m = (pawns >>> 9) & BitBoard.maskAToGFiles & (pos.whiteBB | epMask);
+            m = (pawns >>> 9) & BitBoard::maskAToGFiles & (pos.whiteBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, 9, true)) return moveList;
 
-            m = (pawns >>> 7) & BitBoard.maskBToHFiles & (pos.whiteBB | epMask);
+            m = (pawns >>> 7) & BitBoard::maskBToHFiles & (pos.whiteBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, 7, true)) return moveList;
         }
         return moveList;
@@ -217,25 +219,25 @@ public:
         MoveList moveList = getMoveListObj();
         final U64 occupied = pos.whiteBB | pos.blackBB;
         if (pos.whiteMove) {
-            U64 kingThreats = pos.pieceTypeBB[Piece::BKNIGHT] & BitBoard.knightAttacks[pos.wKingSq];
+            U64 kingThreats = pos.pieceTypeBB[Piece::BKNIGHT] & BitBoard::knightAttacks[pos.wKingSq];
             U64 rookPieces = pos.pieceTypeBB[Piece::BROOK] | pos.pieceTypeBB[Piece::BQUEEN];
             if (rookPieces != 0)
-                kingThreats |= rookPieces & BitBoard.rookAttacks(pos.wKingSq, occupied);
+                kingThreats |= rookPieces & BitBoard::rookAttacks(pos.wKingSq, occupied);
             U64 bishPieces = pos.pieceTypeBB[Piece::BBISHOP] | pos.pieceTypeBB[Piece::BQUEEN];
             if (bishPieces != 0)
-                kingThreats |= bishPieces & BitBoard.bishopAttacks(pos.wKingSq, occupied);
-            kingThreats |= pos.pieceTypeBB[Piece::BPAWN] & BitBoard.wPawnAttacks[pos.wKingSq];
+                kingThreats |= bishPieces & BitBoard::bishopAttacks(pos.wKingSq, occupied);
+            kingThreats |= pos.pieceTypeBB[Piece::BPAWN] & BitBoard::wPawnAttacks[pos.wKingSq];
             U64 validTargets = 0;
             if ((kingThreats != 0) && ((kingThreats & (kingThreats-1)) == 0)) { // Exactly one attacking piece
-                int threatSq = BitBoard.numberOfTrailingZeros(kingThreats);
-                validTargets = kingThreats | BitBoard.squaresBetween[pos.wKingSq][threatSq];
+                int threatSq = BitBoard::numberOfTrailingZeros(kingThreats);
+                validTargets = kingThreats | BitBoard::squaresBetween[pos.wKingSq][threatSq];
             }
             validTargets |= pos.pieceTypeBB[Piece::BKING];
             // Queen moves
             U64 squares = pos.pieceTypeBB[Piece::WQUEEN];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = (BitBoard.rookAttacks(sq, occupied) | BitBoard.bishopAttacks(sq, occupied)) &
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) &
                             ~pos.whiteBB & validTargets;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
@@ -244,8 +246,8 @@ public:
             // Rook moves
             squares = pos.pieceTypeBB[Piece::WROOK];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.rookAttacks(sq, occupied) & ~pos.whiteBB & validTargets;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.whiteBB & validTargets;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -253,8 +255,8 @@ public:
             // Bishop moves
             squares = pos.pieceTypeBB[Piece::WBISHOP];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.bishopAttacks(sq, occupied) & ~pos.whiteBB & validTargets;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.whiteBB & validTargets;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -262,15 +264,15 @@ public:
             // King moves
             {
                 int sq = pos.getKingSq(true);
-                U64 m = BitBoard.kingAttacks[sq] & ~pos.whiteBB;
+                U64 m = BitBoard::kingAttacks[sq] & ~pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
             }
 
             // Knight moves
             U64 knights = pos.pieceTypeBB[Piece::WKNIGHT];
             while (knights != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(knights);
-                U64 m = BitBoard.knightAttacks[sq] & ~pos.whiteBB & validTargets;
+                int sq = BitBoard::numberOfTrailingZeros(knights);
+                U64 m = BitBoard::knightAttacks[sq] & ~pos.whiteBB & validTargets;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 knights &= knights-1;
             }
@@ -279,36 +281,36 @@ public:
             U64 pawns = pos.pieceTypeBB[Piece::WPAWN];
             U64 m = (pawns << 8) & ~occupied;
             if (addPawnMovesByMask(moveList, pos, m & validTargets, -8, true)) return moveList;
-            m = ((m & BitBoard.maskRow3) << 8) & ~occupied;
+            m = ((m & BitBoard::maskRow3) << 8) & ~occupied;
             addPawnDoubleMovesByMask(moveList, pos, m & validTargets, -16);
 
             int epSquare = pos.getEpSquare();
             U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-            m = (pawns << 7) & BitBoard.maskAToGFiles & ((pos.blackBB & validTargets) | epMask);
+            m = (pawns << 7) & BitBoard::maskAToGFiles & ((pos.blackBB & validTargets) | epMask);
             if (addPawnMovesByMask(moveList, pos, m, -7, true)) return moveList;
 
-            m = (pawns << 9) & BitBoard.maskBToHFiles & ((pos.blackBB & validTargets) | epMask);
+            m = (pawns << 9) & BitBoard::maskBToHFiles & ((pos.blackBB & validTargets) | epMask);
             if (addPawnMovesByMask(moveList, pos, m, -9, true)) return moveList;
         } else {
-            U64 kingThreats = pos.pieceTypeBB[Piece::WKNIGHT] & BitBoard.knightAttacks[pos.bKingSq];
+            U64 kingThreats = pos.pieceTypeBB[Piece::WKNIGHT] & BitBoard::knightAttacks[pos.bKingSq];
             U64 rookPieces = pos.pieceTypeBB[Piece::WROOK] | pos.pieceTypeBB[Piece::WQUEEN];
             if (rookPieces != 0)
-                kingThreats |= rookPieces & BitBoard.rookAttacks(pos.bKingSq, occupied);
+                kingThreats |= rookPieces & BitBoard::rookAttacks(pos.bKingSq, occupied);
             U64 bishPieces = pos.pieceTypeBB[Piece::WBISHOP] | pos.pieceTypeBB[Piece::WQUEEN];
             if (bishPieces != 0)
-                kingThreats |= bishPieces & BitBoard.bishopAttacks(pos.bKingSq, occupied);
-            kingThreats |= pos.pieceTypeBB[Piece::WPAWN] & BitBoard.bPawnAttacks[pos.bKingSq];
+                kingThreats |= bishPieces & BitBoard::bishopAttacks(pos.bKingSq, occupied);
+            kingThreats |= pos.pieceTypeBB[Piece::WPAWN] & BitBoard::bPawnAttacks[pos.bKingSq];
             U64 validTargets = 0;
             if ((kingThreats != 0) && ((kingThreats & (kingThreats-1)) == 0)) { // Exactly one attacking piece
-                int threatSq = BitBoard.numberOfTrailingZeros(kingThreats);
-                validTargets = kingThreats | BitBoard.squaresBetween[pos.bKingSq][threatSq];
+                int threatSq = BitBoard::numberOfTrailingZeros(kingThreats);
+                validTargets = kingThreats | BitBoard::squaresBetween[pos.bKingSq][threatSq];
             }
             validTargets |= pos.pieceTypeBB[Piece::WKING];
             // Queen moves
             U64 squares = pos.pieceTypeBB[Piece::BQUEEN];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = (BitBoard.rookAttacks(sq, occupied) | BitBoard.bishopAttacks(sq, occupied)) &
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) &
                             ~pos.blackBB & validTargets;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
@@ -317,8 +319,8 @@ public:
             // Rook moves
             squares = pos.pieceTypeBB[Piece::BROOK];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.rookAttacks(sq, occupied) & ~pos.blackBB & validTargets;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.blackBB & validTargets;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -326,8 +328,8 @@ public:
             // Bishop moves
             squares = pos.pieceTypeBB[Piece::BBISHOP];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.bishopAttacks(sq, occupied) & ~pos.blackBB & validTargets;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.blackBB & validTargets;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -335,15 +337,15 @@ public:
             // King moves
             {
                 int sq = pos.getKingSq(false);
-                U64 m = BitBoard.kingAttacks[sq] & ~pos.blackBB;
+                U64 m = BitBoard::kingAttacks[sq] & ~pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
             }
 
             // Knight moves
             U64 knights = pos.pieceTypeBB[Piece::BKNIGHT];
             while (knights != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(knights);
-                U64 m = BitBoard.knightAttacks[sq] & ~pos.blackBB & validTargets;
+                int sq = BitBoard::numberOfTrailingZeros(knights);
+                U64 m = BitBoard::knightAttacks[sq] & ~pos.blackBB & validTargets;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 knights &= knights-1;
             }
@@ -352,15 +354,15 @@ public:
             U64 pawns = pos.pieceTypeBB[Piece::BPAWN];
             U64 m = (pawns >>> 8) & ~occupied;
             if (addPawnMovesByMask(moveList, pos, m & validTargets, 8, true)) return moveList;
-            m = ((m & BitBoard.maskRow6) >>> 8) & ~occupied;
+            m = ((m & BitBoard::maskRow6) >>> 8) & ~occupied;
             addPawnDoubleMovesByMask(moveList, pos, m & validTargets, 16);
 
             int epSquare = pos.getEpSquare();
             U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-            m = (pawns >>> 9) & BitBoard.maskAToGFiles & ((pos.whiteBB & validTargets) | epMask);
+            m = (pawns >>> 9) & BitBoard::maskAToGFiles & ((pos.whiteBB & validTargets) | epMask);
             if (addPawnMovesByMask(moveList, pos, m, 9, true)) return moveList;
 
-            m = (pawns >>> 7) & BitBoard.maskBToHFiles & ((pos.whiteBB & validTargets) | epMask);
+            m = (pawns >>> 7) & BitBoard::maskBToHFiles & ((pos.whiteBB & validTargets) | epMask);
             if (addPawnMovesByMask(moveList, pos, m, 7, true)) return moveList;
         }
 
@@ -387,20 +389,20 @@ public:
         if (pos.whiteMove) {
             int bKingSq = pos.getKingSq(false);
             U64 discovered = 0; // Squares that could generate discovered checks
-            U64 kRookAtk = BitBoard.rookAttacks(bKingSq, occupied);
-            if ((BitBoard.rookAttacks(bKingSq, occupied & ~kRookAtk) &
+            U64 kRookAtk = BitBoard::rookAttacks(bKingSq, occupied);
+            if ((BitBoard::rookAttacks(bKingSq, occupied & ~kRookAtk) &
                     (pos.pieceTypeBB[Piece::WQUEEN] | pos.pieceTypeBB[Piece::WROOK])) != 0)
                 discovered |= kRookAtk;
-            U64 kBishAtk = BitBoard.bishopAttacks(bKingSq, occupied);
-            if ((BitBoard.bishopAttacks(bKingSq, occupied & ~kBishAtk) &
+            U64 kBishAtk = BitBoard::bishopAttacks(bKingSq, occupied);
+            if ((BitBoard::bishopAttacks(bKingSq, occupied & ~kBishAtk) &
                     (pos.pieceTypeBB[Piece::WQUEEN] | pos.pieceTypeBB[Piece::WBISHOP])) != 0)
                 discovered |= kBishAtk;
 
             // Queen moves
             U64 squares = pos.pieceTypeBB[Piece::WQUEEN];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = (BitBoard.rookAttacks(sq, occupied) | BitBoard.bishopAttacks(sq, occupied));
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied));
                 if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB | kRookAtk | kBishAtk);
                 m &= ~pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
@@ -410,8 +412,8 @@ public:
             // Rook moves
             squares = pos.pieceTypeBB[Piece::WROOK];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.rookAttacks(sq, occupied);
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::rookAttacks(sq, occupied);
                 if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB | kRookAtk);
                 m &= ~pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
@@ -421,8 +423,8 @@ public:
             // Bishop moves
             squares = pos.pieceTypeBB[Piece::WBISHOP];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.bishopAttacks(sq, occupied);
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::bishopAttacks(sq, occupied);
                 if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB | kBishAtk);
                 m &= ~pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
@@ -432,7 +434,7 @@ public:
             // King moves
             {
                 int sq = pos.getKingSq(true);
-                U64 m = BitBoard.kingAttacks[sq];
+                U64 m = BitBoard::kingAttacks[sq];
                 m &= ((discovered & (1ULL<<sq)) == 0) ? pos.blackBB : ~pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 final int k0 = 4;
@@ -458,10 +460,10 @@ public:
 
             // Knight moves
             U64 knights = pos.pieceTypeBB[Piece::WKNIGHT];
-            U64 kKnightAtk = BitBoard.knightAttacks[bKingSq];
+            U64 kKnightAtk = BitBoard::knightAttacks[bKingSq];
             while (knights != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(knights);
-                U64 m = BitBoard.knightAttacks[sq] & ~pos.whiteBB;
+                int sq = BitBoard::numberOfTrailingZeros(knights);
+                U64 m = BitBoard::knightAttacks[sq] & ~pos.whiteBB;
                 if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB | kKnightAtk);
                 m &= ~pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
@@ -473,40 +475,40 @@ public:
             U64 pawns = pos.pieceTypeBB[Piece::WPAWN];
             int epSquare = pos.getEpSquare();
             U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-            U64 m = (pawns << 7) & BitBoard.maskAToGFiles & (pos.blackBB | epMask);
+            U64 m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.blackBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, -7, false)) return moveList;
-            m = (pawns << 9) & BitBoard.maskBToHFiles & (pos.blackBB | epMask);
+            m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.blackBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, -9, false)) return moveList;
 
             // Discovered checks and promotions
-            U64 pawnAll = discovered | BitBoard.maskRow7;
+            U64 pawnAll = discovered | BitBoard::maskRow7;
             m = ((pawns & pawnAll) << 8) & ~(pos.whiteBB | pos.blackBB);
             if (addPawnMovesByMask(moveList, pos, m, -8, false)) return moveList;
-            m = ((m & BitBoard.maskRow3) << 8) & ~(pos.whiteBB | pos.blackBB);
+            m = ((m & BitBoard::maskRow3) << 8) & ~(pos.whiteBB | pos.blackBB);
             addPawnDoubleMovesByMask(moveList, pos, m, -16);
 
             // Normal checks
             m = ((pawns & ~pawnAll) << 8) & ~(pos.whiteBB | pos.blackBB);
-            if (addPawnMovesByMask(moveList, pos, m & BitBoard.bPawnAttacks[bKingSq], -8, false)) return moveList;
-            m = ((m & BitBoard.maskRow3) << 8) & ~(pos.whiteBB | pos.blackBB);
-            addPawnDoubleMovesByMask(moveList, pos, m & BitBoard.bPawnAttacks[bKingSq], -16);
+            if (addPawnMovesByMask(moveList, pos, m & BitBoard::bPawnAttacks[bKingSq], -8, false)) return moveList;
+            m = ((m & BitBoard::maskRow3) << 8) & ~(pos.whiteBB | pos.blackBB);
+            addPawnDoubleMovesByMask(moveList, pos, m & BitBoard::bPawnAttacks[bKingSq], -16);
         } else {
             int wKingSq = pos.getKingSq(true);
             U64 discovered = 0; // Squares that could generate discovered checks
-            U64 kRookAtk = BitBoard.rookAttacks(wKingSq, occupied);
-            if ((BitBoard.rookAttacks(wKingSq, occupied & ~kRookAtk) &
+            U64 kRookAtk = BitBoard::rookAttacks(wKingSq, occupied);
+            if ((BitBoard::rookAttacks(wKingSq, occupied & ~kRookAtk) &
                     (pos.pieceTypeBB[Piece::BQUEEN] | pos.pieceTypeBB[Piece::BROOK])) != 0)
                 discovered |= kRookAtk;
-            U64 kBishAtk = BitBoard.bishopAttacks(wKingSq, occupied);
-            if ((BitBoard.bishopAttacks(wKingSq, occupied & ~kBishAtk) &
+            U64 kBishAtk = BitBoard::bishopAttacks(wKingSq, occupied);
+            if ((BitBoard::bishopAttacks(wKingSq, occupied & ~kBishAtk) &
                     (pos.pieceTypeBB[Piece::BQUEEN] | pos.pieceTypeBB[Piece::BBISHOP])) != 0)
                 discovered |= kBishAtk;
 
             // Queen moves
             U64 squares = pos.pieceTypeBB[Piece::BQUEEN];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = (BitBoard.rookAttacks(sq, occupied) | BitBoard.bishopAttacks(sq, occupied));
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied));
                 if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB | kRookAtk | kBishAtk;
                 m &= ~pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
@@ -516,8 +518,8 @@ public:
             // Rook moves
             squares = pos.pieceTypeBB[Piece::BROOK];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.rookAttacks(sq, occupied);
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::rookAttacks(sq, occupied);
                 if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB | kRookAtk;
                 m &= ~pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
@@ -527,8 +529,8 @@ public:
             // Bishop moves
             squares = pos.pieceTypeBB[Piece::BBISHOP];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.bishopAttacks(sq, occupied);
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::bishopAttacks(sq, occupied);
                 if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB | kBishAtk;
                 m &= ~pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
@@ -538,7 +540,7 @@ public:
             // King moves
             {
                 int sq = pos.getKingSq(false);
-                U64 m = BitBoard.kingAttacks[sq];
+                U64 m = BitBoard::kingAttacks[sq];
                 m &= ((discovered & (1ULL<<sq)) == 0) ? pos.whiteBB : ~pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 final int k0 = 60;
@@ -564,10 +566,10 @@ public:
 
             // Knight moves
             U64 knights = pos.pieceTypeBB[Piece::BKNIGHT];
-            U64 kKnightAtk = BitBoard.knightAttacks[wKingSq];
+            U64 kKnightAtk = BitBoard::knightAttacks[wKingSq];
             while (knights != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(knights);
-                U64 m = BitBoard.knightAttacks[sq] & ~pos.blackBB;
+                int sq = BitBoard::numberOfTrailingZeros(knights);
+                U64 m = BitBoard::knightAttacks[sq] & ~pos.blackBB;
                 if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB | kKnightAtk;
                 m &= ~pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
@@ -579,23 +581,23 @@ public:
             U64 pawns = pos.pieceTypeBB[Piece::BPAWN];
             int epSquare = pos.getEpSquare();
             U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-            U64 m = (pawns >>> 9) & BitBoard.maskAToGFiles & (pos.whiteBB | epMask);
+            U64 m = (pawns >>> 9) & BitBoard::maskAToGFiles & (pos.whiteBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, 9, false)) return moveList;
-            m = (pawns >>> 7) & BitBoard.maskBToHFiles & (pos.whiteBB | epMask);
+            m = (pawns >>> 7) & BitBoard::maskBToHFiles & (pos.whiteBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, 7, false)) return moveList;
 
             // Discovered checks and promotions
-            U64 pawnAll = discovered | BitBoard.maskRow2;
+            U64 pawnAll = discovered | BitBoard::maskRow2;
             m = ((pawns & pawnAll) >>> 8) & ~(pos.whiteBB | pos.blackBB);
             if (addPawnMovesByMask(moveList, pos, m, 8, false)) return moveList;
-            m = ((m & BitBoard.maskRow6) >>> 8) & ~(pos.whiteBB | pos.blackBB);
+            m = ((m & BitBoard::maskRow6) >>> 8) & ~(pos.whiteBB | pos.blackBB);
             addPawnDoubleMovesByMask(moveList, pos, m, 16);
 
             // Normal checks
             m = ((pawns & ~pawnAll) >>> 8) & ~(pos.whiteBB | pos.blackBB);
-            if (addPawnMovesByMask(moveList, pos, m & BitBoard.wPawnAttacks[wKingSq], 8, false)) return moveList;
-            m = ((m & BitBoard.maskRow6) >>> 8) & ~(pos.whiteBB | pos.blackBB);
-            addPawnDoubleMovesByMask(moveList, pos, m & BitBoard.wPawnAttacks[wKingSq], 16);
+            if (addPawnMovesByMask(moveList, pos, m & BitBoard::wPawnAttacks[wKingSq], 8, false)) return moveList;
+            m = ((m & BitBoard::maskRow6) >>> 8) & ~(pos.whiteBB | pos.blackBB);
+            addPawnDoubleMovesByMask(moveList, pos, m & BitBoard::wPawnAttacks[wKingSq], 16);
         }
 
         return moveList;
@@ -608,8 +610,8 @@ public:
             // Queen moves
             U64 squares = pos.pieceTypeBB[Piece::WQUEEN];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = (BitBoard.rookAttacks(sq, occupied) | BitBoard.bishopAttacks(sq, occupied)) & pos.blackBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -617,8 +619,8 @@ public:
             // Rook moves
             squares = pos.pieceTypeBB[Piece::WROOK];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.rookAttacks(sq, occupied) & pos.blackBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::rookAttacks(sq, occupied) & pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -626,8 +628,8 @@ public:
             // Bishop moves
             squares = pos.pieceTypeBB[Piece::WBISHOP];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.bishopAttacks(sq, occupied) & pos.blackBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::bishopAttacks(sq, occupied) & pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -635,35 +637,35 @@ public:
             // Knight moves
             U64 knights = pos.pieceTypeBB[Piece::WKNIGHT];
             while (knights != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(knights);
-                U64 m = BitBoard.knightAttacks[sq] & pos.blackBB;
+                int sq = BitBoard::numberOfTrailingZeros(knights);
+                U64 m = BitBoard::knightAttacks[sq] & pos.blackBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 knights &= knights-1;
             }
 
             // King moves
             int sq = pos.getKingSq(true);
-            U64 m = BitBoard.kingAttacks[sq] & pos.blackBB;
+            U64 m = BitBoard::kingAttacks[sq] & pos.blackBB;
             if (addMovesByMask(moveList, pos, sq, m)) return moveList;
 
             // Pawn moves
             U64 pawns = pos.pieceTypeBB[Piece::WPAWN];
             m = (pawns << 8) & ~(pos.whiteBB | pos.blackBB);
-            m &= BitBoard.maskRow8;
+            m &= BitBoard::maskRow8;
             if (addPawnMovesByMask(moveList, pos, m, -8, false)) return moveList;
 
             int epSquare = pos.getEpSquare();
             U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-            m = (pawns << 7) & BitBoard.maskAToGFiles & (pos.blackBB | epMask);
+            m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.blackBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, -7, false)) return moveList;
-            m = (pawns << 9) & BitBoard.maskBToHFiles & (pos.blackBB | epMask);
+            m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.blackBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, -9, false)) return moveList;
         } else {
             // Queen moves
             U64 squares = pos.pieceTypeBB[Piece::BQUEEN];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = (BitBoard.rookAttacks(sq, occupied) | BitBoard.bishopAttacks(sq, occupied)) & pos.whiteBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -671,8 +673,8 @@ public:
             // Rook moves
             squares = pos.pieceTypeBB[Piece::BROOK];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.rookAttacks(sq, occupied) & pos.whiteBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::rookAttacks(sq, occupied) & pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -680,8 +682,8 @@ public:
             // Bishop moves
             squares = pos.pieceTypeBB[Piece::BBISHOP];
             while (squares != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(squares);
-                U64 m = BitBoard.bishopAttacks(sq, occupied) & pos.whiteBB;
+                int sq = BitBoard::numberOfTrailingZeros(squares);
+                U64 m = BitBoard::bishopAttacks(sq, occupied) & pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 squares &= squares-1;
             }
@@ -689,41 +691,42 @@ public:
             // Knight moves
             U64 knights = pos.pieceTypeBB[Piece::BKNIGHT];
             while (knights != 0) {
-                int sq = BitBoard.numberOfTrailingZeros(knights);
-                U64 m = BitBoard.knightAttacks[sq] & pos.whiteBB;
+                int sq = BitBoard::numberOfTrailingZeros(knights);
+                U64 m = BitBoard::knightAttacks[sq] & pos.whiteBB;
                 if (addMovesByMask(moveList, pos, sq, m)) return moveList;
                 knights &= knights-1;
             }
 
             // King moves
             int sq = pos.getKingSq(false);
-            U64 m = BitBoard.kingAttacks[sq] & pos.whiteBB;
+            U64 m = BitBoard::kingAttacks[sq] & pos.whiteBB;
             if (addMovesByMask(moveList, pos, sq, m)) return moveList;
 
             // Pawn moves
             U64 pawns = pos.pieceTypeBB[Piece::BPAWN];
             m = (pawns >>> 8) & ~(pos.whiteBB | pos.blackBB);
-            m &= BitBoard.maskRow1;
+            m &= BitBoard::maskRow1;
             if (addPawnMovesByMask(moveList, pos, m, 8, false)) return moveList;
 
             int epSquare = pos.getEpSquare();
             U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0L;
-            m = (pawns >>> 9) & BitBoard.maskAToGFiles & (pos.whiteBB | epMask);
+            m = (pawns >>> 9) & BitBoard::maskAToGFiles & (pos.whiteBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, 9, false)) return moveList;
-            m = (pawns >>> 7) & BitBoard.maskBToHFiles & (pos.whiteBB | epMask);
+            m = (pawns >>> 7) & BitBoard::maskBToHFiles & (pos.whiteBB | epMask);
             if (addPawnMovesByMask(moveList, pos, m, 7, false)) return moveList;
         }
         return moveList;
     }
-
+#endif
     /**
      * Return true if the side to move is in check.
      */
-    public static final bool inCheck(Position pos) {
+    static bool inCheck(const Position& pos) {
         int kingSq = pos.getKingSq(pos.whiteMove);
         return sqAttacked(pos, kingSq);
     }
 
+#if 0
     /**
      * Return the next piece in a given direction, starting from sq.
      */
@@ -771,7 +774,7 @@ public:
         int oKingSq = pos.getKingSq(!wtm);
         int oKing = wtm ? Piece::BKING : Piece::WKING;
         int p = Piece::makeWhite(m.promoteTo == Piece::EMPTY ? pos.getPiece(m.from()) : m.promoteTo);
-        int d1 = BitBoard.getDirection(m.to(), oKingSq);
+        int d1 = BitBoard::getDirection(m.to(), oKingSq);
         switch (d1) {
         case 8: case -8: case 1: case -1: // Rook direction
             if ((p == Piece::WQUEEN) || (p == Piece::WROOK))
@@ -793,7 +796,7 @@ public:
                     return true;
             }
         }
-        int d2 = BitBoard.getDirection(m.from(), oKingSq);
+        int d2 = BitBoard::getDirection(m.from(), oKingSq);
         if ((d2 != 0) && (d2 != d1) && (nextPiece(pos, m.from(), d2) == oKing)) {
             int p2 = nextPieceSafe(pos, m.from(), -d2);
             switch (d2) {
@@ -841,7 +844,7 @@ public:
                 int dx = Position::getX(m.to()) - Position::getX(m.from());
                 if (dx != 0) { // en passant
                     int epSq = m.from() + dx;
-                    int d3 = BitBoard.getDirection(epSq, oKingSq);
+                    int d3 = BitBoard::getDirection(epSq, oKingSq);
                     switch (d3) {
                     case 9: case 7: case -9: case -7:
                         if (nextPiece(pos, epSq, d3) == oKing) {
@@ -883,40 +886,42 @@ public:
         pos.setWhiteMove(!pos.whiteMove);
         return ret;
     }
+#endif
 
     /**
      * Return true if a square is attacked by the opposite side.
      */
-    public static final bool sqAttacked(Position pos, int sq) {
+    static bool sqAttacked(const Position& pos, int sq) {
         if (pos.whiteMove) {
-            if ((BitBoard.knightAttacks[sq] & pos.pieceTypeBB[Piece::BKNIGHT]) != 0)
+            if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB[Piece::BKNIGHT]) != 0)
                 return true;
-            if ((BitBoard.kingAttacks[sq] & pos.pieceTypeBB[Piece::BKING]) != 0)
+            if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB[Piece::BKING]) != 0)
                 return true;
-            if ((BitBoard.wPawnAttacks[sq] & pos.pieceTypeBB[Piece::BPAWN]) != 0)
+            if ((BitBoard::wPawnAttacks[sq] & pos.pieceTypeBB[Piece::BPAWN]) != 0)
                 return true;
             U64 occupied = pos.whiteBB | pos.blackBB;
             U64 bbQueen = pos.pieceTypeBB[Piece::BQUEEN];
-            if ((BitBoard.bishopAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::BBISHOP] | bbQueen)) != 0)
+            if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::BBISHOP] | bbQueen)) != 0)
                 return true;
-            if ((BitBoard.rookAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::BROOK] | bbQueen)) != 0)
+            if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::BROOK] | bbQueen)) != 0)
                 return true;
         } else {
-            if ((BitBoard.knightAttacks[sq] & pos.pieceTypeBB[Piece::WKNIGHT]) != 0)
+            if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB[Piece::WKNIGHT]) != 0)
                 return true;
-            if ((BitBoard.kingAttacks[sq] & pos.pieceTypeBB[Piece::WKING]) != 0)
+            if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB[Piece::WKING]) != 0)
                 return true;
-            if ((BitBoard.bPawnAttacks[sq] & pos.pieceTypeBB[Piece::WPAWN]) != 0)
+            if ((BitBoard::bPawnAttacks[sq] & pos.pieceTypeBB[Piece::WPAWN]) != 0)
                 return true;
             U64 occupied = pos.whiteBB | pos.blackBB;
             U64 bbQueen = pos.pieceTypeBB[Piece::WQUEEN];
-            if ((BitBoard.bishopAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::WBISHOP] | bbQueen)) != 0)
+            if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::WBISHOP] | bbQueen)) != 0)
                 return true;
-            if ((BitBoard.rookAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::WROOK] | bbQueen)) != 0)
+            if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::WROOK] | bbQueen)) != 0)
                 return true;
         }
         return false;
     }
+#if 0
 
     /**
      * Remove all illegal moves from moveList.
@@ -930,7 +935,7 @@ public:
         bool isInCheck = inCheck(pos);
         final U64 occupied = pos.whiteBB | pos.blackBB;
         int kSq = pos.getKingSq(pos.whiteMove);
-        U64 kingAtks = BitBoard.rookAttacks(kSq, occupied) | BitBoard.bishopAttacks(kSq, occupied);
+        U64 kingAtks = BitBoard::rookAttacks(kSq, occupied) | BitBoard::bishopAttacks(kSq, occupied);
         int epSquare = pos.getEpSquare();
         if (isInCheck) {
             kingAtks |= pos.pieceTypeBB[pos.whiteMove ? Piece::BKNIGHT : Piece::WKNIGHT];
@@ -975,15 +980,15 @@ public:
             return false;
         U64 oKingMask = pos.pieceTypeBB[pos.whiteMove ? Piece::BKING : Piece::WKING];
         if ((mask & oKingMask) != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(mask & oKingMask);
+            int sq = BitBoard::numberOfTrailingZeros(mask & oKingMask);
             moveList.size = 0;
             setMove(moveList, sq + delta, sq, Piece::EMPTY);
             return true;
         }
-        U64 promMask = mask & BitBoard.maskRow1Row8;
+        U64 promMask = mask & BitBoard::maskRow1Row8;
         mask &= ~promMask;
         while (promMask != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(promMask);
+            int sq = BitBoard::numberOfTrailingZeros(promMask);
             int sq0 = sq + delta;
             if (sq >= 56) { // White promotion
                 setMove(moveList, sq0, sq, Piece::WQUEEN);
@@ -1003,7 +1008,7 @@ public:
             promMask &= (promMask - 1);
         }
         while (mask != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(mask);
+            int sq = BitBoard::numberOfTrailingZeros(mask);
             setMove(moveList, sq + delta, sq, Piece::EMPTY);
             mask &= (mask - 1);
         }
@@ -1013,7 +1018,7 @@ public:
     private final static void addPawnDoubleMovesByMask(MoveList moveList, Position pos,
                                                        U64 mask, int delta) {
         while (mask != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(mask);
+            int sq = BitBoard::numberOfTrailingZeros(mask);
             setMove(moveList, sq + delta, sq, Piece::EMPTY);
             mask &= (mask - 1);
         }
@@ -1022,13 +1027,13 @@ public:
     private final static bool addMovesByMask(MoveList moveList, Position pos, int sq0, U64 mask) {
         U64 oKingMask = pos.pieceTypeBB[pos.whiteMove ? Piece::BKING : Piece::WKING];
         if ((mask & oKingMask) != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(mask & oKingMask);
+            int sq = BitBoard::numberOfTrailingZeros(mask & oKingMask);
             moveList.size = 0;
             setMove(moveList, sq0, sq, Piece::EMPTY);
             return true;
         }
         while (mask != 0) {
-            int sq = BitBoard.numberOfTrailingZeros(mask);
+            int sq = BitBoard::numberOfTrailingZeros(mask);
             setMove(moveList, sq0, sq, Piece::EMPTY);
             mask &= (mask - 1);
         }

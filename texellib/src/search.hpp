@@ -734,16 +734,16 @@ public class Search {
             } else {
                 int moveExtend = 0;
                 if (posExtend == 0) {
-                    final int pV = Evaluate.pV;
+                    final int pV = Evaluate::pV;
                     if ((m.to == recaptureSquare)) {
                         if (sVal == Integer.MIN_VALUE) sVal = SEE(m);
-                        int tVal = Evaluate.pieceValue[pos.getPiece(m.to)];
+                        int tVal = Evaluate::pieceValue[pos.getPiece(m.to)];
                         if (sVal > tVal - pV / 2)
                             moveExtend = plyScale;
                     }
                     if ((moveExtend < plyScale) && isCapture && (pos.wMtrlPawns + pos.bMtrlPawns > pV)) {
                         // Extend if going into pawn endgame
-                        int capVal = Evaluate.pieceValue[pos.getPiece(m.to)];
+                        int capVal = Evaluate::pieceValue[pos.getPiece(m.to)];
                         if (pos.whiteMove) {
                             if ((pos.wMtrl == pos.wMtrlPawns) && (pos.bMtrl - pos.bMtrlPawns == capVal))
                                 moveExtend = plyScale;
@@ -769,9 +769,9 @@ public class Search {
                 if (isCapture && (givesCheck || (depth + extend) > plyScale)) {
                     // Compute recapture target square, but only if we are not going
                     // into q-search at the next ply.
-                    int fVal = Evaluate.pieceValue[pos.getPiece(m.from)];
-                    int tVal = Evaluate.pieceValue[pos.getPiece(m.to)];
-                    final int pV = Evaluate.pV;
+                    int fVal = Evaluate::pieceValue[pos.getPiece(m.from)];
+                    int tVal = Evaluate::pieceValue[pos.getPiece(m.to)];
+                    final int pV = Evaluate::pV;
                     if (Math.abs(tVal - fVal) < pV / 2) {    // "Equal" capture
                         sVal = SEE(m);
                         if (Math.abs(sVal) < pV / 2)
@@ -865,7 +865,7 @@ public class Search {
         if ((m1.from() == m1.to()) || (m2.from() == m2.to()))
             return false;
         if ((m1.to() == m2.from()) || (m1.from() == m2.to()) ||
-            ((BitBoard.squaresBetween[m2.from][m2.to] & (1ULL << m1.from())) != 0))
+            ((BitBoard::squaresBetween[m2.from][m2.to] & (1ULL << m1.from())) != 0))
             return true;
         return false;
     }
@@ -878,7 +878,7 @@ public class Search {
 
         double s = strength * 1e-3;
         double offs = (17 - 50 * s) / 3;
-        double effPly = ply * Evaluate.interpolate(pos.wMtrl + pos.bMtrl, 0, 30, Evaluate.qV * 4, 100) * 1e-2;
+        double effPly = ply * Evaluate::interpolate(pos.wMtrl + pos.bMtrl, 0, 30, Evaluate::qV * 4, 100) * 1e-2;
         double t = effPly + offs;
         double p = 1/(1+Math.exp(t)); // Probability to "see" move
         bool easyMove = ((pos.getPiece(m.to) != Piece::EMPTY) ||
@@ -895,13 +895,13 @@ public class Search {
         if (pos.whiteMove) {
             if (p != Piece::WPAWN)
                 return false;
-            if ((BitBoard.wPawnBlockerMask[m.to] & pos.pieceTypeBB[Piece::BPAWN]) != 0)
+            if ((BitBoard::wPawnBlockerMask[m.to] & pos.pieceTypeBB[Piece::BPAWN]) != 0)
                 return false;
             return m.to >= 40;
         } else {
             if (p != Piece::BPAWN)
                 return false;
-            if ((BitBoard.bPawnBlockerMask[m.to] & pos.pieceTypeBB[Piece::WPAWN]) != 0)
+            if ((BitBoard::bPawnBlockerMask[m.to] & pos.pieceTypeBB[Piece::WPAWN]) != 0)
                 return false;
             return m.to <= 23;
         }
@@ -976,8 +976,8 @@ public class Search {
                 } else {
                     if (negSEE(m))
                         continue;
-                    int capt = Evaluate.pieceValue[pos.getPiece(m.to)];
-                    int prom = Evaluate.pieceValue[m.promoteTo];
+                    int capt = Evaluate::pieceValue[pos.getPiece(m.to)];
+                    int prom = Evaluate::pieceValue[m.promoteTo];
                     int optimisticScore = evalScore + capt + prom + 200;
                     if (optimisticScore < alpha) { // Delta pruning
                         if ((pos.wMtrlPawns > 0) && (pos.wMtrl > capt + pos.wMtrlPawns) &&
@@ -1025,8 +1025,8 @@ public class Search {
 
     /** Return >0, 0, <0, depending on the sign of SEE(m). */
     final public int signSEE(Move m) {
-        int p0 = Evaluate.pieceValue[pos.getPiece(m.from)];
-        int p1 = Evaluate.pieceValue[pos.getPiece(m.to)];
+        int p0 = Evaluate::pieceValue[pos.getPiece(m.from)];
+        int p1 = Evaluate::pieceValue[pos.getPiece(m.to)];
         if (p0 < p1)
             return 1;
         return SEE(m);
@@ -1034,8 +1034,8 @@ public class Search {
 
     /** Return true if SEE(m) < 0. */
     final public bool negSEE(Move m) {
-        int p0 = Evaluate.pieceValue[pos.getPiece(m.from)];
-        int p1 = Evaluate.pieceValue[pos.getPiece(m.to)];
+        int p0 = Evaluate::pieceValue[pos.getPiece(m.from)];
+        int p1 = Evaluate::pieceValue[pos.getPiece(m.to)];
         if (p1 >= p0)
             return false;
         return SEE(m) < 0;
@@ -1049,13 +1049,13 @@ public class Search {
      * @return SEE score for m. Positive value is good for the side that makes the first move.
      */
     final public int SEE(Move m) {
-        final int kV = Evaluate.kV;
+        final int kV = Evaluate::kV;
         
         final int square = m.to;
         if (square == pos.getEpSquare()) {
-            captures[0] = Evaluate.pV;
+            captures[0] = Evaluate::pV;
         } else {
-            captures[0] = Evaluate.pieceValue[pos.getPiece(square)];
+            captures[0] = Evaluate::pieceValue[pos.getPiece(square)];
             if (captures[0] == kV)
                 return kV;
         }
@@ -1063,35 +1063,35 @@ public class Search {
 
         pos.makeSEEMove(m, seeUi);
         bool white = pos.whiteMove;
-        int valOnSquare = Evaluate.pieceValue[pos.getPiece(square)];
+        int valOnSquare = Evaluate::pieceValue[pos.getPiece(square)];
         U64 occupied = pos.whiteBB | pos.blackBB;
         while (true) {
             int bestValue = Integer.MAX_VALUE;
             U64 atk;
             if (white) {
-                atk = BitBoard.bPawnAttacks[square] & pos.pieceTypeBB[Piece::WPAWN] & occupied;
+                atk = BitBoard::bPawnAttacks[square] & pos.pieceTypeBB[Piece::WPAWN] & occupied;
                 if (atk != 0) {
-                    bestValue = Evaluate.pV;
+                    bestValue = Evaluate::pV;
                 } else {
-                    atk = BitBoard.knightAttacks[square] & pos.pieceTypeBB[Piece::WKNIGHT] & occupied;
+                    atk = BitBoard::knightAttacks[square] & pos.pieceTypeBB[Piece::WKNIGHT] & occupied;
                     if (atk != 0) {
-                        bestValue = Evaluate.nV;
+                        bestValue = Evaluate::nV;
                     } else {
-                        U64 bAtk = BitBoard.bishopAttacks(square, occupied) & occupied;
+                        U64 bAtk = BitBoard::bishopAttacks(square, occupied) & occupied;
                         atk = bAtk & pos.pieceTypeBB[Piece::WBISHOP];
                         if (atk != 0) {
-                            bestValue = Evaluate.bV;
+                            bestValue = Evaluate::bV;
                         } else {
-                            U64 rAtk = BitBoard.rookAttacks(square, occupied) & occupied;
+                            U64 rAtk = BitBoard::rookAttacks(square, occupied) & occupied;
                             atk = rAtk & pos.pieceTypeBB[Piece::WROOK];
                             if (atk != 0) {
-                                bestValue = Evaluate.rV;
+                                bestValue = Evaluate::rV;
                             } else {
                                 atk = (bAtk | rAtk) & pos.pieceTypeBB[Piece::WQUEEN];
                                 if (atk != 0) {
-                                    bestValue = Evaluate.qV;
+                                    bestValue = Evaluate::qV;
                                 } else {
-                                    atk = BitBoard.kingAttacks[square] & pos.pieceTypeBB[Piece::WKING] & occupied;
+                                    atk = BitBoard::kingAttacks[square] & pos.pieceTypeBB[Piece::WKING] & occupied;
                                     if (atk != 0) {
                                         bestValue = kV;
                                     } else {
@@ -1103,29 +1103,29 @@ public class Search {
                     }
                 }
             } else {
-                atk = BitBoard.wPawnAttacks[square] & pos.pieceTypeBB[Piece::BPAWN] & occupied;
+                atk = BitBoard::wPawnAttacks[square] & pos.pieceTypeBB[Piece::BPAWN] & occupied;
                 if (atk != 0) {
-                    bestValue = Evaluate.pV;
+                    bestValue = Evaluate::pV;
                 } else {
-                    atk = BitBoard.knightAttacks[square] & pos.pieceTypeBB[Piece::BKNIGHT] & occupied;
+                    atk = BitBoard::knightAttacks[square] & pos.pieceTypeBB[Piece::BKNIGHT] & occupied;
                     if (atk != 0) {
-                        bestValue = Evaluate.nV;
+                        bestValue = Evaluate::nV;
                     } else {
-                        U64 bAtk = BitBoard.bishopAttacks(square, occupied) & occupied;
+                        U64 bAtk = BitBoard::bishopAttacks(square, occupied) & occupied;
                         atk = bAtk & pos.pieceTypeBB[Piece::BBISHOP];
                         if (atk != 0) {
-                            bestValue = Evaluate.bV;
+                            bestValue = Evaluate::bV;
                         } else {
-                            U64 rAtk = BitBoard.rookAttacks(square, occupied) & occupied;
+                            U64 rAtk = BitBoard::rookAttacks(square, occupied) & occupied;
                             atk = rAtk & pos.pieceTypeBB[Piece::BROOK];
                             if (atk != 0) {
-                                bestValue = Evaluate.rV;
+                                bestValue = Evaluate::rV;
                             } else {
                                 atk = (bAtk | rAtk) & pos.pieceTypeBB[Piece::BQUEEN];
                                 if (atk != 0) {
-                                    bestValue = Evaluate.qV;
+                                    bestValue = Evaluate::qV;
                                 } else {
-                                    atk = BitBoard.kingAttacks[square] & pos.pieceTypeBB[Piece::BKING] & occupied;
+                                    atk = BitBoard::kingAttacks[square] & pos.pieceTypeBB[Piece::BKING] & occupied;
                                     if (atk != 0) {
                                         bestValue = kV;
                                     } else {
@@ -1169,7 +1169,7 @@ public class Search {
                 int seeScore = isCapture ? signSEE(m) : 0;
                 int v = pos.getPiece(m.to);
                 int a = pos.getPiece(m.from);
-                score = Evaluate.pieceValue[v]/10 * 1000 - Evaluate.pieceValue[a]/10;
+                score = Evaluate::pieceValue[v]/10 * 1000 - Evaluate::pieceValue[a]/10;
                 if (seeScore > 0)
                     score += 2000000;
                 else if (seeScore == 0)
@@ -1193,7 +1193,7 @@ public class Search {
             Move m = moves.m[i];
             int v = pos.getPiece(m.to);
             int a = pos.getPiece(m.from);
-            m.score = Evaluate.pieceValue[v] * 10000 - Evaluate.pieceValue[a];
+            m.score = Evaluate::pieceValue[v] * 10000 - Evaluate::pieceValue[a];
         }
     }
 

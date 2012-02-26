@@ -28,15 +28,15 @@ class Position {
 private:
     int squares[64];
 
-    // Bitboards
-    U64 pieceTypeBB[Piece::nPieceTypes];
-    U64 whiteBB, blackBB;
-
     // Piece square table scores
     short psScore1[Piece::nPieceTypes];
     short psScore2[Piece::nPieceTypes];
 
 public:
+    // Bitboards
+    U64 pieceTypeBB[Piece::nPieceTypes];
+    U64 whiteBB, blackBB;
+
     bool whiteMove;
 
     /** Number of half-moves since last 50-move reset. */

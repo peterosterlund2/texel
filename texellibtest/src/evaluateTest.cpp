@@ -150,29 +150,29 @@
     @Test
     public void testMaterial() throws ChessParseError {
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
-        ASSERT_EQUAL(0, Evaluate.material(pos));
+        ASSERT_EQUAL(0, Evaluate::material(pos));
         
-        final int pV = Evaluate.pV;
-        final int qV = Evaluate.qV;
+        final int pV = Evaluate::pV;
+        final int qV = Evaluate::qV;
         ASSERT(pV != 0);
         ASSERT(qV != 0);
         ASSERT(qV > pV);
         
         UndoInfo ui = new UndoInfo();
         pos.makeMove(TextIO::stringToMove(pos, "e4"), ui);
-        ASSERT_EQUAL(0, Evaluate.material(pos));
+        ASSERT_EQUAL(0, Evaluate::material(pos));
         pos.makeMove(TextIO::stringToMove(pos, "d5"), ui);
-        ASSERT_EQUAL(0, Evaluate.material(pos));
+        ASSERT_EQUAL(0, Evaluate::material(pos));
         pos.makeMove(TextIO::stringToMove(pos, "exd5"), ui);
-        ASSERT_EQUAL(pV, Evaluate.material(pos));
+        ASSERT_EQUAL(pV, Evaluate::material(pos));
         pos.makeMove(TextIO::stringToMove(pos, "Qxd5"), ui);
-        ASSERT_EQUAL(0, Evaluate.material(pos));
+        ASSERT_EQUAL(0, Evaluate::material(pos));
         pos.makeMove(TextIO::stringToMove(pos, "Nc3"), ui);
-        ASSERT_EQUAL(0, Evaluate.material(pos));
+        ASSERT_EQUAL(0, Evaluate::material(pos));
         pos.makeMove(TextIO::stringToMove(pos, "Qxd2"), ui);
-        ASSERT_EQUAL(-pV, Evaluate.material(pos));
+        ASSERT_EQUAL(-pV, Evaluate::material(pos));
         pos.makeMove(TextIO::stringToMove(pos, "Qxd2"), ui);
-        ASSERT_EQUAL(-pV+qV, Evaluate.material(pos));
+        ASSERT_EQUAL(-pV+qV, Evaluate::material(pos));
     }
 
     /**
@@ -224,12 +224,12 @@
 
         pos.setPiece(Position::getSquare(3, 1), Piece::WROOK);
         score = evalWhite(pos);
-        final int rV = Evaluate.rV;
+        final int rV = Evaluate::rV;
         ASSERT(Math.abs(score) > rV + 100);   // Enough material to force mate
         
         pos.setPiece(Position::getSquare(3, 6), Piece::BBISHOP);
         score = evalWhite(pos);
-        final int bV = Evaluate.bV;
+        final int bV = Evaluate::bV;
         ASSERT(score >= 0);
         ASSERT(score < rV - bV);   // Insufficient excess material to mate
         
@@ -245,7 +245,7 @@
         // KrpKn is win for white
         pos = TextIO::readFEN("8/3bk3/8/8/8/3P4/3RK3/8 w - - 0 1");
         score = evalWhite(pos);
-        final int pV = Evaluate.pV;
+        final int pV = Evaluate::pV;
         ASSERT(score > rV + pV - bV - 100);
         
         // KNNK is a draw
@@ -255,7 +255,7 @@
         
         pos = TextIO::readFEN("8/8/3k4/8/8/3NK3/2B5/8 b - - 0 1");
         score = evalWhite(pos);
-        final int nV = Evaluate.nV;
+        final int nV = Evaluate::nV;
         ASSERT(score > bV + nV + 150);  // KBNK is won, should have a bonus
         score = moveScore(pos, "Kc6");
         ASSERT(score > 0);      // Black king going into wrong corner, good for white
@@ -310,8 +310,8 @@
      */
     @Test
     public void testBishAndRookPawns() throws ChessParseError {
-        final int pV = Evaluate.pV;
-        final int bV = Evaluate.bV;
+        final int pV = Evaluate::pV;
+        final int bV = Evaluate::bV;
         final int winScore = pV + bV;
         final int drawish = (pV + bV) / 20;
         Position pos = TextIO::readFEN("k7/8/8/8/2B5/2K5/P7/8 w - - 0 1");
@@ -362,8 +362,8 @@
      */
     @Test
     public void testKQKP() throws ChessParseError {
-        final int pV = Evaluate.pV;
-        final int qV = Evaluate.qV;
+        final int pV = Evaluate::pV;
+        final int qV = Evaluate::qV;
         final int winScore = qV - pV - 200;
         final int drawish = (pV + qV) / 20;
 
@@ -384,8 +384,8 @@
     
     @Test
     public void testKRKP() throws ChessParseError {
-        final int pV = Evaluate.pV;
-        final int rV = Evaluate.rV;
+        final int pV = Evaluate::pV;
+        final int rV = Evaluate::rV;
         final int winScore = rV - pV;
         final int drawish = (pV + rV) / 20;
         Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");

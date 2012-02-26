@@ -16,7 +16,7 @@ public class ComputerPlayer implements Player {
     public static final std::string engineName;
 
     static {
-        std::string name = "CuckooChess 1.13a8";
+        std::string name = "Texel 1.00";
         std::string m = System.getProperty("sun.arch.data.model");
         if ("32".equals(m))
             name += " 32-bit";
@@ -51,7 +51,7 @@ public class ComputerPlayer implements Player {
     public void setTTLogSize(int logSize) {
         tt = new TranspositionTable(logSize);
     }
-    
+
     Search.Listener listener;
     public void setListener(Search.Listener listener) {
         this->listener = listener;
@@ -86,7 +86,7 @@ public class ComputerPlayer implements Player {
                 return TextIO::moveToString(pos, bookMove, false);
             }
         }
-        
+
         // Find best move using iterative deepening
         currentSearch = sc;
         sc.setListener(listener);
@@ -112,7 +112,7 @@ public class ComputerPlayer implements Player {
         }
         return strMove;
     }
-    
+
     /** Check if a draw claim is allowed, possibly after playing "move".
      * @param move The move that may have to be made before claiming draw.
      * @return The draw string that claims the draw, or empty string if draw claim not valid.
@@ -173,7 +173,7 @@ public class ComputerPlayer implements Player {
         U64[] posHashList = new U64[200];
         tt.nextGeneration();
         Search sc = new Search(pos, posHashList, 0, tt);
-        
+
         // Determine all legal moves
         MoveGen::MoveList moves = new MoveGen().pseudoLegalMoves(pos);
         MoveGen::removeIllegal(pos, moves);
