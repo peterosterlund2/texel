@@ -17,4 +17,7 @@ public:
     cute::suite getSuite() const;
 };
 
+class Position;
+Position swapColors(const Position& pos);
+
 #endif /* EVALUATETEST_HPP_ */

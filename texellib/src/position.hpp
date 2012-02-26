@@ -16,6 +16,7 @@
 #include "piece.hpp"
 #include "evaluate.hpp"
 #include <algorithm>
+#include <iostream>
 
 /**
  * Stores the state of a chess position.
@@ -72,13 +73,16 @@ public:
         for (int i = 0; i < Piece::nPieceTypes; i++) {
             psScore1[i] = 0;
             psScore2[i] = 0;
+            pieceTypeBB[i] = 0;
         }
+        whiteBB = blackBB = 0;
         whiteMove = true;
         castleMask = 0;
         epSquare = -1;
         halfMoveClock = 0;
         fullMoveCounter = 1;
         hashKey = computeZobristHash();
+        pHashKey = 0;
         wKingSq = bKingSq = -1;
         wMtrl = bMtrl = -Evaluate::kV;
         wMtrlPawns = bMtrlPawns = 0;
@@ -516,8 +520,12 @@ public:
     /** Return true if (x,y) is a dark square. */
     static bool darkSquare(int x, int y);
 
-    /** For debugging. */
-    std::ostream& operator<<(std::ostream& os);
+    /**
+     * Compute the Zobrist hash value non-incrementally. Only useful for test programs.
+     */
+    U64 computeZobristHash();
+
+    static void staticInitialize();
 
 private:
     /** Move a non-pawn piece to an empty square. */
@@ -571,58 +579,11 @@ private:
     static U64 epHashKeys[9];        // [epFile + 1] (epFile==-1 for no ep)
     static U64 moveCntKeys[101];     // [min(halfMoveClock, 100)]
 
-#if 0
-    static {
-        int rndNo = 0;
-        for (int p = 0; p < Piece::nPieceTypes; p++)
-            for (int sq = 0; sq < 64; sq++)
-                psHashKeys[p][sq] = getRandomHashVal(rndNo++);
-        whiteHashKey = getRandomHashVal(rndNo++);
-        for (int cm = 0; cm < castleHashKeys.length; cm++)
-            castleHashKeys[cm] = getRandomHashVal(rndNo++);
-        for (int f = 0; f < epHashKeys.length; f++)
-            epHashKeys[f] = getRandomHashVal(rndNo++);
-        for (int mc = 0; mc < moveCntKeys.length; mc++)
-            moveCntKeys[mc] = getRandomHashVal(rndNo++);
-    }
-#endif
-
-public:
-    /**
-     * Compute the Zobrist hash value non-incrementally. Only useful for test programs.
-     */
-    U64 computeZobristHash() {
-        U64 hash = 0;
-        for (int sq = 0; sq < 64; sq++) {
-            int p = squares[sq];
-            hash ^= psHashKeys[p][sq];
-            if ((p == Piece::WPAWN) || (p == Piece::BPAWN))
-                pHashKey ^= psHashKeys[p][sq];
-        }
-        if (whiteMove)
-            hash ^= whiteHashKey;
-        hash ^= castleHashKeys[castleMask];
-        hash ^= epHashKeys[(epSquare >= 0) ? getX(epSquare) + 1 : 0];
-        return hash;
-    }
-private:
-
-    static U64 getRandomHashVal(int rndNo) {
-        return rndNo * 1234532197;
-#if 0
-            MessageDigest md = MessageDigest.getInstance("SHA-1");
-            byte[] input = new byte[4];
-            for (int i = 0; i < 4; i++)
-                input[i] = (byte)((rndNo >> (i * 8)) & 0xff);
-            byte[] digest = md.digest(input);
-            U64 ret = 0;
-            for (int i = 0; i < 8; i++) {
-                ret ^= ((U64)digest[i]) << (i * 8);
-            }
-            return ret;
-#endif
-    }
+    static U64 getRandomHashVal(int rndNo);
 };
+
+/** For debugging. */
+std::ostream& operator<<(std::ostream& os, const Position& pos);
 
 inline int
 Position::getSquare(int x, int y) {

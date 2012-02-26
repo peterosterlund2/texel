@@ -16,7 +16,6 @@ public class Search {
     final static int plyScale = 8; // Fractional ply resolution
 
     Position pos;
-    MoveGen moveGen;
     Evaluate eval;
     KillerTable kt;
     History ht;
@@ -62,15 +61,14 @@ public class Search {
     long totalNodes;
     long tLastStats;        // Time when notifyStats was last called
     bool verbose;
-    
+
     public final static int MATE0 = 32000;
 
     public final static int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
-    int q0Eval; // Static eval score at first level of quiescence search 
+    int q0Eval; // Static eval score at first level of quiescence search
 
     public Search(const Position& pos, U64[] posHashList, int posHashListSize, TranspositionTable tt) {
         this->pos = pos;
-        this->moveGen = MoveGen();
         this->posHashList = posHashList;
         this->posHashListSize = posHashListSize;
         this->tt = tt;
@@ -431,7 +429,7 @@ public class Search {
 
     private static final Move emptyMove = new Move(0, 0, Piece::EMPTY, 0);
 
-    /** 
+    /**
      * Main recursive search algorithm.
      * @return Score for the side to make a move, in position given by "pos".
      */
@@ -454,7 +452,7 @@ public class Search {
                 notifyStats();
             }
         }
-        
+
         // Collect statistics
         if (verbose) {
             if (ply < 20) nodesPlyVec[ply]++;
@@ -470,15 +468,13 @@ public class Search {
                 return score;
             }
             if (inCheck) {
-                MoveGen::MoveList moves = moveGen.pseudoLegalMoves(pos);
+                MoveGen::MoveList moves = MoveGen::pseudoLegalMoves(pos);
                 MoveGen::removeIllegal(pos, moves);
                 if (moves.size == 0) {            // Can't claim draw if already check mated.
                     int score = -(MATE0-(ply+1));
                     if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, TTEntry.T_EXACT, UNKNOWN_SCORE, hKey);
-                    moveGen.returnMoveList(moves);
                     return score;
                 }
-                moveGen.returnMoveList(moves);
             }
             if (log != null) log.logNodeEnd(searchTreeInfo[ply].nodeIdx, 0, TTEntry.T_EXACT, UNKNOWN_SCORE, hKey);
             return 0;
@@ -517,7 +513,7 @@ public class Search {
             hashMove = sti.hashMove;
             ent.getMove(hashMove);
         }
-        
+
         int posExtend = inCheck ? plyScale : 0; // Check extension
 
         // If out of depth, perform quiescence search
@@ -555,7 +551,7 @@ public class Search {
         }
 
         // Reverse futility pruning
-        if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) && 
+        if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) &&
             (Math.abs(alpha) <= MATE0 / 2) && (Math.abs(beta) <= MATE0 / 2)) {
             bool mtrlOk;
             if (pos.whiteMove) {
@@ -672,9 +668,9 @@ public class Search {
         // FIXME! Try hash move before generating move list.
         MoveGen::MoveList moves;
         if (inCheck)
-            moves = moveGen.checkEvasions(pos);
-        else 
-            moves = moveGen.pseudoLegalMoves(pos);
+            moves = MoveGen::checkEvasions(pos);
+        else
+            moves = MoveGen::pseudoLegalMoves(pos);
         bool seeDone = false;
         bool hashMoveSelected = true;
         if (!selectHashMove(moves, hashMove)) {
@@ -700,7 +696,6 @@ public class Search {
             }
             const Move& m = moves.m[mi];
             if (pos.getPiece(m.to) == (pos.whiteMove ? Piece::BKING : Piece::WKING)) {
-                moveGen.returnMoveList(moves);
                 int score = MATE0-ply;
                 if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry.T_EXACT, evalScore, hKey);
                 return score;       // King capture
@@ -711,7 +706,7 @@ public class Search {
             int sVal = Integer.MIN_VALUE;
             // FIXME! Test extending pawn pushes to 7:th rank
             bool mayReduce = (m.score < 53) && (!isCapture || m.score < 0) && !isPromotion;
-            bool givesCheck = MoveGen::givesCheck(pos, m); 
+            bool givesCheck = MoveGen::givesCheck(pos, m);
             bool doFutility = false;
             if (mayReduce && haveLegalMoves && !givesCheck && !passedPawnPush(pos, m)) {
                 int moveCountLimit;
@@ -834,14 +829,12 @@ public class Search {
                     }
                 }
                 tt.insert(hKey, m, TTEntry.T_GE, ply, depth, evalScore);
-                moveGen.returnMoveList(moves);
                 if (log != null) log.logNodeEnd(sti.nodeIdx, alpha, TTEntry.T_GE, evalScore, hKey);
                 return alpha;
             }
             b = alpha + 1;
         }
         if (!haveLegalMoves && !inCheck) {
-            moveGen.returnMoveList(moves);
             if (log != null) log.logNodeEnd(sti.nodeIdx, 0, TTEntry.T_EXACT, evalScore, hKey);
             return 0;       // Stale-mate
         }
@@ -853,7 +846,6 @@ public class Search {
             tt.insert(hKey, emptyMove, TTEntry.T_LE, ply, depth, evalScore);
             if (log != null) log.logNodeEnd(sti.nodeIdx, bestScore, TTEntry.T_LE, evalScore, hKey);
         }
-        moveGen.returnMoveList(moves);
         return bestScore;
     }
 
@@ -936,11 +928,11 @@ public class Search {
         final bool tryChecks = (depth > -3);
         MoveGen::MoveList moves;
         if (inCheck) {
-            moves = moveGen.checkEvasions(pos);
+            MoveGen::checkEvasions(pos, moves);
         } else if (tryChecks) {
-            moves = moveGen.pseudoLegalCapturesAndChecks(pos);
+            MoveGen::pseudoLegalCapturesAndChecks(pos, moves);
         } else {
-            moves = moveGen.pseudoLegalCaptures(pos);
+            MoveGen::pseudoLegalCaptures(pos, moves);
         }
         scoreMoveListMvvLva(moves);
         UndoInfo ui = searchTreeInfo[ply].undoInfo;
@@ -951,10 +943,8 @@ public class Search {
                 selectBest(moves, mi);
             }
             const Move& m = moves.m[mi];
-            if (pos.getPiece(m.to) == (pos.whiteMove ? Piece::BKING : Piece::WKING)) {
-                moveGen.returnMoveList(moves);
+            if (pos.getPiece(m.to) == (pos.whiteMove ? Piece::BKING : Piece::WKING))
                 return MATE0-ply;       // King capture
-            }
             bool givesCheck = false;
             bool givesCheckComputed = false;
             if (inCheck) {
@@ -1000,7 +990,7 @@ public class Search {
             }
             final bool nextInCheck = (depth - 1) > -4 ? givesCheck : false;
 
-            pos.makeMove(m, ui); 
+            pos.makeMove(m, ui);
             qNodes++;
             totalNodes++;
             score = -quiesce(-beta, -alpha, ply + 1, depth - 1, nextInCheck);
@@ -1009,14 +999,11 @@ public class Search {
                 bestScore = score;
                 if (score > alpha) {
                     alpha = score;
-                    if (alpha >= beta) {
-                        moveGen.returnMoveList(moves);
+                    if (alpha >= beta)
                         return alpha;
-                    }
                 }
             }
         }
-        moveGen.returnMoveList(moves);
         return bestScore;
     }
 
@@ -1047,7 +1034,7 @@ public class Search {
      */
     final public int SEE(const Move& m) {
         final int kV = Evaluate::kV;
-        
+
         final int square = m.to;
         if (square == pos.getEpSquare()) {
             captures[0] = Evaluate::pV;
@@ -1142,7 +1129,7 @@ public class Search {
             white = !white;
         }
         pos.unMakeSEEMove(m, seeUi);
-        
+
         int score = 0;
         for (int i = nCapt - 1; i > 0; i--) {
             score = Math.max(0, captures[i] - score);
@@ -1234,7 +1221,7 @@ public class Search {
     public final static bool canClaimDraw50(const Position& pos) {
         return (pos.halfMoveClock >= 100);
     }
-    
+
     public final static bool canClaimDrawRep(const Position& pos, U64[] posHashList,
 					     int posHashListSize, int posHashFirstNew) {
         int reps = 0;

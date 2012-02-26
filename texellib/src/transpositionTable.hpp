@@ -208,26 +208,24 @@ public class TranspositionTable {
      * Extract a list of PV moves, starting from "rootPos" and first move "m".
      */
     public final ArrayList<Move> extractPVMoves(const Position& rootPos, const Move& m) {
-        Position pos = new Position(rootPos);
+        Position pos(rootPos);
         m = new Move(m);
         ArrayList<Move> ret = new ArrayList<Move>();
         UndoInfo ui = new UndoInfo();
         List<U64> hashHistory = new ArrayList<U64>();
-        MoveGen moveGen = new MoveGen();
         while (true) {
             ret.add(m);
             pos.makeMove(m, ui);
-            if (hashHistory.contains(pos.zobristHash())) {
+            if (hashHistory.contains(pos.zobristHash()))
                 break;
-            }
             hashHistory.add(pos.zobristHash());
             TTEntry ent = probe(pos.historyHash());
-            if (ent.type == TTEntry.T_EMPTY) {
+            if (ent.type == TTEntry.T_EMPTY)
                 break;
-            }
             m = new Move(0,0,0);
             ent.getMove(m);
-            MoveGen::MoveList moves = moveGen.pseudoLegalMoves(pos);
+            MoveGen::MoveList moves;
+		    MoveGen::pseudoLegalMoves(pos, moves);
             MoveGen::removeIllegal(pos, moves);
             bool contains = false;
             for (int mi = 0; mi < moves.size; mi++)
@@ -247,10 +245,9 @@ public class TranspositionTable {
         pos = new Position(pos);    // To avoid modifying the input parameter
         bool first = true;
         TTEntry ent = probe(pos.historyHash());
-        UndoInfo ui = new UndoInfo();
+        UndoInfo ui;
         ArrayList<U64> hashHistory = new ArrayList<U64>();
         bool repetition = false;
-        MoveGen moveGen = MoveGen::instance;
         while (ent.type != TTEntry.T_EMPTY) {
             String type = "";
             if (ent.type == TTEntry.T_LE) {
@@ -260,7 +257,8 @@ public class TranspositionTable {
             }
             Move m;
             ent.getMove(m);
-            MoveGen::MoveList moves = moveGen.pseudoLegalMoves(pos);
+            MoveGen::MoveList moves;
+		    MoveGen::pseudoLegalMoves(pos, moves);
             MoveGen::removeIllegal(pos, moves);
             bool contains = false;
             for (int mi = 0; mi < moves.size; mi++)
@@ -293,7 +291,7 @@ public class TranspositionTable {
     public final void printStats() {
         int unused = 0;
         int thisGen = 0;
-        List<Integer> depHist = new ArrayList<Integer>();
+        List<Integer> depHist;
         final int maxDepth = 20*8;
         for (int i = 0; i < maxDepth; i++) {
             depHist.add(0);

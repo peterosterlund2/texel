@@ -13,7 +13,6 @@
     /**
      * Test of haveDrawOffer method, of class Game.
      */
-    @Test
     public void testHaveDrawOffer() {
         Game game = new Game(new HumanPlayer(), new HumanPlayer());
         ASSERT_EQUAL(false, game.haveDrawOffer());
@@ -105,7 +104,6 @@
     /**
      * Test of draw by 50 move rule, of class Game.
      */
-    @Test
     public void testDraw50() {
         Game game = new Game(new HumanPlayer(), new HumanPlayer());
         ASSERT_EQUAL(false, game.haveDrawOffer());
@@ -163,7 +161,6 @@
     /**
      * Test of draw by repetition, of class Game.
      */
-    @Test
     public void testDrawRep() {
         Game game = new Game(new HumanPlayer(), new HumanPlayer());
         ASSERT_EQUAL(false, game.haveDrawOffer());
@@ -236,7 +233,6 @@
     /**
      * Test of resign command, of class Game.
      */
-    @Test
     public void testResign() {
         Game game = new Game(new HumanPlayer(), new HumanPlayer());
         ASSERT_EQUAL(Game::GameState.ALIVE, game.getGameState());
@@ -262,8 +258,7 @@
     /**
      * Test of processString method, of class Game.
      */
-    @Test
-    public void testProcessString() throws ChessParseError {
+    public void testProcessString() {
         Game game = new Game(new HumanPlayer(), new HumanPlayer());
         ASSERT_EQUAL(TextIO::startPosFEN, TextIO::toFEN(game.pos));
         bool res = game.processString("Nf3");
@@ -316,7 +311,6 @@
     /**
      * Test of getGameState method, of class Game.
      */
-    @Test
     public void testGetGameState() {
         Game game = new Game(new HumanPlayer(), new HumanPlayer());
         ASSERT_EQUAL(Game::GameState.ALIVE, game.getGameState());
@@ -333,7 +327,6 @@
     /**
      * Test of insufficientMaterial method, of class Game.
      */
-    @Test
     public void testInsufficientMaterial() {
         Game game = new Game(new HumanPlayer(), new HumanPlayer());
         ASSERT_EQUAL(Game::GameState.ALIVE, game.getGameState());
@@ -377,7 +370,6 @@
     /**
      * Test of perfT method, of class Game.
      */
-    @Test
     public void testPerfT() {
         Game game = new Game(new HumanPlayer(), new HumanPlayer());
         game.processString("new");
@@ -392,9 +384,8 @@
 
     private void doTestPerfT(const Position& pos, int maxDepth, U64[] expectedNodeCounts) {
         for (int d = 1; d <= maxDepth; d++) {
-            MoveGen moveGen = new MoveGen();
             U64 t0 = System.nanoTime();
-            U64 nodes = Game::perfT(moveGen, pos, d);
+            U64 nodes = Game::perfT(pos, d);
             U64 t1 = System.nanoTime();
             System.out.printf("perft(%d) = %d, t=%.6fs\n", d, nodes, (t1 - t0)*1e-9);
             ASSERT_EQUAL(expectedNodeCounts[d-1], nodes);
@@ -407,5 +398,15 @@ cute::suite
 GameTest::getSuite() const {
     cute::suite s;
 //    s.push_back(CUTE());
+#if 0
+    s.push_back(CUTE(testHaveDrawOffer));
+    s.push_back(CUTE(testDraw50));
+    s.push_back(CUTE(testDrawRep));
+    s.push_back(CUTE(testResign));
+    s.push_back(CUTE(testProcessString));
+    s.push_back(CUTE(testGetGameState));
+    s.push_back(CUTE(testInsufficientMaterial));
+    s.push_back(CUTE(testPerfT));
+#endif
     return s;
 }

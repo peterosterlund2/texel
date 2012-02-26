@@ -69,7 +69,8 @@ public class ComputerPlayer implements Player {
         Search sc = new Search(pos, posHashList, posHashListSize, tt);
 
         // Determine all legal moves
-        MoveGen::MoveList moves = new MoveGen().pseudoLegalMoves(pos);
+        MoveGen::MoveList moves;
+	MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         sc.scoreMoveList(moves, 0);
 
@@ -175,7 +176,8 @@ public class ComputerPlayer implements Player {
         Search sc = new Search(pos, posHashList, 0, tt);
 
         // Determine all legal moves
-        MoveGen::MoveList moves = new MoveGen().pseudoLegalMoves(pos);
+        MoveGen::MoveList moves;
+	MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         sc.scoreMoveList(moves, 0);
 

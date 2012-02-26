@@ -109,7 +109,8 @@ public class Book {
             return null;
         }
 
-        MoveGen::MoveList legalMoves = new MoveGen().pseudoLegalMoves(pos);
+        MoveGen::MoveList legalMoves;
+	MoveGen::pseudoLegalMoves(pos, legalMoves);
         MoveGen::removeIllegal(pos, legalMoves);
         int sum = 0;
         for (int i = 0; i < bookMoves.size(); i++) {

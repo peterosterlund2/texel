@@ -49,6 +49,14 @@ str2Num(const std::string& str) {
     return ss >> result ? result : 0;
 }
 
+template <typename T>
+inline std::string
+num2Str(const T& num) {
+    std::stringstream ss;
+    ss << num;
+    return ss.str();
+}
+
 /** Convert string to lower case. */
 inline std::string
 toLowerCase(std::string str) {

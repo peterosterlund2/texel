@@ -13,8 +13,7 @@
     /**
      * Test of negaScout method, of class Search.
      */
-    @Test
-    public void testNegaScout() throws ChessParseError, StopSearch {
+    public void testNegaScout() {
         final int mate0 = Search.MATE0;
 
         Position pos = TextIO::readFEN("3k4/8/3K2R1/8/8/8/8/8 w - - 0 1");
@@ -60,8 +59,7 @@
     /**
      * Test of draw by 50 move rule, of class Search.
      */
-    @Test
-    public void testDraw50() throws ChessParseError, StopSearch {
+    public void testDraw50() {
         final int mate0 = Search.MATE0;
         final int mateInOne = mate0 - 2;
         final int matedInOne = -mate0 + 3;
@@ -121,8 +119,7 @@
     /**
      * Test of draw by repetition rule, of class Search.
      */
-    @Test
-    public void testDrawRep() throws ChessParseError, StopSearch {
+    public void testDrawRep() {
         final int mate0 = Search.MATE0;
         Position pos = TextIO::readFEN("7k/5RR1/8/8/8/8/q3q3/2K5 w - - 0 1");
         Search sc(pos, nullHist, 0, tt);
@@ -159,16 +156,14 @@
     /**
      * Test of hash table, of class Search.
      */
-    @Test
-    public void testHashing() throws ChessParseError {
+    public void testHashing() {
         Position pos = TextIO::readFEN("/k/3p/p2P1p/P2P1P///K/ w - -");  // Fine #70
         Search sc = Search(pos, nullHist, 0, tt);
         Move bestM = idSearch(sc, 28);
         ASSERT_EQUAL(TextIO::stringToMove(pos, "Kb1"), bestM);
     }
     
-    @Test
-    public void testCheckEvasion() throws ChessParseError {
+    public void testCheckEvasion() {
         Position pos = TextIO::readFEN("6r1/R5PK/2p5/1k6/8/8/p7/8 b - - 0 62");
         Search sc(pos, nullHist, 0, tt);
         Move bestM = idSearch(sc, 3);
@@ -181,16 +176,14 @@
         ASSERT_EQUAL(TextIO::stringToMove(pos, "Qxh7+"), bestM);
     }
 
-    @Test
-    public void testStalemateTrap() throws ChessParseError {
+    public void testStalemateTrap() {
         Position pos = TextIO::readFEN("7k/1P3R1P/6r1/5K2/8/8/6R1/8 b - - 98 194");
         Search sc(pos, nullHist, 0, tt);
         Move bestM = idSearch(sc, 3);
         ASSERT_EQUAL(0, bestM.score);
     }
 
-    @Test
-    public void testKQKRNullMove() throws ChessParseError {
+    public void testKQKRNullMove() {
         Position pos = TextIO::readFEN("7K/6R1/5k2/3q4/8/8/8/8 b - - 0 1");
         Search sc(pos, nullHist, 0, tt);
         Move bestM = idSearch(sc, 9);
@@ -198,7 +191,8 @@
     }
 
     private Move idSearch(Search& sc, int maxDepth) {
-        MoveGen::MoveList moves = MoveGen().pseudoLegalMoves(sc.pos);
+        MoveGen::MoveList moves;
+	MoveGen::pseudoLegalMoves(sc.pos, moves);
         MoveGen::removeIllegal(sc.pos, moves);
         sc.scoreMoveList(moves, 0);
         sc.timeLimit(-1, -1);
@@ -224,8 +218,7 @@
     /**
      * Test of SEE method, of class Search.
      */
-    @Test
-    public void testSEE() throws ChessParseError {
+    public void testSEE() {
         final int pV = Evaluate::pV;
         final int nV = Evaluate::nV;
         final int bV = Evaluate::bV;
@@ -376,8 +369,7 @@
     /**
      * Test of scoreMoveList method, of class Search.
      */
-    @Test
-    public void testScoreMoveList() throws ChessParseError {
+    public void testScoreMoveList() {
         Position pos = TextIO::readFEN("r2qk2r/ppp2ppp/1bnp1nb1/1N2p3/3PP3/1PP2N2/1P3PPP/R1BQRBK1 w kq - 0 1");
         Search sc(pos, nullHist, 0, tt);
         MoveGen moveGen;
@@ -423,5 +415,16 @@ cute::suite
 SearchTest::getSuite() const {
     cute::suite s;
 //    s.push_back(CUTE());
+#if 0
+    s.push_back(CUTE(testNegaScout));
+    s.push_back(CUTE(testDraw50));
+    s.push_back(CUTE(testDrawRep));
+    s.push_back(CUTE(testHashing));
+    s.push_back(CUTE(testCheckEvasion));
+    s.push_back(CUTE(testStalemateTrap));
+    s.push_back(CUTE(testKQKRNullMove));
+    s.push_back(CUTE(testSEE));
+    s.push_back(CUTE(testScoreMoveList));
+#endif
     return s;
 }

@@ -269,6 +269,7 @@ testMoveCounters()  {
     fen = "8/8/8/4k3/8/8/2p5/5K2 b - - 47 68";
     pos = TextIO::readFEN(fen);
     move = TextIO::stringToMove(pos, "c1Q");
+    ASSERT(!move.isEmpty());
     pos.makeMove(move, ui);
     ASSERT_EQUAL(0, pos.halfMoveClock);     // Pawn promotion resets 50 move counter
     ASSERT_EQUAL(69, pos.fullMoveCounter);

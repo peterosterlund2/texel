@@ -13,8 +13,7 @@
     /**
      * Test of TTEntry nested class, of class TranspositionTable.
      */
-    @Test
-    public void testTTEntry() throws ChessParseError {
+    public void testTTEntry() {
         final int mate0 = Search.MATE0;
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
         Move move = TextIO::stringToMove(pos, "e4");
@@ -90,8 +89,7 @@
     /**
      * Test of insert method, of class TranspositionTable.
      */
-    @Test
-    public void testInsert() throws ChessParseError {
+    public void testInsert() {
         TranspositionTable tt = new TranspositionTable(16);
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
 	std::string[] moves = {
@@ -131,6 +129,9 @@
 cute::suite
 TranspositionTableTest::getSuite() const {
     cute::suite s;
-//    s.push_back(CUTE());
+#if 0
+    s.push_back(CUTE(testTTEntry));
+    s.push_back(CUTE(testInsert));
+#endif
     return s;
 }

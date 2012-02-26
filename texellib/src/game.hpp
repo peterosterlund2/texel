@@ -132,7 +132,8 @@ public class Game {
      * Get the current state of the game.
      */
     public GameState getGameState() {
-        MoveGen::MoveList moves = new MoveGen().pseudoLegalMoves(pos);
+        MoveGen::MoveList moves;
+		MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         if (moves.size == 0) {
             if (MoveGen::inCheck(pos)) {
@@ -266,9 +267,8 @@ public class Game {
             try {
                 std::string depthStr = moveStr.substring(moveStr.indexOf(" ") + 1);
                 int depth = Integer.parseInt(depthStr);
-                MoveGen moveGen = new MoveGen();
                 long t0 = System.currentTimeMillis();
-                long nodes = perfT(moveGen, pos, depth);
+                long nodes = perfT(pos, depth);
                 long t1 = System.currentTimeMillis();
                 System.out.printf("perft(%d) = %d, t=%.3fs\n", depth, nodes, (t1 - t0)*1e-3);
             }
@@ -531,25 +531,24 @@ public class Game {
         return false;
     }
 
-    final static long perfT(MoveGen& moveGen, const Position& pos, int depth) {
+    final static long perfT(const Position& pos, int depth) {
         if (depth == 0)
             return 1;
         long nodes = 0;
-        MoveGen::MoveList moves = moveGen.pseudoLegalMoves(pos);
+        MoveGen::MoveList moves;
+		MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         if (depth == 1) {
             int ret = moves.size;
-            moveGen.returnMoveList(moves);
             return ret;
         }
-        UndoInfo ui = new UndoInfo();
+        UndoInfo ui;
         for (int mi = 0; mi < moves.size; mi++) {
             const Move& m = moves.m[mi];
             pos.makeMove(m, ui);
-            nodes += perfT(moveGen, pos, depth - 1);
+            nodes += perfT(pos, depth - 1);
             pos.unMakeMove(m, ui);
         }
-        moveGen.returnMoveList(moves);
         return nodes;
     }
 };

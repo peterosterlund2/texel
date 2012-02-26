@@ -13,8 +13,7 @@
     /**
      * Test of getCommand method, of class ComputerPlayer.
      */
-    @Test
-    public void testGetCommand() throws ChessParseError {
+    public void testGetCommand() {
         ArrayList<Position> nullHist = new ArrayList<Position>();
 
         Position pos = TextIO::readFEN("7k/5Q2/p5K1/8/8/8/8/8 b - - 99 80");
@@ -46,8 +45,7 @@
     /**
      * Test of draw by repetition, of class ComputerPlayer.
      */
-    @Test
-    public void testDrawRep() throws ChessParseError {
+    public void testDrawRep() {
         Game game = new Game(new HumanPlayer(), new HumanPlayer());
         ComputerPlayer cp = new ComputerPlayer();
         cp.maxDepth = 3;
@@ -85,5 +83,9 @@ cute::suite
 ComputerPlayerTest::getSuite() const {
     cute::suite s;
 //    s.push_back(CUTE());
+#if 0
+    s.push_back(CUTE(testGetCommand));
+    s.push_back(CUTE(testDrawRep));
+#endif
     return s;
 }

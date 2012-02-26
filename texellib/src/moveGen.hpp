@@ -39,14 +39,11 @@ public:
         void filter(const std::vector<Move>& searchMoves);
     };
 
-    /** Get singleton instance. */
-    static MoveGen& instance();
-
     /**
      * Generate and return a list of pseudo-legal moves.
      * Pseudo-legal means that the moves doesn't necessarily defend from check threats.
      */
-    void pseudoLegalMoves(const Position& pos, MoveList& moveList) {
+    static void pseudoLegalMoves(const Position& pos, MoveList& moveList) {
         const U64 occupied = pos.whiteBB | pos.blackBB;
         if (pos.whiteMove) {
             // Queen moves
@@ -209,7 +206,7 @@ public:
      * Generate and return a list of pseudo-legal check evasion moves.
      * Pseudo-legal means that the moves doesn't necessarily defend from check threats.
      */
-    void checkEvasions(const Position& pos, MoveList& moveList) {
+    static void checkEvasions(const Position& pos, MoveList& moveList) {
         const U64 occupied = pos.whiteBB | pos.blackBB;
         if (pos.whiteMove) {
             U64 kingThreats = pos.pieceTypeBB[Piece::BKNIGHT] & BitBoard::knightAttacks[pos.wKingSq];
@@ -376,7 +373,7 @@ public:
     }
 
     /** Generate captures, checks, and possibly some other moves that are too hard to filter out. */
-    void pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
+    static void pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
         U64 occupied = pos.whiteBB | pos.blackBB;
         if (pos.whiteMove) {
             int bKingSq = pos.getKingSq(false);
@@ -593,7 +590,7 @@ public:
         }
     }
 
-    void pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
+    static void pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
         U64 occupied = pos.whiteBB | pos.blackBB;
         if (pos.whiteMove) {
             // Queen moves
@@ -932,6 +929,8 @@ private:
             if (p != Piece::EMPTY)
                 return p;
         }
+        assert(false);
+        return -1;
     }
 
     /** Like nextPiece(), but handles board edges. */
@@ -959,6 +958,8 @@ private:
             if (p != Piece::EMPTY)
                 return p;
         }
+        assert(false);
+        return -1;
     }
 
     static bool addPawnMovesByMask(MoveList& moveList, const Position& pos, U64 mask,
@@ -1031,6 +1032,9 @@ private:
         Move& m = moveList.m[moveList.size++];
         m.setMove(from, to, promoteTo, 0);
     }
+
+    /** Not implemented. */
+    MoveGen();
 };
 
 

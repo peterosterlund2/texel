@@ -8,6 +8,7 @@
 #include "bitBoard.hpp"
 #include "position.hpp"
 #include <assert.h>
+#include <iostream>
 
 U64 BitBoard::kingAttacks[64];
 U64 BitBoard::knightAttacks[64];

@@ -16,11 +16,3 @@ MoveGen::MoveList::filter(const std::vector<Move> & searchMoves)
             m[used++] = m[i];
     size = used;
 }
-
-MoveGen&
-MoveGen::instance()
-{
-    static MoveGen inst;
-    return inst;
-}
-

@@ -13,8 +13,7 @@
     /**
      * Test of getBookMove method, of class Book.
      */
-    @Test
-    public void testGetBookMove() throws ChessParseError {
+    public void testGetBookMove() {
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
         Book book = new Book(true);
         Move move = book.getBookMove(pos);
@@ -24,8 +23,7 @@
     /**
      * Test of getAllBookMoves method, of class Book.
      */
-    @Test
-    public void testGetAllBookMoves() throws ChessParseError {
+    public void testGetAllBookMoves() {
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
         Book book = new Book(true);
         std::string moveListString = book.getAllBookMoves(pos);
@@ -40,7 +38,8 @@
     /** Check that move is a legal move in position pos. */
     private void checkValid(const Position& pos, const Move& move) {
         ASSERT(move != null);
-        MoveGen::MoveList moveList = new MoveGen().pseudoLegalMoves(pos);
+        MoveGen::MoveList moveList;
+	MoveGen::pseudoLegalMoves(pos, moveList);
         MoveGen::removeIllegal(pos, moveList);
         bool contains = false;
         for (int mi = 0; mi < moveList.size; mi++)
@@ -55,6 +54,9 @@
 cute::suite
 BookTest::getSuite() const {
     cute::suite s;
-//    s.push_back(CUTE());
+#if 0
+    s.push_back(CUTE(testGetBookMove));
+    s.push_back(CUTE(testGetAllBookMoves));
+#endif
     return s;
 }

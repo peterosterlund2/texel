@@ -6,6 +6,7 @@
  */
 
 #include "evaluateTest.hpp"
+#include "position.hpp"
 
 #include "cute.h"
 
@@ -14,8 +15,7 @@
     /**
      * Test of evalPos method, of class Evaluate.
      */
-    @Test
-    public void testEvalPos() throws ChessParseError {
+    public void testEvalPos() {
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
         UndoInfo ui = new UndoInfo();
         pos.makeMove(TextIO::stringToMove(pos, "e4"), ui);
@@ -51,24 +51,24 @@
         ASSERT(ms4 > 0);
         ASSERT(ms4 > ms1);
         ASSERT(ms3 > ms2);
-        
+
         pos = TextIO::readFEN("r3kb1r/p3pp1p/bpPq1np1/4N3/2pP4/2N1PQ2/P1PB1PPP/R3K2R b KQkq - 0 12");
         ASSERT(moveScore(pos, "O-O-O") > 0);    // Black long castle is bad for black
         pos.makeMove(TextIO::stringToMove(pos, "O-O-O"), ui);
         ASSERT(moveScore(pos, "O-O") > 0);      // White short castle is good for white
-        
+
         pos = TextIO::readFEN("8/3k4/2p5/1pp5/1P1P4/3K4/8/8 w - - 0 1");
         int sc1 = moveScore(pos, "bxc5");
         int sc2 = moveScore(pos, "dxc5");
         ASSERT(sc1 < sc2);      // Don't give opponent a passed pawn.
-        
+
         pos = TextIO::readFEN("8/pp1bk3/8/8/8/8/PPPBK3/8 w - - 0 1");
         sc1 = evalWhite(pos);
         pos.setPiece(Position::getSquare(3, 1), Piece::EMPTY);
         pos.setPiece(Position::getSquare(3, 0), Piece::WBISHOP);
         sc2 = evalWhite(pos);
         ASSERT(sc2 > sc1);      // Easier to win if bishops on same color
-        
+
         // Test bishop mobility
         pos = TextIO::readFEN("r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3");
         sc1 = moveScore(pos, "Bd3");
@@ -79,8 +79,7 @@
     /**
      * Test of pieceSquareEval method, of class Evaluate.
      */
-    @Test
-    public void testPieceSquareEval() throws ChessParseError {
+    public void testPieceSquareEval() {
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
         int score = evalWhite(pos);
         ASSERT_EQUAL(0, score);    // Should be zero, by symmetry
@@ -91,9 +90,9 @@
         pos.makeMove(TextIO::stringToMove(pos, "e5"), ui);
         score = evalWhite(pos);
         ASSERT_EQUAL(0, score);    // Should be zero, by symmetry
-        ASSERT(moveScore(pos, "Nf3") > 0);      // Developing knight is good        
+        ASSERT(moveScore(pos, "Nf3") > 0);      // Developing knight is good
         pos.makeMove(TextIO::stringToMove(pos, "Nf3"), ui);
-        ASSERT(moveScore(pos, "Nc6") < 0);      // Developing knight is good        
+        ASSERT(moveScore(pos, "Nc6") < 0);      // Developing knight is good
         pos.makeMove(TextIO::stringToMove(pos, "Nc6"), ui);
         ASSERT(moveScore(pos, "Bb5") > 0);      // Developing bishop is good
         pos.makeMove(TextIO::stringToMove(pos, "Bb5"), ui);
@@ -104,7 +103,7 @@
         pos.makeMove(TextIO::stringToMove(pos, "Nxc6"), ui);
         int score2 = evalWhite(pos);
         ASSERT(score2 < score);                 // Bishop worth more than knight in this case
-        
+
         pos = TextIO::readFEN("5k2/4nppp/p1n5/1pp1p3/4P3/2P1BN2/PP3PPP/3R2K1 w - - 0 1");
         ASSERT(moveScore(pos, "Rd7") > 0);      // Rook on 7:th rank is good
         ASSERT(moveScore(pos, "Rd8") <= 0);     // Rook on 8:th rank not particularly good
@@ -119,8 +118,7 @@
     /**
      * Test of tradeBonus method, of class Evaluate.
      */
-    @Test
-    public void testTradeBonus() throws ChessParseError {
+    public void testTradeBonus() {
         std::string fen = "8/5k2/6r1/2p1p3/3p4/2P2N2/3PPP2/4K1R1 w - - 0 1";
         Position pos = TextIO::readFEN(fen);
         int score1 = evalWhite(pos);
@@ -129,7 +127,7 @@
         pos.makeMove(TextIO::stringToMove(pos, "Kxg6"), ui);
         int score2 = evalWhite(pos);
         ASSERT(score2 > score1);    // White ahead, trading pieces is good
-        
+
         pos = TextIO::readFEN(fen);
         pos.makeMove(TextIO::stringToMove(pos, "cxd4"), ui);
         pos.makeMove(TextIO::stringToMove(pos, "cxd4"), ui);
@@ -147,17 +145,16 @@
     /**
      * Test of material method, of class Evaluate.
      */
-    @Test
-    public void testMaterial() throws ChessParseError {
+    public void testMaterial() {
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
         ASSERT_EQUAL(0, Evaluate::material(pos));
-        
+
         final int pV = Evaluate::pV;
         final int qV = Evaluate::qV;
         ASSERT(pV != 0);
         ASSERT(qV != 0);
         ASSERT(qV > pV);
-        
+
         UndoInfo ui = new UndoInfo();
         pos.makeMove(TextIO::stringToMove(pos, "e4"), ui);
         ASSERT_EQUAL(0, Evaluate::material(pos));
@@ -178,8 +175,7 @@
     /**
      * Test of kingSafety method, of class Evaluate.
      */
-    @Test
-    public void testKingSafety() throws ChessParseError {
+    public void testKingSafety() {
         Position pos = TextIO::readFEN("r3kb1r/p1p1pppp/b2q1n2/4N3/3P4/2N1PQ2/P2B1PPP/R3R1K1 w kq - 0 1");
         int s1 = evalWhite(pos);
         pos.setPiece(TextIO::getSquare("g7"), Piece::EMPTY);
@@ -206,8 +202,7 @@
     /**
      * Test of endGameEval method, of class Evaluate.
      */
-    @Test
-    public void testEndGameEval() throws ChessParseError {
+    public void testEndGameEval() {
         Position pos = new Position();
         pos.setPiece(Position::getSquare(4, 1), Piece::WKING);
         pos.setPiece(Position::getSquare(4, 6), Piece::BKING);
@@ -226,33 +221,33 @@
         score = evalWhite(pos);
         final int rV = Evaluate::rV;
         ASSERT(Math.abs(score) > rV + 100);   // Enough material to force mate
-        
+
         pos.setPiece(Position::getSquare(3, 6), Piece::BBISHOP);
         score = evalWhite(pos);
         final int bV = Evaluate::bV;
         ASSERT(score >= 0);
         ASSERT(score < rV - bV);   // Insufficient excess material to mate
-        
+
         pos.setPiece(Position::getSquare(5, 6), Piece::BROOK);
         score = evalWhite(pos);
         ASSERT(score <= 0);
         ASSERT(-score < bV);
-        
+
         pos.setPiece(Position::getSquare(2, 6), Piece::BBISHOP);
         score = evalWhite(pos);
         ASSERT(-score > bV * 2 + 100);
-        
+
         // KrpKn is win for white
         pos = TextIO::readFEN("8/3bk3/8/8/8/3P4/3RK3/8 w - - 0 1");
         score = evalWhite(pos);
         final int pV = Evaluate::pV;
         ASSERT(score > rV + pV - bV - 100);
-        
+
         // KNNK is a draw
         pos = TextIO::readFEN("8/8/4k3/8/8/3NK3/3N4/8 w - - 0 1");
         score = evalWhite(pos);
         ASSERT(Math.abs(score) < 50);
-        
+
         pos = TextIO::readFEN("8/8/3k4/8/8/3NK3/2B5/8 b - - 0 1");
         score = evalWhite(pos);
         final int nV = Evaluate::nV;
@@ -261,12 +256,12 @@
         ASSERT(score > 0);      // Black king going into wrong corner, good for white
         score = moveScore(pos, "Ke6");
         ASSERT(score < 0);      // Black king going away from wrong corner, good for black
-        
+
         // KRN vs KR is generally drawn
         pos = TextIO::readFEN("rk/p/8/8/8/8/NKR/8 w - - 0 1");
         score = evalWhite(pos);
         ASSERT(score < nV - 2 * pV);
-        
+
         // KRKB, defending king should prefer corner that bishop cannot attack
         pos = TextIO::readFEN("6B1/8/8/8/8/2k5/4r3/2K5 w - - 0 93");
         score = evalWhite(pos);
@@ -280,15 +275,14 @@
     /**
      * Test of endGameEval method, of class Evaluate.
      */
-    @Test
-    public void testPassedPawns() throws ChessParseError {
+    public void testPassedPawns() {
         Position pos = TextIO::readFEN("8/8/8/P3k/8/8/p/K w");
         int score = evalWhite(pos);
         ASSERT(score > 300); // Unstoppable passed pawn
         pos.whiteMove = false;
         score = evalWhite(pos);
         ASSERT(score <= 0); // Not unstoppable
-        
+
         pos = TextIO::readFEN("4R3/8/8/3K4/8/4pk2/8/8 w - - 0 1");
         score = evalWhite(pos);
         pos.setPiece(TextIO::getSquare("d5"), Piece::EMPTY);
@@ -308,8 +302,7 @@
     /**
      * Test of endGameEval method, of class Evaluate.
      */
-    @Test
-    public void testBishAndRookPawns() throws ChessParseError {
+    public void testBishAndRookPawns() {
         final int pV = Evaluate::pV;
         final int bV = Evaluate::bV;
         final int winScore = pV + bV;
@@ -343,25 +336,23 @@
 
         pos = TextIO::readFEN("8/6k1/8/8/4B3/2K4P/P7/8 w - - 0 1");
         ASSERT(evalWhite(pos) > winScore);
-        
+
         pos = TextIO::readFEN("8/6k1/8/8/4B3/2K3PP/8/8 w - - 0 1");
         ASSERT(evalWhite(pos) > winScore);
     }
-    
-    @Test
-    public void testTrappedBishop() throws ChessParseError {
+
+    public void testTrappedBishop() {
         Position pos = TextIO::readFEN("r2q1rk1/ppp2ppp/3p1n2/8/3P4/1P1Q1NP1/b1P2PBP/2KR3R w - - 0 1");
         ASSERT(evalWhite(pos) > 0); // Black has trapped bishop
 
         pos = TextIO::readFEN("r2q2k1/pp1b1p1p/2p2np1/3p4/3P4/1BNQ2P1/PPPB1P1b/2KR4 w - - 0 1");
         ASSERT(evalWhite(pos) > 0); // Black has trapped bishop
     }
-    
+
     /**
      * Test of endGameEval method, of class Evaluate.
      */
-    @Test
-    public void testKQKP() throws ChessParseError {
+    public void testKQKP() {
         final int pV = Evaluate::pV;
         final int qV = Evaluate::qV;
         final int winScore = qV - pV - 200;
@@ -381,9 +372,8 @@
         pos = TextIO::readFEN("3Q4/8/8/8/8/4K3/1kp5/8 w - - 0 1");
         ASSERT(evalWhite(pos) > winScore);
     }
-    
-    @Test
-    public void testKRKP() throws ChessParseError {
+
+    public void testKRKP() {
         final int pV = Evaluate::pV;
         final int rV = Evaluate::rV;
         final int winScore = rV - pV;
@@ -394,8 +384,7 @@
         ASSERT(evalWhite(pos) < drawish);
     }
 
-    @Test
-    public void testCantWin() throws ChessParseError {
+    public void testCantWin() {
         Position pos = TextIO::readFEN("8/8/8/3k4/3p4/3K4/4N3/8 w - - 0 1");
         int score1 = evalWhite(pos);
         ASSERT(score1 < 0);
@@ -418,37 +407,40 @@
         }
         return ret;
     }
+#endif
 
-    final static Position swapColors(const Position& pos) {
-        Position sym = new Position();
-        sym.whiteMove = !pos.whiteMove;
-        for (int x = 0; x < 8; x++) {
-            for (int y = 0; y < 8; y++) {
-                int p = pos.getPiece(Position::getSquare(x, y));
-                p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
-                sym.setPiece(Position::getSquare(x, 7-y), p);
-            }
+Position
+swapColors(const Position& pos) {
+    Position sym;
+    sym.whiteMove = !pos.whiteMove;
+    for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 8; y++) {
+            int p = pos.getPiece(Position::getSquare(x, y));
+            p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
+            sym.setPiece(Position::getSquare(x, 7-y), p);
         }
-
-        int castleMask = 0;
-        if (pos.a1Castle()) castleMask |= 1 << Position::A8_CASTLE;
-        if (pos.h1Castle()) castleMask |= 1 << Position::H8_CASTLE;
-        if (pos.a8Castle()) castleMask |= 1 << Position::A1_CASTLE;
-        if (pos.h8Castle()) castleMask |= 1 << Position::H1_CASTLE;
-        sym.setCastleMask(castleMask);
-
-        if (pos.getEpSquare() >= 0) {
-            int x = Position::getX(pos.getEpSquare());
-            int y = Position::getY(pos.getEpSquare());
-            sym.setEpSquare(Position::getSquare(x, 7-y));
-        }
-
-        sym.halfMoveClock = pos.halfMoveClock;
-        sym.fullMoveCounter = pos.fullMoveCounter;
-
-        return sym;
     }
 
+    int castleMask = 0;
+    if (pos.a1Castle()) castleMask |= 1 << Position::A8_CASTLE;
+    if (pos.h1Castle()) castleMask |= 1 << Position::H8_CASTLE;
+    if (pos.a8Castle()) castleMask |= 1 << Position::A1_CASTLE;
+    if (pos.h8Castle()) castleMask |= 1 << Position::H1_CASTLE;
+    sym.setCastleMask(castleMask);
+
+    if (pos.getEpSquare() >= 0) {
+        int x = Position::getX(pos.getEpSquare());
+        int y = Position::getY(pos.getEpSquare());
+        sym.setEpSquare(Position::getSquare(x, 7-y));
+    }
+
+    sym.halfMoveClock = pos.halfMoveClock;
+    sym.fullMoveCounter = pos.fullMoveCounter;
+
+    return sym;
+}
+
+#if 0
     /** Compute change in eval score for white after making "moveStr" in position "pos". */
     private final int moveScore(const Position& pos, const std::string& moveStr) {
         int score1 = evalWhite(pos);
@@ -467,5 +459,19 @@ cute::suite
 EvaluateTest::getSuite() const {
     cute::suite s;
 //    s.push_back(CUTE());
+#if 0
+    s.push_back(CUTE(testEvalPos));
+    s.push_back(CUTE(testPieceSquareEval));
+    s.push_back(CUTE(testTradeBonus));
+    s.push_back(CUTE(testMaterial));
+    s.push_back(CUTE(testKingSafety));
+    s.push_back(CUTE(testEndGameEval));
+    s.push_back(CUTE(testPassedPawns));
+    s.push_back(CUTE(testBishAndRookPawns));
+    s.push_back(CUTE(testTrappedBishop));
+    s.push_back(CUTE(testKQKP));
+    s.push_back(CUTE(testKRKP));
+    s.push_back(CUTE(testCantWin));
+#endif
     return s;
 }

@@ -120,7 +120,7 @@ TextIO::fixupEPSquare(Position& pos) {
     int epSquare = pos.getEpSquare();
     if (epSquare >= 0) {
         MoveGen::MoveList moves;
-        MoveGen::instance().pseudoLegalMoves(pos, moves);
+        MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         bool epValid = false;
         for (int mi = 0; mi < moves.size; mi++) {
@@ -150,7 +150,7 @@ TextIO::toFEN(const Position& pos) {
                 numEmpty++;
             } else {
                 if (numEmpty > 0) {
-                    ret += numEmpty;
+                    ret += (char)('0' + numEmpty);
                     numEmpty = 0;
                 }
                 switch (p) {
@@ -166,12 +166,12 @@ TextIO::toFEN(const Position& pos) {
                     case Piece::BBISHOP: ret += 'b'; break;
                     case Piece::BKNIGHT: ret += 'n'; break;
                     case Piece::BPAWN:   ret += 'p'; break;
-                    default: assert(false);
+                    default: assert(false); break;
                 }
             }
         }
         if (numEmpty > 0)
-            ret += numEmpty;
+            ret += (char)('0' + numEmpty);
         if (r > 0)
             ret += '/';
     }
@@ -214,9 +214,9 @@ TextIO::toFEN(const Position& pos) {
 
     // Move counters
     ret += ' ';
-    ret += pos.halfMoveClock;
+    ret += num2Str(pos.halfMoveClock);
     ret += ' ';
-    ret += pos.fullMoveCounter;
+    ret += num2Str(pos.fullMoveCounter);
 
     return ret;
 }
@@ -327,7 +327,7 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveGen::Move
             ret += "O-O-O";
         }
     } else if (move.from() == bKingOrigPos && pos.getPiece(bKingOrigPos) == Piece::BKING) {
-        // Check white castle
+        // Check black castle
         if (move.to() == Position::getSquare(6, 7)) {
             ret += "O-O";
         } else if (move.to() == Position::getSquare(2, 7)) {
@@ -388,7 +388,7 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveGen::Move
     if (MoveGen::givesCheck(pos, move)) {
         pos.makeMove(move, ui);
         MoveGen::MoveList nextMoves;
-        MoveGen::instance().pseudoLegalMoves(pos, nextMoves);
+        MoveGen::pseudoLegalMoves(pos, nextMoves);
         MoveGen::removeIllegal(pos, nextMoves);
         if (nextMoves.size == 0)
             ret += '#';
@@ -403,7 +403,7 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveGen::Move
 std::string
 TextIO::moveToString(const Position& pos, const Move& move, bool longForm) {
     MoveGen::MoveList moves;
-    MoveGen::instance().pseudoLegalMoves(pos, moves);
+    MoveGen::pseudoLegalMoves(pos, moves);
     Position tmpPos(pos);
     MoveGen::removeIllegal(tmpPos, moves);
     return ::moveToString(tmpPos, move, longForm, moves);
@@ -411,16 +411,15 @@ TextIO::moveToString(const Position& pos, const Move& move, bool longForm) {
 
 Move
 TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
-#if 0
-    std::string strMove = strMoveIn.replaceAll("=", "");
-#else
-    std::string strMove = strMoveIn;
-#endif
+    std::string strMove;
+    for (int i = 0; i < (int)strMoveIn.length(); i++)
+        if (strMoveIn[i] != '=')
+            strMove += strMoveIn[i];
     Move move;
     if (strMove.length() == 0)
         return move;
     MoveGen::MoveList moves;
-    MoveGen::instance().pseudoLegalMoves(pos, moves);
+    MoveGen::pseudoLegalMoves(pos, moves);
     Position tmpPos(pos);
     MoveGen::removeIllegal(tmpPos, moves);
     {

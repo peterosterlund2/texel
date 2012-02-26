@@ -13,7 +13,6 @@
     /**
      * Test of addKiller method, of class KillerTable.
      */
-    @Test
     public void testAddKiller() {
         KillerTable kt = new KillerTable();
         Move m(TextIO::getSquare("b1"), TextIO::getSquare("b5"), Piece::EMPTY);
@@ -26,7 +25,6 @@
     /**
      * Test of getKillerScore method, of class KillerTable.
      */
-    @Test
     public void testGetKillerScore() {
         KillerTable kt = new KillerTable();
         Move m1 = new Move(TextIO::getSquare("b1"), TextIO::getSquare("b5"), Piece::EMPTY);
@@ -67,6 +65,9 @@
 cute::suite
 KillerTableTest::getSuite() const {
     cute::suite s;
-//    s.push_back(CUTE());
+#if 0
+    s.push_back(CUTE(testAddKiller));
+    s.push_back(CUTE(testGetKillerScore));
+#endif
     return s;
 }
