@@ -6,6 +6,8 @@
  */
 
 #include "search.hpp"
+#include "treeLogger.hpp"
 
 const int Search::MATE0;
 const int Search::plyScale;
+

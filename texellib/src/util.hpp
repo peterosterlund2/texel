@@ -33,7 +33,7 @@ public:
 
 /** Split a string using " " as delimiter. Append words to out. */
 inline void
-stringSplit(const std::string& str, std::vector<std::string>& out)
+splitString(const std::string& str, std::vector<std::string>& out)
 {
     std::string word;
     std::istringstream iss(str, std::istringstream::in);
@@ -41,13 +41,20 @@ stringSplit(const std::string& str, std::vector<std::string>& out)
         out.push_back(word);
 }
 
-/** Convert a string to a number. Return 0 on failure. */
+/** Convert a string to a number. */
 template <typename T>
-inline T
-str2Num(const std::string& str) {
+bool
+str2Num(const std::string& str, T& result) {
     std::stringstream ss(str);
-    T result;
-    return ss >> result ? result : 0;
+    return ss >> result;
+}
+
+template <typename T>
+bool
+hexStr2Num(const std::string& str, T& result) {
+    std::stringstream ss;
+    ss << std::hex << str;
+    return ss >> result;
 }
 
 template <typename T>

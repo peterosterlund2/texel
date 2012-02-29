@@ -8,6 +8,13 @@
 #ifndef SEARCH_HPP_
 #define SEARCH_HPP_
 
+#include "position.hpp"
+#include "killerTable.hpp"
+#include "history.hpp"
+
+
+class TreeLoggerWriter;
+
 /**
  * Implements the nega-scout search algorithm.
  */
@@ -16,22 +23,22 @@ public:
     static const int MATE0 = 32000;
     static const int plyScale = 8; // Fractional ply resolution
 
+private:
 #if 0
-
     Position pos;
     Evaluate eval;
     KillerTable kt;
     History ht;
-    U64[] posHashList;         // List of hashes for previous positions up to the last "zeroing" move.
+    U64 posHashList[];          // List of hashes for previous positions up to the last "zeroing" move.
     int posHashListSize;        // Number of used entries in posHashList
     int posHashFirstNew;        // First entry in posHashList that has not been played OTB.
     TranspositionTable tt;
-    TreeLogger log = null;
+    TreeLoggerWriter log;
 
-    private static final class SearchTreeInfo {
+    struct SearchTreeInfo {
         UndoInfo undoInfo;
         Move hashMove;         // Temporary storage for local hashMove variable
-        bool allowNullMove; // Don't allow two null-moves in a row
+        bool allowNullMove;    // Don't allow two null-moves in a row
         Move bestMove;         // Copy of the best found move at this ply
         Move currentMove;      // Move currently being searched
         int lmr;               // LMR reduction amount
@@ -163,7 +170,7 @@ public:
     final public Move iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             int maxDepth, long initialMaxNodes, bool verbose) {
         tStart = System.currentTimeMillis();
-//        log = TreeLogger.getWriter("/home/petero/treelog.dmp", pos);
+        log = TreeLoggerWriter("/home/petero/treelog.dmp", pos);
         totalNodes = 0;
         if (scMovesIn.size <= 0)
             return null; // No moves to search
@@ -174,12 +181,12 @@ public:
             // At least one move is always included though.
             bool[] includedMoves = new bool[scMovesIn.size];
             long rndL = pos.zobristHash() ^ randomSeed;
-            includedMoves[(int)(Math.abs(rndL) % scMovesIn.size)] = true;
+            includedMoves[(int)(std::abs(rndL) % scMovesIn.size)] = true;
             int nIncludedMoves = 1;
             double pIncl = (strength < 100) ? strength * strength * 1e-4 : 1.0;
             for (int mi = 0; mi < scMovesIn.size; mi++) {
-                rndL = 6364136223846793005L * rndL + 1442695040888963407L;
-                double rnd = ((rndL & 0x7fffffffffffffffL) % 1000000000) / 1e9;
+                rndL = 6364136223846793005ULL * rndL + 1442695040888963407ULL;
+                double rnd = ((rndL & 0x7fffffffffffffffULL) % 1000000000) / 1e9;
                 if (!includedMoves[mi] && (rnd < pIncl)) {
                     includedMoves[mi] = true;
                     nIncludedMoves++;
@@ -210,8 +217,8 @@ public:
         for (int depthS = plyScale; ; depthS += plyScale, firstIteration = false) {
             initNodeStats();
             if (listener != null) listener.notifyDepth(depthS/plyScale);
-            int aspirationDelta = (Math.abs(bestScoreLastIter) <= MATE0 / 2) ? 20 : 1000;
-            int alpha = firstIteration ? -Search.MATE0 : Math.max(bestScoreLastIter - aspirationDelta, -Search.MATE0);
+            int aspirationDelta = (std::abs(bestScoreLastIter) <= MATE0 / 2) ? 20 : 1000;
+            int alpha = firstIteration ? -Search.MATE0 : std::max(bestScoreLastIter - aspirationDelta, -Search.MATE0);
             int bestScore = -Search.MATE0;
             UndoInfo ui = new UndoInfo();
             bool needMoreTime = false;
@@ -228,7 +235,7 @@ public:
                 if (firstIteration) {
                     beta = Search.MATE0;
                 } else {
-                    beta = (mi == 0) ? Math.min(bestScoreLastIter + aspirationDelta, Search.MATE0) : alpha + 1;
+                    beta = (mi == 0) ? std::min(bestScoreLastIter + aspirationDelta, Search.MATE0) : alpha + 1;
                 }
 
                 int lmrS = 0;
@@ -271,7 +278,7 @@ public:
                 if (score >= beta) {
                     int retryDelta = aspirationDelta * 2;
                     while (score >= beta) {
-                        beta = Math.min(score + retryDelta, Search.MATE0);
+                        beta = std::min(score + retryDelta, Search.MATE0);
                         retryDelta = Search.MATE0 * 2;
                         if (mi != 0)
                             needMoreTime = true;
@@ -284,7 +291,7 @@ public:
                         posHashList[posHashListSize++] = pos.zobristHash();
                         pos.makeMove(m, ui);
                         int score2 = -negaScout(-beta, -score, 1, depthS - plyScale, -1, givesCheck);
-                        score = Math.max(score, score2);
+                        score = std::max(score, score2);
                         nodesThisMove += nodes + qNodes;
                         posHashListSize--;
                         pos.unMakeMove(m, ui);
@@ -292,7 +299,7 @@ public:
                 } else if ((mi == 0) && (score <= alpha)) {
                     int retryDelta = Search.MATE0 * 2;
                     while (score <= alpha) {
-                        alpha = Math.max(score - retryDelta, -Search.MATE0);
+                        alpha = std::max(score - retryDelta, -Search.MATE0);
                         retryDelta = Search.MATE0 * 2;
                         needMoreTime = searchNeedMoreTime = true;
                         if (verbose)
@@ -334,7 +341,7 @@ public:
                 }
                 scMoves[mi].move.score = score;
                 scMoves[mi].nodes = nodesThisMove;
-                bestScore = Math.max(bestScore, score);
+                bestScore = std::max(bestScore, score);
                 if (!firstIteration) {
                     if ((score > alpha) || (mi == 0)) {
                         alpha = score;
@@ -378,7 +385,7 @@ public:
                 if (totalNodes >= maxNodes)
                     break;
             }
-            int plyToMate = Search.MATE0 - Math.abs(bestScore);
+            int plyToMate = Search.MATE0 - std::abs(bestScore);
             if (depthS >= plyToMate * plyScale)
                 break;
             bestScoreLastIter = bestScore;
@@ -494,7 +501,7 @@ public:
         if (ent.type != TTEntry::T_EMPTY) {
             int score = ent.getScore(ply);
             evalScore = ent.evalScore;
-            int plyToMate = MATE0 - Math.abs(score);
+            int plyToMate = MATE0 - std::abs(score);
             int eDepth = ent.getDepth();
             if ((beta == alpha + 1) && ((eDepth >= depth) || (eDepth >= plyToMate*plyScale))) {
                 if (    (ent.type == TTEntry::T_EXACT) ||
@@ -534,7 +541,7 @@ public:
         }
 
         // Razoring
-        if ((Math.abs(alpha) <= MATE0 / 2) && (depth < 4*plyScale) && (beta == alpha + 1)) {
+        if ((std::abs(alpha) <= MATE0 / 2) && (depth < 4*plyScale) && (beta == alpha + 1)) {
             if (evalScore == UNKNOWN_SCORE) {
                 evalScore = eval.evalPos(pos);
             }
@@ -553,7 +560,7 @@ public:
 
         // Reverse futility pruning
         if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) &&
-            (Math.abs(alpha) <= MATE0 / 2) && (Math.abs(beta) <= MATE0 / 2)) {
+            (std::abs(alpha) <= MATE0 / 2) && (std::abs(beta) <= MATE0 / 2)) {
             bool mtrlOk;
             if (pos.whiteMove) {
                 mtrlOk = (pos.wMtrl > pos.wMtrlPawns) && (pos.wMtrlPawns > 0);
@@ -581,7 +588,7 @@ public:
         // FIXME! Try null-move verification in late endgames. See loss in round 21.
         sti.currentMove = emptyMove;
         if (    (depth >= 3*plyScale) && !inCheck && sti.allowNullMove &&
-                (Math.abs(beta) <= MATE0 / 2)) {
+                (std::abs(beta) <= MATE0 / 2)) {
             if (MoveGen::canTakeKing(pos)) {
                 int score = MATE0 - ply;
                 if (log != null) log.logNodeEnd(sti.nodeIdx, score, TTEntry::T_EXACT, evalScore, hKey);
@@ -635,7 +642,7 @@ public:
         bool futilityPrune = false;
         int futilityScore = alpha;
         if (!inCheck && (depth < 5*plyScale) && (posExtend == 0)) {
-            if ((Math.abs(alpha) <= MATE0 / 2) && (Math.abs(beta) <= MATE0 / 2)) {
+            if ((std::abs(alpha) <= MATE0 / 2) && (std::abs(beta) <= MATE0 / 2)) {
                 int margin;
                 if (depth <= plyScale)        margin = 61;
                 else if (depth <= 2*plyScale) margin = 144;
@@ -669,9 +676,9 @@ public:
         // FIXME! Try hash move before generating move list.
         MoveGen::MoveList moves;
         if (inCheck)
-            moves = MoveGen::checkEvasions(pos);
+            MoveGen::checkEvasions(pos, moves);
         else
-            moves = MoveGen::pseudoLegalMoves(pos);
+            MoveGen::pseudoLegalMoves(pos, moves);
         bool seeDone = false;
         bool hashMoveSelected = true;
         if (!selectHashMove(moves, hashMove)) {
@@ -746,7 +753,7 @@ public:
                         }
                     }
                 }
-                int extend = Math.max(posExtend, moveExtend);
+                int extend = std::max(posExtend, moveExtend);
                 int lmr = 0;
                 if ((depth >= 3*plyScale) && mayReduce && (extend == 0)) {
                     if (!givesCheck && !passedPawnPush(pos, m)) {
@@ -765,9 +772,9 @@ public:
                     int fVal = Evaluate::pieceValue[pos.getPiece(m.from)];
                     int tVal = Evaluate::pieceValue[pos.getPiece(m.to)];
                     final int pV = Evaluate::pV;
-                    if (Math.abs(tVal - fVal) < pV / 2) {    // "Equal" capture
+                    if (std::abs(tVal - fVal) < pV / 2) {    // "Equal" capture
                         sVal = SEE(m);
-                        if (Math.abs(sVal) < pV / 2)
+                        if (std::abs(sVal) < pV / 2)
                             newCaptureSquare = m.to;
                     }
                 }
@@ -811,7 +818,7 @@ public:
             if (score != illegalScore) {
                 haveLegalMoves = true;
             }
-            bestScore = Math.max(bestScore, score);
+            bestScore = std::max(bestScore, score);
             if (score > alpha) {
                 alpha = score;
                 bestMove = mi;
@@ -864,15 +871,15 @@ public:
     private final bool weakPlaySkipMove(const Position& pos, const Move& m, int ply) {
         long rndL = pos.zobristHash() ^ Position::psHashKeys[0][m.from()] ^
                     Position::psHashKeys[0][m.to()] ^ randomSeed;
-        double rnd = ((rndL & 0x7fffffffffffffffL) % 1000000000) / 1e9;
+        double rnd = ((rndL & 0x7fffffffffffffffULL) % 1000000000) / 1e9;
 
         double s = strength * 1e-3;
         double offs = (17 - 50 * s) / 3;
         double effPly = ply * Evaluate::interpolate(pos.wMtrl + pos.bMtrl, 0, 30, Evaluate::qV * 4, 100) * 1e-2;
         double t = effPly + offs;
-        double p = 1/(1+Math.exp(t)); // Probability to "see" move
+        double p = 1/(1+exp(t)); // Probability to "see" move
         bool easyMove = ((pos.getPiece(m.to) != Piece::EMPTY) ||
-                            (ply < 2) || (searchTreeInfo[ply-2].currentMove.to == m.from));
+                         (ply < 2) || (searchTreeInfo[ply-2].currentMove.to == m.from));
         if (easyMove)
             p = 1-(1-p)*(1-p);
         if (rnd > p)
@@ -1133,7 +1140,7 @@ public:
 
         int score = 0;
         for (int i = nCapt - 1; i > 0; i--) {
-            score = Math.max(0, captures[i] - score);
+            score = std::max(0, captures[i] - score);
         }
         return captures[0] - score;
     }

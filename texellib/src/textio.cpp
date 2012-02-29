@@ -17,7 +17,7 @@ Position
 TextIO::readFEN(const std::string& fen) {
     Position pos;
     std::vector<std::string> words;
-    stringSplit(fen, words);
+    splitString(fen, words);
     if (words.size() < 2)
         throw ChessParseError("Too few spaces");
 
@@ -83,9 +83,9 @@ TextIO::readFEN(const std::string& fen) {
     }
 
     if (words.size() > 4)
-        pos.halfMoveClock = str2Num<int>(words[4]);
+        str2Num(words[4], pos.halfMoveClock);
     if (words.size() > 5)
-        pos.fullMoveCounter = str2Num<int>(words[5]);
+        str2Num(words[5], pos.fullMoveCounter);
 
     // Each side must have exactly one king
     int wKings = 0;

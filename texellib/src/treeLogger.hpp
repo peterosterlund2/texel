@@ -8,80 +8,37 @@
 #ifndef TREELOGGER_HPP_
 #define TREELOGGER_HPP_
 
-#if 0
-public final class TreeLogger {
-    private byte[] entryBuffer = new byte[16];
-    private ByteBuffer bb = ByteBuffer.wrap(entryBuffer);
-    
-    // Used in write mode
-    private FileOutputStream os = null;
-    private BufferedOutputStream bos = null;
-    private U64 nextIndex = 0;
+#include "util.hpp"
+#include "move.hpp"
+#include "transpositionTable.hpp"
+#include "textio.hpp"
 
-    // Used in analyze mode
-    private MappedByteBuffer mapBuf = null;
-    private FileChannel fc = null;
-    private int numEntries = 0;
+#include <vector>
+#include <fstream>
 
-    private TreeLogger() {
-    }
+/**
+ * Base class for logging a search tree to file.
+ */
+class TreeLoggerBase {
+protected:
+    char entryBuffer[16];
 
-    /** Get a logger object set up for writing to a log file. */
-    public static final TreeLogger getWriter(String filename, const Position& pos) {
-        try {
-            TreeLogger log = new TreeLogger();
-            log.os = new FileOutputStream(filename);
-            log.bos = new BufferedOutputStream(log.os, 65536);
-            log.writeHeader(pos);
-            log.nextIndex = 0;
-            return log;
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException();
+    int putInt(int idx, int nBytes, U64 value) {
+        for (int i = 0; i < nBytes; i++) {
+            entryBuffer[idx++] = value & 0xff;
+            value >>= 8;
         }
+        return idx;
     }
 
-    private final void writeHeader(const Position& pos) {
-        try {
-            byte[] fen = TextIO::toFEN(pos).getBytes();
-            bos.write((byte)(fen.length));
-            bos.write(fen);
-            byte[] pad = new byte[128-1-fen.length];
-            for (int i = 0; i < pad.length; i++)
-                pad[i] = 0;
-            bos.write(pad);
-        } catch (IOException e) {
-            throw new RuntimeException();
-        }
+    U64 getInt(int idx, int nBytes) {
+        U64 ret = 0;
+        for (int i = 0; i < nBytes; i++)
+            ret |= ((U64)entryBuffer[idx++]) << (i*8);
+        return ret;
     }
 
-    /** Get a logger object set up for analyzing a log file. */
-    public static final TreeLogger getAnalyzer(String filename) {
-        try {
-            TreeLogger log = new TreeLogger();
-            RandomAccessFile raf;
-            raf = new RandomAccessFile(filename, "rw");
-            log.fc = raf.getChannel();
-            U64 len = raf.length();
-            log.numEntries = (int) ((len - 128) / 16);
-            log.mapBuf = log.fc.map(MapMode.READ_WRITE, 0, len);
-            log.computeForwardPointers();
-            return log;
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException();
-        } catch (IOException e) {
-            throw new RuntimeException();
-        }
-    }
-
-    public final void close() {
-        try {
-            if (bos != null) bos.close();
-            if (fc != null) fc.close();
-        } catch (IOException e) {
-        }
-    }
-
-    /* This is the on-disk format. Big-endian byte-order is used.
+    /* This is the on-disk format. Little-endian byte-order is used.
      * First there is one header entry. Then there is a set of start/end entries.
      * A StartEntry can be identified by its first 4 bytes (endIndex/startIndex)
      * being either -1 (endIndex not computed), or > the entry index.
@@ -111,10 +68,52 @@ public final class TreeLogger {
      * }
      */
 
+    struct StartEntry {
+        int endIndex;
+        int parentIndex;                 // -1 for root node
+        Move move;
+        short alpha;
+        short beta;
+        byte ply;
+        byte depth;
+    };
+    struct EndEntry {
+        int startIndex;
+        short score;
+        short scoreType;
+        short evalScore;
+        U64 hashKey;    // Note! Upper 2 bytes are not valid (ie 0)
+    };
+};
+
+/**
+ * Writer class for logging a search tree to file.
+ */
+class TreeLoggerWriter : public TreeLoggerBase {
+private:
+    std::ofstream os;
+    U64 nextIndex;
+
+public:
+    /** Constructor. */
+    TreeLoggerWriter(const std::string& filename, const Position& pos)
+        : os(filename.c_str(), std::ios_base::out |
+                               std::ios_base::binary |
+                               std::ios_base::trunc),
+          nextIndex(0)
+    {
+        writeHeader(pos);
+        nextIndex = 0;
+    }
+
+    void close() {
+        os.close();
+    }
+
     // ----------------------------------------------------------------------------
     // Functions used for tree logging
 
-    /** 
+    /**
      * Log information when entering a search node.
      * @param parentId     Index of parent node.
      * @param m            Move made to go from parent node to this node
@@ -124,19 +123,16 @@ public final class TreeLogger {
      * @param depth        Search parameter
      * @return node index
      */
-    final U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) {
-        bb.putInt  ( 0, (int)-1);
-        bb.putInt  ( 4, (int)parentIndex);
-        bb.putShort( 8, (short)(m.from + (m.to << 6) + (m.promoteTo << 12)));
-        bb.putShort(10, (short)alpha);
-        bb.putShort(12, (short)beta);
-        bb.put     (14, (byte)ply);
-        bb.put     (15, (byte)depth);
-        try {
-            bos.write(bb.array());
-        } catch (IOException e) {
-            throw new RuntimeException();
-        }
+    U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) {
+        int idx = 0;
+        idx = putInt(idx, 4, -1);
+        idx = putInt(idx, 4, parentIndex);
+        idx = putInt(idx, 2, m.from() + (m.to() << 6) + (m.promoteTo() << 12));
+        idx = putInt(idx, 2, alpha);
+        idx = putInt(idx, 2, beta);
+        idx = putInt(idx, 1, ply);
+        idx = putInt(idx, 1, depth);
+        os.write(entryBuffer, sizeof(entryBuffer));
         return nextIndex++;
     }
 
@@ -147,230 +143,263 @@ public final class TreeLogger {
      * @param evalScore  Score returned by evaluation function at this node, if known.
      * @return node index
      */
-    final U64 logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey) {
-        bb.putInt  ( 0, (int)startIndex);
-        bb.putShort( 4, (short)score);
-        bb.putShort( 6, (short)scoreType);
-        bb.putLong(  8, hashKey);
-        bb.putShort( 8, (short)evalScore); // Overwrites first two byte of hashKey
-        try {
-            bos.write(bb.array());
-        } catch (IOException e) {
-            throw new RuntimeException();
-        }
+    U64 logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey) {
+        int idx = 0;
+        idx = putInt(idx, 4, startIndex);
+        idx = putInt(idx, 2, score);
+        idx = putInt(idx, 2, scoreType);
+        idx = putInt(idx, 2, evalScore);
+        idx = putInt(idx, 6, hashKey);
+        os.write(entryBuffer, sizeof(entryBuffer));
         return nextIndex++;
     }
 
-    // ----------------------------------------------------------------------------
-    // Functions used for tree analyzing
-    
-    private static final int indexToFileOffs(int index) {
+private:
+    void writeHeader(const Position& pos) {
+        char header[128];
+        for (size_t i = 0; i < COUNT_OF(header); i++)
+            header[i] = 0;
+        std::string fen = TextIO::toFEN(pos);
+        for (size_t i = 0; i < fen.length(); i++)
+            header[i] = fen[i];
+        os.write(header, COUNT_OF(header));
+    }
+};
+
+/**
+ * Reader/analysis class for logging a search tree to file.
+ */
+class TreeLoggerReader : public TreeLoggerBase {
+    std::fstream fs;
+    int numEntries;
+
+public:
+    /** Constructor. */
+    TreeLoggerReader(const std::string& filename)
+        : fs(filename.c_str(), std::ios_base::out |
+                               std::ios_base::in |
+                               std::ios_base::binary),
+          numEntries(0)
+    {
+        fs.seekg(0, std::ios_base::end);
+        U64 len = fs.tellg();
+        numEntries = (int) ((len - 128) / 16);
+        computeForwardPointers();
+    }
+
+    void close() {
+        fs.close();
+    }
+
+    /** Main loop of the interactive tree browser. */
+    static void main(int argc, char* argv[]) {
+        if (argc != 2) {
+            printf("Usage: progname filename\n");
+            exit(1);
+        }
+        TreeLoggerReader an(argv[1]);
+        Position rootPos = TextIO::readFEN(an.getRootNodeFEN());
+        an.mainLoop(rootPos);
+        an.close();
+    }
+
+private:
+
+    static int indexToFileOffs(int index) {
         return 128 + index * 16;
     }
-    
+
+    void writeInt(std::streamoff pos, int nBytes, U64 value) {
+        fs.seekp(pos, std::ios_base::beg);
+        putInt(0, nBytes, value);
+        fs.write(entryBuffer, nBytes);
+    }
+
+    U64 readInt(std::streamoff pos, int nBytes) {
+        fs.seekg(pos, std::ios_base::beg);
+        fs.read(entryBuffer, nBytes);
+        return getInt(0, nBytes);
+    }
+
     /** Compute endIndex for all StartNode entries. */
-    private final void computeForwardPointers() {
-        if ((mapBuf.get(127) & (1<<7)) != 0)
+    void computeForwardPointers() {
+        U64 tmp = readInt(127, 1);
+        if ((tmp & (1<<7)) != 0)
             return;
-        System.out.printf("Computing forward pointers...\n");
-        StartEntry se = new StartEntry();
-        EndEntry ee = new EndEntry();
+        printf("Computing forward pointers...\n");
+        StartEntry se;
+        EndEntry ee;
         for (int i = 0; i < numEntries; i++) {
             bool isStart = readEntry(i, se, ee);
             if (!isStart) {
                 int offs = indexToFileOffs(ee.startIndex);
-                mapBuf.putInt(offs, i);
+                writeInt(offs, 4, i);
             }
         }
-        mapBuf.put(127, (byte)(1 << 7));
-        mapBuf.force();
-        System.out.printf("Computing forward pointers... done\n");
+        writeInt(127, 1, 1 << 7);
+        printf("Computing forward pointers... done\n");
     }
 
     /** Get FEN string for root node position. */
-    private final String getRootNodeFEN() {
-        int len = mapBuf.get(0);
-        byte[] fenB = new byte[len];
-        for (int i = 0; i < len; i++)
-            fenB[i] = mapBuf.get(1+i);
-        String ret = new String(fenB);
+    std::string getRootNodeFEN() {
+        char buf[128];
+        fs.seekg(0, std::ios_base::beg);
+        fs.read(buf, sizeof(buf));
+        int len = buf[0];
+        std::string ret(&buf[1], len);
         return ret;
-    }
-
-    static final class StartEntry {
-        int endIndex;
-        int parentIndex;                 // -1 for root node
-        Move move;
-        short alpha;
-        short beta;
-        byte ply;
-        byte depth;
-    }
-    static final class EndEntry {
-        int startIndex;
-        short score;
-        short scoreType;
-        short evalScore;
-        U64 hashKey;    // Note! Upper 2 bytes are not valid (ie 0)
     }
 
     /** Read a start/end entry.
      * @return True if entry was a start entry, false if it was an end entry. */
-    private final bool readEntry(int index, StartEntry se, EndEntry ee) {
+    bool readEntry(int index, StartEntry& se, EndEntry& ee) {
         int offs = indexToFileOffs(index);
-        for (int i = 0; i < 16; i++)
-            bb.put(i, mapBuf.get(offs + i));
-        int otherIndex = bb.getInt(0);
+        fs.seekg(offs, std::ios_base::beg);
+        fs.read(entryBuffer, 16);
+        int otherIndex = getInt(0, 4);
         bool isStartEntry = (otherIndex == -1) || (otherIndex > index);
         if (isStartEntry) {
             se.endIndex = otherIndex;
-            se.parentIndex = bb.getInt(4);
-            int m = bb.getShort(8);
-            se.move = new Move(m & 63, (m >> 6) & 63, (m >> 12) & 15);
-            se.alpha = bb.getShort(10);
-            se.beta = bb.getShort(12);
-            se.ply = bb.get(14);
-            se.depth = bb.get(15);
+            se.parentIndex = getInt(4, 4);
+            int m = getInt(8, 4);
+            se.move.setMove(m & 63, (m >> 6) & 63, (m >> 12) & 15, 0);
+            se.alpha = getInt(10, 2);
+            se.beta = getInt(12, 2);
+            se.ply = getInt(14, 1);
+            se.depth = getInt(15, 1);
         } else {
             ee.startIndex = otherIndex;
-            ee.score = bb.getShort(4);
-            ee.scoreType = bb.getShort(6);
-            ee.evalScore = bb.getShort(8);
-            ee.hashKey = bb.getLong(8) & 0x0000ffffffffffffULL;
+            ee.score = getInt(4, 2);
+            ee.scoreType = getInt(6, 2);
+            ee.evalScore = getInt(8, 2);
+            ee.hashKey = getInt(10, 6);
         }
         return isStartEntry;
     }
 
-    // ----------------------------------------------------------------------------
-    // Functions used for the interactive tree browser
-
-    public static final void main(String[] args) throws IOException {
-        if (args.length != 1) {
-            System.out.printf("Usage: progname filename\n");
-            System.exit(1);
-        }
-        TreeLogger an = getAnalyzer(args[0]);
-        try {
-            Position rootPos = TextIO::readFEN(an.getRootNodeFEN());
-            an.mainLoop(rootPos);
-        } catch (ChessParseError e) {
-            throw new RuntimeException();
-        }
-        an.close();
-    }
-
-    private final void mainLoop(Position rootPos) throws IOException {
+private:
+    void mainLoop(Position rootPos) {
         int currIndex = -1;
-        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-        String prevStr = "";
+        std::string prevStr = "";
 
         bool doPrint = true;
         while (true) {
             if (doPrint) {
-                ArrayList<Move> moves = getMoveSequence(currIndex);
-                for (Move m : moves)
-                    System.out.printf(" %s", TextIO::moveToUCIString(m));
-                System.out.printf("\n");
+                std::vector<Move> moves;
+                getMoveSequence(currIndex, moves);
+                for (size_t i = 0; i < moves.size(); i++) {
+                    const Move& m = moves[i];
+                    printf(" %s", TextIO::moveToUCIString(m).c_str());
+                }
+                printf("\n");
                 printNodeInfo(rootPos, currIndex);
                 Position pos = getPosition(rootPos, currIndex);
-                System.out.print(TextIO::asciiBoard(pos));
-                System.out.printf("%s\n", TextIO::toFEN(pos));
-                System.out.printf("%16x\n", pos.historyHash());
+                printf("%s", TextIO::asciiBoard(pos).c_str());
+                printf("%s\n", TextIO::toFEN(pos).c_str());
+                printf("%16lx\n", pos.historyHash());
                 if (currIndex >= 0) {
-                    ArrayList<Integer> children = findChildren(currIndex);
-                    for (Integer c : children)
-                        printNodeInfo(rootPos, c);
+                    std::vector<int> children;
+                    findChildren(currIndex, children);
+                    for (size_t i = 0; i < children.size(); i++)
+                        printNodeInfo(rootPos, children[i]);
                 }
             }
             doPrint = true;
-            System.out.printf("Command:");
-            String cmdStr = in.readLine();
-            if (cmdStr == null)
+            printf("Command:");
+            std::string cmdStr;
+            std::getline(std::cin, cmdStr);
+            if (!std::cin)
                 return;
             if (cmdStr.length() == 0)
                 cmdStr = prevStr;
-            if (cmdStr.startsWith("q")) {
+            if (startsWith(cmdStr, "q")) {
                 return;
-            } else if (cmdStr.startsWith("?")) {
+            } else if (startsWith(cmdStr, "?")) {
                 printHelp();
                 doPrint = false;
             } else if (isMove(cmdStr)) {
-                ArrayList<Integer> children = findChildren(currIndex);
-                String m = cmdStr;
-                StartEntry se = new StartEntry();
-                EndEntry ee = new EndEntry();
-                ArrayList<Integer> found = new ArrayList<Integer>();
-                for (Integer c : children) {
-                    readEntries(c, se, ee);
-                    if (TextIO::moveToUCIString(se.move).equals(m))
-                        found.add(c);
+                std::vector<int> children;
+                findChildren(currIndex, children);
+                std::string m = cmdStr;
+                StartEntry se;
+                EndEntry ee;
+                std::vector<int> found;
+                for (size_t i = 0; i < children.size(); i++) {
+                    readEntries(children[i], se, ee);
+                    if (TextIO::moveToUCIString(se.move) == m)
+                        found.push_back(children[i]);
                 }
-                if (found.size() == 0) {
-                    System.out.printf("No such move\n");
+                if (found.empty()) {
+                    printf("No such move\n");
                     doPrint = false;
                 } else if (found.size() > 1) {
-                    System.out.printf("Ambiguous move\n");
-                    for (Integer c : found)
-                        printNodeInfo(rootPos, c);
+                    printf("Ambiguous move\n");
+                    for (size_t i = 0; i < found.size(); i++)
+                        printNodeInfo(rootPos, found[i]);
                     doPrint = false;
                 } else {
-                    currIndex = found.get(0);
+                    currIndex = found[0];
                 }
-            } else if (cmdStr.startsWith("u")) {
+            } else if (startsWith(cmdStr, "u")) {
                 int n = getArg(cmdStr, 1);
                 for (int i = 0; i < n; i++)
                     currIndex = findParent(currIndex);
-            } else if (cmdStr.startsWith("l")) {
-                ArrayList<Integer> children = findChildren(currIndex);
-                String m = getArgStr(cmdStr, "");
-                for (Integer c : children)
-                    printNodeInfo(rootPos, c, m);
+            } else if (startsWith(cmdStr, "l")) {
+                std::vector<int> children;
+                findChildren(currIndex, children);
+                std::string m = getArgStr(cmdStr, "");
+                for (size_t i = 0; i < children.size(); i++)
+                    printNodeInfo(rootPos, children[i], m);
                 doPrint = false;
-            } else if (cmdStr.startsWith("n")) {
-                ArrayList<Integer> nodes = getNodeSequence(currIndex);
-                for (int node : nodes)
-                    printNodeInfo(rootPos, node);
+            } else if (startsWith(cmdStr, "n")) {
+                std::vector<int> nodes;
+                getNodeSequence(currIndex, nodes);
+                for (size_t i = 0; i < nodes.size(); i++)
+                    printNodeInfo(rootPos, nodes[i]);
                 doPrint = false;
-            } else if (cmdStr.startsWith("d")) {
-                ArrayList<Integer> nVec = getArgs(cmdStr, 0);
-                for (int n : nVec) {
-                    ArrayList<Integer> children = findChildren(currIndex);
-                    if ((n >= 0) && (n < children.size())) {
-                        currIndex = children.get(n);
+            } else if (startsWith(cmdStr, "d")) {
+                std::vector<int> nVec;
+                getArgs(cmdStr, 0, nVec);
+                for (size_t i = 0; i < nVec.size(); i++) {
+                    int n = nVec[i];
+                    std::vector<int> children;
+                    findChildren(currIndex, children);
+                    if ((n >= 0) && (n < (int)children.size())) {
+                        currIndex = children[n];
                     } else
                         break;
                 }
-            } else if (cmdStr.startsWith("p")) {
-                ArrayList<Move> moves = getMoveSequence(currIndex);
-                for (Move m : moves)
-                    System.out.printf(" %s", TextIO::moveToUCIString(m));
-                System.out.printf("\n");
+            } else if (startsWith(cmdStr, "p")) {
+                std::vector<Move> moves;
+                getMoveSequence(currIndex, moves);
+                for (size_t i = 0; i < moves.size(); i++)
+                    printf(" %s", TextIO::moveToUCIString(moves[i]).c_str());
+                printf("\n");
                 doPrint = false;
-            } else if (cmdStr.startsWith("h")) {
+            } else if (startsWith(cmdStr, "h")) {
                 U64 hashKey = getPosition(rootPos, currIndex).historyHash();
                 hashKey = getHashKey(cmdStr, hashKey);
-                ArrayList<Integer> nodes = getNodeForHashKey(hashKey);
-                for (int node : nodes)
-                    printNodeInfo(rootPos, node);
+                std::vector<int> nodes;
+                getNodeForHashKey(hashKey, nodes);
+                for (size_t i = 0; i < nodes.size(); i++)
+                    printNodeInfo(rootPos, nodes[i]);
                 doPrint = false;
             } else {
-                try {
-                    int i = Integer.parseInt(cmdStr);
+                int i;
+                if (str2Num(cmdStr, i))
                     if ((i >= -1) && (i < numEntries))
                         currIndex = i;
-                } catch (NumberFormatException e) {
-                }
             }
             prevStr = cmdStr;
         }
     }
 
-    private final bool isMove(String cmdStr) {
+    bool isMove(std::string cmdStr) const {
         if (cmdStr.length() != 4)
             return false;
-        cmdStr = cmdStr.toLowerCase();
+        cmdStr = toLowerCase(cmdStr);
         for (int i = 0; i < 4; i++) {
-            int c = cmdStr.charAt(i);
+            int c = cmdStr[i];
             if ((i == 0) || (i == 2)) {
                 if ((c < 'a') || (c > 'h'))
                     return false;
@@ -383,110 +412,105 @@ public final class TreeLogger {
     }
 
     /** Return all nodes with a given hash key. */
-    private final ArrayList<Integer> getNodeForHashKey(U64 hashKey) {
+    void getNodeForHashKey(U64 hashKey, std::vector<int>& nodes) {
         hashKey &= 0x0000ffffffffffffULL;
-        ArrayList<Integer> ret = new ArrayList<Integer>();
-        StartEntry se = new StartEntry();
-        EndEntry ee = new EndEntry();
+        StartEntry se;
+        EndEntry ee;
         for (int index = 0; index < numEntries; index++) {
             bool isStart = readEntry(index, se, ee);
             if (!isStart) {
                 if (ee.hashKey == hashKey) {
                     int sIdx = ee.startIndex;
-                    ret.add(sIdx);
+                    nodes.push_back(sIdx);
                 }
             }
         }
-        Collections.sort(ret);
-        return ret;
+        std::sort(nodes.begin(), nodes.end());
     }
 
     /** Get hash key from an input string. */
-    private final U64 getHashKey(String s, U64 defKey) {
+    U64 getHashKey(std::string& s, U64 defKey) const {
         U64 key = defKey;
-        int idx = s.indexOf(' ');
-        if (idx > 0) {
-            s = s.substring(idx + 1);
-            if (s.startsWith("0x"))
-                s = s.substring(2);
-            try {
-                key = Long.parseLong(s, 16);
-            } catch (NumberFormatException e) {
-            }
+        size_t idx = s.find_first_of(' ');
+        if (idx != s.npos) {
+            s = s.substr(idx + 1);
+            if (startsWith(s, "0x"))
+                s = s.substr(2);
+            hexStr2Num(s, key);
         }
         return key;
     }
 
     /** Get integer parameter from an input string. */
-    private static final int getArg(String s, int defVal) {
-        try {
-            int idx = s.indexOf(' ');
-            if (idx > 0) {
-                return Integer.parseInt(s.substring(idx+1));
-            }
-        } catch (NumberFormatException e) {
+    static int getArg(const std::string& s, int defVal) {
+        size_t idx = s.find_first_of(' ');
+        if (idx != s.npos) {
+            int tmp;
+            if (str2Num(s.substr(idx+1), tmp))
+                return tmp;
         }
         return defVal;
     }
 
     /** Get a list of integer parameters from an input string. */
-    final ArrayList<Integer> getArgs(String s, int defVal) {
-        ArrayList<Integer> ret = new ArrayList<Integer>();
-        String[] split = s.split(" ");
-        try {
-            for (int i = 1; i < split.length; i++)
-                ret.add(Integer.parseInt(split[i]));
-        } catch (NumberFormatException e) {
-            ret.clear();
+    void getArgs(const std::string& s, int defVal, std::vector<int>& args) {
+        std::vector<std::string> split;
+        splitString(s, split);
+        for (size_t i = 1; i < split.size(); i++) {
+            int tmp;
+            if (!str2Num(split[i], tmp)) {
+                args.clear();
+                break;
+            }
+            args.push_back(tmp);
         }
-        if (ret.size() == 0)
-            ret.add(defVal);
-        return ret;
+        if (args.empty())
+            args.push_back(defVal);
     }
 
     /** Get a string parameter from an input string. */
-    private static final String getArgStr(String s, String defVal) {
-        int idx = s.indexOf(' ');
-        if (idx > 0)
-            return s.substring(idx+1);
+    static std::string getArgStr(const std::string& s, const std::string& defVal) {
+        size_t idx = s.find_first_of(' ');
+        if (idx != s.npos)
+            return s.substr(idx+1);
         return defVal;
     }
 
-    private final void printHelp() {
-        System.out.printf("  p              - Print move sequence\n");
-        System.out.printf("  n              - Print node info corresponding to move sequence\n");
-        System.out.printf("  l [move]       - List child nodes, optionally only for one move\n");
-        System.out.printf("  d [n1 [n2...]] - Go to child \"n\"\n");
-        System.out.printf("  move           - Go to child \"move\", if unique\n");
-        System.out.printf("  u [levels]     - Move up\n");
-        System.out.printf("  h [key]        - Find nodes with current (or given) hash key\n");
-        System.out.printf("  num            - Go to node \"num\"\n");
-        System.out.printf("  q              - Quit\n");
-        System.out.printf("  ?              - Print this help\n");
+    void printHelp() {
+        printf("  p              - Print move sequence\n");
+        printf("  n              - Print node info corresponding to move sequence\n");
+        printf("  l [move]       - List child nodes, optionally only for one move\n");
+        printf("  d [n1 [n2...]] - Go to child \"n\"\n");
+        printf("  move           - Go to child \"move\", if unique\n");
+        printf("  u [levels]     - Move up\n");
+        printf("  h [key]        - Find nodes with current (or given) hash key\n");
+        printf("  num            - Go to node \"num\"\n");
+        printf("  q              - Quit\n");
+        printf("  ?              - Print this help\n");
     }
 
     /** Read start/end entries for a tree node. Return true if the end entry exists. */
-    private final bool readEntries(int index, StartEntry se, EndEntry ee) {
+    bool readEntries(int index, StartEntry& se, EndEntry& ee) {
         bool isStart = readEntry(index, se, ee);
         if (isStart) {
             int eIdx = se.endIndex;
             if (eIdx >= 0) {
-                readEntry(eIdx, null, ee);
+                readEntry(eIdx, se, ee);
             } else {
                 return false;
             }
         } else {
             int sIdx = ee.startIndex;
-            readEntry(sIdx, se, null);
+            readEntry(sIdx, se, ee);
         }
         return true;
     }
 
     /** Find the parent node to a node. */
-    private final int findParent(int index) {
+    int findParent(int index) {
         if (index >= 0) {
-            StartEntry se = new StartEntry();
-            EndEntry ee = new EndEntry();
+            StartEntry se;
+            EndEntry ee;
             readEntries(index, se, ee);
             index = se.parentIndex;
         }
@@ -494,15 +518,14 @@ public final class TreeLogger {
     }
 
     /** Find all children of a node. */
-    private final ArrayList<Integer> findChildren(int index) {
-        ArrayList<Integer> ret = new ArrayList<Integer>();
-        StartEntry se = new StartEntry();
-        EndEntry ee = new EndEntry();
+    void findChildren(int index, std::vector<int>& childs) {
+        StartEntry se;
+        EndEntry ee;
         int child = index + 1;
         while ((child >= 0) && (child < numEntries)) {
             bool haveEE = readEntries(child, se, ee);
             if (se.parentIndex == index)
-                ret.add(child);
+                childs.push_back(child);
             if (!haveEE)
                 break;
             if (child != ee.startIndex)
@@ -511,86 +534,81 @@ public final class TreeLogger {
 //                break;
             child = se.endIndex + 1;
         }
-        return ret;
     }
 
     /** Get node position in parents children list. */
-    private final int getChildNo(int index) {
-        ArrayList<Integer> childs = findChildren(findParent(index));
-        for (int i = 0; i < childs.size(); i++)
-            if (childs.get(i) == index)
+    int getChildNo(int index) {
+        std::vector<int> childs;
+        findChildren(findParent(index), childs);
+        for (size_t i = 0; i < childs.size(); i++)
+            if (childs[i] == index)
                 return i;
         return -1;
     }
 
     /** Get list of nodes from root position to a node. */
-    private final ArrayList<Integer> getNodeSequence(int index) {
-        ArrayList<Integer> nodes = new ArrayList<Integer>();
-        nodes.add(index);
+    void getNodeSequence(int index, std::vector<int>& nodes) {
+        nodes.push_back(index);
         while (index >= 0) {
             index = findParent(index);
-            nodes.add(index);
+            nodes.push_back(index);
         }
-        Collections.reverse(nodes);
-        return nodes;
+        std::reverse(nodes.begin(), nodes.end());
     }
 
     /** Find list of moves from root node to a node. */
-    private final ArrayList<Move> getMoveSequence(int index) {
-        ArrayList<Move> moves = new ArrayList<Move>();
-        StartEntry se = new StartEntry();
-        EndEntry ee = new EndEntry();
+    void getMoveSequence(int index, std::vector<Move>& moves) {
+        StartEntry se;
+        EndEntry ee;
         while (index >= 0) {
             readEntries(index, se, ee);
-            moves.add(se.move);
+            moves.push_back(se.move);
             index = findParent(index);
         }
-        Collections.reverse(moves);
-        return moves;
+        std::reverse(moves.begin(), moves.end());
     }
 
     /** Find the position corresponding to a node. */
-    private final Position getPosition(Position rootPos, int index) {
-        ArrayList<Move> moves = getMoveSequence(index);
-        Position ret = new Position(rootPos);
-        UndoInfo ui = new UndoInfo();
-        for (Move m : moves)
-            ret.makeMove(m, ui);
+    Position getPosition(const Position& rootPos, int index) {
+        std::vector<Move> moves;
+        getMoveSequence(index, moves);
+        Position ret(rootPos);
+        UndoInfo ui;
+        for (size_t i = 0; i < moves.size(); i++)
+            ret.makeMove(moves[i], ui);
         return ret;
     }
 
-    private final void printNodeInfo(Position rootPos, int index) {
+    void printNodeInfo(const Position& rootPos, int index) {
         printNodeInfo(rootPos, index, "");
     }
-    private final void printNodeInfo(Position rootPos, int index, String filterMove) {
+
+    void printNodeInfo(const Position& rootPos, int index, const std::string& filterMove) {
         if (index < 0) { // Root node
-            System.out.printf("%8d entries:%d\n", index, numEntries);
+            printf("%8d entries:%d\n", index, numEntries);
         } else {
-            StartEntry se = new StartEntry();
-            EndEntry ee = new EndEntry();
+            StartEntry se;
+            EndEntry ee;
             bool haveEE = readEntries(index, se, ee);
-            String m = TextIO::moveToUCIString(se.move);
-            if ((filterMove.length() > 0) && !m.equals(filterMove))
+            std::string m = TextIO::moveToUCIString(se.move);
+            if ((filterMove.length() > 0) && (m != filterMove))
                 return;
-            System.out.printf("%3d %8d %s a:%6d b:%6d p:%2d d:%2d", getChildNo(index), index,
-                    m, se.alpha, se.beta, se.ply, se.depth);
+            printf("%3d %8d %s a:%6d b:%6d p:%2d d:%2d", getChildNo(index), index,
+                   m.c_str(), se.alpha, se.beta, se.ply, se.depth);
             if (haveEE) {
                 int subTreeNodes = (se.endIndex - ee.startIndex - 1) / 2;
-                String type;
+                std::string type;
                 switch (ee.scoreType) {
-                case TTEntry::T_EXACT: type = "= "; break;
-                case TTEntry::T_GE   : type = ">="; break;
-                case TTEntry::T_LE   : type = "<="; break;
-                default              : type = "  "; break;
+                case TranspositionTable::TTEntry::T_EXACT: type = "= "; break;
+                case TranspositionTable::TTEntry::T_GE   : type = ">="; break;
+                case TranspositionTable::TTEntry::T_LE   : type = "<="; break;
+                default                                  : type = "  "; break;
                 }
-                System.out.printf(" s:%s%6d e:%6d sub:%d", type, ee.score, ee.evalScore,
-                                                            subTreeNodes);
+                printf(" s:%s%6d e:%6d sub:%d", type.c_str(), ee.score, ee.evalScore, subTreeNodes);
             }
-            System.out.printf("\n");
+            printf("\n");
         }
     }
 };
-#endif
-
 
 #endif /* TREELOGGER_HPP_ */
