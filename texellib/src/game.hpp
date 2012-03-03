@@ -10,117 +10,18 @@
 
 #include "move.hpp"
 #include "undoInfo.hpp"
+#include "position.hpp"
+#include "player.hpp"
 
 #include <vector>
+#include <string>
 
 /**
- *
+ * Handles a game between two players.
  */
 class Game {
-protected:
-    std::vector<Move> moveList;
-    std::vector<UndoInfo> uiInfoList;
-    std::vector<bool> drawOfferList;
-    int currentMove;
-#if 0
-private:
-    bool pendingDrawOffer;
-    GameState drawState;
-    std::string drawStateMoveStr; // Move required to claim DRAW_REP or DRAW_50
-    GameState resignState;
 public:
-    Position pos = null;
-    Player whitePlayer;
-    Player blackPlayer;
-
-    Game(Player whitePlayer, Player blackPlayer) {
-        this->whitePlayer = whitePlayer;
-        this->blackPlayer = blackPlayer;
-        handleCommand("new");
-    }
-
-    /**
-     * Update the game state according to move/command string from a player.
-     * @param str The move or command to process.
-     * @return True if str was understood, false otherwise.
-     */
-    public bool processString(const std::string& str) {
-        if (handleCommand(str))
-            return true;
-        if (getGameState() != GameState.ALIVE)
-            return false;
-
-        Move m = TextIO::stringToMove(pos, str);
-        if (m.isEmpty())
-            return false;
-
-        UndoInfo ui = new UndoInfo();
-        pos.makeMove(m, ui);
-        TextIO::fixupEPSquare(pos);
-        while (currentMove < moveList.size()) {
-            moveList.remove(currentMove);
-            uiInfoList.remove(currentMove);
-            drawOfferList.remove(currentMove);
-        }
-        moveList.add(m);
-        uiInfoList.add(ui);
-        drawOfferList.add(pendingDrawOffer);
-        pendingDrawOffer = false;
-        currentMove++;
-        return true;
-    }
-
-    public final std::string getGameStateString() {
-        switch (getGameState()) {
-            case ALIVE:
-                return "";
-            case WHITE_MATE:
-                return "Game over, white mates!";
-            case BLACK_MATE:
-                return "Game over, black mates!";
-            case WHITE_STALEMATE:
-            case BLACK_STALEMATE:
-                return "Game over, draw by stalemate!";
-            case DRAW_REP:
-            {
-                std::string ret = "Game over, draw by repetition!";
-                if ((drawStateMoveStr != null) && (drawStateMoveStr.length() > 0)) {
-                    ret = ret + " [" + drawStateMoveStr + "]";
-                }
-                return ret;
-            }
-            case DRAW_50:
-            {
-                std::string ret = "Game over, draw by 50 move rule!";
-                if ((drawStateMoveStr != null) && (drawStateMoveStr.length() > 0)) {
-                    ret = ret + " [" + drawStateMoveStr + "]";
-                }
-                return ret;
-            }
-            case DRAW_NO_MATE:
-                return "Game over, draw by impossibility of mate!";
-            case DRAW_AGREE:
-                return "Game over, draw by agreement!";
-            case RESIGN_WHITE:
-                return "Game over, white resigns!";
-            case RESIGN_BLACK:
-                return "Game over, black resigns!";
-            default:
-                throw new RuntimeException();
-        }
-    }
-
-    /**
-     * Get the last played move, or null if no moves played yet.
-     */
-    public Move getLastMove() {
-        Move m;
-        if (currentMove > 0)
-            m = moveList.get(currentMove - 1);
-        return m;
-    }
-
-    public enum GameState {
+    enum GameState {
         ALIVE,
         WHITE_MATE,         // White mates
         BLACK_MATE,         // Black mates
@@ -132,429 +33,90 @@ public:
         DRAW_AGREE,         // Draw by agreement
         RESIGN_WHITE,       // White resigns
         RESIGN_BLACK        // Black resigns
+    };
+
+    Position pos;
+    Player* whitePlayer;
+    Player* blackPlayer;
+
+protected:
+    std::vector<Move> moveList;
+    std::vector<UndoInfo> uiInfoList;
+    std::vector<bool> drawOfferList;
+    int currentMove;
+
+public:
+    bool pendingDrawOffer;
+    GameState drawState;
+private:
+    std::string drawStateMoveStr; // Move required to claim DRAW_REP or DRAW_50
+    GameState resignState;
+
+public:
+    Game(Player& whitePlayer, Player& blackPlayer) {
+        this->whitePlayer = &whitePlayer;
+        this->blackPlayer = &blackPlayer;
+        handleCommand("new");
     }
+
+    /**
+     * Update the game state according to move/command string from a player.
+     * @param str The move or command to process.
+     * @return True if str was understood, false otherwise.
+     */
+    bool processString(const std::string& str);
+
+    std::string getGameStateString();
+
+    /**
+     * Get the last played move, or null if no moves played yet.
+     */
+    Move getLastMove();
 
     /**
      * Get the current state of the game.
      */
-    public GameState getGameState() {
-        MoveGen::MoveList moves;
-		MoveGen::pseudoLegalMoves(pos, moves);
-        MoveGen::removeIllegal(pos, moves);
-        if (moves.size == 0) {
-            if (MoveGen::inCheck(pos)) {
-                return pos.whiteMove ? GameState.BLACK_MATE : GameState.WHITE_MATE;
-            } else {
-                return pos.whiteMove ? GameState.WHITE_STALEMATE : GameState.BLACK_STALEMATE;
-            }
-        }
-        if (insufficientMaterial()) {
-            return GameState.DRAW_NO_MATE;
-        }
-        if (resignState != GameState.ALIVE) {
-            return resignState;
-        }
-        return drawState;
-    }
+    GameState getGameState();
 
     /**
      * Check if a draw offer is available.
      * @return True if the current player has the option to accept a draw offer.
      */
-    public bool haveDrawOffer() {
-        if (currentMove > 0)
-            return drawOfferList.get(currentMove - 1);
-        else
-            return false;
-    }
+    bool haveDrawOffer();
 
+    void getPosHistory(std::vector<std::string> ret);
+
+    std::string getMoveListString(bool compressed);
+
+    std::string getPGNResultString();
+
+    /** Return a list of previous positions in this game, back to the last "zeroing" move. */
+    void getHistory(std::vector<Position>& posList);
+
+    static U64 perfT(Position& pos, int depth);
+
+protected:
     /**
      * Handle a special command.
      * @param moveStr  The command to handle
      * @return  True if command handled, false otherwise.
      */
-    protected bool handleCommand(const std::string& moveStr) {
-        if (moveStr.equals("new")) {
-            moveList = new ArrayList<Move>();
-            uiInfoList = new ArrayList<UndoInfo>();
-            drawOfferList = new ArrayList<bool>();
-            currentMove = 0;
-            pendingDrawOffer = false;
-            drawState = GameState.ALIVE;
-            resignState = GameState.ALIVE;
-            try {
-                pos = TextIO::readFEN(TextIO::startPosFEN);
-            } catch (ChessParseError ex) {
-                throw new RuntimeException();
-            }
-            whitePlayer.clearTT();
-            blackPlayer.clearTT();
-            activateHumanPlayer();
-            return true;
-        } else if (moveStr.equals("undo")) {
-            if (currentMove > 0) {
-                pos.unMakeMove(moveList.get(currentMove - 1), uiInfoList.get(currentMove - 1));
-                currentMove--;
-                pendingDrawOffer = false;
-                drawState = GameState.ALIVE;
-                resignState = GameState.ALIVE;
-                return handleCommand("swap");
-            } else {
-                printf("Nothing to undo\n");
-            }
-            return true;
-        } else if (moveStr.equals("redo")) {
-            if (currentMove < moveList.size()) {
-                pos.makeMove(moveList.get(currentMove), uiInfoList.get(currentMove));
-                currentMove++;
-                pendingDrawOffer = false;
-                return handleCommand("swap");
-            } else {
-                printf("Nothing to redo\n");
-            }
-            return true;
-        } else if (moveStr.equals("swap") || moveStr.equals("go")) {
-            Player tmp = whitePlayer;
-            whitePlayer = blackPlayer;
-            blackPlayer = tmp;
-            return true;
-        } else if (moveStr.equals("list")) {
-            listMoves();
-            return true;
-        } else if (moveStr.startsWith("setpos ")) {
-            std::string fen = moveStr.substring(moveStr.indexOf(" ") + 1);
-            Position newPos = null;
-            try {
-                newPos = TextIO::readFEN(fen);
-            } catch (ChessParseError ex) {
-                printf("Invalid FEN: %s (%s)\n", fen, ex.getMessage());
-            }
-            if (newPos != null) {
-                handleCommand("new");
-                pos = newPos;
-                activateHumanPlayer();
-            }
-            return true;
-        } else if (moveStr.equals("getpos")) {
-            std::string fen = TextIO::toFEN(pos);
-            printf("%s\n", fen);
-            return true;
-        } else if (moveStr.startsWith("draw ")) {
-            if (getGameState() == GameState.ALIVE) {
-                std::string drawCmd = moveStr.substring(moveStr.indexOf(" ") + 1);
-                return handleDrawCmd(drawCmd);
-            } else {
-                return true;
-            }
-        } else if (moveStr.equals("resign")) {
-            if (getGameState()== GameState.ALIVE) {
-                resignState = pos.whiteMove ? GameState.RESIGN_WHITE : GameState.RESIGN_BLACK;
-                return true;
-            } else {
-                return true;
-            }
-        } else if (moveStr.startsWith("book")) {
-            std::string bookCmd = moveStr.substring(moveStr.indexOf(" ") + 1);
-            return handleBookCmd(bookCmd);
-        } else if (moveStr.startsWith("time")) {
-            try {
-                std::string timeStr = moveStr.substring(moveStr.indexOf(" ") + 1);
-                int timeLimit = Integer.parseInt(timeStr);
-                whitePlayer.timeLimit(timeLimit, timeLimit, false);
-                blackPlayer.timeLimit(timeLimit, timeLimit, false);
-                return true;
-            }
-            catch (NumberFormatException nfe) {
-                printf("Number format exception: %s\n", nfe.getMessage());
-                return false;
-            }
-        } else if (moveStr.startsWith("perft ")) {
-            try {
-                std::string depthStr = moveStr.substring(moveStr.indexOf(" ") + 1);
-                int depth = Integer.parseInt(depthStr);
-                U64 t0 = currentTimeMillis();
-                U64 nodes = perfT(pos, depth);
-                U64 t1 = currentTimeMillis();
-                printf("perft(%d) = %d, t=%.3fs\n", depth, nodes, (t1 - t0)*1e-3);
-            }
-            catch (NumberFormatException nfe) {
-                printf("Number format exception: %s\n", nfe.getMessage());
-                return false;
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
+    bool handleCommand(const std::string& moveStr);
 
     /** Swap players around if needed to make the human player in control of the next move. */
-    protected void activateHumanPlayer() {
-        if (!(pos.whiteMove ? whitePlayer : blackPlayer).isHumanPlayer()) {
-            Player tmp = whitePlayer;
-            whitePlayer = blackPlayer;
-            blackPlayer = tmp;
-        }
-    }
+    void activateHumanPlayer();
 
-    public List<std::string> getPosHistory() {
-        List<std::string> ret = new ArrayList<std::string>();
-
-        Position pos = new Position(this->pos);
-        for (int i = currentMove; i > 0; i--) {
-            pos.unMakeMove(moveList.get(i - 1), uiInfoList.get(i - 1));
-        }
-        ret.add(TextIO::toFEN(pos)); // Store initial FEN
-
-        StringBuilder moves = new StringBuilder();
-        for (int i = 0; i < moveList.size(); i++) {
-            Move move = moveList.get(i);
-            std::string strMove = TextIO::moveToString(pos, move, false);
-            moves.append(std::string.format(" %s", strMove));
-            UndoInfo ui = new UndoInfo();
-            pos.makeMove(move, ui);
-        }
-        ret.add(moves.toString()); // Store move list string
-        int numUndo = moveList.size() - currentMove;
-        ret.add(((Integer)numUndo).toString());
-        return ret;
-    }
-
+private:
     /**
      * Print a list of all moves.
      */
-    private void listMoves() {
-        std::string movesStr = getMoveListString(false);
-        printf("%s", movesStr);
-    }
+    void listMoves();
 
-    final public std::string getMoveListString(bool compressed) {
-        StringBuilder ret = new StringBuilder();
+    bool handleDrawCmd(std::string drawCmd);
 
-        // Undo all moves in move history.
-        Position pos = new Position(this->pos);
-        for (int i = currentMove; i > 0; i--) {
-            pos.unMakeMove(moveList.get(i - 1), uiInfoList.get(i - 1));
-        }
+    bool handleBookCmd(const std::string& bookCmd);
 
-        // Print all moves
-        std::string whiteMove = "";
-        std::string blackMove = "";
-        for (int i = 0; i < currentMove; i++) {
-            Move move = moveList.get(i);
-            std::string strMove = TextIO::moveToString(pos, move, false);
-            if (drawOfferList.get(i)) {
-                strMove += " (d)";
-            }
-            if (pos.whiteMove) {
-                whiteMove = strMove;
-            } else {
-                blackMove = strMove;
-                if (whiteMove.length() == 0) {
-                    whiteMove = "...";
-                }
-                if (compressed) {
-                    ret.append(String.format("%d. %s %s ",
-                            pos.fullMoveCounter, whiteMove, blackMove));
-                } else {
-                    ret.append(String.format("%3d.  %-10s %-10s\n",
-                            pos.fullMoveCounter, whiteMove, blackMove));
-                }
-                whiteMove = "";
-                blackMove = "";
-            }
-            UndoInfo ui = new UndoInfo();
-            pos.makeMove(move, ui);
-        }
-        if ((whiteMove.length() > 0) || (blackMove.length() > 0)) {
-            if (whiteMove.length() == 0) {
-                whiteMove = "...";
-            }
-            if (compressed) {
-                ret.append(String.format("%d. %s %s ",
-                        pos.fullMoveCounter, whiteMove, blackMove));
-            } else {
-                ret.append(String.format("%3d.  %-8s %-8s\n",
-                        pos.fullMoveCounter, whiteMove, blackMove));
-            }
-        }
-        std::string gameResult = getPGNResultString();
-        if (!gameResult.equals("*")) {
-            if (compressed) {
-                ret.append(gameResult);
-            } else {
-                ret.append(String.format("%s\n", gameResult));
-            }
-        }
-        return ret.toString();
-    }
-
-    public final std::string getPGNResultString() {
-        std::string gameResult = "*";
-        switch (getGameState()) {
-            case ALIVE:
-                break;
-            case WHITE_MATE:
-            case RESIGN_BLACK:
-                gameResult = "1-0";
-                break;
-            case BLACK_MATE:
-            case RESIGN_WHITE:
-                gameResult = "0-1";
-                break;
-            case WHITE_STALEMATE:
-            case BLACK_STALEMATE:
-            case DRAW_REP:
-            case DRAW_50:
-            case DRAW_NO_MATE:
-            case DRAW_AGREE:
-                gameResult = "1/2-1/2";
-                break;
-        }
-        return gameResult;
-    }
-
-    /** Return a list of previous positions in this game, back to the last "zeroing" move. */
-    public ArrayList<Position> getHistory() {
-        ArrayList<Position> posList = new ArrayList<Position>();
-        Position pos = new Position(this->pos);
-        for (int i = currentMove; i > 0; i--) {
-            if (pos.halfMoveClock == 0)
-                break;
-            pos.unMakeMove(moveList.get(i- 1), uiInfoList.get(i- 1));
-            posList.add(new Position(pos));
-        }
-        Collections.reverse(posList);
-        return posList;
-    }
-
-    private bool handleDrawCmd(std::string drawCmd) {
-        if (drawCmd.startsWith("rep") || drawCmd.startsWith("50")) {
-            bool rep = drawCmd.startsWith("rep");
-            Move m;
-            std::string ms = drawCmd.substring(drawCmd.indexOf(" ") + 1);
-            if (ms.length() > 0)
-                m = TextIO::stringToMove(pos, ms);
-            bool valid;
-            if (rep) {
-                valid = false;
-                List<Position> oldPositions = new ArrayList<Position>();
-                if (!m.isEmpty()) {
-                    UndoInfo ui = new UndoInfo();
-                    Position tmpPos = new Position(pos);
-                    tmpPos.makeMove(m, ui);
-                    oldPositions.add(tmpPos);
-                }
-                oldPositions.add(pos);
-                Position tmpPos = pos;
-                for (int i = currentMove - 1; i >= 0; i--) {
-                    tmpPos = new Position(tmpPos);
-                    tmpPos.unMakeMove(moveList.get(i), uiInfoList.get(i));
-                    oldPositions.add(tmpPos);
-                }
-                int repetitions = 0;
-                Position firstPos = oldPositions.get(0);
-                for (Position p : oldPositions) {
-                    if (p.drawRuleEquals(firstPos))
-                        repetitions++;
-                }
-                if (repetitions >= 3) {
-                    valid = true;
-                }
-            } else {
-                Position tmpPos(pos);
-                if (!m.isEmpty()) {
-                    UndoInfo ui;
-                    tmpPos.makeMove(m, ui);
-                }
-                valid = tmpPos.halfMoveClock >= 100;
-            }
-            if (valid) {
-                drawState = rep ? GameState.DRAW_REP : GameState.DRAW_50;
-                drawStateMoveStr = null;
-                if (m != null) {
-                    drawStateMoveStr = TextIO::moveToString(pos, m, false);
-                }
-            } else {
-                pendingDrawOffer = true;
-                if (m != null) {
-                    processString(ms);
-                }
-            }
-            return true;
-        } else if (drawCmd.startsWith("offer ")) {
-            pendingDrawOffer = true;
-            std::string ms = drawCmd.substring(drawCmd.indexOf(" ") + 1);
-            if (TextIO::stringToMove(pos, ms) != null) {
-                processString(ms);
-            }
-            return true;
-        } else if (drawCmd.equals("accept")) {
-            if (haveDrawOffer()) {
-                drawState = GameState.DRAW_AGREE;
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    private bool handleBookCmd(const std::string& bookCmd) {
-        if (bookCmd.equals("off")) {
-            whitePlayer.useBook(false);
-            blackPlayer.useBook(false);
-            return true;
-        } else if (bookCmd.equals("on")) {
-            whitePlayer.useBook(true);
-            whitePlayer.useBook(true);
-            return true;
-        }
-        return false;
-    }
-
-    private bool insufficientMaterial() {
-        if (pos.pieceTypeBB[Piece::WQUEEN] != 0) return false;
-        if (pos.pieceTypeBB[Piece::WROOK]  != 0) return false;
-        if (pos.pieceTypeBB[Piece::WPAWN]  != 0) return false;
-        if (pos.pieceTypeBB[Piece::BQUEEN] != 0) return false;
-        if (pos.pieceTypeBB[Piece::BROOK]  != 0) return false;
-        if (pos.pieceTypeBB[Piece::BPAWN]  != 0) return false;
-        int wb = BitBoard::bitCount(pos.pieceTypeBB[Piece::WBISHOP]);
-        int wn = BitBoard::bitCount(pos.pieceTypeBB[Piece::WKNIGHT]);
-        int bb = BitBoard::bitCount(pos.pieceTypeBB[Piece::BBISHOP]);
-        int bn = BitBoard::bitCount(pos.pieceTypeBB[Piece::BKNIGHT]);
-        if (wb + wn + bb + bn <= 1) {
-            return true;    // King + bishop/knight vs king is draw
-        }
-        if (wn + bn == 0) {
-            // Only bishops. If they are all on the same color, the position is a draw.
-            U64 bMask = pos.pieceTypeBB[Piece::WBISHOP] | pos.pieceTypeBB[Piece::BBISHOP];
-            if (((bMask & BitBoard::maskDarkSq) == 0) ||
-                ((bMask & BitBoard::maskLightSq) == 0))
-                return true;
-        }
-
-        return false;
-    }
-
-    final static U64 perfT(const Position& pos, int depth) {
-        if (depth == 0)
-            return 1;
-        U64 nodes = 0;
-        MoveGen::MoveList moves;
-		MoveGen::pseudoLegalMoves(pos, moves);
-        MoveGen::removeIllegal(pos, moves);
-        if (depth == 1)
-            return moves.size;
-        UndoInfo ui;
-        for (int mi = 0; mi < moves.size; mi++) {
-            const Move& m = moves.m[mi];
-            pos.makeMove(m, ui);
-            nodes += perfT(pos, depth - 1);
-            pos.unMakeMove(m, ui);
-        }
-        return nodes;
-    }
-#endif
+    bool insufficientMaterial();
 };
 
 

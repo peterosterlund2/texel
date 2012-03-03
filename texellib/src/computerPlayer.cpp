@@ -7,6 +7,11 @@
 
 #include "computerPlayer.hpp"
 
+#include <iostream>
+
+std::string ComputerPlayer::engineName;
+
+
 static StaticInitializer<ComputerPlayer> cpInit;
 
 void
@@ -47,7 +52,7 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
         Move bookMove;
         book.getBookMove(pos, bookMove);
         if (!bookMove.isEmpty()) {
-            printf("Book moves: %s\n", book.getAllBookMoves(pos).c_str());
+            std::cout << "Book moves: " << book.getAllBookMoves(pos) << std::endl;
             return TextIO::moveToString(pos, bookMove, false);
         }
     }

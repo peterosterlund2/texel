@@ -10,8 +10,8 @@
 #include "moveGen.hpp"
 #include "textio.hpp"
 
-#include <stdio.h>
 #include <iostream>
+#include <iomanip>
 
 using namespace std;
 
@@ -158,11 +158,21 @@ TranspositionTable::printStats() const {
         }
     }
     double w = 100.0 / table.size();
-    printf("Hash stats: size:%ld unused:%d (%.2f%%) thisGen:%d (%.2f%%)\n",
-                      table.size(), unused, unused*w, thisGen, thisGen*w);
+    std::stringstream ss;
+    ss.precision(2);
+    ss << std::fixed << "Hash stats: size:" << table.size()
+       << " unused:" << unused << " (" << (unused*w) << "%)"
+       << " thisGen:" << thisGen << " (" << (thisGen*w) << "%)" << std::endl;
+    cout << ss.str();
     for (int i = 0; i < maxDepth; i++) {
         int c = depHist[i];
-        if (c > 0)
-            printf("%3d %8d (%6.2f%%)\n", i, c, c*w);
+        if (c > 0) {
+            std::stringstream ss;
+            ss.precision(2);
+            ss << std::setw(3) << i
+               << ' ' << std::setw(8) << c
+               << " (" << std::setw(6) << std::fixed << (c*w);
+            std::cout << ss.str();
+        }
     }
 }

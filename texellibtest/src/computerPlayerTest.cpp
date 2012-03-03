@@ -7,12 +7,12 @@
 
 #include "computerPlayerTest.hpp"
 #include "computerPlayer.hpp"
+#include "humanPlayer.hpp"
 #include "textio.hpp"
 #include "game.hpp"
 
 #include "cute.h"
 
-#if 0
 /**
  * Test of getCommand method, of class ComputerPlayer.
  */
@@ -62,35 +62,37 @@ testDrawRep() {
     game.processString("Rh7");
     game.processString("Kg8");
     game.processString("Rhg7");
-    std::string result = cp.getCommand(game.pos, false, game.getHistory());
+    std::vector<Position> hist;
+    game.getHistory(hist);
+    std::string result = cp.getCommand(game.pos, false, hist);
     ASSERT_EQUAL("Kh8", result); // Not valid to claim draw here
     game.processString("Kh8");
     game.processString("Rh7");
     game.processString("Kg8");
     game.processString("Rhg7");
-    result = cp.getCommand(game.pos, false, game.getHistory());
+    game.getHistory(hist);
+    result = cp.getCommand(game.pos, false, hist);
     ASSERT_EQUAL("draw rep Kh8", result);   // Can't win, but can claim draw.
 
     game.processString("setpos 7k/R7/1R6/8/8/8/8/K7 w - - 0 1");
     game.processString("Ra8");
     game.processString("Kh7");
-    result = cp.getCommand(game.pos, false, game.getHistory());
+    game.getHistory(hist);
+    result = cp.getCommand(game.pos, false, hist);
     ASSERT_EQUAL("Ra7+", result);       // Ra7 is mate-in-two
     game.processString("Ra7");
     game.processString("Kh8");
     game.processString("Ra8");
     game.processString("Kh7");
-    result = cp.getCommand(game.pos, false, game.getHistory());
-    ASSERT(!result.equals("Ra7+")); // Ra7 now leads to a draw by repetition
+    game.getHistory(hist);
+    result = cp.getCommand(game.pos, false, hist);
+    ASSERT(result != "Ra7+"); // Ra7 now leads to a draw by repetition
 }
-#endif
 
 cute::suite
 ComputerPlayerTest::getSuite() const {
     cute::suite s;
-#if 0
     s.push_back(CUTE(testGetCommand));
     s.push_back(CUTE(testDrawRep));
-#endif
     return s;
 }

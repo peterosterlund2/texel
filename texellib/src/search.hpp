@@ -105,7 +105,7 @@ public:
         if (listener)
             this->listener = listener;
         else
-            listener = &dummyListener;
+            this->listener = &dummyListener;
     }
 
     void timeLimit(int minTimeLimit, int maxTimeLimit);

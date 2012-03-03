@@ -9,7 +9,6 @@
 #include "position.hpp"
 #include "moveGen.hpp"
 
-#include <stdio.h>
 #include <assert.h>
 
 
@@ -115,7 +114,10 @@ Book::initBook() {
     }
     if (verbose) {
         S64 t1 = currentTimeMillis();
-        printf("Book moves:%d (parse time:%.3f)\n", numBookMoves, (t1 - t0) / 1000.0);
+        std::stringstream ss;
+        ss.precision(3);
+        ss << std::fixed << ((t1 - t0) / 1000.0);
+        std::cout << "Book moves:" << numBookMoves << " (parse time:" << ss.str() << ')' << std::endl;
     }
 }
 
@@ -149,11 +151,12 @@ Book::getWeight(int count) {
 void
 Book::createBinBook(std::vector<byte>& binBook) {
     for (size_t i = 0; bookLines[i]; i++) {
-        if (!addBookLine(bookLines[i], binBook)) {
-            printf("Book parse error, line:%d\n", (int)i);
+        const char* line = bookLines[i];
+        if (!addBookLine(line, binBook)) {
+            std::cout << "Book parse error, line:" << i << std::endl;
             assert(false);
         }
-//            printf("no:%d line:%s\n", lnr.getLineNumber(), line);
+//        std::cout << "no:" << i << " line:" << line << std::endl;
     }
 }
 
@@ -166,7 +169,7 @@ Book::addBookLine(const std::string& line, std::vector<byte>& binBook) {
     splitString(line, strMoves);
     for (size_t i = 0; i < strMoves.size(); i++) {
         std::string strMove = strMoves[i];
-//            printf("Adding move:%s\n", strMove);
+//        std::cout << "Adding move:" << strMove << std::endl;
         int bad = 0;
         if ((strMove.length() > 0) && (strMove[strMove.length()-1] == '?')) {
             strMove = strMove.substr(0, strMove.length() - 1);

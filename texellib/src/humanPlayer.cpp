@@ -8,13 +8,13 @@
 #include "humanPlayer.hpp"
 #include "position.hpp"
 
-#include <stdio.h>
+#include <iostream>
 
 
 std::string
 HumanPlayer::getCommand(const Position& pos, bool drawOffer, const std::vector<Position>& history) {
     const char* color = pos.whiteMove ? "white" : "black";
-    printf("Enter move (%s):", color);
+    std::cout << "Enter move (" << color << "):" << std::flush;
     std::string moveStr;
     if (getline(std::cin, moveStr) < 0)
         return "quit";

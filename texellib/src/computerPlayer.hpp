@@ -22,8 +22,10 @@ class ComputerPlayer : public Player {
 private:
 
     int minTimeMillis;
+public:
     int maxTimeMillis;
     int maxDepth;
+private:
     int maxNodes;
     TranspositionTable tt;
     Book book;
@@ -41,7 +43,8 @@ public:
 
     ComputerPlayer()
         : tt(15),
-          book(verbose)
+          book(verbose),
+          listener(NULL)
     {
         minTimeMillis = 10000;
         maxTimeMillis = 10000;

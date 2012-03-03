@@ -8,7 +8,6 @@
 #include "util.hpp"
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <sys/time.h>
 
 S64 currentTimeMillis() {
