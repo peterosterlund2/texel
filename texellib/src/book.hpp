@@ -44,10 +44,10 @@ public:
     private final void initBook() {
         if (numBookMoves >= 0)
             return;
-        U64 t0 = System.currentTimeMillis();
+        U64 t0 = currentTimeMillis();
         bookMap = new HashMap<U64, List<BookEntry>>();
         rndGen = new SecureRandom();
-        rndGen.setSeed(System.currentTimeMillis());
+        rndGen.setSeed(currentTimeMillis());
         numBookMoves = 0;
         try {
             InputStream inStream = getClass().getResourceAsStream("/book.bin");
@@ -83,12 +83,12 @@ public:
         } catch (ChessParseError ex) {
             throw new RuntimeException();
         } catch (IOException ex) {
-            System.out.println("Can't read opening book resource");
+            printf("Can't read opening book resource\n");
             throw new RuntimeException();
         }
         if (verbose) {
-            U64 t1 = System.currentTimeMillis();
-            System.out.printf("Book moves:%d (parse time:%.3f)%n", numBookMoves,
+            U64 t1 = currentTimeMillis();
+            printf("Book moves:%d (parse time:%.3f)%n", numBookMoves,
                     (t1 - t0) / 1000.0);
         }
     }
@@ -200,16 +200,16 @@ public:
                     continue;
                 }
                 if (!addBookLine(line, binBook)) {
-                    System.out.printf("Book parse error, line:%d\n", lnr.getLineNumber());
+                    printf("Book parse error, line:%d\n", lnr.getLineNumber());
                     throw new RuntimeException();
                 }
-//              System.out.printf("no:%d line:%s%n", lnr.getLineNumber(), line);
+//              printf("no:%d line:%s%n", lnr.getLineNumber(), line);
             }
             lnr.close();
         } catch (ChessParseError ex) {
             throw new RuntimeException();
         } catch (IOException ex) {
-            System.out.println("Can't read opening book resource");
+            printf("Can't read opening book resource\n");
             throw new RuntimeException();
         }
         return binBook;
@@ -221,7 +221,7 @@ public:
         UndoInfo ui = new UndoInfo();
         String[] strMoves = line.split(" ");
         for (std::string strMove : strMoves) {
-//            System.out.printf("Adding move:%s\n", strMove);
+//            printf("Adding move:%s\n", strMove);
             int bad = 0;
             if (strMove.endsWith("?")) {
                 strMove = strMove.substring(0, strMove.length() - 1);

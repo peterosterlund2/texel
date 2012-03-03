@@ -15,11 +15,6 @@
 
 using namespace std;
 
-const int TranspositionTable::TTEntry::T_EXACT;
-const int TranspositionTable::TTEntry::T_GE;
-const int TranspositionTable::TTEntry::T_LE;
-const int TranspositionTable::TTEntry::T_EMPTY;
-
 
 void
 TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore) {
@@ -47,11 +42,11 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
     }
     bool doStore = true;
     if ((ent->key == key) && (ent->getDepth() > depth) && (ent->type == type)) {
-        if (type == TTEntry::T_EXACT)
+        if (type == TType::T_EXACT)
             doStore = false;
-        else if ((type == TTEntry::T_GE) && (sm.score() <= ent->getScore(ply)))
+        else if ((type == TType::T_GE) && (sm.score() <= ent->getScore(ply)))
             doStore = false;
-        else if ((type == TTEntry::T_LE) && (sm.score() >= ent->getScore(ply)))
+        else if ((type == TType::T_LE) && (sm.score() >= ent->getScore(ply)))
             doStore = false;
     }
     if (doStore) {
@@ -67,8 +62,8 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
     }
 }
 
-std::vector<Move>
-TranspositionTable::extractPVMoves(const Position& rootPos, const Move& mFirst) const {
+void
+TranspositionTable::extractPVMoves(const Position& rootPos, const Move& mFirst, std::vector<Move>& pv) {
     Position pos(rootPos);
     Move m(mFirst);
     std::vector<Move> ret;
@@ -80,8 +75,9 @@ TranspositionTable::extractPVMoves(const Position& rootPos, const Move& mFirst) 
         if (contains(hashHistory, pos.zobristHash()))
             break;
         hashHistory.push_back(pos.zobristHash());
-        TTEntry ent = probe(pos.historyHash());
-        if (ent.type == TTEntry::T_EMPTY)
+        TTEntry ent;
+        probe(pos.historyHash(), ent);
+        if (ent.type == TType::T_EMPTY)
             break;
         ent.getMove(m);
         MoveGen::MoveList moves;
@@ -96,20 +92,20 @@ TranspositionTable::extractPVMoves(const Position& rootPos, const Move& mFirst) 
         if  (!contains)
             break;
     }
-    return ret;
 }
 
 /** Extract the PV starting from posIn, using hash entries, both exact scores and bounds. */
 std::string
-TranspositionTable::extractPV(const Position& posIn) const {
+TranspositionTable::extractPV(const Position& posIn) {
     std::string ret;
     Position pos(posIn);
     bool first = true;
-    TTEntry ent = probe(pos.historyHash());
+    TTEntry ent;
+    probe(pos.historyHash(), ent);
     UndoInfo ui;
     std::vector<U64> hashHistory;
     bool repetition = false;
-    while (ent.type != TTEntry::T_EMPTY) {
+    while (ent.type != TType::T_EMPTY) {
         Move m;
         ent.getMove(m);
         MoveGen::MoveList moves;
@@ -127,9 +123,9 @@ TranspositionTable::extractPV(const Position& posIn) const {
             break;
         if (!first)
             ret += ' ';
-        if (ent.type == TTEntry::T_LE)
+        if (ent.type == TType::T_LE)
             ret += '<';
-        else if (ent.type == TTEntry::T_GE)
+        else if (ent.type == TType::T_GE)
             ret += '>';
         std::string moveStr = TextIO::moveToString(pos, m, false);
         ret += moveStr;
@@ -137,7 +133,7 @@ TranspositionTable::extractPV(const Position& posIn) const {
         if (contains(hashHistory, pos.zobristHash()))
             repetition = true;
         hashHistory.push_back(pos.zobristHash());
-        ent = probe(pos.historyHash());
+        probe(pos.historyHash(), ent);
         first = false;
     }
     return ret;
@@ -152,7 +148,7 @@ TranspositionTable::printStats() const {
     depHist.resize(maxDepth);
     for (int i = 0; i < (int)table.size(); i++) {
         const TTEntry& ent = table[i];
-        if (ent.type == TTEntry::T_EMPTY) {
+        if (ent.type == TType::T_EMPTY) {
             unused++;
         } else {
             if (ent.generation == generation)

@@ -37,6 +37,7 @@ public:
         int size;
         MoveList() : size(0) { }
         void filter(const std::vector<Move>& searchMoves);
+        void clear() { size = 0; }
     };
 
     /**

@@ -18,8 +18,9 @@ typedef TranspositionTable::TTEntry TTEntry;
 /**
  * Test of TTEntry nested class, of class TranspositionTable.
  */
-static void testTTEntry() {
-    const int mate0 = Search::MATE0;
+static void
+testTTEntry() {
+    const int mate0 = SearchConst::MATE0;
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     Move move = TextIO::stringToMove(pos, "e4");
 
@@ -32,7 +33,7 @@ static void testTTEntry() {
     ent1.setScore(score, ply);
     ent1.setDepth(3);
     ent1.generation = 0;
-    ent1.type = TranspositionTable::TTEntry::T_EXACT;
+    ent1.type = TType::T_EXACT;
     ent1.setHashSlot(0);
     Move tmpMove;
     ent1.getMove(tmpMove);
@@ -50,7 +51,7 @@ static void testTTEntry() {
     ent2.setScore(score, ply);
     ent2.setDepth(99);
     ent2.generation = 0;
-    ent2.type = TranspositionTable::TTEntry::T_EXACT;
+    ent2.type = TType::T_EXACT;
     ent2.setHashSlot(0);
     ent2.getMove(tmpMove);
     ASSERT_EQUAL(move, tmpMove);
@@ -67,9 +68,9 @@ static void testTTEntry() {
 
     ent2.generation = 0;
     ent1.setDepth(7); ent2.setDepth(7);
-    ent1.type = TranspositionTable::TTEntry::T_GE;
+    ent1.type = TType::T_GE;
     ASSERT(ent2.betterThan(ent1, 0));
-    ent2.type = TranspositionTable::TTEntry::T_LE;
+    ent2.type = TType::T_LE;
     ASSERT(!ent2.betterThan(ent1, 0));  // T_GE is equally good as T_LE
     ASSERT(!ent1.betterThan(ent2, 0));
 
@@ -83,7 +84,7 @@ static void testTTEntry() {
     ent3.setScore(score, ply);
     ent3.setDepth(99);
     ent3.generation = 0;
-    ent3.type = TranspositionTable::TTEntry::T_EXACT;
+    ent3.type = TType::T_EXACT;
     ent3.setHashSlot(0);
     ent3.getMove(tmpMove);
     ASSERT_EQUAL(move, tmpMove);
@@ -94,7 +95,8 @@ static void testTTEntry() {
 /**
  * Test of insert method, of class TranspositionTable.
  */
-static void testInsert() {
+static void
+testInsert() {
     TranspositionTable tt(16);
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     std::string moves[] = {
@@ -106,7 +108,7 @@ static void testInsert() {
         pos.makeMove(m, ui);
         int score = i * 17 + 3;
         m.setScore(score);
-        int type = TranspositionTable::TTEntry::T_EXACT;
+        int type = TType::T_EXACT;
         int ply = i + 1;
         int depth = i * 2 + 5;
         tt.insert(pos.historyHash(), m, type, ply, depth, score * 2 + 3);
@@ -116,8 +118,9 @@ static void testInsert() {
     for (size_t i = 0; i < COUNT_OF(moves); i++) {
         Move m = TextIO::stringToMove(pos, moves[i]);
         pos.makeMove(m, ui);
-        TranspositionTable::TTEntry ent = tt.probe(pos.historyHash());
-        ASSERT_EQUAL(TranspositionTable::TTEntry::T_EXACT, (int)ent.type);
+        TranspositionTable::TTEntry ent;
+        tt.probe(pos.historyHash(), ent);
+        ASSERT_EQUAL(TType::T_EXACT, (int)ent.type);
         int score = i * 17 + 3;
         int ply = i + 1;
         int depth = i * 2 + 5;

@@ -10,7 +10,7 @@
 
 #include "util.hpp"
 #include "move.hpp"
-#include "search.hpp"
+#include "constants.hpp"
 
 #include <vector>
 
@@ -35,17 +35,12 @@ public:
         short evalScore;         // Score from static evaluation
         // FIXME!!! Test storing both upper and lower bound in each hash entry.
 
-        static const int T_EXACT = 0;   // Exact score
-        static const int T_GE = 1;      // True score >= this->score
-        static const int T_LE = 2;      // True score <= this->score
-        static const int T_EMPTY = 3;   // Empty hash slot
-
         /** Return true if this object is more valuable than the other, false otherwise. */
         bool betterThan(const TTEntry& other, int currGen) const {
             if ((generation == currGen) != (other.generation == currGen))
                 return generation == currGen;   // Old entries are less valuable
-            if ((type == T_EXACT) != (other.type == T_EXACT))
-                return type == T_EXACT;         // Exact score more valuable than lower/upper bound
+            if ((type == TType::T_EXACT) != (other.type == TType::T_EXACT))
+                return type == TType::T_EXACT;         // Exact score more valuable than lower/upper bound
             if (getDepth() != other.getDepth())
                 return getDepth() > other.getDepth();     // Larger depth is more valuable
             return false;   // Otherwise, pretty much equally valuable
@@ -55,7 +50,7 @@ public:
         bool valuable(int currGen) const {
             if (generation != currGen)
                 return false;
-            return (type == T_EXACT) || (getDepth() > 3 * Search::plyScale);
+            return (type == TType::T_EXACT) || (getDepth() > 3 * SearchConst::plyScale);
         }
 
         void getMove(Move& m) const {
@@ -69,9 +64,9 @@ public:
         /** Get the score from the hash entry, and convert from "mate in x" to "mate at ply". */
         int getScore(int ply) const {
             int sc = score;
-            if (sc > Search::MATE0 - 1000) {
+            if (sc > SearchConst::MATE0 - 1000) {
                 sc -= ply;
-            } else if (sc < -(Search::MATE0 - 1000)) {
+            } else if (sc < -(SearchConst::MATE0 - 1000)) {
                 sc += ply;
             }
             return sc;
@@ -79,9 +74,9 @@ public:
 
         /** Convert score from "mate at ply" to "mate in x", and store in hash entry. */
         void setScore(int score, int ply) {
-            if (score > Search::MATE0 - 1000)
+            if (score > SearchConst::MATE0 - 1000)
                 score += ply;
-            else if (score < -(Search::MATE0 - 1000))
+            else if (score < -(SearchConst::MATE0 - 1000))
                 score -= ply;
             this->score = (short)score;
         }
@@ -119,9 +114,9 @@ public:
             TTEntry& ent = table[i];
             ent.key = 0;
             ent.depthSlot = 0;
-            ent.type = TTEntry::T_EMPTY;
+            ent.type = TType::T_EMPTY;
         }
-        emptySlot.type = TTEntry::T_EMPTY;
+        emptySlot.type = TType::T_EMPTY;
         generation = 0;
     }
 
@@ -129,20 +124,22 @@ public:
     void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore);
 
     /** Retrieve an entry from the hash table corresponding to "pos". */
-    TTEntry probe(U64 key) const {
+    void probe(U64 key, TTEntry& result) {
         int idx0 = h0(key);
-        TTEntry ent = table[idx0];
+        TTEntry& ent = table[idx0];
         if (ent.key == key) {
             ent.generation = (byte)generation;
-            return ent;
+            result = ent;
+            return;
         }
         int idx1 = h1(key);
-        ent = table[idx1];
-        if (ent.key == key) {
-            ent.generation = (byte)generation;
-            return ent;
+        TTEntry& ent2 = table[idx1];
+        if (ent2.key == key) {
+            ent2.generation = (byte)generation;
+            result = ent2;
+            return;
         }
-        return emptySlot;
+        result = emptySlot;
     }
 
     /**
@@ -156,16 +153,16 @@ public:
     /** Clear the transposition table. */
     void clear() {
         for (int i = 0; i < (int)table.size(); i++)
-            table[i].type = TTEntry::T_EMPTY;
+            table[i].type = TType::T_EMPTY;
     }
 
     /**
      * Extract a list of PV moves, starting from "rootPos" and first move "mFirst".
      */
-    std::vector<Move> extractPVMoves(const Position& rootPos, const Move& mFirst) const;
+    void extractPVMoves(const Position& rootPos, const Move& mFirst, std::vector<Move>& pv);
 
     /** Extract the PV starting from posIn, using hash entries, both exact scores and bounds. */
-    std::string extractPV(const Position& posIn) const;
+    std::string extractPV(const Position& posIn);
 
     /** Print hash table statistics. */
     void printStats() const;

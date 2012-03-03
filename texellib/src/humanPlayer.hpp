@@ -24,7 +24,7 @@ public class HumanPlayer implements Player {
     public std::string getCommand(const Position& pos, bool drawOffer, List<Position> history) {
         try {
             std::string color = pos.whiteMove ? "white" : "black";
-            System.out.print(String.format("Enter move (%s):", color));
+            printf("Enter move (%s):", color);
             std::string moveStr = in.readLine();
             if (moveStr == null)
                 return "quit";
@@ -38,12 +38,12 @@ public class HumanPlayer implements Player {
             return "quit";
         }
     }
-    
+
     @Override
     public bool isHumanPlayer() {
         return true;
     }
-    
+
     @Override
     public void useBook(bool bookOn) {
     }

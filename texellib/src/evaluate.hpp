@@ -141,6 +141,20 @@ public:
         // FIXME! Test "tempo value"
     }
 
+    /**
+     * Interpolate between (x1,y1) and (x2,y2).
+     * If x < x1, return y1, if x > x2 return y2. Otherwise, use linear interpolation.
+     */
+    static int interpolate(int x, int x1, int y1, int x2, int y2) {
+        if (x > x2) {
+            return y2;
+        } else if (x < x1) {
+            return y1;
+        } else {
+            return (x - x1) * (y2 - y1) / (x2 - x1) + y1;
+        }
+    }
+
     /** Compute white_material - black_material. */
     static int material(const Position& pos) {
         return pos.wMtrl - pos.bMtrl;
@@ -483,7 +497,7 @@ private:
                 bKingAttacks += BitBoard::bitCount(atk & bKingZone);
             m &= m-1;
         }
-        U64 r7 = (pos.pieceTypeBB[Piece::WROOK] >> 48) & 0x00ffULL;
+        U64 r7 = pos.pieceTypeBB[Piece::WROOK] & 0x00ff000000000000ULL;
         if (((r7 & (r7 - 1)) != 0) &&
             ((pos.pieceTypeBB[Piece::BKING] & 0xff00000000000000ULL) != 0))
             score += 30; // Two rooks on 7:th row
@@ -1010,20 +1024,6 @@ private:
         else
             score /= 50;
         return score;
-    }
-
-    /**
-     * Interpolate between (x1,y1) and (x2,y2).
-     * If x < x1, return y1, if x > x2 return y2. Otherwise, use linear interpolation.
-     */
-    static int interpolate(int x, int x1, int y1, int x2, int y2) {
-        if (x > x2) {
-            return y2;
-        } else if (x < x1) {
-            return y1;
-        } else {
-            return (x - x1) * (y2 - y1) / (x2 - x1) + y1;
-        }
     }
 };
 

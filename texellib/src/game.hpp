@@ -200,7 +200,7 @@ public:
                 resignState = GameState.ALIVE;
                 return handleCommand("swap");
             } else {
-                System.out.println("Nothing to undo");
+                printf("Nothing to undo\n");
             }
             return true;
         } else if (moveStr.equals("redo")) {
@@ -210,7 +210,7 @@ public:
                 pendingDrawOffer = false;
                 return handleCommand("swap");
             } else {
-                System.out.println("Nothing to redo");
+                printf("Nothing to redo\n");
             }
             return true;
         } else if (moveStr.equals("swap") || moveStr.equals("go")) {
@@ -227,7 +227,7 @@ public:
             try {
                 newPos = TextIO::readFEN(fen);
             } catch (ChessParseError ex) {
-                System.out.printf("Invalid FEN: %s (%s)%n", fen, ex.getMessage());
+                printf("Invalid FEN: %s (%s)%n", fen, ex.getMessage());
             }
             if (newPos != null) {
                 handleCommand("new");
@@ -237,7 +237,7 @@ public:
             return true;
         } else if (moveStr.equals("getpos")) {
             std::string fen = TextIO::toFEN(pos);
-            System.out.println(fen);
+            printf("%s\n", fen);
             return true;
         } else if (moveStr.startsWith("draw ")) {
             if (getGameState() == GameState.ALIVE) {
@@ -265,20 +265,20 @@ public:
                 return true;
             }
             catch (NumberFormatException nfe) {
-                System.out.printf("Number format exception: %s\n", nfe.getMessage());
+                printf("Number format exception: %s\n", nfe.getMessage());
                 return false;
             }
         } else if (moveStr.startsWith("perft ")) {
             try {
                 std::string depthStr = moveStr.substring(moveStr.indexOf(" ") + 1);
                 int depth = Integer.parseInt(depthStr);
-                long t0 = System.currentTimeMillis();
-                long nodes = perfT(pos, depth);
-                long t1 = System.currentTimeMillis();
-                System.out.printf("perft(%d) = %d, t=%.3fs\n", depth, nodes, (t1 - t0)*1e-3);
+                U64 t0 = currentTimeMillis();
+                U64 nodes = perfT(pos, depth);
+                U64 t1 = currentTimeMillis();
+                printf("perft(%d) = %d, t=%.3fs\n", depth, nodes, (t1 - t0)*1e-3);
             }
             catch (NumberFormatException nfe) {
-                System.out.printf("Number format exception: %s\n", nfe.getMessage());
+                printf("Number format exception: %s\n", nfe.getMessage());
                 return false;
             }
             return true;
@@ -324,7 +324,7 @@ public:
      */
     private void listMoves() {
         std::string movesStr = getMoveListString(false);
-        System.out.printf("%s", movesStr);
+        printf("%s", movesStr);
     }
 
     final public std::string getMoveListString(bool compressed) {
@@ -536,10 +536,10 @@ public:
         return false;
     }
 
-    final static long perfT(const Position& pos, int depth) {
+    final static U64 perfT(const Position& pos, int depth) {
         if (depth == 0)
             return 1;
-        long nodes = 0;
+        U64 nodes = 0;
         MoveGen::MoveList moves;
 		MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);

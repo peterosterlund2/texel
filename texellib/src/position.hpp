@@ -464,7 +464,9 @@ private:
 
     /* ------------- Hashing code ------------------ */
 
+public:
     static U64 psHashKeys[Piece::nPieceTypes][64];    // [piece][square]
+private:
     static U64 whiteHashKey;
     static U64 castleHashKeys[16];   // [castleMask]
     static U64 epHashKeys[9];        // [epFile + 1] (epFile==-1 for no ep)

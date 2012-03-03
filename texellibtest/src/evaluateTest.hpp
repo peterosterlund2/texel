@@ -19,5 +19,7 @@ public:
 
 class Position;
 Position swapColors(const Position& pos);
+int evalWhite(const Position& pos);
+
 
 #endif /* EVALUATETEST_HPP_ */

@@ -16,6 +16,7 @@
 #include <algorithm>
 
 typedef unsigned long U64;
+typedef signed long S64;
 typedef signed char byte;
 
 template <typename T, size_t N> char (&_ArraySizeHelper(T(&array)[N]))[N];
@@ -98,5 +99,7 @@ contains(const std::vector<std::string> v, const char* e) {
     return contains(v, std::string(e));
 }
 
+/** Return current wall clock time in milliseconds, starting at some arbitrary point in time. */
+U64 currentTimeMillis();
 
 #endif /* UTIL_HPP_ */

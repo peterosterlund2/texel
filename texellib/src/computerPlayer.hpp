@@ -29,7 +29,11 @@ private:
     Book book;
     bool bookEnabled;
     bool randomMode;
-    Search currentSearch;
+    Search* currentSearch;
+
+    // Not implemented.
+    ComputerPlayer(const ComputerPlayer& other);
+    ComputerPlayer& operator=(const ComputerPlayer& other);
 
 public:
     static std::string engineName;
@@ -53,25 +57,23 @@ public:
         tt = TranspositionTable(logSize); // FIXME!! Resize
     }
 
-    Search.Listener listener;
-    public void setListener(Search.Listener listener) {
+    Search::Listener listener;
+    public void setListener(Search::Listener listener) {
         this->listener = listener;
     }
 
-    @Override
-    public std::string getCommand(const Position& pos, bool drawOffer, List<Position> history) {
+    public std::string getCommand(const Position& pos, bool drawOffer, const std::vector<Position>& history) {
         // Create a search object
         U64[] posHashList = new U64[200 + history.size()];
         int posHashListSize = 0;
-        for (Position p : history) {
-            posHashList[posHashListSize++] = p.zobristHash();
-        }
+        for (size_t i = 0; i < history.size(); i++)
+            posHashList[posHashListSize++] = history[i].zobristHash();
         tt.nextGeneration();
-        Search sc = new Search(pos, posHashList, posHashListSize, tt);
+        Search sc(pos, posHashList, posHashListSize, tt);
 
         // Determine all legal moves
         MoveGen::MoveList moves;
-	MoveGen::pseudoLegalMoves(pos, moves);
+        MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         sc.scoreMoveList(moves, 0);
 
@@ -83,14 +85,14 @@ public:
 
         if (bookEnabled) {
             Move bookMove = book.getBookMove(pos);
-            if (bookMove != null) {
-                System.out.printf("Book moves: %s\n", book.getAllBookMoves(pos));
+            if (!bookMove.isEmpty()) {
+                printf("Book moves: %s\n", book.getAllBookMoves(pos));
                 return TextIO::moveToString(pos, bookMove, false);
             }
         }
 
         // Find best move using iterative deepening
-        currentSearch = sc;
+        currentSearch = &sc;
         sc.setListener(listener);
         Move bestM;
         if ((moves.size == 1) && (canClaimDraw(pos, posHashList, posHashListSize, moves.m[0]) == "")) {
@@ -102,7 +104,7 @@ public:
             sc.timeLimit(minTimeMillis, maxTimeMillis);
             bestM = sc.iterativeDeepening(moves, maxDepth, maxNodes, verbose);
         }
-        currentSearch = null;
+        currentSearch = NULL;
 //        tt.printStats();
         std::string strMove = TextIO::moveToString(pos, bestM, false);
 
@@ -119,20 +121,20 @@ public:
      * @param move The move that may have to be made before claiming draw.
      * @return The draw string that claims the draw, or empty string if draw claim not valid.
      */
-    private std::string canClaimDraw(const Position& pos, U64[] posHashList, int posHashListSize, Move move) {
+    private std::string canClaimDraw(const Position& pos, U64 posHashList[], int posHashListSize, Move move) {
         std::string drawStr = "";
-        if (Search.canClaimDraw50(pos)) {
+        if (Search::canClaimDraw50(pos)) {
             drawStr = "draw 50";
-        } else if (Search.canClaimDrawRep(pos, posHashList, posHashListSize, posHashListSize)) {
+        } else if (Search::canClaimDrawRep(pos, posHashList, posHashListSize, posHashListSize)) {
             drawStr = "draw rep";
         } else {
             std::string strMove = TextIO::moveToString(pos, move, false);
             posHashList[posHashListSize++] = pos.zobristHash();
             UndoInfo ui = new UndoInfo();
             pos.makeMove(move, ui);
-            if (Search.canClaimDraw50(pos)) {
+            if (Search::canClaimDraw50(pos)) {
                 drawStr = "draw 50 " + strMove;
-            } else if (Search.canClaimDrawRep(pos, posHashList, posHashListSize, posHashListSize)) {
+            } else if (Search::canClaimDrawRep(pos, posHashList, posHashListSize, posHashListSize)) {
                 drawStr = "draw rep " + strMove;
             }
             pos.unMakeMove(move, ui);
@@ -140,17 +142,14 @@ public:
         return drawStr;
     }
 
-    @Override
     public bool isHumanPlayer() {
         return false;
     }
 
-    @Override
     public void useBook(bool bookOn) {
         bookEnabled = bookOn;
     }
 
-    @Override
     public void timeLimit(int minTimeLimit, int maxTimeLimit, bool randomMode) {
         if (randomMode) {
             minTimeLimit = 0;
@@ -159,12 +158,10 @@ public:
         minTimeMillis = minTimeLimit;
         maxTimeMillis = maxTimeLimit;
         this->randomMode = randomMode;
-        if (currentSearch != null) {
+        if (currentSearch != NULL)
             currentSearch.timeLimit(minTimeLimit, maxTimeLimit);
-        }
     }
 
-    @Override
     public void clearTT() {
         tt.clear();
     }
@@ -211,7 +208,7 @@ private:
         int bestScore = bestM.score;
 
         Random rndGen = new SecureRandom();
-        rndGen.setSeed(System.currentTimeMillis());
+        rndGen.setSeed(currentTimeMillis());
 
         int sum = 0;
         for (int mi = 0; mi < moves.size; mi++) {

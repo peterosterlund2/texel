@@ -13,8 +13,40 @@
 #include "cute.h"
 
 
+Position
+swapColors(const Position& pos) {
+    Position sym;
+    sym.whiteMove = !pos.whiteMove;
+    for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 8; y++) {
+            int p = pos.getPiece(Position::getSquare(x, y));
+            p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
+            sym.setPiece(Position::getSquare(x, 7-y), p);
+        }
+    }
+
+    int castleMask = 0;
+    if (pos.a1Castle()) castleMask |= 1 << Position::A8_CASTLE;
+    if (pos.h1Castle()) castleMask |= 1 << Position::H8_CASTLE;
+    if (pos.a8Castle()) castleMask |= 1 << Position::A1_CASTLE;
+    if (pos.h8Castle()) castleMask |= 1 << Position::H1_CASTLE;
+    sym.setCastleMask(castleMask);
+
+    if (pos.getEpSquare() >= 0) {
+        int x = Position::getX(pos.getEpSquare());
+        int y = Position::getY(pos.getEpSquare());
+        sym.setEpSquare(Position::getSquare(x, 7-y));
+    }
+
+    sym.halfMoveClock = pos.halfMoveClock;
+    sym.fullMoveCounter = pos.fullMoveCounter;
+
+    return sym;
+}
+
 /** Return static evaluation score for white, regardless of whose turn it is to move. */
-static int evalWhite(const Position& pos) {
+int
+evalWhite(const Position& pos) {
     Evaluate eval;
     int ret = eval.evalPos(pos);
     Position symPos = swapColors(pos);
@@ -173,7 +205,8 @@ testTradeBonus() {
 /**
  * Test of material method, of class Evaluate.
  */
-static void testMaterial() {
+static void
+testMaterial() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     ASSERT_EQUAL(0, Evaluate::material(pos));
 
@@ -231,7 +264,8 @@ testKingSafety() {
 /**
  * Test of endGameEval method, of class Evaluate.
  */
-static void testEndGameEval() {
+static void
+testEndGameEval() {
     Position pos;
     pos.setPiece(Position::getSquare(4, 1), Piece::WKING);
     pos.setPiece(Position::getSquare(4, 6), Piece::BKING);
@@ -304,7 +338,8 @@ static void testEndGameEval() {
 /**
  * Test of endGameEval method, of class Evaluate.
  */
-static void testPassedPawns() {
+static void
+testPassedPawns() {
     Position pos = TextIO::readFEN("8/8/8/P3k/8/8/p/K w");
     int score = evalWhite(pos);
     ASSERT(score > 300); // Unstoppable passed pawn
@@ -338,7 +373,8 @@ static void testPassedPawns() {
 /**
  * Test of endGameEval method, of class Evaluate.
  */
-static void testBishAndRookPawns() {
+static void
+testBishAndRookPawns() {
     const int pV = Evaluate::pV;
     const int bV = Evaluate::bV;
     const int winScore = pV + bV;
@@ -377,7 +413,8 @@ static void testBishAndRookPawns() {
     ASSERT(evalWhite(pos) > winScore);
 }
 
-static void testTrappedBishop() {
+static void
+testTrappedBishop() {
     Position pos = TextIO::readFEN("r2q1rk1/ppp2ppp/3p1n2/8/3P4/1P1Q1NP1/b1P2PBP/2KR3R w - - 0 1");
     ASSERT(evalWhite(pos) > 0); // Black has trapped bishop
 
@@ -388,7 +425,8 @@ static void testTrappedBishop() {
 /**
  * Test of endGameEval method, of class Evaluate.
  */
-static void testKQKP() {
+static void
+testKQKP() {
     const int pV = Evaluate::pV;
     const int qV = Evaluate::qV;
     const int winScore = qV - pV - 200;
@@ -409,7 +447,8 @@ static void testKQKP() {
     ASSERT(evalWhite(pos) > winScore);
 }
 
-static void testKRKP() {
+static void
+testKRKP() {
     const int pV = Evaluate::pV;
     const int rV = Evaluate::rV;
     const int winScore = rV - pV;
@@ -420,7 +459,8 @@ static void testKRKP() {
     ASSERT(evalWhite(pos) < drawish);
 }
 
-static void testKPK() {
+static void
+testKPK() {
     const int pV = Evaluate::pV;
     const int rV = Evaluate::rV;
     const int winScore = rV - pV;
@@ -431,7 +471,8 @@ static void testKPK() {
     ASSERT(evalWhite(pos) < drawish);
 }
 
-static void testCantWin() {
+static void
+testCantWin() {
     Position pos = TextIO::readFEN("8/8/8/3k4/3p4/3K4/4N3/8 w - - 0 1");
     int score1 = evalWhite(pos);
     ASSERT(score1 < 0);
@@ -441,38 +482,6 @@ static void testCantWin() {
     ASSERT(score2 <= 0);
     ASSERT(score2 > score1);
 }
-
-Position
-swapColors(const Position& pos) {
-    Position sym;
-    sym.whiteMove = !pos.whiteMove;
-    for (int x = 0; x < 8; x++) {
-        for (int y = 0; y < 8; y++) {
-            int p = pos.getPiece(Position::getSquare(x, y));
-            p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
-            sym.setPiece(Position::getSquare(x, 7-y), p);
-        }
-    }
-
-    int castleMask = 0;
-    if (pos.a1Castle()) castleMask |= 1 << Position::A8_CASTLE;
-    if (pos.h1Castle()) castleMask |= 1 << Position::H8_CASTLE;
-    if (pos.a8Castle()) castleMask |= 1 << Position::A1_CASTLE;
-    if (pos.h8Castle()) castleMask |= 1 << Position::H1_CASTLE;
-    sym.setCastleMask(castleMask);
-
-    if (pos.getEpSquare() >= 0) {
-        int x = Position::getX(pos.getEpSquare());
-        int y = Position::getY(pos.getEpSquare());
-        sym.setEpSquare(Position::getSquare(x, 7-y));
-    }
-
-    sym.halfMoveClock = pos.halfMoveClock;
-    sym.fullMoveCounter = pos.fullMoveCounter;
-
-    return sym;
-}
-
 
 
 cute::suite
