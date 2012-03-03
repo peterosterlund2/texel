@@ -100,10 +100,12 @@ public:
                               const std::vector<Move>& pv) { }
         virtual void notifyStats(U64 nodes, int nps, int time) { }
     };
-    Listener listener;
 
-    void setListener(Listener& listener) {
-        this->listener = listener;
+    void setListener(Listener* listener) {
+        if (listener)
+            this->listener = listener;
+        else
+            listener = &dummyListener;
     }
 
     void timeLimit(int minTimeLimit, int maxTimeLimit);
@@ -145,7 +147,16 @@ public:
     static bool canClaimDrawRep(const Position& pos, const std::vector<U64>& posHashList,
                                 int posHashListSize, int posHashFirstNew);
 
+    /**
+     * Compute scores for each move in a move list, using SEE, killer and history information.
+     * @param moves  List of moves to score.
+     */
+    void scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx = 0);
+
 private:
+    Listener dummyListener;
+    Listener* listener;
+
     struct MoveInfo {
         Move move;
         U64 nodes;
@@ -212,12 +223,6 @@ private:
      */
     int SEE(const Move& m);
 
-    /**
-     * Compute scores for each move in a move list, using SEE, killer and history information.
-     * @param moves  List of moves to score.
-     */
-    void scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx = 0);
-
     void scoreMoveListMvvLva(MoveGen::MoveList& moves) {
         for (int i = 0; i < moves.size; i++) {
             Move& m = moves.m[i];
@@ -237,7 +242,6 @@ private:
 
     void initNodeStats();
 
-private:
     // Not implemented
     Search(const Search& other);
     Search& operator=(const Search& other);

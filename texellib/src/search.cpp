@@ -38,6 +38,7 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     strength = 1000;
     weak = false;
     randomSeed = 0;
+    listener = &dummyListener;
 }
 
 void
@@ -103,7 +104,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     try {
     for (int depthS = plyScale; ; depthS += plyScale, firstIteration = false) {
         initNodeStats();
-        listener.notifyDepth(depthS/plyScale);
+        listener->notifyDepth(depthS/plyScale);
         int aspirationDelta = (std::abs(bestScoreLastIter) <= MATE0 / 2) ? 20 : 1000;
         int alpha = firstIteration ? -MATE0 : std::max(bestScoreLastIter - aspirationDelta, -MATE0);
         int bestScore = -MATE0;
@@ -113,7 +114,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             searchNeedMoreTime = (mi > 0);
             Move& m = scMoves[mi].move;
             if (currentTimeMillis() - tStart >= 1000)
-                listener.notifyCurrMove(m, mi + 1);
+                listener->notifyCurrMove(m, mi + 1);
             nodes = qNodes = 0;
             posHashList[posHashListSize++] = pos.zobristHash();
             bool givesCheck = MoveGen::givesCheck(pos, m);
@@ -302,7 +303,7 @@ Search::notifyPV(int depth, int score, bool uBound, bool lBound, const Move& m) 
     int nps = (time > 0) ? (int)(totalNodes / (time / 1000.0)) : 0;
     std::vector<Move> pv;
     tt.extractPVMoves(pos, m, pv);
-    listener.notifyPV(depth, score, time, totalNodes, nps, isMate, uBound, lBound, pv);
+    listener->notifyPV(depth, score, time, totalNodes, nps, isMate, uBound, lBound, pv);
 }
 
 void
@@ -310,7 +311,7 @@ Search::notifyStats() {
     S64 tNow = currentTimeMillis();
     int time = (int) (tNow - tStart);
     int nps = (time > 0) ? (int)(totalNodes / (time / 1000.0)) : 0;
-    listener.notifyStats(totalNodes, nps, time);
+    listener->notifyStats(totalNodes, nps, time);
     tLastStats = tNow;
 }
 

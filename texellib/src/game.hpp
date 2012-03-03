@@ -227,7 +227,7 @@ public:
             try {
                 newPos = TextIO::readFEN(fen);
             } catch (ChessParseError ex) {
-                printf("Invalid FEN: %s (%s)%n", fen, ex.getMessage());
+                printf("Invalid FEN: %s (%s)\n", fen, ex.getMessage());
             }
             if (newPos != null) {
                 handleCommand("new");
@@ -356,7 +356,7 @@ public:
                     ret.append(String.format("%d. %s %s ",
                             pos.fullMoveCounter, whiteMove, blackMove));
                 } else {
-                    ret.append(String.format("%3d.  %-10s %-10s%n",
+                    ret.append(String.format("%3d.  %-10s %-10s\n",
                             pos.fullMoveCounter, whiteMove, blackMove));
                 }
                 whiteMove = "";
@@ -373,7 +373,7 @@ public:
                 ret.append(String.format("%d. %s %s ",
                         pos.fullMoveCounter, whiteMove, blackMove));
             } else {
-                ret.append(String.format("%3d.  %-8s %-8s%n",
+                ret.append(String.format("%3d.  %-8s %-8s\n",
                         pos.fullMoveCounter, whiteMove, blackMove));
             }
         }
@@ -382,7 +382,7 @@ public:
             if (compressed) {
                 ret.append(gameResult);
             } else {
-                ret.append(String.format("%s%n", gameResult));
+                ret.append(String.format("%s\n", gameResult));
             }
         }
         return ret.toString();

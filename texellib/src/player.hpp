@@ -29,7 +29,7 @@ public:
      *                This makes it possible for the player to correctly handle
      *                the draw by repetition rule.
      */
-    virtual std::string getCommand(const Position& pos, bool drawOffer, std::vector<Position> history) = 0;
+    virtual std::string getCommand(const Position& pos, bool drawOffer, const std::vector<Position>& history) = 0;
 
     /** Return true if this player is a human player. */
     virtual bool isHumanPlayer() = 0;
@@ -44,7 +44,7 @@ public:
      * Inform player about min recommended/max allowed thinking time per move.
      * Of course, a human player is likely to ignore this.
      */
-    virtual void timeLimit(int minTimeLimit, int maxTimeLimit, bool randomMode) = 0;
+    virtual void timeLimit(int minTimeLimit, int maxTimeLimit) = 0;
 
     /**
      * Inform player that the transposition table should be cleared.

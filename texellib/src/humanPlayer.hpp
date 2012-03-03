@@ -8,56 +8,37 @@
 #ifndef HUMANPLAYER_HPP_
 #define HUMANPLAYER_HPP_
 
+#include "player.hpp"
+
+#include <string>
+
+
 /**
  * A player that reads input from the keyboard.
  */
-#if 0
-public class HumanPlayer implements Player {
-    private std::string lastCmd = "";
-    private BufferedReader in;
+class HumanPlayer : public Player {
+private:
+    std::string lastCmd;
 
-    public HumanPlayer() {
-        in = new BufferedReader(new InputStreamReader(System.in));
+public:
+    HumanPlayer() {
     }
 
-    @Override
-    public std::string getCommand(const Position& pos, bool drawOffer, List<Position> history) {
-        try {
-            std::string color = pos.whiteMove ? "white" : "black";
-            printf("Enter move (%s):", color);
-            std::string moveStr = in.readLine();
-            if (moveStr == null)
-                return "quit";
-            if (moveStr.length() == 0) {
-                return lastCmd;
-            } else {
-                lastCmd = moveStr;
-            }
-            return moveStr;
-        } catch (IOException ex) {
-            return "quit";
-        }
-    }
+    std::string getCommand(const Position& pos, bool drawOffer, const std::vector<Position>& history);
 
-    @Override
-    public bool isHumanPlayer() {
+    bool isHumanPlayer() {
         return true;
     }
 
-    @Override
-    public void useBook(bool bookOn) {
+    void useBook(bool bookOn) {
     }
 
-    @Override
-    public void timeLimit(int minTimeLimit, int maxTimeLimit, bool randomMode) {
+    void timeLimit(int minTimeLimit, int maxTimeLimit) {
     }
 
-    @Override
-    public void clearTT() {
+    void clearTT() {
     }
 };
-#endif
-
 
 
 #endif /* HUMANPLAYER_HPP_ */

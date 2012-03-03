@@ -108,6 +108,10 @@ public:
 public:
     /** Constructor. Creates an empty transposition table with numEntries slots. */
     TranspositionTable(int log2Size) {
+        reSize(log2Size);
+    }
+
+    void reSize(int log2Size) {
         const int numEntries = (1 << log2Size);
         table.resize(numEntries);
         for (int i = 0; i < numEntries; i++) {
