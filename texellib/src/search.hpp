@@ -38,13 +38,11 @@ private:
     TreeLoggerWriter log;
 
     struct SearchTreeInfo {
-        UndoInfo undoInfo;
-        Move hashMove;         // Temporary storage for local hashMove variable
         bool allowNullMove;    // Don't allow two null-moves in a row
         Move bestMove;         // Copy of the best found move at this ply
         Move currentMove;      // Move currently being searched
         int lmr;               // LMR reduction amount
-        U64 nodeIdx;
+        S64 nodeIdx;           // For tree logging
         SearchTreeInfo() {
             allowNullMove = true;
             lmr = 0;
@@ -54,9 +52,9 @@ private:
     SearchTreeInfo searchTreeInfo[200];
 
     // Time management
-    U64 tStart;                // Time when search started
-    U64 minTimeMillis;         // Minimum recommended thinking time
-    U64 maxTimeMillis;         // Maximum allowed thinking time
+    S64 tStart;                // Time when search started
+    S64 minTimeMillis;         // Minimum recommended thinking time
+    S64 maxTimeMillis;         // Maximum allowed thinking time
     bool searchNeedMoreTime;   // True if negaScout should use up to maxTimeMillis time.
     S64 maxNodes;              // Maximum number of nodes to search (approximately)
     int nodesToGo;             // Number of nodes until next time check
@@ -73,7 +71,7 @@ private:
     int nodesPlyVec[20];
     int nodesDepthVec[20];
     S64 totalNodes;
-    U64 tLastStats;        // Time when notifyStats was last called
+    S64 tLastStats;        // Time when notifyStats was last called
     bool verbose;
 
     int q0Eval; // Static eval score at first level of quiescence search
@@ -207,7 +205,6 @@ private:
     int quiesce(int alpha, int beta, int ply, int depth, const bool inCheck);
 
     int captures[64];   // Value of captured pieces
-    UndoInfo seeUi;
 
     /**
      * Static exchange evaluation function.

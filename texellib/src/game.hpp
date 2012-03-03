@@ -543,10 +543,8 @@ public:
         MoveGen::MoveList moves;
 		MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
-        if (depth == 1) {
-            int ret = moves.size;
-            return ret;
-        }
+        if (depth == 1)
+            return moves.size;
         UndoInfo ui;
         for (int mi = 0; mi < moves.size; mi++) {
             const Move& m = moves.m[mi];

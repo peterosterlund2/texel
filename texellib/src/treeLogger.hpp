@@ -14,7 +14,7 @@
 #include <vector>
 #include <fstream>
 
-#define TREELOG
+//#define TREELOG
 
 
 class Position;
@@ -117,6 +117,8 @@ public:
         os.close();
     }
 
+    bool isOpened() const { return opened; }
+
     // ----------------------------------------------------------------------------
     // Functions used for tree logging
 
@@ -174,8 +176,9 @@ public:
     TreeLoggerWriter() { }
     void open(const std::string& filename, const Position& pos) { }
     void close() { }
-    U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) { }
-    U64 logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey) { }
+    bool isOpened() const { return false; }
+    U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) { return 0; }
+    U64 logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey) { return 0; }
 };
 #endif
 

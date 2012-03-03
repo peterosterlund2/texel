@@ -18,13 +18,17 @@ Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                int posHashListSize0, TranspositionTable& tt0)
     : tt(tt0)
 {
-    init(pos, posHashList0, posHashListSize0);
+    init(pos0, posHashList0, posHashListSize0);
 }
 
 void
 Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
              int posHashListSize0) {
+    pos = pos0;
+    posHashList = posHashList0;
+    posHashListSize = posHashListSize0;
     posHashFirstNew = posHashListSize;
+    log.close();
     initNodeStats();
     minTimeMillis = -1;
     maxTimeMillis = -1;
@@ -247,7 +251,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             bestMove = scMoves[0].move;
             notifyPV(depthS/plyScale, bestMove.score(), false, false, bestMove);
         }
-        U64 tNow = currentTimeMillis();
+        S64 tNow = currentTimeMillis();
         if (verbose) {
             for (int i = 0; i < 20; i++)
                 printf("%2d %7d %7d\n", i, nodesPlyVec[i], nodesDepthVec[i]);
@@ -303,7 +307,7 @@ Search::notifyPV(int depth, int score, bool uBound, bool lBound, const Move& m) 
 
 void
 Search::notifyStats() {
-    U64 tNow = currentTimeMillis();
+    S64 tNow = currentTimeMillis();
     int time = (int) (tNow - tStart);
     int nps = (time > 0) ? (int)(totalNodes / (time / 1000.0)) : 0;
     listener.notifyStats(totalNodes, nps, time);
@@ -313,22 +317,20 @@ Search::notifyStats() {
 int
 Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
-    {
+    if (log.isOpened()) {
         const SearchTreeInfo& sti = searchTreeInfo[ply-1];
         U64 idx = log.logNodeStart(sti.nodeIdx, sti.currentMove, alpha, beta, ply, depth/plyScale);
         searchTreeInfo[ply].nodeIdx = idx;
     }
     if (--nodesToGo <= 0) {
         nodesToGo = nodesBetweenTimeCheck;
-        U64 tNow = currentTimeMillis();
-        U64 timeLimit = searchNeedMoreTime ? maxTimeMillis : minTimeMillis;
+        S64 tNow = currentTimeMillis();
+        S64 timeLimit = searchNeedMoreTime ? maxTimeMillis : minTimeMillis;
         if (    ((timeLimit >= 0) && (tNow - tStart >= timeLimit)) ||
-                ((maxNodes >= 0) && (totalNodes >= maxNodes))) {
+                ((maxNodes >= 0) && (totalNodes >= maxNodes)))
             throw StopSearch();
-        }
-        if (tNow - tLastStats >= 1000) {
+        if (tNow - tLastStats >= 1000)
             notifyStats();
-        }
     }
 
     // Collect statistics
@@ -380,7 +382,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     ((ent.type == TType::T_GE) && (score >= beta)) ||
                     ((ent.type == TType::T_LE) && (score <= alpha))) {
                 if (score >= beta) {
-                    hashMove = sti.hashMove;
                     ent.getMove(hashMove);
                     if (!hashMove.isEmpty())
                         if (pos.getPiece(hashMove.to()) == Piece::EMPTY)
@@ -390,7 +391,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 return score;
             }
         }
-        hashMove = sti.hashMove;
         ent.getMove(hashMove);
     }
 
@@ -532,15 +532,13 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         bool isPv = beta > alpha + 1;
         if (isPv || (depth > 8 * plyScale)) {
             // No hash move. Try internal iterative deepening.
-            long savedNodeIdx = sti.nodeIdx;
+            S64 savedNodeIdx = sti.nodeIdx;
             int newDepth = isPv ? depth  - 2 * plyScale : depth * 3 / 8;
             negaScout(alpha, beta, ply, newDepth, -1, inCheck);
             sti.nodeIdx = savedNodeIdx;
             tt.probe(hKey, ent);
-            if (ent.type != TType::T_EMPTY) {
-                hashMove = sti.hashMove;
+            if (ent.type != TType::T_EMPTY)
                 ent.getMove(hashMove);
-            }
         }
     }
 
@@ -559,7 +557,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         hashMoveSelected = false;
     }
 
-    UndoInfo ui = sti.undoInfo;
+    UndoInfo ui;
     bool haveLegalMoves = false;
     int illegalScore = -(MATE0-(ply+1));
     int b = beta;
@@ -654,8 +652,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             nodes++;
             totalNodes++;
             sti.currentMove = m;
-/*            long nodes0 = nodes;
-            long qNodes0 = qNodes;
+/*            U64 nodes0 = nodes;
+            U64 qNodes0 = qNodes;
             if ((ply < 3) && (newDepth > plyScale)) {
                 printf("%2d %5s %5d %5d %6s %6s ",
                        mi, "-", alpha, beta, "-", "-");
@@ -727,8 +725,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
 bool
 Search::weakPlaySkipMove(const Position& pos, const Move& m, int ply) const {
-    long rndL = pos.zobristHash() ^ Position::psHashKeys[0][m.from()] ^
-                Position::psHashKeys[0][m.to()] ^ randomSeed;
+    U64 rndL = pos.zobristHash() ^ Position::psHashKeys[0][m.from()] ^
+               Position::psHashKeys[0][m.to()] ^ randomSeed;
     double rnd = ((rndL & 0x7fffffffffffffffULL) % 1000000000) / 1e9;
 
     double s = strength * 1e-3;
@@ -782,7 +780,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
         MoveGen::pseudoLegalCaptures(pos, moves);
     }
     scoreMoveListMvvLva(moves);
-    UndoInfo ui = searchTreeInfo[ply].undoInfo;
+    UndoInfo ui;
     for (int mi = 0; mi < moves.size; mi++) {
         if (mi < 8) {
             // If the first 8 moves didn't fail high, this is probably an ALL-node,
@@ -869,7 +867,8 @@ Search::SEE(const Move& m) {
     }
     int nCapt = 1;                  // Number of entries in captures[]
 
-    pos.makeSEEMove(m, seeUi);
+    UndoInfo ui;
+    pos.makeSEEMove(m, ui);
     bool white = pos.whiteMove;
     int valOnSquare = Evaluate::pieceValue[pos.getPiece(square)];
     U64 occupied = pos.whiteBB | pos.blackBB;
@@ -952,7 +951,7 @@ Search::SEE(const Move& m) {
         occupied &= ~(atk & -atk);
         white = !white;
     }
-    pos.unMakeSEEMove(m, seeUi);
+    pos.unMakeSEEMove(m, ui);
 
     int score = 0;
     for (int i = nCapt - 1; i > 0; i--) {
@@ -1002,11 +1001,8 @@ Search::selectBest(MoveGen::MoveList& moves, int startIdx) {
             bestScore = sc;
         }
     }
-    if (bestIdx != startIdx) {
-        const Move& m = moves.m[startIdx];
-        moves.m[startIdx] = moves.m[bestIdx];
-        moves.m[bestIdx] = m;
-    }
+    if (bestIdx != startIdx)
+        std::swap(moves.m[bestIdx], moves.m[startIdx]);
 }
 
 /** If hashMove exists in the move list, move the hash move to the front of the list. */
@@ -1017,9 +1013,8 @@ Search::selectHashMove(MoveGen::MoveList& moves, const Move& hashMove) {
     for (int i = 0; i < moves.size; i++) {
         Move& m = moves.m[i];
         if (m.equals(hashMove)) {
-            moves.m[i] = moves.m[0];
-            moves.m[0] = m;
             m.setScore(10000);
+            std::swap(moves.m[i], moves.m[0]);
             return true;
         }
     }

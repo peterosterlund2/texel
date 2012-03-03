@@ -100,6 +100,6 @@ contains(const std::vector<std::string> v, const char* e) {
 }
 
 /** Return current wall clock time in milliseconds, starting at some arbitrary point in time. */
-U64 currentTimeMillis();
+S64 currentTimeMillis();
 
 #endif /* UTIL_HPP_ */

@@ -433,11 +433,9 @@ SearchTest::testScoreMoveList() {
     ASSERT_EQUAL(m, moves.m[0]);
 }
 
-
 cute::suite
 SearchTest::getSuite() const {
     cute::suite s;
-#if 0
     s.push_back(CUTE(testNegaScout));
     s.push_back(CUTE(testDraw50));
     s.push_back(CUTE(testDrawRep));
@@ -447,6 +445,5 @@ SearchTest::getSuite() const {
     s.push_back(CUTE(testKQKRNullMove));
     s.push_back(CUTE(testSEE));
     s.push_back(CUTE(testScoreMoveList));
-#endif
     return s;
 }

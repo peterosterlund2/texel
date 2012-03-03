@@ -11,6 +11,7 @@
 #include "position.hpp"
 
 
+#ifdef TREELOG
 void
 TreeLoggerWriter::writeHeader(const Position& pos) {
     char header[128];
@@ -21,7 +22,7 @@ TreeLoggerWriter::writeHeader(const Position& pos) {
         header[i] = fen[i];
     os.write(header, COUNT_OF(header));
 }
-
+#endif
 
 void
 TreeLoggerReader::main(int argc, char* argv[]) {
