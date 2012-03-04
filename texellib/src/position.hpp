@@ -469,6 +469,8 @@ private:
     static U64 moveCntKeys[101];     // [min(halfMoveClock, 100)]
 
     static U64 getRandomHashVal(int rndNo);
+
+    static const U64 zobristRndKeys[];
 };
 
 /** For debugging. */

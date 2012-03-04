@@ -321,18 +321,16 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveGen::Move
     int bKingOrigPos = Position::getSquare(4, 7);
     if (move.from() == wKingOrigPos && pos.getPiece(wKingOrigPos) == Piece::WKING) {
         // Check white castle
-        if (move.to() == Position::getSquare(6, 0)) {
+        if (move.to() == Position::getSquare(6, 0))
             ret += "O-O";
-        } else if (move.to() == Position::getSquare(2, 0)) {
+        else if (move.to() == Position::getSquare(2, 0))
             ret += "O-O-O";
-        }
     } else if (move.from() == bKingOrigPos && pos.getPiece(bKingOrigPos) == Piece::BKING) {
         // Check black castle
-        if (move.to() == Position::getSquare(6, 7)) {
+        if (move.to() == Position::getSquare(6, 7))
             ret += "O-O";
-        } else if (move.to() == Position::getSquare(2, 7)) {
+        else if (move.to() == Position::getSquare(2, 7))
             ret += "O-O-O";
-        }
     }
     if (ret.length() == 0) {
         int p = pos.getPiece(move.from());
