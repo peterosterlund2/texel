@@ -208,7 +208,7 @@ public:
     }
 
     /** Main loop of the interactive tree browser. */
-    static void main(int argc, char* argv[]);
+    static void main(const std::string& filename);
 
 private:
 

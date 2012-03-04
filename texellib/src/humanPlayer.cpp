@@ -16,7 +16,7 @@ HumanPlayer::getCommand(const Position& pos, bool drawOffer, const std::vector<P
     const char* color = pos.whiteMove ? "white" : "black";
     std::cout << "Enter move (" << color << "):" << std::flush;
     std::string moveStr;
-    if (getline(std::cin, moveStr) < 0)
+    if ((getline(std::cin, moveStr) < 0) || (!std::cin))
         return "quit";
     if (moveStr.length() == 0) {
         return lastCmd;

@@ -541,9 +541,8 @@ Evaluate::rookBonus(const Position& pos) {
     while (m != 0) {
         int sq = BitBoard::numberOfTrailingZeros(m);
         const int x = Position::getX(sq);
-        if ((wPawns & BitBoard::maskFile[x]) == 0) { // At least half-open file
+        if ((wPawns & BitBoard::maskFile[x]) == 0) // At least half-open file
             score += (bPawns & BitBoard::maskFile[x]) == 0 ? 25 : 12;
-        }
         U64 atk = BitBoard::rookAttacks(sq, occupied);
         wAttacksBB |= atk;
         score += rookMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB | bPawnAttacks))];
@@ -559,9 +558,8 @@ Evaluate::rookBonus(const Position& pos) {
     while (m != 0) {
         int sq = BitBoard::numberOfTrailingZeros(m);
         const int x = Position::getX(sq);
-        if ((bPawns & BitBoard::maskFile[x]) == 0) {
+        if ((bPawns & BitBoard::maskFile[x]) == 0)
             score -= (wPawns & BitBoard::maskFile[x]) == 0 ? 25 : 12;
-        }
         U64 atk = BitBoard::rookAttacks(sq, occupied);
         bAttacksBB |= atk;
         score -= rookMobScore[BitBoard::bitCount(atk & ~(pos.blackBB | wPawnAttacks))];
@@ -751,7 +749,7 @@ int
 Evaluate::kingSafetyKPPart(const Position& pos) {
     // FIXME!!! Try non-linear king safety
     const U64 key = pos.pawnZobristHash() ^ pos.kingZobristHash();
-    KingSafetyHashData ksh = kingSafetyHash[(int)key & (kingSafetyHash.size() - 1)];
+    KingSafetyHashData& ksh = kingSafetyHash[(int)key & (kingSafetyHash.size() - 1)];
     if (ksh.key != key) {
         int score = 0;
         U64 wPawns = pos.pieceTypeBB[Piece::WPAWN];

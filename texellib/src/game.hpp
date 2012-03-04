@@ -45,14 +45,14 @@ protected:
     std::vector<bool> drawOfferList;
     int currentMove;
 
-public:
-    bool pendingDrawOffer;
-    GameState drawState;
 private:
     std::string drawStateMoveStr; // Move required to claim DRAW_REP or DRAW_50
     GameState resignState;
 
 public:
+    bool pendingDrawOffer;
+    GameState drawState;
+
     Game(Player& whitePlayer, Player& blackPlayer) {
         this->whitePlayer = &whitePlayer;
         this->blackPlayer = &blackPlayer;
@@ -117,6 +117,10 @@ private:
     bool handleBookCmd(const std::string& bookCmd);
 
     bool insufficientMaterial();
+
+    // Not implemented
+    Game(const Game& other);
+    Game& operator=(const Game& other);
 };
 
 

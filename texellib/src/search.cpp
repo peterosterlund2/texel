@@ -1030,7 +1030,7 @@ Search::scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx) {
             int seeScore = isCapture ? signSEE(m) : 0;
             int v = pos.getPiece(m.to());
             int a = pos.getPiece(m.from());
-            score = Evaluate::pieceValue[v]/10 * 1000 - Evaluate::pieceValue[a]/10;
+            score = Evaluate::pieceValue[v]/10 * 1000 - Evaluate::pieceValue[a]/10; // FIXME!! Try /16 * 1024 ... /16
             if (seeScore > 0)
                 score += 2000000;
             else if (seeScore == 0)

@@ -28,12 +28,8 @@ TreeLoggerWriter::writeHeader(const Position& pos) {
 #endif
 
 void
-TreeLoggerReader::main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cout << "Usage: progname filename" << std::endl;
-        exit(1);
-    }
-    TreeLoggerReader an(argv[1]);
+TreeLoggerReader::main(const std::string& filename) {
+    TreeLoggerReader an(filename);
     Position rootPos = TextIO::readFEN(an.getRootNodeFEN());
     an.mainLoop(rootPos);
     an.close();

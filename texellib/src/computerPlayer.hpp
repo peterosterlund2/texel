@@ -52,6 +52,7 @@ public:
         maxNodes = -1;
         verbose = true;
         bookEnabled = true;
+        currentSearch = NULL;
     }
 
     void setTTLogSize(int logSize) {
