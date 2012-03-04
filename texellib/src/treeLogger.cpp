@@ -75,7 +75,7 @@ TreeLoggerReader::readEntry(int index, StartEntry& se, EndEntry& ee) {
     if (isStartEntry) {
         se.endIndex = otherIndex;
         se.parentIndex = getInt(4, 4);
-        int m = getInt(8, 4);
+        int m = getInt(8, 2);
         se.move.setMove(m & 63, (m >> 6) & 63, (m >> 12) & 15, 0);
         se.alpha = getInt(10, 2);
         se.beta = getInt(12, 2);
@@ -417,8 +417,8 @@ TreeLoggerReader::printNodeInfo(const Position& rootPos, int index, const std::s
                   << ' '   << std::setw(8) << index << ' ' << m
                   << " a:" << std::setw(6) << se.alpha
                   << " b:" << std::setw(6) << se.beta
-                  << " p:" << std::setw(2) << se.ply
-                  << " d:" << std::setw(2) << se.depth;
+                  << " p:" << std::setw(2) << (int)se.ply
+                  << " d:" << std::setw(2) << (int)se.depth;
         if (haveEE) {
             int subTreeNodes = (se.endIndex - ee.startIndex - 1) / 2;
             std::string type;
@@ -426,7 +426,7 @@ TreeLoggerReader::printNodeInfo(const Position& rootPos, int index, const std::s
             case TType::T_EXACT: type = "= "; break;
             case TType::T_GE   : type = ">="; break;
             case TType::T_LE   : type = "<="; break;
-            default                                  : type = "  "; break;
+            default            : type = "  "; break;
             }
             std::cout << " s:" << type << std::setw(6) << ee.score
                       << " e:" << std::setw(6) << ee.evalScore
