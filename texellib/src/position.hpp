@@ -233,20 +233,16 @@ public:
             if (p == Piece::WPAWN) {
                 if (move.to() - move.from() == 2 * 8) {
                     int x = getX(move.to());
-                    if (    ((x > 0) && (squares[move.to() - 1] == Piece::BPAWN)) ||
-                            ((x < 7) && (squares[move.to() + 1] == Piece::BPAWN))) {
+                    if (BitBoard::epMaskW[x] & pieceTypeBB[Piece::BPAWN])
                         setEpSquare(move.from() + 8);
-                    }
                 } else if (move.to() == prevEpSquare) {
                     setPiece(move.to() - 8, Piece::EMPTY);
                 }
             } else if (p == Piece::BPAWN) {
                 if (move.to() - move.from() == -2 * 8) {
                     int x = getX(move.to());
-                    if (    ((x > 0) && (squares[move.to() - 1] == Piece::WPAWN)) ||
-                            ((x < 7) && (squares[move.to() + 1] == Piece::WPAWN))) {
+                    if (BitBoard::epMaskB[x] & pieceTypeBB[Piece::WPAWN])
                         setEpSquare(move.from() - 8);
-                    }
                 } else if (move.to() == prevEpSquare) {
                     setPiece(move.to() + 8, Piece::EMPTY);
                 }

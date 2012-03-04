@@ -28,6 +28,8 @@ const U64 BitBoard::maskFile[8] = {
     0x8080808080808080ULL
 };
 
+U64 BitBoard::epMaskW[8];
+U64 BitBoard::epMaskB[8];
 
 U64* BitBoard::rTables[64];
 U64 BitBoard::rMasks[64];
@@ -174,6 +176,19 @@ static StaticInitializer<BitBoard> bbInit;
 
 void
 BitBoard::staticInitialize() {
+
+    for (int f = 0; f < 8; f++) {
+        U64 m = 0;
+        if (f > 0) m |= 1ULL << Position::getSquare(f-1, 3);
+        if (f < 7) m |= 1ULL << Position::getSquare(f+1, 3);
+        epMaskW[f] = m;
+
+        m = 0;
+        if (f > 0) m |= 1ULL << Position::getSquare(f-1, 4);
+        if (f < 7) m |= 1ULL << Position::getSquare(f+1, 4);
+        epMaskB[f] = m;
+    }
+
     // Compute king attacks
     for (int sq = 0; sq < 64; sq++) {
         U64 m = 1ULL << sq;

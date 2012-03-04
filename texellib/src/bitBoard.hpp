@@ -28,6 +28,9 @@ public:
 
     static const U64 maskFile[8];
 
+    // Masks for squares where enemy pawn can capture en passant, indexed by file
+    static U64 epMaskW[8], epMaskB[8];
+
     static const U64 maskRow1      = 0x00000000000000FFULL;
     static const U64 maskRow2      = 0x000000000000FF00ULL;
     static const U64 maskRow3      = 0x0000000000FF0000ULL;
