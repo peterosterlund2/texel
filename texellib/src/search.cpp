@@ -285,7 +285,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             }
         }
         if (firstIteration) {
-            std::sort(scMoves.begin(), scMoves.end(), MoveInfo::SortByScore());
+            std::stable_sort(scMoves.begin(), scMoves.end(), MoveInfo::SortByScore());
             bestMove = scMoves[0].move;
             notifyPV(depthS/plyScale, bestMove.score(), false, false, bestMove);
         }
@@ -319,7 +319,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
 
         if (!firstIteration) {
             // Moves that were hard to search should be searched early in the next iteration
-            std::sort(scMoves.begin()+1, scMoves.end(), MoveInfo::SortByNodes());
+            std::stable_sort(scMoves.begin()+1, scMoves.end(), MoveInfo::SortByNodes());
         }
     }
     } catch (const StopSearch& ss) {
