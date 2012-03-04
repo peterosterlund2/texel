@@ -84,34 +84,7 @@ public:
     }
 
     /** Search a position and return the best move and score. Used for test suite processing. */
-    std::pair<Move, std::string> searchPosition(Position& pos, int maxTimeMillis) {
-        // Create a search object
-        std::vector<U64> posHashList(200);
-        tt.nextGeneration();
-        Search sc(pos, posHashList, 0, tt);
-
-        // Determine all legal moves
-        MoveGen::MoveList moves;
-        MoveGen::pseudoLegalMoves(pos, moves);
-        MoveGen::removeIllegal(pos, moves);
-        sc.scoreMoveList(moves, 0);
-
-        // Find best move using iterative deepening
-        sc.timeLimit(maxTimeMillis, maxTimeMillis);
-        Move bestM = sc.iterativeDeepening(moves, -1, -1, false);
-
-        // Extract PV
-        std::string PV = TextIO::moveToString(pos, bestM, false) + " ";
-        UndoInfo ui;
-        pos.makeMove(bestM, ui);
-        PV += tt.extractPV(pos);
-        pos.unMakeMove(bestM, ui);
-
-//        tt.printStats();
-
-        // Return best move and PV
-        return std::pair<Move, std::string>(bestM, PV);
-    }
+    std::pair<Move, std::string> searchPosition(Position& pos, int maxTimeMillis);
 
     /** Initialize static data. */
     static void staticInitialize();

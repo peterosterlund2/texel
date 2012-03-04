@@ -13,6 +13,7 @@
 #include "moveGen.hpp"
 #include "transpositionTable.hpp"
 #include "move.hpp"
+#include "textio.hpp"
 
 #include <vector>
 

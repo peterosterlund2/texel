@@ -8,6 +8,7 @@
 #include "book.hpp"
 #include "position.hpp"
 #include "moveGen.hpp"
+#include "textio.hpp"
 
 #include <assert.h>
 

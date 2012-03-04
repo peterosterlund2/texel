@@ -8,6 +8,8 @@
 #include "moveGenTest.hpp"
 #include "moveGen.hpp"
 #include "evaluateTest.hpp"
+#include "textio.hpp"
+
 #include <vector>
 #include <iostream>
 

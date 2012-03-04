@@ -6,6 +6,7 @@
  */
 
 #include "computerPlayer.hpp"
+#include "textio.hpp"
 
 #include <iostream>
 
@@ -102,4 +103,34 @@ ComputerPlayer::canClaimDraw(Position& pos, std::vector<U64>& posHashList,
         pos.unMakeMove(move, ui);
     }
     return drawStr;
+}
+
+std::pair<Move, std::string>
+ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
+    // Create a search object
+    std::vector<U64> posHashList(200);
+    tt.nextGeneration();
+    Search sc(pos, posHashList, 0, tt);
+
+    // Determine all legal moves
+    MoveGen::MoveList moves;
+    MoveGen::pseudoLegalMoves(pos, moves);
+    MoveGen::removeIllegal(pos, moves);
+    sc.scoreMoveList(moves, 0);
+
+    // Find best move using iterative deepening
+    sc.timeLimit(maxTimeMillis, maxTimeMillis);
+    Move bestM = sc.iterativeDeepening(moves, -1, -1, false);
+
+    // Extract PV
+    std::string PV = TextIO::moveToString(pos, bestM, false) + " ";
+    UndoInfo ui;
+    pos.makeMove(bestM, ui);
+    PV += tt.extractPV(pos);
+    pos.unMakeMove(bestM, ui);
+
+//    tt.printStats();
+
+    // Return best move and PV
+    return std::pair<Move, std::string>(bestM, PV);
 }

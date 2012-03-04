@@ -14,7 +14,7 @@
 
 #include <assert.h>
 
-#define MOVELIST_DEBUG
+//#define MOVELIST_DEBUG
 
 #ifdef MOVELIST_DEBUG
 # include <set>
@@ -359,7 +359,7 @@ public:
 
 #ifdef MOVELIST_DEBUG
         {
-            // Extra that all valid evasions were generated
+            // Extra check that all valid evasions were generated
             MoveList allMoves;
             pseudoLegalMoves(pos, allMoves);
             Position tmpPos(pos);

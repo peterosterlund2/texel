@@ -7,6 +7,7 @@
 
 #include "search.hpp"
 #include "treeLogger.hpp"
+#include "textio.hpp"
 
 #include <iostream>
 #include <iomanip>
