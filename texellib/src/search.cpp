@@ -41,6 +41,10 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     weak = false;
     randomSeed = 0;
     listener = &dummyListener;
+    tLastStats = currentTimeMillis();
+    totalNodes = 0;
+    nodesToGo = 0;
+    verbose = false;
 }
 
 void
@@ -71,7 +75,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     {
         // If strength is < 10%, only include a subset of the root moves.
         // At least one move is always included though.
-        bool includedMoves[scMovesIn.size];
+        std::vector<bool> includedMoves(scMovesIn.size);
         U64 rndL = pos.zobristHash() ^ randomSeed;
         includedMoves[(int)(rndL % scMovesIn.size)] = true;
         int nIncludedMoves = 1;
