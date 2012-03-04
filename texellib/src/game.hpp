@@ -101,7 +101,7 @@ protected:
      * @param moveStr  The command to handle
      * @return  True if command handled, false otherwise.
      */
-    bool handleCommand(const std::string& moveStr);
+    virtual bool handleCommand(const std::string& moveStr);
 
     /** Swap players around if needed to make the human player in control of the next move. */
     void activateHumanPlayer();

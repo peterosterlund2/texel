@@ -254,7 +254,7 @@ TextIO::uciStringToMove(const std::string& move) {
     if ((move.length() < 4) || (move.length() > 5))
         return m;
     int fromSq = TextIO::getSquare(move.substr(0, 2));
-    int toSq   = TextIO::getSquare(move.substr(2, 4));
+    int toSq   = TextIO::getSquare(move.substr(2, 2));
     if ((fromSq < 0) || (toSq < 0)) {
         return m;
     }

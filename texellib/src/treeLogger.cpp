@@ -21,8 +21,9 @@ TreeLoggerWriter::writeHeader(const Position& pos) {
     for (size_t i = 0; i < COUNT_OF(header); i++)
         header[i] = 0;
     std::string fen = TextIO::toFEN(pos);
+    header[0] = fen.length();
     for (size_t i = 0; i < fen.length(); i++)
-        header[i] = fen[i];
+        header[i+1] = fen[i];
     os.write(header, COUNT_OF(header));
 }
 #endif
@@ -68,7 +69,7 @@ bool
 TreeLoggerReader::readEntry(int index, StartEntry& se, EndEntry& ee) {
     int offs = indexToFileOffs(index);
     fs.seekg(offs, std::ios_base::beg);
-    fs.read(entryBuffer, 16);
+    fs.read((char*)entryBuffer, 16);
     int otherIndex = getInt(0, 4);
     bool isStartEntry = (otherIndex == -1) || (otherIndex > index);
     if (isStartEntry) {

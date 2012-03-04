@@ -77,7 +77,7 @@ TUIGame::handleTestSuite(const std::string& cmd) {
         if (idx == cmd.npos)
             return;
         std::string filename(cmd.substr(0, idx));
-        std::string timeStr(cmd.substr(idx + 1, cmd.length()));
+        std::string timeStr(cmd.substr(idx + 1));
         int timeLimit;
         if (!str2Num(timeStr, timeLimit)) {
             std::cout << "Error parsing number: " << timeStr << std::endl;
@@ -100,18 +100,18 @@ TUIGame::handleTestSuite(const std::string& cmd) {
             lineNo++;
             if (startsWith(line, "#") || (line.length() == 0))
                 continue;
-            size_t idx1 = line.find_first_of(" bm ");
+            size_t idx1 = line.find(" bm ");
             if (idx1 == line.npos) {
                 std::cout << "Parse error, line:" << lineNo << std::endl;
                 return;
             }
             std::string fen = line.substr(0, idx1);
-            size_t idx2 = line.find_first_of(";", idx1);
+            size_t idx2 = line.find(";", idx1);
             if (idx2 == line.npos) {
                 std::cout << "Parse error, line:" << lineNo << std::endl;
                 return;
             }
-            std::string bm = line.substr(idx1 + 4, idx2);
+            std::string bm = line.substr(idx1+4, idx2 - (idx1+4));
 //            std::cout << "Line " << std::setw(3) << lineNo << ": fen:" << fen << " bm:" << bm << std::endl;
             Position testPos = TextIO::readFEN(fen);
             cp->clearTT();

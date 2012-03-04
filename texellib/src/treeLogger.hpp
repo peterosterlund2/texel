@@ -24,20 +24,20 @@ class Position;
  */
 class TreeLoggerBase {
 protected:
-    char entryBuffer[16];
+    unsigned char entryBuffer[16];
 
     int putInt(int idx, int nBytes, U64 value) {
         for (int i = 0; i < nBytes; i++) {
-            entryBuffer[idx++] = value & 0xff;
+            entryBuffer[idx + nBytes - 1 - i] = value & 0xff;
             value >>= 8;
         }
-        return idx;
+        return idx + nBytes;
     }
 
     U64 getInt(int idx, int nBytes) {
         U64 ret = 0;
         for (int i = 0; i < nBytes; i++)
-            ret |= ((U64)entryBuffer[idx++]) << (i*8);
+            ret = (ret << 8) | entryBuffer[idx++];
         return ret;
     }
 
@@ -143,7 +143,7 @@ public:
         idx = putInt(idx, 2, beta);
         idx = putInt(idx, 1, ply);
         idx = putInt(idx, 1, depth);
-        os.write(entryBuffer, sizeof(entryBuffer));
+        os.write((const char*)entryBuffer, sizeof(entryBuffer));
         return nextIndex++;
     }
 
@@ -163,7 +163,7 @@ public:
         idx = putInt(idx, 2, scoreType);
         idx = putInt(idx, 2, evalScore);
         idx = putInt(idx, 6, hashKey);
-        os.write(entryBuffer, sizeof(entryBuffer));
+        os.write((const char*)entryBuffer, sizeof(entryBuffer));
         return nextIndex++;
     }
 
@@ -219,12 +219,12 @@ private:
     void writeInt(std::streamoff pos, int nBytes, U64 value) {
         fs.seekp(pos, std::ios_base::beg);
         putInt(0, nBytes, value);
-        fs.write(entryBuffer, nBytes);
+        fs.write((const char*)entryBuffer, nBytes);
     }
 
     U64 readInt(std::streamoff pos, int nBytes) {
         fs.seekg(pos, std::ios_base::beg);
-        fs.read(entryBuffer, nBytes);
+        fs.read((char*)entryBuffer, nBytes);
         return getInt(0, nBytes);
     }
 

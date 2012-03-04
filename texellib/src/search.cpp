@@ -153,7 +153,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                       << std::endl;
             */
             pos.makeMove(m, ui);
-            SearchTreeInfo sti = searchTreeInfo[0];
+            SearchTreeInfo& sti = searchTreeInfo[0];
             sti.currentMove = m;
             sti.lmr = lmrS;
             sti.nodeIdx = -1;
@@ -415,7 +415,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     TranspositionTable::TTEntry ent;
     tt.probe(hKey, ent);
     Move hashMove;
-    SearchTreeInfo sti = searchTreeInfo[ply];
+    SearchTreeInfo& sti = searchTreeInfo[ply];
     if (ent.type != TType::T_EMPTY) {
         int score = ent.getScore(ply);
         evalScore = ent.evalScore;
@@ -431,7 +431,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         if (pos.getPiece(hashMove.to()) == Piece::EMPTY)
                             kt.addKiller(ply, hashMove);
                 }
-                log.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, ent.type, evalScore, hKey);
+                log.logNodeEnd(sti.nodeIdx, score, ent.type, evalScore, hKey);
                 return score;
             }
         }
@@ -541,8 +541,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 return score;
             } else {
                 if ((searchTreeInfo[ply-1].lmr > 0) && (depth < 5*plyScale)) {
-                    Move m1 = searchTreeInfo[ply-1].currentMove;
-                    Move m2 = searchTreeInfo[ply+1].bestMove; // threat move
+                    const Move& m1 = searchTreeInfo[ply-1].currentMove;
+                    const Move& m2 = searchTreeInfo[ply+1].bestMove; // threat move
                     if (relatedMoves(m1, m2)) {
                         // if the threat move was made possible by a reduced
                         // move on the previous ply, the reduction was unsafe.
