@@ -657,6 +657,7 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
 
 int
 Evaluate::threatBonus(const Position& pos) {
+    // FIXME!! Try higher weight for attacks on more valuable pieces.
     int score = 0;
 
     // Sum values for all black pieces under attack

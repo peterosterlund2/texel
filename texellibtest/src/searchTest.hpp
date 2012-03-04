@@ -25,6 +25,7 @@ private:
     static void testDraw50();
     static void testDrawRep();
     static void testHashing();
+    static void testLMP();
     static void testCheckEvasion();
     static void testStalemateTrap();
     static void testKQKRNullMove();

@@ -191,6 +191,14 @@ SearchTest::testHashing() {
 }
 
 void
+SearchTest::testLMP() {
+    Position pos(TextIO::readFEN("2r2rk1/6p1/p3pq1p/1p1b1p2/3P1n2/PP3N2/3N1PPP/1Q2RR1K b"));  // WAC 174
+    Search sc(pos, nullHist, 0, tt);
+    Move bestM = idSearch(sc, 2);
+    ASSERT(bestM.score() < SearchConst::MATE0 / 2);
+}
+
+void
 SearchTest::testCheckEvasion() {
     Position pos = TextIO::readFEN("6r1/R5PK/2p5/1k6/8/8/p7/8 b - - 0 62");
     Search sc(pos, nullHist, 0, tt);
@@ -216,7 +224,7 @@ void
 SearchTest::testKQKRNullMove() {
     Position pos = TextIO::readFEN("7K/6R1/5k2/3q4/8/8/8/8 b - - 0 1");
     Search sc(pos, nullHist, 0, tt);
-    Move bestM = idSearch(sc, 9);
+    Move bestM = idSearch(sc, 10);
     ASSERT_EQUAL(SearchConst::MATE0-18, bestM.score());
 }
 
@@ -441,6 +449,7 @@ SearchTest::getSuite() const {
     s.push_back(CUTE(testDraw50));
     s.push_back(CUTE(testDrawRep));
     s.push_back(CUTE(testHashing));
+    s.push_back(CUTE(testLMP));
     s.push_back(CUTE(testCheckEvasion));
     s.push_back(CUTE(testStalemateTrap));
     s.push_back(CUTE(testKQKRNullMove));
