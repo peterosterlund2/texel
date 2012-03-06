@@ -156,7 +156,7 @@ public:
 
     /** Clear the transposition table. */
     void clear() {
-        for (int i = 0; i < (int)table.size(); i++)
+        for (size_t i = 0; i < table.size(); i++)
             table[i].type = TType::T_EMPTY;
     }
 

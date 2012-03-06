@@ -8,161 +8,150 @@
 #ifndef UCIPROTOCOL_HPP_
 #define UCIPROTOCOL_HPP_
 
-#if 0
+#include "position.hpp"
+#include "enginecontrol.hpp"
+#include "searchparams.hpp"
+
+#include <vector>
+#include <iostream>
+#include <string>
+
 /**
  * Handle the UCI protocol mode.
- * @author petero
  */
-public class UCIProtocol {
+class UCIProtocol {
+private:
     // Data set by the "position" command.
     Position pos;
-    ArrayList<Move> moves;
+    std::vector<Move> moves;
 
     // Engine data
-    EngineControl engine;
+    std::shared_ptr<EngineControl> engine;
 
     // Set to true to break out of main loop
-    boolean quit;
+    bool quit;
 
-
-    public static void main(boolean autoStart) {
-        UCIProtocol uciProt = new UCIProtocol();
-        uciProt.mainLoop(System.in, System.out, autoStart);
+public:
+    static void main(bool autoStart) {
+        UCIProtocol uciProt;
+        uciProt.mainLoop(std::cin, std::cout, autoStart);
     }
+    UCIProtocol()
+        : quit(false)
+    { }
 
-    public UCIProtocol() {
-        pos = null;
-        moves = new ArrayList<Move>();
-        quit = false;
-    }
-
-    final public void mainLoop(InputStream is, PrintStream os, boolean autoStart) {
-        try {
-            if (autoStart) {
-                handleCommand("uci", os);
-            }
-            InputStreamReader inStrRead = new InputStreamReader(is);
-            BufferedReader inBuf = new BufferedReader(inStrRead);
-            String line;
-            while ((line = inBuf.readLine()) != null) {
-                handleCommand(line, os);
-                if (quit) {
-                    break;
-                }
-            }
-        } catch (IOException ex) {
-            // If stream closed or other I/O error, terminate program
+    void mainLoop(std::istream& is, std::ostream& os, bool autoStart) {
+        if (autoStart)
+            handleCommand("uci", os);
+        std::string line;
+        while (getline(is, line) >= 0) {
+            handleCommand(line, os);
+            if (quit)
+                break;
         }
     }
 
-    final void handleCommand(String cmdLine, PrintStream os) {
-        String[] tokens = tokenize(cmdLine);
+private:
+    void handleCommand(const std::string& cmdLine, std::ostream& os) {
+#if 0
+        std::vector<std::string> tokens;
+        tokenize(cmdLine, tokens);
         try {
-            String cmd = tokens[0];
-            if (cmd.equals("uci")) {
-                os.printf("id name %s%n", ComputerPlayer.engineName);
-                os.printf("id author Peter Osterlund%n");
-                EngineControl.printOptions(os);
-                os.printf("uciok%n");
-            } else if (cmd.equals("isready")) {
+            std::string cmd = tokens[0];
+            if (cmd == "uci") {
+                os << "id name " << ComputerPlayer::engineName << std::endl;
+                os << "id author Peter Osterlund" << std::endl;
+                EngineControl::printOptions(os);
+                os << "uciok" << std::endl;
+            } else if (cmd == "isready") {
                 initEngine(os);
-                os.printf("readyok%n");
-            } else if (cmd.equals("setoption")) {
+                os << "readyok" << std::endl;
+            } else if (cmd == "setoption") {
                 initEngine(os);
-                StringBuilder optionName = new StringBuilder();
-                StringBuilder optionValue = new StringBuilder();
-                if (tokens[1].endsWith("name")) {
+                std::string optionName;
+                std::string optionValue;
+                if (tokens[1] == "name") {
                     int idx = 2;
-                    while ((idx < tokens.length) && !tokens[idx].equals("value")) {
-                        optionName.append(tokens[idx++].toLowerCase());
-                        optionName.append(' ');
+                    while ((idx < (int)tokens.size()) && (tokens[idx] != "value")) {
+                        optionName += toLowerCase(tokens[idx++]);
+                        optionName += ' ';
                     }
-                    if ((idx < tokens.length) && tokens[idx++].equals("value")) {
-                        while ((idx < tokens.length)) {
-                            optionValue.append(tokens[idx++].toLowerCase());
-                            optionValue.append(' ');
+                    if ((idx < (int)tokens.size()) && (tokens[idx++] == "value")) {
+                        while ((idx < (int)tokens.size())) {
+                            optionValue += toLowerCase(tokens[idx++]);
+                            optionValue += ' ';
                         }
                     }
-                    engine.setOption(optionName.toString().trim(), optionValue.toString().trim());
+                    engine.setOption(optionName.trim(), optionValue.trim());
                 }
-            } else if (cmd.equals("ucinewgame")) {
-                if (engine != null) {
+            } else if (cmd == "ucinewgame") {
+                if (engine)
                     engine.newGame();
-                }
-            } else if (cmd.equals("position")) {
-                String fen = null;
+            } else if (cmd ==  "position") {
+                std::string fen;
                 int idx = 1;
-                if (tokens[idx].equals("startpos")) {
+                if (tokens[idx] == "startpos") {
                     idx++;
-                    fen = TextIO.startPosFEN;
-                } else if (tokens[idx].equals("fen")) {
+                    fen = TextIO::startPosFEN;
+                } else if (tokens[idx] == "fen") {
                     idx++;
-                    StringBuilder sb = new StringBuilder();
-                    while ((idx < tokens.length) && !tokens[idx].equals("moves")) {
-                        sb.append(tokens[idx++]);
-                        sb.append(' ');
+                    std::string sb;
+                    while ((idx < (int)tokens.size()) && (tokens[idx] != "moves")) {
+                        sb += tokens[idx++];
+                        sb += ' ';
                     }
-                    fen = sb.toString().trim();
+                    fen = sb.trim();
                 }
-                if (fen != null) {
-                    pos = TextIO.readFEN(fen);
+                if (fen.length() > 0) {
+                    pos = TextIO::readFEN(fen);
                     moves.clear();
-                    if ((idx < tokens.length) && tokens[idx++].equals("moves")) {
-                        for (int i = idx; i < tokens.length; i++) {
-                            Move m = TextIO.uciStringToMove(tokens[i]);
-                            if (m != null) {
-                                moves.add(m);
-                            } else {
+                    if ((idx < (int)tokens.size()) && (tokens[idx++] == "moves")) {
+                        for (size_t i = idx; i < tokens.size(); i++) {
+                            Move m = TextIO::uciStringToMove(tokens[i]);
+                            if (m.isEmpty())
                                 break;
-                            }
+                            moves.push_back(m);
                         }
                     }
                 }
-            } else if (cmd.equals("go")) {
-                if (pos == null) {
-                    try {
-                        pos = TextIO.readFEN(TextIO.startPosFEN);
-                    } catch (ChessParseError ex) {
-                        throw new RuntimeException();
-                    }
-                }
+            } else if (cmd == "go") {
+                if (pos == null)
+                    pos = TextIO::readFEN(TextIO::startPosFEN);
                 initEngine(os);
                 int idx = 1;
-                SearchParams sPar = new SearchParams();
-                boolean ponder = false;
-                while (idx < tokens.length) {
-                    String subCmd = tokens[idx++];
-                    if (subCmd.equals("searchmoves")) {
-                        while (idx < tokens.length) {
-                            Move m = TextIO.uciStringToMove(tokens[idx]);
-                            if (m != null) {
-                                sPar.searchMoves.add(m);
-                                idx++;
-                            } else {
+                SearchParams sPar;
+                bool ponder = false;
+                while (idx < (int)tokens.size()) {
+                    std::string subCmd = tokens[idx++];
+                    if (subCmd == "searchmoves") {
+                        while (idx < (int)tokens.size()) {
+                            Move m = TextIO::uciStringToMove(tokens[idx]);
+                            if (m.isEmpty())
                                 break;
-                            }
+                            sPar.searchMoves.push_back(m);
+                            idx++;
                         }
-                    } else if (subCmd.equals("ponder")) {
+                    } else if (subCmd == "ponder") {
                         ponder = true;
-                    } else if (subCmd.equals("wtime")) {
-                        sPar.wTime = Integer.parseInt(tokens[idx++]);
-                    } else if (subCmd.equals("btime")) {
-                        sPar.bTime = Integer.parseInt(tokens[idx++]);
-                    } else if (subCmd.equals("winc")) {
-                        sPar.wInc = Integer.parseInt(tokens[idx++]);
-                    } else if (subCmd.equals("binc")) {
-                        sPar.bInc = Integer.parseInt(tokens[idx++]);
-                    } else if (subCmd.equals("movestogo")) {
-                        sPar.movesToGo = Integer.parseInt(tokens[idx++]);
-                    } else if (subCmd.equals("depth")) {
-                        sPar.depth = Integer.parseInt(tokens[idx++]);
-                    } else if (subCmd.equals("nodes")) {
-                        sPar.nodes = Integer.parseInt(tokens[idx++]);
-                    } else if (subCmd.equals("mate")) {
-                        sPar.mate = Integer.parseInt(tokens[idx++]);
-                    } else if (subCmd.equals("movetime")) {
-                        sPar.moveTime = Integer.parseInt(tokens[idx++]);
-                    } else if (subCmd.equals("infinite")) {
+                    } else if (subCmd == "wtime") {
+                        str2Num(tokens[idx++], sPar.wTime);
+                    } else if (subCmd == "btime") {
+                        str2Num(tokens[idx++], sPar.bTime);
+                    } else if (subCmd == "winc") {
+                        str2Num(tokens[idx++], sPar.wInc);
+                    } else if (subCmd == "binc") {
+                        str2Num(tokens[idx++], sPar.bInc);
+                    } else if (subCmd == "movestogo") {
+                        str2Num(tokens[idx++], sPar.movesToGo);
+                    } else if (subCmd == "depth") {
+                        str2Num(tokens[idx++], sPar.depth);
+                    } else if (subCmd == "nodes") {
+                        str2Num(tokens[idx++], sPar.nodes);
+                    } else if (subCmd == "mate") {
+                        str2Num(tokens[idx++], sPar.mate);
+                    } else if (subCmd == "movetime") {
+                        str2Num(tokens[idx++], sPar.moveTime);
+                    } else if (subCmd == "infinite") {
                         sPar.infinite = true;
                     }
                 }
@@ -171,35 +160,36 @@ public class UCIProtocol {
                 } else {
                     engine.startSearch(pos, moves, sPar);
                 }
-            } else if (cmd.equals("stop")) {
+            } else if (cmd == "stop") {
                 engine.stopSearch();
-            } else if (cmd.equals("ponderhit")) {
+            } else if (cmd == "ponderhit") {
                 engine.ponderHit();
-            } else if (cmd.equals("quit")) {
-                if (engine != null) {
+            } else if (cmd == "quit") {
+                if (engine)
                     engine.stopSearch();
-                }
                 quit = true;
             }
-        } catch (ChessParseError ex) {
+        } catch (const ChessParseError& ex) {
         } catch (ArrayIndexOutOfBoundsException e) {
-        } catch (NumberFormatException nfe) {
         }
+#endif
     }
 
-    final private void initEngine(PrintStream os) {
-        if (engine == null) {
-            engine = new EngineControl(os);
-        }
+    void initEngine(std::ostream& os) {
+#if 0
+        if (engine)
+            engine.reset(new EngineControl(os));
+#endif
     }
 
+#if 0
     /** Convert a string to tokens by splitting at whitespace characters. */
-    final String[] tokenize(String cmdLine) {
+    void tokenize(const std::string& cmdLine, std::vector<std::string>& tokens) {
         cmdLine = cmdLine.trim();
         return cmdLine.split("\\s+");
     }
-}
 #endif
+};
 
 
 #endif /* UCIPROTOCOL_HPP_ */

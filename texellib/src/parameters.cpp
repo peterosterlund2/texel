@@ -6,3 +6,9 @@
  */
 
 #include "parameters.hpp"
+
+Parameters&
+Parameters::instance() {
+    static Parameters inst;
+    return inst;
+}

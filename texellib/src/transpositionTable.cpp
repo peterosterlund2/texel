@@ -146,7 +146,7 @@ TranspositionTable::printStats() const {
     std::vector<int> depHist;
     const int maxDepth = 20*8;
     depHist.resize(maxDepth);
-    for (int i = 0; i < (int)table.size(); i++) {
+    for (size_t i = 0; i < table.size(); i++) {
         const TTEntry& ent = table[i];
         if (ent.type == TType::T_EMPTY) {
             unused++;

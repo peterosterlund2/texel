@@ -9,6 +9,7 @@
 #include "humanPlayer.hpp"
 #include "tuigame.hpp"
 #include "treeLogger.hpp"
+#include "uciprotocol.hpp"
 
 /**
  * Texel chess engine main function.
@@ -22,9 +23,7 @@ int main(int argc, char* argv[]) {
         game.play();
     } else if ((argc == 3) && (std::string(argv[1]) == "tree")) {
         TreeLoggerReader::main(argv[2]);
-#if 0
     } else {
-        UCIProtocol.main(false);
-#endif
+        UCIProtocol::main(false);
     }
 }

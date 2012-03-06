@@ -355,7 +355,7 @@ testHashCode() {
     std::vector<UndoInfo> uiList;
     std::vector<U64> hashList;
     std::vector<Move> moveList;
-    for (int i = 0; i < (int)COUNT_OF(moves); i++) {
+    for (size_t i = 0; i < COUNT_OF(moves); i++) {
         uiList.push_back(UndoInfo());
         Move m = TextIO::stringToMove(pos, moves[i]);
         moveList.push_back(m);

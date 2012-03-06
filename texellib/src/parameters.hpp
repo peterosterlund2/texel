@@ -8,169 +8,186 @@
 #ifndef PARAMETERS_HPP_
 #define PARAMETERS_HPP_
 
-#if 0
+#include "util.hpp"
+
+#include <memory>
+#include <map>
+#include <string>
+#include <assert.h>
+
+
 class Parameters {
-    public static enum Type {
+public:
+    enum Type {
         CHECK,
         SPIN,
         COMBO,
         BUTTON,
         STRING
-    }
+    };
 
-    public static class ParamBase {
-        public std::string name;
-        public Type type;
-        public bool visible;
-    }
+    struct ParamBase {
+        std::string name;
+        Type type;
+        bool visible;
 
-    public static final class CheckParam extends ParamBase {
-        public bool value;
-        public bool defaultValue;
-        CheckParam(const std::string& name, bool visible, bool def) {
-            this->name = name;
-            this->type = Type.CHECK;
-            this->visible = visible;
+        ParamBase(const std::string& n, Type t, bool v) : name(n), type(t), visible(v) { }
+
+        virtual bool getBoolPar() const { assert(false); return false; }
+        virtual int getIntPar() const { assert(false); return 0; }
+        virtual std::string getStringPar() const { assert(false); return ""; }
+        virtual void set(const std::string& value) { assert(false); }
+    private:
+        // Not implemented
+        ParamBase(const ParamBase& other);
+        ParamBase& operator=(const ParamBase& other);
+    };
+
+    struct CheckParam : public ParamBase {
+        bool value;
+        bool defaultValue;
+
+        CheckParam(const std::string& name, bool visible, bool def)
+            : ParamBase(name, CHECK, visible) {
             this->value = def;
             this->defaultValue = def;
         }
-    }
 
-    public static final class SpinParam extends ParamBase {
-        public int minValue;
-        public int maxValue;
-        public int value;
-        public int defaultValue;
-        SpinParam(const std::string& name, bool visible, int minV, int maxV, int def) {
-            this->name = name;
-            this->type = Type.SPIN;
-            this->visible = visible;
+        virtual bool getBoolPar() const { return value; }
+
+        virtual void set(const std::string& value) {
+            if (toLowerCase(value) == "true")
+                this->value = true;
+            else if (toLowerCase(value) == "false")
+                this->value = false;
+        }
+    };
+
+    struct SpinParam : public ParamBase {
+        int minValue;
+        int maxValue;
+        int value;
+        int defaultValue;
+
+        SpinParam(const std::string& name, bool visible, int minV, int maxV, int def)
+            : ParamBase(name, SPIN, visible) {
             this->minValue = minV;
             this->maxValue = maxV;
             this->value = def;
             this->defaultValue = def;
         }
-    }
 
-    public static final class ComboParam extends ParamBase {
-        public std::string[] allowedValues;
-        public std::string value;
-        public std::string defaultValue;
-        ComboParam(const std::string& name, bool visible, std::string[] allowed,
-		   const std::string& def) {
-            this->name = name;
-            this->type = Type.COMBO;
-            this->visible = visible;
+        virtual int getIntPar() const { return value; }
+
+        virtual void set(const std::string& value) {
+            int val;
+            str2Num(value, val);
+            if ((val >= minValue) && (val <= maxValue))
+                this->value = val;
+        }
+    };
+
+    struct ComboParam : public ParamBase {
+        std::vector<std::string> allowedValues;
+        std::string value;
+        std::string defaultValue;
+
+        ComboParam(const std::string& name, bool visible, const std::vector<std::string>& allowed,
+                   const std::string& def)
+            : ParamBase(name, COMBO, visible) {
             this->allowedValues = allowed;
             this->value = def;
             this->defaultValue = def;
         }
-    }
 
-    public static final class ButtonParam extends ParamBase {
-        ButtonParam(const std::string& name, bool visible) {
-            this->name = name;
-            this->type = Type.BUTTON;
-            this->visible = visible;
+        virtual std::string getStringPar() const { return value; }
+
+        virtual void set(const std::string& value) {
+            for (size_t i = 0; i < allowedValues.size(); i++) {
+                const std::string& allowed = allowedValues[i];
+                if (toLowerCase(allowed) == toLowerCase(value)) {
+                    this->value = allowed;
+                    break;
+                }
+            }
         }
-    }
+    };
 
-    public static final class StringParam extends ParamBase {
-        public std::string value;
-        public std::string defaultValue;
-        StringParam(const std::string& name, bool visible, const std::string& def) {
-            this->name = name;
-            this->type = Type.STRING;
-            this->visible = visible;
+    struct ButtonParam : public ParamBase {
+        ButtonParam(const std::string& name, bool visible)
+            : ParamBase(name, BUTTON, visible) { }
+
+        virtual void set(const std::string& value) {
+        }
+    };
+
+    struct StringParam : public ParamBase {
+        std::string value;
+        std::string defaultValue;
+
+        StringParam(const std::string& name, bool visible, const std::string& def)
+            : ParamBase(name, STRING, visible) {
             this->value = def;
             this->defaultValue = def;
         }
+
+        virtual std::string getStringPar() const { return value; }
+
+        virtual void set(const std::string& value) {
+            this->value = value;
+        }
+    };
+
+    static Parameters& instance();
+
+private:
+    typedef std::map<std::string, std::shared_ptr<ParamBase> > ParamMap;
+    ParamMap params;
+
+public:
+    void getParamNames(std::vector<std::string>& parNames) {
+        parNames.clear();
+        for (ParamMap::const_iterator it = params.begin(); it != params.end(); ++it)
+            if (it->second->visible)
+                parNames.push_back(it->first);
     }
 
-    public static Parameters instance() {
-        return inst;
-    }
-    public final std::string[] getParamNames() {
-        ArrayList<std::string> parNames = new ArrayList<std::string>();
-        for (Map.Entry<std::string, ParamBase> e : params.entrySet())
-            if (e.getValue().visible)
-                parNames.add(e.getKey());
-        return parNames.toArray(new std::string[parNames.size()]);
+    std::shared_ptr<ParamBase> getParam(const std::string& name) {
+        return params[name];
     }
 
-    public final ParamBase getParam(const std::string& name) {
-        return params.get(name);
+private:
+    Parameters() {
+        addPar(std::shared_ptr<ParamBase>(new SpinParam("qV", false, -200, 200, 0)));
+        addPar(std::shared_ptr<ParamBase>(new SpinParam("rV", false, -200, 200, 0)));
+        addPar(std::shared_ptr<ParamBase>(new SpinParam("bV", false, -200, 200, 0)));
+        addPar(std::shared_ptr<ParamBase>(new SpinParam("nV", false, -200, 200, 0)));
+        addPar(std::shared_ptr<ParamBase>(new SpinParam("pV", false, -200, 200, 0)));
     }
 
-    private static final Parameters inst = new Parameters();
-    private Map<std::string, ParamBase> params = new TreeMap<std::string, ParamBase>();
-
-    private Parameters() {
-        addPar(new SpinParam("qV", false, -200, 200, 0));
-        addPar(new SpinParam("rV", false, -200, 200, 0));
-        addPar(new SpinParam("bV", false, -200, 200, 0));
-        addPar(new SpinParam("nV", false, -200, 200, 0));
-        addPar(new SpinParam("pV", false, -200, 200, 0));
+    void addPar(std::shared_ptr<ParamBase> p) {
+        params[toLowerCase(p->name)] = p;
     }
 
-    private final void addPar(ParamBase p) {
-        params.put(p.name.toLowerCase(), p);
+public:
+    bool getBoolPar(const std::string& name) const {
+        return params.find(toLowerCase(name))->second->getBoolPar();
     }
 
-    final bool getBooleanPar(const std::string& name) {
-        return ((CheckParam)params.get(name.toLowerCase())).value;
+    int getIntPar(const std::string& name) const {
+        return params.find(toLowerCase(name))->second->getIntPar();
     }
-    final int getIntPar(const std::string& name) {
-        int ret = ((SpinParam)params.get(name.toLowerCase())).value;
-        return ret;
-    }
-    final String getStringPar(const std::string& name) {
-        return ((StringParam)params.get(name.toLowerCase())).value;
+    std::string getStringPar(const std::string& name) const {
+        return params.find(toLowerCase(name))->second->getStringPar();
     }
 
-    public final void set(const std::string& name, const std::string& value) {
-        ParamBase p = params.get(name.toLowerCase());
-        if (p == null)
+    void set(const std::string& name, const std::string& value) {
+        ParamMap::iterator it = params.find(toLowerCase(name));
+        if (it == params.end())
             return;
-        switch (p.type) {
-        case CHECK: {
-            CheckParam cp = (CheckParam)p;
-            if (value.toLowerCase().equals("true"))
-                cp.value = true;
-            else if (value.toLowerCase().equals("false"))
-                cp.value = false;
-            break;
-        }
-        case SPIN: {
-            SpinParam sp = (SpinParam)p;
-            try {
-                int val = Integer.parseInt(value);
-                if ((val >= sp.minValue) && (val <= sp.maxValue))
-                    sp.value = val;
-            } catch (NumberFormatException ex) {
-            }
-            break;
-        }
-        case COMBO: {
-            ComboParam cp = (ComboParam)p;
-            for (std::string allowed : cp.allowedValues)
-                if (allowed.toLowerCase().equals(value.toLowerCase())) {
-                    cp.value = allowed;
-                    break;
-                }
-            break;
-        }
-        case BUTTON:
-            break;
-        case STRING: {
-            StringParam sp = (StringParam)p;
-            sp.value = value;
-            break;
-        }
-        }
+        it->second->set(value);
     }
 };
-#endif
 
 
 #endif /* PARAMETERS_HPP_ */

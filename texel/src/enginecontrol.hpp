@@ -8,92 +8,113 @@
 #ifndef ENGINECONTROL_HPP_
 #define ENGINECONTROL_HPP_
 
-#if 0
+#include "search.hpp"
+#include "transpositionTable.hpp"
+#include "moveGen.hpp"
+#include "position.hpp"
+#include "move.hpp"
+#include "parameters.hpp"
+#include "random.hpp"
+#include "searchparams.hpp"
+#include "computerPlayer.hpp"
+#include "textio.hpp"
+
+#include <vector>
+#include <iostream>
+#include <memory>
+
 /**
  * Control the search thread.
- * @author petero
  */
-public class EngineControl {
-    PrintStream os;
+class EngineControl {
+private:
+    std::ostream& os;
 
+#if 0
     Thread engineThread;
-    private final Object threadMutex;
-    Search sc;
+    Object threadMutex;
+#endif
+    std::shared_ptr<Search> sc;
     TranspositionTable tt;
-    MoveGen moveGen;
 
     Position pos;
-    long[] posHashList;
+    std::vector<U64> posHashList;
     int posHashListSize;
-    boolean ponder;     // True if currently doing pondering
-    boolean onePossibleMove;
-    boolean infinite;
+    bool ponder;     // True if currently doing pondering
+    bool onePossibleMove;
+    bool infinite;
 
     int minTimeLimit;
     int maxTimeLimit;
     int maxDepth;
     int maxNodes;
-    List<Move> searchMoves;
+    std::vector<Move> searchMoves;
 
     // Options
-    int hashSizeMB = 16;
-    boolean ownBook = false;
-    boolean analyseMode = false;
-    boolean ponderMode = true;
+    int hashSizeMB;
+    bool ownBook;
+    bool analyseMode;
+    bool ponderMode;
 
     // Reduced strength variables
-    int strength = 1000;
-    long randomSeed = 0;
+    int strength;
+    U64 randomSeed;
 
     /**
      * This class is responsible for sending "info" strings during search.
      */
-    private static class SearchListener implements Search.Listener {
-        PrintStream os;
-        
-        SearchListener(PrintStream os) {
-            this.os = os;
+    class SearchListener : public Search::Listener {
+        std::ostream& os;
+
+    public:
+        SearchListener(std::ostream& os0) : os(os0) { }
+
+        void notifyDepth(int depth) {
+            os << "info depth " << depth << std::endl;
         }
 
-        public void notifyDepth(int depth) {
-            os.printf("info depth %d%n", depth);
+        void notifyCurrMove(const Move& m, int moveNr) {
+            os << "info currmove " << moveToString(m) << " currmovenumber " << moveNr << std::endl;
         }
 
-        public void notifyCurrMove(Move m, int moveNr) {
-            os.printf("info currmove %s currmovenumber %d%n", moveToString(m), moveNr);
-        }
-
-        public void notifyPV(int depth, int score, int time, long nodes, int nps, boolean isMate,
-                boolean upperBound, boolean lowerBound, ArrayList<Move> pv) {
-            StringBuilder pvBuf = new StringBuilder();
+        void notifyPV(int depth, int score, int time, long nodes, int nps, bool isMate,
+                bool upperBound, bool lowerBound, const std::vector<Move>& pv) {
+            std::string pvBuf;
             for (Move m : pv) {
-                pvBuf.append(" ");
-                pvBuf.append(moveToString(m));
+                pvBuf += ' ';
+                pvBuf += moveToString(m);
             }
-            String bound = "";
+            std::string bound;
             if (upperBound) {
                 bound = " upperbound";
             } else if (lowerBound) {
                 bound = " lowerbound";
             }
-            os.printf("info depth %d score %s %d%s time %d nodes %d nps %d pv%s%n",
-                    depth, isMate ? "mate" : "cp", score, bound, time, nodes, nps, pvBuf.toString());
+            os << "info depth " << depth << " score " << (isMate ? "mate " : "cp ")
+               << score << bound << " time " << time << " nodes " << nodes
+               << " nps " << nps << " pv" << pvBuf << std::endl;
         }
 
-        public void notifyStats(long nodes, int nps, int time) {
-            os.printf("info nodes %d nps %d time %d%n", nodes, nps, time);
+        void notifyStats(U64 nodes, int nps, int time) {
+            os << "info nodes " << nodes << " nps " << nps << " time " << time << std::endl;
         }
-    }
+    };
 
-    public EngineControl(PrintStream os) {
-        this.os = os;
-        threadMutex = new Object();
+public:
+    EngineControl(std::ostream& o)
+        : os(o),
+          tt(8),
+          hashSizeMB(16),
+          ownBook(false),
+          analyseMode(false),
+          ponderMode(true),
+          strength(1000),
+          randomSeed(0) {
         setupTT();
-        moveGen = new MoveGen();
     }
 
-    final public void startSearch(Position pos, ArrayList<Move> moves, SearchParams sPar) {
-        setupPosition(new Position(pos), moves);
+    void startSearch(const Position& pos, const std::vector<Move>& moves, const SearchParams& sPar) {
+        setupPosition(pos, moves);
         computeTimeLimit(sPar);
         ponder = false;
         infinite = (maxTimeLimit < 0) && (maxDepth < 0) && (maxNodes < 0);
@@ -101,43 +122,47 @@ public class EngineControl {
         startThread(minTimeLimit, maxTimeLimit, maxDepth, maxNodes);
     }
 
-    final public void startPonder(Position pos, List<Move> moves, SearchParams sPar) {
-        setupPosition(new Position(pos), moves);
+    void startPonder(const Position& pos, const std::vector<Move>& moves, const SearchParams& sPar) {
+        setupPosition(pos, moves);
         computeTimeLimit(sPar);
         ponder = true;
         infinite = false;
         startThread(-1, -1, -1, -1);
     }
 
-    final public void ponderHit() {
-        Search mySearch;
+    void ponderHit() {
+        std::shared_ptr<Search> mySearch;
+#if 0
         synchronized (threadMutex) {
+#endif
             mySearch = sc;
+#if 0
         }
-        if (mySearch != null) {
+#endif
+        if (mySearch) {
             if (onePossibleMove) {
                 if (minTimeLimit > 1) minTimeLimit = 1;
                 if (maxTimeLimit > 1) maxTimeLimit = 1;
             }
-            mySearch.timeLimit(minTimeLimit, maxTimeLimit);
+            mySearch->timeLimit(minTimeLimit, maxTimeLimit);
         }
         infinite = (maxTimeLimit < 0) && (maxDepth < 0) && (maxNodes < 0);
         ponder = false;
     }
 
-    final public void stopSearch() {
+    void stopSearch() {
         stopThread();
     }
 
-    final public void newGame() {
-        randomSeed = new Random().nextLong();
+    void newGame() {
+        randomSeed = Random().nextU64();
         tt.clear();
     }
 
     /**
      * Compute thinking time for current search.
      */
-    final public void computeTimeLimit(SearchParams sPar) {
+    void computeTimeLimit(const SearchParams& sPar) {
         minTimeLimit = -1;
         maxTimeLimit = -1;
         maxDepth = -1;
@@ -159,18 +184,18 @@ public class EngineControl {
             if (moves == 0) {
                 moves = 999;
             }
-            moves = Math.min(moves, 45); // Assume 45 more moves until end of game
+            moves = std::min(moves, 45); // Assume 45 more moves until end of game
             if (ponderMode) {
-                final double ponderHitRate = 0.35;
-                moves = (int)Math.ceil(moves * (1 - ponderHitRate));
+                const double ponderHitRate = 0.35;
+                moves = (int)ceil(moves * (1 - ponderHitRate));
             }
-            boolean white = pos.whiteMove;
+            bool white = pos.whiteMove;
             int time = white ? sPar.wTime : sPar.bTime;
             int inc  = white ? sPar.wInc : sPar.bInc;
-            final int margin = Math.min(1000, time * 9 / 10);
+            const int margin = std::min(1000, time * 9 / 10);
             int timeLimit = (time + inc * (moves - 1) - margin) / moves;
             minTimeLimit = (int)(timeLimit * 0.85);
-            maxTimeLimit = (int)(minTimeLimit * (Math.max(2.5, Math.min(4.0, moves / 2))));
+            maxTimeLimit = (int)(minTimeLimit * (std::max(2.5, std::min(4.0, moves / 2.0))));
 
             // Leave at least 1s on the clock, but can't use negative time
             minTimeLimit = clamp(minTimeLimit, 1, time - margin);
@@ -178,47 +203,49 @@ public class EngineControl {
         }
     }
 
-    private static final int clamp(int val, int min, int max) {
-        if (val < min) {
+private:
+    static int clamp(int val, int min, int max) {
+        if (val < min)
             return min;
-        } else if (val > max) {
+        else if (val > max)
             return max;
-        } else {
+        else
             return val;
-        }
     }
 
-    final private void startThread(final int minTimeLimit, final int maxTimeLimit,
-                                   int maxDepth, final int maxNodes) {
+    void startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
+#if 0
         synchronized (threadMutex) {} // Must not start new search until old search is finished
-        sc = new Search(pos, posHashList, posHashListSize, tt);
-        sc.timeLimit(minTimeLimit, maxTimeLimit);
-        sc.setListener(new SearchListener(os));
-        sc.setStrength(strength, randomSeed);
-        MoveGen.MoveList moves = moveGen.pseudoLegalMoves(pos);
-        MoveGen.removeIllegal(pos, moves);
-        if ((searchMoves != null) && (searchMoves.size() > 0))
+#endif
+        sc.reset(new Search(pos, posHashList, posHashListSize, tt));
+        sc->timeLimit(minTimeLimit, maxTimeLimit);
+        sc->setListener(new SearchListener(os));
+        sc->setStrength(strength, randomSeed);
+        MoveGen::MoveList moves;
+        MoveGen::pseudoLegalMoves(pos, moves);
+        MoveGen::removeIllegal(pos, moves);
+        if (searchMoves.size() > 0)
             moves.filter(searchMoves);
-        final MoveGen.MoveList srchMoves = moves;
+        MoveGen::MoveList srchMoves = moves;
         onePossibleMove = false;
         if ((srchMoves.size < 2) && !infinite) {
             onePossibleMove = true;
-            if (!ponder) {
-                if ((maxDepth < 0) || (maxDepth > 2)) maxDepth = 2;
-            }
+            if (!ponder)
+                if ((maxDepth < 0) || (maxDepth > 2))
+                    maxDepth = 2;
         }
         tt.nextGeneration();
-        final int srchmaxDepth = maxDepth;
+#if 0
+        const int srchmaxDepth = maxDepth;
         engineThread = new Thread(new Runnable() {
             public void run() {
-                Move m = null;
+                Move m;
                 if (ownBook && !analyseMode) {
-                    Book book = new Book(false);
+                    Book book(false);
                     m = book.getBookMove(pos);
                 }
-                if (m == null) {
+                if (m.isEmpty())
                     m = sc.iterativeDeepening(srchMoves, srchmaxDepth, maxNodes, false);
-                }
                 while (ponder || infinite) {
                     // We should not respond until told to do so. Just wait until
                     // we are allowed to respond.
@@ -230,104 +257,105 @@ public class EngineControl {
                 }
                 Move ponderMove = getPonderMove(pos, m);
                 synchronized (threadMutex) {
-                    if (ponderMove != null) {
-                        os.printf("bestmove %s ponder %s%n", moveToString(m), moveToString(ponderMove));
-                    } else {
-                        os.printf("bestmove %s%n", moveToString(m));
-                    }
+                    os << "bestmove " << moveToString(m);
+                    if (ponderMove != null)
+                        os << " ponder " << moveToString(ponderMove);
+                    os << std::endl;
                     engineThread = null;
                     sc = null;
                 }
             }
         });
         engineThread.start();
+#endif
     }
 
-    private final void stopThread() {
-        Thread myThread;
-        Search mySearch;
+    void stopThread() {
+#if 0
+        std::shared_ptr<Thread> myThread;
+        std::shared_ptr<Search> mySearch;
         synchronized (threadMutex) {
             myThread = engineThread;
             mySearch = sc;
         }
-        if (myThread != null) {
-            mySearch.timeLimit(0, 0);
+        if (myThread) {
+            mySearch->timeLimit(0, 0);
             infinite = false;
             ponder = false;
-            try {
-                myThread.join();
-            } catch (InterruptedException ex) {
-                throw new RuntimeException();
-            }
+            myThread->join();
         }
+#endif
     }
 
-
-    private final void setupTT() {
+    void setupTT() {
         int nEntries = hashSizeMB > 0 ? hashSizeMB * (1 << 20) / 24 : 1024;
-        int logSize = (int) Math.floor(Math.log(nEntries) / Math.log(2));
-        tt = new TranspositionTable(logSize);
+        int logSize = (int) floor(log(nEntries) / log(2.0));
+        tt.reSize(logSize);
     }
 
-    private final void setupPosition(Position pos, List<Move> moves) {
-        UndoInfo ui = new UndoInfo();
-        posHashList = new long[200 + moves.size()];
+    void setupPosition(Position pos, const std::vector<Move>& moves) {
+        UndoInfo ui;
+        posHashList.resize(200 + moves.size());
         posHashListSize = 0;
-        for (Move m : moves) {
+        for (size_t i = 0; i < moves.size(); i++) {
+            const Move& m = moves[i];
             posHashList[posHashListSize++] = pos.zobristHash();
             pos.makeMove(m, ui);
         }
-        this.pos = pos;
+        this->pos = pos;
     }
 
     /**
      * Try to find a move to ponder from the transposition table.
      */
-    private final Move getPonderMove(Position pos, Move m) {
-        if (m == null) return null;
-        Move ret = null;
-        UndoInfo ui = new UndoInfo();
+    Move getPonderMove(Position pos, const Move& m) {
+        if (m.isEmpty())
+            return Move();
+        Move ret;
+        UndoInfo ui;
         pos.makeMove(m, ui);
-        TTEntry ent = tt.probe(pos.historyHash());
-        if (ent.type != TTEntry.T_EMPTY) {
-            ret = new Move(0, 0, 0);
+        TranspositionTable::TTEntry ent;
+        tt.probe(pos.historyHash(), ent);
+        if (ent.type != TType::T_EMPTY) {
+            ret = Move();
             ent.getMove(ret);
-            MoveGen.MoveList moves = moveGen.pseudoLegalMoves(pos);
-            MoveGen.removeIllegal(pos, moves);
-            boolean contains = false;
+            MoveGen::MoveList moves;
+            MoveGen::pseudoLegalMoves(pos, moves);
+            MoveGen::removeIllegal(pos, moves);
+            bool contains = false;
             for (int mi = 0; mi < moves.size; mi++)
                 if (moves.m[mi].equals(ret)) {
                     contains = true;
                     break;
                 }
             if  (!contains)
-                ret = null;
+                ret = Move();
         }
         pos.unMakeMove(m, ui);
         return ret;
     }
 
-    private static final String moveToString(Move m) {
-        if (m == null)
+    static std::string moveToString(const Move& m) {
+        if (m.isEmpty())
             return "0000";
-        String ret = TextIO.squareToString(m.from);
-        ret += TextIO.squareToString(m.to);
-        switch (m.promoteTo) {
-            case Piece.WQUEEN:
-            case Piece.BQUEEN:
-                ret += "q";
+        std::string ret = TextIO::squareToString(m.from());
+        ret += TextIO::squareToString(m.to());
+        switch (m.promoteTo()) {
+            case Piece::WQUEEN:
+            case Piece::BQUEEN:
+                ret += 'q';
                 break;
-            case Piece.WROOK:
-            case Piece.BROOK:
-                ret += "r";
+            case Piece::WROOK:
+            case Piece::BROOK:
+                ret += 'r';
                 break;
-            case Piece.WBISHOP:
-            case Piece.BBISHOP:
-                ret += "b";
+            case Piece::WBISHOP:
+            case Piece::BBISHOP:
+                ret += 'b';
                 break;
-            case Piece.WKNIGHT:
-            case Piece.BKNIGHT:
-                ret += "n";
+            case Piece::WKNIGHT:
+            case Piece::BKNIGHT:
+                ret += 'n';
                 break;
             default:
                 break;
@@ -335,72 +363,73 @@ public class EngineControl {
         return ret;
     }
 
-    static void printOptions(PrintStream os) {
-        os.printf("option name Hash type spin default 16 min 1 max 2048%n");
-        os.printf("option name OwnBook type check default false%n");
-        os.printf("option name Ponder type check default true%n");
-        os.printf("option name UCI_AnalyseMode type check default false%n");
-        os.printf("option name UCI_EngineAbout type string default %s by Peter Osterlund, see http://web.comhem.se/petero2home/javachess/index.html%n",
-                ComputerPlayer.engineName);
-        os.printf("option name Strength type spin default 1000 min 0 max 1000\n");
-        
-        for (String pName : Parameters.instance().getParamNames()) {
-            ParamBase p = Parameters.instance().getParam(pName);
-            switch (p.type) {
-            case CHECK: {
-                CheckParam cp = (CheckParam)p;
-                os.printf("optionn name %s type check default %s\n",
-                        p.name, cp.defaultValue?"true":"false");
+    static void printOptions(std::ostream& os) {
+        os << "option name Hash type spin default 16 min 1 max 2048" << std::endl;
+        os << "option name OwnBook type check default false" << std::endl;
+        os << "option name Ponder type check default true" << std::endl;
+        os << "option name UCI_AnalyseMode type check default false" << std::endl;
+        os << "option name UCI_EngineAbout type string default " << ComputerPlayer::engineName
+           << " by Peter Osterlund, see http://web.comhem.se/petero2home/javachess/index.html" << std::endl;
+        os << "option name Strength type spin default 1000 min 0 max 1000" << std::endl;
+
+
+        std::vector<std::string> parNames;
+        Parameters::instance().getParamNames(parNames);
+        for (size_t i = 0; i < parNames.size(); i++) {
+            std::string pName = parNames[i];
+            std::shared_ptr<Parameters::ParamBase> p = Parameters::instance().getParam(pName);
+            switch (p->type) {
+            case Parameters::CHECK: {
+                const Parameters::CheckParam& cp = static_cast<const Parameters::CheckParam&>(*p.get());
+                os << "optionn name " << cp.name << " type check default "
+                   << (cp.defaultValue?"true":"false") << std::endl;
                 break;
             }
-            case SPIN: {
-                SpinParam sp = (SpinParam)p;
-                os.printf("option name %s type spin default %d min %d max %d\n",
-                        p.name, sp.defaultValue, sp.minValue, sp.maxValue);
+            case Parameters::SPIN: {
+                const Parameters::SpinParam& sp = static_cast<const Parameters::SpinParam&>(*p.get());
+                os << "option name " << sp.name << " type spin default "
+                   << sp.defaultValue << " min " << sp.minValue
+                   << " max " << sp.maxValue << std::endl;
                 break;
             }
-            case COMBO: {
-                ComboParam cp = (ComboParam)p;
-                os.printf("option name %s type combo default %s ", cp.name, cp.defaultValue);
-                for (String s : cp.allowedValues)
-                    os.printf(" var %s", s);
-                os.printf("\n");
+            case Parameters::COMBO: {
+                const Parameters::ComboParam& cp = static_cast<const Parameters::ComboParam&>(*p.get());
+                os << "option name " << cp.name << " type combo default " << cp.defaultValue;
+                for (size_t i = 0; i < cp.allowedValues.size(); i++)
+                    os << " var " << cp.allowedValues[i];
+                os << std::endl;
                 break;
             }
-            case BUTTON:
-                os.printf("option name %s type button\n", p.name);
+            case Parameters::BUTTON:
+                os << "option name " << p->name << " type button" << std::endl;
                 break;
-            case STRING: {
-                StringParam sp = (StringParam)p;
-                os.printf("option name %s type string default %s\n",
-                        p.name, sp.defaultValue);
+            case Parameters::STRING: {
+                const Parameters::StringParam& sp = static_cast<const Parameters::StringParam&>(*p.get());
+                os << "option name " << sp.name << " type string default "
+                   << sp.defaultValue << std::endl;
                 break;
             }
             }
         }
     }
 
-    final void setOption(String optionName, String optionValue) {
-        try {
-            if (optionName.equals("hash")) {
-                hashSizeMB = Integer.parseInt(optionValue);
-                setupTT();
-            } else if (optionName.equals("ownbook")) {
-                ownBook = Boolean.parseBoolean(optionValue);
-            } else if (optionName.equals("ponder")) {
-                ponderMode = Boolean.parseBoolean(optionValue);
-            } else if (optionName.equals("uci_analysemode")) {
-                analyseMode = Boolean.parseBoolean(optionValue);
-            } else if (optionName.equals("strength")) {
-                strength = Integer.parseInt(optionValue);
-            } else {
-                Parameters.instance().set(optionName, optionValue);
-            }
-        } catch (NumberFormatException nfe) {
+    void setOption(const std::string& optionName, const std::string& optionValue) {
+        if (optionName == "hash") {
+            str2Num(optionValue, hashSizeMB);
+            setupTT();
+        } else if (optionName == "ownbook") {
+            ownBook = (toLowerCase(optionValue) == "true");
+        } else if (optionName == "ponder") {
+            ponderMode = (toLowerCase(optionValue) == "true");
+        } else if (optionName == "uci_analysemode") {
+            analyseMode = (toLowerCase(optionValue) == "true");
+        } else if (optionName == "strength") {
+            str2Num(optionValue, strength);
+        } else {
+            Parameters::instance().set(optionName, optionValue);
         }
     }
-}
-#endif
+};
 
 
 #endif /* ENGINECONTROL_HPP_ */

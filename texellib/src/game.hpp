@@ -59,6 +59,8 @@ public:
         handleCommand("new");
     }
 
+    virtual ~Game() { }
+
     /**
      * Update the game state according to move/command string from a player.
      * @param str The move or command to process.

@@ -17,6 +17,8 @@ public:
     void setSeed(U64 seed);
 
     int nextInt(int modulo);
+
+    U64 nextU64();
 };
 
 

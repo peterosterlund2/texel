@@ -24,7 +24,7 @@ TextIO::readFEN(const std::string& fen) {
     // Piece placement
     int row = 7;
     int col = 0;
-    for (int i = 0; i < (int)words[0].length(); i++) {
+    for (size_t i = 0; i < words[0].length(); i++) {
         char c = words[0][i];
         switch (c) {
             case '1': col += 1; break;
@@ -58,7 +58,7 @@ TextIO::readFEN(const std::string& fen) {
     // Castling rights
     int castleMask = 0;
     if (words.size() > 2) {
-        for (int i = 0; i < (int)words[2].length(); i++) {
+        for (size_t i = 0; i < words[2].length(); i++) {
             char c = words[2][i];
             switch (c) {
                 case 'K': castleMask |= (1 << Position::H1_CASTLE); break;
@@ -410,7 +410,7 @@ TextIO::moveToString(const Position& pos, const Move& move, bool longForm) {
 Move
 TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
     std::string strMove;
-    for (int i = 0; i < (int)strMoveIn.length(); i++)
+    for (size_t i = 0; i < strMoveIn.length(); i++)
         if (strMoveIn[i] != '=')
             strMove += strMoveIn[i];
     Move move;

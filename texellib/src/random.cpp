@@ -20,3 +20,8 @@ int
 Random::nextInt(int modulo) {
     return 0; // FIXME!!
 }
+
+U64
+Random::nextU64() {
+    return 0; // FIXME!!
+}

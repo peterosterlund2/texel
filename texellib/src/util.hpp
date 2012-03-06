@@ -18,6 +18,7 @@
 typedef unsigned long U64;
 typedef signed long S64;
 typedef signed char byte;
+typedef unsigned char ubyte;
 
 template <typename T, size_t N> char (&_ArraySizeHelper(T(&array)[N]))[N];
 #define COUNT_OF(array) (sizeof(_ArraySizeHelper(array)))
@@ -69,17 +70,17 @@ num2Str(const T& num) {
 /** Convert string to lower case. */
 inline std::string
 toLowerCase(std::string str) {
-  for (int i = 0; i < (int)str.length(); i++)
+  for (size_t i = 0; i < str.length(); i++)
     str[i] = std::tolower(str[i]);
   return str;
 }
 
 inline bool
 startsWith(const std::string& str, const std::string& startsWith) {
-    int N = startsWith.length();
-    if ((int)str.length() < N)
+    size_t N = startsWith.length();
+    if (str.length() < N)
         return false;
-    for (int i = 0; i < N; i++)
+    for (size_t i = 0; i < N; i++)
         if (str[i] != startsWith[i])
             return false;
     return true;

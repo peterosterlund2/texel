@@ -82,8 +82,8 @@ private:
     };
     static std::vector<PawnHashData> pawnHash;
 
-    static const byte kpkTable[2*32*64*48/8];
-    static const byte krkpTable[2*32*48*8];
+    static const ubyte kpkTable[2*32*64*48/8];
+    static const ubyte krkpTable[2*32*48*8];
 
     // King safety variables
     U64 wKingZone, bKingZone;       // Squares close to king that are worth attacking
