@@ -1035,7 +1035,7 @@ private:
     }
 
     /** Not implemented. */
-    MoveGen();
+    MoveGen() = delete;
 };
 
 

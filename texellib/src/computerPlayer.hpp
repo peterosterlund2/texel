@@ -34,8 +34,8 @@ private:
     Search::Listener* listener; // FIXME!! Is this safe?
 
     // Not implemented.
-    ComputerPlayer(const ComputerPlayer& other);
-    ComputerPlayer& operator=(const ComputerPlayer& other);
+    ComputerPlayer(const ComputerPlayer& other) = delete;
+    ComputerPlayer& operator=(const ComputerPlayer& other) = delete;
 
 public:
     static std::string engineName;

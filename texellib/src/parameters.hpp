@@ -39,8 +39,8 @@ public:
         virtual void set(const std::string& value) { assert(false); }
     private:
         // Not implemented
-        ParamBase(const ParamBase& other);
-        ParamBase& operator=(const ParamBase& other);
+        ParamBase(const ParamBase& other) = delete;
+        ParamBase& operator=(const ParamBase& other) = delete;
     };
 
     struct CheckParam : public ParamBase {
