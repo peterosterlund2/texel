@@ -149,32 +149,32 @@ void
 SearchTest::testDrawRep() {
     const int mate0 = SearchConst::MATE0;
     Position pos = TextIO::readFEN("7k/5RR1/8/8/8/8/q3q3/2K5 w - - 0 1");
-    std::shared_ptr<Search> sc(new Search(pos, nullHist, 0, tt));
+    std::shared_ptr<Search> sc = std::make_shared<Search>(pos, nullHist, 0, tt);
     sc->maxTimeMillis = -1;
     const int plyScale = SearchConst::plyScale;
     int score = sc->negaScout(-mate0, mate0, 0, 3*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT_EQUAL(0, score);
 
     pos = TextIO::readFEN("7k/5RR1/8/8/8/8/q3q3/2K5 w - - 0 1");
-    sc.reset(new Search(pos, nullHist, 0, tt));
+    sc = std::make_shared<Search>(pos, nullHist, 0, tt);
     sc->maxTimeMillis = -1;
     score = idSearch(*sc.get(), 3).score();
     ASSERT_EQUAL(0, score);
 
     pos = TextIO::readFEN("7k/5RR1/8/8/8/8/1q3q2/3K4 w - - 0 1");
-    sc.reset(new Search(pos, nullHist, 0, tt));
+    sc = std::make_shared<Search>(pos, nullHist, 0, tt);
     sc->maxTimeMillis = -1;
     score = idSearch(*sc.get(), 4).score();
     ASSERT(score < 0);
 
     pos = TextIO::readFEN("7k/5RR1/8/8/8/8/1q3q2/3K4 w - - 0 1");
-    sc.reset(new Search(pos, nullHist, 0, tt));
+    sc = std::make_shared<Search>(pos, nullHist, 0, tt);
     sc->maxTimeMillis = -1;
     score = sc->negaScout(-mate0, mate0, 0, 3*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT(score < 0);
 
     pos = TextIO::readFEN("qn6/qn4k1/pp3R2/5R2/8/8/8/K7 w - - 0 1");
-    sc.reset(new Search(pos, nullHist, 0, tt));
+    sc = std::make_shared<Search>(pos, nullHist, 0, tt);
     sc->maxTimeMillis = -1;
     score = idSearch(*sc.get(), 7).score();
     ASSERT_EQUAL(0, score); // Draw, black can not escape from perpetual checks

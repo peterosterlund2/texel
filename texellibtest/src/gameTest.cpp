@@ -19,8 +19,7 @@
  */
 static void
 testHaveDrawOffer() {
-    HumanPlayer hp1, hp2;
-    Game game(hp1, hp2);
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(false, game.haveDrawOffer());
 
     bool res = game.processString("e4");
@@ -112,8 +111,7 @@ testHaveDrawOffer() {
  */
 static void
 testDraw50() {
-    HumanPlayer hp1, hp2;
-    Game game(hp1, hp2);
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(false, game.haveDrawOffer());
     bool res = game.processString("draw 50");
     ASSERT_EQUAL(true, res);
@@ -171,8 +169,7 @@ testDraw50() {
  */
 static void
 testDrawRep() {
-    HumanPlayer hp1, hp2;
-    Game game(hp1, hp2);
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(false, game.haveDrawOffer());
     game.processString("Nc3");
     game.processString("Nc6");
@@ -245,8 +242,7 @@ testDrawRep() {
  */
 static void
 testResign() {
-    HumanPlayer hp1, hp2;
-    Game game(hp1, hp2);
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.processString("f3");
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
@@ -272,8 +268,7 @@ testResign() {
  */
 static void
 testProcessString() {
-    HumanPlayer hp1, hp2;
-    Game game(hp1, hp2);
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(TextIO::startPosFEN, TextIO::toFEN(game.pos));
     bool res = game.processString("Nf3");
     ASSERT_EQUAL(true, res);
@@ -327,8 +322,7 @@ testProcessString() {
  */
 static void
 testGetGameState() {
-    HumanPlayer hp1, hp2;
-    Game game(hp1, hp2);
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.processString("f3");
     game.processString("e5");
@@ -345,8 +339,7 @@ testGetGameState() {
  */
 static void
 testInsufficientMaterial() {
-    HumanPlayer hp1, hp2;
-    Game game(hp1, hp2);
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.processString("setpos 4k3/8/8/8/8/8/8/4K3 w - - 0 1");
     ASSERT_EQUAL(Game::DRAW_NO_MATE, game.getGameState());
@@ -405,8 +398,7 @@ doTestPerfT(Position& pos, int maxDepth, U64 expectedNodeCounts[]) {
  */
 static void
 testPerfT() {
-    HumanPlayer hp1, hp2;
-    Game game(hp1, hp2);
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     game.processString("new");
     U64 n1[] = { 20, 400, 8902, 197281, 4865609, 119060324, 3195901860ULL, 84998978956ULL};
     doTestPerfT(game.pos, 5, n1);

@@ -15,7 +15,7 @@
 #include <fstream>
 #include <iomanip>
 
-TUIGame::TUIGame(Player& whitePlayer, Player& blackPlayer)
+TUIGame::TUIGame(std::shared_ptr<Player> whitePlayer, std::shared_ptr<Player> blackPlayer)
     : Game(whitePlayer, blackPlayer) {
 }
 
@@ -27,14 +27,12 @@ TUIGame::handleCommand(const std::string& moveStr) {
         std::string testSuiteCmd = moveStr.substr(moveStr.find_first_of(' ') + 1);
         handleTestSuite(testSuiteCmd);
         return true;
-#if 0
     } else if (moveStr == "uci") {
-        whitePlayer = null;
-        blackPlayer = null;
+        whitePlayer.reset();
+        blackPlayer.reset();
         UCIProtocol::main(true);
         exit(0);
         return false;
-#endif
     } else if (moveStr == "help") {
         showHelp();
         return true;
@@ -86,12 +84,12 @@ TUIGame::handleTestSuite(const std::string& cmd) {
 //        std::cout << "file:" << filename << " time:" << timeStr << " (" << timeLimit << ")" << std::endl;
         fr.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         fr.open(filename.c_str());
-        Player* pl = whitePlayer->isHumanPlayer() ? blackPlayer : whitePlayer;
+        std::shared_ptr<Player> pl = whitePlayer->isHumanPlayer() ? blackPlayer : whitePlayer;
         if (pl->isHumanPlayer()) {
             std::cout << "No computer player available" << std::endl;
             return;
         }
-        ComputerPlayer* cp = static_cast<ComputerPlayer*>(pl);
+        std::shared_ptr<ComputerPlayer> cp = std::static_pointer_cast<ComputerPlayer>(pl);
         int numRight = 0;
         int numTotal = 0;
         std::string line;
@@ -191,7 +189,7 @@ TUIGame::play() {
             activateHumanPlayer();
 
         // Get command from current player and act on it
-        Player* pl = pos.whiteMove ? whitePlayer : blackPlayer;
+        std::shared_ptr<Player> pl = pos.whiteMove ? whitePlayer : blackPlayer;
         std::vector<Position> posList;
         getHistory(posList);
         std::string moveStr = pl->getCommand(pos, haveDrawOffer(), posList);

@@ -14,6 +14,7 @@
 #include "search.hpp"
 
 #include <string>
+#include <memory>
 
 /**
  * A computer algorithm player.
@@ -31,7 +32,7 @@ private:
     Book book;
     bool bookEnabled;
     Search* currentSearch;
-    Search::Listener* listener; // FIXME!! Is this safe?
+    std::shared_ptr <Search::Listener> listener;
 
     // Not implemented.
     ComputerPlayer(const ComputerPlayer& other) = delete;
@@ -43,8 +44,7 @@ public:
 
     ComputerPlayer()
         : tt(15),
-          book(verbose),
-          listener(NULL)
+          book(verbose)
     {
         minTimeMillis = 10000;
         maxTimeMillis = 10000;
@@ -59,7 +59,7 @@ public:
         tt.reSize(logSize);
     }
 
-    void setListener(Search::Listener* listener) {
+    void setListener(std::shared_ptr<Search::Listener> listener) {
         this->listener = listener;
     }
 

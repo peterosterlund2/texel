@@ -18,6 +18,7 @@
 #include "moveGen.hpp"
 
 #include <limits>
+#include <memory>
 
 class SearchTest;
 
@@ -93,19 +94,16 @@ public:
      */
     class Listener {
     public:
-        virtual void notifyDepth(int depth) { }
-        virtual void notifyCurrMove(const Move& m, int moveNr) { }
+        virtual void notifyDepth(int depth) = 0;
+        virtual void notifyCurrMove(const Move& m, int moveNr) = 0;
         virtual void notifyPV(int depth, int score, int time, U64 nodes, int nps,
                               bool isMate, bool upperBound, bool lowerBound,
-                              const std::vector<Move>& pv) { }
-        virtual void notifyStats(U64 nodes, int nps, int time) { }
+                              const std::vector<Move>& pv) = 0;
+        virtual void notifyStats(U64 nodes, int nps, int time) = 0;
     };
 
-    void setListener(Listener* listener) {
-        if (listener)
-            this->listener = listener;
-        else
-            this->listener = &dummyListener;
+    void setListener(std::shared_ptr<Listener> listener) {
+        this->listener = listener;
     }
 
     void timeLimit(int minTimeLimit, int maxTimeLimit);
@@ -154,8 +152,7 @@ public:
     void scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx = 0);
 
 private:
-    Listener dummyListener;
-    Listener* listener;
+    std::shared_ptr<Listener> listener;
 
     struct MoveInfo {
         Move move;

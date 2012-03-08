@@ -7,21 +7,27 @@
 
 #include "random.hpp"
 
-Random::Random(U64 seed) {
-    setSeed(seed);
+
+Random::Random()
+    : gen(currentTimeMillis()) {
+}
+
+Random::Random(U64 seed)
+    : gen(seed) {
 }
 
 void
 Random::setSeed(U64 seed) {
-
+    gen.seed(seed);
 }
 
 int
 Random::nextInt(int modulo) {
-    return 0; // FIXME!!
+    std::uniform_int_distribution<int> dist(0, modulo-1);
+    return dist(gen);
 }
 
 U64
 Random::nextU64() {
-    return 0; // FIXME!!
+    return gen();
 }

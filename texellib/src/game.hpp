@@ -15,6 +15,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 /**
  * Handles a game between two players.
@@ -36,8 +37,8 @@ public:
     };
 
     Position pos;
-    Player* whitePlayer;
-    Player* blackPlayer;
+    std::shared_ptr<Player> whitePlayer;
+    std::shared_ptr<Player> blackPlayer;
 
 protected:
     std::vector<Move> moveList;
@@ -53,9 +54,9 @@ public:
     bool pendingDrawOffer;
     GameState drawState;
 
-    Game(Player& whitePlayer, Player& blackPlayer) {
-        this->whitePlayer = &whitePlayer;
-        this->blackPlayer = &blackPlayer;
+    Game(std::shared_ptr<Player> whitePlayer, std::shared_ptr<Player> blackPlayer) {
+        this->whitePlayer = whitePlayer;
+        this->blackPlayer = blackPlayer;
         handleCommand("new");
     }
 

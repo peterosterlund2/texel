@@ -10,12 +10,14 @@
 
 #include "game.hpp"
 
+#include <memory>
+
 /**
  * Handles a game played using a text interface.
  */
 class TUIGame : public Game {
 public:
-    TUIGame(Player& whitePlayer, Player& blackPlayer);
+    TUIGame(std::shared_ptr<Player> whitePlayer, std::shared_ptr<Player> blackPlayer);
 
     /**
      * Administrate a game between two players, human or computer.

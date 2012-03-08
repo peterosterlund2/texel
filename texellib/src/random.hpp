@@ -10,15 +10,25 @@
 
 #include "util.hpp"
 
+#include <random>
+
+/**
+ * Pseudo-random number generator.
+ */
 class Random {
 public:
-    Random(U64 seed = 0);
+    Random();
+
+    Random(U64 seed);
 
     void setSeed(U64 seed);
 
     int nextInt(int modulo);
 
     U64 nextU64();
+
+private:
+    std::mt19937_64 gen;
 };
 
 

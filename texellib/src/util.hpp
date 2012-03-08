@@ -100,6 +100,19 @@ contains(const std::vector<std::string> v, const char* e) {
     return contains(v, std::string(e));
 }
 
+inline std::string
+trim(const std::string& s) {
+    for (int i = 0; i < (int)s.length(); i++) {
+        if (!isspace(s[i])) {
+            for (int j = s.length()-1; j >= i; j--)
+                if (!isspace(s[j]))
+                    return s.substr(i, j-i+1);
+            return "";
+        }
+    }
+    return "";
+}
+
 /** Return current wall clock time in milliseconds, starting at some arbitrary point in time. */
 S64 currentTimeMillis();
 

@@ -158,11 +158,11 @@ public:
 
 private:
     Parameters() {
-        addPar(std::shared_ptr<ParamBase>(new SpinParam("qV", false, -200, 200, 0)));
-        addPar(std::shared_ptr<ParamBase>(new SpinParam("rV", false, -200, 200, 0)));
-        addPar(std::shared_ptr<ParamBase>(new SpinParam("bV", false, -200, 200, 0)));
-        addPar(std::shared_ptr<ParamBase>(new SpinParam("nV", false, -200, 200, 0)));
-        addPar(std::shared_ptr<ParamBase>(new SpinParam("pV", false, -200, 200, 0)));
+        addPar(std::make_shared<SpinParam>("qV", false, -200, 200, 0));
+        addPar(std::make_shared<SpinParam>("rV", false, -200, 200, 0));
+        addPar(std::make_shared<SpinParam>("bV", false, -200, 200, 0));
+        addPar(std::make_shared<SpinParam>("nV", false, -200, 200, 0));
+        addPar(std::make_shared<SpinParam>("pV", false, -200, 200, 0));
     }
 
     void addPar(std::shared_ptr<ParamBase> p) {

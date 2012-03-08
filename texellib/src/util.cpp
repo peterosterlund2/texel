@@ -7,11 +7,15 @@
 
 #include "util.hpp"
 
-#include <stdlib.h>
-#include <sys/time.h>
+#include <chrono>
+#include <iostream>
 
 S64 currentTimeMillis() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    auto t = std::chrono::system_clock::now();
+    auto t0 = t.time_since_epoch();
+    auto x = t0.count();
+    typedef decltype(t0) T0Type;
+    auto n = T0Type::period::num;
+    auto d = T0Type::period::den;
+    return (S64)(x * (1000.0 * n / d));
 }
