@@ -165,7 +165,7 @@ private:
         addPar(std::make_shared<SpinParam>("pV", false, -200, 200, 0));
     }
 
-    void addPar(std::shared_ptr<ParamBase> p) {
+    void addPar(const std::shared_ptr<ParamBase>& p) {
         params[toLowerCase(p->name)] = p;
     }
 

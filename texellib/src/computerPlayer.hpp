@@ -59,7 +59,7 @@ public:
         tt.reSize(logSize);
     }
 
-    void setListener(std::shared_ptr<Search::Listener> listener) {
+    void setListener(const std::shared_ptr<Search::Listener>& listener) {
         this->listener = listener;
     }
 

@@ -54,7 +54,8 @@ public:
     bool pendingDrawOffer;
     GameState drawState;
 
-    Game(std::shared_ptr<Player> whitePlayer, std::shared_ptr<Player> blackPlayer) {
+    Game(const std::shared_ptr<Player>& whitePlayer,
+         const std::shared_ptr<Player>& blackPlayer) {
         this->whitePlayer = whitePlayer;
         this->blackPlayer = blackPlayer;
         handleCommand("new");

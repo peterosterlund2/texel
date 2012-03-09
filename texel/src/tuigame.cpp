@@ -15,7 +15,8 @@
 #include <fstream>
 #include <iomanip>
 
-TUIGame::TUIGame(std::shared_ptr<Player> whitePlayer, std::shared_ptr<Player> blackPlayer)
+TUIGame::TUIGame(const std::shared_ptr<Player>& whitePlayer,
+                 const std::shared_ptr<Player>& blackPlayer)
     : Game(whitePlayer, blackPlayer) {
 }
 

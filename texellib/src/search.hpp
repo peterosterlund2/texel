@@ -102,7 +102,7 @@ public:
         virtual void notifyStats(U64 nodes, int nps, int time) = 0;
     };
 
-    void setListener(std::shared_ptr<Listener> listener) {
+    void setListener(const std::shared_ptr<Listener>& listener) {
         this->listener = listener;
     }
 
