@@ -15,8 +15,8 @@
 #include <vector>
 #include <algorithm>
 
-typedef unsigned long U64;
-typedef signed long S64;
+typedef uint64_t U64;
+typedef int64_t S64;
 typedef signed char byte;
 typedef unsigned char ubyte;
 

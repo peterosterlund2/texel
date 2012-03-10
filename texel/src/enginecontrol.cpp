@@ -36,9 +36,9 @@ void
 EngineControl::SearchListener::notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
                                         bool upperBound, bool lowerBound, const std::vector<Move>& pv) {
     std::string pvBuf;
-    for (Move m : pv) {
+    for (size_t i = 0; i < pv.size(); i++) {
         pvBuf += ' ';
-        pvBuf += moveToString(m);
+        pvBuf += moveToString(pv[i]);
     }
     std::string bound;
     if (upperBound) {

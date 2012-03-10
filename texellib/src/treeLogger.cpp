@@ -13,6 +13,7 @@
 #include <iostream>
 #include <iomanip>
 
+// FIXME!! Searching for hash keys is much faster in java version.
 
 #ifdef TREELOG
 void
