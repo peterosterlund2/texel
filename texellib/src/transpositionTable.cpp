@@ -66,11 +66,10 @@ void
 TranspositionTable::extractPVMoves(const Position& rootPos, const Move& mFirst, std::vector<Move>& pv) {
     Position pos(rootPos);
     Move m(mFirst);
-    std::vector<Move> ret;
     UndoInfo ui;
     std::vector<U64> hashHistory;
     while (true) {
-        ret.push_back(m);
+        pv.push_back(m);
         pos.makeMove(m, ui);
         if (contains(hashHistory, pos.zobristHash()))
             break;

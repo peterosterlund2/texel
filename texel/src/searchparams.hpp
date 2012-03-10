@@ -26,8 +26,10 @@ struct SearchParams {
     int moveTime;                  // If >0, search for exactly this amount of time, ms
     bool infinite;
 
-    SearchParams() {
-    }
+    SearchParams()
+        : wTime(0), bTime(0), wInc(0), bInc(0), movesToGo(0),
+          depth(0), nodes(0), mate(0), moveTime(0), infinite(false)
+    { }
 };
 
 #endif /* SEARCHPARAMS_HPP_ */

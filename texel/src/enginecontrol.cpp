@@ -5,6 +5,8 @@
  *      Author: petero
  */
 
+#define _GLIBCXX_USE_NANOSLEEP
+
 #include "enginecontrol.hpp"
 #include "random.hpp"
 #include "searchparams.hpp"
@@ -15,6 +17,7 @@
 
 #include <iostream>
 #include <memory>
+#include <chrono>
 
 
 EngineControl::SearchListener::SearchListener(std::ostream& os0)
@@ -91,11 +94,10 @@ EngineControl::startPonder(const Position& pos, const std::vector<Move>& moves, 
 void
 EngineControl::ponderHit() {
     std::shared_ptr<Search> mySearch;
-#if 0
-    synchronized (threadMutex) {
+    {
+        std::lock_guard<std::mutex> L(threadMutex);
         mySearch = sc;
     }
-#endif
     if (mySearch) {
         if (onePossibleMove) {
             if (minTimeLimit > 1) minTimeLimit = 1;
@@ -175,8 +177,10 @@ EngineControl::clamp(int val, int min, int max) {
 
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
-#if 0
-    synchronized (threadMutex) {} // Must not start new search until old search is finished
+    {
+        // Must not start new search until old search is finished
+        std::lock_guard<std::mutex> L(threadMutex);
+    }
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, tt);
     sc->timeLimit(minTimeLimit, maxTimeLimit);
     sc->setListener(std::make_shared<SearchListener>(os));
@@ -186,55 +190,48 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     MoveGen::removeIllegal(pos, moves);
     if (searchMoves.size() > 0)
         moves.filter(searchMoves);
-    MoveGen::MoveList srchMoves = moves;
     onePossibleMove = false;
-    if ((srchMoves.size < 2) && !infinite) {
+    if ((moves.size < 2) && !infinite) {
         onePossibleMove = true;
         if (!ponder)
             if ((maxDepth < 0) || (maxDepth > 2))
                 maxDepth = 2;
     }
     tt.nextGeneration();
-    const int srchmaxDepth = maxDepth;
-    engineThread = new Thread(new Runnable() {
-    public void run() {
+    auto f = [this,&moves,maxDepth,maxNodes](void) {
         Move m;
         if (ownBook && !analyseMode) {
             Book book(false);
-            m = book.getBookMove(pos);
+            book.getBookMove(pos, m);
         }
         if (m.isEmpty())
-            m = sc.iterativeDeepening(srchMoves, srchmaxDepth, maxNodes, false);
+            m = sc->iterativeDeepening(moves, maxDepth, maxNodes, false);
         while (ponder || infinite) {
             // We should not respond until told to do so. Just wait until
             // we are allowed to respond.
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException ex) {
-                break;
-            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         Move ponderMove = getPonderMove(pos, m);
-        synchronized (threadMutex) {
+        {
+            std::lock_guard<std::mutex> L(threadMutex);
             os << "bestmove " << moveToString(m);
-            if (ponderMove != null)
+            if (!ponderMove.isEmpty())
                 os << " ponder " << moveToString(ponderMove);
             os << std::endl;
-            engineThread = null;
-            sc = null;
+            engineThread->detach();
+            engineThread.reset();
+            sc.reset();
         }
-    }
-    });
-    engineThread.start();
-#endif
+    };
+    engineThread.reset(new std::thread(f));
 }
 
 void
 EngineControl::stopThread() {
-#if 0
-    std::shared_ptr<Thread> myThread;
+    std::shared_ptr<std::thread> myThread;
     std::shared_ptr<Search> mySearch;
-    synchronized (threadMutex) {
+    {
+        std::lock_guard<std::mutex> L(threadMutex);
         myThread = engineThread;
         mySearch = sc;
     }
@@ -244,7 +241,6 @@ EngineControl::stopThread() {
         ponder = false;
         myThread->join();
     }
-#endif
 }
 
 void

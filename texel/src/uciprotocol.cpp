@@ -174,7 +174,7 @@ UCIProtocol::handleCommand(const std::string& cmdLine, std::ostream& os) {
 
 void
 UCIProtocol::initEngine(std::ostream& os) {
-    if (engine)
+    if (!engine)
         engine = std::make_shared<EngineControl>(os);
 }
 

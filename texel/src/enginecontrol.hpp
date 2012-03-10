@@ -15,7 +15,8 @@
 
 #include <vector>
 #include <iosfwd>
-
+#include <thread>
+#include <memory>
 
 class SearchParams;
 
@@ -27,17 +28,15 @@ class EngineControl {
 private:
     std::ostream& os;
 
-#if 0
-    Thread engineThread;
-    Object threadMutex;
-#endif
+    std::shared_ptr<std::thread> engineThread;
+    std::mutex threadMutex;
     std::shared_ptr<Search> sc;
     TranspositionTable tt;
 
     Position pos;
     std::vector<U64> posHashList;
     int posHashListSize;
-    bool ponder;     // True if currently doing pondering
+    volatile bool ponder;     // True if currently doing pondering
     bool onePossibleMove;
     bool infinite;
 
