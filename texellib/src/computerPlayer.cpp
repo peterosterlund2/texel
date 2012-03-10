@@ -50,7 +50,7 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
     }
 
     if (bookEnabled) {
-        Move bookMove;
+        Move bookMove(0);
         book.getBookMove(pos, bookMove);
         if (!bookMove.isEmpty()) {
             std::cout << "Book moves: " << book.getAllBookMoves(pos) << std::endl;
@@ -61,7 +61,7 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
     // Find best move using iterative deepening
     currentSearch = &sc;
     sc.setListener(listener);
-    Move bestM;
+    Move bestM(0);
     if ((moves.size == 1) && (canClaimDraw(pos, posHashList, posHashListSize, moves.m[0]) == "")) {
         bestM = moves.m[0];
         bestM.setScore(0);

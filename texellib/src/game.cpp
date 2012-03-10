@@ -83,7 +83,7 @@ Game::getGameStateString() {
 
 Move
 Game::getLastMove() {
-    Move m;
+    Move m(0);
     if (currentMove > 0)
         m = moveList[currentMove - 1];
     return m;
@@ -363,7 +363,7 @@ bool
 Game::handleDrawCmd(std::string drawCmd) {
     if (startsWith(drawCmd, "rep") || startsWith(drawCmd, "50")) {
         bool rep = startsWith(drawCmd, "rep");
-        Move m;
+        Move m(0);
         size_t idx = drawCmd.find_first_of(' ');
         std::string ms;
         if (idx != drawCmd.npos) {

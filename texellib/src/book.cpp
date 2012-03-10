@@ -22,7 +22,7 @@ int Book::numBookMoves = -1;
 void
 Book::getBookMove(Position& pos, Move& out) {
     initBook();
-    out = Move();
+    out = Move(0);
     BookMap::iterator it = bookMap.find(pos.zobristHash());
     if (it == bookMap.end())
         return;

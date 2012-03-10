@@ -272,15 +272,14 @@ EngineControl::setupPosition(Position pos, const std::vector<Move>& moves) {
  */
 Move
 EngineControl::getPonderMove(Position pos, const Move& m) {
+    Move ret(0);
     if (m.isEmpty())
-        return Move();
-    Move ret;
+        return ret;
     UndoInfo ui;
     pos.makeMove(m, ui);
     TranspositionTable::TTEntry ent;
     tt.probe(pos.historyHash(), ent);
     if (ent.type != TType::T_EMPTY) {
-        ret = Move();
         ent.getMove(ret);
         MoveGen::MoveList moves;
         MoveGen::pseudoLegalMoves(pos, moves);
@@ -292,7 +291,7 @@ EngineControl::getPonderMove(Position pos, const Move& m) {
                 break;
             }
         if  (!contains)
-            ret = Move();
+            ret = Move(0);
     }
     pos.unMakeMove(m, ui);
     return ret;

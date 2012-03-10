@@ -79,6 +79,7 @@ protected:
         short beta;
         byte ply;
         byte depth;
+        StartEntry() : move(0) { }
     };
     struct EndEntry {
         int startIndex;

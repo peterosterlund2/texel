@@ -20,7 +20,7 @@ const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 
 Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                int posHashListSize0, TranspositionTable& tt0)
-    : tt(tt0)
+    : tt(tt0), emptyMove(0)
 {
     init(pos0, posHashList0, posHashListSize0);
 }
@@ -70,7 +70,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     log.open("/home/petero/treelog.dmp", pos);
     totalNodes = 0;
     if (scMovesIn.size <= 0)
-        return Move(); // No moves to search
+        return Move(0); // No moves to search
 
     std::vector<MoveInfo> scMoves;
     {
@@ -414,7 +414,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     // Check transposition table
     TranspositionTable::TTEntry ent;
     tt.probe(hKey, ent);
-    Move hashMove;
+    Move hashMove(0);
     SearchTreeInfo& sti = searchTreeInfo[ply];
     if (ent.type != TType::T_EMPTY) {
         int score = ent.getScore(ply);

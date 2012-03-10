@@ -106,7 +106,7 @@ TranspositionTable::extractPV(const Position& posIn) {
     std::vector<U64> hashHistory;
     bool repetition = false;
     while (ent.type != TType::T_EMPTY) {
-        Move m;
+        Move m(0);
         ent.getMove(m);
         MoveGen::MoveList moves;
         MoveGen::pseudoLegalMoves(pos, moves);
