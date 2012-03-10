@@ -272,7 +272,7 @@ EngineControl::setupPosition(Position pos, const std::vector<Move>& moves) {
  */
 Move
 EngineControl::getPonderMove(Position pos, const Move& m) {
-    Move ret(0);
+    Move ret;
     if (m.isEmpty())
         return ret;
     UndoInfo ui;
@@ -291,7 +291,7 @@ EngineControl::getPonderMove(Position pos, const Move& m) {
                 break;
             }
         if  (!contains)
-            ret = Move(0);
+            ret = Move();
     }
     pos.unMakeMove(m, ui);
     return ret;

@@ -35,7 +35,7 @@ testTTEntry() {
     ent1.generation = 0;
     ent1.type = TType::T_EXACT;
     ent1.setHashSlot(0);
-    Move tmpMove(0);
+    Move tmpMove;
     ent1.getMove(tmpMove);
     ASSERT_EQUAL(move, tmpMove);
     ASSERT_EQUAL(score, ent1.getScore(ply));
@@ -127,7 +127,7 @@ testInsert() {
         ASSERT_EQUAL(score, ent.getScore(ply));
         ASSERT_EQUAL(depth, ent.getDepth());
         ASSERT_EQUAL(score * 2 + 3, ent.evalScore);
-        Move tmpMove(0);
+        Move tmpMove;
         ent.getMove(tmpMove);
         ASSERT_EQUAL(m, tmpMove);
     }

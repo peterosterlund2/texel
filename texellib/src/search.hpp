@@ -44,9 +44,7 @@ private:
         Move currentMove;      // Move currently being searched
         int lmr;               // LMR reduction amount
         S64 nodeIdx;           // For tree logging
-        SearchTreeInfo()
-        : bestMove(0), currentMove(0)
-        {
+        SearchTreeInfo() {
             allowNullMove = true;
             lmr = 0;
             nodeIdx = 0;
@@ -159,7 +157,7 @@ private:
     struct MoveInfo {
         Move move;
         U64 nodes;
-        MoveInfo(const Move& m, int n) : move(m), nodes(n) { }
+        MoveInfo(const Move& m, int n) { move = m;  nodes = n; }
 
         struct SortByScore {
             bool operator()(const MoveInfo& mi1, const MoveInfo& mi2) const {

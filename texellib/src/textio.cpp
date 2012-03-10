@@ -250,7 +250,7 @@ TextIO::moveToUCIString(const Move& m) {
 
 Move
 TextIO::uciStringToMove(const std::string& move) {
-    Move m(0);
+    Move m;
     if ((move.length() < 4) || (move.length() > 5))
         return m;
     int fromSq = TextIO::getSquare(move.substr(0, 2));
@@ -413,7 +413,7 @@ TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
     for (size_t i = 0; i < strMoveIn.length(); i++)
         if (strMoveIn[i] != '=')
             strMove += strMoveIn[i];
-    Move move(0);
+    Move move;
     if (strMove.length() == 0)
         return move;
     MoveGen::MoveList moves;
@@ -470,7 +470,7 @@ TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
             }
             if (match) {
                 if (!move.isEmpty()) {
-                    return Move(0); // More than one match, not ok
+                    return Move(); // More than one match, not ok
                 } else {
                     move = m;
                 }

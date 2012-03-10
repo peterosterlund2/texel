@@ -36,7 +36,7 @@ static void
 testGetBookMove() {
     Position pos(TextIO::readFEN(TextIO::startPosFEN));
     Book book(true);
-    Move move(0);
+    Move move;
     book.getBookMove(pos, move);
     checkValid(pos, move);
 }

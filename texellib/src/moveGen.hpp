@@ -33,7 +33,9 @@ public:
     /** A stack-allocated move list object. */
     class MoveList {
     public:
-        Move m[MAX_MOVES];
+        union { // Wrap array in union to prevent initialization
+            Move m[MAX_MOVES];
+        };
         int size;
         MoveList() : size(0) { }
         void filter(const std::vector<Move>& searchMoves);

@@ -13,11 +13,11 @@
 /** Represents a chess move. */
 class Move {
 public:
-    /** Create uninitialized move object. */
-    Move() { }
+    /** Create empty move object. */
+    Move() : from_(0), to_(0), promoteTo_(0), score_(0) { }
 
     /** Create a move object. */
-    Move(int from, int to = 0, int promoteTo = 0, int score = 0);
+    Move(int from, int to, int promoteTo, int score = 0);
 
     /** Copy constructor. */
     Move(const Move& m);
