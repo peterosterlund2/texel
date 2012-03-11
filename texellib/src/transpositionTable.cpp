@@ -17,13 +17,22 @@ using namespace std;
 
 
 void
+TranspositionTable::reSize(int log2Size) {
+    const size_t numEntries = ((size_t)1) << log2Size;
+    table.resize(numEntries);
+    for (size_t i = 0; i < numEntries; i++)
+        table[i].type = TType::T_EMPTY;
+    generation = 0;
+}
+
+void
 TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore) {
     if (depth < 0) depth = 0;
-    int idx0 = getIndex(key);
+    size_t idx0 = getIndex(key);
     int key2 = getStoredKey(key);
     TTEntry* ent = &table[idx0];
     if (ent->key != key2) {
-        int idx1 = idx0 ^ 1;
+        size_t idx1 = idx0 ^ 1;
         ent = &table[idx1];
         if (ent->key != key2)
             if (table[idx1].betterThan(table[idx0], generation))

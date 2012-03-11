@@ -93,20 +93,14 @@ public:
         reSize(log2Size);
     }
 
-    void reSize(int log2Size) {
-        const int numEntries = (1 << log2Size);
-        table.resize(numEntries);
-        for (int i = 0; i < numEntries; i++)
-            table[i].type = TType::T_EMPTY;
-        generation = 0;
-    }
+    void reSize(int log2Size);
 
     /** Insert an entry in the hash table. */
     void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore);
 
     /** Retrieve an entry from the hash table corresponding to position with zobrist key "key". */
     void probe(U64 key, TTEntry& result) {
-        int idx0 = getIndex(key);
+        size_t idx0 = getIndex(key);
         int key2 = getStoredKey(key);
         TTEntry& ent = table[idx0];
         if (ent.key == key2) {
@@ -114,7 +108,7 @@ public:
             result = ent;
             return;
         }
-        int idx1 = idx0 ^ 1;
+        size_t idx1 = idx0 ^ 1;
         TTEntry& ent2 = table[idx1];
         if (ent2.key == key2) {
             ent2.generation = (byte)generation;
@@ -151,15 +145,15 @@ public:
 
 private:
     /** Get position in hash table given zobrist key. */
-    int getIndex(U64 key) const;
+    size_t getIndex(U64 key) const;
 
     /** Get part of zobrist key to store in hash table. */
     static int getStoredKey(U64 key);
 };
 
-inline int
+inline size_t
 TranspositionTable::getIndex(U64 key) const {
-    return (int)(key & (table.size() - 1));
+    return (size_t)(key & (table.size() - 1));
 }
 
 inline int

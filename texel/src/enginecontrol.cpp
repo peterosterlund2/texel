@@ -61,6 +61,7 @@ EngineControl::SearchListener::notifyStats(U64 nodes, int nps, int time) {
 
 EngineControl::EngineControl(std::ostream& o)
     : os(o),
+      shouldDetach(true),
       tt(8),
       hashSizeMB(16),
       ownBook(false),
@@ -185,27 +186,27 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     sc->timeLimit(minTimeLimit, maxTimeLimit);
     sc->setListener(std::make_shared<SearchListener>(os));
     sc->setStrength(strength, randomSeed);
-    MoveGen::MoveList moves;
-    MoveGen::pseudoLegalMoves(pos, moves);
-    MoveGen::removeIllegal(pos, moves);
+    std::shared_ptr<MoveGen::MoveList> moves(std::make_shared<MoveGen::MoveList>());
+    MoveGen::pseudoLegalMoves(pos, *moves);
+    MoveGen::removeIllegal(pos, *moves);
     if (searchMoves.size() > 0)
-        moves.filter(searchMoves);
+        moves->filter(searchMoves);
     onePossibleMove = false;
-    if ((moves.size < 2) && !infinite) {
+    if ((moves->size < 2) && !infinite) {
         onePossibleMove = true;
         if (!ponder)
             if ((maxDepth < 0) || (maxDepth > 2))
                 maxDepth = 2;
     }
     tt.nextGeneration();
-    auto f = [this,&moves,maxDepth,maxNodes](void) {
+    auto f = [this,moves,maxDepth,maxNodes](void) {
         Move m;
         if (ownBook && !analyseMode) {
             Book book(false);
             book.getBookMove(pos, m);
         }
         if (m.isEmpty())
-            m = sc->iterativeDeepening(moves, maxDepth, maxNodes, false);
+            m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, false);
         while (ponder || infinite) {
             // We should not respond until told to do so. Just wait until
             // we are allowed to respond.
@@ -218,11 +219,13 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
             if (!ponderMove.isEmpty())
                 os << " ponder " << moveToString(ponderMove);
             os << std::endl;
-            engineThread->detach();
+	    if (shouldDetach)
+	        engineThread->detach();
             engineThread.reset();
             sc.reset();
         }
     };
+    shouldDetach = true;
     engineThread.reset(new std::thread(f));
 }
 
@@ -239,15 +242,31 @@ EngineControl::stopThread() {
         mySearch->timeLimit(0, 0);
         infinite = false;
         ponder = false;
+	shouldDetach = false;
         myThread->join();
     }
 }
 
 void
 EngineControl::setupTT() {
-    int nEntries = hashSizeMB > 0 ? hashSizeMB * (1 << 20) / sizeof(TranspositionTable::TTEntry) : 1024;
-    int logSize = (int) floor(log(nEntries) / log(2.0));
-    tt.reSize(logSize);
+    U64 nEntries = hashSizeMB > 0 ? ((U64)hashSizeMB) * (1 << 20) / sizeof(TranspositionTable::TTEntry)
+	                          : (U64)1024;
+    volatile int logSize = 0;
+    while (nEntries > 1) {
+        logSize++;
+        nEntries /= 2;
+    }
+    logSize++;
+    while (true) {
+        try {
+            logSize--;
+            if (logSize <= 0)
+                break;;
+            tt.reSize(logSize);
+            break;
+        } catch (const std::bad_alloc& ex) {
+        }
+    }
 }
 
 void
@@ -324,7 +343,7 @@ EngineControl::moveToString(const Move& m) {
 
 void
 EngineControl::printOptions(std::ostream& os) {
-    os << "option name Hash type spin default 16 min 1 max 2048" << std::endl;
+    os << "option name Hash type spin default 16 min 1 max 4096" << std::endl;
     os << "option name OwnBook type check default false" << std::endl;
     os << "option name Ponder type check default true" << std::endl;
     os << "option name UCI_AnalyseMode type check default false" << std::endl;
@@ -341,7 +360,7 @@ EngineControl::printOptions(std::ostream& os) {
         switch (p->type) {
         case Parameters::CHECK: {
             const Parameters::CheckParam& cp = static_cast<const Parameters::CheckParam&>(*p.get());
-            os << "optionn name " << cp.name << " type check default "
+            os << "option name " << cp.name << " type check default "
                     << (cp.defaultValue?"true":"false") << std::endl;
             break;
         }

@@ -31,6 +31,7 @@ private:
 
     std::shared_ptr<std::thread> engineThread;
     std::mutex threadMutex;
+    volatile bool shouldDetach;
     std::shared_ptr<Search> sc;
     TranspositionTable tt;
 
@@ -39,7 +40,7 @@ private:
     int posHashListSize;
     volatile bool ponder;     // True if currently doing pondering
     bool onePossibleMove;
-    bool infinite;
+    volatile bool infinite;
 
     int minTimeLimit;
     int maxTimeLimit;
