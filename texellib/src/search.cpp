@@ -1029,16 +1029,16 @@ Search::scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx) {
         bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY) || (m.promoteTo() != Piece::EMPTY);
         int score = 0;
         if (isCapture) {
-            int seeScore = isCapture ? signSEE(m) : 0;
+            int seeScore = signSEE(m);
             int v = pos.getPiece(m.to());
             int a = pos.getPiece(m.from());
-            score = Evaluate::pieceValue[v]/10 * 1000 - Evaluate::pieceValue[a]/10; // FIXME!! Try /16 * 1024 ... /16
+            score = Evaluate::pieceValueOrder[v] * 8 - Evaluate::pieceValueOrder[a];
             if (seeScore > 0)
-                score += 2000000;
+                score += 100;
             else if (seeScore == 0)
-                score += 1000000;
+                score += 50;
             else
-                score -= 1000000;
+                score -= 50;
             score *= 100;
         }
         int ks = kt.getKillerScore(ply, m);

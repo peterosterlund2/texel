@@ -14,6 +14,12 @@ int Evaluate::pieceValue[Piece::nPieceTypes] = {
     kV, qV, rV, bV, nV, pV
 };
 
+int Evaluate::pieceValueOrder[Piece::nPieceTypes] = {
+    0,
+    5, 4, 3, 2, 2, 1,
+    5, 4, 3, 2, 2, 1
+};
+
 /** Piece/square table for king during middle game. */
 const int Evaluate::kt1b[64] = { -22,-35,-40,-40,-40,-40,-35,-22,
                                  -22,-35,-40,-40,-40,-40,-35,-22,

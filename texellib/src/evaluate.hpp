@@ -26,6 +26,7 @@ public:
     static const int kV = 9900; // Used by SEE algorithm, but not included in board material sums
 
     static int pieceValue[Piece::nPieceTypes];
+    static int pieceValueOrder[Piece::nPieceTypes];
 
     /** Piece/square table for king during middle game. */
     static const int kt1b[64];
