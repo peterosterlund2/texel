@@ -117,7 +117,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         int bestScore = -MATE0;
         UndoInfo ui;
         bool needMoreTime = false;
-        for (size_t mi = 0; mi < scMoves.size(); mi++) {
+        for (int mi = 0; mi < (int)scMoves.size(); mi++) {
             searchNeedMoreTime = (mi > 0);
             Move& m = scMoves[mi].move;
             if (currentTimeMillis() - tStart >= 1000)
@@ -322,7 +322,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             std::stable_sort(scMoves.begin()+1, scMoves.end(), MoveInfo::SortByNodes());
         }
     }
-    } catch (const StopSearch& ss) {
+    } catch (const StopSearch&) {
         pos = origPos;
     }
     notifyStats();

@@ -240,8 +240,8 @@ private:
     void initNodeStats();
 
     // Not implemented
-    Search(const Search& other) = delete;
-    Search& operator=(const Search& other) = delete;
+    Search(const Search& other);
+    Search& operator=(const Search& other);
 };
 
 #endif /* SEARCH_HPP_ */

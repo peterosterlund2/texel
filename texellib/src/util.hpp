@@ -9,11 +9,13 @@
 #define UTIL_HPP_
 
 #include <stddef.h>
+#include <stdint.h>
 #include <string>
 #include <cstdlib>
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <cctype>
 
 typedef uint64_t U64;
 typedef int64_t S64;
@@ -48,7 +50,8 @@ template <typename T>
 bool
 str2Num(const std::string& str, T& result) {
     std::stringstream ss(str);
-    return ss >> result;
+    ss >> result;
+    return !!ss;
 }
 
 template <typename T>
@@ -56,7 +59,8 @@ bool
 hexStr2Num(const std::string& str, T& result) {
     std::stringstream ss;
     ss << std::hex << str;
-    return ss >> result;
+    ss >> result;
+    return !!ss;
 }
 
 template <typename T>
@@ -104,7 +108,7 @@ inline std::string
 trim(const std::string& s) {
     for (int i = 0; i < (int)s.length(); i++) {
         if (!isspace(s[i])) {
-            for (int j = s.length()-1; j >= i; j--)
+            for (int j = (int)s.length()-1; j >= i; j--)
                 if (!isspace(s[j]))
                     return s.substr(i, j-i+1);
             return "";

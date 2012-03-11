@@ -34,11 +34,15 @@ protected:
         return idx + nBytes;
     }
 
-    U64 getInt(int idx, int nBytes) {
+    U64 getLong(int idx, int nBytes) const {
         U64 ret = 0;
         for (int i = 0; i < nBytes; i++)
             ret = (ret << 8) | entryBuffer[idx++];
         return ret;
+    }
+
+    int getInt(int idx, int nBytes) const {
+        return (int)getLong(idx, nBytes);
     }
 
     /* This is the on-disk format. Little-endian byte-order is used.

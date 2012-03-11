@@ -35,8 +35,8 @@ private:
     std::shared_ptr <Search::Listener> listener;
 
     // Not implemented.
-    ComputerPlayer(const ComputerPlayer& other) = delete;
-    ComputerPlayer& operator=(const ComputerPlayer& other) = delete;
+    ComputerPlayer(const ComputerPlayer& other);
+    ComputerPlayer& operator=(const ComputerPlayer& other);
 
 public:
     static std::string engineName;

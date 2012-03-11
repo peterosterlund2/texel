@@ -41,7 +41,7 @@ void
 UCIProtocol::handleCommand(const std::string& cmdLine, std::ostream& os) {
     std::vector<std::string> tokens;
     tokenize(cmdLine, tokens);
-    const int nTok = tokens.size();
+    const int nTok = (int)tokens.size();
     if (nTok == 0)
         return;
     try {
@@ -168,7 +168,7 @@ UCIProtocol::handleCommand(const std::string& cmdLine, std::ostream& os) {
                 engine->stopSearch();
             quit = true;
         }
-    } catch (const ChessParseError& ex) {
+    } catch (const ChessParseError&) {
     }
 }
 

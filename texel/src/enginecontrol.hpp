@@ -16,6 +16,7 @@
 #include <vector>
 #include <iosfwd>
 #include <thread>
+#include <mutex>
 #include <memory>
 
 class SearchParams;

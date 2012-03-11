@@ -123,8 +123,8 @@ private:
     bool insufficientMaterial();
 
     // Not implemented
-    Game(const Game& other) = delete;
-    Game& operator=(const Game& other) = delete;
+    Game(const Game& other);
+    Game& operator=(const Game& other);
 };
 
 

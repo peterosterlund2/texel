@@ -247,7 +247,7 @@ Game::getPosHistory(std::vector<std::string> ret) {
     }
     ret.push_back(moves); // Store move list string
 
-    int numUndo = moveList.size() - currentMove;
+    int numUndo = (int)moveList.size() - currentMove;
     ret.push_back(num2Str(numUndo));
 }
 

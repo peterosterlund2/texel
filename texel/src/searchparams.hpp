@@ -13,7 +13,8 @@
 /**
  * Store search parameters (times, increments, max depth, etc).
  */
-struct SearchParams {
+class SearchParams {
+public:
     std::vector<Move> searchMoves; // If non-empty, search only these moves
     int wTime;                     // White remaining time, ms
     int bTime;                     // Black remaining time, ms

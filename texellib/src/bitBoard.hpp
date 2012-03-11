@@ -8,7 +8,6 @@
 #ifndef BITBOARD_HPP_
 #define BITBOARD_HPP_
 
-#include <inttypes.h>
 #include "util.hpp"
 
 class BitBoard {

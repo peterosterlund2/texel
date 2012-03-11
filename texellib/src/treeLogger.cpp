@@ -87,7 +87,7 @@ TreeLoggerReader::readEntry(int index, StartEntry& se, EndEntry& ee) {
         ee.score = getInt(4, 2);
         ee.scoreType = getInt(6, 2);
         ee.evalScore = getInt(8, 2);
-        ee.hashKey = getInt(10, 6);
+        ee.hashKey = getLong(10, 6);
     }
     return isStartEntry;
 }
@@ -359,7 +359,7 @@ int
 TreeLoggerReader::getChildNo(int index) {
     std::vector<int> childs;
     findChildren(findParent(index), childs);
-    for (size_t i = 0; i < childs.size(); i++)
+    for (int i = 0; i < (int)childs.size(); i++)
         if (childs[i] == index)
             return i;
     return -1;

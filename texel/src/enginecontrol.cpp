@@ -245,7 +245,7 @@ EngineControl::stopThread() {
 
 void
 EngineControl::setupTT() {
-    int nEntries = hashSizeMB > 0 ? hashSizeMB * (1 << 20) / 24 : 1024;
+    int nEntries = hashSizeMB > 0 ? hashSizeMB * (1 << 20) / sizeof(TranspositionTable::TTEntry) : 1024;
     int logSize = (int) floor(log(nEntries) / log(2.0));
     tt.reSize(logSize);
 }
