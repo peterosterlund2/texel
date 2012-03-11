@@ -34,7 +34,6 @@ testTTEntry() {
     ent1.setDepth(3);
     ent1.generation = 0;
     ent1.type = TType::T_EXACT;
-    ent1.setHashSlot(0);
     Move tmpMove;
     ent1.getMove(tmpMove);
     ASSERT_EQUAL(move, tmpMove);
@@ -52,7 +51,6 @@ testTTEntry() {
     ent2.setDepth(99);
     ent2.generation = 0;
     ent2.type = TType::T_EXACT;
-    ent2.setHashSlot(0);
     ent2.getMove(tmpMove);
     ASSERT_EQUAL(move, tmpMove);
     ASSERT_EQUAL(score, ent2.getScore(ply));
@@ -85,7 +83,6 @@ testTTEntry() {
     ent3.setDepth(99);
     ent3.generation = 0;
     ent3.type = TType::T_EXACT;
-    ent3.setHashSlot(0);
     ent3.getMove(tmpMove);
     ASSERT_EQUAL(move, tmpMove);
     ASSERT_EQUAL(score, ent3.getScore(ply));

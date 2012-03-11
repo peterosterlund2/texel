@@ -19,29 +19,18 @@ using namespace std;
 void
 TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore) {
     if (depth < 0) depth = 0;
-    int idx0 = h0(key);
-    int idx1 = h1(key);
+    int idx0 = getIndex(key);
+    int key2 = getStoredKey(key);
     TTEntry* ent = &table[idx0];
-    byte hashSlot = 0;
-    if (ent->key != key) {
+    if (ent->key != key2) {
+        int idx1 = idx0 ^ 1;
         ent = &table[idx1];
-        hashSlot = 1;
-    }
-    if (ent->key != key) {
-        if (table[idx1].betterThan(table[idx0], generation)) {
-            ent = &table[idx0];
-            hashSlot = 0;
-        }
-        if (ent->valuable(generation)) {
-            int altEntIdx = (ent->getHashSlot() == 0) ? h1(ent->key) : h0(ent->key);
-            if (ent->betterThan(table[altEntIdx], generation)) {
-                table[altEntIdx] = (*ent);
-                table[altEntIdx].setHashSlot(1 - ent->getHashSlot());
-            }
-        }
+        if (ent->key != key2)
+            if (table[idx1].betterThan(table[idx0], generation))
+                ent = &table[idx0];
     }
     bool doStore = true;
-    if ((ent->key == key) && (ent->getDepth() > depth) && (ent->type == type)) {
+    if ((ent->key == key2) && (ent->getDepth() > depth) && (ent->type == type)) {
         if (type == TType::T_EXACT)
             doStore = false;
         else if ((type == TType::T_GE) && (sm.score() <= ent->getScore(ply)))
@@ -50,14 +39,13 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
             doStore = false;
     }
     if (doStore) {
-        if ((ent->key != key) || (sm.from() != sm.to()))
+        if ((ent->key != key2) || (sm.from() != sm.to()))
             ent->setMove(sm);
-        ent->key = key;
+        ent->key = key2;
         ent->setScore(sm.score(), ply);
         ent->setDepth(depth);
         ent->generation = (byte)generation;
         ent->type = (byte)type;
-        ent->setHashSlot(hashSlot);
         ent->evalScore = (short)evalScore;
     }
 }

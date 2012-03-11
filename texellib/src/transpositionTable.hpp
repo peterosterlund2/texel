@@ -24,11 +24,11 @@ public:
     class TTEntry {
         friend class TranspositionTable;
     public:
-        U64 key;                 // Zobrist hash key
+        int key;                 // Zobrist hash key
     private:
         short move;              // from + (to<<6) + (promote<<12)
         short score;             // Score from search
-        unsigned short depthSlot;// Search depth (bit 0-14) and hash slot (bit 15).
+        unsigned short depth;    // Search depth
     public:
         byte generation;         // Increase when OTB position changes
         byte type;               // exact score, lower bound, upper bound
@@ -44,13 +44,6 @@ public:
             if (getDepth() != other.getDepth())
                 return getDepth() > other.getDepth();     // Larger depth is more valuable
             return false;   // Otherwise, pretty much equally valuable
-        }
-
-        /** Return true if entry is good enough to spend extra time trying to avoid overwriting it. */
-        bool valuable(int currGen) const {
-            if (generation != currGen)
-                return false;
-            return (type == TType::T_EXACT) || (getDepth() > 3 * SearchConst::plyScale);
         }
 
         void getMove(Move& m) const {
@@ -83,26 +76,15 @@ public:
 
         /** Get depth from the hash entry. */
         int getDepth() const {
-            return depthSlot & 0x7fff;
+            return depth;
         }
 
         /** Set depth. */
         void setDepth(int d) {
-            depthSlot &= 0x8000;
-            depthSlot |= ((short)d) & 0x7fff;
-        }
-
-        int getHashSlot() const {
-            return depthSlot >> 15;
-        }
-
-        void setHashSlot(int s) {
-            depthSlot &= 0x7fff;
-            depthSlot |= (s << 15);
+            depth = d;
         }
     };
     std::vector<TTEntry> table;
-    TTEntry emptySlot;
     byte generation;
 
 public:
@@ -114,36 +96,32 @@ public:
     void reSize(int log2Size) {
         const int numEntries = (1 << log2Size);
         table.resize(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-            TTEntry& ent = table[i];
-            ent.key = 0;
-            ent.depthSlot = 0;
-            ent.type = TType::T_EMPTY;
-        }
-        emptySlot.type = TType::T_EMPTY;
+        for (int i = 0; i < numEntries; i++)
+            table[i].type = TType::T_EMPTY;
         generation = 0;
     }
 
     /** Insert an entry in the hash table. */
     void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore);
 
-    /** Retrieve an entry from the hash table corresponding to "pos". */
+    /** Retrieve an entry from the hash table corresponding to position with zobrist key "key". */
     void probe(U64 key, TTEntry& result) {
-        int idx0 = h0(key);
+        int idx0 = getIndex(key);
+        int key2 = getStoredKey(key);
         TTEntry& ent = table[idx0];
-        if (ent.key == key) {
+        if (ent.key == key2) {
             ent.generation = (byte)generation;
             result = ent;
             return;
         }
-        int idx1 = h1(key);
+        int idx1 = idx0 ^ 1;
         TTEntry& ent2 = table[idx1];
-        if (ent2.key == key) {
+        if (ent2.key == key2) {
             ent2.generation = (byte)generation;
             result = ent2;
             return;
         }
-        result = emptySlot;
+        result.type = TType::T_EMPTY;
     }
 
     /**
@@ -172,18 +150,21 @@ public:
     void printStats() const;
 
 private:
-    int h0(U64 key) const;
-    int h1(U64 key) const;
+    /** Get position in hash table given zobrist key. */
+    int getIndex(U64 key) const;
+
+    /** Get part of zobrist key to store in hash table. */
+    static int getStoredKey(U64 key);
 };
 
 inline int
-TranspositionTable::h0(U64 key) const {
+TranspositionTable::getIndex(U64 key) const {
     return (int)(key & (table.size() - 1));
 }
 
 inline int
-TranspositionTable::h1(U64 key) const {
-    return (int)((key >> 32) & (table.size() - 1));
+TranspositionTable::getStoredKey(U64 key) {
+    return (int)(key >> 32);
 }
 
 #endif /* TRANSPOSITIONTABLE_HPP_ */
