@@ -72,7 +72,7 @@ TranspositionTable::extractPVMoves(const Position& rootPos, const Move& mFirst, 
         MoveGen::removeIllegal(pos, moves);
         bool contains = false;
         for (int mi = 0; mi < moves.size; mi++)
-            if (moves.m[mi].equals(m)) {
+            if (moves[mi].equals(m)) {
                 contains = true;
                 break;
             }
@@ -100,7 +100,7 @@ TranspositionTable::extractPV(const Position& posIn) {
         MoveGen::removeIllegal(pos, moves);
         bool valid = false;
         for (int mi = 0; mi < moves.size; mi++)
-            if (moves.m[mi].equals(m)) {
+            if (moves[mi].equals(m)) {
                 valid = true;
                 break;
             }

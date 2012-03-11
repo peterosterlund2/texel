@@ -35,7 +35,7 @@ getCaptureList(Position& pos, bool includeChecks, bool onlyLegal) {
         MoveGen::removeIllegal(pos, moves);
     std::vector<std::string> strMoves;
     for (int mi = 0; mi < moves.size; mi++) {
-        const Move& m = moves.m[mi];
+        const Move& m = moves[mi];
         std::string mStr = TextIO::moveToUCIString(m);
         strMoves.push_back(mStr);
     }
@@ -52,7 +52,7 @@ getCheckEvasions(Position& pos, bool onlyLegal) {
     if (onlyLegal)
         MoveGen::removeIllegal(pos, moves);
     for (int mi = 0; mi < moves.size; mi++) {
-        const Move& m = moves.m[mi];
+        const Move& m = moves[mi];
         std::string mStr = TextIO::moveToUCIString(m);
         strMoves.push_back(mStr);
     }
@@ -67,7 +67,7 @@ getMoveList0(Position& pos, bool onlyLegal) {
         MoveGen::removeIllegal(pos, moves);
     std::vector<std::string> strMoves;
     for (int mi = 0; mi < moves.size; mi++) {
-        const Move& m = moves.m[mi];
+        const Move& m = moves[mi];
         std::string mStr = TextIO::moveToUCIString(m);
         strMoves.push_back(mStr);
     }

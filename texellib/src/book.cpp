@@ -36,7 +36,7 @@ Book::getBookMove(Position& pos, Move& out) {
         const BookEntry& be = bookMoves[i];
         bool contains = false;
         for (int mi = 0; mi < legalMoves.size; mi++)
-            if (legalMoves.m[mi].equals(be.move)) {
+            if (legalMoves[mi].equals(be.move)) {
                 contains = true;
                 break;
             }

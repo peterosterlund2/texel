@@ -91,7 +91,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         }
         for (int mi = 0; mi < scMovesIn.size; mi++) {
             if (includedMoves[mi]) {
-                const Move& m = scMovesIn.m[mi];
+                const Move& m = scMovesIn[mi];
                 scMoves.push_back(MoveInfo(m, 0));
             }
         }
@@ -615,7 +615,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
         if ((mi > 0) || !hashMoveSelected)
             selectBest(moves, mi);
-        Move& m = moves.m[mi];
+        Move& m = moves[mi];
         if (pos.getPiece(m.to()) == (pos.whiteMove ? Piece::BKING : Piece::WKING)) {
             int score = MATE0-ply;
             log.logNodeEnd(sti.nodeIdx, score, TType::T_EXACT, evalScore, hKey);
@@ -759,7 +759,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 kt.addKiller(ply, m);
                 ht.addSuccess(pos, m, depth/plyScale);
                 for (int mi2 = mi - 1; mi2 >= 0; mi2--) {
-                    Move m2 = moves.m[mi2];
+                    Move m2 = moves[mi2];
                     if (pos.getPiece(m2.to()) == Piece::EMPTY)
                         ht.addFail(pos, m2, depth/plyScale);
                 }
@@ -775,7 +775,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         return 0;       // Stale-mate
     }
     if (bestMove >= 0) {
-        tt.insert(hKey, moves.m[bestMove], TType::T_EXACT, ply, depth, evalScore);
+        tt.insert(hKey, moves[bestMove], TType::T_EXACT, ply, depth, evalScore);
         log.logNodeEnd(sti.nodeIdx, bestScore, TType::T_EXACT, evalScore, hKey);
     } else {
         emptyMove.setScore(bestScore);
@@ -849,7 +849,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
             // so spending more effort on move ordering is probably wasted time.
             selectBest(moves, mi);
         }
-        const Move& m = moves.m[mi];
+        const Move& m = moves[mi];
         if (pos.getPiece(m.to()) == (pos.whiteMove ? Piece::BKING : Piece::WKING))
             return MATE0-ply;       // King capture
         bool givesCheck = false;
@@ -1025,7 +1025,7 @@ Search::SEE(const Move& m) {
 void
 Search::scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx) {
     for (int i = startIdx; i < moves.size; i++) {
-        Move& m = moves.m[i];
+        Move& m = moves[i];
         bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY) || (m.promoteTo() != Piece::EMPTY);
         int score = 0;
         if (isCapture) {
@@ -1055,16 +1055,16 @@ Search::scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx) {
 void
 Search::selectBest(MoveGen::MoveList& moves, int startIdx) {
     int bestIdx = startIdx;
-    int bestScore = moves.m[bestIdx].score();
+    int bestScore = moves[bestIdx].score();
     for (int i = startIdx + 1; i < moves.size; i++) {
-        int sc = moves.m[i].score();
+        int sc = moves[i].score();
         if (sc > bestScore) {
             bestIdx = i;
             bestScore = sc;
         }
     }
     if (bestIdx != startIdx)
-        std::swap(moves.m[bestIdx], moves.m[startIdx]);
+        std::swap(moves[bestIdx], moves[startIdx]);
 }
 
 /** If hashMove exists in the move list, move the hash move to the front of the list. */
@@ -1073,10 +1073,10 @@ Search::selectHashMove(MoveGen::MoveList& moves, const Move& hashMove) {
     if (hashMove.isEmpty())
         return false;
     for (int i = 0; i < moves.size; i++) {
-        Move& m = moves.m[i];
+        Move& m = moves[i];
         if (m.equals(hashMove)) {
             m.setScore(10000);
-            std::swap(moves.m[i], moves.m[0]);
+            std::swap(moves[i], moves[0]);
             return true;
         }
     }

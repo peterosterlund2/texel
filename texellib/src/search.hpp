@@ -222,10 +222,10 @@ private:
 
     void scoreMoveListMvvLva(MoveGen::MoveList& moves) {
         for (int i = 0; i < moves.size; i++) {
-            Move& m = moves.m[i];
+            Move& m = moves[i];
             int v = pos.getPiece(m.to());
             int a = pos.getPiece(m.from());
-            m.setScore(Evaluate::pieceValue[v] * 10000 - Evaluate::pieceValue[a]);
+            m.setScore(Evaluate::pieceValue[v] * 10000 - Evaluate::pieceValue[a]); // FIXME! Use pieceValueOrder
         }
     }
 

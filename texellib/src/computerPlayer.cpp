@@ -17,7 +17,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.01a1";
+    std::string name = "Texel 1.01a2";
     if (false)
         name += " 32-bit";
     if (false)
@@ -62,8 +62,8 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
     currentSearch = &sc;
     sc.setListener(listener);
     Move bestM;
-    if ((moves.size == 1) && (canClaimDraw(pos, posHashList, posHashListSize, moves.m[0]) == "")) {
-        bestM = moves.m[0];
+    if ((moves.size == 1) && (canClaimDraw(pos, posHashList, posHashListSize, moves[0]) == "")) {
+        bestM = moves[0];
         bestM.setScore(0);
     } else {
         sc.timeLimit(minTimeMillis, maxTimeMillis);

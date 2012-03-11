@@ -124,7 +124,7 @@ TextIO::fixupEPSquare(Position& pos) {
         MoveGen::removeIllegal(pos, moves);
         bool epValid = false;
         for (int mi = 0; mi < moves.size; mi++) {
-            const Move& m = moves.m[mi];
+            const Move& m = moves[mi];
             if (m.to() == epSquare) {
                 if (pos.getPiece(m.from()) == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) {
                     epValid = true;
@@ -352,7 +352,7 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveGen::Move
                 int numSameFile = 0;
                 int numSameRow = 0;
                 for (int mi = 0; mi < moves.size; mi++) {
-                    const Move& m = moves.m[mi];
+                    const Move& m = moves[mi];
                     if (m.isEmpty())
                         break;
                     if ((pos.getPiece(m.from()) == p) && (m.to() == move.to())) {
@@ -426,10 +426,10 @@ TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
             MoveGen::MoveList subMoves;
             int len = 0;
             for (int mi = 0; mi < moves.size; mi++) {
-                const Move& m = moves.m[mi];
+                const Move& m = moves[mi];
                 std::string str1 = ::moveToString(pos, m, true, moves);
                 if (str1[str1.length() - 1] == lastChar) {
-                    subMoves.m[len++] = m;
+                    subMoves[len++] = m;
                 }
             }
             subMoves.size = len;
@@ -441,7 +441,7 @@ TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
     for (int i = 0; i < 2; i++) {
         // Search for full match
         for (int mi = 0; mi < moves.size; mi++) {
-            const Move& m = moves.m[mi];
+            const Move& m = moves[mi];
             std::string str1 = normalizeMoveString(::moveToString(pos, m, true, moves));
             std::string str2 = normalizeMoveString(::moveToString(pos, m, false, moves));
             if (i == 0) {
@@ -458,7 +458,7 @@ TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
     for (int i = 0; i < 2; i++) {
         // Search for unique substring match
         for (int mi = 0; mi < moves.size; mi++) {
-            const Move& m = moves.m[mi];
+            const Move& m = moves[mi];
             std::string str1 = normalizeMoveString(TextIO::moveToString(pos, m, true));
             std::string str2 = normalizeMoveString(TextIO::moveToString(pos, m, false));
             bool match;

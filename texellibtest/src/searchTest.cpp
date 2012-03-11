@@ -411,25 +411,25 @@ SearchTest::testScoreMoveList() {
     for (int i = 0; i < moves.size; i++) {
         Search::selectBest(moves, i);
         if (i > 0) {
-            int sc1 = moves.m[i - 1].score();
-            int sc2 = moves.m[i].score();
+            int sc1 = moves[i - 1].score();
+            int sc2 = moves[i].score();
             ASSERT(sc2 <= sc1);
         }
     }
 
     moves.clear();
     MoveGen::pseudoLegalMoves(pos, moves);
-    moves.m[0].setScore(17);
-    moves.m[1].setScore(666);
-    moves.m[2].setScore(4711);
+    moves[0].setScore(17);
+    moves[1].setScore(666);
+    moves[2].setScore(4711);
     sc.scoreMoveList(moves, 0, 2);
-    ASSERT_EQUAL(17, moves.m[0].score());
-    ASSERT_EQUAL(666, moves.m[1].score());
+    ASSERT_EQUAL(17, moves[0].score());
+    ASSERT_EQUAL(666, moves[1].score());
     for (int i = 1; i < moves.size; i++) {
         Search::selectBest(moves, i);
         if (i > 1) {
-            int sc1 = moves.m[i - 1].score();
-            int sc2 = moves.m[i].score();
+            int sc1 = moves[i - 1].score();
+            int sc2 = moves[i].score();
             ASSERT(sc2 <= sc1);
         }
     }
@@ -440,7 +440,7 @@ SearchTest::testScoreMoveList() {
     MoveGen::pseudoLegalMoves(pos, moves);
     bool res = Search::selectHashMove(moves, m);
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(m, moves.m[0]);
+    ASSERT_EQUAL(m, moves[0]);
 }
 
 cute::suite

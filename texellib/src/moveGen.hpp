@@ -22,7 +22,7 @@
 #endif
 
 /**
- *
+ * Generates move lists (pseudo-legal, legal, check evasions, captures).
  */
 class MoveGen {
 private:
@@ -32,14 +32,22 @@ public:
 
     /** A stack-allocated move list object. */
     class MoveList {
+    private:
+        int buf[sizeof(Move[MAX_MOVES])/sizeof(int)];
     public:
-        union { // Wrap array in union to prevent initialization
-            Move m[MAX_MOVES];
-        };
         int size;
+
         MoveList() : size(0) { }
         void filter(const std::vector<Move>& searchMoves);
         void clear() { size = 0; }
+
+              Move& operator[](int i)        { return ((Move*)&buf[0])[i]; }
+        const Move& operator[](int i) const  { return ((Move*)&buf[0])[i]; }
+
+        void addMove(int from, int to, int promoteTo) {
+            Move& m = (*this)[size++];
+            new (&m) Move(from, to, promoteTo, 0);
+        }
     };
 
     /**
@@ -90,14 +98,14 @@ public:
                         (pos.getPiece(k0 + 3) == Piece::WROOK) &&
                         !sqAttacked(pos, k0) &&
                         !sqAttacked(pos, k0 + 1)) {
-                        setMove(moveList, k0, k0 + 2, Piece::EMPTY);
+                        moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                     }
                     if (((pos.getCastleMask() & (1 << Position::A1_CASTLE)) != 0) &&
                         ((OOO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
                         (pos.getPiece(k0 - 4) == Piece::WROOK) &&
                         !sqAttacked(pos, k0) &&
                         !sqAttacked(pos, k0 - 1)) {
-                        setMove(moveList, k0, k0 - 2, Piece::EMPTY);
+                        moveList.addMove(k0, k0 - 2, Piece::EMPTY);
                     }
                 }
             }
@@ -167,14 +175,14 @@ public:
                         (pos.getPiece(k0 + 3) == Piece::BROOK) &&
                         !sqAttacked(pos, k0) &&
                         !sqAttacked(pos, k0 + 1)) {
-                        setMove(moveList, k0, k0 + 2, Piece::EMPTY);
+                        moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                     }
                     if (((pos.getCastleMask() & (1 << Position::A8_CASTLE)) != 0) &&
                         ((OOO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
                         (pos.getPiece(k0 - 4) == Piece::BROOK) &&
                         !sqAttacked(pos, k0) &&
                         !sqAttacked(pos, k0 - 1)) {
-                        setMove(moveList, k0, k0 - 2, Piece::EMPTY);
+                        moveList.addMove(k0, k0 - 2, Piece::EMPTY);
                     }
                 }
             }
@@ -438,14 +446,14 @@ public:
                         (pos.getPiece(k0 + 3) == Piece::WROOK) &&
                         !sqAttacked(pos, k0) &&
                         !sqAttacked(pos, k0 + 1)) {
-                        setMove(moveList, k0, k0 + 2, Piece::EMPTY);
+                        moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                     }
                     if (((pos.getCastleMask() & (1 << Position::A1_CASTLE)) != 0) &&
                         ((OOO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
                         (pos.getPiece(k0 - 4) == Piece::WROOK) &&
                         !sqAttacked(pos, k0) &&
                         !sqAttacked(pos, k0 - 1)) {
-                        setMove(moveList, k0, k0 - 2, Piece::EMPTY);
+                        moveList.addMove(k0, k0 - 2, Piece::EMPTY);
                     }
                 }
             }
@@ -544,14 +552,14 @@ public:
                         (pos.getPiece(k0 + 3) == Piece::BROOK) &&
                         !sqAttacked(pos, k0) &&
                         !sqAttacked(pos, k0 + 1)) {
-                        setMove(moveList, k0, k0 + 2, Piece::EMPTY);
+                        moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                     }
                     if (((pos.getCastleMask() & (1 << Position::A8_CASTLE)) != 0) &&
                         ((OOO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
                         (pos.getPiece(k0 - 4) == Piece::BROOK) &&
                         !sqAttacked(pos, k0) &&
                         !sqAttacked(pos, k0 - 1)) {
-                        setMove(moveList, k0, k0 - 2, Piece::EMPTY);
+                        moveList.addMove(k0, k0 - 2, Piece::EMPTY);
                     }
                 }
             }
@@ -887,7 +895,7 @@ public:
         if (isInCheck) {
             kingAtks |= pos.pieceTypeBB[pos.whiteMove ? Piece::BKNIGHT : Piece::WKNIGHT];
             for (int mi = 0; mi < moveList.size; mi++) {
-                const Move& m = moveList.m[mi];
+                const Move& m = moveList[mi];
                 bool legal;
                 if ((m.from() != kSq) && ((kingAtks & (1ULL<<m.to())) == 0) && (m.to() != epSquare)) {
                     legal = false;
@@ -899,11 +907,11 @@ public:
                     pos.unMakeMove(m, ui);
                 }
                 if (legal)
-                    moveList.m[length++] = m;
+                    moveList[length++] = m;
             }
         } else {
             for (int mi = 0; mi < moveList.size; mi++) {
-                const Move& m = moveList.m[mi];
+                const Move& m = moveList[mi];
                 bool legal;
                 if ((m.from() != kSq) && ((kingAtks & (1ULL<<m.from())) == 0) && (m.to() != epSquare)) {
                     legal = true;
@@ -915,7 +923,7 @@ public:
                     pos.unMakeMove(m, ui);
                 }
                 if (legal)
-                    moveList.m[length++] = m;
+                    moveList[length++] = m;
             }
         }
         moveList.size = length;
@@ -973,7 +981,7 @@ private:
         if ((mask & oKingMask) != 0) {
             int sq = BitBoard::numberOfTrailingZeros(mask & oKingMask);
             moveList.size = 0;
-            setMove(moveList, sq + delta, sq, Piece::EMPTY);
+            moveList.addMove(sq + delta, sq, Piece::EMPTY);
             return true;
         }
         U64 promMask = mask & BitBoard::maskRow1Row8;
@@ -982,25 +990,25 @@ private:
             int sq = BitBoard::numberOfTrailingZeros(promMask);
             int sq0 = sq + delta;
             if (sq >= 56) { // White promotion
-                setMove(moveList, sq0, sq, Piece::WQUEEN);
-                setMove(moveList, sq0, sq, Piece::WKNIGHT);
+                moveList.addMove(sq0, sq, Piece::WQUEEN);
+                moveList.addMove(sq0, sq, Piece::WKNIGHT);
                 if (allPromotions) {
-                    setMove(moveList, sq0, sq, Piece::WROOK);
-                    setMove(moveList, sq0, sq, Piece::WBISHOP);
+                    moveList.addMove(sq0, sq, Piece::WROOK);
+                    moveList.addMove(sq0, sq, Piece::WBISHOP);
                 }
             } else { // Black promotion
-                setMove(moveList, sq0, sq, Piece::BQUEEN);
-                setMove(moveList, sq0, sq, Piece::BKNIGHT);
+                moveList.addMove(sq0, sq, Piece::BQUEEN);
+                moveList.addMove(sq0, sq, Piece::BKNIGHT);
                 if (allPromotions) {
-                    setMove(moveList, sq0, sq, Piece::BROOK);
-                    setMove(moveList, sq0, sq, Piece::BBISHOP);
+                    moveList.addMove(sq0, sq, Piece::BROOK);
+                    moveList.addMove(sq0, sq, Piece::BBISHOP);
                 }
             }
             promMask &= (promMask - 1);
         }
         while (mask != 0) {
             int sq = BitBoard::numberOfTrailingZeros(mask);
-            setMove(moveList, sq + delta, sq, Piece::EMPTY);
+            moveList.addMove(sq + delta, sq, Piece::EMPTY);
             mask &= (mask - 1);
         }
         return false;
@@ -1010,7 +1018,7 @@ private:
                                          U64 mask, int delta) {
         while (mask != 0) {
             int sq = BitBoard::numberOfTrailingZeros(mask);
-            setMove(moveList, sq + delta, sq, Piece::EMPTY);
+            moveList.addMove(sq + delta, sq, Piece::EMPTY);
             mask &= (mask - 1);
         }
     }
@@ -1020,20 +1028,15 @@ private:
         if ((mask & oKingMask) != 0) {
             int sq = BitBoard::numberOfTrailingZeros(mask & oKingMask);
             moveList.size = 0;
-            setMove(moveList, sq0, sq, Piece::EMPTY);
+            moveList.addMove(sq0, sq, Piece::EMPTY);
             return true;
         }
         while (mask != 0) {
             int sq = BitBoard::numberOfTrailingZeros(mask);
-            setMove(moveList, sq0, sq, Piece::EMPTY);
+            moveList.addMove(sq0, sq, Piece::EMPTY);
             mask &= (mask - 1);
         }
         return false;
-    }
-
-    static void setMove(MoveList& moveList, int from, int to, int promoteTo) {
-        Move& m = moveList.m[moveList.size++];
-        m.setMove(from, to, promoteTo, 0);
     }
 
     /** Not implemented. */

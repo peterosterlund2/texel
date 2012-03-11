@@ -282,7 +282,7 @@ EngineControl::getPonderMove(Position pos, const Move& m) {
         MoveGen::removeIllegal(pos, moves);
         bool contains = false;
         for (int mi = 0; mi < moves.size; mi++)
-            if (moves.m[mi].equals(ret)) {
+            if (moves[mi].equals(ret)) {
                 contains = true;
                 break;
             }

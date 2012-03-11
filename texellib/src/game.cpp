@@ -483,7 +483,7 @@ Game::perfT(Position& pos, int depth) {
         return moves.size;
     UndoInfo ui;
     for (int mi = 0; mi < moves.size; mi++) {
-        const Move& m = moves.m[mi];
+        const Move& m = moves[mi];
         pos.makeMove(m, ui);
         nodes += perfT(pos, depth - 1);
         pos.unMakeMove(m, ui);
