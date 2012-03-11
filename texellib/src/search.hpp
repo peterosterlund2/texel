@@ -225,7 +225,7 @@ private:
             Move& m = moves[i];
             int v = pos.getPiece(m.to());
             int a = pos.getPiece(m.from());
-            m.setScore(Evaluate::pieceValue[v] * 10000 - Evaluate::pieceValue[a]); // FIXME! Use pieceValueOrder
+            m.setScore(Evaluate::pieceValueOrder[v] * 8 - Evaluate::pieceValueOrder[a]);
         }
     }
 
