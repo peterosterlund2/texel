@@ -367,6 +367,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         searchTreeInfo[ply].nodeIdx = idx;
     }
     if (--nodesToGo <= 0) {
+        // FIXME!! Sometimes loses on time in 300 moves / 1 minute games
         nodesToGo = nodesBetweenTimeCheck;
         S64 tNow = currentTimeMillis();
         S64 timeLimit = searchNeedMoreTime ? maxTimeMillis : minTimeMillis;

@@ -75,6 +75,7 @@ EngineControl::EngineControl(std::ostream& o)
 
 void
 EngineControl::startSearch(const Position& pos, const std::vector<Move>& moves, const SearchParams& sPar) {
+    stopSearch();
     setupPosition(pos, moves);
     computeTimeLimit(sPar);
     ponder = false;
@@ -85,6 +86,7 @@ EngineControl::startSearch(const Position& pos, const std::vector<Move>& moves, 
 
 void
 EngineControl::startPonder(const Position& pos, const std::vector<Move>& moves, const SearchParams& sPar) {
+    stopSearch();
     setupPosition(pos, moves);
     computeTimeLimit(sPar);
     ponder = true;
@@ -178,10 +180,6 @@ EngineControl::clamp(int val, int min, int max) {
 
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
-    {
-        // Must not start new search until old search is finished
-        std::lock_guard<std::mutex> L(threadMutex);
-    }
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, tt);
     sc->timeLimit(minTimeLimit, maxTimeLimit);
     sc->setListener(std::make_shared<SearchListener>(os));
@@ -213,38 +211,38 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         Move ponderMove = getPonderMove(pos, m);
-        {
-            std::lock_guard<std::mutex> L(threadMutex);
-            os << "bestmove " << moveToString(m);
-            if (!ponderMove.isEmpty())
-                os << " ponder " << moveToString(ponderMove);
-            os << std::endl;
-	    if (shouldDetach)
-	        engineThread->detach();
-            engineThread.reset();
-            sc.reset();
-        }
+        std::lock_guard<std::mutex> L(threadMutex);
+        os << "bestmove " << moveToString(m);
+        if (!ponderMove.isEmpty())
+            os << " ponder " << moveToString(ponderMove);
+        os << std::endl;
+        if (shouldDetach)
+            engineThread->detach();
+        engineThread.reset();
+        sc.reset();
     };
     shouldDetach = true;
-    engineThread.reset(new std::thread(f));
+    {
+        std::lock_guard<std::mutex> L(threadMutex);
+        engineThread.reset(new std::thread(f));
+    }
 }
 
 void
 EngineControl::stopThread() {
     std::shared_ptr<std::thread> myThread;
-    std::shared_ptr<Search> mySearch;
     {
         std::lock_guard<std::mutex> L(threadMutex);
         myThread = engineThread;
-        mySearch = sc;
+        if (myThread) {
+            sc->timeLimit(0, 0);
+            infinite = false;
+            ponder = false;
+            shouldDetach = false;
+        }
     }
-    if (myThread) {
-        mySearch->timeLimit(0, 0);
-        infinite = false;
-        ponder = false;
-	shouldDetach = false;
+    if (myThread)
         myThread->join();
-    }
 }
 
 void
