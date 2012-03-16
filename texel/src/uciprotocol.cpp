@@ -160,7 +160,8 @@ UCIProtocol::handleCommand(const std::string& cmdLine, std::ostream& os) {
                 engine->startSearch(pos, moves, sPar);
             }
         } else if (cmd == "stop") {
-            engine->stopSearch();
+            if (engine)
+                engine->stopSearch();
         } else if (cmd == "ponderhit") {
             engine->ponderHit();
         } else if (cmd == "quit") {
