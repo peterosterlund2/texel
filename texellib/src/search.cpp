@@ -38,7 +38,7 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     maxTimeMillis = -1;
     searchNeedMoreTime = false;
     maxNodes = -1;
-    nodesBetweenTimeCheck = 5000;
+    nodesBetweenTimeCheck = 10000;
     strength = 1000;
     weak = false;
     randomSeed = 0;
@@ -52,6 +52,10 @@ void
 Search::timeLimit(int minTimeLimit, int maxTimeLimit) {
     minTimeMillis = minTimeLimit;
     maxTimeMillis = maxTimeLimit;
+    if ((maxTimeMillis >= 0) && (maxTimeMillis < 1000))
+        nodesBetweenTimeCheck = 1000;
+    else
+        nodesBetweenTimeCheck = 10000;
 }
 
 void
@@ -366,8 +370,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         U64 idx = log.logNodeStart(sti.nodeIdx, sti.currentMove, alpha, beta, ply, depth/plyScale);
         searchTreeInfo[ply].nodeIdx = idx;
     }
-    if (--nodesToGo <= 0) {
-        // FIXME!! Sometimes loses on time in 300 moves / 1 minute games
+    if (nodesToGo <= 0) {
         nodesToGo = nodesBetweenTimeCheck;
         S64 tNow = currentTimeMillis();
         S64 timeLimit = searchNeedMoreTime ? maxTimeMillis : minTimeMillis;
@@ -698,6 +701,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             pos.makeMove(m, ui);
             nodes++;
             totalNodes++;
+            nodesToGo--;
             sti.currentMove = m;
             /*
             U64 nodes0 = nodes;
@@ -901,6 +905,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
         pos.makeMove(m, ui);
         qNodes++;
         totalNodes++;
+        nodesToGo--;
         score = -quiesce(-beta, -alpha, ply + 1, depth - 1, nextInCheck);
         pos.unMakeMove(m, ui);
         if (score > bestScore) {
@@ -1064,8 +1069,7 @@ Search::selectBest(MoveGen::MoveList& moves, int startIdx) {
             bestScore = sc;
         }
     }
-    if (bestIdx != startIdx)
-        std::swap(moves[bestIdx], moves[startIdx]);
+    std::swap(moves[bestIdx], moves[startIdx]);
 }
 
 /** If hashMove exists in the move list, move the hash move to the front of the list. */
