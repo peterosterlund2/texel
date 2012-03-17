@@ -123,6 +123,16 @@ EngineControl::newGame() {
     tt.clear();
 }
 
+template <typename T>
+T clamp(T val, T min, T max) {
+    if (val < min)
+        return min;
+    else if (val > max)
+        return max;
+    else
+        return val;
+}
+
 /**
  * Compute thinking time for current search.
  */
@@ -146,9 +156,8 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
         maxNodes = sPar.nodes;
     } else {
         int moves = sPar.movesToGo;
-        if (moves == 0) {
+        if (moves == 0)
             moves = 999;
-        }
         moves = std::min(moves, 45); // Assume 45 more moves until end of game
         if (ponderMode) {
             const double ponderHitRate = 0.35;
@@ -160,22 +169,12 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
         const int margin = std::min(1000, time * 9 / 10);
         int timeLimit = (time + inc * (moves - 1) - margin) / moves;
         minTimeLimit = (int)(timeLimit * 0.85);
-        maxTimeLimit = (int)(minTimeLimit * (std::max(2.5, std::min(4.0, moves / 2.0))));
+        maxTimeLimit = (int)(minTimeLimit * clamp(moves * 0.5, 2.5, 4.0));
 
         // Leave at least 1s on the clock, but can't use negative time
         minTimeLimit = clamp(minTimeLimit, 1, time - margin);
         maxTimeLimit = clamp(maxTimeLimit, 1, time - margin);
     }
-}
-
-int
-EngineControl::clamp(int val, int min, int max) {
-    if (val < min)
-        return min;
-    else if (val > max)
-        return max;
-    else
-        return val;
 }
 
 void

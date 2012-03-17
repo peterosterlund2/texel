@@ -100,8 +100,6 @@ public:
     void setOption(const std::string& optionName, const std::string& optionValue);
 
 private:
-    static int clamp(int val, int min, int max);
-
     void startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes);
 
     void stopThread();
