@@ -379,22 +379,7 @@ public:
      */
     void makeSEEMove(const Move& move, UndoInfo& ui) {
         ui.capturedPiece = squares[move.to()];
-        bool wtm = whiteMove;
-
         int p = squares[move.from()];
-        U64 fromMask = 1ULL << move.from();
-
-        // Handle castling
-        if (((pieceTypeBB[Piece::WKING] | pieceTypeBB[Piece::BKING]) & fromMask) != 0) {
-            int k0 = move.from();
-            if (move.to() == k0 + 2) { // O-O
-                setSEEPiece(k0 + 1, squares[k0 + 3]);
-                setSEEPiece(k0 + 3, Piece::EMPTY);
-            } else if (move.to() == k0 - 2) { // O-O-O
-                setSEEPiece(k0 - 1, squares[k0 - 4]);
-                setSEEPiece(k0 - 4, Piece::EMPTY);
-            }
-        }
 
         // Handle en passant
         if (move.to() == epSquare) {
@@ -408,7 +393,7 @@ public:
         // Perform move
         setSEEPiece(move.from(), Piece::EMPTY);
         setSEEPiece(move.to(), p);
-        whiteMove = !wtm;
+        whiteMove = !whiteMove;
     }
 
     void unMakeSEEMove(const Move& move, UndoInfo& ui) {
@@ -416,20 +401,6 @@ public:
         int p = squares[move.to()];
         setSEEPiece(move.from(), p);
         setSEEPiece(move.to(), ui.capturedPiece);
-        bool wtm = whiteMove;
-
-        // Handle castling
-        int king = wtm ? Piece::WKING : Piece::BKING;
-        if (p == king) {
-            int k0 = move.from();
-            if (move.to() == k0 + 2) { // O-O
-                setSEEPiece(k0 + 3, squares[k0 + 1]);
-                setSEEPiece(k0 + 1, Piece::EMPTY);
-            } else if (move.to() == k0 - 2) { // O-O-O
-                setSEEPiece(k0 - 4, squares[k0 - 1]);
-                setSEEPiece(k0 - 1, Piece::EMPTY);
-            }
-        }
 
         // Handle en passant
         if (move.to() == epSquare) {

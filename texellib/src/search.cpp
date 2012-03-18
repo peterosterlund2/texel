@@ -1040,9 +1040,8 @@ Search::SEE(const Move& m) {
     pos.unMakeSEEMove(m, ui);
 
     int score = 0;
-    for (int i = nCapt - 1; i > 0; i--) {
+    for (int i = nCapt - 1; i > 0; i--)
         score = std::max(0, captures[i] - score);
-    }
     return captures[0] - score;
 }
 
