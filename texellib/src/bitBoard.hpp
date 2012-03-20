@@ -79,6 +79,11 @@ public:
         return dirTable[offs];
     }
 
+    static int getDistance(int from, int to) {
+        int offs = to + (to|7) - from - (from|7) + 0x77;
+        return distTable[offs];
+    }
+
     static U64 southFill(U64 mask) {
         mask |= (mask >> 8);
         mask |= (mask >> 16);
@@ -126,6 +131,7 @@ private:
     static const U64 bMagics[64];
 
     static const byte dirTable[];
+    static const byte distTable[];
     static const int trailingZ[64];
 };
 

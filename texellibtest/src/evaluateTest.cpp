@@ -501,6 +501,28 @@ testCantWin() {
     ASSERT(score2 > score1);
 }
 
+static void
+testPawnRace() {
+    const int pV = Evaluate::pV;
+    const int winScore = 400;
+    const int drawish = 100;
+    Position pos = TextIO::readFEN("8/8/K7/1P3p2/8/6k1/8/8 w - - 0 1");
+    ASSERT(evalWhite(pos) > winScore);
+    pos = TextIO::readFEN("8/8/K7/1P3p2/8/6k1/8/8 b - - 0 1");
+    ASSERT(evalWhite(pos) > winScore);
+
+    pos = TextIO::readFEN("8/8/K7/1P3p2/6k1/8/8/8 b - - 0 1");
+    ASSERT(std::abs(evalWhite(pos)) < drawish);
+    pos = TextIO::readFEN("8/8/K7/1P6/5pk1/8/8/8 b - - 0 1");
+    ASSERT(evalWhite(pos) < -winScore);
+    pos = TextIO::readFEN("8/K7/8/1P6/5pk1/8/8/8 b - - 0 1");
+    ASSERT(std::abs(evalWhite(pos)) < drawish);
+    pos = TextIO::readFEN("8/K7/8/8/1PP2p1k/8/8/8 w - - 0 1");
+    ASSERT(evalWhite(pos) < drawish + pV);
+    ASSERT(evalWhite(pos) > 0);
+    pos = TextIO::readFEN("8/K7/8/8/1PP2p1k/8/8/8 b - - 0 1");
+    ASSERT(evalWhite(pos) < -winScore + pV);
+}
 
 cute::suite
 EvaluateTest::getSuite() const {
@@ -518,5 +540,6 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testKRKP));
     s.push_back(CUTE(testKPK));
     s.push_back(CUTE(testCantWin));
+    s.push_back(CUTE(testPawnRace));
     return s;
 }

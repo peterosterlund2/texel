@@ -407,60 +407,87 @@ Evaluate::pawnBonus(const Position& pos) {
     score -= interpolate(pos.wMtrl - pos.wMtrlPawns, 0, 2 * phd.passedBonusB, hiMtrl, phd.passedBonusB);
 
     // Passed pawns are more dangerous if enemy king is far away
-    int mtrlNoPawns;
-    const int highMtrl = qV + rV;
+    int bestWPawnDist = 8;
+    int bestWPromSq = -1;
     U64 m = phd.passedPawnsW;
     if (m != 0) {
-        mtrlNoPawns = pos.bMtrl - pos.bMtrlPawns;
-        if (mtrlNoPawns < highMtrl) {
+        int mtrlNoPawns = pos.bMtrl - pos.bMtrlPawns;
+        if (mtrlNoPawns < hiMtrl) {
             int kingPos = pos.getKingSq(false);
-            int kingX = Position::getX(kingPos);
-            int kingY = Position::getY(kingPos);
             while (m != 0) {
                 int sq = BitBoard::numberOfTrailingZeros(m);
                 int x = Position::getX(sq);
                 int y = Position::getY(sq);
                 int pawnDist = std::min(5, 7 - y);
-                int kingDistX = std::abs(kingX - x);
-                int kingDistY = std::abs(kingY - 7);
-                int kingDist = std::max(kingDistX, kingDistY);
+                int kingDist = BitBoard::getDistance(kingPos, Position::getSquare(x, 7));
                 int kScore = kingDist * 4;
                 if (kingDist > pawnDist) kScore += (kingDist - pawnDist) * (kingDist - pawnDist);
-                score += interpolate(mtrlNoPawns, 0, kScore, highMtrl, 0);
+                score += interpolate(mtrlNoPawns, 0, kScore, hiMtrl, 0);
                 if (!pos.whiteMove)
                     kingDist--;
-                if ((pawnDist < kingDist) && (mtrlNoPawns == 0))
-                    score += 500; // King can't stop pawn
+                if ((pawnDist < kingDist) && (mtrlNoPawns == 0)) {
+                    if (BitBoard::northFill(1ULL<<sq) & (1LL << pos.getKingSq(true)))
+                        pawnDist++; // Own king blocking pawn
+                    if (pawnDist < bestWPawnDist) {
+                        bestWPawnDist = pawnDist;
+                        bestWPromSq = Position::getSquare(x, 7);
+                    }
+                }
                 m &= m-1;
             }
         }
     }
+    int bestBPawnDist = 8;
+    int bestBPromSq = -1;
     m = phd.passedPawnsB;
     if (m != 0) {
-        mtrlNoPawns = pos.wMtrl - pos.wMtrlPawns;
-        if (mtrlNoPawns < highMtrl) {
+        int mtrlNoPawns = pos.wMtrl - pos.wMtrlPawns;
+        if (mtrlNoPawns < hiMtrl) {
             int kingPos = pos.getKingSq(true);
-            int kingX = Position::getX(kingPos);
-            int kingY = Position::getY(kingPos);
             while (m != 0) {
                 int sq = BitBoard::numberOfTrailingZeros(m);
                 int x = Position::getX(sq);
                 int y = Position::getY(sq);
                 int pawnDist = std::min(5, y);
-                int kingDistX = std::abs(kingX - x);
-                int kingDistY = std::abs(kingY - 0);
-                int kingDist = std::max(kingDistX, kingDistY);
+                int kingDist = BitBoard::getDistance(kingPos, Position::getSquare(x, 0));
                 int kScore = kingDist * 4;
                 if (kingDist > pawnDist) kScore += (kingDist - pawnDist) * (kingDist - pawnDist);
-                score -= interpolate(mtrlNoPawns, 0, kScore, highMtrl, 0);
+                score -= interpolate(mtrlNoPawns, 0, kScore, hiMtrl, 0);
                 if (pos.whiteMove)
                     kingDist--;
-                if ((pawnDist < kingDist) && (mtrlNoPawns == 0))
-                    score -= 500; // King can't stop pawn
+                if ((pawnDist < kingDist) && (mtrlNoPawns == 0)) {
+                    if (BitBoard::southFill(1ULL<<sq) & (1LL << pos.getKingSq(false)))
+                        pawnDist++; // Own king blocking pawn
+                    if (pawnDist < bestBPawnDist) {
+                        bestBPawnDist = pawnDist;
+                        bestBPromSq = Position::getSquare(x, 0);
+                    }
+                }
                 m &= m-1;
             }
         }
     }
+
+    // Evaluate pawn races in pawn end games
+    if (bestWPromSq >= 0) {
+        if (bestBPromSq >= 0) {
+            int wPly = bestWPawnDist * 2; if (pos.whiteMove) wPly--;
+            int bPly = bestBPawnDist * 2; if (!pos.whiteMove) bPly--;
+            if (wPly < bPly - 1) {
+                score += 500;
+            } else if (wPly == bPly - 1) {
+                if (BitBoard::getDirection(bestWPromSq, pos.getKingSq(false)))
+                    score += 500;
+            } else if (wPly == bPly + 1) {
+                if (BitBoard::getDirection(bestBPromSq, pos.getKingSq(true)))
+                    score -= 500;
+            } else {
+                score -= 500;
+            }
+        } else
+            score += 500;
+    } else if (bestBPromSq >= 0)
+        score -= 500;
 
     return score;
 }
@@ -540,11 +567,19 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
         }
     }
 
-    // Connected passed pawn bonus. Seems logical but doesn't help in tests
-//        if (passedPawnsW != 0)
-//            passedBonusW += 15 * BitBoard::bitCount(passedPawnsW & ((passedPawnsW & BitBoard::maskBToHFiles) >> 1));
-//        if (passedPawnsB != 0)
-//            passedBonusB += 15 * BitBoard::bitCount(passedPawnsB & ((passedPawnsB & BitBoard::maskBToHFiles) >> 1));
+    // Connected passed pawn bonus. Seems logical but scored -8 elo in tests
+//    if (passedPawnsW != 0) {
+//        U64 mask = passedPawnsW;
+//        mask = (((mask >> 7) | (mask << 1) | (mask << 9)) & BitBoard::maskBToHFiles) |
+//               (((mask >> 9) | (mask >> 1) | (mask << 7)) & BitBoard::maskAToGFiles);
+//        passedBonusW += 13 * BitBoard::bitCount(passedPawnsW & mask);
+//    }
+//    if (passedPawnsB != 0) {
+//        U64 mask = passedPawnsB;
+//        mask = (((mask >> 7) | (mask << 1) | (mask << 9)) & BitBoard::maskBToHFiles) |
+//               (((mask >> 9) | (mask >> 1) | (mask << 7)) & BitBoard::maskAToGFiles);
+//        passedBonusB += 13 * BitBoard::bitCount(passedPawnsB & mask);
+//    }
 
     ph.key = pos.pawnZobristHash();
     ph.score = score;
@@ -1054,8 +1089,7 @@ Evaluate::evalKQKP(int wKing, int wQueen, int bKing, int bPawn) {
         }
     }
 
-    const int dist = std::max(std::abs(Position::getX(wKing)-Position::getX(bPawn)),
-                              std::abs(Position::getY(wKing)-Position::getY(bPawn)));
+    const int dist = BitBoard::getDistance(wKing, bPawn);
     int score = qV - pV - 20 * dist;
     if (!canWin)
         score /= 50;

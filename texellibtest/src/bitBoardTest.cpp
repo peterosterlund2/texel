@@ -115,6 +115,19 @@ testGetDirection() {
             ASSERT_EQUAL(computeDirection(from, to), BitBoard::getDirection(from, to));
 }
 
+static int computeDistance(int from, int to) {
+    int dx = Position::getX(to) - Position::getX(from);
+    int dy = Position::getY(to) - Position::getY(from);
+    return std::max(std::abs(dx), std::abs(dy));
+}
+
+static void
+testGetDistance() {
+    for (int from = 0; from < 64; from++)
+        for (int to = 0; to < 64; to++)
+            ASSERT_EQUAL(computeDistance(from, to), BitBoard::getDistance(from, to));
+}
+
 static void
 testTrailingZeros() {
     for (int i = 0; i < 64; i++) {
@@ -131,6 +144,7 @@ BitBoardTest::getSuite() const {
     s.push_back(CUTE(testKnightAttacks));
     s.push_back(CUTE(testSquaresBetween));
     s.push_back(CUTE(testGetDirection));
+    s.push_back(CUTE(testGetDistance));
     s.push_back(CUTE(testTrailingZeros));
     return s;
 }
