@@ -536,7 +536,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
 
     // Evaluate passed pawn bonus, white
     U64 passedPawnsW = wPawns & ~BitBoard::southFill(bPawns | bPawnAttacks | (wPawns >> 8));
-    static const int ppBonus[] = {-1,24,26,30,36,47,64,-1};
+    static const int ppBonus[] = {-1,24,26,30,36,55,100,-1};
     int passedBonusW = 0;
     if (passedPawnsW != 0) {
         U64 guardedPassedW = passedPawnsW & (((wPawns & BitBoard::maskBToHFiles) << 7) |
