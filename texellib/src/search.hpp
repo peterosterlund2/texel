@@ -230,8 +230,6 @@ private:
      */
     int quiesce(int alpha, int beta, int ply, int depth, const bool inCheck);
 
-    int captures[64];   // Value of captured pieces
-
     /**
      * Static exchange evaluation function.
      * @return SEE score for m. Positive value is good for the side that makes the first move.

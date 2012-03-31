@@ -941,6 +941,8 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
 
 int
 Search::SEE(const Move& m) {
+    int captures[64];   // Value of captured pieces
+
     const int kV = Evaluate::kV;
 
     const int square = m.to();
