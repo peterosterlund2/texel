@@ -253,6 +253,8 @@ Evaluate::evalPos(const Position& pos) {
     // FIXME! Test penalty if side to move has >1 hanging piece
 
     // FIXME! Test "tempo value"
+
+    // FIXME! "Kf1" bad: r1bqk2r/pp1nppb1/2p4p/3p2p1/3P4/2NBPNP1/PPP2PP1/R2QK2R w KQkq - 1 10
 }
 
 int
@@ -978,7 +980,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
             if (wMtrlNoPawns - bMtrlNoPawns > bV) {
                 int wKnights = BitBoard::bitCount(pos.pieceTypeBB[Piece::WKNIGHT]);
                 int wBishops = BitBoard::bitCount(pos.pieceTypeBB[Piece::WBISHOP]);
-                if ((wKnights == 2) && (wMtrlNoPawns == 2 * nV) && (bMtrlNoPawns == 0)) {
+                if ((wKnights == 2) && (pos.wMtrl == 2 * nV) && (bMtrlNoPawns == 0)) {
                     score /= 50;    // KNNK is a draw
                 } else if ((wKnights == 1) && (wBishops == 1) && (wMtrlNoPawns == nV + bV) && (bMtrlNoPawns == 0)) {
                     score /= 10;
@@ -1031,7 +1033,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
             if (bMtrlNoPawns - wMtrlNoPawns > bV) {
                 int bKnights = BitBoard::bitCount(pos.pieceTypeBB[Piece::BKNIGHT]);
                 int bBishops = BitBoard::bitCount(pos.pieceTypeBB[Piece::BBISHOP]);
-                if ((bKnights == 2) && (bMtrlNoPawns == 2 * nV) && (wMtrlNoPawns == 0)) {
+                if ((bKnights == 2) && (pos.bMtrl == 2 * nV) && (wMtrlNoPawns == 0)) {
                     score /= 50;    // KNNK is a draw
                 } else if ((bKnights == 1) && (bBishops == 1) && (bMtrlNoPawns == nV + bV) && (wMtrlNoPawns == 0)) {
                     score /= 10;

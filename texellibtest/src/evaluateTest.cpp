@@ -318,7 +318,7 @@ testEndGameEval() {
     score = evalWhite(pos);
     ASSERT(-score > bV * 2 + 100);
 
-    // KrpKn is win for white
+    // KRPKN is win for white
     pos = TextIO::readFEN("8/3bk3/8/8/8/3P4/3RK3/8 w - - 0 1");
     score = evalWhite(pos);
     const int pV = Evaluate::pV;
@@ -329,9 +329,13 @@ testEndGameEval() {
     score = evalWhite(pos);
     ASSERT(std::abs(score) < 50);
 
+    const int nV = Evaluate::nV;
+    pos = TextIO::readFEN("8/8/8/4k3/N6N/P2K4/8/8 b - - 0 66");
+    score = evalWhite(pos);
+    ASSERT(score > nV * 2);
+
     pos = TextIO::readFEN("8/8/3k4/8/8/3NK3/2B5/8 b - - 0 1");
     score = evalWhite(pos);
-    const int nV = Evaluate::nV;
     ASSERT(score > bV + nV + 150);  // KBNK is won, should have a bonus
     score = moveScore(pos, "Kc6");
     ASSERT(score > 0);      // Black king going into wrong corner, good for white
