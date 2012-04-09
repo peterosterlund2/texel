@@ -72,7 +72,7 @@ public:
             this->move = (short)(move.from() + (move.to() << 6) + (move.promoteTo() << 12));
         }
 
-        /** Get the score from the hash entry, and convert from "mate in x" to "mate at ply". */
+        /** Get the score from the hash entry and convert from "mate in x" to "mate at ply". */
         int getScore(int ply) const {
             int sc = score;
             if (sc > SearchConst::MATE0 - 1000) {
@@ -83,7 +83,7 @@ public:
             return sc;
         }
 
-        /** Convert score from "mate at ply" to "mate in x", and store in hash entry. */
+        /** Convert score from "mate at ply" to "mate in x" and store in hash entry. */
         void setScore(int score, int ply) {
             if (score > SearchConst::MATE0 - 1000)
                 score += ply;
