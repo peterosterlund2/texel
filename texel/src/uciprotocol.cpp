@@ -48,7 +48,10 @@ UCIProtocol::mainLoop(std::istream& is, std::ostream& os, bool autoStart) {
     if (autoStart)
         handleCommand("uci", os);
     std::string line;
-    while (getline(is, line) >= 0) {
+    while (true) {
+        getline(is, line);
+        if (!is || is.eof())
+            break;
         handleCommand(line, os);
         if (quit)
             break;
