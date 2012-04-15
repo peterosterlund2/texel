@@ -855,7 +855,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
     if (score > alpha)
         alpha = score;
     int bestScore = score;
-    const bool tryChecks = (depth > -3);
+    const bool tryChecks = (depth > -1);
     MoveGen::MoveList moves;
     if (inCheck) {
         MoveGen::checkEvasions(pos, moves);
@@ -899,7 +899,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
                 if (optimisticScore < alpha) { // Delta pruning
                     if ((pos.wMtrlPawns > 0) && (pos.wMtrl > capt + pos.wMtrlPawns) &&
                         (pos.bMtrlPawns > 0) && (pos.bMtrl > capt + pos.bMtrlPawns)) {
-                        if (depth -1 > -4) {
+                        if (depth -1 > -2) {
                             givesCheck = MoveGen::givesCheck(pos, m);
                             givesCheckComputed = true;
                         }
@@ -914,11 +914,11 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
         }
 
         if (!givesCheckComputed) {
-            if (depth - 1 > -4) {
+            if (depth - 1 > -2) {
                 givesCheck = MoveGen::givesCheck(pos, m);
             }
         }
-        const bool nextInCheck = (depth - 1) > -4 ? givesCheck : false;
+        const bool nextInCheck = (depth - 1) > -2 ? givesCheck : false;
 
         pos.makeMove(m, ui);
         qNodes++;
