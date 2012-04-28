@@ -205,12 +205,12 @@ public:
 #endif
 
 /**
- * Reader/analysis class for logging a search tree to file.
+ * Reader/analysis class for a search tree dumped to a file.
  */
 class TreeLoggerReader : public TreeLoggerBase {
     std::fstream fs;
-    int filePos;
-    U64 fileLen;
+    S64 filePos;
+    S64 fileLen;
     int numEntries;
 
 public:
@@ -237,8 +237,8 @@ public:
 
 private:
 
-    static int indexToFileOffs(int index) {
-        return 128 + index * 16;
+    static S64 indexToFileOffs(int index) {
+        return 128 + 16 * (S64)index;
     }
 
     void writeInt(std::streamoff pos, int nBytes, U64 value) {
@@ -259,7 +259,7 @@ private:
     void computeForwardPointers();
 
     /** Write forward pointer data to disk. */
-    void flushForwardPointerData(std::vector<std::pair<int,int> >& toWrite);
+    void flushForwardPointerData(std::vector<std::pair<S64,int> >& toWrite);
 
     /** Get FEN string for root node position. */
     std::string getRootNodeFEN();
@@ -274,7 +274,7 @@ private:
     bool isMove(std::string cmdStr) const;
 
     /** Return all nodes with a given hash key. */
-    void getNodeForHashKey(U64 hashKey, std::vector<int>& nodes);
+    void getNodesForHashKey(U64 hashKey, std::vector<int>& nodes, int maxEntry);
 
     /** Get hash key from an input string. */
     U64 getHashKey(std::string& s, U64 defKey) const;
