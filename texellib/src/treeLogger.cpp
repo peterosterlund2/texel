@@ -31,8 +31,6 @@
 #include <iostream>
 #include <iomanip>
 
-// FIXME!! Searching for hash keys is much faster in java version.
-
 #ifdef TREELOG
 void
 TreeLoggerWriter::writeHeader(const Position& pos) {
@@ -63,20 +61,61 @@ TreeLoggerReader::computeForwardPointers() {
     std::cout << "Computing forward pointers..." << std::endl;
     StartEntry se;
     EndEntry ee;
+    const size_t batchSize = 1000000;
     std::vector<std::pair<int,int> > toWrite;
+    toWrite.reserve(batchSize);
     for (int i = 0; i < numEntries; i++) {
         bool isStart = readEntry(i, se, ee);
         if (!isStart) {
             int offs = indexToFileOffs(ee.startIndex);
             toWrite.push_back(std::make_pair(offs, i));
+            if (toWrite.size() >= batchSize) {
+                flushForwardPointerData(toWrite);
+                toWrite.clear();
+                toWrite.reserve(batchSize);
+            }
         }
     }
-    std::sort(toWrite.begin(), toWrite.end());
-    for (int i = 0; i < toWrite.size(); i++)
-        writeInt(toWrite[i].first, 4, toWrite[i].second);
+    flushForwardPointerData(toWrite);
     writeInt(127, 1, 1 << 7);
     fs.flush();
     std::cout << "Computing forward pointers... done" << std::endl;
+}
+
+void
+TreeLoggerReader::flushForwardPointerData(std::vector<std::pair<int,int> >& toWrite) {
+    if (toWrite.empty())
+        return;
+    std::sort(toWrite.begin(), toWrite.end());
+    const int bufSize = 4096;
+    unsigned char buf[bufSize];
+    int bufStart = -1;
+    for (size_t i = 0; i < toWrite.size(); i++) {
+        int offs = toWrite[i].first;
+        int val = toWrite[i].second;
+        if ((bufStart >= 0) && ((offs < bufStart) || (offs + 4 > bufStart + bufSize))) { // flush
+            int writeSize = std::min(bufSize, (int)(fileLen - bufStart));
+            fs.seekp(bufStart, std::ios_base::beg);
+            fs.write((const char*)buf, writeSize);
+            bufStart = -1;
+        }
+        if (bufStart == -1) {
+            bufStart = offs;
+            int readSize = std::min(bufSize, (int)(fileLen - bufStart));
+            fs.seekg(bufStart, std::ios_base::beg);
+            fs.read((char*)buf, readSize);
+        }
+        for (int i = 0; i < 4; i++) {
+            buf[offs-bufStart+3-i] = val & 0xff;
+            val >>= 8;
+        }
+    }
+    if (bufStart >= 0) { // flush
+        int writeSize = std::min(bufSize, (int)(fileLen - bufStart));
+        fs.seekp(bufStart, std::ios_base::beg);
+        fs.write((const char*)buf, writeSize);
+    }
+    filePos = -1;
 }
 
 std::string

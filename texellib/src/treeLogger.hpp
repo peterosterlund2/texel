@@ -210,6 +210,7 @@ public:
 class TreeLoggerReader : public TreeLoggerBase {
     std::fstream fs;
     int filePos;
+    U64 fileLen;
     int numEntries;
 
 public:
@@ -218,12 +219,12 @@ public:
         : fs(filename.c_str(), std::ios_base::out |
                                std::ios_base::in |
                                std::ios_base::binary),
-          filePos(-1),
-          numEntries(0)
+          filePos(-1), fileLen(0), numEntries(0)
     {
+        fs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         fs.seekg(0, std::ios_base::end);
-        U64 len = fs.tellg();
-        numEntries = (int) ((len - 128) / 16);
+        fileLen = fs.tellg();
+        numEntries = (int) ((fileLen - 128) / 16);
         computeForwardPointers();
     }
 
@@ -256,6 +257,9 @@ private:
 
     /** Compute endIndex for all StartNode entries. */
     void computeForwardPointers();
+
+    /** Write forward pointer data to disk. */
+    void flushForwardPointerData(std::vector<std::pair<int,int> >& toWrite);
 
     /** Get FEN string for root node position. */
     std::string getRootNodeFEN();
