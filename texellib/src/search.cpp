@@ -598,10 +598,21 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         bool isPv = beta > alpha + 1;
         if (isPv || (depth > 8 * plyScale)) {
             // No hash move. Try internal iterative deepening.
+#ifdef TREELOG
+            SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
+            Move savedMove = sti2.currentMove;
+            S64 savedNodeIdx2 = sti2.nodeIdx;
+            sti2.currentMove = Move(1,1,0);
+            sti2.nodeIdx = sti.nodeIdx;
+#endif
             S64 savedNodeIdx = sti.nodeIdx;
             int newDepth = isPv ? depth  - 2 * plyScale : depth * 3 / 8;
             negaScout(alpha, beta, ply, newDepth, -1, inCheck);
             sti.nodeIdx = savedNodeIdx;
+#ifdef TREELOG
+            sti2.currentMove = savedMove;
+            sti2.nodeIdx = savedNodeIdx2;
+#endif
             tt.probe(hKey, ent);
             if (ent.type != TType::T_EMPTY)
                 ent.getMove(hashMove);

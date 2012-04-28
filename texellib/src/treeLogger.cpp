@@ -157,6 +157,19 @@ TreeLoggerReader::readEntry(int index, StartEntry& se, EndEntry& ee) {
     return isStartEntry;
 }
 
+static bool isNoMove(const Move& m) {
+    return (m.from() == 1) && (m.to() == 1);
+}
+
+std::string moveToStr(const Move& m) {
+    if (m.isEmpty())
+        return "null";
+    else if (isNoMove(m))
+        return "----";
+    else
+        return TextIO::moveToUCIString(m);
+}
+
 void
 TreeLoggerReader::mainLoop(Position rootPos) {
     int currIndex = -1;
@@ -169,7 +182,7 @@ TreeLoggerReader::mainLoop(Position rootPos) {
             getMoveSequence(currIndex, moves);
             for (size_t i = 0; i < moves.size(); i++) {
                 const Move& m = moves[i];
-                std::cout << " " << TextIO::moveToUCIString(m);
+                std::cout << " " << moveToStr(m);
             }
             std::cout << std::endl;
             printNodeInfo(rootPos, currIndex);
@@ -208,7 +221,7 @@ TreeLoggerReader::mainLoop(Position rootPos) {
             std::vector<int> found;
             for (size_t i = 0; i < children.size(); i++) {
                 readEntries(children[i], se, ee);
-                if (TextIO::moveToUCIString(se.move) == m)
+                if (moveToStr(se.move) == m)
                     found.push_back(children[i]);
             }
             if (found.empty()) {
@@ -255,7 +268,7 @@ TreeLoggerReader::mainLoop(Position rootPos) {
             std::vector<Move> moves;
             getMoveSequence(currIndex, moves);
             for (size_t i = 0; i < moves.size(); i++)
-                std::cout << ' ' << TextIO::moveToUCIString(moves[i]);
+                std::cout << ' ' << moveToStr(moves[i]);
             std::cout << std::endl;
             doPrint = false;
         } else if (startsWith(cmdStr, "h")) {
@@ -461,7 +474,8 @@ TreeLoggerReader::getPosition(const Position& rootPos, int index) {
     Position ret(rootPos);
     UndoInfo ui;
     for (size_t i = 0; i < moves.size(); i++)
-        ret.makeMove(moves[i], ui);
+        if (!isNoMove(moves[i]))
+            ret.makeMove(moves[i], ui);
     return ret;
 }
 
@@ -478,7 +492,7 @@ TreeLoggerReader::printNodeInfo(const Position& rootPos, int index, const std::s
         StartEntry se;
         EndEntry ee;
         bool haveEE = readEntries(index, se, ee);
-        std::string m = TextIO::moveToUCIString(se.move);
+        std::string m = moveToStr(se.move);
         if ((filterMove.length() > 0) && (m != filterMove))
             return;
         std::cout << std::setw(3) << getChildNo(index)
