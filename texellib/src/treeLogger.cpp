@@ -63,14 +63,19 @@ TreeLoggerReader::computeForwardPointers() {
     std::cout << "Computing forward pointers..." << std::endl;
     StartEntry se;
     EndEntry ee;
+    std::vector<std::pair<int,int> > toWrite;
     for (int i = 0; i < numEntries; i++) {
         bool isStart = readEntry(i, se, ee);
         if (!isStart) {
             int offs = indexToFileOffs(ee.startIndex);
-            writeInt(offs, 4, i);
+            toWrite.push_back(std::make_pair(offs, i));
         }
     }
+    std::sort(toWrite.begin(), toWrite.end());
+    for (int i = 0; i < toWrite.size(); i++)
+        writeInt(toWrite[i].first, 4, toWrite[i].second);
     writeInt(127, 1, 1 << 7);
+    fs.flush();
     std::cout << "Computing forward pointers... done" << std::endl;
 }
 
@@ -79,6 +84,7 @@ TreeLoggerReader::getRootNodeFEN() {
     char buf[128];
     fs.seekg(0, std::ios_base::beg);
     fs.read(buf, sizeof(buf));
+    filePos = sizeof(buf);
     int len = buf[0];
     std::string ret(&buf[1], len);
     return ret;
@@ -87,8 +93,10 @@ TreeLoggerReader::getRootNodeFEN() {
 bool
 TreeLoggerReader::readEntry(int index, StartEntry& se, EndEntry& ee) {
     int offs = indexToFileOffs(index);
-    fs.seekg(offs, std::ios_base::beg);
+    if (offs != filePos)
+        fs.seekg(offs, std::ios_base::beg);
     fs.read((char*)entryBuffer, 16);
+    filePos = offs + 16;
     int otherIndex = getInt(0, 4);
     bool isStartEntry = (otherIndex == -1) || (otherIndex > index);
     if (isStartEntry) {

@@ -209,6 +209,7 @@ public:
  */
 class TreeLoggerReader : public TreeLoggerBase {
     std::fstream fs;
+    int filePos;
     int numEntries;
 
 public:
@@ -217,6 +218,7 @@ public:
         : fs(filename.c_str(), std::ios_base::out |
                                std::ios_base::in |
                                std::ios_base::binary),
+          filePos(-1),
           numEntries(0)
     {
         fs.seekg(0, std::ios_base::end);
@@ -242,11 +244,13 @@ private:
         fs.seekp(pos, std::ios_base::beg);
         putInt(0, nBytes, value);
         fs.write((const char*)entryBuffer, nBytes);
+        filePos = -1;
     }
 
     U64 readInt(std::streamoff pos, int nBytes) {
         fs.seekg(pos, std::ios_base::beg);
         fs.read((char*)entryBuffer, nBytes);
+        filePos = -1;
         return getInt(0, nBytes);
     }
 
