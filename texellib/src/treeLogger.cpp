@@ -240,11 +240,41 @@ TreeLoggerReader::mainLoop(Position rootPos) {
             for (int i = 0; i < n; i++)
                 currIndex = findParent(currIndex);
         } else if (startsWith(cmdStr, "l")) {
+            bool onlyBest = startsWith(cmdStr, "lb");
             std::vector<int> children;
             findChildren(currIndex, children);
             std::string m = getArgStr(cmdStr, "");
-            for (size_t i = 0; i < children.size(); i++)
-                printNodeInfo(rootPos, children[i], m);
+            if (onlyBest) {
+                int bestDepth = -1;
+                int bestScore = std::numeric_limits<int>::min();
+                for (size_t i = 0; i < children.size(); i++) {
+                    StartEntry se;
+                    EndEntry ee;
+                    bool haveEE = readEntries(children[i], se, ee);
+                    if (!haveEE || (ee.scoreType == TType::T_GE) || isNoMove(se.move))
+                        continue;
+                    int d = se.depth;
+                    if ((ee.scoreType == TType::T_EXACT) && (ee.score > se.beta))
+                        continue;
+                    if ((d > bestDepth) || ((d == bestDepth) && (-ee.score > bestScore))) {
+                        if ((currIndex >= 0) && (i+1 < children.size())) {
+                            StartEntry se2;
+                            EndEntry ee2;
+                            bool haveEE2 = readEntries(children[i+1], se2, ee2);
+                            if (haveEE2 && (se2.depth == d) && (se2.move == se.move) &&
+                                ((ee2.scoreType == TType::T_GE) ||
+                                 ((ee2.scoreType == TType::T_EXACT) && (ee2.score == ee.score))))
+                                continue;
+                        }
+                        printNodeInfo(rootPos, children[i], m);
+                        bestDepth = d;
+                        bestScore = -ee.score;
+                    }
+                }
+            } else {
+                for (size_t i = 0; i < children.size(); i++)
+                    printNodeInfo(rootPos, children[i], m);
+            }
             doPrint = false;
         } else if (startsWith(cmdStr, "n")) {
             std::vector<int> nodes;
