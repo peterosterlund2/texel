@@ -43,6 +43,10 @@ private:
 
 public:
     History() {
+        init();
+    }
+
+    void init() {
         for (int p = 0; p < Piece::nPieceTypes; p++) {
             for (int sq = 0; sq < 64; sq++) {
                 Entry& e = ht[p][sq];

@@ -139,6 +139,7 @@ void
 EngineControl::newGame() {
     randomSeed = Random().nextU64();
     tt.clear();
+    ht.init();
 }
 
 template <typename T>
@@ -197,7 +198,7 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
-    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, tt);
+    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, tt, ht);
     sc->timeLimit(minTimeLimit, maxTimeLimit);
     sc->setListener(std::make_shared<SearchListener>(os));
     sc->setStrength(strength, randomSeed);

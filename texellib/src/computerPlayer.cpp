@@ -35,7 +35,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.02a1";
+    std::string name = "Texel 1.02a2";
     if (sizeof(char*) == 4)
         name += " 32-bit";
     if (sizeof(char*) == 8)
@@ -53,7 +53,8 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
         posHashList[posHashListSize++] = history[i].zobristHash();
     tt.nextGeneration();
     Position pos(posIn);
-    Search sc(pos, posHashList, posHashListSize, tt);
+    History ht;
+    Search sc(pos, posHashList, posHashListSize, tt, ht);
 
     // Determine all legal moves
     MoveGen::MoveList moves;
@@ -128,7 +129,8 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     // Create a search object
     std::vector<U64> posHashList(200);
     tt.nextGeneration();
-    Search sc(pos, posHashList, 0, tt);
+    History ht;
+    Search sc(pos, posHashList, 0, tt, ht);
 
     // Determine all legal moves
     MoveGen::MoveList moves;

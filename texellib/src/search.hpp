@@ -49,7 +49,7 @@ private:
     Position pos;
     Evaluate eval;
     KillerTable kt;
-    History ht;
+    History& ht;
     std::vector<U64> posHashList; // List of hashes for previous positions up to the last "zeroing" move.
     int posHashListSize;          // Number of used entries in posHashList
     int posHashFirstNew;          // First entry in posHashList that has not been played OTB.
@@ -97,7 +97,7 @@ private:
 
 public:
     Search(const Position& pos, const std::vector<U64>& posHashList,
-           int posHashListSize, TranspositionTable& tt);
+           int posHashListSize, TranspositionTable& tt, History& ht);
 
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
               int posHashListSize0);

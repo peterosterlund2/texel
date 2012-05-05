@@ -52,6 +52,7 @@ private:
     volatile bool shouldDetach;
     std::shared_ptr<Search> sc;
     TranspositionTable tt;
+    History ht;
 
     Position pos;
     std::vector<U64> posHashList;
