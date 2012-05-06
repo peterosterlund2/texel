@@ -125,9 +125,8 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     bool firstIteration = true;
     Move bestMove = scMoves[0].move;
     this->verbose = verbose;
-    if ((maxDepth < 0) || (maxDepth > 100)) {
+    if ((maxDepth < 0) || (maxDepth > 100))
         maxDepth = 100;
-    }
     for (size_t i = 0; i < COUNT_OF(searchTreeInfo); i++)
         searchTreeInfo[i].allowNullMove = true;
     try {
@@ -443,21 +442,21 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         evalScore = ent.evalScore;
         int plyToMate = MATE0 - std::abs(score);
         int eDepth = ent.getDepth();
+        ent.getMove(hashMove);
         if ((beta == alpha + 1) && ((eDepth >= depth) || (eDepth >= plyToMate*plyScale))) {
             if (     (ent.type == TType::T_EXACT) ||
                     ((ent.type == TType::T_GE) && (score >= beta)) ||
                     ((ent.type == TType::T_LE) && (score <= alpha))) {
                 if (score >= beta) {
-                    ent.getMove(hashMove);
                     if (!hashMove.isEmpty())
                         if (pos.getPiece(hashMove.to()) == Piece::EMPTY)
                             kt.addKiller(ply, hashMove);
                 }
+                sti.bestMove = hashMove;
                 log.logNodeEnd(sti.nodeIdx, score, ent.type, evalScore, hKey);
                 return score;
             }
         }
-        ent.getMove(hashMove);
     }
 
     int posExtend = inCheck ? plyScale : 0; // Check extension
@@ -465,6 +464,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     // If out of depth, perform quiescence search
     if (depth + posExtend <= 0) {
         q0Eval = evalScore;
+        sti.bestMove.setMove(0,0,0,0);
         int score = quiesce(alpha, beta, ply, 0, inCheck);
         int type = TType::T_EXACT;
         if (score <= alpha) {
@@ -472,8 +472,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         } else if (score >= beta) {
             type = TType::T_GE;
         }
-        emptyMove.setScore(score);
-        tt.insert(hKey, emptyMove, type, ply, depth, q0Eval);
+        sti.bestMove.setScore(score);
+        tt.insert(hKey, sti.bestMove, type, ply, depth, q0Eval);
         log.logNodeEnd(sti.nodeIdx, score, type, q0Eval, hKey);
         return score;
     }
@@ -550,6 +550,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             int epSquare = pos.getEpSquare();
             pos.setEpSquare(-1);
             searchTreeInfo[ply+1].allowNullMove = false;
+            searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
             int score = -negaScout(-beta, -(beta - 1), ply + 1, depth - R, -1, false);
             searchTreeInfo[ply+1].allowNullMove = true;
             pos.setEpSquare(epSquare);
@@ -924,11 +925,8 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
             }
         }
 
-        if (!givesCheckComputed) {
-            if (depth - 1 > -2) {
-                givesCheck = MoveGen::givesCheck(pos, m);
-            }
-        }
+        if (!givesCheckComputed && (depth - 1 > -2))
+            givesCheck = MoveGen::givesCheck(pos, m);
         const bool nextInCheck = (depth - 1) > -2 ? givesCheck : false;
 
         pos.makeMove(m, ui);
@@ -940,6 +938,10 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
         if (score > bestScore) {
             bestScore = score;
             if (score > alpha) {
+                if (depth == 0) {
+                    SearchTreeInfo& sti = searchTreeInfo[ply];
+                    sti.bestMove.setMove(m.from(), m.to(), m.promoteTo(), score);
+                }
                 alpha = score;
                 if (alpha >= beta)
                     return alpha;
