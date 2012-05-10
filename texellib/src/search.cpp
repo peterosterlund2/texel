@@ -101,15 +101,12 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         std::vector<bool> includedMoves(scMovesIn.size);
         U64 rndL = pos.zobristHash() ^ randomSeed;
         includedMoves[(int)(rndL % scMovesIn.size)] = true;
-        int nIncludedMoves = 1;
         double pIncl = (strength < 100) ? strength * strength * 1e-4 : 1.0;
         for (int mi = 0; mi < scMovesIn.size; mi++) {
             rndL = 6364136223846793005ULL * rndL + 1442695040888963407ULL;
             double rnd = ((rndL & 0x7fffffffffffffffULL) % 1000000000) / 1e9;
-            if (!includedMoves[mi] && (rnd < pIncl)) {
+            if (!includedMoves[mi] && (rnd < pIncl))
                 includedMoves[mi] = true;
-                nIncludedMoves++;
-            }
         }
         for (int mi = 0; mi < scMovesIn.size; mi++) {
             if (includedMoves[mi]) {
