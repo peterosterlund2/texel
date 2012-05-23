@@ -29,6 +29,7 @@
 #include "util.hpp"
 #include "move.hpp"
 #include "constants.hpp"
+#include "alignedAlloc.hpp"
 
 #include <vector>
 
@@ -102,7 +103,7 @@ public:
             depth = d;
         }
     };
-    std::vector<TTEntry> table;
+    std::vector<TTEntry, AlignedAllocator<TTEntry> > table;
     byte generation;
 
 public:

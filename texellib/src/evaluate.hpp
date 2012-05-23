@@ -29,6 +29,7 @@
 #include "parameters.hpp"
 #include "piece.hpp"
 #include "position.hpp"
+#include "alignedAlloc.hpp"
 
 /**
  * Position evaluation routines.
@@ -99,7 +100,7 @@ private:
         U64 passedPawnsW;     // The most advanced passed pawns for each file
         U64 passedPawnsB;
     };
-    static std::vector<PawnHashData> pawnHash;
+    static std::vector<PawnHashData, AlignedAllocator<Evaluate::PawnHashData> > pawnHash;
 
     static const ubyte kpkTable[2*32*64*48/8];
     static const ubyte krkpTable[2*32*48*8];

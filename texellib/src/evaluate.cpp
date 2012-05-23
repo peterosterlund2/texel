@@ -150,7 +150,7 @@ int Evaluate::nt2w[64];
 int Evaluate::pt2w[64];
 
 int Evaluate::castleFactor[256];
-std::vector<Evaluate::PawnHashData> Evaluate::pawnHash;
+std::vector<Evaluate::PawnHashData, AlignedAllocator<Evaluate::PawnHashData> > Evaluate::pawnHash;
 std::vector<Evaluate::KingSafetyHashData> Evaluate::kingSafetyHash;
 
 
@@ -402,6 +402,7 @@ Evaluate::pawnBonus(const Position& pos) {
     PawnHashData& phd = pawnHash[(int)key & (pawnHash.size() - 1)];
     if (phd.key != key)
         computePawnHashData(pos, phd);
+    U64 m = phd.passedPawnsW;
     int score = phd.score;
 
     const int hiMtrl = qV + rV;
@@ -411,7 +412,6 @@ Evaluate::pawnBonus(const Position& pos) {
     // Passed pawns are more dangerous if enemy king is far away
     int bestWPawnDist = 8;
     int bestWPromSq = -1;
-    U64 m = phd.passedPawnsW;
     if (m != 0) {
         int mtrlNoPawns = pos.bMtrl - pos.bMtrlPawns;
         if (mtrlNoPawns < hiMtrl) {
