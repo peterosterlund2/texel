@@ -27,6 +27,7 @@
 #define BITBOARD_HPP_
 
 #include "util.hpp"
+#include "alignedAlloc.hpp"
 
 class BitBoard {
 public:
@@ -129,6 +130,8 @@ private:
     static U64 bMasks[64];
     static const int bBits[64];
     static const U64 bMagics[64];
+
+    static vector_aligned<U64> tableData;
 
     static const byte dirTable[];
     static const byte distTable[];

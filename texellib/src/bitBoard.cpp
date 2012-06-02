@@ -107,6 +107,7 @@ const U64 BitBoard::bMagics[64] = {
     0x9080000412220a00ULL, 0x0000002020010a42ULL, 0xfc087e8e4bb2f736ULL, 0x43ff9e4ef4ca2c89ULL,
 };
 
+vector_aligned<U64> BitBoard::tableData;
 
 const byte BitBoard::dirTable[] = {
        -9,  0,  0,  0,  0,  0,  0, -8,  0,  0,  0,  0,  0,  0, -7,
@@ -271,12 +272,22 @@ BitBoard::staticInitialize() {
     }
 
     // Rook magics
+    int rTableSize = 0;
+    for (int sq = 0; sq < 64; sq++)
+        rTableSize += 1 << rBits[sq];
+    int bTableSize = 0;
+    for (int sq = 0; sq < 64; sq++)
+        bTableSize += 1 << bBits[sq];
+    tableData.resize(rTableSize + bTableSize);
+
+    int tableUsed = 0;
     for (int sq = 0; sq < 64; sq++) {
         int x = Position::getX(sq);
         int y = Position::getY(sq);
         rMasks[sq] = addRookRays(x, y, 0ULL, true);
         int tableSize = 1 << rBits[sq];
-        U64* table = new U64[tableSize];
+        U64* table = &tableData[tableUsed];
+        tableUsed += tableSize;
         const U64 unInit = 0xffffffffffffffffULL;
         for (int i = 0; i < tableSize; i++) table[i] = unInit;
         int nPatterns = 1 << BitBoard::bitCount(rMasks[sq]);
@@ -299,7 +310,8 @@ BitBoard::staticInitialize() {
         int y = Position::getY(sq);
         bMasks[sq] = addBishopRays(x, y, 0ULL, true);
         int tableSize = 1 << bBits[sq];
-        U64* table = new U64[tableSize];
+        U64* table = &tableData[tableUsed];
+        tableUsed += tableSize;
         const U64 unInit = 0xffffffffffffffffULL;
         for (int i = 0; i < tableSize; i++) table[i] = unInit;
         int nPatterns = 1 << BitBoard::bitCount(bMasks[sq]);
