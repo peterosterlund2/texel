@@ -150,8 +150,9 @@ int Evaluate::nt2w[64];
 int Evaluate::pt2w[64];
 
 int Evaluate::castleFactor[256];
-std::vector<Evaluate::PawnHashData, AlignedAllocator<Evaluate::PawnHashData> > Evaluate::pawnHash;
-std::vector<Evaluate::KingSafetyHashData> Evaluate::kingSafetyHash;
+
+vector_aligned<Evaluate::PawnHashData> Evaluate::pawnHash;
+vector_aligned<Evaluate::KingSafetyHashData> Evaluate::kingSafetyHash;
 
 
 static StaticInitializer<Evaluate> evInit;

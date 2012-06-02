@@ -103,7 +103,7 @@ public:
             depth = d;
         }
     };
-    std::vector<TTEntry, AlignedAllocator<TTEntry> > table;
+    vector_aligned<TTEntry> table;
     byte generation;
 
 public:

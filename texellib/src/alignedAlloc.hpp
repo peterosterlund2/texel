@@ -29,6 +29,8 @@
 #include "util.hpp"
 #include <iostream>
 
+/** STL allocator that makes sure all allocated memory
+ *  blocks are aligned to a 64-byte boundary. */
 template <typename T>
 class AlignedAllocator {
 private:

@@ -43,6 +43,11 @@ typedef unsigned char ubyte;
 template <typename T, size_t N> char (&_ArraySizeHelper(T(&array)[N]))[N];
 #define COUNT_OF(array) (sizeof(_ArraySizeHelper(array)))
 
+template <typename T> class AlignedAllocator;
+/** std::vector with cache line aware allocator. */
+template <typename T>
+class vector_aligned : public std::vector<T, AlignedAllocator<T> > { };
+
 
 /** Helper class to perform static initialization of a class T. */
 template <typename T>
