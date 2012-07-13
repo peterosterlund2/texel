@@ -461,6 +461,8 @@ testKQKP() {
     ASSERT(evalWhite(pos) > winScore);
     pos = TextIO::readFEN("3Q4/8/8/8/K7/8/1kp5/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
+    pos = TextIO::readFEN("8/8/8/8/8/1Q6/p3K3/k7 b - - 0 1");
+    ASSERT(evalWhite(pos) < drawish);
 
     // Pawn on c2
     pos = TextIO::readFEN("3Q4/8/8/8/3K4/8/1kp5/8 w - - 0 1");

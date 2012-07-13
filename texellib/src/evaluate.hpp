@@ -201,7 +201,7 @@ private:
     /** Implements special knowledge for some endgame situations. */
     int endGameEval(const Position& pos, int oldScore);
 
-    static int evalKQKP(int wKing, int wQueen, int bKing, int bPawn);
+    static int evalKQKP(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove);
 
     static int kpkEval(int wKing, int bKing, int wPawn, bool whiteMove);
 

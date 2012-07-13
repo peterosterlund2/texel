@@ -904,7 +904,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
         int wq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WQUEEN]);
         int bk = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BKING]);
         int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
-        score = evalKQKP(wk, wq, bk, bp);
+        score = evalKQKP(wk, wq, bk, bp, pos.whiteMove);
         handled = true;
     }
     if (!handled && (pos.wMtrl == rV) && (pos.pieceTypeBB[Piece::WROOK] != 0)) {
@@ -931,7 +931,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
         int bq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BQUEEN]);
         int wk = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WKING]);
         int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
-        score = -evalKQKP(63-bk, 63-bq, 63-wk, 63-wp);
+        score = -evalKQKP(63-bk, 63-bq, 63-wk, 63-wp, !pos.whiteMove);
         handled = true;
     }
     if (!handled && (pos.bMtrl == rV) && (pos.pieceTypeBB[Piece::BROOK] != 0)) {
@@ -1066,7 +1066,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
 }
 
 int
-Evaluate::evalKQKP(int wKing, int wQueen, int bKing, int bPawn) {
+Evaluate::evalKQKP(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove) {
     bool canWin = false;
     if (((1ULL << bKing) & 0xFFFF) == 0) {
         canWin = true; // King doesn't support pawn
@@ -1076,6 +1076,8 @@ Evaluate::evalKQKP(int wKing, int wQueen, int bKing, int bPawn) {
         switch (bPawn) {
         case 8:  // a2
             canWin = ((1ULL << wKing) & 0x0F1F1F1F1FULL) != 0;
+            if (canWin && (bKing == 0) && (Position::getX(wQueen) == 1) && !whiteMove)
+                canWin = false; // Stale-mate
             break;
         case 10: // c2
             canWin = ((1ULL << wKing) & 0x071F1F1FULL) != 0;
@@ -1085,6 +1087,8 @@ Evaluate::evalKQKP(int wKing, int wQueen, int bKing, int bPawn) {
             break;
         case 15: // h2
             canWin = ((1ULL << wKing) & 0xF0F8F8F8F8ULL) != 0;
+            if (canWin && (bKing == 7) && (Position::getX(wQueen) == 6) && !whiteMove)
+                canWin = false; // Stale-mate
             break;
         default:
             canWin = true;
