@@ -108,7 +108,7 @@ const int Evaluate::bt1b[64] = {  0,  0,  0,  0,  0,  0,  0,  0,
                                   0,  4,  2,  2,  2,  2,  4,  0,
                                  -5, -5, -7, -5, -5, -7, -5, -5 };
 
-/** Piece/square table for bishops during middle game. */
+/** Piece/square table for bishops during end game. */
 const int Evaluate::bt2b[64] = {  0,  0,  0,  0,  0,  0,  0,  0,
                                   0,  2,  2,  2,  2,  2,  2,  0,
                                   0,  2,  4,  4,  4,  4,  2,  0,
@@ -128,7 +128,7 @@ const int Evaluate::qt1b[64] = { -10, -5,  0,  0,  0,  0, -5,-10,
                                   -5,  0,  5,  5,  5,  5,  0, -5,
                                  -10, -5,  0,  0,  0,  0, -5,-10 };
 
-/** Piece/square table for rooks during middle game. */
+/** Piece/square table for rooks during end game. */
 const int Evaluate::rt1b[64] = {  8, 11, 13, 13, 13, 13, 11,  8,
                                  22, 27, 27, 27, 27, 27, 27, 22,
                                   0,  0,  0,  0,  0,  0,  0,  0,
