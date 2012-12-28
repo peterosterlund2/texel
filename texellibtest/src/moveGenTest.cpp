@@ -104,12 +104,8 @@ getMoveList0(Position& pos, bool onlyLegal) {
     for (size_t i = 0; i < strMoves.size(); i++) {
         const std::string& sm = strMoves[i];
         Move m = TextIO::uciStringToMove(sm);
-        if (!m.isEmpty()) {
-            pos.makeMove(m, ui);
-            bool invalid = MoveGen::canTakeKing(pos);
-            pos.unMakeMove(m, ui);
-            if (invalid) m.setMove(0,0,0,0);
-        }
+        if (!m.isEmpty() && !MoveGen::isLegal(pos, m))
+            m.setMove(0,0,0,0);
         if (m.isEmpty()) // Move was illegal (but pseudo-legal)
             continue;
         bool qProm = false; // Promotion types considered in qsearch
@@ -467,30 +463,6 @@ testRemoveIllegal() {
     ASSERT_EQUAL(1, strMoves.size());
 }
 
-/**
- * Test that if king capture is possible, only a king capture move is returned in the move list.
- */
-static void
-testKingCapture() {
-    Position pos = TextIO::readFEN("8/4k3/8/8/8/8/8/4RK2 b - - 0 1");
-    pos.setWhiteMove(true);
-    std::vector<std::string> strMoves = getMoveList(pos, false);
-    ASSERT_EQUAL(1, strMoves.size());
-    ASSERT_EQUAL("e1e7", strMoves[0]);
-
-    pos.setPiece(Position::getSquare(0, 2), Piece::WBISHOP);
-    pos.setPiece(Position::getSquare(4, 1), Piece::WPAWN);
-    strMoves = getMoveList(pos, false);
-    ASSERT_EQUAL(1, strMoves.size());
-    ASSERT_EQUAL("a3e7", strMoves[0]);
-
-    pos.setPiece(Position::getSquare(1, 3), Piece::WPAWN);
-    pos.setPiece(Position::getSquare(5, 5), Piece::WPAWN);
-    strMoves = getMoveList(pos, false);
-    ASSERT_EQUAL(1, strMoves.size());
-    ASSERT_EQUAL("f6e7", strMoves[0]);
-}
-
 /** Test that captureList and captureAndcheckList are generated correctly. */
 static void
 testCaptureList() {
@@ -548,7 +520,6 @@ MoveGenTest::getSuite() const {
     s.push_back(CUTE(testInCheck));
     s.push_back(CUTE(testGivesCheck));
     s.push_back(CUTE(testRemoveIllegal));
-    s.push_back(CUTE(testKingCapture));
     s.push_back(CUTE(testCaptureList));
     s.push_back(CUTE(testCheckEvasions));
     return s;

@@ -112,14 +112,22 @@ public:
      * Return true if a square is attacked by the opposite side.
      */
     static bool sqAttacked(const Position& pos, int sq) {
-        if (pos.whiteMove) {
+        U64 occupied = pos.whiteBB | pos.blackBB;
+        return sqAttacked(pos, sq, occupied);
+    }
+    static bool sqAttacked(const Position& pos, int sq, U64 occupied) {
+        return pos.whiteMove ? sqAttacked<true>(pos, sq, occupied)
+                             : sqAttacked<false>(pos, sq, occupied);
+    }
+    template <bool wtm>
+    static bool sqAttacked(const Position& pos, int sq, U64 occupied) {
+        if (wtm) {
             if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB[Piece::BKNIGHT]) != 0)
                 return true;
             if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB[Piece::BKING]) != 0)
                 return true;
             if ((BitBoard::wPawnAttacks[sq] & pos.pieceTypeBB[Piece::BPAWN]) != 0)
                 return true;
-            U64 occupied = pos.whiteBB | pos.blackBB;
             U64 bbQueen = pos.pieceTypeBB[Piece::BQUEEN];
             if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::BBISHOP] | bbQueen)) != 0)
                 return true;
@@ -132,7 +140,6 @@ public:
                 return true;
             if ((BitBoard::bPawnAttacks[sq] & pos.pieceTypeBB[Piece::WPAWN]) != 0)
                 return true;
-            U64 occupied = pos.whiteBB | pos.blackBB;
             U64 bbQueen = pos.pieceTypeBB[Piece::WQUEEN];
             if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::WBISHOP] | bbQueen)) != 0)
                 return true;
@@ -148,6 +155,9 @@ public:
      * This function removes the moves that don't defend from check threats.
      */
     static void removeIllegal(Position& pos, MoveList& moveList);
+
+    /** Return true if the pseudo-legal move "move" is legal is position "pos". */
+    static bool isLegal(Position& pos, const Move& move);
 
 private:
     /**
@@ -193,17 +203,10 @@ private:
         return -1;
     }
 
-    static bool addPawnMovesByMask(MoveList& moveList, const Position& pos, U64 mask,
+    static void addPawnMovesByMask(MoveList& moveList, const Position& pos, U64 mask,
                                    int delta, bool allPromotions) {
         if (mask == 0)
-            return false;
-        U64 oKingMask = pos.pieceTypeBB[pos.whiteMove ? Piece::BKING : Piece::WKING];
-        if ((mask & oKingMask) != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(mask & oKingMask);
-            moveList.size = 0;
-            moveList.addMove(sq + delta, sq, Piece::EMPTY);
-            return true;
-        }
+            return;
         U64 promMask = mask & BitBoard::maskRow1Row8;
         mask &= ~promMask;
         while (promMask != 0) {
@@ -231,7 +234,6 @@ private:
             moveList.addMove(sq + delta, sq, Piece::EMPTY);
             mask &= (mask - 1);
         }
-        return false;
     }
 
     static void addPawnDoubleMovesByMask(MoveList& moveList, const Position& pos,
@@ -243,20 +245,12 @@ private:
         }
     }
 
-    static bool addMovesByMask(MoveList& moveList, const Position& pos, int sq0, U64 mask) {
-        U64 oKingMask = pos.pieceTypeBB[pos.whiteMove ? Piece::BKING : Piece::WKING];
-        if ((mask & oKingMask) != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(mask & oKingMask);
-            moveList.size = 0;
-            moveList.addMove(sq0, sq, Piece::EMPTY);
-            return true;
-        }
+    static void addMovesByMask(MoveList& moveList, const Position& pos, int sq0, U64 mask) {
         while (mask != 0) {
             int sq = BitBoard::numberOfTrailingZeros(mask);
             moveList.addMove(sq0, sq, Piece::EMPTY);
             mask &= (mask - 1);
         }
-        return false;
     }
 
     /** Not implemented. */

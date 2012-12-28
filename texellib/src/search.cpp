@@ -404,11 +404,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     // Draw tests
     if (canClaimDraw50(pos)) {
-        if (MoveGen::canTakeKing(pos)) {
-            int score = MATE0 - ply;
-            log.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, TType::T_EXACT, UNKNOWN_SCORE, hKey);
-            return score;
-        }
         if (inCheck) {
             MoveGen::MoveList moves;
             MoveGen::pseudoLegalMoves(pos, moves);
@@ -480,7 +475,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         if (evalScore == UNKNOWN_SCORE) {
             evalScore = eval.evalPos(pos);
         }
-        const int razorMargin = 250;
+        const int razorMargin = 250; // FIXME!! Try making depth-dependant
         if (evalScore < beta - razorMargin) {
             q0Eval = evalScore;
             int score = quiesce(alpha-razorMargin, beta-razorMargin, ply, 0, inCheck);
@@ -524,11 +519,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     sti.currentMove = emptyMove;
     if (    (depth >= 3*plyScale) && !inCheck && sti.allowNullMove &&
             (std::abs(beta) <= MATE0 / 2)) {
-        if (MoveGen::canTakeKing(pos)) {
-            int score = MATE0 - ply;
-            log.logNodeEnd(sti.nodeIdx, score, TType::T_EXACT, evalScore, hKey);
-            return score;
-        }
         bool nullOk;
         if (pos.whiteMove) {
             nullOk = (pos.wMtrl > pos.wMtrlPawns) && (pos.wMtrlPawns > 0);
@@ -647,11 +637,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         if ((mi > 0) || !hashMoveSelected)
             selectBest(moves, mi);
         Move& m = moves[mi];
-        if (pos.getPiece(m.to()) == (pos.whiteMove ? Piece::BKING : Piece::WKING)) {
-            int score = MATE0-ply;
-            log.logNodeEnd(sti.nodeIdx, score, TType::T_EXACT, evalScore, hKey);
-            return score;       // King capture
-        }
         int newCaptureSquare = -1;
         bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
         bool isPromotion = (m.promoteTo() != Piece::EMPTY);
@@ -678,6 +663,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         if (doFutility) {
             score = futilityScore;
         } else {
+            if (!MoveGen::isLegal(pos, m))
+                continue;
             int moveExtend = 0;
             if (posExtend == 0) {
                 const int pV = Evaluate::pV;
@@ -851,15 +838,8 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
                 q0Eval = score;
         }
     }
-    if (score >= beta) {
-        if ((depth == 0) && (score < MATE0 - ply)) {
-            if (MoveGen::canTakeKing(pos)) {
-                // To make stale-mate detection work
-                score = MATE0 - ply;
-            }
-        }
+    if (score >= beta)
         return score;
-    }
     const int evalScore = score;
     if (score > alpha)
         alpha = score;
@@ -882,8 +862,6 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
             selectBest(moves, mi);
         }
         const Move& m = moves[mi];
-        if (pos.getPiece(m.to()) == (pos.whiteMove ? Piece::BKING : Piece::WKING))
-            return MATE0-ply;       // King capture
         bool givesCheck = false;
         bool givesCheckComputed = false;
         if (inCheck) {
@@ -904,7 +882,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
                     continue;
                 int capt = Evaluate::pieceValue[pos.getPiece(m.to())];
                 int prom = Evaluate::pieceValue[m.promoteTo()];
-                int optimisticScore = evalScore + capt + prom + 200;
+                int optimisticScore = evalScore + capt + prom + 200; // FIXME!! Try lower value (50-75?)
                 if (optimisticScore < alpha) { // Delta pruning
                     if ((pos.wMtrlPawns > 0) && (pos.wMtrl > capt + pos.wMtrlPawns) &&
                         (pos.bMtrlPawns > 0) && (pos.bMtrl > capt + pos.bMtrlPawns)) {
@@ -921,6 +899,8 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
                 }
             }
         }
+        if (!MoveGen::isLegal(pos, m))
+            continue;
 
         if (!givesCheckComputed && (depth - 1 > -2))
             givesCheck = MoveGen::givesCheck(pos, m);
