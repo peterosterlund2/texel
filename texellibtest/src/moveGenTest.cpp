@@ -100,7 +100,6 @@ getMoveList0(Position& pos, bool onlyLegal) {
     std::vector<std::string> evList = getCheckEvasions(pos, onlyLegal);
     if (inCheck)
         ASSERT(containsAll(strMoves, evList));
-    UndoInfo ui;
     for (size_t i = 0; i < strMoves.size(); i++) {
         const std::string& sm = strMoves[i];
         Move m = TextIO::uciStringToMove(sm);
