@@ -26,8 +26,7 @@
 #ifndef ALIGNEDALLOC_HPP_
 #define ALIGNEDALLOC_HPP_
 
-#include "util.hpp"
-#include <iostream>
+#include <stdint.h>
 
 /** STL allocator that makes sure all allocated memory
  *  blocks are aligned to a 64-byte boundary. */
@@ -35,6 +34,7 @@ template <typename T>
 class AlignedAllocator {
 private:
     enum { ALIGN = 64 };
+    typedef uint64_t U64;
 public:
     typedef T* pointer;
     typedef const T* const_pointer;
@@ -76,7 +76,7 @@ public:
     }
 
     template <typename U>
-    bool operator=(const AlignedAllocator<U>& other) const {
+    bool operator==(const AlignedAllocator<U>& other) const {
         return true;
     }
 
