@@ -130,7 +130,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     for (int depthS = plyScale; ; depthS += plyScale, firstIteration = false) {
         initNodeStats();
         if (listener) listener->notifyDepth(depthS/plyScale);
-        int aspirationDelta = (std::abs(bestScoreLastIter) <= MATE0 / 2) ? 20 : 1000;
+        int aspirationDelta = (std::abs(bestScoreLastIter) <= MATE0 / 2) ? 15 : 1000;
         int alpha = firstIteration ? -MATE0 : std::max(bestScoreLastIter - aspirationDelta, -MATE0);
         int bestScore = -MATE0;
         UndoInfo ui;
@@ -516,6 +516,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     // Try null-move pruning
     // FIXME! Try null-move verification in late endgames. See loss in round 21.
+    // FIXME! Try double null-move to mitigate zugzwang problems.
     sti.currentMove = emptyMove;
     if (    (depth >= 3*plyScale) && !inCheck && sti.allowNullMove &&
             (std::abs(beta) <= MATE0 / 2)) {

@@ -303,7 +303,7 @@ Evaluate::pieceSquareEval(const Position& pos) {
     }
 
     // Knights
-    {
+    { // FIXME!! Test knight mobility
         const int t1 = qV + 2 * rV + 1 * bV + 1 * nV + 6 * pV;
         const int t2 = nV + 8 * pV;
         int n1 = pos.psScore1[Piece::WKNIGHT];
