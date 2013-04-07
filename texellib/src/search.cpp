@@ -197,7 +197,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                 int retryDelta = aspirationDelta * 2;
                 while (score >= beta) {
                     beta = std::min(score + retryDelta, MATE0);
-                    retryDelta = MATE0 * 2;
+                    retryDelta = retryDelta * 3 / 2;
                     if (mi != 0)
                         needMoreTime = true;
                     bestMove = m;
@@ -221,10 +221,10 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                     pos.unMakeMove(m, ui);
                 }
             } else if ((mi == 0) && (score <= alpha)) {
-                int retryDelta = MATE0 * 2;
+                int retryDelta = aspirationDelta * 2;
                 while (score <= alpha) {
                     alpha = std::max(score - retryDelta, -MATE0);
-                    retryDelta = MATE0 * 2;
+                    retryDelta = retryDelta * 3 / 2;
                     needMoreTime = searchNeedMoreTime = true;
                     if (verbose) {
                         std::stringstream ss;
@@ -738,7 +738,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             sti.lmr = lmr;
             score = -negaScout(-b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
             if (((lmr > 0) && (score > alpha)) ||
-                ((score > alpha) && (score < beta) && (b != beta) && (score != illegalScore))) {
+                ((score > alpha) && (score < beta) && (b != beta))) {
                 sti.lmr = 0;
                 newDepth += lmr;
                 score = -negaScout(-beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
