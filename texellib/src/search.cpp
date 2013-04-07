@@ -471,11 +471,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Razoring
-    if ((std::abs(alpha) <= MATE0 / 2) && (depth < 4*plyScale) && (beta == alpha + 1)) {
+    const bool normalBound = (alpha >= -MATE0 / 2) && (beta <= MATE0 / 2);
+    if (normalBound && (depth < 4*plyScale) && (beta == alpha + 1)) {
         if (evalScore == UNKNOWN_SCORE) {
             evalScore = eval.evalPos(pos);
         }
-        const int razorMargin = 250; // FIXME!! Try making depth-dependant
+        const int razorMargin = 250; // FIXME!! Try making depth-dependent
         if (evalScore < beta - razorMargin) {
             q0Eval = evalScore;
             int score = quiesce(alpha-razorMargin, beta-razorMargin, ply, 0, inCheck);
@@ -489,8 +490,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Reverse futility pruning
-    if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) &&
-        (std::abs(alpha) <= MATE0 / 2) && (std::abs(beta) <= MATE0 / 2)) {
+    if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) && normalBound) {
         bool mtrlOk;
         if (pos.whiteMove) {
             mtrlOk = (pos.wMtrl > pos.wMtrlPawns) && (pos.wMtrlPawns > 0);
@@ -568,19 +568,17 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     bool futilityPrune = false;
     int futilityScore = alpha;
-    if (!inCheck && (depth < 5*plyScale) && (posExtend == 0)) {
-        if ((std::abs(alpha) <= MATE0 / 2) && (std::abs(beta) <= MATE0 / 2)) {
-            int margin;
-            if (depth <= plyScale)        margin = 61;
-            else if (depth <= 2*plyScale) margin = 144;
-            else if (depth <= 3*plyScale) margin = 268;
-            else                          margin = 334;
-            if (evalScore == UNKNOWN_SCORE)
-                evalScore = eval.evalPos(pos);
-            futilityScore = evalScore + margin;
-            if (futilityScore <= alpha)
-                futilityPrune = true;
-        }
+    if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) && normalBound) {
+        int margin;
+        if (depth <= plyScale)        margin = 61;
+        else if (depth <= 2*plyScale) margin = 144;
+        else if (depth <= 3*plyScale) margin = 268;
+        else                          margin = 334;
+        if (evalScore == UNKNOWN_SCORE)
+            evalScore = eval.evalPos(pos);
+        futilityScore = evalScore + margin;
+        if (futilityScore <= alpha)
+            futilityPrune = true;
     }
 
     if ((depth > 4*plyScale) && hashMove.isEmpty()) {
@@ -647,7 +645,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         bool givesCheck = MoveGen::givesCheck(pos, m);
         bool doFutility = false;
         if (mayReduce && haveLegalMoves && !givesCheck && !passedPawnPush(pos, m)) {
-            if ((std::abs(alpha) <= MATE0 / 2) && (std::abs(beta) <= MATE0 / 2)) {
+            if (normalBound && (bestScore >= -MATE0 / 2)) {
                 int moveCountLimit;
                 if (depth <= plyScale)          moveCountLimit = 3;
                 else if (depth <= 2 * plyScale) moveCountLimit = 6;
@@ -791,6 +789,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         b = alpha + 1;
     }
     if (!haveLegalMoves && !inCheck) {
+        emptyMove.setScore(0);
+        tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
         log.logNodeEnd(sti.nodeIdx, 0, TType::T_EXACT, evalScore, hKey);
         return 0;       // Stale-mate
     }
