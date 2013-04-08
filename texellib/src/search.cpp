@@ -476,7 +476,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         if (evalScore == UNKNOWN_SCORE) {
             evalScore = eval.evalPos(pos);
         }
-        const int razorMargin = 250; // FIXME!! Try making depth-dependent
+        const int razorMargin = (depth <= plyScale) ? 125 : 250;
         if (evalScore < beta - razorMargin) {
             q0Eval = evalScore;
             int score = quiesce(alpha-razorMargin, beta-razorMargin, ply, 0, inCheck);
