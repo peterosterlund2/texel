@@ -107,11 +107,9 @@ Book::initBook() {
     bookMap.clear();
     rndGen.setSeed(currentTimeMillis());
     numBookMoves = 0;
-//        InputStream inStream = getClass().getResourceAsStream("/book.bin");
     std::vector<byte> buf;
     createBinBook(buf);
 
-    // FIXME!!
     Position startPos(TextIO::readFEN(TextIO::startPosFEN));
     Position pos(startPos);
     UndoInfo ui;
@@ -316,7 +314,7 @@ Book::bookLines[] = {
 
     // Scandinavian
     "e4 d5 exd5 Qxd5 Nc3 Qa5 d4 Nf6 Nf3 Bf5 Bc4 e6 Bd2 c6 Qe2 Bb4 Ne5 Nbd7 Nxd7 Nxd7 a3",
-    "e4 d5 exd5 Qxd5 Nc3 Qa5 d4 c6 Nf3 Nf6 Bc4 Bg4 h3 Bh5 g4 Bg6 Bd2 Qb6 Qe2",
+    "e4 d5? exd5 Qxd5 Nc3 Qa5 d4 c6 Nf3 Nf6 Bc4 Bg4 h3 Bh5 g4 Bg6 Bd2 Qb6 Qe2",
     "e4 d5 exd5 Nf6 d4 Nxd5 c4 Nb6 Nf3 g6 Nc3 Bg7 Be3 O-O h3 Nc6 Qd2 e5 d5",
     "e4 d5? exd5 Nf6 d4 Nxd5 Nf3 g6 c4 Nb6",
     "e4 d5? exd5 Nf6 d4 Nxd5 Nf3 g6 Be2 Bg7 O-O O-O c4 Nb6 Nc3 Nc6 d5 Ne5",
@@ -339,7 +337,7 @@ Book::bookLines[] = {
     // Tarrasch defense
     "d4 d5 c4 e6 Nc3 c5 cxd5 exd5 Nf3 Nc6 g3 Nf6 Bg2 Be7 O-O O-O Bg5 cxd4 Nxd4 h6",
 
-    // Buddapest defense
+    // Budapest defense
     "d4 Nf6 c4 e5 dxe5 Ng4 Nf3 Bc5 e3 Nc6 Be2 Ngxe5 O-O d6",
 
     // Sicilian
@@ -378,7 +376,8 @@ Book::bookLines[] = {
     "e4 e6 d4 d5 Nc3 Nf6 Bg5 Be7 e5 Nfd7 Bxe7",
     "e4 e6 d4 d5 Nd2 Nf6 e5 Nfd7 Bd3 c5 c3 Nc6 Ne2 cxd4 cxd4 f6 exf6 Nxf6",
     "e4 e6? d4 d5 Nc3 Nf6 e5 Nfd7 f4 c5 Nf3 Nc6 Be3 cxd4 Nxd4 Bc5 Qd2 O-O O-O-O a6",
-    "e4 e6? d4 d5 Nc3 Bb4 e5 c5 a3 Bxc3 bxc3 Ne7 Qg4 Qc7 Qxg7 Rg8 Qxh7 cxd4 Ne2 Nbc6 f4 Bd7",
+    "e4 e6? d4 d5 Nc3 Bb4 e5 c5 a3 Bxc3 bxc3 Ne7? Qg4 Qc7 Qxg7 Rg8 Qxh7 cxd4 Ne2 Nbc6 f4 Bd7",
+    "e4 e6? d4 d5 Nc3 Bb4 e5 c5 a3 Bxc3 bxc3 Qc7 Qg4 f6 f4 f5 Qg3 cxd4 cxd4 Ne7 c3 b6",
     "e4 e6? d4 d5 Nc3 Bb4 e5 c5 Qg4",
     "e4 e6? d4 d5 Nc3 Bb4 e5 c5 Nf3 Ne7 a3",
     "e4 e6? d4 c5? d5 exd5 exd5 d6",
