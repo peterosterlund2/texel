@@ -281,7 +281,7 @@ EngineControl::setupTT() {
         try {
             logSize--;
             if (logSize <= 0)
-                break;;
+                break;
             tt.reSize(logSize);
             break;
         } catch (const std::bad_alloc& ex) {
@@ -363,7 +363,7 @@ EngineControl::moveToString(const Move& m) {
 
 void
 EngineControl::printOptions(std::ostream& os) {
-    os << "option name Hash type spin default 16 min 1 max 4096" << std::endl;
+    os << "option name Hash type spin default 16 min 1 max 524288" << std::endl;
     os << "option name OwnBook type check default false" << std::endl;
     os << "option name Ponder type check default true" << std::endl;
     os << "option name UCI_AnalyseMode type check default false" << std::endl;
