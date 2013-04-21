@@ -29,6 +29,9 @@
 #include "util.hpp"
 #include "alignedAlloc.hpp"
 
+#define HAVE_CTZ 1
+#define HAVE_POPCNT 1
+
 class BitBoard {
 public:
     /** Squares attacked by a king on a given square. */
@@ -100,11 +103,18 @@ public:
     }
 
     static int numberOfTrailingZeros(U64 mask) {
+#if HAVE_CTZ
+	return __builtin_ctzl(mask);
+#else
         return trailingZ[(int)(((mask & -mask) * 0x07EDD5E59A4E28C2ULL) >> 58)];
+#endif
     }
 
     /** Return number of 1 bits in mask. */
     static int bitCount(U64 mask) {
+#if HAVE_POPCNT
+	return __builtin_popcountl(mask);
+#else
         const U64 k1 = 0x5555555555555555ULL;
         const U64 k2 = 0x3333333333333333ULL;
         const U64 k4 = 0x0f0f0f0f0f0f0f0fULL;
@@ -115,6 +125,7 @@ public:
         t = (t + (t >> 4)) & k4;
         t = (t * kf) >> 56;
         return (int)t;
+#endif
     }
 
     /** Initialize static data. */
