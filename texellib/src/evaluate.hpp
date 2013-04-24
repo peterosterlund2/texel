@@ -89,6 +89,7 @@ public:
     static const int rookMobScore[];
     static const int bishMobScore[];
     static const int queenMobScore[];
+    static int knightMobScore[64][9];
 
 private:
     struct PawnHashData {
@@ -183,6 +184,9 @@ private:
 
     /** Compute bishop evaluation. */
     int bishopEval(const Position& pos, int oldScore);
+
+    /** Compute knight evaluation. */
+    int knightEval(const Position& pos) const;
 
     int threatBonus(const Position& pos);
 

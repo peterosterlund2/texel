@@ -187,6 +187,32 @@ Evaluate::staticInitialize() {
     }
 
     kingSafetyHash.resize(1 << 15);
+
+    // Knight mobility scores
+    for (int sq = 0; sq < 64; sq++) {
+        int x = Position::getX(sq);
+        int y = Position::getY(sq);
+        if (x >= 4) x = 7 - x;
+        if (y >= 4) y = 7 - y;
+        if (x < y) std::swap(x, y);
+        int maxMob = 0;
+        switch (y*8+x) {
+        case  0: maxMob = 2; break; // a1
+        case  1: maxMob = 3; break; // b1
+        case  2: maxMob = 4; break; // c1
+        case  3: maxMob = 4; break; // d1
+        case  9: maxMob = 4; break; // b2
+        case 10: maxMob = 6; break; // c2
+        case 11: maxMob = 6; break; // d2
+        case 18: maxMob = 8; break; // c3
+        case 19: maxMob = 8; break; // d3
+        case 27: maxMob = 8; break; // d4
+        default:
+            assert(false);
+        }
+        for (int m = 0; m <= 8; m++)
+            knightMobScore[sq][m] = m * 16 / maxMob - 12;
+    }
 }
 
 static const int empty[64] = { 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
@@ -218,7 +244,7 @@ const int Evaluate::distToH1A8[8][8] = { { 0, 1, 2, 3, 4, 5, 6, 7 },
 const int Evaluate::rookMobScore[] = {-10,-7,-4,-1,2,5,7,9,11,12,13,14,14,14,14};
 const int Evaluate::bishMobScore[] = {-15,-10,-6,-2,2,6,10,13,16,18,20,22,23,24};
 const int Evaluate::queenMobScore[] = {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,9,10,10,10,10,10,10,10,10,10,10,10,10};
-
+int Evaluate::knightMobScore[64][9];
 
 int
 Evaluate::evalPos(const Position& pos) {
@@ -243,6 +269,7 @@ Evaluate::evalPos(const Position& pos) {
 
     score += rookBonus(pos);
     score += bishopEval(pos, score);
+    score += knightEval(pos);
     score += threatBonus(pos);
     score += kingSafety(pos);
     score = endGameEval(pos, score);
@@ -303,19 +330,17 @@ Evaluate::pieceSquareEval(const Position& pos) {
     }
 
     // Knights
-    { // FIXME!! Test knight mobility
+    {
         const int t1 = qV + 2 * rV + 1 * bV + 1 * nV + 6 * pV;
         const int t2 = nV + 8 * pV;
         int n1 = pos.psScore1[Piece::WKNIGHT];
         int n2 = pos.psScore2[Piece::WKNIGHT];
-        if ((n1 != 0) || (n2 != 0)) {
+        if ((n1 != 0) || (n2 != 0))
             score += interpolate(bMtrl, t2, n2, t1, n1);
-        }
         n1 = pos.psScore1[Piece::BKNIGHT];
         n2 = pos.psScore2[Piece::BKNIGHT];
-        if ((n1 != 0) || (n2 != 0)) {
+        if ((n1 != 0) || (n2 != 0))
             score -= interpolate(wMtrl, t2, n2, t1, n1);
-        }
     }
 
     // Bishops
@@ -495,7 +520,6 @@ Evaluate::pawnBonus(const Position& pos) {
     return score;
 }
 
-/** Compute pawn hash data for pos. */
 void
 Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     int score = 0;
@@ -636,7 +660,6 @@ Evaluate::rookBonus(const Position& pos) {
     return score;
 }
 
-/** Compute bishop evaluation. */
 int
 Evaluate::bishopEval(const Position& pos, int oldScore) {
     int score = 0;
@@ -714,6 +737,30 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
             score += (pos.pieceTypeBB[Piece::BQUEEN] != 0) ? pV : pV * 3 / 2;
     }
 
+    return score;
+}
+
+int
+Evaluate::knightEval(const Position& pos) const {
+    int score = 0;
+    U64 wKnights = pos.pieceTypeBB[Piece::WKNIGHT];
+    U64 bKnights = pos.pieceTypeBB[Piece::BKNIGHT];
+    if ((wKnights | bKnights) == 0)
+        return 0;
+    U64 m = wKnights;
+    while (m != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(m);
+        U64 atk = BitBoard::knightAttacks[sq];
+        score += knightMobScore[sq][BitBoard::bitCount(atk & ~pos.whiteBB)];
+        m &= m-1;
+    }
+    m = bKnights;
+    while (m != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(m);
+        U64 atk = BitBoard::knightAttacks[sq];
+        score -= knightMobScore[sq][BitBoard::bitCount(atk & ~pos.blackBB)];
+        m &= m-1;
+    }
     return score;
 }
 
