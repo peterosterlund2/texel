@@ -105,6 +105,7 @@ private:
 
     static const ubyte kpkTable[2*32*64*48/8];
     static const ubyte krkpTable[2*32*48*8];
+    static const U64 krpkrTable[2*24*64];
 
     // King safety variables
     U64 wKingZone, bKingZone;       // Squares close to king that are worth attacking
@@ -210,6 +211,8 @@ private:
     static int kpkEval(int wKing, int bKing, int wPawn, bool whiteMove);
 
     static int krkpEval(int wKing, int bKing, int bPawn, bool whiteMove);
+
+    static int krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bool whiteMove);
 };
 
 inline

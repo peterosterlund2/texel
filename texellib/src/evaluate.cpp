@@ -947,9 +947,9 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
         return 0;
     }
     if (!handled && (pos.wMtrl == qV) && (pos.bMtrl == pV) && (pos.pieceTypeBB[Piece::WQUEEN] != 0)) {
-        int wk = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WKING]);
+        int wk = pos.getKingSq(true);
         int wq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WQUEEN]);
-        int bk = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BKING]);
+        int bk = pos.getKingSq(false);
         int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
         score = evalKQKP(wk, wq, bk, bp, pos.whiteMove);
         handled = true;
@@ -973,10 +973,20 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
             handled = true;
         }
     }
+    if (!handled && (pos.wMtrl == rV + pV) && (pos.bMtrl == rV) &&
+            pos.pieceTypeBB[Piece::WROOK] && pos.pieceTypeBB[Piece::WPAWN] && pos.pieceTypeBB[Piece::BROOK]) {
+        int wk = pos.getKingSq(true);
+        int bk = pos.getKingSq(false);
+        int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
+        int wr = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WROOK]);
+        int br = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BROOK]);
+        score = krpkrEval(wk, bk, wp, wr, br, pos.whiteMove);
+        handled = true;
+    }
     if (!handled && (pos.bMtrl == qV) && (pos.wMtrl == pV) && (pos.pieceTypeBB[Piece::BQUEEN] != 0)) {
-        int bk = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BKING]);
+        int bk = pos.getKingSq(false);
         int bq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BQUEEN]);
-        int wk = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WKING]);
+        int wk = pos.getKingSq(true);
         int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
         score = -evalKQKP(63-bk, 63-bq, 63-wk, 63-wp, !pos.whiteMove);
         handled = true;
@@ -999,6 +1009,16 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
             }
             handled = true;
         }
+    }
+    if (!handled && (pos.bMtrl == rV + pV) && (pos.wMtrl == rV) &&
+            pos.pieceTypeBB[Piece::BROOK] && pos.pieceTypeBB[Piece::BPAWN] && pos.pieceTypeBB[Piece::WROOK]) {
+        int wk = pos.getKingSq(true);
+        int bk = pos.getKingSq(false);
+        int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
+        int wr = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WROOK]);
+        int br = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BROOK]);
+        score = -krpkrEval(63-bk, 63-wk, 63-bp, 63-br, 63-wr, !pos.whiteMove);
+        handled = true;
     }
     if (!handled && (score > 0)) {
         if ((wMtrlPawns == 0) && (wMtrlNoPawns <= bMtrlNoPawns + bV)) {
@@ -1108,7 +1128,6 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
     }
     return score;
 
-    // FIXME! Add evaluation of KRPKR   : eg 8/8/8/5pk1/1r6/R7/8/4K3 w - - 0 74
     // FIXME! KRBKR is very hard to draw
 }
 
@@ -1189,5 +1208,41 @@ Evaluate::krkpEval(int wKing, int bKing, int bPawn, bool whiteMove) {
         score += 150;
     else
         score /= 50;
+    return score;
+}
+
+int Evaluate::krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bool whiteMove) {
+    if (Position::getX(wPawn) >= 4) { // Mirror X
+        wKing ^= 7;
+        bKing ^= 7;
+        wPawn ^= 7;
+        wRook ^= 7;
+        bRook ^= 7;
+    }
+    int index = whiteMove ? 0 : 1;
+    index = index * 24 + (Position::getY(wPawn)-1)*4+Position::getX(wPawn);
+    index = index * 64 + wKing;
+    const U64 kMask = krpkrTable[index];
+    const bool canWin = (kMask & (1ULL << bKing)) != 0;
+    U64 kingNeighbors = BitBoard::kingAttacks[bKing];
+    const U64 occupied = (1ULL<<wKing) | (1ULL<<bKing) | (1ULL<<wPawn) | (1ULL<<bRook);
+    const U64 rAtk = BitBoard::rookAttacks(wRook, occupied);
+    kingNeighbors &= ~(BitBoard::kingAttacks[wKing] | BitBoard::wPawnAttacks[wPawn] | rAtk);
+    bool close;
+    if (canWin) {
+        close = (kMask & kingNeighbors) != kingNeighbors;
+    } else {
+        close = (kMask & kingNeighbors) != 0;
+    }
+    int score = pV + Position::getY(wPawn) * pV / 4;
+    if (canWin) {
+        if (!close)
+            score += pV;
+    } else {
+        if (close)
+            score /= 2;
+        else
+            score /= 4;
+    }
     return score;
 }

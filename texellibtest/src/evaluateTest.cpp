@@ -484,6 +484,18 @@ testKRKP() {
 }
 
 static void
+testKRPKR() {
+    const int pV = Evaluate::pV;
+    const int winScore = 2 * pV;
+    const int drawish = pV * 2 / 3;
+    Position pos = TextIO::readFEN("8/r7/4K1k1/4P3/8/5R2/8/8 w - - 0 1");
+    ASSERT(evalWhite(pos) > winScore);
+
+    pos = TextIO::readFEN("4k3/7R/1r6/5K2/4P3/8/8/8 w - - 0 1");
+    ASSERT(evalWhite(pos) < drawish);
+}
+
+static void
 testKPK() {
     const int pV = Evaluate::pV;
     const int rV = Evaluate::rV;
@@ -544,6 +556,7 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testTrappedBishop));
     s.push_back(CUTE(testKQKP));
     s.push_back(CUTE(testKRKP));
+    s.push_back(CUTE(testKRPKR));
     s.push_back(CUTE(testKPK));
     s.push_back(CUTE(testCantWin));
     s.push_back(CUTE(testPawnRace));
