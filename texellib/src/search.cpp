@@ -883,7 +883,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
                     continue;
                 int capt = Evaluate::pieceValue[pos.getPiece(m.to())];
                 int prom = Evaluate::pieceValue[m.promoteTo()];
-                int optimisticScore = evalScore + capt + prom + 200; // FIXME!! Try lower value (50-75?)
+                int optimisticScore = evalScore + capt + prom + 200;
                 if (optimisticScore < alpha) { // Delta pruning
                     if ((pos.wMtrlPawns > 0) && (pos.wMtrl > capt + pos.wMtrlPawns) &&
                         (pos.bMtrlPawns > 0) && (pos.bMtrl > capt + pos.bMtrlPawns)) {

@@ -345,8 +345,16 @@ Evaluate::pieceSquareEval(const Position& pos) {
 
     // Bishops
     {
-        score += pos.psScore1[Piece::WBISHOP];
-        score -= pos.psScore1[Piece::BBISHOP];
+        const int t1 = qV + 2 * rV + 1 * bV + 1 * nV + 6 * pV;
+        const int t2 = nV + 8 * pV;
+        int n1 = pos.psScore1[Piece::WBISHOP];
+        int n2 = pos.psScore2[Piece::WBISHOP];
+        if ((n1 != 0) || (n2 != 0))
+            score += interpolate(bMtrl, t2, n2, t1, n1);
+        n1 = pos.psScore1[Piece::BBISHOP];
+        n2 = pos.psScore2[Piece::BBISHOP];
+        if ((n1 != 0) || (n2 != 0))
+            score -= interpolate(wMtrl, t2, n2, t1, n1);
     }
 
     // Queens
