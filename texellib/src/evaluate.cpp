@@ -375,9 +375,9 @@ Evaluate::castleBonus(const Position& pos) {
 
     const int k1 = kt1b[7*8+6] - kt1b[7*8+4];
     const int k2 = kt2b[7*8+6] - kt2b[7*8+4];
-    const int t1 = qV + 2 * rV + 2 * bV;
-    const int t2 = rV;
-    const int t = pos.bMtrl - pos.bMtrlPawns;
+    const int t1 = 2 * (qV + 2 * rV + 2 * bV);
+    const int t2 = 2 * rV;
+    const int t = pos.wMtrl + pos.bMtrl - pos.wMtrlPawns - pos.bMtrlPawns;
     const int ks = interpolate(t, t2, k2, t1, k1);
 
     const int castleValue = ks + rt1b[7*8+5] - rt1b[7*8+7];

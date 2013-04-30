@@ -133,6 +133,9 @@ void testEvalPos() {
     pos.makeMove(TextIO::stringToMove(pos, "O-O-O"), ui);
     ASSERT(moveScore(pos, "O-O") > 0);      // White short castle is good for white
 
+    pos = TextIO::readFEN("1nb1kbn1/pppp1ppp/8/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQ - 0 1");
+    ASSERT(moveScore(pos, "O-O") > 0);      // Short castle is good for white
+
     pos = TextIO::readFEN("8/3k4/2p5/1pp5/1P1P4/3K4/8/8 w - - 0 1");
     int sc1 = moveScore(pos, "bxc5");
     int sc2 = moveScore(pos, "dxc5");
