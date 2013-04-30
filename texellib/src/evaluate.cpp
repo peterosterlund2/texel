@@ -293,66 +293,34 @@ Evaluate::pieceSquareEval(const Position& pos) {
     const int wMtrlPawns = pos.wMtrlPawns;
     const int bMtrlPawns = pos.bMtrlPawns;
 
-    // Kings
+    // Kings/pawns
     {
         const int t1 = qV + 2 * rV + 2 * bV;
         const int t2 = rV;
         {
-            const int k1 = pos.psScore1[Piece::WKING];
-            const int k2 = pos.psScore2[Piece::WKING];
+            const int k1 = pos.psScore1[Piece::WKING] + pos.psScore1[Piece::WPAWN];
+            const int k2 = pos.psScore2[Piece::WKING] + pos.psScore2[Piece::WPAWN];
             const int t = bMtrl - bMtrlPawns;
             score += interpolate(t, t2, k2, t1, k1);
         }
         {
-            const int k1 = pos.psScore1[Piece::BKING];
-            const int k2 = pos.psScore2[Piece::BKING];
+            const int k1 = pos.psScore1[Piece::BKING] + pos.psScore1[Piece::BPAWN];
+            const int k2 = pos.psScore2[Piece::BKING] + pos.psScore2[Piece::BPAWN];
             const int t = wMtrl - wMtrlPawns;
             score -= interpolate(t, t2, k2, t1, k1);
         }
     }
 
-    // Pawns
-    {
-        const int t1 = qV + 2 * rV + 2 * bV;
-        const int t2 = rV;
-        int wp1 = pos.psScore1[Piece::WPAWN];
-        int wp2 = pos.psScore2[Piece::WPAWN];
-        if ((wp1 != 0) || (wp2 != 0)) {
-            const int tw = bMtrl - bMtrlPawns;
-            score += interpolate(tw, t2, wp2, t1, wp1);
-        }
-        int bp1 = pos.psScore1[Piece::BPAWN];
-        int bp2 = pos.psScore2[Piece::BPAWN];
-        if ((bp1 != 0) || (bp2 != 0)) {
-            const int tb = wMtrl - wMtrlPawns;
-            score -= interpolate(tb, t2, bp2, t1, bp1);
-        }
-    }
-
-    // Knights
+    // Knights/bishops
     {
         const int t1 = qV + 2 * rV + 1 * bV + 1 * nV + 6 * pV;
         const int t2 = nV + 8 * pV;
-        int n1 = pos.psScore1[Piece::WKNIGHT];
-        int n2 = pos.psScore2[Piece::WKNIGHT];
+        int n1 = pos.psScore1[Piece::WKNIGHT] + pos.psScore1[Piece::WBISHOP];
+        int n2 = pos.psScore2[Piece::WKNIGHT] + pos.psScore2[Piece::WBISHOP];
         if ((n1 != 0) || (n2 != 0))
             score += interpolate(bMtrl, t2, n2, t1, n1);
-        n1 = pos.psScore1[Piece::BKNIGHT];
-        n2 = pos.psScore2[Piece::BKNIGHT];
-        if ((n1 != 0) || (n2 != 0))
-            score -= interpolate(wMtrl, t2, n2, t1, n1);
-    }
-
-    // Bishops
-    {
-        const int t1 = qV + 2 * rV + 1 * bV + 1 * nV + 6 * pV;
-        const int t2 = nV + 8 * pV;
-        int n1 = pos.psScore1[Piece::WBISHOP];
-        int n2 = pos.psScore2[Piece::WBISHOP];
-        if ((n1 != 0) || (n2 != 0))
-            score += interpolate(bMtrl, t2, n2, t1, n1);
-        n1 = pos.psScore1[Piece::BBISHOP];
-        n2 = pos.psScore2[Piece::BBISHOP];
+        n1 = pos.psScore1[Piece::BKNIGHT] + pos.psScore1[Piece::BBISHOP];
+        n2 = pos.psScore2[Piece::BKNIGHT] + pos.psScore2[Piece::BBISHOP];
         if ((n1 != 0) || (n2 != 0))
             score -= interpolate(wMtrl, t2, n2, t1, n1);
     }
@@ -749,7 +717,7 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
 }
 
 int
-Evaluate::knightEval(const Position& pos) const {
+Evaluate::knightEval(const Position& pos) {
     int score = 0;
     U64 wKnights = pos.pieceTypeBB[Piece::WKNIGHT];
     U64 bKnights = pos.pieceTypeBB[Piece::BKNIGHT];
@@ -759,6 +727,7 @@ Evaluate::knightEval(const Position& pos) const {
     while (m != 0) {
         int sq = BitBoard::numberOfTrailingZeros(m);
         U64 atk = BitBoard::knightAttacks[sq];
+        wAttacksBB |= atk;
         score += knightMobScore[sq][BitBoard::bitCount(atk & ~pos.whiteBB)];
         m &= m-1;
     }
@@ -766,6 +735,7 @@ Evaluate::knightEval(const Position& pos) const {
     while (m != 0) {
         int sq = BitBoard::numberOfTrailingZeros(m);
         U64 atk = BitBoard::knightAttacks[sq];
+        bAttacksBB |= atk;
         score -= knightMobScore[sq][BitBoard::bitCount(atk & ~pos.blackBB)];
         m &= m-1;
     }
@@ -778,18 +748,12 @@ Evaluate::threatBonus(const Position& pos) {
     int score = 0;
 
     // Sum values for all black pieces under attack
-    U64 m = pos.pieceTypeBB[Piece::WKNIGHT];
-    while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
-        wAttacksBB |= BitBoard::knightAttacks[sq];
-        m &= m-1;
-    }
     wAttacksBB &= (pos.pieceTypeBB[Piece::BKNIGHT] |
                    pos.pieceTypeBB[Piece::BBISHOP] |
                    pos.pieceTypeBB[Piece::BROOK] |
                    pos.pieceTypeBB[Piece::BQUEEN]);
     wAttacksBB |= wPawnAttacks;
-    m = wAttacksBB & pos.blackBB & ~pos.pieceTypeBB[Piece::BKING];
+    U64 m = wAttacksBB & pos.blackBB & ~pos.pieceTypeBB[Piece::BKING];
     int tmp = 0;
     while (m != 0) {
         int sq = BitBoard::numberOfTrailingZeros(m);
@@ -799,12 +763,6 @@ Evaluate::threatBonus(const Position& pos) {
     score += tmp + tmp * tmp / qV;
 
     // Sum values for all white pieces under attack
-    m = pos.pieceTypeBB[Piece::BKNIGHT];
-    while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
-        bAttacksBB |= BitBoard::knightAttacks[sq];
-        m &= m-1;
-    }
     bAttacksBB &= (pos.pieceTypeBB[Piece::WKNIGHT] |
                    pos.pieceTypeBB[Piece::WBISHOP] |
                    pos.pieceTypeBB[Piece::WROOK] |

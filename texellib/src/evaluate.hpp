@@ -187,7 +187,7 @@ private:
     int bishopEval(const Position& pos, int oldScore);
 
     /** Compute knight evaluation. */
-    int knightEval(const Position& pos) const;
+    int knightEval(const Position& pos);
 
     int threatBonus(const Position& pos);
 
