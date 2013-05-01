@@ -907,93 +907,122 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
     const int wMtrlNoPawns = pos.wMtrl - wMtrlPawns;
     const int bMtrlNoPawns = pos.bMtrl - bMtrlPawns;
 
-    bool handled = false;
-    if ((wMtrlPawns + bMtrlPawns == 0) && (wMtrlNoPawns < rV) && (bMtrlNoPawns < rV)) {
-        // King + minor piece vs king + minor piece is a draw
-        return 0;
-    }
-    if (!handled && (pos.wMtrl == qV) && (pos.bMtrl == pV) && (pos.pieceTypeBB[Piece::WQUEEN] != 0)) {
+    // Handle special endgames
+    typedef MatId MI;
+    switch (pos.materialId()) {
+    case 0:
+    case MI::WN: case MI::BN: case MI::WB: case MI::BB:
+    case MI::WN + MI::BN: case MI::WN + MI::BB:
+    case MI::WB + MI::BN: case MI::WB + MI::BB:
+        return 0; // King + minor piece vs king + minor piece is a draw
+    case MI::WQ + MI::BP: {
         int wk = pos.getKingSq(true);
         int wq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WQUEEN]);
         int bk = pos.getKingSq(false);
         int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
-        score = evalKQKP(wk, wq, bk, bp, pos.whiteMove);
-        handled = true;
+        return evalKQKP(wk, wq, bk, bp, pos.whiteMove);
     }
-    if (!handled && (pos.wMtrl == rV) && (pos.pieceTypeBB[Piece::WROOK] != 0)) {
-        if (pos.bMtrl == pV) {
-            int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
-            score = krkpEval(pos.getKingSq(true), pos.getKingSq(false),
-                    bp, pos.whiteMove);
-            handled = true;
-        } else if ((pos.bMtrl == bV) && (pos.pieceTypeBB[Piece::BBISHOP] != 0)) {
-            score /= 8;
-            const int kSq = pos.getKingSq(false);
-            const int x = Position::getX(kSq);
-            const int y = Position::getY(kSq);
-            if ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq) != 0) {
-                score += (7 - distToH1A8[7-y][7-x]) * 7;
-            } else {
-                score += (7 - distToH1A8[7-y][x]) * 7;
-            }
-            handled = true;
-        }
+    case MI::BQ + MI::WP: {
+        int bk = pos.getKingSq(false);
+        int bq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BQUEEN]);
+        int wk = pos.getKingSq(true);
+        int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
+        return -evalKQKP(63-bk, 63-bq, 63-wk, 63-wp, !pos.whiteMove);
     }
-    if (!handled && (pos.wMtrl == rV + pV) && (pos.bMtrl == rV) &&
-            pos.pieceTypeBB[Piece::WROOK] && pos.pieceTypeBB[Piece::WPAWN] && pos.pieceTypeBB[Piece::BROOK]) {
+    case MI::WR + MI::BP: {
+        int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
+        return krkpEval(pos.getKingSq(true), pos.getKingSq(false),
+                        bp, pos.whiteMove);
+    }
+    case MI::BR + MI::WP: {
+        int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
+        return -krkpEval(63-pos.getKingSq(false), 63-pos.getKingSq(true),
+                         63-wp, !pos.whiteMove);
+    }
+    case MI::WR + MI::BB: {
+        score /= 8;
+        const int kSq = pos.getKingSq(false);
+        const int x = Position::getX(kSq);
+        const int y = Position::getY(kSq);
+        if ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq) != 0)
+            score += (7 - distToH1A8[7-y][7-x]) * 7;
+        else
+            score += (7 - distToH1A8[7-y][x]) * 7;
+        return score;
+    }
+    case MI::BR + MI::WB: {
+        score /= 8;
+        const int kSq = pos.getKingSq(true);
+        const int x = Position::getX(kSq);
+        const int y = Position::getY(kSq);
+        if ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq) != 0)
+            score -= (7 - distToH1A8[7-y][7-x]) * 7;
+        else
+            score -= (7 - distToH1A8[7-y][x]) * 7;
+        return score;
+    }
+    case MI::WR + MI::WP + MI::BR: {
         int wk = pos.getKingSq(true);
         int bk = pos.getKingSq(false);
         int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
         int wr = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WROOK]);
         int br = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BROOK]);
-        score = krpkrEval(wk, bk, wp, wr, br, pos.whiteMove);
-        handled = true;
+        return krpkrEval(wk, bk, wp, wr, br, pos.whiteMove);
     }
-    if (!handled && (pos.bMtrl == qV) && (pos.wMtrl == pV) && (pos.pieceTypeBB[Piece::BQUEEN] != 0)) {
-        int bk = pos.getKingSq(false);
-        int bq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BQUEEN]);
-        int wk = pos.getKingSq(true);
-        int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
-        score = -evalKQKP(63-bk, 63-bq, 63-wk, 63-wp, !pos.whiteMove);
-        handled = true;
-    }
-    if (!handled && (pos.bMtrl == rV) && (pos.pieceTypeBB[Piece::BROOK] != 0)) {
-        if (pos.wMtrl == pV) {
-            int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
-            score = -krkpEval(63-pos.getKingSq(false), 63-pos.getKingSq(true),
-                    63-wp, !pos.whiteMove);
-            handled = true;
-        } else if ((pos.wMtrl == bV) && (pos.pieceTypeBB[Piece::WBISHOP] != 0)) {
-            score /= 8;
-            const int kSq = pos.getKingSq(true);
-            const int x = Position::getX(kSq);
-            const int y = Position::getY(kSq);
-            if ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq) != 0) {
-                score -= (7 - distToH1A8[7-y][7-x]) * 7;
-            } else {
-                score -= (7 - distToH1A8[7-y][x]) * 7;
-            }
-            handled = true;
-        }
-    }
-    if (!handled && (pos.bMtrl == rV + pV) && (pos.wMtrl == rV) &&
-            pos.pieceTypeBB[Piece::BROOK] && pos.pieceTypeBB[Piece::BPAWN] && pos.pieceTypeBB[Piece::WROOK]) {
+    case MI::BR + MI::BP + MI::WR: {
         int wk = pos.getKingSq(true);
         int bk = pos.getKingSq(false);
         int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
         int wr = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WROOK]);
         int br = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BROOK]);
-        score = -krpkrEval(63-bk, 63-wk, 63-bp, 63-br, 63-wr, !pos.whiteMove);
-        handled = true;
+        return -krpkrEval(63-bk, 63-wk, 63-bp, 63-br, 63-wr, !pos.whiteMove);
     }
-    if (!handled && (score > 0)) {
+    case MI::WN * 2:
+    case MI::BN * 2:
+        return score / 50; // KNNK is a draw
+    case MI::WN + MI::WB: {
+        score /= 10;
+        score += nV + bV + 300;
+        const int kSq = pos.getKingSq(false);
+        const int x = Position::getX(kSq);
+        const int y = Position::getY(kSq);
+        if ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq) != 0)
+            score += (7 - distToH1A8[7-y][7-x]) * 10;
+        else
+            score += (7 - distToH1A8[7-y][x]) * 10;
+        return score;
+    }
+    case MI::BN + MI::BB: {
+        score /= 10;
+        score -= nV + bV + 300;
+        const int kSq = pos.getKingSq(true);
+        const int x = Position::getX(kSq);
+        const int y = Position::getY(kSq);
+        if ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq) != 0)
+            score -= (7 - distToH1A8[7-y][7-x]) * 10;
+        else
+            score -= (7 - distToH1A8[7-y][x]) * 10;
+        return score;
+    }
+    case MI::WP: {
+        int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
+        return kpkEval(pos.getKingSq(true), pos.getKingSq(false),
+                       wp, pos.whiteMove);
+    }
+    case MI::BP: {
+        int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
+        return -kpkEval(63-pos.getKingSq(false), 63-pos.getKingSq(true),
+                        63-bp, !pos.whiteMove);
+    }
+    }
+
+    // Give bonus/penalty if advantage is/isn't large enough to win
+    if (score > 0) {
         if ((wMtrlPawns == 0) && (wMtrlNoPawns <= bMtrlNoPawns + bV)) {
-            if (wMtrlNoPawns < rV) {
+            if (wMtrlNoPawns < rV)
                 return -pos.bMtrl / 50;
-            } else {
-                score /= 8;         // Too little excess material, probably draw
-                handled = true;
-            }
+            else
+                return score / 8;        // Too little excess material, probably draw
         } else if ((pos.pieceTypeBB[Piece::WROOK] | pos.pieceTypeBB[Piece::WKNIGHT] |
                     pos.pieceTypeBB[Piece::WQUEEN]) == 0) {
             // Check for rook pawn + wrong color bishop
@@ -1009,44 +1038,14 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
             }
         }
     }
-    if (!handled) {
-        if (bMtrlPawns == 0) {
-            if (wMtrlNoPawns - bMtrlNoPawns > bV) {
-                int wKnights = BitBoard::bitCount(pos.pieceTypeBB[Piece::WKNIGHT]);
-                int wBishops = BitBoard::bitCount(pos.pieceTypeBB[Piece::WBISHOP]);
-                if ((wKnights == 2) && (pos.wMtrl == 2 * nV) && (bMtrlNoPawns == 0)) {
-                    score /= 50;    // KNNK is a draw
-                } else if ((wKnights == 1) && (wBishops == 1) && (wMtrlNoPawns == nV + bV) && (bMtrlNoPawns == 0)) {
-                    score /= 10;
-                    score += nV + bV + 300;
-                    const int kSq = pos.getKingSq(false);
-                    const int x = Position::getX(kSq);
-                    const int y = Position::getY(kSq);
-                    if ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq) != 0) {
-                        score += (7 - distToH1A8[7-y][7-x]) * 10;
-                    } else {
-                        score += (7 - distToH1A8[7-y][x]) * 10;
-                    }
-                } else {
-                    score += 300;       // Enough excess material, should win
-                }
-                handled = true;
-            } else if ((wMtrlNoPawns + bMtrlNoPawns == 0) && (wMtrlPawns == pV)) { // KPK
-                int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
-                score = kpkEval(pos.getKingSq(true), pos.getKingSq(false),
-                                wp, pos.whiteMove);
-                handled = true;
-            }
-        }
-    }
-    if (!handled && (score < 0)) {
+    if ((bMtrlPawns == 0) && (wMtrlNoPawns - bMtrlNoPawns > bV))
+        return score + 300;       // Enough excess material, should win
+    if (score < 0) {
         if ((bMtrlPawns == 0) && (bMtrlNoPawns <= wMtrlNoPawns + bV)) {
-            if (bMtrlNoPawns < rV) {
+            if (bMtrlNoPawns < rV)
                 return pos.wMtrl / 50;
-            } else {
-                score /= 8;         // Too little excess material, probably draw
-                handled = true;
-            }
+            else
+                return score / 8;        // Too little excess material, probably draw
         } else if ((pos.pieceTypeBB[Piece::BROOK] | pos.pieceTypeBB[Piece::BKNIGHT] |
                     pos.pieceTypeBB[Piece::BQUEEN]) == 0) {
             // Check for rook pawn + wrong color bishop
@@ -1062,36 +1061,8 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
             }
         }
     }
-    if (!handled) {
-        if (wMtrlPawns == 0) {
-            if (bMtrlNoPawns - wMtrlNoPawns > bV) {
-                int bKnights = BitBoard::bitCount(pos.pieceTypeBB[Piece::BKNIGHT]);
-                int bBishops = BitBoard::bitCount(pos.pieceTypeBB[Piece::BBISHOP]);
-                if ((bKnights == 2) && (pos.bMtrl == 2 * nV) && (wMtrlNoPawns == 0)) {
-                    score /= 50;    // KNNK is a draw
-                } else if ((bKnights == 1) && (bBishops == 1) && (bMtrlNoPawns == nV + bV) && (wMtrlNoPawns == 0)) {
-                    score /= 10;
-                    score -= nV + bV + 300;
-                    const int kSq = pos.getKingSq(true);
-                    const int x = Position::getX(kSq);
-                    const int y = Position::getY(kSq);
-                    if ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq) != 0) {
-                        score -= (7 - distToH1A8[7-y][7-x]) * 10;
-                    } else {
-                        score -= (7 - distToH1A8[7-y][x]) * 10;
-                    }
-                } else {
-                    score -= 300;       // Enough excess material, should win
-                }
-                handled = true;
-            } else if ((wMtrlNoPawns + bMtrlNoPawns == 0) && (bMtrlPawns == pV)) { // KPK
-                int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
-                score = -kpkEval(63-pos.getKingSq(false), 63-pos.getKingSq(true),
-                                 63-bp, !pos.whiteMove);
-                handled = true;
-            }
-        }
-    }
+    if ((wMtrlPawns == 0) && (bMtrlNoPawns - wMtrlNoPawns > bV))
+        return score - 300;       // Enough excess material, should win
     return score;
 
     // FIXME! KRBKR is very hard to draw

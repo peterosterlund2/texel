@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,26 +17,16 @@
 */
 
 /*
- * positionTest.hpp
+ * material.cpp
  *
- *  Created on: Feb 25, 2012
+ *  Created on: May 1, 2013
  *      Author: petero
  */
 
-#ifndef POSITIONTEST_HPP_
-#define POSITIONTEST_HPP_
+#include "material.hpp"
 
-#include "suiteBase.hpp"
-
-class Position;
-
-class PositionTest : public SuiteBase {
-public:
-    std::string getName() const { return "PositionTest"; }
-
-    cute::suite getSuite() const;
-
-    static int computeMaterialId(const Position& pos);
+const int MatId::materialId[] = {
+    0,
+    0, WQ, WR, WB, WN, WP,
+    0, BQ, BR, BB, BN, BP
 };
-
-#endif /* POSITIONTEST_HPP_ */

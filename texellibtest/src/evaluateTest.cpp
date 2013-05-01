@@ -24,6 +24,7 @@
  */
 
 #include "evaluateTest.hpp"
+#include "positionTest.hpp"
 #include "evaluate.hpp"
 #include "position.hpp"
 #include "textio.hpp"
@@ -70,6 +71,8 @@ evalWhite(const Position& pos) {
     Position symPos = swapColors(pos);
     int symScore = eval.evalPos(symPos);
     ASSERT_EQUAL(ret, symScore);
+    ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
+    ASSERT_EQUAL(symPos.materialId(), PositionTest::computeMaterialId(symPos));
     if (!pos.whiteMove)
         ret = -ret;
     return ret;

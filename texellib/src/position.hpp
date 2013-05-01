@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #include "undoInfo.hpp"
 #include "bitBoard.hpp"
 #include "piece.hpp"
+#include "material.hpp"
 #include <algorithm>
 #include <iostream>
 
@@ -69,6 +70,7 @@ private:
 
     U64 hashKey;           // Cached Zobrist hash key
     U64 pHashKey;          // Cached Zobrist pawn hash key
+    MatId matId;           // Cached material identifier
 
 public:
     /** Bit definitions for the castleMask bit mask. */
@@ -97,11 +99,9 @@ public:
             return false;
         if (pHashKey != other.pHashKey)
             return false;
+        if (matId() != other.matId())
+            return false;
         return true;
-    }
-
-    int hashCode() const {
-        return (int)hashKey;
     }
 
     /**
@@ -124,6 +124,11 @@ public:
         if (halfMoveClock >= 80)
             ret ^= moveCntKeys[std::min(halfMoveClock, 100)];
         return ret;
+    }
+
+    /** Return the material identifier. */
+    int materialId() const {
+        return matId();
     }
 
     /**

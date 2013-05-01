@@ -33,6 +33,13 @@
 
 #include <vector>
 
+int PositionTest::computeMaterialId(const Position& pos) {
+    MatId id;
+    for (int sq = 0; sq < 64; sq++)
+        id.addPiece(pos.getPiece(sq));
+    return id();
+}
+
 /**
  * Test of getPiece method, of class Position.
  */
@@ -345,6 +352,7 @@ testHashCode() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     U64 h1 = pos.zobristHash();
     ASSERT_EQUAL(h1, pos.computeZobristHash());
+    ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     UndoInfo ui;
     Move move = TextIO::stringToMove(pos, "e4");
     pos.makeMove(move, ui);
@@ -355,6 +363,7 @@ testHashCode() {
     pos.setWhiteMove(!pos.whiteMove);
     U64 h4 = pos.zobristHash();
     ASSERT_EQUAL(h4, pos.computeZobristHash());
+    ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     ASSERT(h1 != pos.zobristHash());
     pos.setWhiteMove(!pos.whiteMove);
     ASSERT(h1 == pos.zobristHash());
@@ -365,6 +374,7 @@ testHashCode() {
     pos = TextIO::readFEN("rnbqkbnr/pppp1ppp/8/2P1p3/8/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1");
     h1 = pos.zobristHash();
     ASSERT_EQUAL(h1, pos.computeZobristHash());
+    ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
 
     std::string moves[] = {
         "b5", "Nc3", "Nf6", "Nb1", "Ng8", "Nc3", "Nf6", "Nb1", "Ng8", "Nc3", "d5",
@@ -380,6 +390,7 @@ testHashCode() {
         pos.makeMove(m, uiList[i]);
         U64 h = pos.zobristHash();
         ASSERT_EQUAL(h, pos.computeZobristHash());
+        ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
         hashList.push_back(h);
     }
     ASSERT(hashList[0] != hashList[4]);
@@ -389,6 +400,7 @@ testHashCode() {
         U64 h = pos.zobristHash();
         ASSERT_EQUAL(h, pos.computeZobristHash());
         ASSERT_EQUAL(h, i > 0 ? hashList[i - 1] : h1);
+        ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     }
 }
 

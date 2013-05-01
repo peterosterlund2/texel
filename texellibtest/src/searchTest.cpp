@@ -25,6 +25,7 @@
 
 #include "searchTest.hpp"
 #include "evaluateTest.hpp"
+#include "positionTest.hpp"
 #include "constants.hpp"
 #include "search.hpp"
 #include "position.hpp"
@@ -50,6 +51,7 @@ SearchTest::idSearch(Search& sc, int maxDepth) {
     sc.scoreMoveList(moves, 0);
     sc.timeLimit(-1, -1);
     Move bestM = sc.iterativeDeepening(moves, maxDepth, -1, false);
+    ASSERT_EQUAL(sc.pos.materialId(), PositionTest::computeMaterialId(sc.pos));
     return bestM;
 }
 

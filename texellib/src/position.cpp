@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -84,6 +84,10 @@ Position::setPiece(int square, int piece) {
     // Update hash key
     hashKey ^= psHashKeys[removedPiece][square];
     hashKey ^= psHashKeys[piece][square];
+
+    // Update material identifier
+    matId.removePiece(removedPiece);
+    matId.addPiece(piece);
 
     // Update bitboards
     const U64 sqMask = 1ULL << square;
