@@ -29,7 +29,7 @@
 #include <iostream>
 
 S64 currentTimeMillis() {
-    auto t = std::chrono::system_clock::now();
+    auto t = std::chrono::high_resolution_clock::now();
     auto t0 = t.time_since_epoch();
     auto x = t0.count();
     typedef decltype(t0) T0Type;
