@@ -364,7 +364,7 @@ testEndGameEval() {
 }
 
 /**
- * Test of endGameEval method, of class Evaluate.
+ * Passed pawn tests.
  */
 static void
 testPassedPawns() {

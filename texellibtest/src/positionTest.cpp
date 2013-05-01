@@ -29,9 +29,11 @@
 
 #include "position.hpp"
 #include "piece.hpp"
+#include "material.hpp"
 #include "textio.hpp"
 
 #include <vector>
+#include <set>
 
 int PositionTest::computeMaterialId(const Position& pos) {
     MatId id;
@@ -424,6 +426,96 @@ testGetKingSq() {
     ASSERT_EQUAL(TextIO::getSquare("d6"), pos.getKingSq(false));
 }
 
+struct Mtrl {
+    int p, r, n, b, q;
+    Mtrl(int p0, int r0, int n0, int b0, int q0) :
+        p(p0), r(r0), n(n0), b(b0), q(q0) {}
+};
+
+/**
+ * Test that the material identifier is unique for all legal material configurations.
+ */
+static void
+testMaterialId() {
+    std::vector<Mtrl> configs;
+    for (int p = 0; p <= 8; p++) {
+        int maxP1 = 8;
+        for (int r = 0; r <= 10; r++) {
+            int maxP2 = maxP1 - std::max(0, r - 2);
+            if (p > maxP2)
+                continue;
+            for (int n = 0; n <= 10; n++) {
+                int maxP3 = maxP2 - std::max(0, n - 2);
+                if (p > maxP3)
+                    continue;
+                for (int b = 0; b <= 10; b++) {
+                    int maxP4 = maxP3 - std::max(0, b - 2);
+                    if (p > maxP4)
+                        continue;
+                    for (int q = 0; q <= 9; q++) {
+                        int maxP5 = maxP4 - std::max(0, q - 1);
+                        if (p > maxP5)
+                            continue;
+                        configs.push_back(Mtrl(p,r,n,b,q));
+                    }
+                }
+            }
+        }
+    }
+
+    {
+        std::set<int> ids;
+        for (const Mtrl& w : configs) {
+            MatId id;
+            for (int i = 0; i < w.p; i++) id.addPiece(Piece::WPAWN);
+            for (int i = 0; i < w.r; i++) id.addPiece(Piece::WROOK);
+            for (int i = 0; i < w.n; i++) id.addPiece(Piece::WKNIGHT);
+            for (int i = 0; i < w.b; i++) id.addPiece(Piece::WBISHOP);
+            for (int i = 0; i < w.q; i++) id.addPiece(Piece::WQUEEN);
+            auto res = ids.insert(id());
+            ASSERT_EQUAL(res.second, true);
+        }
+    }
+
+    {
+        std::set<int> ids;
+        for (const Mtrl& b : configs) {
+            MatId id;
+            for (int i = 0; i < b.p; i++) id.addPiece(Piece::BPAWN);
+            for (int i = 0; i < b.r; i++) id.addPiece(Piece::BROOK);
+            for (int i = 0; i < b.n; i++) id.addPiece(Piece::BKNIGHT);
+            for (int i = 0; i < b.b; i++) id.addPiece(Piece::BBISHOP);
+            for (int i = 0; i < b.q; i++) id.addPiece(Piece::BQUEEN);
+            auto res = ids.insert(id());
+            ASSERT_EQUAL(res.second, true);
+        }
+    }
+
+    return;
+    { // Not run by default, takes a lot of memory and runs a bit slow
+        std::set<int> ids;
+        for (const Mtrl& w : configs) {
+            for (const Mtrl& b : configs) {
+                MatId id;
+                for (int i = 0; i < w.p; i++) id.addPiece(Piece::WPAWN);
+                for (int i = 0; i < w.r; i++) id.addPiece(Piece::WROOK);
+                for (int i = 0; i < w.n; i++) id.addPiece(Piece::WKNIGHT);
+                for (int i = 0; i < w.b; i++) id.addPiece(Piece::WBISHOP);
+                for (int i = 0; i < w.q; i++) id.addPiece(Piece::WQUEEN);
+
+                for (int i = 0; i < b.p; i++) id.addPiece(Piece::BPAWN);
+                for (int i = 0; i < b.r; i++) id.addPiece(Piece::BROOK);
+                for (int i = 0; i < b.n; i++) id.addPiece(Piece::BKNIGHT);
+                for (int i = 0; i < b.b; i++) id.addPiece(Piece::BBISHOP);
+                for (int i = 0; i < b.q; i++) id.addPiece(Piece::BQUEEN);
+
+                auto res = ids.insert(id());
+                ASSERT_EQUAL(res.second, true);
+            }
+        }
+    }
+}
+
 cute::suite
 PositionTest::getSuite() const {
     cute::suite s;
@@ -437,5 +529,6 @@ PositionTest::getSuite() const {
     s.push_back(CUTE(testDrawRuleEquals));
     s.push_back(CUTE(testHashCode));
     s.push_back(CUTE(testGetKingSq));
+    s.push_back(CUTE(testMaterialId));
     return s;
 }
