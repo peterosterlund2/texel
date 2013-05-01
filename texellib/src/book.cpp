@@ -331,6 +331,7 @@ Book::bookLines[] = {
     "c4? Nf6 Nc3 e6 Nf3 d5 d4 Be7 e3 O-O Bd3 c5",
     "Nf3? d5 d4 Nf6 c4 e6 Nc3 Be7 Bf4 O-O e3 c5 dxc5 Bxc5 Qc2 Nc6",
     "d4 d5 c4 c6 Nf3 Nf6 Nc3 e6 e3 Nbd7 Bd3 dxc4 Bxc4 b5 Bd3 a6 O-O",
+    "d4 d5 c4 c6 Nf3 Nf6 Nc3 e6 Bg5 h6 Bh4 dxc4 e4 g5 Bg3 b5 Be2 Bb7",
     "d4 d5 c4 c6? cxd5 cxd5 Nc3 Nf6 Bf4 Nc6 e3 a6",
     "d4 d5 c4 c6? Nc3 Nf6 e3 e6 Nf3",
 
