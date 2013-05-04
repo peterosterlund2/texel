@@ -280,7 +280,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                     notifyPV(depthS/plyScale, score, false, false, m);
             }
             scMoves[mi].move.setScore(score);
-            scMoves[mi].nodes = nodesThisMove;
+            scMoves[mi].nodes += nodesThisMove;
             bestScore = std::max(bestScore, score);
             if (!firstIteration) {
                 if ((score > alpha) || (mi == 0)) {
