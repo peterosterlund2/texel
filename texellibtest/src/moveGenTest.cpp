@@ -42,6 +42,17 @@ containsAll(const std::vector<T> v, const std::vector<T>& e) {
     return true;
 }
 
+static void removeIllegal(Position& pos, MoveGen::MoveList& moveList) {
+    MoveGen::MoveList ml2;
+    for (int i = 0; i < moveList.size; i++) {
+        const Move& m = moveList[i];
+        if (MoveGen::isLegal(pos, moveList[i], MoveGen::inCheck(pos)))
+            ml2.addMove(m.from(), m.to(), m.promoteTo());
+    }
+    MoveGen::removeIllegal(pos, moveList);
+    ASSERT_EQUAL(moveList.size, ml2.size);
+}
+
 static std::vector<std::string>
 getCaptureList(Position& pos, bool includeChecks, bool onlyLegal) {
     MoveGen::MoveList moves;
@@ -50,7 +61,7 @@ getCaptureList(Position& pos, bool includeChecks, bool onlyLegal) {
     else
         MoveGen::pseudoLegalCaptures(pos, moves);
     if (onlyLegal)
-        MoveGen::removeIllegal(pos, moves);
+        removeIllegal(pos, moves);
     std::vector<std::string> strMoves;
     for (int mi = 0; mi < moves.size; mi++) {
         const Move& m = moves[mi];
@@ -68,7 +79,7 @@ getCheckEvasions(Position& pos, bool onlyLegal) {
     MoveGen::MoveList moves;
     MoveGen::checkEvasions(pos, moves);
     if (onlyLegal)
-        MoveGen::removeIllegal(pos, moves);
+        removeIllegal(pos, moves);
     for (int mi = 0; mi < moves.size; mi++) {
         const Move& m = moves[mi];
         std::string mStr = TextIO::moveToUCIString(m);
@@ -82,7 +93,7 @@ getMoveList0(Position& pos, bool onlyLegal) {
     MoveGen::MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     if (onlyLegal)
-        MoveGen::removeIllegal(pos, moves);
+        removeIllegal(pos, moves);
     std::vector<std::string> strMoves;
     for (int mi = 0; mi < moves.size; mi++) {
         const Move& m = moves[mi];
@@ -103,7 +114,7 @@ getMoveList0(Position& pos, bool onlyLegal) {
     for (size_t i = 0; i < strMoves.size(); i++) {
         const std::string& sm = strMoves[i];
         Move m = TextIO::uciStringToMove(sm);
-        if (!m.isEmpty() && !MoveGen::isLegal(pos, m))
+        if (!m.isEmpty() && !MoveGen::isLegal(pos, m, MoveGen::inCheck(pos)))
             m.setMove(0,0,0,0);
         if (m.isEmpty()) // Move was illegal (but pseudo-legal)
             continue;

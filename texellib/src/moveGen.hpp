@@ -156,8 +156,9 @@ public:
      */
     static void removeIllegal(Position& pos, MoveList& moveList);
 
-    /** Return true if the pseudo-legal move "move" is legal is position "pos". */
-    static bool isLegal(Position& pos, const Move& move);
+    /** Return true if the pseudo-legal move "move" is legal is position "pos".
+     * isInCheck must be equal to inCheck(pos). */
+    static bool isLegal(Position& pos, const Move& move, bool isInCheck);
 
 private:
     /**

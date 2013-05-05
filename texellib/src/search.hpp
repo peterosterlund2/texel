@@ -245,10 +245,19 @@ private:
         }
     }
 
-    /**
-     * Find move with highest score and move it to the front of the list.
-     */
-    static void selectBest(MoveGen::MoveList& moves, int startIdx);
+    /** Find move with highest score and move it to the front of the list. */
+    static void selectBest(MoveGen::MoveList& moves, int startIdx) {
+        int bestIdx = startIdx;
+        int bestScore = moves[bestIdx].score();
+        for (int i = startIdx + 1; i < moves.size; i++) {
+            int sc = moves[i].score();
+            if (sc > bestScore) {
+                bestIdx = i;
+                bestScore = sc;
+            }
+        }
+        std::swap(moves[bestIdx], moves[startIdx]);
+    }
 
     /** If hashMove exists in the move list, move the hash move to the front of the list. */
     static bool selectHashMove(MoveGen::MoveList& moves, const Move& hashMove);

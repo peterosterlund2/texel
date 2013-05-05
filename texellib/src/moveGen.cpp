@@ -852,43 +852,46 @@ MoveGen::removeIllegal(Position& pos, MoveList& moveList) {
 }
 
 bool
-MoveGen::isLegal(Position& pos, const Move& m) {
+MoveGen::isLegal(Position& pos, const Move& m, bool isInCheck) {
     UndoInfo ui;
     int kSq = pos.getKingSq(pos.whiteMove);
-    U64 kingAtks;
-    {
-        U64 occupied = pos.whiteBB | pos.blackBB;
-        kingAtks = BitBoard::rookAttacks(kSq, occupied) | BitBoard::bishopAttacks(kSq, occupied);
-    }
     const int epSquare = pos.getEpSquare();
-    if (inCheck(pos)) {
-        kingAtks |= pos.pieceTypeBB[pos.whiteMove ? Piece::BKNIGHT : Piece::WKNIGHT];
-        if ((m.from() != kSq) && ((kingAtks & (1ULL<<m.to())) == 0) && (m.to() != epSquare)) {
-            return false;
+    if (isInCheck) {
+        if ((m.from() != kSq) && (m.to() != epSquare)) {
+            U64 occupied = pos.whiteBB | pos.blackBB;
+            U64 toMask = 1ULL << m.to();
+            int knight = pos.whiteMove ? Piece::BKNIGHT : Piece::WKNIGHT;
+            if (((BitBoard::rookAttacks(kSq, occupied) & toMask) == 0) &&
+                ((BitBoard::bishopAttacks(kSq, occupied) & toMask) == 0) &&
+                ((BitBoard::knightAttacks[kSq] & pos.pieceTypeBB[knight] & toMask) == 0))
+                return false;
+        }
+        pos.makeMove(m, ui);
+        pos.setWhiteMove(!pos.whiteMove);
+        bool legal = !inCheck(pos);
+        pos.setWhiteMove(!pos.whiteMove);
+        pos.unMakeMove(m, ui);
+        return legal;
+    } else {
+        if (m.from() == kSq) {
+            U64 occupied = (pos.whiteBB | pos.blackBB) & ~(1ULL<<m.from());
+            return !MoveGen::sqAttacked(pos, m.to(), occupied);
         } else {
+            if (m.to() != epSquare) {
+                U64 occupied = pos.whiteBB | pos.blackBB;
+                U64 fromMask = 1ULL << m.from();
+                if (((BitBoard::rookAttacks(kSq, occupied) & fromMask) == 0) &&
+                    ((BitBoard::bishopAttacks(kSq, occupied) & fromMask) == 0))
+                    return true;
+                else if (BitBoard::getDirection(kSq, m.from()) == BitBoard::getDirection(kSq, m.to()))
+                    return true;
+            }
             pos.makeMove(m, ui);
             pos.setWhiteMove(!pos.whiteMove);
             bool legal = !inCheck(pos);
             pos.setWhiteMove(!pos.whiteMove);
             pos.unMakeMove(m, ui);
             return legal;
-        }
-    } else {
-        if (m.from() == kSq) {
-            U64 occupied = (pos.whiteBB | pos.blackBB) & ~(1ULL<<m.from());
-            bool legal = !MoveGen::sqAttacked(pos, m.to(), occupied);
-            return legal;
-        } else {
-            if (((kingAtks & (1ULL<<m.from())) == 0) && (m.to() != epSquare)) {
-                return true;
-            } else {
-                pos.makeMove(m, ui);
-                pos.setWhiteMove(!pos.whiteMove);
-                bool legal = !inCheck(pos);
-                pos.setWhiteMove(!pos.whiteMove);
-                pos.unMakeMove(m, ui);
-                return legal;
-            }
         }
     }
 }

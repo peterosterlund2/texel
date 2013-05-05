@@ -615,7 +615,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         MoveGen::pseudoLegalMoves(pos, moves);
     bool seeDone = false;
     bool hashMoveSelected = true;
-    if (!selectHashMove(moves, hashMove)) {
+    if (hashMove.isEmpty() || !selectHashMove(moves, hashMove)) {
         scoreMoveList(moves, ply);
         seeDone = true;
         hashMoveSelected = false;
@@ -662,7 +662,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         if (doFutility) {
             score = futilityScore;
         } else {
-            if (!MoveGen::isLegal(pos, m))
+            if (!MoveGen::isLegal(pos, m, inCheck))
                 continue;
             int moveExtend = 0;
             if (posExtend == 0) {
@@ -854,6 +854,13 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
     } else {
         MoveGen::pseudoLegalCaptures(pos, moves);
     }
+
+    bool realInCheckComputed = false;
+    bool realInCheck = false;
+    if (depth > -2) {
+        realInCheckComputed = true;
+        realInCheck = inCheck;
+    }
     scoreMoveListMvvLva(moves);
     UndoInfo ui;
     for (int mi = 0; mi < moves.size; mi++) {
@@ -900,7 +907,11 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
                 }
             }
         }
-        if (!MoveGen::isLegal(pos, m))
+        if (!realInCheckComputed) {
+            realInCheck = MoveGen::inCheck(pos);
+            realInCheckComputed = true;
+        }
+        if (!MoveGen::isLegal(pos, m, realInCheck))
             continue;
 
         if (!givesCheckComputed && (depth - 1 > -2))
@@ -1068,25 +1079,8 @@ Search::scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx) {
     }
 }
 
-void
-Search::selectBest(MoveGen::MoveList& moves, int startIdx) {
-    int bestIdx = startIdx;
-    int bestScore = moves[bestIdx].score();
-    for (int i = startIdx + 1; i < moves.size; i++) {
-        int sc = moves[i].score();
-        if (sc > bestScore) {
-            bestIdx = i;
-            bestScore = sc;
-        }
-    }
-    std::swap(moves[bestIdx], moves[startIdx]);
-}
-
-/** If hashMove exists in the move list, move the hash move to the front of the list. */
 bool
 Search::selectHashMove(MoveGen::MoveList& moves, const Move& hashMove) {
-    if (hashMove.isEmpty())
-        return false;
     for (int i = 0; i < moves.size; i++) {
         Move& m = moves[i];
         if (m.equals(hashMove)) {
