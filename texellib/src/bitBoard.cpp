@@ -49,6 +49,9 @@ const U64 BitBoard::maskFile[8] = {
 U64 BitBoard::epMaskW[8];
 U64 BitBoard::epMaskB[8];
 
+const U64 BitBoard::maskDarkSq;
+const U64 BitBoard::maskLightSq;
+
 U64* BitBoard::rTables[64];
 U64 BitBoard::rMasks[64];
 int BitBoard::rBits[64] = { 12, 11, 11, 11, 11, 11, 11, 12,

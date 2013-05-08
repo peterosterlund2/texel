@@ -682,8 +682,6 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
         score -= 28 + (8 - numPawns) * 3;
     }
 
-    // FIXME!!! Bad bishop
-
     if ((numWhite == 1) && (numBlack == 1) && (whiteDark != blackDark) &&
         (pos.wMtrl - pos.wMtrlPawns == pos.bMtrl - pos.bMtrlPawns)) {
         const int penalty = (oldScore + score) / 2;
@@ -691,6 +689,19 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
         const int hiMtrl = 2 * (qV + rV + bV);
         int mtrl = pos.wMtrl + pos.bMtrl - pos.wMtrlPawns - pos.bMtrlPawns;
         score -= interpolate(mtrl, loMtrl, penalty, hiMtrl, 0);
+    } else {
+        if (numWhite == 1) {
+            U64 bishColorMask = whiteDark ? BitBoard::maskDarkSq : BitBoard::maskLightSq;
+            U64 m = pos.pieceTypeBB[Piece::WPAWN] & bishColorMask;
+            m |= (m << 8) & pos.pieceTypeBB[Piece::BPAWN];
+            score -= 2 * BitBoard::bitCount(m);
+        }
+        if (numBlack == 1) {
+            U64 bishColorMask = blackDark ? BitBoard::maskDarkSq : BitBoard::maskLightSq;
+            U64 m = pos.pieceTypeBB[Piece::BPAWN] & bishColorMask;
+            m |= (m >> 8) & pos.pieceTypeBB[Piece::WPAWN];
+            score += 2 * BitBoard::bitCount(m);
+        }
     }
 
     // Penalty for bishop trapped behind pawn at a2/h2/a7/h7
