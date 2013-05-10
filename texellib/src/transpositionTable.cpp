@@ -183,10 +183,10 @@ TranspositionTable::printStats() const {
         if (c > 0) {
             std::stringstream ss;
             ss.precision(2);
-            ss << std::setw(3) << i
+            ss << std::setw(4) << i
                << ' ' << std::setw(8) << c
-               << " (" << std::setw(6) << std::fixed << (c*w);
-            std::cout << ss.str();
+               << " " << std::setw(6) << std::fixed << (c*w);
+            std::cout << ss.str() << std::endl;
         }
     }
 }
