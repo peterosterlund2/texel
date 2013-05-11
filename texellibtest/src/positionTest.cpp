@@ -491,28 +491,32 @@ testMaterialId() {
         }
     }
 
-    return;
-    { // Not run by default, takes a lot of memory and runs a bit slow
-        std::set<int> ids;
+    {
+        S64 t0 = currentTimeMillis();
+        std::vector<int> ids;
+        ids.reserve(configs.size()*configs.size());
         for (const Mtrl& w : configs) {
+            MatId id;
+            for (int i = 0; i < w.p; i++) id.addPiece(Piece::WPAWN);
+            for (int i = 0; i < w.r; i++) id.addPiece(Piece::WROOK);
+            for (int i = 0; i < w.n; i++) id.addPiece(Piece::WKNIGHT);
+            for (int i = 0; i < w.b; i++) id.addPiece(Piece::WBISHOP);
+            for (int i = 0; i < w.q; i++) id.addPiece(Piece::WQUEEN);
             for (const Mtrl& b : configs) {
-                MatId id;
-                for (int i = 0; i < w.p; i++) id.addPiece(Piece::WPAWN);
-                for (int i = 0; i < w.r; i++) id.addPiece(Piece::WROOK);
-                for (int i = 0; i < w.n; i++) id.addPiece(Piece::WKNIGHT);
-                for (int i = 0; i < w.b; i++) id.addPiece(Piece::WBISHOP);
-                for (int i = 0; i < w.q; i++) id.addPiece(Piece::WQUEEN);
-
-                for (int i = 0; i < b.p; i++) id.addPiece(Piece::BPAWN);
-                for (int i = 0; i < b.r; i++) id.addPiece(Piece::BROOK);
-                for (int i = 0; i < b.n; i++) id.addPiece(Piece::BKNIGHT);
-                for (int i = 0; i < b.b; i++) id.addPiece(Piece::BBISHOP);
-                for (int i = 0; i < b.q; i++) id.addPiece(Piece::BQUEEN);
-
-                auto res = ids.insert(id());
-                ASSERT_EQUAL(res.second, true);
+                MatId id2(id);
+                for (int i = 0; i < b.p; i++) id2.addPiece(Piece::BPAWN);
+                for (int i = 0; i < b.r; i++) id2.addPiece(Piece::BROOK);
+                for (int i = 0; i < b.n; i++) id2.addPiece(Piece::BKNIGHT);
+                for (int i = 0; i < b.b; i++) id2.addPiece(Piece::BBISHOP);
+                for (int i = 0; i < b.q; i++) id2.addPiece(Piece::BQUEEN);
+                ids.push_back(id2());
             }
         }
+        std::sort(ids.begin(), ids.end());
+        for (size_t i = 0; i < ids.size()-1; i++)
+            ASSERT(ids[i] != ids[i+1]);
+        S64 t1 = currentTimeMillis();
+        std::cout << "time:" << t1 - t0 << std::endl;
     }
 }
 
