@@ -126,6 +126,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         maxDepth = 100;
     for (size_t i = 0; i < COUNT_OF(searchTreeInfo); i++)
         searchTreeInfo[i].allowNullMove = true;
+    ht.reScale();
     try {
     for (int depthS = plyScale; ; depthS += plyScale, firstIteration = false) {
         initNodeStats();

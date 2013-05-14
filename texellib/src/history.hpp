@@ -57,6 +57,16 @@ public:
         }
     }
 
+    void reScale() {
+        for (int p = 0; p < Piece::nPieceTypes; p++) {
+            for (int sq = 0; sq < 64; sq++) {
+                Entry& e = ht[p][sq];
+                e.countSuccess /= 4;
+                e.countFail /= 4;
+            }
+        }
+    }
+
     /** Record move as a success. */
     void addSuccess(const Position& pos, const Move& m, int depth) {
         int p = pos.getPiece(m.from());
