@@ -306,7 +306,7 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
         mhd.wPawnIPF = interpolate(bMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
         mhd.bPawnIPF = interpolate(wMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
     }
-    { // Knight
+    { // Knight/bishop
         const int loMtrl = nV + 8 * pV;
         const int hiMtrl = qV + 2 * rV + 1 * bV + 1 * nV + 6 * pV;
         mhd.wKnightIPF = interpolate(bMtrl, loMtrl, 0, hiMtrl, IPOLMAX);
@@ -371,7 +371,7 @@ Evaluate::pieceSquareEval(const Position& pos) {
         score -= interpolate(k2, k1, mhd->bPawnIPF);
     }
 
-    // Knights
+    // Knights/bishops
     {
         int n1 = pos.psScore1[Piece::WKNIGHT] + pos.psScore1[Piece::WBISHOP];
         int n2 = pos.psScore2[Piece::WKNIGHT] + pos.psScore2[Piece::WBISHOP];
