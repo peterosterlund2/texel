@@ -288,8 +288,20 @@ Evaluate::evalPos(const Position& pos) {
 
 void
 Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const {
+    // Compute material part of score
     int score = pos.wMtrl - pos.bMtrl;
     score += tradeBonus(pos);
+    { // Redundancy of major pieces
+        int wMajor = BitBoard::bitCount(pos.pieceTypeBB[Piece::WQUEEN] | pos.pieceTypeBB[Piece::WROOK]);
+        int bMajor = BitBoard::bitCount(pos.pieceTypeBB[Piece::BQUEEN] | pos.pieceTypeBB[Piece::BROOK]);
+        int w = std::min(wMajor, 3);
+        int b = std::min(bMajor, 3);
+        static int bonus[4][4] = { {   0, -25,   0,   0 },
+                                   {  25,   0,   0,   0 },
+                                   {   0,   0,   0,  25 },
+                                   {   0,   0, -25,   0 } };
+        score += bonus[w][b];
+    }
     mhd.id = pos.materialId();
     mhd.score = score;
 
