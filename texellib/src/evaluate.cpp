@@ -153,6 +153,7 @@ int Evaluate::castleFactor[256];
 
 vector_aligned<Evaluate::PawnHashData> Evaluate::pawnHash;
 vector_aligned<Evaluate::KingSafetyHashData> Evaluate::kingSafetyHash;
+std::vector<Evaluate::MaterialHashData> Evaluate::materialHash;
 
 
 static StaticInitializer<Evaluate> evInit;
@@ -187,6 +188,7 @@ Evaluate::staticInitialize() {
     }
 
     kingSafetyHash.resize(1 << 15);
+    materialHash.resize(1 << 14);
 
     // Knight mobility scores
     for (int sq = 0; sq < 64; sq++) {
@@ -248,7 +250,7 @@ int Evaluate::knightMobScore[64][9];
 
 int
 Evaluate::evalPos(const Position& pos) {
-    int score = pos.wMtrl - pos.bMtrl;
+    int score = materialScore(pos);
 
     wKingAttacks = bKingAttacks = 0;
     wKingZone = BitBoard::kingAttacks[pos.getKingSq(true)]; wKingZone |= wKingZone << 8;
@@ -264,7 +266,6 @@ Evaluate::evalPos(const Position& pos) {
 
     score += pieceSquareEval(pos);
     score += pawnBonus(pos);
-    score += tradeBonus(pos);
     score += castleBonus(pos);
 
     score += rookBonus(pos);
@@ -285,44 +286,99 @@ Evaluate::evalPos(const Position& pos) {
     // FIXME! "Kf1" bad: r1bqk2r/pp1nppb1/2p4p/3p2p1/3P4/2NBPNP1/PPP2PP1/R2QK2R w KQkq - 1 10
 }
 
+void
+Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const {
+    int score = pos.wMtrl - pos.bMtrl;
+    score += tradeBonus(pos);
+    mhd.id = pos.materialId();
+    mhd.score = score;
+
+    // Compute interpolation factors
+    const int wMtrl = pos.wMtrl;
+    const int bMtrl = pos.bMtrl;
+    const int wMtrlPawns = pos.wMtrlPawns;
+    const int bMtrlPawns = pos.bMtrlPawns;
+    const int wMtrlNoPawns = wMtrl - wMtrlPawns;
+    const int bMtrlNoPawns = bMtrl - bMtrlPawns;
+    { // Pawn
+        const int loMtrl = rV;
+        const int hiMtrl = qV + 2 * rV + 2 * bV;
+        mhd.wPawnIPF = interpolate(bMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
+        mhd.bPawnIPF = interpolate(wMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
+    }
+    { // Knight
+        const int loMtrl = nV + 8 * pV;
+        const int hiMtrl = qV + 2 * rV + 1 * bV + 1 * nV + 6 * pV;
+        mhd.wKnightIPF = interpolate(bMtrl, loMtrl, 0, hiMtrl, IPOLMAX);
+        mhd.bKnightIPF = interpolate(wMtrl, loMtrl, 0, hiMtrl, IPOLMAX);
+    }
+    { // Castle
+        const int loMtrl = 2 * rV;
+        const int hiMtrl = 2 * (qV + 2 * rV + 2 * bV);
+        const int m = wMtrlNoPawns + bMtrlNoPawns;
+        mhd.castleIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
+    }
+    { // Passed pawn
+        const int loMtrl = 0;
+        const int hiMtrl = qV + rV;
+        mhd.wPassedPawnIPF = interpolate(bMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
+        mhd.bPassedPawnIPF = interpolate(wMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
+    }
+    { // King safety
+        const int loMtrl = rV + bV;
+        const int hiMtrl = qV + 2 * rV + 2 * bV + 2 * nV;
+        const int m = (wMtrlNoPawns + bMtrlNoPawns) / 2;
+        mhd.kingSafetyIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
+    }
+    { // Different color bishops
+        const int loMtrl = 2 * bV;
+        const int hiMtrl = 2 * (qV + rV + bV);
+        const int m = wMtrlNoPawns + bMtrlNoPawns;
+        mhd.diffColorBishopIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
+    }
+}
+
+int
+Evaluate::tradeBonus(const Position& pos) const {
+    const int wM = pos.wMtrl;
+    const int bM = pos.bMtrl;
+    const int wPawn = pos.wMtrlPawns;
+    const int bPawn = pos.bMtrlPawns;
+    const int deltaScore = wM - bM;
+
+    int pBonus = 0;
+    pBonus += interpolate((deltaScore > 0) ? wPawn : bPawn, 0, -30 * deltaScore / 100, 6 * pV, 0);
+    pBonus += interpolate((deltaScore > 0) ? bM : wM, 0, 30 * deltaScore / 100, qV + 2 * rV + 2 * bV + 2 * nV, 0);
+
+    return pBonus;
+}
+
 int
 Evaluate::pieceSquareEval(const Position& pos) {
     int score = 0;
-    const int wMtrl = pos.wMtrl;
-    const int bMtrl = pos.bMtrl;
     const int wMtrlPawns = pos.wMtrlPawns;
     const int bMtrlPawns = pos.bMtrlPawns;
 
     // Kings/pawns
     {
-        const int t1 = qV + 2 * rV + 2 * bV;
-        const int t2 = rV;
-        {
-            const int k1 = pos.psScore1[Piece::WKING] + pos.psScore1[Piece::WPAWN];
-            const int k2 = pos.psScore2[Piece::WKING] + pos.psScore2[Piece::WPAWN];
-            const int t = bMtrl - bMtrlPawns;
-            score += interpolate(t, t2, k2, t1, k1);
-        }
-        {
-            const int k1 = pos.psScore1[Piece::BKING] + pos.psScore1[Piece::BPAWN];
-            const int k2 = pos.psScore2[Piece::BKING] + pos.psScore2[Piece::BPAWN];
-            const int t = wMtrl - wMtrlPawns;
-            score -= interpolate(t, t2, k2, t1, k1);
-        }
+        const int k1 = pos.psScore1[Piece::WKING] + pos.psScore1[Piece::WPAWN];
+        const int k2 = pos.psScore2[Piece::WKING] + pos.psScore2[Piece::WPAWN];
+        score += interpolate(k2, k1, mhd->wPawnIPF);
+    }
+    {
+        const int k1 = pos.psScore1[Piece::BKING] + pos.psScore1[Piece::BPAWN];
+        const int k2 = pos.psScore2[Piece::BKING] + pos.psScore2[Piece::BPAWN];
+        score -= interpolate(k2, k1, mhd->bPawnIPF);
     }
 
-    // Knights/bishops
+    // Knights
     {
-        const int t1 = qV + 2 * rV + 1 * bV + 1 * nV + 6 * pV;
-        const int t2 = nV + 8 * pV;
         int n1 = pos.psScore1[Piece::WKNIGHT] + pos.psScore1[Piece::WBISHOP];
         int n2 = pos.psScore2[Piece::WKNIGHT] + pos.psScore2[Piece::WBISHOP];
-        if ((n1 != 0) || (n2 != 0))
-            score += interpolate(bMtrl, t2, n2, t1, n1);
+        score += interpolate(n2, n1, mhd->wKnightIPF);
         n1 = pos.psScore1[Piece::BKNIGHT] + pos.psScore1[Piece::BBISHOP];
         n2 = pos.psScore2[Piece::BKNIGHT] + pos.psScore2[Piece::BBISHOP];
-        if ((n1 != 0) || (n2 != 0))
-            score -= interpolate(wMtrl, t2, n2, t1, n1);
+        score -= interpolate(n2, n1, mhd->bKnightIPF);
     }
 
     // Queens
@@ -375,10 +431,7 @@ Evaluate::castleBonus(const Position& pos) {
 
     const int k1 = kt1b[7*8+6] - kt1b[7*8+4];
     const int k2 = kt2b[7*8+6] - kt2b[7*8+4];
-    const int t1 = 2 * (qV + 2 * rV + 2 * bV);
-    const int t2 = 2 * rV;
-    const int t = pos.wMtrl + pos.bMtrl - pos.wMtrlPawns - pos.bMtrlPawns;
-    const int ks = interpolate(t, t2, k2, t1, k1);
+    const int ks = interpolate(k2, k1, mhd->castleIPF);
 
     const int castleValue = ks + rt1b[7*8+5] - rt1b[7*8+7];
     if (castleValue <= 0)
@@ -408,8 +461,8 @@ Evaluate::pawnBonus(const Position& pos) {
     int score = phd.score;
 
     const int hiMtrl = qV + rV;
-    score += interpolate(pos.bMtrl - pos.bMtrlPawns, 0, 2 * phd.passedBonusW, hiMtrl, phd.passedBonusW);
-    score -= interpolate(pos.wMtrl - pos.wMtrlPawns, 0, 2 * phd.passedBonusB, hiMtrl, phd.passedBonusB);
+    score += interpolate(2 * phd.passedBonusW, phd.passedBonusW, mhd->wPassedPawnIPF);
+    score -= interpolate(2 * phd.passedBonusB, phd.passedBonusB, mhd->bPassedPawnIPF);
 
     // Passed pawns are more dangerous if enemy king is far away
     int bestWPawnDist = 8;
@@ -426,7 +479,7 @@ Evaluate::pawnBonus(const Position& pos) {
                 int kingDist = BitBoard::getDistance(kingPos, Position::getSquare(x, 7));
                 int kScore = kingDist * 4;
                 if (kingDist > pawnDist) kScore += (kingDist - pawnDist) * (kingDist - pawnDist);
-                score += interpolate(mtrlNoPawns, 0, kScore, hiMtrl, 0);
+                score += interpolate(kScore, 0, mhd->wPassedPawnIPF);
                 if (!pos.whiteMove)
                     kingDist--;
                 if ((pawnDist < kingDist) && (mtrlNoPawns == 0)) {
@@ -456,7 +509,7 @@ Evaluate::pawnBonus(const Position& pos) {
                 int kingDist = BitBoard::getDistance(kingPos, Position::getSquare(x, 0));
                 int kScore = kingDist * 4;
                 if (kingDist > pawnDist) kScore += (kingDist - pawnDist) * (kingDist - pawnDist);
-                score -= interpolate(mtrlNoPawns, 0, kScore, hiMtrl, 0);
+                score -= interpolate(kScore, 0, mhd->bPassedPawnIPF);
                 if (pos.whiteMove)
                     kingDist--;
                 if ((pawnDist < kingDist) && (mtrlNoPawns == 0)) {
@@ -685,10 +738,7 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
     if ((numWhite == 1) && (numBlack == 1) && (whiteDark != blackDark) &&
         (pos.wMtrl - pos.wMtrlPawns == pos.bMtrl - pos.bMtrlPawns)) {
         const int penalty = (oldScore + score) / 2;
-        const int loMtrl = 2 * bV;
-        const int hiMtrl = 2 * (qV + rV + bV);
-        int mtrl = pos.wMtrl + pos.bMtrl - pos.wMtrlPawns - pos.bMtrlPawns;
-        score -= interpolate(mtrl, loMtrl, penalty, hiMtrl, 0);
+        score -= interpolate(penalty, 0, mhd->diffColorBishopIPF);
     } else {
         if (numWhite == 1) {
             U64 bishColorMask = whiteDark ? BitBoard::maskDarkSq : BitBoard::maskLightSq;
@@ -797,7 +847,6 @@ Evaluate::kingSafety(const Position& pos) {
     const int m = (pos.wMtrl - pos.wMtrlPawns + pos.bMtrl - pos.bMtrlPawns) / 2;
     if (m <= minM)
         return 0;
-    const int maxM = qV + 2 * rV + 2 * bV + 2 * nV;
     int score = kingSafetyKPPart(pos);
     if (Position::getY(pos.wKingSq) == 0) {
         if (((pos.pieceTypeBB[Piece::WKING] & 0x60L) != 0) && // King on f1 or g1
@@ -828,7 +877,7 @@ Evaluate::kingSafety(const Position& pos) {
         }
     }
     score += (bKingAttacks - wKingAttacks) * 4;
-    const int kSafety = interpolate(m, minM, 0, maxM, score);
+    const int kSafety = interpolate(0, score, mhd->kingSafetyIPF);
     return kSafety;
 }
 

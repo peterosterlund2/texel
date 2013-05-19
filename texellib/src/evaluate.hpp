@@ -144,6 +144,13 @@ public:
         }
     }
 
+    static const int IPOLMAX = 1024;
+
+    /** Compute v1 + (v2-v1)*k/IPOLMAX */
+    static int interpolate(int v1, int v2, int k) {
+        return v1 + (v2 - v1) * k / IPOLMAX;
+    }
+
     /** Compute white_material - black_material. */
     static int material(const Position& pos) {
         return pos.wMtrl - pos.bMtrl;
@@ -155,20 +162,36 @@ private:
     /** Compute score based on piece square tables. Positive values are good for white. */
     int pieceSquareEval(const Position& pos);
 
-    /** Implement the "when ahead trade pieces, when behind trade pawns" rule. */
-    int tradeBonus(const Position& pos) {
-        const int wM = pos.wMtrl;
-        const int bM = pos.bMtrl;
-        const int wPawn = pos.wMtrlPawns;
-        const int bPawn = pos.bMtrlPawns;
-        const int deltaScore = wM - bM;
+    struct MaterialHashData {
+        MaterialHashData() : id(-1), score(0) { }
+        int id;
+        int score;
+        short wPawnIPF, bPawnIPF;
+        short wKnightIPF, bKnightIPF;
+        short castleIPF;
+        short wPassedPawnIPF, bPassedPawnIPF;
+        short kingSafetyIPF;
+        short diffColorBishopIPF;
+    };
+    static std::vector<MaterialHashData> materialHash;
+    const MaterialHashData* mhd;
 
-        int pBonus = 0;
-        pBonus += interpolate((deltaScore > 0) ? wPawn : bPawn, 0, -30 * deltaScore / 100, 6 * pV, 0);
-        pBonus += interpolate((deltaScore > 0) ? bM : wM, 0, 30 * deltaScore / 100, qV + 2 * rV + 2 * bV + 2 * nV, 0);
-
-        return pBonus;
+    /** Get material score */
+    int materialScore(const Position& pos) {
+        int mId = pos.materialId();
+        int key = (mId >> 16) * 40507 + mId;
+        MaterialHashData& newMhd = materialHash[key & (materialHash.size() - 1)];
+        if (newMhd.id != mId)
+            computeMaterialScore(pos, newMhd);
+        mhd = &newMhd;
+        return newMhd.score;
     }
+
+    /** Compute material score. */
+    void computeMaterialScore(const Position& pos, MaterialHashData& mhd) const;
+
+    /** Implement the "when ahead trade pieces, when behind trade pawns" rule. */
+    int tradeBonus(const Position& pos) const;
 
     static int castleFactor[256];
 
