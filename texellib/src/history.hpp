@@ -73,7 +73,7 @@ public:
         int cnt = depth;
         Entry& e = ht[p][m.to()];
         int val = e.countSuccess + cnt;
-        if (val > 1000) {
+        if (val + e.countFail > 1300) {
             val /= 2;
             e.countFail /= 2;
         }
@@ -86,7 +86,12 @@ public:
         int p = pos.getPiece(m.from());
         int cnt = depth;
         Entry& e = ht[p][m.to()];
-        e.countFail += cnt;
+        int val = e.countFail + cnt;
+        if (val + e.countSuccess > 1300) {
+            val /= 2;
+            e.countSuccess /= 2;
+        }
+        e.countFail = val;
         e.score = -1;
     }
 
