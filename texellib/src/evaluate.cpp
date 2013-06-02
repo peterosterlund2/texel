@@ -151,7 +151,7 @@ int Evaluate::pt2w[64];
 
 int Evaluate::castleFactor[256];
 
-vector_aligned<Evaluate::PawnHashData> Evaluate::pawnHash;
+std::vector<Evaluate::PawnHashData> Evaluate::pawnHash;
 vector_aligned<Evaluate::KingSafetyHashData> Evaluate::kingSafetyHash;
 std::vector<Evaluate::MaterialHashData> Evaluate::materialHash;
 
@@ -348,6 +348,12 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
         const int m = wMtrlNoPawns + bMtrlNoPawns;
         mhd.diffColorBishopIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
     }
+    { // Knight outpost
+        const int loMtrl = 3 * pV;
+        const int hiMtrl = 6 * pV;
+        mhd.wKnightOutPostIPF = interpolate(bMtrlPawns, loMtrl, 0, hiMtrl, IPOLMAX);
+        mhd.bKnightOutPostIPF = interpolate(wMtrlPawns, loMtrl, 0, hiMtrl, IPOLMAX);
+    }
 }
 
 int
@@ -469,6 +475,7 @@ Evaluate::pawnBonus(const Position& pos) {
     PawnHashData& phd = pawnHash[(int)key & (pawnHash.size() - 1)];
     if (phd.key != key)
         computePawnHashData(pos, phd);
+    this->phd = &phd;
     U64 m = phd.passedPawnsW;
     int score = phd.score;
 
@@ -566,18 +573,17 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     int score = 0;
 
     // Evaluate double pawns and pawn islands
-    U64 wPawns = pos.pieceTypeBB[Piece::WPAWN];
-    U64 wPawnFiles = BitBoard::southFill(wPawns) & 0xff;
-    int wDouble = BitBoard::bitCount(wPawns) - BitBoard::bitCount(wPawnFiles);
-    int wIslands = BitBoard::bitCount(((~wPawnFiles) >> 1) & wPawnFiles);
-    int wIsolated = BitBoard::bitCount(~(wPawnFiles<<1) & wPawnFiles & ~(wPawnFiles>>1));
+    const U64 wPawns = pos.pieceTypeBB[Piece::WPAWN];
+    const U64 wPawnFiles = BitBoard::southFill(wPawns) & 0xff;
+    const int wDouble = BitBoard::bitCount(wPawns) - BitBoard::bitCount(wPawnFiles);
+    const int wIslands = BitBoard::bitCount(((~wPawnFiles) >> 1) & wPawnFiles);
+    const int wIsolated = BitBoard::bitCount(~(wPawnFiles<<1) & wPawnFiles & ~(wPawnFiles>>1));
 
-
-    U64 bPawns = pos.pieceTypeBB[Piece::BPAWN];
-    U64 bPawnFiles = BitBoard::southFill(bPawns) & 0xff;
-    int bDouble = BitBoard::bitCount(bPawns) - BitBoard::bitCount(bPawnFiles);
-    int bIslands = BitBoard::bitCount(((~bPawnFiles) >> 1) & bPawnFiles);
-    int bIsolated = BitBoard::bitCount(~(bPawnFiles<<1) & bPawnFiles & ~(bPawnFiles>>1));
+    const U64 bPawns = pos.pieceTypeBB[Piece::BPAWN];
+    const U64 bPawnFiles = BitBoard::southFill(bPawns) & 0xff;
+    const int bDouble = BitBoard::bitCount(bPawns) - BitBoard::bitCount(bPawnFiles);
+    const int bIslands = BitBoard::bitCount(((~bPawnFiles) >> 1) & bPawnFiles);
+    const int bIsolated = BitBoard::bitCount(~(bPawnFiles<<1) & bPawnFiles & ~(bPawnFiles>>1));
 
     score -= (wDouble - bDouble) * 25;
     score -= (wIslands - bIslands) * 15;
@@ -586,17 +592,16 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     // Evaluate backward pawns, defined as a pawn that guards a friendly pawn,
     // can't be guarded by friendly pawns, can advance, but can't advance without
     // being captured by an enemy pawn.
-    U64 wPawnAttacks = (((wPawns & BitBoard::maskBToHFiles) << 7) |
-                        ((wPawns & BitBoard::maskAToGFiles) << 9));
-    U64 bPawnAttacks = (((bPawns & BitBoard::maskBToHFiles) >> 9) |
-                        ((bPawns & BitBoard::maskAToGFiles) >> 7));
-    U64 wBackward = wPawns & ~((wPawns | bPawns) >> 8) & (bPawnAttacks >> 8) &
-                    ~BitBoard::northFill(wPawnAttacks);
+    const U64 bPawnNoAtks = ~BitBoard::southFill(bPawnAttacks);
+    const U64 wPawnNoAtks = ~BitBoard::northFill(wPawnAttacks);
+    ph.outPostsW = bPawnNoAtks & wPawnAttacks;
+    ph.outPostsB = wPawnNoAtks & bPawnAttacks;
+
+    U64 wBackward = wPawns & ~((wPawns | bPawns) >> 8) & (bPawnAttacks >> 8) & wPawnNoAtks;
     wBackward &= (((wPawns & BitBoard::maskBToHFiles) >> 9) |
                   ((wPawns & BitBoard::maskAToGFiles) >> 7));
     wBackward &= ~BitBoard::northFill(bPawnFiles);
-    U64 bBackward = bPawns & ~((wPawns | bPawns) << 8) & (wPawnAttacks << 8) &
-                    ~BitBoard::southFill(bPawnAttacks);
+    U64 bBackward = bPawns & ~((wPawns | bPawns) << 8) & (wPawnAttacks << 8) & bPawnNoAtks;
     bBackward &= (((bPawns & BitBoard::maskBToHFiles) << 7) |
                   ((bPawns & BitBoard::maskAToGFiles) << 9));
     bBackward &= ~BitBoard::northFill(wPawnFiles);
@@ -607,8 +612,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     static const int ppBonus[] = {-1,24,26,30,36,55,100,-1};
     int passedBonusW = 0;
     if (passedPawnsW != 0) {
-        U64 guardedPassedW = passedPawnsW & (((wPawns & BitBoard::maskBToHFiles) << 7) |
-                                              ((wPawns & BitBoard::maskAToGFiles) << 9));
+        U64 guardedPassedW = passedPawnsW & wPawnAttacks;
         passedBonusW += 15 * BitBoard::bitCount(guardedPassedW);
         U64 m = passedPawnsW;
         while (m != 0) {
@@ -623,8 +627,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     U64 passedPawnsB = bPawns & ~BitBoard::northFill(wPawns | wPawnAttacks | (bPawns << 8));
     int passedBonusB = 0;
     if (passedPawnsB != 0) {
-        U64 guardedPassedB = passedPawnsB & (((bPawns & BitBoard::maskBToHFiles) >> 9) |
-                                              ((bPawns & BitBoard::maskAToGFiles) >> 7));
+        U64 guardedPassedB = passedPawnsB & bPawnAttacks;
         passedBonusB += 15 * BitBoard::bitCount(guardedPassedB);
         U64 m = passedPawnsB;
         while (m != 0) {
@@ -796,6 +799,8 @@ Evaluate::knightEval(const Position& pos) {
     U64 bKnights = pos.pieceTypeBB[Piece::BKNIGHT];
     if ((wKnights | bKnights) == 0)
         return 0;
+
+    // Knight mobility
     U64 m = wKnights;
     while (m != 0) {
         int sq = BitBoard::numberOfTrailingZeros(m);
@@ -812,6 +817,38 @@ Evaluate::knightEval(const Position& pos) {
         score -= knightMobScore[sq][BitBoard::bitCount(atk & ~pos.blackBB)];
         m &= m-1;
     }
+
+    // Knight outposts
+    static const int outPostBonus[64] = {  0,  0,  0,  0,  0,  0,  0,  0,
+                                           0,  0,  0,  0,  0,  0,  0,  0,
+                                           0,  4,  7, 10, 10,  7,  4,  0,
+                                           0,  4,  9, 12, 12,  9,  4,  0,
+                                           0,  0,  5,  8,  8,  5,  0,  0,
+                                           0,  0,  0,  0,  0,  0,  0,  0,
+                                           0,  0,  0,  0,  0,  0,  0,  0,
+                                           0,  0,  0,  0,  0,  0,  0,  0 };
+    m = wKnights & phd->outPostsW;
+    if (m != 0) {
+        int outPost = 0;
+        while (m != 0) {
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            outPost += outPostBonus[63-sq] * 4;
+            m &= m-1;
+        }
+        score += interpolate(0, outPost, mhd->wKnightOutPostIPF);
+    }
+
+    m = bKnights & phd->outPostsB;
+    if (m != 0) {
+        int outPost = 0;
+        while (m != 0) {
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            outPost += outPostBonus[sq] * 4;
+            m &= m-1;
+        }
+        score -= interpolate(0, outPost, mhd->bKnightOutPostIPF);
+    }
+
     return score;
 }
 

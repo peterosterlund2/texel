@@ -100,8 +100,11 @@ private:
         short passedBonusB;
         U64 passedPawnsW;     // The most advanced passed pawns for each file
         U64 passedPawnsB;
+        U64 outPostsW;        // Possible outpost squares for white
+        U64 outPostsB;
     };
-    static vector_aligned<PawnHashData> pawnHash;
+    static std::vector<PawnHashData> pawnHash;
+    const PawnHashData* phd;
 
     static const ubyte kpkTable[2*32*64*48/8];
     static const ubyte krkpTable[2*32*48*8];
@@ -172,6 +175,7 @@ private:
         short wPassedPawnIPF, bPassedPawnIPF;
         short kingSafetyIPF;
         short diffColorBishopIPF;
+        short wKnightOutPostIPF, bKnightOutPostIPF;
     };
     static std::vector<MaterialHashData> materialHash;
     const MaterialHashData* mhd;

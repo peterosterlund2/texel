@@ -548,6 +548,15 @@ testPawnRace() {
     ASSERT(evalWhite(pos) < -winScore + pV);
 }
 
+static void
+testKnightOutPost() {
+    Position pos = TextIO::readFEN("rnrq2nk/ppp1p1pp/8/4Np2/3P4/8/P3P3/R1RQ2NK w KQkq - 0 1");
+    int s1 = evalWhite(pos);
+    pos = TextIO::readFEN("rnrq2nk/ppp1p1pp/8/3PNp2/8/8/P3P3/R1RQ2NK w KQkq - 0 1");
+    int s2 = evalWhite(pos);
+    ASSERT(s2 < s1);
+}
+
 cute::suite
 EvaluateTest::getSuite() const {
     cute::suite s;
@@ -566,5 +575,6 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testKPK));
     s.push_back(CUTE(testCantWin));
     s.push_back(CUTE(testPawnRace));
+    s.push_back(CUTE(testKnightOutPost));
     return s;
 }
