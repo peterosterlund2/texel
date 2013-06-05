@@ -296,10 +296,10 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
         int bMajor = BitBoard::bitCount(pos.pieceTypeBB[Piece::BQUEEN] | pos.pieceTypeBB[Piece::BROOK]);
         int w = std::min(wMajor, 3);
         int b = std::min(bMajor, 3);
-        static int bonus[4][4] = { {   0, -25,   0,   0 },
-                                   {  25,   0,   0,   0 },
-                                   {   0,   0,   0,  25 },
-                                   {   0,   0, -25,   0 } };
+        static const int bonus[4][4] = { {   0, -50,   0,   0 },
+                                         {  50,   0,   0,   0 },
+                                         {   0,   0,   0,  38 },
+                                         {   0,   0, -38,   0 } };
         score += bonus[w][b];
     }
     mhd.id = pos.materialId();
@@ -585,9 +585,9 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     const int bIslands = BitBoard::bitCount(((~bPawnFiles) >> 1) & bPawnFiles);
     const int bIsolated = BitBoard::bitCount(~(bPawnFiles<<1) & bPawnFiles & ~(bPawnFiles>>1));
 
-    score -= (wDouble - bDouble) * 25;
-    score -= (wIslands - bIslands) * 15;
-    score -= (wIsolated - bIsolated) * 15;
+    score -= (wDouble - bDouble) * 19;
+    score -= (wIslands - bIslands) * 14;
+    score -= (wIsolated - bIsolated) * 9;
 
     // Evaluate backward pawns, defined as a pawn that guards a friendly pawn,
     // can't be guarded by friendly pawns, can advance, but can't advance without
@@ -821,9 +821,9 @@ Evaluate::knightEval(const Position& pos) {
     // Knight outposts
     static const int outPostBonus[64] = {  0,  0,  0,  0,  0,  0,  0,  0,
                                            0,  0,  0,  0,  0,  0,  0,  0,
-                                           0,  4,  7, 10, 10,  7,  4,  0,
-                                           0,  4,  9, 12, 12,  9,  4,  0,
-                                           0,  0,  5,  8,  8,  5,  0,  0,
+                                           0, 14, 25, 36, 36, 25, 14,  0,
+                                           0, 14, 33, 43, 43, 33, 14,  0,
+                                           0,  0, 18, 29, 29, 18,  0,  0,
                                            0,  0,  0,  0,  0,  0,  0,  0,
                                            0,  0,  0,  0,  0,  0,  0,  0,
                                            0,  0,  0,  0,  0,  0,  0,  0 };
@@ -832,7 +832,7 @@ Evaluate::knightEval(const Position& pos) {
         int outPost = 0;
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
-            outPost += outPostBonus[63-sq] * 4;
+            outPost += outPostBonus[63-sq];
             m &= m-1;
         }
         score += interpolate(0, outPost, mhd->wKnightOutPostIPF);
@@ -843,7 +843,7 @@ Evaluate::knightEval(const Position& pos) {
         int outPost = 0;
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
-            outPost += outPostBonus[sq] * 4;
+            outPost += outPostBonus[sq];
             m &= m-1;
         }
         score -= interpolate(0, outPost, mhd->bKnightOutPostIPF);

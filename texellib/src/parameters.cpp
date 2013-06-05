@@ -25,6 +25,13 @@
 
 #include "parameters.hpp"
 
+Parameters::Parameters() {
+//    addPar(std::make_shared<SpinParam>("doubled", true, 0, 2048, 25));
+//    addPar(std::make_shared<SpinParam>("island", true, 0, 2048, 15));
+//    addPar(std::make_shared<SpinParam>("isolated", true, 0, 2048, 15));
+//    addPar(std::make_shared<SpinParam>("nOutpost", true, 0, 2048, 128));
+}
+
 Parameters&
 Parameters::instance() {
     static Parameters inst;
