@@ -118,12 +118,7 @@ private:
 
 public:
     /** Constructor. */
-    Evaluate()
-        : wKingZone(0), bKingZone(0),
-          wKingAttacks(0), bKingAttacks(0),
-          wAttacksBB(0), bAttacksBB(0),
-          wPawnAttacks(0), bPawnAttacks(0) {
-    }
+    Evaluate();
 
     /**
      * Static evaluation of a position.

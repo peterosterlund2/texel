@@ -32,6 +32,13 @@
 #include <assert.h>
 
 
+Game::Game(const std::shared_ptr<Player>& whitePlayer,
+           const std::shared_ptr<Player>& blackPlayer) {
+    this->whitePlayer = whitePlayer;
+    this->blackPlayer = blackPlayer;
+    handleCommand("new");
+}
+
 bool
 Game::processString(const std::string& str) {
     if (handleCommand(str))

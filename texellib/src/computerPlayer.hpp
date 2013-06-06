@@ -60,18 +60,7 @@ public:
     static std::string engineName;
     bool verbose;
 
-    ComputerPlayer()
-        : tt(15),
-          book(verbose)
-    {
-        minTimeMillis = 10000;
-        maxTimeMillis = 10000;
-        maxDepth = 100;
-        maxNodes = -1;
-        verbose = true;
-        bookEnabled = true;
-        currentSearch = NULL;
-    }
+    ComputerPlayer();
 
     void setTTLogSize(int logSize) {
         tt.reSize(logSize);
@@ -91,12 +80,7 @@ public:
         bookEnabled = bookOn;
     }
 
-    void timeLimit(int minTimeLimit, int maxTimeLimit) {
-        minTimeMillis = minTimeLimit;
-        maxTimeMillis = maxTimeLimit;
-        if (currentSearch != NULL)
-            currentSearch->timeLimit(minTimeLimit, maxTimeLimit);
-    }
+    void timeLimit(int minTimeLimit, int maxTimeLimit);
 
     void clearTT() {
         tt.clear();

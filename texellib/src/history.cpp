@@ -24,3 +24,26 @@
  */
 
 #include "history.hpp"
+
+void
+History::init() {
+    for (int p = 0; p < Piece::nPieceTypes; p++) {
+        for (int sq = 0; sq < 64; sq++) {
+            Entry& e = ht[p][sq];
+            e.countSuccess = 0;
+            e.countFail = 0;
+            e.score = -1;
+        }
+    }
+}
+
+void
+History::reScale() {
+    for (int p = 0; p < Piece::nPieceTypes; p++) {
+        for (int sq = 0; sq < 64; sq++) {
+            Entry& e = ht[p][sq];
+            e.countSuccess /= 4;
+            e.countFail /= 4;
+        }
+    }
+}

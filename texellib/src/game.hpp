@@ -73,11 +73,7 @@ public:
     GameState drawState;
 
     Game(const std::shared_ptr<Player>& whitePlayer,
-         const std::shared_ptr<Player>& blackPlayer) {
-        this->whitePlayer = whitePlayer;
-        this->blackPlayer = blackPlayer;
-        handleCommand("new");
-    }
+         const std::shared_ptr<Player>& blackPlayer);
 
     virtual ~Game() { }
 

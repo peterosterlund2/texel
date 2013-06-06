@@ -41,9 +41,25 @@ testIsWhite() {
     ASSERT_EQUAL(false, Piece::isWhite(Piece::BKING));
 }
 
+static void
+testMakeWhiteBlack() {
+    for (int p = 0; p < Piece::nPieceTypes; p++) {
+        if (p == Piece::EMPTY)
+            continue;
+        ASSERT(Piece::isWhite(Piece::makeWhite(p)));
+        ASSERT(!Piece::isWhite(Piece::makeBlack(p)));
+        if (Piece::isWhite(p)) {
+            ASSERT_EQUAL(p, Piece::makeWhite(Piece::makeBlack(p)));
+        } else {
+            ASSERT_EQUAL(p, Piece::makeBlack(Piece::makeWhite(p)));
+        }
+    }
+}
+
 cute::suite
 PieceTest::getSuite() const {
     cute::suite s;
     s.push_back(CUTE(testIsWhite));
+    s.push_back(CUTE(testMakeWhiteBlack));
     return s;
 }

@@ -248,6 +248,13 @@ const int Evaluate::bishMobScore[] = {-15,-10,-6,-2,2,6,10,13,16,18,20,22,23,24}
 const int Evaluate::queenMobScore[] = {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,9,10,10,10,10,10,10,10,10,10,10,10,10};
 int Evaluate::knightMobScore[64][9];
 
+Evaluate::Evaluate()
+    : wKingZone(0), bKingZone(0),
+      wKingAttacks(0), bKingAttacks(0),
+      wAttacksBB(0), bAttacksBB(0),
+      wPawnAttacks(0), bPawnAttacks(0) {
+}
+
 int
 Evaluate::evalPos(const Position& pos) {
     int score = materialScore(pos);

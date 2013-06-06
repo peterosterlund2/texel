@@ -46,26 +46,9 @@ public:
         init();
     }
 
-    void init() {
-        for (int p = 0; p < Piece::nPieceTypes; p++) {
-            for (int sq = 0; sq < 64; sq++) {
-                Entry& e = ht[p][sq];
-                e.countSuccess = 0;
-                e.countFail = 0;
-                e.score = -1;
-            }
-        }
-    }
+    void init();
 
-    void reScale() {
-        for (int p = 0; p < Piece::nPieceTypes; p++) {
-            for (int sq = 0; sq < 64; sq++) {
-                Entry& e = ht[p][sq];
-                e.countSuccess /= 4;
-                e.countFail /= 4;
-            }
-        }
-    }
+    void reScale();
 
     /** Record move as a success. */
     void addSuccess(const Position& pos, const Move& m, int depth) {

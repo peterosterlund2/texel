@@ -43,6 +43,18 @@ ComputerPlayer::staticInitialize() {
     engineName = name;
 }
 
+ComputerPlayer::ComputerPlayer()
+    : tt(15),
+      book(verbose)
+{
+    minTimeMillis = 10000;
+    maxTimeMillis = 10000;
+    maxDepth = 100;
+    maxNodes = -1;
+    verbose = true;
+    bookEnabled = true;
+    currentSearch = NULL;
+}
 
 std::string
 ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vector<Position>& history) {
@@ -122,6 +134,14 @@ ComputerPlayer::canClaimDraw(Position& pos, std::vector<U64>& posHashList,
         pos.unMakeMove(move, ui);
     }
     return drawStr;
+}
+
+void
+ComputerPlayer::timeLimit(int minTimeLimit, int maxTimeLimit) {
+    minTimeMillis = minTimeLimit;
+    maxTimeMillis = maxTimeLimit;
+    if (currentSearch != NULL)
+        currentSearch->timeLimit(minTimeLimit, maxTimeLimit);
 }
 
 std::pair<Move, std::string>
