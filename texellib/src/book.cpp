@@ -309,7 +309,7 @@ Book::bookLines[] = {
     "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 d6 O-O Bd7 c3 g6 d4 Bg7 Re1 Nge7 Be3 O-O Nbd2 h6 dxe5 dxe5 Bb3 b6 a4",
     "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 d6 c3 Bd7 d4 Nge7 Bb3 h6 Nbd2 Ng6 Nc4 Be7 Ne3 O-O",
     "e4 e5 Nf3 Nc6 Bb5 Nf6 O-O Bc5 c3 O-O d4 Bb6 Bg5 h6 Bh4 d6 a4 a5 Re1 exd4 Bxc6 bxc6 Nxd4",
-    "e4 e5 Nf3 Nc6 Bb5 Nf6? O-O Bc5 Nxe5 Nxe5 d4 a6 Ba4 Nxe4 Qe2 Be7 Qxe4 Ng6",
+    "e4 e5 Nf3 Nc6 Bb5 Nf6? O-O Bc5 Nxe5 Nxe5 d4 a6 Ba4 b5 Bb3 Bxd4 Qxd4 d6",
     "e4 e5 Nf3 Nc6 Bb5 Nf6? O-O Bc5? Nc3? O-O d3 d6",
 
     // Scandinavian
@@ -353,6 +353,7 @@ Book::bookLines[] = {
     "e4 c5 Nf3 e6 d4 cxd4 Nxd4 a6 Bd3 Nf6 O-O Qc7 Qe2 d6 c4 g6 Nc3 Bg7 Rd1 O-O",
     "e4 c5 Nf3 e6 d4 cxd4 Nxd4 Nf6 Nc3 d6 Be2 a6 O-O Be7 f4 O-O",
     "e4 c5 Nf3 e6 d4 cxd4 Nxd4 Nc6 Nc3 Qc7 Be3 a6 Bd3 Nf6 O-O Ne5 h3 Bc5 Qe2 d6",
+    "e4 c5 Nf3 e6 d4 cxd4 Nxd4 Nc6 Nc3 Qc7 f4 a6 Be2 b5",
     "e4 c5 Nf3 e6? Nc3 Nc6 d4 cxd4 Nxd4 Qc7 Be3 a6 Qd2 Nf6 O-O-O Be7",
     "e4 c5 Nc3 Nc6 Nge2 g6 d4 cxd4 Nxd4 Bg7 Be3 Nf6 Bc4 O-O Bb3 d6",
     "e4 c5 Nc3 Nc6 f4 d6 Nf3 g6 Bb5 Bd7 O-O Bg7 d3 a6 Bc4 Na5 e5 Nxc4 dxc4 Be6",
