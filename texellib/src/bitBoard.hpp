@@ -29,9 +29,6 @@
 #include "util.hpp"
 #include "alignedAlloc.hpp"
 
-#define HAVE_CTZ 1
-#define HAVE_POPCNT 1
-
 class BitBoard {
 public:
     /** Squares attacked by a king on a given square. */
@@ -103,7 +100,7 @@ public:
     }
 
     static int numberOfTrailingZeros(U64 mask) {
-#if HAVE_CTZ
+#ifdef HAVE_CTZ
         if (sizeof(U64) == sizeof(long))
             return __builtin_ctzl(mask);
         else if (sizeof(U64) == sizeof(long long))
@@ -114,7 +111,7 @@ public:
 
     /** Return number of 1 bits in mask. */
     static int bitCount(U64 mask) {
-#if HAVE_POPCNT
+#ifdef HAVE_POPCNT
         if (sizeof(U64) == sizeof(long))
             return __builtin_popcountl(mask);
         else if (sizeof(U64) == sizeof(long long))

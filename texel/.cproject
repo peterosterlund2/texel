@@ -28,6 +28,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/src}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.383137702" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1910639426" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
+									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.263772406" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.274157317" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
@@ -102,6 +106,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/src}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1087135514" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.237750881" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
+									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.146033721" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool command="gcc" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" errorParsers="org.eclipse.cdt.core.GCCErrorParser" id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.1356078551" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
@@ -177,6 +185,10 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.275396237" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.debugging.gprof.1734747791" name="Generate gprof information (-pg)" superClass="gnu.cpp.compiler.option.debugging.gprof" value="true" valueType="boolean"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1914824252" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
+									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1359583299" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool command="gcc" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" errorParsers="org.eclipse.cdt.core.GCCErrorParser" id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.469974566" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
