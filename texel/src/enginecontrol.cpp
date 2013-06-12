@@ -304,6 +304,8 @@ EngineControl::setupPosition(Position pos, const std::vector<Move>& moves) {
         const Move& m = moves[i];
         posHashList[posHashListSize++] = pos.zobristHash();
         pos.makeMove(m, ui);
+        if (pos.halfMoveClock == 0)
+            posHashListSize = 0;
     }
     this->pos = pos;
 }
