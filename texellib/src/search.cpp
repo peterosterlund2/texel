@@ -1100,22 +1100,6 @@ Search::selectHashMove(MoveGen::MoveList& moves, const Move& hashMove) {
     return false;
 }
 
-bool
-Search::canClaimDrawRep(const Position& pos, const std::vector<U64>& posHashList,
-                       int posHashListSize, int posHashFirstNew) {
-    int reps = 0;
-    for (int i = posHashListSize - 4; i >= 0; i -= 2) {
-        if (pos.zobristHash() == posHashList[i]) {
-            reps++;
-            if (i >= posHashFirstNew) {
-                reps++;
-                break;
-            }
-        }
-    }
-    return (reps >= 2);
-}
-
 void
 Search::initNodeStats() {
     nodes = qNodes = 0;

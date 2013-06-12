@@ -269,4 +269,19 @@ private:
     Search& operator=(const Search& other);
 };
 
+inline bool
+Search::canClaimDrawRep(const Position& pos, const std::vector<U64>& posHashList,
+                       int posHashListSize, int posHashFirstNew) {
+    int reps = 0;
+    int stop = std::max(0, posHashListSize - pos.halfMoveClock);
+    for (int i = posHashListSize - 4; i >= stop; i -= 2) {
+        if (pos.zobristHash() == posHashList[i]) {
+            reps++;
+            if ((i >= posHashFirstNew) || (reps >= 2))
+                return true;
+        }
+    }
+    return false;
+}
+
 #endif /* SEARCH_HPP_ */
