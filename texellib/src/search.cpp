@@ -436,7 +436,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         int plyToMate = MATE0 - std::abs(score);
         int eDepth = ent.getDepth();
         ent.getMove(hashMove);
-        if ((beta == alpha + 1) && ((eDepth >= depth) || (eDepth >= plyToMate*plyScale))) {
+        if (((beta == alpha + 1) || (depth <= ply*plyScale)) && ((eDepth >= depth) || (eDepth >= plyToMate*plyScale))) {
             if (     (ent.type == TType::T_EXACT) ||
                     ((ent.type == TType::T_GE) && (score >= beta)) ||
                     ((ent.type == TType::T_LE) && (score <= alpha))) {
