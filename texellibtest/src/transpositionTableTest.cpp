@@ -46,12 +46,12 @@ testTTEntry() {
     int score = 17;
     int ply = 3;
     TTEntry ent1;
-    ent1.key = 1;
+    ent1.setKey(1);
     ent1.setMove(move);
     ent1.setScore(score, ply);
     ent1.setDepth(3);
-    ent1.generation = 0;
-    ent1.type = TType::T_EXACT;
+    ent1.setGeneration(0);
+    ent1.setType(TType::T_EXACT);
     Move tmpMove;
     ent1.getMove(tmpMove);
     ASSERT_EQUAL(move, tmpMove);
@@ -62,13 +62,13 @@ testTTEntry() {
     TTEntry ent2;
     score = mate0 - 6;
     ply = 3;
-    ent2.key = 3;
+    ent2.setKey(3);
     move = Move(8, 0, Piece::BQUEEN);
     ent2.setMove(move);
     ent2.setScore(score, ply);
     ent2.setDepth(99);
-    ent2.generation = 0;
-    ent2.type = TType::T_EXACT;
+    ent2.setGeneration(0);
+    ent2.setType(TType::T_EXACT);
     ent2.getMove(tmpMove);
     ASSERT_EQUAL(move, tmpMove);
     ASSERT_EQUAL(score, ent2.getScore(ply));
@@ -78,15 +78,15 @@ testTTEntry() {
     ASSERT(!ent1.betterThan(ent2, 0));  // More depth is good
     ASSERT(ent2.betterThan(ent1, 0));
 
-    ent2.generation = 1;
+    ent2.setGeneration(1);
     ASSERT(!ent2.betterThan(ent1, 0));  // ent2 has wrong generation
     ASSERT(ent2.betterThan(ent1, 1));   // ent1 has wrong generation
 
-    ent2.generation = 0;
+    ent2.setGeneration(0);
     ent1.setDepth(7); ent2.setDepth(7);
-    ent1.type = TType::T_GE;
+    ent1.setType(TType::T_GE);
     ASSERT(ent2.betterThan(ent1, 0));
-    ent2.type = TType::T_LE;
+    ent2.setType(TType::T_LE);
     ASSERT(!ent2.betterThan(ent1, 0));  // T_GE is equally good as T_LE
     ASSERT(!ent1.betterThan(ent2, 0));
 
@@ -94,13 +94,13 @@ testTTEntry() {
     TTEntry ent3;
     score = -mate0 + 5;
     ply = 3;
-    ent3.key = 3;
+    ent3.setKey(3);
     move = Move(8, 0, Piece::BQUEEN);
     ent3.setMove(move);
     ent3.setScore(score, ply);
     ent3.setDepth(99);
-    ent3.generation = 0;
-    ent3.type = TType::T_EXACT;
+    ent3.setGeneration(0);
+    ent3.setType(TType::T_EXACT);
     ent3.getMove(tmpMove);
     ASSERT_EQUAL(move, tmpMove);
     ASSERT_EQUAL(score, ent3.getScore(ply));
@@ -134,14 +134,18 @@ testInsert() {
         Move m = TextIO::stringToMove(pos, moves[i]);
         pos.makeMove(m, ui);
         TranspositionTable::TTEntry ent;
+        ent.setMove(Move());
+        ent.setScore(0, 0);
+        ent.setDepth(0);
+        ent.setEvalScore(0);
         tt.probe(pos.historyHash(), ent);
-        ASSERT_EQUAL(TType::T_EXACT, (int)ent.type);
+        ASSERT_EQUAL(TType::T_EXACT, (int)ent.getType());
         int score = i * 17 + 3;
         int ply = i + 1;
         int depth = i * 2 + 5;
         ASSERT_EQUAL(score, ent.getScore(ply));
         ASSERT_EQUAL(depth, ent.getDepth());
-        ASSERT_EQUAL(score * 2 + 3, ent.evalScore);
+        ASSERT_EQUAL(score * 2 + 3, ent.getEvalScore());
         Move tmpMove;
         ent.getMove(tmpMove);
         ASSERT_EQUAL(m, tmpMove);

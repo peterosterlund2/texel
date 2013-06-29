@@ -39,7 +39,7 @@ TranspositionTable::reSize(int log2Size) {
     const size_t numEntries = ((size_t)1) << log2Size;
     table.resize(numEntries);
     for (size_t i = 0; i < numEntries; i++)
-        table[i].type = TType::T_EMPTY;
+        table[i].setType(TType::T_EMPTY);
     generation = 0;
 }
 
@@ -49,15 +49,15 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
     size_t idx0 = getIndex(key);
     int key2 = getStoredKey(key);
     TTEntry* ent = &table[idx0];
-    if (ent->key != key2) {
+    if (ent->getKey() != key2) {
         size_t idx1 = idx0 ^ 1;
         ent = &table[idx1];
-        if (ent->key != key2)
+        if (ent->getKey() != key2)
             if (table[idx1].betterThan(table[idx0], generation))
                 ent = &table[idx0];
     }
     bool doStore = true;
-    if ((ent->key == key2) && (ent->getDepth() > depth) && (ent->type == type)) {
+    if ((ent->getKey() == key2) && (ent->getDepth() > depth) && (ent->getType() == type)) {
         if (type == TType::T_EXACT)
             doStore = false;
         else if ((type == TType::T_GE) && (sm.score() <= ent->getScore(ply)))
@@ -66,14 +66,14 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
             doStore = false;
     }
     if (doStore) {
-        if ((ent->key != key2) || (sm.from() != sm.to()))
+        if ((ent->getKey() != key2) || (sm.from() != sm.to()))
             ent->setMove(sm);
-        ent->key = key2;
+        ent->setKey(key2);
         ent->setScore(sm.score(), ply);
         ent->setDepth(depth);
-        ent->generation = (byte)generation;
-        ent->type = (byte)type;
-        ent->evalScore = (short)evalScore;
+        ent->setGeneration((byte)generation);
+        ent->setType(type);
+        ent->setEvalScore(evalScore);
     }
 }
 
@@ -91,7 +91,7 @@ TranspositionTable::extractPVMoves(const Position& rootPos, const Move& mFirst, 
         hashHistory.push_back(pos.zobristHash());
         TTEntry ent;
         probe(pos.historyHash(), ent);
-        if (ent.type == TType::T_EMPTY)
+        if (ent.getType() == TType::T_EMPTY)
             break;
         ent.getMove(m);
         MoveGen::MoveList moves;
@@ -119,7 +119,7 @@ TranspositionTable::extractPV(const Position& posIn) {
     UndoInfo ui;
     std::vector<U64> hashHistory;
     bool repetition = false;
-    while (ent.type != TType::T_EMPTY) {
+    while (ent.getType() != TType::T_EMPTY) {
         Move m;
         ent.getMove(m);
         MoveGen::MoveList moves;
@@ -137,9 +137,9 @@ TranspositionTable::extractPV(const Position& posIn) {
             break;
         if (!first)
             ret += ' ';
-        if (ent.type == TType::T_LE)
+        if (ent.getType() == TType::T_LE)
             ret += '<';
-        else if (ent.type == TType::T_GE)
+        else if (ent.getType() == TType::T_GE)
             ret += '>';
         std::string moveStr = TextIO::moveToString(pos, m, false);
         ret += moveStr;
@@ -162,10 +162,10 @@ TranspositionTable::printStats() const {
     depHist.resize(maxDepth);
     for (size_t i = 0; i < table.size(); i++) {
         const TTEntry& ent = table[i];
-        if (ent.type == TType::T_EMPTY) {
+        if (ent.getType() == TType::T_EMPTY) {
             unused++;
         } else {
-            if (ent.generation == generation)
+            if (ent.getGeneration() == generation)
                 thisGen++;
             if (ent.getDepth() < maxDepth)
                 depHist[ent.getDepth()]++;

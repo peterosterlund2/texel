@@ -430,23 +430,23 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     tt.probe(hKey, ent);
     Move hashMove;
     SearchTreeInfo& sti = searchTreeInfo[ply];
-    if (ent.type != TType::T_EMPTY) {
+    if (ent.getType() != TType::T_EMPTY) {
         int score = ent.getScore(ply);
-        evalScore = ent.evalScore;
+        evalScore = ent.getEvalScore();
         int plyToMate = MATE0 - std::abs(score);
         int eDepth = ent.getDepth();
         ent.getMove(hashMove);
         if (((beta == alpha + 1) || (depth <= ply*plyScale)) && ((eDepth >= depth) || (eDepth >= plyToMate*plyScale))) {
-            if (     (ent.type == TType::T_EXACT) ||
-                    ((ent.type == TType::T_GE) && (score >= beta)) ||
-                    ((ent.type == TType::T_LE) && (score <= alpha))) {
+            if (     (ent.getType() == TType::T_EXACT) ||
+                    ((ent.getType() == TType::T_GE) && (score >= beta)) ||
+                    ((ent.getType() == TType::T_LE) && (score <= alpha))) {
                 if (score >= beta) {
                     if (!hashMove.isEmpty())
                         if (pos.getPiece(hashMove.to()) == Piece::EMPTY)
                             kt.addKiller(ply, hashMove);
                 }
                 sti.bestMove = hashMove;
-                log.logNodeEnd(sti.nodeIdx, score, ent.type, evalScore, hKey);
+                log.logNodeEnd(sti.nodeIdx, score, ent.getType(), evalScore, hKey);
                 return score;
             }
         }
@@ -602,7 +602,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             sti2.nodeIdx = savedNodeIdx2;
 #endif
             tt.probe(hKey, ent);
-            if (ent.type != TType::T_EMPTY)
+            if (ent.getType() != TType::T_EMPTY)
                 ent.getMove(hashMove);
         }
     }

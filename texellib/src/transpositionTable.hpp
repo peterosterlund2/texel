@@ -41,29 +41,29 @@ class Position;
 class TranspositionTable {
 public:
     class TTEntry {
-        friend class TranspositionTable;
-    public:
-        int key;                 // Zobrist hash key
     private:
+        int key;                 // Zobrist hash key
         short move;              // from + (to<<6) + (promote<<12)
         short score;             // Score from search
         unsigned short depth;    // Search depth
-    public:
         byte generation;         // Increase when OTB position changes
         byte type;               // exact score, lower bound, upper bound
         short evalScore;         // Score from static evaluation
-        // FIXME!!! Test storing both upper and lower bound in each hash entry.
 
+    public:
         /** Return true if this object is more valuable than the other, false otherwise. */
         bool betterThan(const TTEntry& other, int currGen) const {
-            if ((generation == currGen) != (other.generation == currGen))
-                return generation == currGen;   // Old entries are less valuable
-            if ((type == TType::T_EXACT) != (other.type == TType::T_EXACT))
-                return type == TType::T_EXACT;         // Exact score more valuable than lower/upper bound
+            if ((getGeneration() == currGen) != (other.getGeneration() == currGen))
+                return getGeneration() == currGen;   // Old entries are less valuable
+            if ((getType() == TType::T_EXACT) != (other.getType() == TType::T_EXACT))
+                return getType() == TType::T_EXACT;         // Exact score more valuable than lower/upper bound
             if (getDepth() != other.getDepth())
                 return getDepth() > other.getDepth();     // Larger depth is more valuable
             return false;   // Otherwise, pretty much equally valuable
         }
+
+        int getKey() const { return key; }
+        void setKey(int k) { key = k; }
 
         void getMove(Move& m) const {
             m.setMove(move & 63, (move >> 6) & 63, (move >> 12) & 15, m.score());
@@ -93,15 +93,14 @@ public:
             this->score = (short)score;
         }
 
-        /** Get depth from the hash entry. */
-        int getDepth() const {
-            return depth;
-        }
-
-        /** Set depth. */
-        void setDepth(int d) {
-            depth = d;
-        }
+        int getDepth() const { return depth; }
+        void setDepth(int d) { depth = d; }
+        int getGeneration() const { return generation; }
+        void setGeneration(int g) { generation = (byte)g; }
+        byte getType() const { return type; }
+        void setType(int t) { type = (byte)t; }
+        int getEvalScore() const { return evalScore; }
+        void setEvalScore(int s) { evalScore = (short)s; }
     };
     vector_aligned<TTEntry> table;
     byte generation;
@@ -122,19 +121,21 @@ public:
         size_t idx0 = getIndex(key);
         int key2 = getStoredKey(key);
         TTEntry& ent = table[idx0];
-        if (ent.key == key2) {
-            ent.generation = (byte)generation;
+        if (ent.getKey() == key2) {
+            if (ent.getGeneration() != generation)
+                ent.setGeneration(generation);
             result = ent;
             return;
         }
         size_t idx1 = idx0 ^ 1;
         TTEntry& ent2 = table[idx1];
-        if (ent2.key == key2) {
-            ent2.generation = (byte)generation;
+        if (ent2.getKey() == key2) {
+            if (ent2.getGeneration() != generation)
+                ent2.setGeneration(generation);
             result = ent2;
             return;
         }
-        result.type = TType::T_EMPTY;
+        result.setType(TType::T_EMPTY);
     }
 
     /**
@@ -148,7 +149,7 @@ public:
     /** Clear the transposition table. */
     void clear() {
         for (size_t i = 0; i < table.size(); i++)
-            table[i].type = TType::T_EMPTY;
+            table[i].setType(TType::T_EMPTY);
     }
 
     /**

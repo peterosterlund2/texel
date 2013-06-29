@@ -322,7 +322,7 @@ EngineControl::getPonderMove(Position pos, const Move& m) {
     pos.makeMove(m, ui);
     TranspositionTable::TTEntry ent;
     tt.probe(pos.historyHash(), ent);
-    if (ent.type != TType::T_EMPTY) {
+    if (ent.getType() != TType::T_EMPTY) {
         ent.getMove(ret);
         MoveGen::MoveList moves;
         MoveGen::pseudoLegalMoves(pos, moves);
