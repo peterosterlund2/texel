@@ -41,16 +41,27 @@ class Position;
 class TranspositionTable {
 public:
     class TTEntry {
-    private:
-        int key;                 // Zobrist hash key
-        short move;              // from + (to<<6) + (promote<<12)
-        short score;             // Score from search
-        unsigned short depth;    // Search depth
-        byte generation;         // Increase when OTB position changes
-        byte type;               // exact score, lower bound, upper bound
-        short evalScore;         // Score from static evaluation
-
     public:
+        /** Set type to T_EMPTY. */
+        void clear() {
+            key = 0;
+            data = 0;
+            setType(TType::T_EMPTY);
+        }
+
+        /** Store in transposition table, encoded for thread safety. */
+        void store(TTEntry& ent) {
+            ACCESS_ONCE(ent.key) = key ^ data;
+            ACCESS_ONCE(ent.data) = data;
+        }
+
+        /** Load from transposition table, decode the thread safety encoding. */
+        void load(const TTEntry& ent) {
+            key = ACCESS_ONCE_CONST(ent.key);
+            data = ACCESS_ONCE_CONST(ent.data);
+            key ^= data;
+        }
+
         /** Return true if this object is more valuable than the other, false otherwise. */
         bool betterThan(const TTEntry& other, int currGen) const {
             if ((getGeneration() == currGen) != (other.getGeneration() == currGen))
@@ -66,16 +77,18 @@ public:
         void setKey(int k) { key = k; }
 
         void getMove(Move& m) const {
+            int move = getBits(0, 16);
             m.setMove(move & 63, (move >> 6) & 63, (move >> 12) & 15, m.score());
         }
 
-        void setMove(const Move& move) {
-            this->move = (short)(move.from() + (move.to() << 6) + (move.promoteTo() << 12));
+        void setMove(const Move& m) {
+            int move = (short)(m.from() + (m.to() << 6) + (m.promoteTo() << 12));
+            setBits(0, 16, move);
         }
 
         /** Get the score from the hash entry and convert from "mate in x" to "mate at ply". */
         int getScore(int ply) const {
-            int sc = score;
+            int sc = (S16)getBits(16, 16);
             if (sc > SearchConst::MATE0 - 1000) {
                 sc -= ply;
             } else if (sc < -(SearchConst::MATE0 - 1000)) {
@@ -90,20 +103,39 @@ public:
                 score += ply;
             else if (score < -(SearchConst::MATE0 - 1000))
                 score -= ply;
-            this->score = (short)score;
+            setBits(16, 16, score);
         }
 
-        int getDepth() const { return depth; }
-        void setDepth(int d) { depth = d; }
-        int getGeneration() const { return generation; }
-        void setGeneration(int g) { generation = (byte)g; }
-        byte getType() const { return type; }
-        void setType(int t) { type = (byte)t; }
-        int getEvalScore() const { return evalScore; }
-        void setEvalScore(int s) { evalScore = (short)s; }
+        int getDepth() const { return getBits(32, 10); }
+        void setDepth(int d) { setBits(32, 10, d); }
+        int getGeneration() const { return getBits(42, 4); }
+        void setGeneration(int g) { setBits(42, 4, g); }
+        int getType() const { return getBits(46, 2); }
+        void setType(int t) { setBits(46, 2, t); }
+        int getEvalScore() const { return (S16)getBits(48, 16); }
+        void setEvalScore(int s) { setBits(48, 16, s); }
+
+    private:
+        U64 key;        //  0 64 key         Zobrist hash key
+        U64 data;       //  0 16 move        from + (to<<6) ++ (promote<<12)
+                        // 16 16 score       Score from search
+                        // 32 10 depth       Search depth
+                        // 42  4 generation  Increase when OTB position changes
+                        // 46  2 type        exact score, lower bound, upper bound
+                        // 48 16 evalScore   Score from static evaluation
+
+        void setBits(int first, int size, unsigned int value) {
+            U64 mask = ((1ULL << size) - 1) << first;
+            data = (data & ~mask) | (((U64)value << first) & mask);
+        }
+
+        unsigned int getBits(int first, int size) const {
+            U64 sizeMask = ((1ULL << size) - 1);
+            return (data >> first) & sizeMask;
+        }
     };
     vector_aligned<TTEntry> table;
-    byte generation;
+    ubyte generation;
 
 public:
     /** Constructor. Creates an empty transposition table with numEntries slots. */
@@ -120,19 +152,24 @@ public:
     void probe(U64 key, TTEntry& result) {
         size_t idx0 = getIndex(key);
         int key2 = getStoredKey(key);
-        TTEntry& ent = table[idx0];
+        TTEntry ent;
+        ent.load(table[idx0]);
         if (ent.getKey() == key2) {
-            if (ent.getGeneration() != generation)
+            if (ent.getGeneration() != generation) {
                 ent.setGeneration(generation);
+                ent.store(table[idx0]);
+            }
             result = ent;
             return;
         }
         size_t idx1 = idx0 ^ 1;
-        TTEntry& ent2 = table[idx1];
-        if (ent2.getKey() == key2) {
-            if (ent2.getGeneration() != generation)
-                ent2.setGeneration(generation);
-            result = ent2;
+        ent.load(table[idx1]);
+        if (ent.getKey() == key2) {
+            if (ent.getGeneration() != generation) {
+                ent.setGeneration(generation);
+                ent.store(table[idx1]);
+            }
+            result = ent;
             return;
         }
         result.setType(TType::T_EMPTY);
@@ -143,13 +180,15 @@ public:
      * more valuable than the entries currently present in the hash table.
      */
     void nextGeneration() {
-        generation++;
+        generation = (generation + 1) & 15;
     }
 
     /** Clear the transposition table. */
     void clear() {
+        TTEntry ent;
+        ent.clear();
         for (size_t i = 0; i < table.size(); i++)
-            table[i].setType(TType::T_EMPTY);
+            ent.store(table[i]);
     }
 
     /**
@@ -168,7 +207,7 @@ private:
     size_t getIndex(U64 key) const;
 
     /** Get part of zobrist key to store in hash table. */
-    static int getStoredKey(U64 key);
+    static U64 getStoredKey(U64 key);
 };
 
 inline size_t
@@ -176,9 +215,9 @@ TranspositionTable::getIndex(U64 key) const {
     return (size_t)(key & (table.size() - 1));
 }
 
-inline int
+inline U64
 TranspositionTable::getStoredKey(U64 key) {
-    return (int)(key >> 32);
+    return key;
 }
 
 #endif /* TRANSPOSITIONTABLE_HPP_ */

@@ -38,8 +38,10 @@ void
 TranspositionTable::reSize(int log2Size) {
     const size_t numEntries = ((size_t)1) << log2Size;
     table.resize(numEntries);
+    TTEntry ent;
+    ent.clear();
     for (size_t i = 0; i < numEntries; i++)
-        table[i].setType(TType::T_EMPTY);
+        ent.store(table[i]);
     generation = 0;
 }
 
@@ -48,13 +50,20 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
     if (depth < 0) depth = 0;
     size_t idx0 = getIndex(key);
     int key2 = getStoredKey(key);
-    TTEntry* ent = &table[idx0];
-    if (ent->getKey() != key2) {
+    TTEntry ent0, ent1;
+    ent0.load(table[idx0]);
+    size_t idx = idx0;
+    TTEntry* ent = &ent0;
+    if (ent0.getKey() != key2) {
         size_t idx1 = idx0 ^ 1;
-        ent = &table[idx1];
-        if (ent->getKey() != key2)
-            if (table[idx1].betterThan(table[idx0], generation))
-                ent = &table[idx0];
+        ent1.load(table[idx1]);
+        idx = idx1;
+        ent = &ent1;
+        if (ent1.getKey() != key2)
+            if (ent1.betterThan(ent0, generation)) {
+                idx = idx0;
+                ent = &ent0;
+            }
     }
     bool doStore = true;
     if ((ent->getKey() == key2) && (ent->getDepth() > depth) && (ent->getType() == type)) {
@@ -74,6 +83,7 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
         ent->setGeneration((byte)generation);
         ent->setType(type);
         ent->setEvalScore(evalScore);
+        ent->store(table[idx]);
     }
 }
 
@@ -90,6 +100,7 @@ TranspositionTable::extractPVMoves(const Position& rootPos, const Move& mFirst, 
             break;
         hashHistory.push_back(pos.zobristHash());
         TTEntry ent;
+        ent.clear();
         probe(pos.historyHash(), ent);
         if (ent.getType() == TType::T_EMPTY)
             break;
@@ -115,6 +126,7 @@ TranspositionTable::extractPV(const Position& posIn) {
     Position pos(posIn);
     bool first = true;
     TTEntry ent;
+    ent.clear();
     probe(pos.historyHash(), ent);
     UndoInfo ui;
     std::vector<U64> hashHistory;
@@ -161,7 +173,8 @@ TranspositionTable::printStats() const {
     const int maxDepth = 20*8;
     depHist.resize(maxDepth);
     for (size_t i = 0; i < table.size(); i++) {
-        const TTEntry& ent = table[i];
+        TTEntry ent;
+        ent.load(table[i]);
         if (ent.getType() == TType::T_EMPTY) {
             unused++;
         } else {

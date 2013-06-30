@@ -427,6 +427,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     int evalScore = UNKNOWN_SCORE;
     // Check transposition table
     TranspositionTable::TTEntry ent;
+    ent.clear();
     tt.probe(hKey, ent);
     Move hashMove;
     SearchTreeInfo& sti = searchTreeInfo[ply];

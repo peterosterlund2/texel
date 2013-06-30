@@ -134,10 +134,7 @@ testInsert() {
         Move m = TextIO::stringToMove(pos, moves[i]);
         pos.makeMove(m, ui);
         TranspositionTable::TTEntry ent;
-        ent.setMove(Move());
-        ent.setScore(0, 0);
-        ent.setDepth(0);
-        ent.setEvalScore(0);
+        ent.clear();
         tt.probe(pos.historyHash(), ent);
         ASSERT_EQUAL(TType::T_EXACT, (int)ent.getType());
         int score = i * 17 + 3;

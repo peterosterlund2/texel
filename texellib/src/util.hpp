@@ -37,11 +37,15 @@
 
 typedef uint64_t U64;
 typedef int64_t S64;
+typedef int16_t S16;
 typedef signed char byte;
 typedef unsigned char ubyte;
 
 template <typename T, size_t N> char (&_ArraySizeHelper(T(&array)[N]))[N];
 #define COUNT_OF(array) (sizeof(_ArraySizeHelper(array)))
+
+#define ACCESS_ONCE(x) (*static_cast<std::remove_reference<decltype(x)>::type volatile*>(&(x)))
+#define ACCESS_ONCE_CONST(x) (*static_cast<std::remove_reference<decltype(x)>::type const volatile*>(&(x)))
 
 template <typename T> class AlignedAllocator;
 /** std::vector with cache line aware allocator. */
