@@ -252,7 +252,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     shouldDetach = true;
     {
         std::lock_guard<std::mutex> L(threadMutex);
-        engineThread.reset(new std::thread(f));
+        engineThread = std::make_shared<std::thread>(f);
     }
 }
 
