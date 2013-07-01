@@ -68,7 +68,8 @@ private:
             nodeIdx = 0;
         }
     };
-    SearchTreeInfo searchTreeInfo[200];
+    static const int MAX_SEARCH_DEPTH = 100;
+    SearchTreeInfo searchTreeInfo[MAX_SEARCH_DEPTH * 2];
 
     // Time management
     S64 tStart;                // Time when search started

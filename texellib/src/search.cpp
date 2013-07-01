@@ -122,8 +122,8 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     bool firstIteration = true;
     Move bestMove = scMoves[0].move;
     this->verbose = verbose;
-    if ((maxDepth < 0) || (maxDepth > 100))
-        maxDepth = 100;
+    if ((maxDepth < 0) || (maxDepth > MAX_SEARCH_DEPTH))
+        maxDepth = MAX_SEARCH_DEPTH;
     for (size_t i = 0; i < COUNT_OF(searchTreeInfo); i++)
         searchTreeInfo[i].allowNullMove = true;
     ht.reScale();
@@ -310,7 +310,8 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         }
         S64 tNow = currentTimeMillis();
         if (verbose) {
-            for (int i = 0; i < 20; i++)
+            static_assert(COUNT_OF(nodesPlyVec) == COUNT_OF(nodesDepthVec), "Wrong array size");
+            for (int i = 0; i < (int)COUNT_OF(nodesPlyVec); i++)
                 std::cout << std::setw(2) << i
                           << ' ' << std::setw(7) << nodesPlyVec[i]
                           << ' ' << std::setw(7) << nodesDepthVec[i]
@@ -398,8 +399,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     // Collect statistics
     if (verbose) {
-        if (ply < 20) nodesPlyVec[ply]++;
-        if (depth < 20*plyScale) nodesDepthVec[depth/plyScale]++;
+        if (ply < (int)COUNT_OF(nodesPlyVec)) nodesPlyVec[ply]++;
+        if (depth < (int)COUNT_OF(nodesDepthVec)*plyScale) nodesDepthVec[depth/plyScale]++;
     }
     const U64 hKey = pos.historyHash();
 
