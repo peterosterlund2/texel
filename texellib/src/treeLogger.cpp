@@ -189,9 +189,7 @@ TreeLoggerReader::mainLoop(Position rootPos) {
             Position pos = getPosition(rootPos, currIndex);
             std::cout << TextIO::asciiBoard(pos);
             std::cout << TextIO::toFEN(pos) << std::endl;
-            std::stringstream ss;
-            ss << std::hex << std::setw(16) << std::setfill('0') << pos.historyHash();
-            std::cout << ss.str() << std::endl;
+            std::cout << num2Hex(pos.historyHash()) << std::endl;
             if (currIndex >= 0) {
                 std::vector<int> children;
                 findChildren(currIndex, children);

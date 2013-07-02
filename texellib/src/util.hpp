@@ -34,6 +34,7 @@
 #include <vector>
 #include <algorithm>
 #include <cctype>
+#include <iomanip>
 
 typedef uint64_t U64;
 typedef int64_t S64;
@@ -95,6 +96,13 @@ inline std::string
 num2Str(const T& num) {
     std::stringstream ss;
     ss << num;
+    return ss.str();
+}
+
+inline std::string
+num2Hex(U64 num) {
+    std::stringstream ss;
+    ss << std::hex << std::setw(16) << std::setfill('0') << num;
     return ss.str();
 }
 
