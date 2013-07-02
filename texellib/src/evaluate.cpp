@@ -278,12 +278,6 @@ Evaluate::evalPos(const Position& pos) {
     if (!pos.whiteMove)
         score = -score;
     return score;
-
-    // FIXME! Test penalty if side to move has >1 hanging piece
-
-    // FIXME! Test "tempo value"
-
-    // FIXME! "Kf1" bad: r1bqk2r/pp1nppb1/2p4p/3p2p1/3P4/2NBPNP1/PPP2PP1/R2QK2R w KQkq - 1 10
 }
 
 void
@@ -854,7 +848,6 @@ Evaluate::knightEval(const Position& pos) {
 
 int
 Evaluate::threatBonus(const Position& pos) {
-    // FIXME!! Try higher weight for attacks on more valuable pieces.
     int score = 0;
 
     // Sum values for all black pieces under attack
@@ -932,7 +925,6 @@ Evaluate::kingSafety(const Position& pos) {
 
 int
 Evaluate::kingSafetyKPPart(const Position& pos) {
-    // FIXME!!! Try non-linear king safety
     const U64 key = pos.pawnZobristHash() ^ pos.kingZobristHash();
     KingSafetyHashData& ksh = kingSafetyHash[(int)key & (kingSafetyHash.size() - 1)];
     if (ksh.key != key) {
@@ -1173,8 +1165,6 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
     if ((wMtrlPawns == 0) && (bMtrlNoPawns - wMtrlNoPawns > bV))
         return score - 300;       // Enough excess material, should win
     return score;
-
-    // FIXME! KRBKR is very hard to draw
 }
 
 int

@@ -517,8 +517,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Try null-move pruning
-    // FIXME! Try null-move verification in late endgames. See loss in round 21.
-    // FIXME! Try double null-move to mitigate zugzwang problems.
     sti.currentMove = emptyMove;
     if (    (depth >= 3*plyScale) && !inCheck && sti.allowNullMove &&
             (std::abs(beta) <= MATE0 / 2)) {
@@ -609,7 +607,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Start searching move alternatives
-    // FIXME! Try hash move before generating move list.
     MoveGen::MoveList moves;
     if (inCheck)
         MoveGen::checkEvasions(pos, moves);
@@ -642,7 +639,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
         bool isPromotion = (m.promoteTo() != Piece::EMPTY);
         int sVal = std::numeric_limits<int>::min();
-        // FIXME! Test extending pawn pushes to 7:th rank
         bool mayReduce = (m.score() < 53) && (!isCapture || m.score() < 0) && !isPromotion;
         bool givesCheck = MoveGen::givesCheck(pos, m);
         bool doFutility = false;

@@ -194,10 +194,6 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
         // Leave at least 1s on the clock, but can't use negative time
         minTimeLimit = clamp(minTimeLimit, 1, time - margin);
         maxTimeLimit = clamp(maxTimeLimit, 1, time - margin);
-
-        // FIXME!! Reduce time if last N (three?) iterations found the same best move
-        // FIXME!! Stop search if minTimeLimit/N time (summed over all iterations) has been spent thinking about the currently best move.
-        // FIXME!! Stop search if minTimeLimit/N has been spent, and best move has accounted for more than x% of total thinking time.
     }
 }
 

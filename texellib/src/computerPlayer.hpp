@@ -99,9 +99,6 @@ private:
      */
     std::string canClaimDraw(Position& pos, std::vector<U64>& posHashList,
                              int posHashListSize, const Move& move);
-
-
-    // FIXME!!! Test Botvinnik-Markoff extension
 };
 
 
