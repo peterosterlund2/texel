@@ -47,6 +47,7 @@ ComputerPlayer::ComputerPlayer()
     : tt(15),
       book(verbose)
 {
+    et = Evaluate::getEvalHashTables();
     minTimeMillis = 10000;
     maxTimeMillis = 10000;
     maxDepth = 100;
@@ -66,7 +67,8 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
     tt.nextGeneration();
     Position pos(posIn);
     History ht;
-    Search sc(pos, posHashList, posHashListSize, tt, ht);
+    Search::SearchTables st(tt, ht, *et);
+    Search sc(pos, posHashList, posHashListSize, st);
 
     // Determine all legal moves
     MoveGen::MoveList moves;
@@ -150,7 +152,8 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     std::vector<U64> posHashList(200);
     tt.nextGeneration();
     History ht;
-    Search sc(pos, posHashList, 0, tt, ht);
+    Search::SearchTables st(tt, ht, *et);
+    Search sc(pos, posHashList, 0, st);
 
     // Determine all legal moves
     MoveGen::MoveList moves;

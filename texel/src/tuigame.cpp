@@ -191,7 +191,8 @@ TUIGame::play() {
         }
         */
         {
-            Evaluate eval;
+            auto et = Evaluate::getEvalHashTables();
+            Evaluate eval(*et);
             int evScore = eval.evalPos(pos) * (pos.whiteMove ? 1 : -1);
             std::stringstream ss;
             ss.precision(2);

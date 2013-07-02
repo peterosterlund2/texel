@@ -37,9 +37,8 @@ using namespace SearchConst;
 const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 
 Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
-               int posHashListSize0, TranspositionTable& tt0, History& ht0)
-    : ht(ht0), tt(tt0)
-{
+               int posHashListSize0, SearchTables& st)
+    : eval(st.et), ht(st.ht), tt(st.tt) {
     init(pos0, posHashList0, posHashListSize0);
 }
 

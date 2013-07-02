@@ -66,7 +66,8 @@ swapColors(const Position& pos) {
 /** Return static evaluation score for white, regardless of whose turn it is to move. */
 int
 evalWhite(const Position& pos) {
-    Evaluate eval;
+    auto et = Evaluate::getEvalHashTables();
+    Evaluate eval(*et);
     int ret = eval.evalPos(pos);
     Position symPos = swapColors(pos);
     int symScore = eval.evalPos(symPos);

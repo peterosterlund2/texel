@@ -47,10 +47,11 @@ public:
 private:
     int maxNodes;
     TranspositionTable tt;
+    std::shared_ptr<Evaluate::EvalHashTables> et;
     Book book;
     bool bookEnabled;
     Search* currentSearch;
-    std::shared_ptr <Search::Listener> listener;
+    std::shared_ptr<Search::Listener> listener;
 
     ComputerPlayer(const ComputerPlayer& other) = delete;
     ComputerPlayer& operator=(const ComputerPlayer& other) = delete;

@@ -53,6 +53,7 @@ private:
     std::shared_ptr<Search> sc;
     TranspositionTable tt;
     History ht;
+    std::shared_ptr<Evaluate::EvalHashTables> et;
 
     Position pos;
     std::vector<U64> posHashList;

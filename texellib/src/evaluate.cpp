@@ -151,11 +151,6 @@ int Evaluate::pt2w[64];
 
 int Evaluate::castleFactor[256];
 
-std::vector<Evaluate::PawnHashData> Evaluate::pawnHash;
-vector_aligned<Evaluate::KingSafetyHashData> Evaluate::kingSafetyHash;
-std::vector<Evaluate::MaterialHashData> Evaluate::materialHash;
-
-
 static StaticInitializer<Evaluate> evInit;
 
 void
@@ -173,8 +168,6 @@ Evaluate::staticInitialize() {
         pt2w[i] = pt2b[63-i];
     }
 
-    pawnHash.resize(1<<16);
-
     for (int i = 0; i < 256; i++) {
         int h1Dist = 100;
         bool h1Castle = (i & (1<<7)) != 0;
@@ -186,9 +179,6 @@ Evaluate::staticInitialize() {
             a1Dist = 2 + BitBoard::bitCount(i & 0x000000000000000EL); // b1,c1,d1
         castleFactor[i] = 1024 / std::min(a1Dist, h1Dist);
     }
-
-    kingSafetyHash.resize(1 << 15);
-    materialHash.resize(1 << 14);
 
     // Knight mobility scores
     for (int sq = 0; sq < 64; sq++) {
@@ -248,8 +238,11 @@ const int Evaluate::bishMobScore[] = {-15,-10,-6,-2,2,6,10,13,16,18,20,22,23,24}
 const int Evaluate::queenMobScore[] = {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,9,10,10,10,10,10,10,10,10,10,10,10,10};
 int Evaluate::knightMobScore[64][9];
 
-Evaluate::Evaluate()
-    : wKingZone(0), bKingZone(0),
+Evaluate::Evaluate(EvalHashTables& et)
+    : pawnHash(et.pawnHash),
+      materialHash(et.materialHash),
+      kingSafetyHash(et.kingSafetyHash),
+      wKingZone(0), bKingZone(0),
       wKingAttacks(0), bKingAttacks(0),
       wAttacksBB(0), bAttacksBB(0),
       wPawnAttacks(0), bPawnAttacks(0) {

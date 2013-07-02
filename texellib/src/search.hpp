@@ -97,8 +97,16 @@ private:
     int q0Eval; // Static eval score at first level of quiescence search
 
 public:
+    struct SearchTables {
+        SearchTables(TranspositionTable& tt0, History& ht0, Evaluate::EvalHashTables& et0)
+            : tt(tt0), ht(ht0), et(et0) {}
+        TranspositionTable& tt;
+        History& ht;
+        Evaluate::EvalHashTables& et;
+    };
+
     Search(const Position& pos, const std::vector<U64>& posHashList,
-           int posHashListSize, TranspositionTable& tt, History& ht);
+           int posHashListSize, SearchTables& st);
 
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
               int posHashListSize0);

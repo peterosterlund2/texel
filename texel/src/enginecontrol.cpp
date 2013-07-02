@@ -89,6 +89,7 @@ EngineControl::EngineControl(std::ostream& o)
       randomSeed(0)
 {
     setupTT();
+    et = Evaluate::getEvalHashTables();
 }
 
 void
@@ -202,7 +203,8 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
-    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, tt, ht);
+    Search::SearchTables st(tt, ht, *et);
+    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st);
     sc->setListener(std::make_shared<SearchListener>(os));
     sc->setStrength(strength, randomSeed);
     std::shared_ptr<MoveGen::MoveList> moves(std::make_shared<MoveGen::MoveList>());

@@ -47,6 +47,7 @@ public:
     static int pieceValue[Piece::nPieceTypes];
     static int pieceValueOrder[Piece::nPieceTypes];
 
+private:
     /** Piece/square table for king during middle game. */
     static const int kt1b[64];
 
@@ -80,10 +81,6 @@ public:
     static int kt1w[64], qt1w[64], rt1w[64], bt1w[64], nt1w[64], pt1w[64];
     static int kt2w[64], bt2w[64], nt2w[64], pt2w[64];
 
-public:
-    static const int* psTab1[Piece::nPieceTypes];
-    static const int* psTab2[Piece::nPieceTypes];
-
     static const int distToH1A8[8][8];
 
     static const int rookMobScore[];
@@ -91,7 +88,6 @@ public:
     static const int queenMobScore[];
     static int knightMobScore[64][9];
 
-private:
     struct PawnHashData {
         PawnHashData();
         U64 key;
@@ -103,9 +99,32 @@ private:
         U64 outPostsW;        // Possible outpost squares for white
         U64 outPostsB;
     };
-    static std::vector<PawnHashData> pawnHash;
+    std::vector<PawnHashData>& pawnHash;
     const PawnHashData* phd;
 
+    struct MaterialHashData {
+        MaterialHashData() : id(-1), score(0) { }
+        int id;
+        int score;
+        short wPawnIPF, bPawnIPF;
+        short wKnightIPF, bKnightIPF;
+        short castleIPF;
+        short wPassedPawnIPF, bPassedPawnIPF;
+        short kingSafetyIPF;
+        short diffColorBishopIPF;
+        short wKnightOutPostIPF, bKnightOutPostIPF;
+    };
+    std::vector<MaterialHashData>& materialHash;
+    const MaterialHashData* mhd;
+
+    struct KingSafetyHashData {
+        KingSafetyHashData() : key((U64)-1), score(0) { }
+        U64 key;
+        int score;
+    };
+    vector_aligned<KingSafetyHashData>& kingSafetyHash;
+
+private:
     static const ubyte kpkTable[2*32*64*48/8];
     static const ubyte krkpTable[2*32*48*8];
     static const U64 krpkrTable[2*24*64];
@@ -117,8 +136,27 @@ private:
     U64 wPawnAttacks, bPawnAttacks; // Squares attacked by white/black pawns
 
 public:
+    static const int* psTab1[Piece::nPieceTypes];
+    static const int* psTab2[Piece::nPieceTypes];
+
+    struct EvalHashTables {
+        EvalHashTables() {
+            pawnHash.resize(1<<16);
+            kingSafetyHash.resize(1 << 15);
+            materialHash.resize(1 << 14);
+        }
+        std::vector<PawnHashData> pawnHash;
+        std::vector<MaterialHashData> materialHash;
+        vector_aligned<KingSafetyHashData> kingSafetyHash;
+    };
+
+    /** Get evaluation hash tables. */
+    static std::shared_ptr<EvalHashTables> getEvalHashTables() {
+        return std::make_shared<EvalHashTables>();
+    }
+
     /** Constructor. */
-    Evaluate();
+    Evaluate(EvalHashTables& et);
 
     /**
      * Static evaluation of a position.
@@ -160,21 +198,6 @@ private:
     /** Compute score based on piece square tables. Positive values are good for white. */
     int pieceSquareEval(const Position& pos);
 
-    struct MaterialHashData {
-        MaterialHashData() : id(-1), score(0) { }
-        int id;
-        int score;
-        short wPawnIPF, bPawnIPF;
-        short wKnightIPF, bKnightIPF;
-        short castleIPF;
-        short wPassedPawnIPF, bPassedPawnIPF;
-        short kingSafetyIPF;
-        short diffColorBishopIPF;
-        short wKnightOutPostIPF, bKnightOutPostIPF;
-    };
-    static std::vector<MaterialHashData> materialHash;
-    const MaterialHashData* mhd;
-
     /** Get material score */
     int materialScore(const Position& pos) {
         int mId = pos.materialId();
@@ -215,13 +238,6 @@ private:
 
     /** Compute king safety for both kings. */
     int kingSafety(const Position& pos);
-
-    struct KingSafetyHashData {
-        KingSafetyHashData() : key((U64)-1), score(0) { }
-        U64 key;
-        int score;
-    };
-    static vector_aligned<KingSafetyHashData> kingSafetyHash;
 
     int kingSafetyKPPart(const Position& pos);
 
