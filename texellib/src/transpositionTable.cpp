@@ -49,7 +49,7 @@ void
 TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore) {
     if (depth < 0) depth = 0;
     size_t idx0 = getIndex(key);
-    int key2 = getStoredKey(key);
+    U64 key2 = getStoredKey(key);
     TTEntry ent0, ent1;
     ent0.load(table[idx0]);
     size_t idx = idx0;

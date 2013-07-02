@@ -73,8 +73,8 @@ public:
             return false;   // Otherwise, pretty much equally valuable
         }
 
-        int getKey() const { return key; }
-        void setKey(int k) { key = k; }
+        U64 getKey() const { return key; }
+        void setKey(U64 k) { key = k; }
 
         void getMove(Move& m) const {
             int move = getBits(0, 16);
@@ -151,7 +151,7 @@ public:
     /** Retrieve an entry from the hash table corresponding to position with zobrist key "key". */
     void probe(U64 key, TTEntry& result) {
         size_t idx0 = getIndex(key);
-        int key2 = getStoredKey(key);
+        U64 key2 = getStoredKey(key);
         TTEntry ent;
         ent.load(table[idx0]);
         if (ent.getKey() == key2) {
