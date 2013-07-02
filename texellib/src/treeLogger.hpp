@@ -68,13 +68,13 @@ protected:
      * A StartEntry can be identified by its first 4 bytes (endIndex/startIndex)
      * being either -1 (endIndex not computed), or > the entry index.
      *
-     * private static final class Header {
+     * class Header {
      *     byte fenLen; // Used length of fen array
      *     byte[] fen; // 126 bytes, 0-padded
      *     byte flags; // bit 0: 1 if endIndex has been computed for all StartEntries.
      * }
      *
-     * private static final class StartEntry {
+     * class StartEntry {
      *     int endIndex;
      *     int parentIndex;                 // -1 for root node
      *     short move;
@@ -84,7 +84,7 @@ protected:
      *     byte depth;
      * }
      *
-     * private static final class EndEntry {
+     * class EndEntry {
      *     int startIndex;
      *     short score;
      *     short scoreType;
