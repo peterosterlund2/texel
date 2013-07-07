@@ -36,8 +36,8 @@
 /**
  * Test of getCommand method, of class ComputerPlayer.
  */
-static void
-testGetCommand() {
+void
+ComputerPlayerTest::testGetCommand() {
     std::vector<Position> nullHist;
 
     Position pos(TextIO::readFEN("7k/5Q2/p5K1/8/8/8/8/8 b - - 99 80"));
@@ -69,8 +69,8 @@ testGetCommand() {
 /**
  * Test of draw by repetition, of class ComputerPlayer.
  */
-static void
-testDrawRep() {
+void
+ComputerPlayerTest::testDrawRep() {
     HumanPlayer hp1, hp2;
 
     Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());

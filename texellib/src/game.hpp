@@ -35,43 +35,14 @@
 #include <string>
 #include <memory>
 
+class GameTest;
+
 /**
  * Handles a game between two players.
  */
 class Game {
+    friend class GameTest;
 public:
-    enum GameState {
-        ALIVE,
-        WHITE_MATE,         // White mates
-        BLACK_MATE,         // Black mates
-        WHITE_STALEMATE,    // White is stalemated
-        BLACK_STALEMATE,    // Black is stalemated
-        DRAW_REP,           // Draw by 3-fold repetition
-        DRAW_50,            // Draw by 50 move rule
-        DRAW_NO_MATE,       // Draw by impossibility of check mate
-        DRAW_AGREE,         // Draw by agreement
-        RESIGN_WHITE,       // White resigns
-        RESIGN_BLACK        // Black resigns
-    };
-
-    Position pos;
-    std::shared_ptr<Player> whitePlayer;
-    std::shared_ptr<Player> blackPlayer;
-
-protected:
-    std::vector<Move> moveList;
-    std::vector<UndoInfo> uiInfoList;
-    std::vector<bool> drawOfferList;
-    int currentMove;
-
-private:
-    std::string drawStateMoveStr; // Move required to claim DRAW_REP or DRAW_50
-    GameState resignState;
-
-public:
-    bool pendingDrawOffer;
-    GameState drawState;
-
     Game(const std::shared_ptr<Player>& whitePlayer,
          const std::shared_ptr<Player>& blackPlayer);
 
@@ -90,6 +61,20 @@ public:
      * Get the last played move, or null if no moves played yet.
      */
     Move getLastMove();
+
+    enum GameState {
+        ALIVE,
+        WHITE_MATE,         // White mates
+        BLACK_MATE,         // Black mates
+        WHITE_STALEMATE,    // White is stalemated
+        BLACK_STALEMATE,    // Black is stalemated
+        DRAW_REP,           // Draw by 3-fold repetition
+        DRAW_50,            // Draw by 50 move rule
+        DRAW_NO_MATE,       // Draw by impossibility of check mate
+        DRAW_AGREE,         // Draw by agreement
+        RESIGN_WHITE,       // White resigns
+        RESIGN_BLACK        // Black resigns
+    };
 
     /**
      * Get the current state of the game.
@@ -111,7 +96,8 @@ public:
     /** Return a list of previous positions in this game, back to the last "zeroing" move. */
     void getHistory(std::vector<Position>& posList);
 
-    static U64 perfT(Position& pos, int depth);
+
+    Position pos;
 
 protected:
     /**
@@ -124,10 +110,19 @@ protected:
     /** Swap players around if needed to make the human player in control of the next move. */
     void activateHumanPlayer();
 
+
+    std::shared_ptr<Player> whitePlayer;
+    std::shared_ptr<Player> blackPlayer;
+    std::vector<Move> moveList;
+    std::vector<UndoInfo> uiInfoList;
+    std::vector<bool> drawOfferList;
+    int currentMove;
+
 private:
-    /**
-     * Print a list of all moves.
-     */
+    Game(const Game& other) = delete;
+    Game& operator=(const Game& other) = delete;
+
+    /** Print a list of all moves. */
     void listMoves();
 
     bool handleDrawCmd(std::string drawCmd);
@@ -136,8 +131,15 @@ private:
 
     bool insufficientMaterial();
 
-    Game(const Game& other) = delete;
-    Game& operator=(const Game& other) = delete;
+    /** Computer PerfT value. */
+    static U64 perfT(Position& pos, int depth);
+
+
+    std::string drawStateMoveStr; // Move required to claim DRAW_REP or DRAW_50
+    GameState resignState;
+    bool pendingDrawOffer;
+    GameState drawState;
+
 };
 
 

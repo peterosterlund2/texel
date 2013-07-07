@@ -31,12 +31,55 @@
 #include "position.hpp"
 #include "alignedAlloc.hpp"
 
-/**
- * Position evaluation routines.
- *
- */
+/** Position evaluation routines. */
 class Evaluate {
+private:
+    struct PawnHashData {
+        PawnHashData();
+        U64 key;
+        int score;            // Positive score means good for white
+        short passedBonusW;
+        short passedBonusB;
+        U64 passedPawnsW;     // The most advanced passed pawns for each file
+        U64 passedPawnsB;
+        U64 outPostsW;        // Possible outpost squares for white
+        U64 outPostsB;
+    };
+
+    struct MaterialHashData {
+        MaterialHashData() : id(-1), score(0) { }
+        int id;
+        int score;
+        short wPawnIPF, bPawnIPF;
+        short wKnightIPF, bKnightIPF;
+        short castleIPF;
+        short wPassedPawnIPF, bPassedPawnIPF;
+        short kingSafetyIPF;
+        short diffColorBishopIPF;
+        short wKnightOutPostIPF, bKnightOutPostIPF;
+    };
+
+    struct KingSafetyHashData {
+        KingSafetyHashData() : key((U64)-1), score(0) { }
+        U64 key;
+        int score;
+    };
+
 public:
+    struct EvalHashTables {
+        EvalHashTables() {
+            pawnHash.resize(1<<16);
+            kingSafetyHash.resize(1 << 15);
+            materialHash.resize(1 << 14);
+        }
+        std::vector<PawnHashData> pawnHash;
+        std::vector<MaterialHashData> materialHash;
+        vector_aligned<KingSafetyHashData> kingSafetyHash;
+    };
+
+    /** Constructor. */
+    Evaluate(EvalHashTables& et);
+
     static const int pV =   92; // + Parameters::instance().getIntPar("pV");
     static const int nV =  385; // + Parameters::instance().getIntPar("nV");
     static const int bV =  385; // + Parameters::instance().getIntPar("bV");
@@ -47,7 +90,87 @@ public:
     static int pieceValue[Piece::nPieceTypes];
     static int pieceValueOrder[Piece::nPieceTypes];
 
+    static const int* psTab1[Piece::nPieceTypes];
+    static const int* psTab2[Piece::nPieceTypes];
+
+    /** Get evaluation hash tables. */
+    static std::shared_ptr<EvalHashTables> getEvalHashTables();
+
+    /**
+     * Static evaluation of a position.
+     * @param pos The position to evaluate.
+     * @return The evaluation score, measured in centipawns.
+     *         Positive values are good for the side to make the next move.
+     */
+    int evalPos(const Position& pos);
+
+    /**
+     * Interpolate between (x1,y1) and (x2,y2).
+     * If x < x1, return y1, if x > x2 return y2. Otherwise, use linear interpolation.
+     */
+    static int interpolate(int x, int x1, int y1, int x2, int y2);
+
+    static const int IPOLMAX = 1024;
+
+    /** Compute v1 + (v2-v1)*k/IPOLMAX */
+    static int interpolate(int v1, int v2, int k);
+
+    /** Compute white_material - black_material. */
+    static int material(const Position& pos);
+
+    static void staticInitialize();
+
 private:
+    /** Compute score based on piece square tables. Positive values are good for white. */
+    int pieceSquareEval(const Position& pos);
+
+    /** Get material score */
+    int materialScore(const Position& pos);
+
+    /** Compute material score. */
+    void computeMaterialScore(const Position& pos, MaterialHashData& mhd) const;
+
+    /** Implement the "when ahead trade pieces, when behind trade pawns" rule. */
+    int tradeBonus(const Position& pos) const;
+
+    /** Score castling ability. */
+    int castleBonus(const Position& pos);
+
+    int pawnBonus(const Position& pos);
+
+    /** Compute pawn hash data for pos. */
+    void computePawnHashData(const Position& pos, PawnHashData& ph);
+
+    /** Compute rook bonus. Rook on open/half-open file. */
+    int rookBonus(const Position& pos);
+
+    /** Compute bishop evaluation. */
+    int bishopEval(const Position& pos, int oldScore);
+
+    /** Compute knight evaluation. */
+    int knightEval(const Position& pos);
+
+    int threatBonus(const Position& pos);
+
+    /** Compute king safety for both kings. */
+    int kingSafety(const Position& pos);
+
+    int kingSafetyKPPart(const Position& pos);
+
+    /** Implements special knowledge for some endgame situations. */
+    int endGameEval(const Position& pos, int oldScore);
+
+    static int evalKQKP(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove);
+
+    static int kpkEval(int wKing, int bKing, int wPawn, bool whiteMove);
+
+    static int krkpEval(int wKing, int bKing, int bPawn, bool whiteMove);
+
+    static int krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bool whiteMove);
+
+
+    static int castleFactor[256];
+
     /** Piece/square table for king during middle game. */
     static const int kt1b[64];
 
@@ -88,43 +211,14 @@ private:
     static const int queenMobScore[];
     static int knightMobScore[64][9];
 
-    struct PawnHashData {
-        PawnHashData();
-        U64 key;
-        int score;            // Positive score means good for white
-        short passedBonusW;
-        short passedBonusB;
-        U64 passedPawnsW;     // The most advanced passed pawns for each file
-        U64 passedPawnsB;
-        U64 outPostsW;        // Possible outpost squares for white
-        U64 outPostsB;
-    };
     std::vector<PawnHashData>& pawnHash;
     const PawnHashData* phd;
 
-    struct MaterialHashData {
-        MaterialHashData() : id(-1), score(0) { }
-        int id;
-        int score;
-        short wPawnIPF, bPawnIPF;
-        short wKnightIPF, bKnightIPF;
-        short castleIPF;
-        short wPassedPawnIPF, bPassedPawnIPF;
-        short kingSafetyIPF;
-        short diffColorBishopIPF;
-        short wKnightOutPostIPF, bKnightOutPostIPF;
-    };
     std::vector<MaterialHashData>& materialHash;
     const MaterialHashData* mhd;
 
-    struct KingSafetyHashData {
-        KingSafetyHashData() : key((U64)-1), score(0) { }
-        U64 key;
-        int score;
-    };
     vector_aligned<KingSafetyHashData>& kingSafetyHash;
 
-private:
     static const ubyte kpkTable[2*32*64*48/8];
     static const ubyte krkpTable[2*32*48*8];
     static const U64 krpkrTable[2*24*64];
@@ -134,124 +228,8 @@ private:
     int wKingAttacks, bKingAttacks; // Number of attacks close to white/black king
     U64 wAttacksBB, bAttacksBB;
     U64 wPawnAttacks, bPawnAttacks; // Squares attacked by white/black pawns
-
-public:
-    static const int* psTab1[Piece::nPieceTypes];
-    static const int* psTab2[Piece::nPieceTypes];
-
-    struct EvalHashTables {
-        EvalHashTables() {
-            pawnHash.resize(1<<16);
-            kingSafetyHash.resize(1 << 15);
-            materialHash.resize(1 << 14);
-        }
-        std::vector<PawnHashData> pawnHash;
-        std::vector<MaterialHashData> materialHash;
-        vector_aligned<KingSafetyHashData> kingSafetyHash;
-    };
-
-    /** Get evaluation hash tables. */
-    static std::shared_ptr<EvalHashTables> getEvalHashTables() {
-        return std::make_shared<EvalHashTables>();
-    }
-
-    /** Constructor. */
-    Evaluate(EvalHashTables& et);
-
-    /**
-     * Static evaluation of a position.
-     * @param pos The position to evaluate.
-     * @return The evaluation score, measured in centipawns.
-     *         Positive values are good for the side to make the next move.
-     */
-    int evalPos(const Position& pos);
-
-    /**
-     * Interpolate between (x1,y1) and (x2,y2).
-     * If x < x1, return y1, if x > x2 return y2. Otherwise, use linear interpolation.
-     */
-    static int interpolate(int x, int x1, int y1, int x2, int y2) {
-        if (x > x2) {
-            return y2;
-        } else if (x < x1) {
-            return y1;
-        } else {
-            return (x - x1) * (y2 - y1) / (x2 - x1) + y1;
-        }
-    }
-
-    static const int IPOLMAX = 1024;
-
-    /** Compute v1 + (v2-v1)*k/IPOLMAX */
-    static int interpolate(int v1, int v2, int k) {
-        return v1 + (v2 - v1) * k / IPOLMAX;
-    }
-
-    /** Compute white_material - black_material. */
-    static int material(const Position& pos) {
-        return pos.wMtrl - pos.bMtrl;
-    }
-
-    static void staticInitialize();
-
-private:
-    /** Compute score based on piece square tables. Positive values are good for white. */
-    int pieceSquareEval(const Position& pos);
-
-    /** Get material score */
-    int materialScore(const Position& pos) {
-        int mId = pos.materialId();
-        int key = (mId >> 16) * 40507 + mId;
-        MaterialHashData& newMhd = materialHash[key & (materialHash.size() - 1)];
-        if (newMhd.id != mId)
-            computeMaterialScore(pos, newMhd);
-        mhd = &newMhd;
-        return newMhd.score;
-    }
-
-    /** Compute material score. */
-    void computeMaterialScore(const Position& pos, MaterialHashData& mhd) const;
-
-    /** Implement the "when ahead trade pieces, when behind trade pawns" rule. */
-    int tradeBonus(const Position& pos) const;
-
-    static int castleFactor[256];
-
-    /** Score castling ability. */
-    int castleBonus(const Position& pos);
-
-    int pawnBonus(const Position& pos);
-
-    /** Compute pawn hash data for pos. */
-    void computePawnHashData(const Position& pos, PawnHashData& ph);
-
-    /** Compute rook bonus. Rook on open/half-open file. */
-    int rookBonus(const Position& pos);
-
-    /** Compute bishop evaluation. */
-    int bishopEval(const Position& pos, int oldScore);
-
-    /** Compute knight evaluation. */
-    int knightEval(const Position& pos);
-
-    int threatBonus(const Position& pos);
-
-    /** Compute king safety for both kings. */
-    int kingSafety(const Position& pos);
-
-    int kingSafetyKPPart(const Position& pos);
-
-    /** Implements special knowledge for some endgame situations. */
-    int endGameEval(const Position& pos, int oldScore);
-
-    static int evalKQKP(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove);
-
-    static int kpkEval(int wKing, int bKing, int wPawn, bool whiteMove);
-
-    static int krkpEval(int wKing, int bKing, int bPawn, bool whiteMove);
-
-    static int krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bool whiteMove);
 };
+
 
 inline
 Evaluate::PawnHashData::PawnHashData()
@@ -261,6 +239,38 @@ Evaluate::PawnHashData::PawnHashData()
       passedBonusB(0),
       passedPawnsW(0),
       passedPawnsB(0) {
+}
+
+inline int
+Evaluate::interpolate(int x, int x1, int y1, int x2, int y2) {
+    if (x > x2) {
+        return y2;
+    } else if (x < x1) {
+        return y1;
+    } else {
+        return (x - x1) * (y2 - y1) / (x2 - x1) + y1;
+    }
+}
+
+inline int
+Evaluate::interpolate(int v1, int v2, int k) {
+    return v1 + (v2 - v1) * k / IPOLMAX;
+}
+
+inline int
+Evaluate::material(const Position& pos) {
+    return pos.wMtrl - pos.bMtrl;
+}
+
+inline int
+Evaluate::materialScore(const Position& pos) {
+    int mId = pos.materialId();
+    int key = (mId >> 16) * 40507 + mId;
+    MaterialHashData& newMhd = materialHash[key & (materialHash.size() - 1)];
+    if (newMhd.id != mId)
+        computeMaterialScore(pos, newMhd);
+    mhd = &newMhd;
+    return newMhd.score;
 }
 
 #endif /* EVALUATE_HPP_ */

@@ -33,6 +33,24 @@
  * Implements the relative history heuristic.
  */
 class History {
+public:
+    History();
+
+    /** Clear all history information. */
+    void init();
+
+    /** Rescale the history counters, so that future updates have more weight. */
+    void reScale();
+
+    /** Record move as a success. */
+    void addSuccess(const Position& pos, const Move& m, int depth);
+
+    /** Record move as a failure. */
+    void addFail(const Position& pos, const Move& m, int depth);
+
+    /** Get a score between 0 and 49, depending of the success/fail ratio of the move. */
+    int getHistScore(const Position& pos, const Move& m) const;
+
 private:
     struct Entry {
         int countSuccess;
@@ -40,60 +58,57 @@ private:
         mutable int score;
     };
     struct Entry ht[Piece::nPieceTypes][64];
-
-public:
-    History() {
-        init();
-    }
-
-    void init();
-
-    void reScale();
-
-    /** Record move as a success. */
-    void addSuccess(const Position& pos, const Move& m, int depth) {
-        int p = pos.getPiece(m.from());
-        int cnt = depth;
-        Entry& e = ht[p][m.to()];
-        int val = e.countSuccess + cnt;
-        if (val + e.countFail > 1300) {
-            val /= 2;
-            e.countFail /= 2;
-        }
-        e.countSuccess = val;
-        e.score = -1;
-    }
-
-    /** Record move as a failure. */
-    void addFail(const Position& pos, const Move& m, int depth) {
-        int p = pos.getPiece(m.from());
-        int cnt = depth;
-        Entry& e = ht[p][m.to()];
-        int val = e.countFail + cnt;
-        if (val + e.countSuccess > 1300) {
-            val /= 2;
-            e.countSuccess /= 2;
-        }
-        e.countFail = val;
-        e.score = -1;
-    }
-
-    /** Get a score between 0 and 49, depending of the success/fail ratio of the move. */
-    int getHistScore(const Position& pos, const Move& m) const {
-        int p = pos.getPiece(m.from());
-        const Entry& e = ht[p][m.to()];
-        int ret = e.score;
-        if (ret >= 0)
-            return ret;
-        int succ = e.countSuccess;
-        int fail = e.countFail;
-        if (succ + fail > 0) {
-            ret = succ * 49 / (succ + fail);
-        } else
-            ret = 0;
-        e.score = ret;
-        return ret;
-    }
 };
+
+
+inline
+History::History() {
+    init();
+}
+
+inline void
+History::addSuccess(const Position& pos, const Move& m, int depth) {
+    int p = pos.getPiece(m.from());
+    int cnt = depth;
+    Entry& e = ht[p][m.to()];
+    int val = e.countSuccess + cnt;
+    if (val + e.countFail > 1300) {
+        val /= 2;
+        e.countFail /= 2;
+    }
+    e.countSuccess = val;
+    e.score = -1;
+}
+
+inline void
+History::addFail(const Position& pos, const Move& m, int depth) {
+    int p = pos.getPiece(m.from());
+    int cnt = depth;
+    Entry& e = ht[p][m.to()];
+    int val = e.countFail + cnt;
+    if (val + e.countSuccess > 1300) {
+        val /= 2;
+        e.countSuccess /= 2;
+    }
+    e.countFail = val;
+    e.score = -1;
+}
+
+inline int
+History::getHistScore(const Position& pos, const Move& m) const {
+    int p = pos.getPiece(m.from());
+    const Entry& e = ht[p][m.to()];
+    int ret = e.score;
+    if (ret >= 0)
+        return ret;
+    int succ = e.countSuccess;
+    int fail = e.countFail;
+    if (succ + fail > 0) {
+        ret = succ * 49 / (succ + fail);
+    } else
+        ret = 0;
+    e.score = ret;
+    return ret;
+}
 
 #endif /* HISTORY_HPP_ */

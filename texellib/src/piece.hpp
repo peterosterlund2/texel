@@ -54,17 +54,26 @@ public:
      * Return true if p is a white piece, false otherwise.
      * Note that if p is EMPTY, an unspecified value is returned.
      */
-    static bool isWhite(int pType) {
-        return pType < BKING;
-    }
+    static bool isWhite(int pType);
 
-    static int makeWhite(int pType) {
-        return pType < BKING ? pType : pType - (BKING - WKING);
-    }
+    static int makeWhite(int pType);
 
-    static int makeBlack(int pType) {
-        return ((pType > EMPTY) && (pType < BKING)) ? pType + (BKING - WKING) : pType;
-    }
+    static int makeBlack(int pType);
 };
+
+inline bool
+Piece::isWhite(int pType) {
+    return pType < BKING;
+}
+
+inline int
+Piece::makeWhite(int pType) {
+    return pType < BKING ? pType : pType - (BKING - WKING);
+}
+
+inline int
+Piece::makeBlack(int pType) {
+    return ((pType > EMPTY) && (pType < BKING)) ? pType + (BKING - WKING) : pType;
+}
 
 #endif /* PIECE_HPP_ */

@@ -40,63 +40,11 @@
 
 class SearchTest;
 
-/**
- * Implements the nega-scout search algorithm.
- */
+/** Implements the nega-scout search algorithm. */
 class Search {
     friend class SearchTest;
-private:
-    Position pos;
-    Evaluate eval;
-    KillerTable kt;
-    History& ht;
-    std::vector<U64> posHashList; // List of hashes for previous positions up to the last "zeroing" move.
-    int posHashListSize;          // Number of used entries in posHashList
-    int posHashFirstNew;          // First entry in posHashList that has not been played OTB.
-    TranspositionTable& tt;
-    TreeLoggerWriter log;
-
-    struct SearchTreeInfo {
-        bool allowNullMove;    // Don't allow two null-moves in a row
-        Move bestMove;         // Copy of the best found move at this ply
-        Move currentMove;      // Move currently being searched
-        int lmr;               // LMR reduction amount
-        S64 nodeIdx;           // For tree logging
-        SearchTreeInfo() {
-            allowNullMove = true;
-            lmr = 0;
-            nodeIdx = 0;
-        }
-    };
-    static const int MAX_SEARCH_DEPTH = 100;
-    SearchTreeInfo searchTreeInfo[MAX_SEARCH_DEPTH * 2];
-
-    // Time management
-    S64 tStart;                // Time when search started
-    S64 minTimeMillis;         // Minimum recommended thinking time
-    S64 maxTimeMillis;         // Maximum allowed thinking time
-    bool searchNeedMoreTime;   // True if negaScout should use up to maxTimeMillis time.
-    S64 maxNodes;              // Maximum number of nodes to search (approximately)
-    int nodesToGo;             // Number of nodes until next time check
-    int nodesBetweenTimeCheck; // How often to check remaining time
-
-    // Reduced strength variables
-    int strength;              // Strength (0-1000)
-    bool weak;                 // Set to strength < 1000
-    U64 randomSeed;
-
-    // Search statistics stuff
-    U64 nodes;
-    U64 qNodes;
-    int nodesPlyVec[20];
-    int nodesDepthVec[20];
-    S64 totalNodes;
-    S64 tLastStats;        // Time when notifyStats was last called
-    bool verbose;
-
-    int q0Eval; // Static eval score at first level of quiescence search
-
 public:
+    /** Help tables used by the search. */
     struct SearchTables {
         SearchTables(TranspositionTable& tt0, History& ht0, Evaluate::EvalHashTables& et0)
             : tt(tt0), ht(ht0), et(et0) {}
@@ -105,20 +53,11 @@ public:
         Evaluate::EvalHashTables& et;
     };
 
+    /** Constructor. */
     Search(const Position& pos, const std::vector<U64>& posHashList,
            int posHashListSize, SearchTables& st);
 
-    void init(const Position& pos0, const std::vector<U64>& posHashList0,
-              int posHashListSize0);
-
-    class StopSearch : public std::exception {
-    public:
-        StopSearch() { }
-    };
-
-    /**
-     * Used to get various search information during search
-     */
+    /** Interface for reporting search information during search. */
     class Listener {
     public:
         virtual void notifyDepth(int depth) = 0;
@@ -147,24 +86,6 @@ public:
     int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
 
-    /** Return >0, 0, <0, depending on the sign of SEE(m). */
-    int signSEE(const Move& m) {
-        int p0 = Evaluate::pieceValue[pos.getPiece(m.from())];
-        int p1 = Evaluate::pieceValue[pos.getPiece(m.to())];
-        if (p0 < p1)
-            return 1;
-        return SEE(m);
-    }
-
-    /** Return true if SEE(m) < 0. */
-    bool negSEE(const Move& m) {
-        int p0 = Evaluate::pieceValue[pos.getPiece(m.from())];
-        int p1 = Evaluate::pieceValue[pos.getPiece(m.to())];
-        if (p1 >= p0)
-            return false;
-        return SEE(m) < 0;
-    }
-
     static bool canClaimDraw50(const Position& pos) {
         return (pos.halfMoveClock >= 100);
     }
@@ -179,64 +100,25 @@ public:
     void scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx = 0);
 
 private:
-    std::shared_ptr<Listener> listener;
+    Search(const Search& other) = delete;
+    Search& operator=(const Search& other) = delete;
 
-    struct MoveInfo {
-        Move move;
-        U64 nodes;
-        MoveInfo(const Move& m, int n) { move = m;  nodes = n; }
-
-        struct SortByScore {
-            bool operator()(const MoveInfo& mi1, const MoveInfo& mi2) const {
-                return mi1.move.score() > mi2.move.score();
-            }
-        };
-        struct SortByNodes {
-            bool operator()(const MoveInfo& mi1, const MoveInfo& mi2) {
-                return mi1.nodes > mi2.nodes;
-            }
-        };
-    };
+    void init(const Position& pos0, const std::vector<U64>& posHashList0,
+              int posHashListSize0);
 
     void notifyPV(int depth, int score, bool uBound, bool lBound, const Move& m);
 
     void notifyStats();
 
-    Move emptyMove;
-
     /** Return true if move m2 was made possible by move m1. */
-    static bool relatedMoves(const Move& m1, const Move& m2) {
-        if ((m1.from() == m1.to()) || (m2.from() == m2.to()))
-            return false;
-        if ((m1.to() == m2.from()) || (m1.from() == m2.to()) ||
-            ((BitBoard::squaresBetween[m2.from()][m2.to()] & (1ULL << m1.from())) != 0))
-            return true;
-        return false;
-    }
+    static bool relatedMoves(const Move& m1, const Move& m2);
 
     /** Return true if move should be skipped in order to make engine play weaker. */
     bool weakPlaySkipMove(const Position& pos, const Move& m, int ply) const;
 
-    static bool passedPawnPush(const Position& pos, const Move& m) {
-        int p = pos.getPiece(m.from());
-        if (pos.whiteMove) {
-            if (p != Piece::WPAWN)
-                return false;
-            if ((BitBoard::wPawnBlockerMask[m.to()] & pos.pieceTypeBB[Piece::BPAWN]) != 0)
-                return false;
-            return m.to() >= 40;
-        } else {
-            if (p != Piece::BPAWN)
-                return false;
-            if ((BitBoard::bPawnBlockerMask[m.to()] & pos.pieceTypeBB[Piece::WPAWN]) != 0)
-                return false;
-            return m.to() <= 23;
-        }
-    }
+    static bool passedPawnPush(const Position& pos, const Move& m);
 
-    /**
-     * Quiescence search. Only non-losing captures are searched.
-     */
+    /** Quiescence search. Only non-losing captures are searched. */
     int quiesce(int alpha, int beta, int ply, int depth, const bool inCheck);
 
     /**
@@ -245,36 +127,81 @@ private:
      */
     int SEE(const Move& m);
 
-    void scoreMoveListMvvLva(MoveGen::MoveList& moves) {
-        for (int i = 0; i < moves.size; i++) {
-            Move& m = moves[i];
-            int v = pos.getPiece(m.to());
-            int a = pos.getPiece(m.from());
-            m.setScore(Evaluate::pieceValueOrder[v] * 8 - Evaluate::pieceValueOrder[a]);
-        }
-    }
+    /** Return >0, 0, <0, depending on the sign of SEE(m). */
+    int signSEE(const Move& m);
+
+    /** Return true if SEE(m) < 0. */
+    bool negSEE(const Move& m);
+
+    void scoreMoveListMvvLva(MoveGen::MoveList& moves) const;
 
     /** Find move with highest score and move it to the front of the list. */
-    static void selectBest(MoveGen::MoveList& moves, int startIdx) {
-        int bestIdx = startIdx;
-        int bestScore = moves[bestIdx].score();
-        for (int i = startIdx + 1; i < moves.size; i++) {
-            int sc = moves[i].score();
-            if (sc > bestScore) {
-                bestIdx = i;
-                bestScore = sc;
-            }
-        }
-        std::swap(moves[bestIdx], moves[startIdx]);
-    }
+    static void selectBest(MoveGen::MoveList& moves, int startIdx);
 
     /** If hashMove exists in the move list, move the hash move to the front of the list. */
     static bool selectHashMove(MoveGen::MoveList& moves, const Move& hashMove);
 
     void initNodeStats();
 
-    Search(const Search& other) = delete;
-    Search& operator=(const Search& other) = delete;
+    /** Exception thrown to stop the search. */
+    class StopSearch : public std::exception {
+    public:
+        StopSearch() { }
+    };
+
+
+    Position pos;
+    Evaluate eval;
+    KillerTable kt;
+    History& ht;
+    std::vector<U64> posHashList; // List of hashes for previous positions up to the last "zeroing" move.
+    int posHashListSize;          // Number of used entries in posHashList
+    int posHashFirstNew;          // First entry in posHashList that has not been played OTB.
+    TranspositionTable& tt;
+    TreeLoggerWriter log;
+
+    std::shared_ptr<Listener> listener;
+    Move emptyMove;
+
+    struct SearchTreeInfo {
+        bool allowNullMove;    // Don't allow two null-moves in a row
+        Move bestMove;         // Copy of the best found move at this ply
+        Move currentMove;      // Move currently being searched
+        int lmr;               // LMR reduction amount
+        S64 nodeIdx;           // For tree logging
+        SearchTreeInfo() {
+            allowNullMove = true;
+            lmr = 0;
+            nodeIdx = 0;
+        }
+    };
+    static const int MAX_SEARCH_DEPTH = 100;
+    SearchTreeInfo searchTreeInfo[MAX_SEARCH_DEPTH * 2];
+
+    // Time management
+    S64 tStart;                // Time when search started
+    S64 minTimeMillis;         // Minimum recommended thinking time
+    S64 maxTimeMillis;         // Maximum allowed thinking time
+    bool searchNeedMoreTime;   // True if negaScout should use up to maxTimeMillis time.
+    S64 maxNodes;              // Maximum number of nodes to search (approximately)
+    int nodesToGo;             // Number of nodes until next time check
+    int nodesBetweenTimeCheck; // How often to check remaining time
+
+    // Reduced strength variables
+    int strength;              // Strength (0-1000)
+    bool weak;                 // True if strength < 1000
+    U64 randomSeed;
+
+    // Search statistics stuff
+    U64 nodes;
+    U64 qNodes;
+    int nodesPlyVec[20];
+    int nodesDepthVec[20];
+    S64 totalNodes;
+    S64 tLastStats;        // Time when notifyStats was last called
+    bool verbose;
+
+    int q0Eval; // Static eval score at first level of quiescence search
 };
 
 inline bool
@@ -290,6 +217,76 @@ Search::canClaimDrawRep(const Position& pos, const std::vector<U64>& posHashList
         }
     }
     return false;
+}
+
+inline bool
+Search::relatedMoves(const Move& m1, const Move& m2) {
+    if ((m1.from() == m1.to()) || (m2.from() == m2.to()))
+        return false;
+    if ((m1.to() == m2.from()) || (m1.from() == m2.to()) ||
+        ((BitBoard::squaresBetween[m2.from()][m2.to()] & (1ULL << m1.from())) != 0))
+        return true;
+    return false;
+}
+
+inline bool
+Search::passedPawnPush(const Position& pos, const Move& m) {
+    int p = pos.getPiece(m.from());
+    if (pos.whiteMove) {
+        if (p != Piece::WPAWN)
+            return false;
+        if ((BitBoard::wPawnBlockerMask[m.to()] & pos.pieceTypeBB[Piece::BPAWN]) != 0)
+            return false;
+        return m.to() >= 40;
+    } else {
+        if (p != Piece::BPAWN)
+            return false;
+        if ((BitBoard::bPawnBlockerMask[m.to()] & pos.pieceTypeBB[Piece::WPAWN]) != 0)
+            return false;
+        return m.to() <= 23;
+    }
+}
+
+inline int
+Search::signSEE(const Move& m) {
+    int p0 = Evaluate::pieceValue[pos.getPiece(m.from())];
+    int p1 = Evaluate::pieceValue[pos.getPiece(m.to())];
+    if (p0 < p1)
+        return 1;
+    return SEE(m);
+}
+
+inline bool
+Search::negSEE(const Move& m) {
+    int p0 = Evaluate::pieceValue[pos.getPiece(m.from())];
+    int p1 = Evaluate::pieceValue[pos.getPiece(m.to())];
+    if (p1 >= p0)
+        return false;
+    return SEE(m) < 0;
+}
+
+inline void
+Search::scoreMoveListMvvLva(MoveGen::MoveList& moves) const {
+    for (int i = 0; i < moves.size; i++) {
+        Move& m = moves[i];
+        int v = pos.getPiece(m.to());
+        int a = pos.getPiece(m.from());
+        m.setScore(Evaluate::pieceValueOrder[v] * 8 - Evaluate::pieceValueOrder[a]);
+    }
+}
+
+inline void
+Search::selectBest(MoveGen::MoveList& moves, int startIdx) {
+    int bestIdx = startIdx;
+    int bestScore = moves[bestIdx].score();
+    for (int i = startIdx + 1; i < moves.size; i++) {
+        int sc = moves[i].score();
+        if (sc > bestScore) {
+            bestIdx = i;
+            bestScore = sc;
+        }
+    }
+    std::swap(moves[bestIdx], moves[startIdx]);
 }
 
 #endif /* SEARCH_HPP_ */

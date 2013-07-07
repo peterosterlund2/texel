@@ -27,12 +27,26 @@
 #define GAMETEST_HPP_
 
 #include "suiteBase.hpp"
+#include "util.hpp"
+
+class Position;
 
 class GameTest : public SuiteBase {
 public:
     std::string getName() const { return "GameTest"; }
 
     cute::suite getSuite() const;
+
+private:
+    static void testHaveDrawOffer();
+    static void testDraw50();
+    static void testDrawRep();
+    static void testResign();
+    static void testProcessString();
+    static void testGetGameState();
+    static void testInsufficientMaterial();
+    static void doTestPerfT(Position& pos, int maxDepth, U64 expectedNodeCounts[]);
+    static void testPerfT();
 };
 
 #endif /* GAMETEST_HPP_ */

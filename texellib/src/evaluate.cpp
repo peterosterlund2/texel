@@ -1282,3 +1282,8 @@ int Evaluate::krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, b
     }
     return score;
 }
+
+std::shared_ptr<Evaluate::EvalHashTables>
+Evaluate::getEvalHashTables() {
+    return std::make_shared<EvalHashTables>();
+}

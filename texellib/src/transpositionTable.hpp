@@ -134,14 +134,9 @@ public:
             return (data >> first) & sizeMask;
         }
     };
-    vector_aligned<TTEntry> table;
-    ubyte generation;
 
-public:
     /** Constructor. Creates an empty transposition table with numEntries slots. */
-    TranspositionTable(int log2Size) {
-        reSize(log2Size);
-    }
+    TranspositionTable(int log2Size);
 
     void reSize(int log2Size);
 
@@ -149,51 +144,18 @@ public:
     void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore);
 
     /** Retrieve an entry from the hash table corresponding to position with zobrist key "key". */
-    void probe(U64 key, TTEntry& result) {
-        size_t idx0 = getIndex(key);
-        U64 key2 = getStoredKey(key);
-        TTEntry ent;
-        ent.load(table[idx0]);
-        if (ent.getKey() == key2) {
-            if (ent.getGeneration() != generation) {
-                ent.setGeneration(generation);
-                ent.store(table[idx0]);
-            }
-            result = ent;
-            return;
-        }
-        size_t idx1 = idx0 ^ 1;
-        ent.load(table[idx1]);
-        if (ent.getKey() == key2) {
-            if (ent.getGeneration() != generation) {
-                ent.setGeneration(generation);
-                ent.store(table[idx1]);
-            }
-            result = ent;
-            return;
-        }
-        result.setType(TType::T_EMPTY);
-    }
+    void probe(U64 key, TTEntry& result);
 
     /**
      * Increase hash table generation. This means that subsequent inserts will be considered
      * more valuable than the entries currently present in the hash table.
      */
-    void nextGeneration() {
-        generation = (generation + 1) & 15;
-    }
+    void nextGeneration();
 
     /** Clear the transposition table. */
-    void clear() {
-        TTEntry ent;
-        ent.clear();
-        for (size_t i = 0; i < table.size(); i++)
-            ent.store(table[i]);
-    }
+    void clear();
 
-    /**
-     * Extract a list of PV moves, starting from "rootPos" and first move "mFirst".
-     */
+    /** Extract a list of PV moves, starting from "rootPos" and first move "mFirst". */
     void extractPVMoves(const Position& rootPos, const Move& mFirst, std::vector<Move>& pv);
 
     /** Extract the PV starting from posIn, using hash entries, both exact scores and bounds. */
@@ -208,6 +170,10 @@ private:
 
     /** Get part of zobrist key to store in hash table. */
     static U64 getStoredKey(U64 key);
+
+
+    vector_aligned<TTEntry> table;
+    ubyte generation;
 };
 
 inline size_t
@@ -218,6 +184,50 @@ TranspositionTable::getIndex(U64 key) const {
 inline U64
 TranspositionTable::getStoredKey(U64 key) {
     return key;
+}
+
+inline TranspositionTable::TranspositionTable(int log2Size) {
+    reSize(log2Size);
+}
+
+inline void
+TranspositionTable::probe(U64 key, TTEntry& result) {
+    size_t idx0 = getIndex(key);
+    U64 key2 = getStoredKey(key);
+    TTEntry ent;
+    ent.load(table[idx0]);
+    if (ent.getKey() == key2) {
+        if (ent.getGeneration() != generation) {
+            ent.setGeneration(generation);
+            ent.store(table[idx0]);
+        }
+        result = ent;
+        return;
+    }
+    size_t idx1 = idx0 ^ 1;
+    ent.load(table[idx1]);
+    if (ent.getKey() == key2) {
+        if (ent.getGeneration() != generation) {
+            ent.setGeneration(generation);
+            ent.store(table[idx1]);
+        }
+        result = ent;
+        return;
+    }
+    result.setType(TType::T_EMPTY);
+}
+
+inline void
+TranspositionTable::nextGeneration() {
+    generation = (generation + 1) & 15;
+}
+
+inline void
+TranspositionTable::clear() {
+    TTEntry ent;
+    ent.clear();
+    for (size_t i = 0; i < table.size(); i++)
+        ent.store(table[i]);
 }
 
 #endif /* TRANSPOSITIONTABLE_HPP_ */

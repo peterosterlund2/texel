@@ -93,6 +93,23 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     if (scMovesIn.size <= 0)
         return Move(); // No moves to search
 
+    struct MoveInfo {
+        Move move;
+        U64 nodes;
+        MoveInfo(const Move& m, int n) { move = m;  nodes = n; }
+
+        struct SortByScore {
+            bool operator()(const MoveInfo& mi1, const MoveInfo& mi2) const {
+                return mi1.move.score() > mi2.move.score();
+            }
+        };
+        struct SortByNodes {
+            bool operator()(const MoveInfo& mi1, const MoveInfo& mi2) {
+                return mi1.nodes > mi2.nodes;
+            }
+        };
+    };
+
     std::vector<MoveInfo> scMoves;
     {
         // If strength is < 10%, only include a subset of the root moves.

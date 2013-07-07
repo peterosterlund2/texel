@@ -34,57 +34,32 @@
 #include <string>
 #include <memory>
 
+class ComputerPlayerTest;
+
 /**
  * A computer algorithm player.
  */
 class ComputerPlayer : public Player {
-private:
-
-    int minTimeMillis;
-public:
-    int maxTimeMillis;
-    int maxDepth;
-private:
-    int maxNodes;
-    TranspositionTable tt;
-    std::shared_ptr<Evaluate::EvalHashTables> et;
-    Book book;
-    bool bookEnabled;
-    Search* currentSearch;
-    std::shared_ptr<Search::Listener> listener;
-
-    ComputerPlayer(const ComputerPlayer& other) = delete;
-    ComputerPlayer& operator=(const ComputerPlayer& other) = delete;
-
+    friend class ComputerPlayerTest;
 public:
     static std::string engineName;
     bool verbose;
 
     ComputerPlayer();
 
-    void setTTLogSize(int logSize) {
-        tt.reSize(logSize);
-    }
+    void setTTLogSize(int logSize);
 
-    void setListener(const std::shared_ptr<Search::Listener>& listener) {
-        this->listener = listener;
-    }
+    void setListener(const std::shared_ptr<Search::Listener>& listener);
 
     std::string getCommand(const Position& posIn, bool drawOffer, const std::vector<Position>& history);
 
-    bool isHumanPlayer() {
-        return false;
-    }
+    bool isHumanPlayer();
 
-    void useBook(bool bookOn) {
-        bookEnabled = bookOn;
-    }
+    void useBook(bool bookOn);
 
     void timeLimit(int minTimeLimit, int maxTimeLimit);
 
-    void clearTT() {
-        tt.clear();
-    }
+    void clearTT();
 
     /** Search a position and return the best move and score. Used for test suite processing. */
     std::pair<Move, std::string> searchPosition(Position& pos, int maxTimeMillis);
@@ -93,13 +68,54 @@ public:
     static void staticInitialize();
 
 private:
+    ComputerPlayer(const ComputerPlayer& other) = delete;
+    ComputerPlayer& operator=(const ComputerPlayer& other) = delete;
+
     /** Check if a draw claim is allowed, possibly after playing "move".
      * @param move The move that may have to be made before claiming draw.
      * @return The draw string that claims the draw, or empty string if draw claim not valid.
      */
     std::string canClaimDraw(Position& pos, std::vector<U64>& posHashList,
                              int posHashListSize, const Move& move);
+
+
+    int minTimeMillis;
+    int maxTimeMillis;
+    int maxDepth;
+
+    int maxNodes;
+    TranspositionTable tt;
+    std::shared_ptr<Evaluate::EvalHashTables> et;
+    Book book;
+    bool bookEnabled;
+    Search* currentSearch;
+    std::shared_ptr<Search::Listener> listener;
 };
 
+
+inline void
+ComputerPlayer::setTTLogSize(int logSize) {
+    tt.reSize(logSize);
+}
+
+inline void
+ComputerPlayer::setListener(const std::shared_ptr<Search::Listener>& listener) {
+    this->listener = listener;
+}
+
+inline bool
+ComputerPlayer::isHumanPlayer() {
+    return false;
+}
+
+inline void
+ComputerPlayer::useBook(bool bookOn) {
+    bookEnabled = bookOn;
+}
+
+inline void
+ComputerPlayer::clearTT() {
+    tt.clear();
+}
 
 #endif /* COMPUTERPLAYER_HPP_ */

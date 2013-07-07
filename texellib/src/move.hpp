@@ -45,13 +45,6 @@ public:
 
     void setScore(int score);
 
-    class SortByScore {
-    public:
-        bool operator()(const Move& m1, const Move& m2) const {
-            return m1.score_ > m2.score_;
-        }
-    };
-
     int from() const;
     int to() const;
     int promoteTo() const;
