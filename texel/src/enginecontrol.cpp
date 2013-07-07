@@ -81,11 +81,6 @@ EngineControl::EngineControl(std::ostream& o)
     : os(o),
       shouldDetach(true),
       tt(8),
-      hashSizeMB(16),
-      ownBook(false),
-      analyseMode(false),
-      ponderMode(true),
-      strength(1000),
       randomSeed(0)
 {
     setupTT();
@@ -185,7 +180,7 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
         const int margin = std::min(1000, time * 9 / 10);
         int timeLimit = (time + inc * (moves - 1) - margin) / moves;
         minTimeLimit = (int)(timeLimit * 0.85);
-        if (ponderMode) {
+        if (Parameters::instance().getBoolPar("Ponder")) {
             const double ponderHitRate = 0.35;
             minTimeLimit = (int)ceil(minTimeLimit / (1 - ponderHitRate));
         }
@@ -199,10 +194,11 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
+    Parameters& par = Parameters::instance();
     Search::SearchTables st(tt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st);
     sc->setListener(std::make_shared<SearchListener>(os));
-    sc->setStrength(strength, randomSeed);
+    sc->setStrength(par.getIntPar("Strength"), randomSeed);
     std::shared_ptr<MoveGen::MoveList> moves(std::make_shared<MoveGen::MoveList>());
     MoveGen::pseudoLegalMoves(pos, *moves);
     MoveGen::removeIllegal(pos, *moves);
@@ -223,7 +219,9 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     }
     sc->timeLimit(minTimeLimit, maxTimeLimit);
     tt.nextGeneration();
-    auto f = [this,moves,maxDepth,maxNodes](void) {
+    bool ownBook = par.getBoolPar("OwnBook");
+    bool analyseMode = par.getBoolPar("UCI_AnalyseMode");
+    auto f = [this,ownBook,analyseMode,moves,maxDepth,maxNodes](void) {
         Move m;
         if (ownBook && !analyseMode) {
             Book book(false);
@@ -273,6 +271,7 @@ EngineControl::stopThread() {
 
 void
 EngineControl::setupTT() {
+    int hashSizeMB = Parameters::instance().getIntPar("Hash");
     U64 nEntries = hashSizeMB > 0 ? ((U64)hashSizeMB) * (1 << 20) / sizeof(TranspositionTable::TTEntry)
 	                          : (U64)1024;
     volatile int logSize = 0;
@@ -370,15 +369,6 @@ EngineControl::moveToString(const Move& m) {
 
 void
 EngineControl::printOptions(std::ostream& os) {
-    os << "option name Hash type spin default 16 min 1 max 524288" << std::endl;
-    os << "option name OwnBook type check default false" << std::endl;
-    os << "option name Ponder type check default true" << std::endl;
-    os << "option name UCI_AnalyseMode type check default false" << std::endl;
-    os << "option name UCI_EngineAbout type string default " << ComputerPlayer::engineName
-            << " by Peter Osterlund, see http://web.comhem.se/petero2home/javachess/index.html" << std::endl;
-    os << "option name Strength type spin default 1000 min 0 max 1000" << std::endl;
-
-
     std::vector<std::string> parNames;
     Parameters::instance().getParamNames(parNames);
     for (size_t i = 0; i < parNames.size(); i++) {
@@ -421,18 +411,7 @@ EngineControl::printOptions(std::ostream& os) {
 
 void
 EngineControl::setOption(const std::string& optionName, const std::string& optionValue) {
-    if (optionName == "hash") {
-        str2Num(optionValue, hashSizeMB);
+    Parameters::instance().set(optionName, optionValue);
+    if (optionName == "hash")
         setupTT();
-    } else if (optionName == "ownbook") {
-        ownBook = (toLowerCase(optionValue) == "true");
-    } else if (optionName == "ponder") {
-        ponderMode = (toLowerCase(optionValue) == "true");
-    } else if (optionName == "uci_analysemode") {
-        analyseMode = (toLowerCase(optionValue) == "true");
-    } else if (optionName == "strength") {
-        str2Num(optionValue, strength);
-    } else {
-        Parameters::instance().set(optionName, optionValue);
-    }
 }

@@ -68,14 +68,7 @@ private:
     int maxNodes;
     std::vector<Move> searchMoves;
 
-    // Options
-    int hashSizeMB;
-    bool ownBook;
-    bool analyseMode;
-    bool ponderMode;
-
-    // Reduced strength variables
-    int strength;
+    // Random seed for reduced strength
     U64 randomSeed;
 
     /**

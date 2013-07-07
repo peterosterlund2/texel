@@ -24,12 +24,22 @@
  */
 
 #include "parameters.hpp"
+#include "computerPlayer.hpp"
 
 Parameters::Parameters() {
-//    addPar(std::make_shared<SpinParam>("doubled", true, 0, 2048, 25));
-//    addPar(std::make_shared<SpinParam>("island", true, 0, 2048, 15));
-//    addPar(std::make_shared<SpinParam>("isolated", true, 0, 2048, 15));
-//    addPar(std::make_shared<SpinParam>("nOutpost", true, 0, 2048, 128));
+    addPar(std::make_shared<Parameters::SpinParam>("Hash", 1, 524288, 16));
+    addPar(std::make_shared<Parameters::CheckParam>("OwnBook", false));
+    addPar(std::make_shared<Parameters::CheckParam>("Ponder", true));
+    addPar(std::make_shared<Parameters::CheckParam>("UCI_AnalyseMode", false));
+    std::string about = ComputerPlayer::engineName +
+                        " by Peter Osterlund, see http://web.comhem.se/petero2home/javachess/index.html#texel";
+    addPar(std::make_shared<Parameters::StringParam>("UCI_EngineAbout", about));
+    addPar(std::make_shared<Parameters::SpinParam>("Strength", 0, 1000, 1000));
+
+//    addPar(std::make_shared<SpinParam>("doubled", 0, 2048, 25));
+//    addPar(std::make_shared<SpinParam>("island", 0, 2048, 15));
+//    addPar(std::make_shared<SpinParam>("isolated", 0, 2048, 15));
+//    addPar(std::make_shared<SpinParam>("nOutpost", 0, 2048, 128));
 }
 
 Parameters&
