@@ -202,16 +202,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             U64 nodesThisMove = nodes + qNodes;
             posHashListSize--;
             pos.unMakeMove(m, ui);
-            {
-                int type = TType::T_EXACT;
-                if (score <= alpha) {
-                    type = TType::T_LE;
-                } else if (score >= beta) {
-                    type = TType::T_GE;
-                }
-                m.setScore(score);
-                tt.insert(pos.historyHash(), m, type, 0, depthS, UNKNOWN_SCORE);
-            }
+            m.setScore(score);
             if (score >= beta) {
                 int retryDelta = aspirationDelta * 2;
                 while (score >= beta) {
