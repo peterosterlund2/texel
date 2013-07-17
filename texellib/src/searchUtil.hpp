@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,26 +17,33 @@
 */
 
 /*
- * constants.hpp
+ * searchUtil.hpp
  *
- *  Created on: Mar 2, 2012
+ *  Created on: Jul 15, 2013
  *      Author: petero
  */
 
-#ifndef CONSTANTS_HPP_
-#define CONSTANTS_HPP_
+#ifndef SEARCHUTIL_HPP_
+#define SEARCHUTIL_HPP_
 
-namespace SearchConst {
-    const int MATE0 = 32000;
-    const int plyScale = 8; // Fractional ply resolution
-    const int MIN_SMP_DEPTH = 8; // Minimum depth for SMP work sharing
+#include "move.hpp"
+
+
+struct SearchTreeInfo {
+    SearchTreeInfo();
+
+    bool allowNullMove;    // Don't allow two null-moves in a row
+    Move bestMove;         // Copy of the best found move at this ply
+    Move currentMove;      // Move currently being searched
+    int lmr;               // LMR reduction amount
+    S64 nodeIdx;           // For tree logging
+};
+
+
+inline
+SearchTreeInfo::SearchTreeInfo()
+    : allowNullMove(true), lmr(0), nodeIdx(0) {
 }
 
-namespace TType {
-    const int T_EXACT = 0;   // Exact score
-    const int T_GE = 1;      // True score >= this->score
-    const int T_LE = 2;      // True score <= this->score
-    const int T_EMPTY = 3;   // Empty hash slot
-}
 
-#endif /* CONSTANTS_HPP_ */
+#endif /* SEARCHUTIL_HPP_ */

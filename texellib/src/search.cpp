@@ -39,6 +39,7 @@ const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                int posHashListSize0, SearchTables& st)
     : eval(st.et), ht(st.ht), tt(st.tt) {
+    stopHandler = std::make_shared<DefaultStopHandler>(*this);
     init(pos0, posHashList0, posHashListSize0);
 }
 
@@ -86,7 +87,8 @@ Search::setStrength(int strength, U64 randomSeed) {
 
 Move
 Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
-                           int maxDepth, U64 initialMaxNodes, bool verbose) {
+                           int maxDepth, U64 initialMaxNodes,
+                           bool verbose, bool smp) {
     tStart = currentTimeMillis();
     log.open("/home/petero/treelog.dmp", pos);
     totalNodes = 0;
@@ -192,10 +194,10 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             sti.currentMove = m;
             sti.lmr = lmrS;
             sti.nodeIdx = -1;
-            int score = -negaScout(-beta, -alpha, 1, depthS - lmrS - plyScale, -1, givesCheck);
+            int score = -negaScout(smp, -beta, -alpha, 1, depthS - lmrS - plyScale, -1, givesCheck);
             if ((lmrS > 0) && (score > alpha)) {
                 sti.lmr = 0;
-                score = -negaScout(-beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
+                score = -negaScout(smp, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
             }
             U64 nodesThisMove = nodes + qNodes;
             posHashListSize--;
@@ -231,7 +233,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                     nodes = qNodes = 0;
                     posHashList[posHashListSize++] = pos.zobristHash();
                     pos.makeMove(m, ui);
-                    int score2 = -negaScout(-beta, -score, 1, depthS - plyScale, -1, givesCheck);
+                    int score2 = -negaScout(smp, -beta, -score, 1, depthS - plyScale, -1, givesCheck);
                     score = std::max(score, score2);
                     nodesThisMove += nodes + qNodes;
                     posHashListSize--;
@@ -256,7 +258,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                     nodes = qNodes = 0;
                     posHashList[posHashListSize++] = pos.zobristHash();
                     pos.makeMove(m, ui);
-                    score = -negaScout(-score, -alpha, 1, depthS - plyScale, -1, givesCheck);
+                    score = -negaScout(smp, -score, -alpha, 1, depthS - plyScale, -1, givesCheck);
                     nodesThisMove += nodes + qNodes;
                     posHashListSize--;
                     pos.unMakeMove(m, ui);
@@ -394,6 +396,19 @@ Search::notifyStats() {
     tLastStats = tNow;
 }
 
+bool
+Search::shouldStop() {
+    S64 tNow = currentTimeMillis();
+    S64 timeLimit = searchNeedMoreTime ? maxTimeMillis : minTimeMillis;
+    if (    ((timeLimit >= 0) && (tNow - tStart >= timeLimit)) ||
+            ((maxNodes >= 0) && (totalNodes >= maxNodes)))
+        return true;
+    if (tNow - tLastStats >= 1000)
+        notifyStats();
+    return false;
+}
+
+template <bool smp>
 int
 Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
@@ -404,13 +419,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
     if (nodesToGo <= 0) {
         nodesToGo = nodesBetweenTimeCheck;
-        S64 tNow = currentTimeMillis();
-        S64 timeLimit = searchNeedMoreTime ? maxTimeMillis : minTimeMillis;
-        if (    ((timeLimit >= 0) && (tNow - tStart >= timeLimit)) ||
-                ((maxNodes >= 0) && (totalNodes >= maxNodes)))
+        if (stopHandler->shouldStop())
             throw StopSearch();
-        if (tNow - tLastStats >= 1000)
-            notifyStats();
     }
 
     // Collect statistics
@@ -556,7 +566,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             pos.setEpSquare(-1);
             searchTreeInfo[ply+1].allowNullMove = false;
             searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
-            int score = -negaScout(-beta, -(beta - 1), ply + 1, depth - R, -1, false);
+            int score = -negaScout(smp, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
             searchTreeInfo[ply+1].allowNullMove = true;
             pos.setEpSquare(epSquare);
             pos.setWhiteMove(!pos.whiteMove);
@@ -611,7 +621,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 #endif
             S64 savedNodeIdx = sti.nodeIdx;
             int newDepth = isPv ? depth  - 2 * plyScale : depth * 3 / 8;
-            negaScout(alpha, beta, ply, newDepth, -1, inCheck);
+            negaScout(smp, alpha, beta, ply, newDepth, -1, inCheck);
             sti.nodeIdx = savedNodeIdx;
 #ifdef TREELOG
             sti2.currentMove = savedMove;
@@ -756,12 +766,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             }
             */
             sti.lmr = lmr;
-            score = -negaScout(-b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+            score = -negaScout(smp, -b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
             if (((lmr > 0) && (score > alpha)) ||
                 ((score > alpha) && (score < beta) && (b != beta))) {
                 sti.lmr = 0;
                 newDepth += lmr;
-                score = -negaScout(-beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+                score = -negaScout(smp, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
             }
             /*
             if (ply <= 3) {

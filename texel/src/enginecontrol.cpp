@@ -221,7 +221,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     tt.nextGeneration();
     bool ownBook = par.getBoolPar("OwnBook");
     bool analyseMode = par.getBoolPar("UCI_AnalyseMode");
-    auto f = [this,ownBook,analyseMode,moves,maxDepth,maxNodes](void) {
+    auto f = [this,ownBook,analyseMode,moves,maxDepth,maxNodes]() {
         Move m;
         if (ownBook && !analyseMode) {
             Book book(false);

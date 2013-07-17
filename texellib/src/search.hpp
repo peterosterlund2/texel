@@ -34,9 +34,11 @@
 #include "evaluate.hpp"
 #include "treeLogger.hpp"
 #include "moveGen.hpp"
+#include "searchUtil.hpp"
 
 #include <limits>
 #include <memory>
+
 
 class SearchTest;
 
@@ -72,23 +74,43 @@ public:
         this->listener = listener;
     }
 
+    /** Exception thrown to stop the search. */
+    class StopSearch : public std::exception {
+    public:
+        StopSearch() { }
+    };
+
+    class StopHandler {
+    public:
+        virtual bool shouldStop() = 0;
+    };
+
+    void setStopHandler(const std::shared_ptr<StopHandler>& stopHandler) {
+        this->stopHandler = stopHandler;
+    }
+
     void timeLimit(int minTimeLimit, int maxTimeLimit);
 
     void setStrength(int strength, U64 randomSeed);
 
     Move iterativeDeepening(const MoveGen::MoveList& scMovesIn,
-                            int maxDepth, U64 initialMaxNodes, bool verbose);
+                            int maxDepth, U64 initialMaxNodes, bool verbose,
+                            bool smp = false); // FIXME!! Remove default
 
     /**
      * Main recursive search algorithm.
      * @return Score for the side to make a move, in position given by "pos".
      */
+    template <bool smp>
+    int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
+                  const bool inCheck);
+    int negaScout(bool smp,
+                  int alpha, int beta, int ply, int depth, int recaptureSquare,
+                  const bool inCheck);
     int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
 
-    static bool canClaimDraw50(const Position& pos) {
-        return (pos.halfMoveClock >= 100);
-    }
+    static bool canClaimDraw50(const Position& pos);
 
     static bool canClaimDrawRep(const Position& pos, const std::vector<U64>& posHashList,
                                 int posHashListSize, int posHashFirstNew);
@@ -98,6 +120,9 @@ public:
      * @param moves  List of moves to score.
      */
     void scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx = 0);
+
+    /** Set search tree information for a given ply. */
+    void setSearchTreeInfo(int ply, const SearchTreeInfo& sti);
 
 private:
     Search(const Search& other) = delete;
@@ -143,11 +168,17 @@ private:
 
     void initNodeStats();
 
-    /** Exception thrown to stop the search. */
-    class StopSearch : public std::exception {
+    class DefaultStopHandler : public StopHandler {
     public:
-        StopSearch() { }
+        DefaultStopHandler(Search& sc0) : sc(sc0) { }
+        bool shouldStop() { return sc.shouldStop(); }
+    private:
+        Search& sc;
     };
+
+    /** Return true if the search should be stopped immediately. */
+    bool shouldStop();
+
 
 
     Position pos;
@@ -161,20 +192,9 @@ private:
     TreeLoggerWriter log;
 
     std::shared_ptr<Listener> listener;
+    std::shared_ptr<StopHandler> stopHandler;
     Move emptyMove;
 
-    struct SearchTreeInfo {
-        bool allowNullMove;    // Don't allow two null-moves in a row
-        Move bestMove;         // Copy of the best found move at this ply
-        Move currentMove;      // Move currently being searched
-        int lmr;               // LMR reduction amount
-        S64 nodeIdx;           // For tree logging
-        SearchTreeInfo() {
-            allowNullMove = true;
-            lmr = 0;
-            nodeIdx = 0;
-        }
-    };
     static const int MAX_SEARCH_DEPTH = 100;
     SearchTreeInfo searchTreeInfo[MAX_SEARCH_DEPTH * 2];
 
@@ -287,6 +307,33 @@ Search::selectBest(MoveGen::MoveList& moves, int startIdx) {
         }
     }
     std::swap(moves[bestIdx], moves[startIdx]);
+}
+
+inline void
+Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti) {
+    searchTreeInfo[ply] = sti;
+}
+
+inline int
+Search::negaScout(bool smp,
+                  int alpha, int beta, int ply, int depth, int recaptureSquare,
+                  const bool inCheck) {
+    using namespace SearchConst;
+    if (smp && (depth >= MIN_SMP_DEPTH * plyScale))
+        return negaScout<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+    else
+        return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+}
+
+inline int
+Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
+                  const bool inCheck) {
+    return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+}
+
+inline bool
+Search::canClaimDraw50(const Position& pos) {
+    return (pos.halfMoveClock >= 100);
 }
 
 #endif /* SEARCH_HPP_ */
