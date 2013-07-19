@@ -34,6 +34,7 @@
 #include "searchTest.hpp"
 #include "textioTest.hpp"
 #include "transpositionTableTest.hpp"
+#include "parallelTest.hpp"
 
 void
 runSuite(const SuiteBase& suite) {
@@ -56,5 +57,6 @@ int main() {
     runSuite(SearchTest());
     runSuite(TextIOTest());
     runSuite(TranspositionTableTest());
+    runSuite(ParallelTest());
     return 0;
 }

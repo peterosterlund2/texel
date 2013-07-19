@@ -90,6 +90,7 @@ private:
 
 /** Priority queue of pending search tasks. Handles thread safety. */
 class WorkQueue {
+    friend class ParallelTest;
 public:
     /** Constructor. */
     WorkQueue(std::condition_variable& cv, FailHighInfo& fhInfo);
@@ -113,7 +114,7 @@ public:
     void moveFinished(const std::shared_ptr<SplitPoint>& sp, int moveNo, bool cancelRemaining);
 
     /** Return probability that the best unstarted move needs to be searched. */
-    double getBestProbability(const FailHighInfo& fhInfo) const;
+    double getBestProbability() const;
 
 private:
     /** Move sp to waiting if it has no unstarted moves. */
@@ -134,6 +135,9 @@ private:
     static void removeFromSet(const std::shared_ptr<SplitPoint>& sp,
                               std::set<std::shared_ptr<SplitPoint>, SplitPointCompare>& spSet,
                               std::vector<std::shared_ptr<SplitPoint>>& spVec);
+
+    /** Cancel "sp" and all children. Assumes mutex already locked. */
+    void cancelInternal(const std::shared_ptr<SplitPoint>& sp);
 
 
     std::condition_variable& cv;
@@ -202,6 +206,7 @@ public:
 
 /** SplitPoint does not handle thread safety, WorkQueue must do that.  */
 class SplitPoint {
+    friend class ParallelTest;
 public:
     /** Constructor. */
     SplitPoint(const std::shared_ptr<SplitPoint>& parentSp, int parentMoveNo,
@@ -269,8 +274,11 @@ public:
     /** Return true if there are moves that have not been finished (canceled) yet. */
     bool hasUnFinishedMove() const;
 
+    /** Print object state to "os", for debugging. */
+    void print(std::ostream& os, int level, const FailHighInfo& fhInfo) const;
+
 private:
-    /** Get index of first unstarted move. */
+    /** Get index of first unstarted move, or -1 if there is no unstarted move. */
     int findNextMove() const;
 
     /** Remove null entries from children vector. */
@@ -336,7 +344,7 @@ private:
 class SplitPointHolder {
 public:
     /** Constructor. */
-    SplitPointHolder();
+    SplitPointHolder(WorkQueue& wq);
 
     /** Destructor. Cancel SplitPoint. */
     ~SplitPointHolder();
@@ -354,6 +362,7 @@ private:
     SplitPointHolder(const SplitPointHolder&) = delete;
     SplitPointHolder operator=(const SplitPointHolder&) = delete;
 
+    WorkQueue& wq;
     std::shared_ptr<SplitPoint> sp;
 };
 

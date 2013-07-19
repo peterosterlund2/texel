@@ -25,6 +25,8 @@
 
 #include "parallel.hpp"
 #include "search.hpp"
+#include "textio.hpp"
+
 #include <cassert>
 
 U64 SplitPoint::nextSeqNo = 0;
@@ -96,7 +98,7 @@ ThreadStopHandler::shouldStop() {
     if (counter >= nextProbCheck) {
         nextProbCheck = counter + 1 + counter / 4;
         double myProb = sp.getPMoveUseful(fhInfo, moveNo);
-        double bestProb = wq.getBestProbability(fhInfo);
+        double bestProb = wq.getBestProbability();
         if ((bestProb > myProb + 0.01) && (bestProb >= (myProb + (1.0 - myProb) * 0.25)))
             return true;
     }
@@ -225,9 +227,7 @@ WorkQueue::setOwnerCurrMove(const std::shared_ptr<SplitPoint>& sp, int moveNo) {
 void
 WorkQueue::cancel(const std::shared_ptr<SplitPoint>& sp) {
     std::lock_guard<std::mutex> L(mutex);
-    sp->cancel();
-    queue.erase(sp);
-    waiting.erase(sp);
+    cancelInternal(sp);
 }
 
 void
@@ -239,7 +239,7 @@ WorkQueue::moveFinished(const std::shared_ptr<SplitPoint>& sp, int moveNo, bool 
 }
 
 double
-WorkQueue::getBestProbability(const FailHighInfo& fhInfo) const {
+WorkQueue::getBestProbability() const {
     std::lock_guard<std::mutex> L(mutex);
     if (queue.empty())
         return 0.0;
@@ -253,6 +253,8 @@ WorkQueue::maybeMoveToWaiting(const std::shared_ptr<SplitPoint>& sp) {
         queue.erase(sp);
         if (sp->hasUnFinishedMove())
             waiting.insert(sp);
+        else
+            waiting.erase(sp);
     }
 }
 
@@ -287,6 +289,19 @@ WorkQueue::removeFromSet(const std::shared_ptr<SplitPoint>& sp,
         std::shared_ptr<SplitPoint> child = wChild.lock();
         if (child)
             removeFromSet(child, spSet, spVec);
+    }
+}
+
+void
+WorkQueue::cancelInternal(const std::shared_ptr<SplitPoint>& sp) {
+    sp->cancel();
+    queue.erase(sp);
+    waiting.erase(sp);
+
+    for (const auto& wChild : sp->getChildren()) {
+        std::shared_ptr<SplitPoint> child = wChild.lock();
+        if (child)
+            cancelInternal(child);
     }
 }
 
@@ -400,11 +415,6 @@ void
 SplitPoint::cancel() {
     for (SplitPointMove& spMove : spMoves)
         spMove.setCanceled(true);
-    for (const auto& wChild : children) {
-        std::shared_ptr<SplitPoint> child = wChild.lock();
-        if (child)
-            child->cancel();
-    }
 }
 
 void
@@ -455,6 +465,31 @@ SplitPoint::cleanUpChildren() {
     children = toKeep;
 }
 
+void
+SplitPoint::print(std::ostream& os, int level, const FailHighInfo& fhInfo) const {
+    std::string pad(level*2, ' ');
+    os << pad << "seq:" << seqNo << " pos:" << TextIO::toFEN(pos) << std::endl;
+    os << pad << "parent:" << parentMoveNo << " hashListSize:" << posHashListSize <<
+        " a:" << alpha << " b:" << beta << " ply:" << ply << std::endl;
+    os << pad << "p1:" << pSpUseful << " p2:" << pNextMoveUseful << " curr:" << currMoveNo << std::endl;
+    os << pad << "moves:";
+    for (int mi = 0; mi < (int)spMoves.size(); mi++) {
+        const auto& spm = spMoves[mi];
+        os << ' ' << TextIO::moveToUCIString(spm.getMove());
+        if (spm.isCanceled())
+            os << ",c";
+        if (spm.isSearching())
+            os << ",s";
+        os << "," << fhInfo.getMoveNeededProbability(parentMoveNo, currMoveNo, mi);
+    }
+    os << std::endl;
+    for (const auto& wChild : children) {
+        std::shared_ptr<SplitPoint> child = wChild.lock();
+        if (child)
+            child->print(os, level+1, fhInfo);
+    }
+}
+
 // ----------------------------------------------------------------------------
 
 SplitPointMove::SplitPointMove(const Move& move0, int lmr0, int depth0,
@@ -465,16 +500,18 @@ SplitPointMove::SplitPointMove(const Move& move0, int lmr0, int depth0,
 
 // ----------------------------------------------------------------------------
 
-SplitPointHolder::SplitPointHolder() {
+SplitPointHolder::SplitPointHolder(WorkQueue& wq0)
+    : wq(wq0) {
 }
 
 SplitPointHolder::~SplitPointHolder() {
     if (sp)
-        sp->cancel();
+        wq.cancel(sp);
 }
 
 void
 SplitPointHolder::setSp(const std::shared_ptr<SplitPoint>& sp0) {
+    assert(!sp);
     sp = sp0;
 }
 
