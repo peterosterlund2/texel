@@ -52,7 +52,7 @@ class FailHighInfo;
 class WorkerThread {
 public:
     /** Constructor. Does not start new thread. */
-    WorkerThread(int threadNo, ParallelData& pd, TranspositionTable&& tt);
+    WorkerThread(int threadNo, ParallelData& pd, TranspositionTable& tt);
 
     /** Destructor. Waits for thread to terminate. */
     ~WorkerThread();
@@ -65,6 +65,9 @@ public:
 
     /** Returns true if thread should stop searching. */
     bool shouldStop() const { return stopThread; }
+
+    /** Return true if thread is running. */
+    bool threadRunning() const { return thread != nullptr; }
 
 private:
     WorkerThread(const WorkerThread&) = delete;
@@ -111,7 +114,9 @@ public:
     /** Set move to canceled after helper thread finished searching it. */
     void moveFinished(const std::shared_ptr<SplitPoint>& sp, int moveNo, bool cancelRemaining);
 
-    /** Return probability that the best unstarted move needs to be searched. */
+    /** Return probability that the best unstarted move needs to be searched.
+     *  Also return the corresponding SplitPoint. */
+    double getBestProbability(std::shared_ptr<SplitPoint>& bestSp) const;
     double getBestProbability() const;
 
 private:
@@ -187,7 +192,16 @@ private:
 class ParallelData {
 public:
     /** Constructor. */
-    ParallelData();
+    ParallelData(TranspositionTable& tt);
+
+    /** Create/delete worker threads so that there are numWorkers in total. */
+    void addRemoveWorkers(int numWorkers);
+
+    /** Start all worker threads. */
+    void startAll();
+
+    /** Stop all worker threads. */
+    void stopAll();
 
 
     // Notified when wq becomes non-empty and when search should stop
@@ -197,8 +211,11 @@ public:
 
     WorkQueue wq;
 
+private:
     /** Vector of helper threads. Master thread not included. */
-    std::vector<std::shared_ptr<WorkerThread>> threads; // FIXME!! Only modify when not searching
+    std::vector<std::shared_ptr<WorkerThread>> threads;
+
+    TranspositionTable& tt;
 };
 
 
@@ -271,6 +288,9 @@ public:
 
     /** Return true if there are moves that have not been finished (canceled) yet. */
     bool hasUnFinishedMove() const;
+
+    /** Return true if this SplitPoint is an ancestor to "sp". */
+    bool isAncestorTo(const SplitPoint& sp) const;
 
     /** Print object state to "os", for debugging. */
     void print(std::ostream& os, int level, const FailHighInfo& fhInfo) const;

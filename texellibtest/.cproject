@@ -60,6 +60,7 @@
 								<option id="gnu.cpp.link.option.libs.1312187623" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="texellib"/>
 								</option>
+								<option id="gnu.cpp.link.option.flags.1411758677" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1475204416" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -151,6 +152,7 @@
 								<option id="gnu.cpp.link.option.libs.63904313" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="texellib"/>
 								</option>
+								<option id="gnu.cpp.link.option.flags.1708615518" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1752976583" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -244,6 +246,7 @@
 									<listOptionValue builtIn="false" value="texellib"/>
 								</option>
 								<option id="gnu.cpp.link.option.debugging.gprof.1925864234" name="Generate gprof information (-pg)" superClass="gnu.cpp.link.option.debugging.gprof" value="true" valueType="boolean"/>
+								<option id="gnu.cpp.link.option.flags.847722158" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1423445314" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -337,6 +340,7 @@
 									<listOptionValue builtIn="false" value="texellib"/>
 								</option>
 								<option id="gnu.cpp.link.option.debugging.gprof.1753561694" name="Generate gprof information (-pg)" superClass="gnu.cpp.link.option.debugging.gprof" value="true" valueType="boolean"/>
+								<option id="gnu.cpp.link.option.flags.1687684646" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1322733318" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

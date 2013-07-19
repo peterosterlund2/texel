@@ -23,6 +23,8 @@
  *      Author: petero
  */
 
+#define _GLIBCXX_USE_NANOSLEEP
+
 #include "parallelTest.hpp"
 #include "parallel.hpp"
 #include "position.hpp"
@@ -31,6 +33,8 @@
 
 #include <vector>
 #include <memory>
+#include <thread>
+#include <chrono>
 
 #include "cute.h"
 
@@ -71,7 +75,8 @@ ParallelTest::testFailHighInfo() {
 void
 ParallelTest::testWorkQueue() {
     const double eps = 1e-8;
-    ParallelData pd;
+    TranspositionTable tt(10);
+    ParallelData pd(tt);
     WorkQueue& wq = pd.wq;
     FailHighInfo& fhi = pd.fhInfo;
     int moveNo = -1;
@@ -218,7 +223,8 @@ ParallelTest::testWorkQueue() {
 void
 ParallelTest::testWorkQueueParentChild() {
     const double eps = 1e-8;
-    ParallelData pd;
+    TranspositionTable tt(10);
+    ParallelData pd(tt);
     WorkQueue& wq = pd.wq;
     FailHighInfo& fhi = pd.fhInfo;
 
@@ -249,6 +255,7 @@ ParallelTest::testWorkQueueParentChild() {
     sp1->addMove(SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
     sp1->addMove(SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
     wq.addWork(sp1);
+    ASSERT(sp1->isAncestorTo(*sp1));
 
     pos.makeMove(TextIO::uciStringToMove("e2e4"), ui);
     posHashList[posHashListSize++] = pos.zobristHash();
@@ -258,6 +265,8 @@ ParallelTest::testWorkQueueParentChild() {
     sp2->addMove(SplitPointMove(TextIO::uciStringToMove("e7e5"), 0, 4, -1, false));
     sp2->addMove(SplitPointMove(TextIO::uciStringToMove("c7c5"), 0, 4, -1, false));
     wq.addWork(sp2);
+    ASSERT( sp1->isAncestorTo(*sp2));
+    ASSERT(!sp2->isAncestorTo(*sp1));
 
     pos.makeMove(TextIO::uciStringToMove("e7e5"), ui);
     posHashList[posHashListSize++] = pos.zobristHash();
@@ -268,6 +277,10 @@ ParallelTest::testWorkQueueParentChild() {
     sp3->addMove(SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
     sp3->addMove(SplitPointMove(TextIO::uciStringToMove("c2c3"), 0, 4, -1, false));
     wq.addWork(sp3);
+    ASSERT( sp1->isAncestorTo(*sp3));
+    ASSERT( sp2->isAncestorTo(*sp3));
+    ASSERT(!sp3->isAncestorTo(*sp1));
+    ASSERT(!sp3->isAncestorTo(*sp2));
 
     pos = TextIO::readFEN(TextIO::startPosFEN);
     posHashListSize = 1;
@@ -279,6 +292,12 @@ ParallelTest::testWorkQueueParentChild() {
     sp4->addMove(SplitPointMove(TextIO::uciStringToMove("d7d5"), 0, 4, -1, false));
     sp4->addMove(SplitPointMove(TextIO::uciStringToMove("g8f6"), 0, 4, -1, false));
     wq.addWork(sp4);
+    ASSERT( sp1->isAncestorTo(*sp4));
+    ASSERT(!sp2->isAncestorTo(*sp4));
+    ASSERT(!sp3->isAncestorTo(*sp4));
+    ASSERT(!sp4->isAncestorTo(*sp1));
+    ASSERT(!sp4->isAncestorTo(*sp2));
+    ASSERT(!sp4->isAncestorTo(*sp3));
 
     ASSERT_EQUAL(4, wq.queue.size());
     ASSERT_EQUAL(0, wq.waiting.size());
@@ -354,7 +373,8 @@ ParallelTest::testWorkQueueParentChild() {
 
 void
 ParallelTest::testSplitPointHolder() {
-    ParallelData pd;
+    TranspositionTable tt(10);
+    ParallelData pd(tt);
     WorkQueue& wq = pd.wq;
     FailHighInfo& fhi = pd.fhInfo;
     std::vector<std::shared_ptr<SplitPoint>> spVec;
@@ -426,9 +446,74 @@ ParallelTest::testSplitPointHolder() {
     ASSERT_EQUAL(0, spVec.size());
 }
 
+static void
+probeTT(Position& pos, const Move& m, TranspositionTable& tt, TranspositionTable::TTEntry& ent) {
+    UndoInfo ui;
+    pos.makeMove(m, ui);
+    ent.clear();
+    tt.probe(pos.historyHash(), ent);
+    pos.unMakeMove(m, ui);
+}
+
 void
 ParallelTest::testWorkerThread() {
+    TranspositionTable tt(16);
+    ParallelData pd(tt);
+    WorkQueue& wq = pd.wq;
+    FailHighInfo& fhi = pd.fhInfo;
+    std::vector<std::shared_ptr<SplitPoint>> spVec;
 
+    for (int m = 0; m < 2; m++) {
+        for (int i = 0; i < 10; i++) {
+            for (int cnt = 0; cnt < (1<<(9-i)); cnt++) {
+                fhi.addData(m, i, true);
+                if (m == 0)
+                    fhi.addData(m, i, false);
+            }
+        }
+    }
+
+    std::shared_ptr<SplitPoint> nullRoot;
+    Position pos = TextIO::readFEN(TextIO::startPosFEN);
+    std::vector<U64> posHashList(200);
+    posHashList[0] = pos.zobristHash();
+    int posHashListSize = 1;
+    SearchTreeInfo sti;
+    KillerTable kt;
+    History ht;
+
+    pd.addRemoveWorkers(3);
+
+    {
+        SplitPointHolder sph(wq, spVec);
+        auto sp = std::make_shared<SplitPoint>(nullRoot, 0,
+                                               pos, posHashList, posHashListSize,
+                                               sti, kt, ht, -10, 10, 1);
+        sph.setSp(sp);
+        const int plyScale = SearchConst::plyScale;
+        int depth = 10 * plyScale;
+        sph.addMove(SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, depth, -1, false));
+        sph.addMove(SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, depth, -1, false));
+        sph.addMove(SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, depth, -1, false));
+        sph.addToQueue();
+        pd.startAll();
+        while (sp->hasUnFinishedMove()) {
+            std::cout << "waiting..." << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        pd.stopAll();
+
+        TranspositionTable::TTEntry ent;
+        probeTT(pos, TextIO::uciStringToMove("e2e4"), tt, ent);
+        ASSERT(ent.getType() == TType::T_EMPTY); // Only searched by "master" thread, which does not exist in this test
+
+        probeTT(pos, TextIO::uciStringToMove("c2c4"), tt, ent);
+        ASSERT(ent.getType() != TType::T_EMPTY);
+        ASSERT_EQUAL(10 * plyScale, ent.getDepth());
+        probeTT(pos, TextIO::uciStringToMove("d2d4"), tt, ent);
+        ASSERT(ent.getType() != TType::T_EMPTY);
+        ASSERT_EQUAL(10 * plyScale, ent.getDepth());
+    }
 }
 
 cute::suite

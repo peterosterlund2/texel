@@ -34,7 +34,7 @@ U64 SplitPoint::nextSeqNo = 0;
 // ----------------------------------------------------------------------------
 
 WorkerThread::WorkerThread(int threadNo0, ParallelData& pd0,
-                           TranspositionTable&& tt0)
+                           TranspositionTable& tt0)
     : threadNo(threadNo0), pd(pd0), tt(tt0),
       stopThread(false) {
 }
@@ -97,8 +97,10 @@ ThreadStopHandler::shouldStop() {
     if (counter >= nextProbCheck) {
         nextProbCheck = counter + 1 + counter / 4;
         double myProb = sp.getPMoveUseful(fhInfo, moveNo);
-        double bestProb = wq.getBestProbability();
-        if ((bestProb > myProb + 0.01) && (bestProb >= (myProb + (1.0 - myProb) * 0.25)))
+        std::shared_ptr<SplitPoint> bestSp;
+        double bestProb = wq.getBestProbability(bestSp);
+        if ((bestProb > myProb + 0.01) && (bestProb >= (myProb + (1.0 - myProb) * 0.25)) &&
+            !sp.isAncestorTo(*bestSp))
             return true;
     }
 
@@ -245,12 +247,18 @@ WorkQueue::moveFinished(const std::shared_ptr<SplitPoint>& sp, int moveNo, bool 
 }
 
 double
-WorkQueue::getBestProbability() const {
+WorkQueue::getBestProbability(std::shared_ptr<SplitPoint>& bestSp) const {
     std::lock_guard<std::mutex> L(mutex);
     if (queue.empty())
         return 0.0;
-    const std::shared_ptr<SplitPoint>& sp = *queue.begin();
-    return sp->getPNextMoveUseful();
+    bestSp = *queue.begin();
+    return bestSp->getPNextMoveUseful();
+}
+
+double
+WorkQueue::getBestProbability() const {
+    std::shared_ptr<SplitPoint> bestSp;
+    return getBestProbability(bestSp);
 }
 
 void
@@ -309,6 +317,37 @@ WorkQueue::cancelInternal(const std::shared_ptr<SplitPoint>& sp) {
         if (child)
             cancelInternal(child);
     }
+}
+
+
+// ----------------------------------------------------------------------------
+
+ParallelData::ParallelData(TranspositionTable& tt0)
+    : wq(cv, fhInfo), tt(tt0) {
+}
+
+void
+ParallelData::addRemoveWorkers(int numWorkers) {
+    while (numWorkers < (int)threads.size()) {
+        assert(!threads.back()->threadRunning());
+        threads.pop_back();
+    }
+    for (int i = threads.size(); i < numWorkers; i++)
+        threads.push_back(std::make_shared<WorkerThread>(i+1, *this, tt));
+}
+
+void
+ParallelData::startAll() {
+    for (auto& thread : threads)
+        thread->start();
+}
+
+void
+ParallelData::stopAll() {
+    for (auto& thread : threads)
+        thread->stop(false);
+    for (auto& thread : threads)
+        thread->stop(true);
 }
 
 // ----------------------------------------------------------------------------
@@ -471,6 +510,17 @@ SplitPoint::cleanUpChildren() {
     children = toKeep;
 }
 
+bool
+SplitPoint::isAncestorTo(const SplitPoint& sp) const {
+    const SplitPoint* tmp = &sp;
+    while (tmp) {
+        if (tmp == this)
+            return true;
+        tmp = &*(tmp->parent);
+    }
+    return false;
+}
+
 void
 SplitPoint::print(std::ostream& os, int level, const FailHighInfo& fhInfo) const {
     std::string pad(level*2, ' ');
@@ -601,10 +651,4 @@ FailHighInfo::reScaleInternal(int factor) {
         failLoCount[i] /= factor;
     }
     totCount /= factor;
-}
-
-// ----------------------------------------------------------------------------
-
-ParallelData::ParallelData()
-    : wq(cv, fhInfo) {
 }
