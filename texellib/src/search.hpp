@@ -35,6 +35,7 @@
 #include "treeLogger.hpp"
 #include "moveGen.hpp"
 #include "searchUtil.hpp"
+#include "parallel.hpp"
 
 #include <limits>
 #include <memory>
@@ -59,7 +60,7 @@ public:
 
     /** Constructor. */
     Search(const Position& pos, const std::vector<U64>& posHashList,
-           int posHashListSize, SearchTables& st);
+           int posHashListSize, SearchTables& st, ParallelData& pd);
 
     /** Interface for reporting search information during search. */
     class Listener {
@@ -96,8 +97,7 @@ public:
     void setStrength(int strength, U64 randomSeed);
 
     Move iterativeDeepening(const MoveGen::MoveList& scMovesIn,
-                            int maxDepth, U64 initialMaxNodes, bool verbose,
-                            bool smp = false); // FIXME!! Remove default
+                            int maxDepth, U64 initialMaxNodes, bool verbose);
 
     /**
      * Main recursive search algorithm.
@@ -191,6 +191,8 @@ private:
     int posHashListSize;          // Number of used entries in posHashList
     int posHashFirstNew;          // First entry in posHashList that has not been played OTB.
     TranspositionTable& tt;
+    ParallelData& pd;
+    std::vector<std::shared_ptr<SplitPoint>> spVec;
     TreeLoggerWriter log;
 
     std::shared_ptr<Listener> listener;
@@ -321,7 +323,8 @@ Search::negaScout(bool smp,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
     using namespace SearchConst;
-    if (smp && (depth >= MIN_SMP_DEPTH * plyScale))
+    if (smp && (depth >= MIN_SMP_DEPTH * plyScale) &&
+               ((int)spVec.size() < MAX_SP_PER_THREAD))
         return negaScout<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
     else
         return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);

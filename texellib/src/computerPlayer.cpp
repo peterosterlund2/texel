@@ -44,7 +44,7 @@ ComputerPlayer::staticInitialize() {
 }
 
 ComputerPlayer::ComputerPlayer()
-    : tt(15),
+    : tt(15), pd(tt),
       book(verbose)
 {
     et = Evaluate::getEvalHashTables();
@@ -69,7 +69,7 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
     KillerTable kt;
     History ht;
     Search::SearchTables st(tt, kt, ht, *et);
-    Search sc(pos, posHashList, posHashListSize, st);
+    Search sc(pos, posHashList, posHashListSize, st, pd);
 
     // Determine all legal moves
     MoveGen::MoveList moves;
@@ -155,7 +155,7 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     KillerTable kt;
     History ht;
     Search::SearchTables st(tt, kt, ht, *et);
-    Search sc(pos, posHashList, 0, st);
+    Search sc(pos, posHashList, 0, st, pd);
 
     // Determine all legal moves
     MoveGen::MoveList moves;

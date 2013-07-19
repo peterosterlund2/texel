@@ -204,6 +204,10 @@ public:
     void stopAll();
 
 
+    /** Return true if multiple threads are in use. */
+    bool isSMP() const;
+
+
     // Notified when wq becomes non-empty and when search should stop
     std::condition_variable cv;
 
@@ -362,7 +366,7 @@ private:
 class SplitPointHolder {
 public:
     /** Constructor. */
-    SplitPointHolder(WorkQueue& wq, std::vector<std::shared_ptr<SplitPoint>>& spVec);
+    SplitPointHolder(ParallelData& pd, std::vector<std::shared_ptr<SplitPoint>>& spVec);
 
     /** Destructor. Cancel SplitPoint. */
     ~SplitPointHolder();
@@ -380,7 +384,7 @@ private:
     SplitPointHolder(const SplitPointHolder&) = delete;
     SplitPointHolder operator=(const SplitPointHolder&) = delete;
 
-    WorkQueue& wq;
+    ParallelData& pd;
     std::vector<std::shared_ptr<SplitPoint>>& spVec;
     std::shared_ptr<SplitPoint> sp;
     enum class State { EMPTY, CREATED, QUEUED } state;

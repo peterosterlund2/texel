@@ -85,6 +85,7 @@ private:
 
     int maxNodes;
     TranspositionTable tt;
+    ParallelData pd;
     std::shared_ptr<Evaluate::EvalHashTables> et;
     Book book;
     bool bookEnabled;

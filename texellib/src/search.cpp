@@ -37,8 +37,8 @@ using namespace SearchConst;
 const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 
 Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
-               int posHashListSize0, SearchTables& st)
-    : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt) {
+               int posHashListSize0, SearchTables& st, ParallelData& pd0)
+    : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), pd(pd0) {
     stopHandler = std::make_shared<DefaultStopHandler>(*this);
     init(pos0, posHashList0, posHashListSize0);
 }
@@ -88,7 +88,7 @@ Search::setStrength(int strength, U64 randomSeed) {
 Move
 Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                            int maxDepth, U64 initialMaxNodes,
-                           bool verbose, bool smp) {
+                           bool verbose) {
     tStart = currentTimeMillis();
     log.open("/home/petero/treelog.dmp", pos);
     totalNodes = 0;
@@ -135,6 +135,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     }
 
     kt.clear();
+    const bool smp = pd.isSMP();
     maxNodes = initialMaxNodes;
     nodesToGo = 0;
     Position origPos(pos);

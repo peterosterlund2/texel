@@ -399,7 +399,7 @@ ParallelTest::testSplitPointHolder() {
     History ht;
 
     {
-        SplitPointHolder sph(wq, spVec);
+        SplitPointHolder sph(pd, spVec);
         ASSERT_EQUAL(0, wq.queue.size());
         ASSERT_EQUAL(0, spVec.size());
         sph.setSp(std::make_shared<SplitPoint>(nullRoot, 0,
@@ -416,14 +416,14 @@ ParallelTest::testSplitPointHolder() {
         ASSERT_EQUAL(1, wq.queue.size());
         ASSERT_EQUAL(1, spVec.size());
         {
-            SplitPointHolder sph2(wq, spVec);
+            SplitPointHolder sph2(pd, spVec);
             ASSERT_EQUAL(1, wq.queue.size());
             ASSERT_EQUAL(1, spVec.size());
         }
         ASSERT_EQUAL(1, wq.queue.size());
         ASSERT_EQUAL(1, spVec.size());
         {
-            SplitPointHolder sph2(wq, spVec);
+            SplitPointHolder sph2(pd, spVec);
             ASSERT_EQUAL(1, wq.queue.size());
             ASSERT_EQUAL(1, spVec.size());
             sph2.setSp(std::make_shared<SplitPoint>(spVec.back(), 0,
@@ -459,7 +459,6 @@ void
 ParallelTest::testWorkerThread() {
     TranspositionTable tt(16);
     ParallelData pd(tt);
-    WorkQueue& wq = pd.wq;
     FailHighInfo& fhi = pd.fhInfo;
     std::vector<std::shared_ptr<SplitPoint>> spVec;
 
@@ -485,7 +484,7 @@ ParallelTest::testWorkerThread() {
     pd.addRemoveWorkers(3);
 
     {
-        SplitPointHolder sph(wq, spVec);
+        SplitPointHolder sph(pd, spVec);
         auto sp = std::make_shared<SplitPoint>(nullRoot, 0,
                                                pos, posHashList, posHashListSize,
                                                sti, kt, ht, -10, 10, 1);

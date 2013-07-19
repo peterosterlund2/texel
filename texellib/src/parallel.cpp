@@ -136,7 +136,7 @@ WorkerThread::mainLoop() {
             std::vector<U64> posHashList;
             int posHashListSize;
             sp->getPosHashList(pos, posHashList, posHashListSize);
-            Search sc(pos, posHashList, posHashListSize, st);
+            Search sc(pos, posHashList, posHashListSize, st, pd);
             auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd.wq, *sp,
                                                                  spMove, pd.fhInfo, moveNo));
             sc.setStopHandler(stopHandler);
@@ -350,6 +350,11 @@ ParallelData::stopAll() {
         thread->stop(true);
 }
 
+bool
+ParallelData::isSMP() const {
+    return !threads.empty();
+}
+
 // ----------------------------------------------------------------------------
 
 SplitPoint::SplitPoint(const std::shared_ptr<SplitPoint>& parentSp0, int parentMoveNo0,
@@ -556,14 +561,14 @@ SplitPointMove::SplitPointMove(const Move& move0, int lmr0, int depth0,
 
 // ----------------------------------------------------------------------------
 
-SplitPointHolder::SplitPointHolder(WorkQueue& wq0,
+SplitPointHolder::SplitPointHolder(ParallelData& pd0,
                                    std::vector<std::shared_ptr<SplitPoint>>& spVec0)
-    : wq(wq0), spVec(spVec0), state(State::EMPTY) {
+    : pd(pd0), spVec(spVec0), state(State::EMPTY) {
 }
 
 SplitPointHolder::~SplitPointHolder() {
     if (state == State::QUEUED) {
-        wq.cancel(sp);
+        pd.wq.cancel(sp);
         assert(!spVec.empty());
         spVec.pop_back();
     }
@@ -586,7 +591,7 @@ SplitPointHolder::addMove(const SplitPointMove& spMove) {
 void
 SplitPointHolder::addToQueue() {
     assert(state == State::CREATED);
-    wq.addWork(sp);
+    pd.wq.addWork(sp);
     spVec.push_back(sp);
     state = State::QUEUED;
 }

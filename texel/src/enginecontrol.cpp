@@ -81,6 +81,7 @@ EngineControl::EngineControl(std::ostream& o)
     : os(o),
       shouldDetach(true),
       tt(8),
+      pd(tt),
       randomSeed(0)
 {
     setupTT();
@@ -196,7 +197,7 @@ void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
     Parameters& par = Parameters::instance();
     Search::SearchTables st(tt, kt, ht, *et);
-    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st);
+    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd);
     sc->setListener(std::make_shared<SearchListener>(os));
     sc->setStrength(par.getIntPar("Strength"), randomSeed);
     std::shared_ptr<MoveGen::MoveList> moves(std::make_shared<MoveGen::MoveList>());
