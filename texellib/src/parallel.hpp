@@ -344,7 +344,7 @@ private:
 class SplitPointHolder {
 public:
     /** Constructor. */
-    SplitPointHolder(WorkQueue& wq);
+    SplitPointHolder(WorkQueue& wq, std::vector<std::shared_ptr<SplitPoint>>& spVec);
 
     /** Destructor. Cancel SplitPoint. */
     ~SplitPointHolder();
@@ -355,15 +355,17 @@ public:
     /** Add a move to the SplitPoint. */
     void addMove(const SplitPointMove& spMove);
 
-    /** Get the SplitPoint object. */
-    const std::shared_ptr<SplitPoint>& getSp() const;
+    /** Add SplitPoint to work queue. */
+    void addToQueue();
 
 private:
     SplitPointHolder(const SplitPointHolder&) = delete;
     SplitPointHolder operator=(const SplitPointHolder&) = delete;
 
     WorkQueue& wq;
+    std::vector<std::shared_ptr<SplitPoint>>& spVec;
     std::shared_ptr<SplitPoint> sp;
+    enum class State { EMPTY, CREATED, QUEUED } state;
 };
 
 

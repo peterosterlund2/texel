@@ -354,7 +354,78 @@ ParallelTest::testWorkQueueParentChild() {
 
 void
 ParallelTest::testSplitPointHolder() {
+    const double eps = 1e-8;
+    ParallelData pd;
+    WorkQueue& wq = pd.wq;
+    FailHighInfo& fhi = pd.fhInfo;
+    std::vector<std::shared_ptr<SplitPoint>> spVec;
 
+    for (int m = 0; m < 2; m++) {
+        for (int i = 0; i < 10; i++) {
+            for (int cnt = 0; cnt < (1<<(9-i)); cnt++) {
+                fhi.addData(m, i, true);
+                if (m == 0)
+                    fhi.addData(m, i, false);
+            }
+        }
+    }
+
+    std::shared_ptr<SplitPoint> nullRoot;
+    Position pos = TextIO::readFEN(TextIO::startPosFEN);
+    UndoInfo ui;
+    std::vector<U64> posHashList(200);
+    posHashList[0] = pos.zobristHash();
+    int posHashListSize = 1;
+    SearchTreeInfo sti;
+    KillerTable kt;
+    History ht;
+
+    {
+        SplitPointHolder sph(wq, spVec);
+        ASSERT_EQUAL(0, wq.queue.size());
+        ASSERT_EQUAL(0, spVec.size());
+        sph.setSp(std::make_shared<SplitPoint>(nullRoot, 0,
+                                               pos, posHashList, posHashListSize,
+                                               sti, kt, ht, -10, 10, 1));
+        ASSERT_EQUAL(0, wq.queue.size());
+        ASSERT_EQUAL(0, spVec.size());
+        sph.addMove(SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
+        sph.addMove(SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
+        sph.addMove(SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
+        ASSERT_EQUAL(0, wq.queue.size());
+        ASSERT_EQUAL(0, spVec.size());
+        sph.addToQueue();
+        ASSERT_EQUAL(1, wq.queue.size());
+        ASSERT_EQUAL(1, spVec.size());
+        {
+            SplitPointHolder sph2(wq, spVec);
+            ASSERT_EQUAL(1, wq.queue.size());
+            ASSERT_EQUAL(1, spVec.size());
+        }
+        ASSERT_EQUAL(1, wq.queue.size());
+        ASSERT_EQUAL(1, spVec.size());
+        {
+            SplitPointHolder sph2(wq, spVec);
+            ASSERT_EQUAL(1, wq.queue.size());
+            ASSERT_EQUAL(1, spVec.size());
+            sph2.setSp(std::make_shared<SplitPoint>(spVec.back(), 0,
+                                                    pos, posHashList, posHashListSize,
+                                                    sti, kt, ht, -10, 10, 1));
+            ASSERT_EQUAL(1, wq.queue.size());
+            ASSERT_EQUAL(1, spVec.size());
+            sph2.addMove(SplitPointMove(TextIO::uciStringToMove("g8f6"), 0, 4, -1, false));
+            sph2.addMove(SplitPointMove(TextIO::uciStringToMove("c7c6"), 0, 4, -1, false));
+            ASSERT_EQUAL(1, wq.queue.size());
+            ASSERT_EQUAL(1, spVec.size());
+            sph2.addToQueue();
+            ASSERT_EQUAL(2, wq.queue.size());
+            ASSERT_EQUAL(2, spVec.size());
+        }
+        ASSERT_EQUAL(1, wq.queue.size());
+        ASSERT_EQUAL(1, spVec.size());
+    }
+    ASSERT_EQUAL(0, wq.queue.size());
+    ASSERT_EQUAL(0, spVec.size());
 }
 
 void

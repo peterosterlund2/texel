@@ -500,29 +500,39 @@ SplitPointMove::SplitPointMove(const Move& move0, int lmr0, int depth0,
 
 // ----------------------------------------------------------------------------
 
-SplitPointHolder::SplitPointHolder(WorkQueue& wq0)
-    : wq(wq0) {
+SplitPointHolder::SplitPointHolder(WorkQueue& wq0,
+                                   std::vector<std::shared_ptr<SplitPoint>>& spVec0)
+    : wq(wq0), spVec(spVec0), state(State::EMPTY) {
 }
 
 SplitPointHolder::~SplitPointHolder() {
-    if (sp)
+    if (state == State::QUEUED) {
         wq.cancel(sp);
+        assert(!spVec.empty());
+        spVec.pop_back();
+    }
 }
 
 void
 SplitPointHolder::setSp(const std::shared_ptr<SplitPoint>& sp0) {
-    assert(!sp);
+    assert(state == State::EMPTY);
+    assert(sp0);
     sp = sp0;
+    state = State::CREATED;
 }
 
 void
 SplitPointHolder::addMove(const SplitPointMove& spMove) {
+    assert(state == State::CREATED);
     sp->addMove(spMove);
 }
 
-const std::shared_ptr<SplitPoint>&
-SplitPointHolder::getSp() const {
-    return sp;
+void
+SplitPointHolder::addToQueue() {
+    assert(state == State::CREATED);
+    wq.addWork(sp);
+    spVec.push_back(sp);
+    state = State::QUEUED;
 }
 
 // ----------------------------------------------------------------------------
