@@ -66,8 +66,9 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
         posHashList[posHashListSize++] = history[i].zobristHash();
     tt.nextGeneration();
     Position pos(posIn);
+    KillerTable kt;
     History ht;
-    Search::SearchTables st(tt, ht, *et);
+    Search::SearchTables st(tt, kt, ht, *et);
     Search sc(pos, posHashList, posHashListSize, st);
 
     // Determine all legal moves
@@ -151,8 +152,9 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     // Create a search object
     std::vector<U64> posHashList(200);
     tt.nextGeneration();
+    KillerTable kt;
     History ht;
-    Search::SearchTables st(tt, ht, *et);
+    Search::SearchTables st(tt, kt, ht, *et);
     Search sc(pos, posHashList, 0, st);
 
     // Determine all legal moves

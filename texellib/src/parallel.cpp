@@ -37,7 +37,6 @@ WorkerThread::WorkerThread(int threadNo0, ParallelData& pd0,
                            TranspositionTable&& tt0)
     : threadNo(threadNo0), pd(pd0), tt(tt0),
       stopThread(false) {
-    et = Evaluate::getEvalHashTables();
 }
 
 WorkerThread::~WorkerThread() {
@@ -109,6 +108,13 @@ ThreadStopHandler::shouldStop() {
 
 void
 WorkerThread::mainLoop() {
+    if (!et)
+        et = Evaluate::getEvalHashTables();
+    if (!kt)
+        kt = std::make_shared<KillerTable>();
+    if (!ht)
+        ht = std::make_shared<History>();
+
     std::mutex m;
     std::unique_lock<std::mutex> lock(m);
     Position pos;
@@ -120,10 +126,10 @@ WorkerThread::mainLoop() {
             const SplitPointMove& spMove = newSp->getSpMove(moveNo);
             if (sp != newSp) {
                 sp = newSp;
-                ht = sp->getHistory();
-                kt = sp->getKillerTable();
+                *ht = sp->getHistory();
+                *kt = sp->getKillerTable();
             }
-            Search::SearchTables st(tt, ht, *et);
+            Search::SearchTables st(tt, *kt, *ht, *et);
             sp->getPos(pos, spMove.getMove());
             std::vector<U64> posHashList;
             int posHashListSize;

@@ -39,6 +39,9 @@ public:
     /** Create an empty killer table. */
     KillerTable();
 
+    /** Clear killer table. */
+    void clear();
+
     /** Add a killer move to the table. Moves are replaced on an LRU basis. */
     void addKiller(int ply, const Move& m);
 

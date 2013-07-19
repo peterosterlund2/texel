@@ -195,7 +195,7 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
     Parameters& par = Parameters::instance();
-    Search::SearchTables st(tt, ht, *et);
+    Search::SearchTables st(tt, kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st);
     sc->setListener(std::make_shared<SearchListener>(os));
     sc->setStrength(par.getIntPar("Strength"), randomSeed);

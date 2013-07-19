@@ -77,11 +77,9 @@ private:
     ParallelData& pd;
     std::shared_ptr<std::thread> thread;
 
-
-    std::shared_ptr<Search> sc;
     std::shared_ptr<Evaluate::EvalHashTables> et;
-    KillerTable kt;
-    History ht;
+    std::shared_ptr<KillerTable> kt;
+    std::shared_ptr<History> ht;
     TranspositionTable& tt;
 
     volatile bool stopThread;

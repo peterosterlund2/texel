@@ -110,6 +110,7 @@ private:
     volatile bool shouldDetach;
     std::shared_ptr<Search> sc;
     TranspositionTable tt;
+    KillerTable kt;
     History ht;
     std::shared_ptr<Evaluate::EvalHashTables> et;
 

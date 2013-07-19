@@ -41,9 +41,10 @@
 
 static std::vector<U64> nullHist(200);
 static TranspositionTable tt(19);
+static KillerTable kt;
 static History ht;
 static auto et = Evaluate::getEvalHashTables();
-static Search::SearchTables st(tt, ht, *et);
+static Search::SearchTables st(tt, kt, ht, *et);
 
 Move
 SearchTest::idSearch(Search& sc, int maxDepth) {

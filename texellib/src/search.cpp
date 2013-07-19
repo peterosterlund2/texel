@@ -38,7 +38,7 @@ const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 
 Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                int posHashListSize0, SearchTables& st)
-    : eval(st.et), ht(st.ht), tt(st.tt) {
+    : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt) {
     stopHandler = std::make_shared<DefaultStopHandler>(*this);
     init(pos0, posHashList0, posHashListSize0);
 }
@@ -133,6 +133,8 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             }
         }
     }
+
+    kt.clear();
     maxNodes = initialMaxNodes;
     nodesToGo = 0;
     Position origPos(pos);

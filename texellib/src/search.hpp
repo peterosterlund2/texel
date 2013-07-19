@@ -48,9 +48,11 @@ class Search {
 public:
     /** Help tables used by the search. */
     struct SearchTables {
-        SearchTables(TranspositionTable& tt0, History& ht0, Evaluate::EvalHashTables& et0)
-            : tt(tt0), ht(ht0), et(et0) {}
+        SearchTables(TranspositionTable& tt0, KillerTable& kt0, History& ht0,
+                     Evaluate::EvalHashTables& et0)
+            : tt(tt0), kt(kt0), ht(ht0), et(et0) {}
         TranspositionTable& tt;
+        KillerTable& kt;
         History& ht;
         Evaluate::EvalHashTables& et;
     };
@@ -183,7 +185,7 @@ private:
 
     Position pos;
     Evaluate eval;
-    KillerTable kt;
+    KillerTable& kt;
     History& ht;
     std::vector<U64> posHashList; // List of hashes for previous positions up to the last "zeroing" move.
     int posHashListSize;          // Number of used entries in posHashList
