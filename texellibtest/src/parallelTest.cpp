@@ -354,7 +354,6 @@ ParallelTest::testWorkQueueParentChild() {
 
 void
 ParallelTest::testSplitPointHolder() {
-    const double eps = 1e-8;
     ParallelData pd;
     WorkQueue& wq = pd.wq;
     FailHighInfo& fhi = pd.fhInfo;
@@ -372,7 +371,6 @@ ParallelTest::testSplitPointHolder() {
 
     std::shared_ptr<SplitPoint> nullRoot;
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
-    UndoInfo ui;
     std::vector<U64> posHashList(200);
     posHashList[0] = pos.zobristHash();
     int posHashListSize = 1;
