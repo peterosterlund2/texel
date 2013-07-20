@@ -38,6 +38,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 
 class Search;
@@ -210,6 +211,12 @@ public:
     /** Return true if multiple threads are in use. */
     bool isSMP() const;
 
+    /** Get number of nodes searched by all helper threads. */
+    S64 getNumSearchedNodes() const;
+
+    /** Add nNodes to total number of searched nodes. */
+    void addSearchedNodes(S64 nNodes);
+
 
     // Notified when wq becomes non-empty and when search should stop
     std::condition_variable cv;
@@ -223,6 +230,8 @@ private:
     std::vector<std::shared_ptr<WorkerThread>> threads;
 
     TranspositionTable& tt;
+
+    std::atomic<S64> totalHelperNodes; // Number of nodes searched by all helper threads
 };
 
 
@@ -385,7 +394,7 @@ public:
 
 private:
     SplitPointHolder(const SplitPointHolder&) = delete;
-    SplitPointHolder operator=(const SplitPointHolder&) = delete;
+    SplitPointHolder& operator=(const SplitPointHolder&) = delete;
 
     ParallelData& pd;
     std::vector<std::shared_ptr<SplitPoint>>& spVec;

@@ -127,6 +127,9 @@ public:
     /** Set search tree information for a given ply. */
     void setSearchTreeInfo(int ply, const SearchTreeInfo& sti);
 
+    /** Get total number of nodes searched by this thread. */
+    S64 getTotalNodesThisThread() const;
+
 private:
     Search(const Search& other) = delete;
     Search& operator=(const Search& other) = delete;
@@ -139,6 +142,9 @@ private:
 
     /** Report search statistics to listener. */
     void notifyStats();
+
+    /** Get total number of nodes searched by all threads. */
+    S64 getTotalNodes() const;
 
     /** Return true if move m2 was made possible by move m1. */
     static bool relatedMoves(const Move& m1, const Move& m2);
@@ -343,6 +349,16 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 inline bool
 Search::canClaimDraw50(const Position& pos) {
     return (pos.halfMoveClock >= 100);
+}
+
+inline S64
+Search::getTotalNodes() const {
+    return totalNodes + pd.getNumSearchedNodes();
+}
+
+inline S64
+Search::getTotalNodesThisThread() const {
+    return totalNodes;
 }
 
 #endif /* SEARCH_HPP_ */

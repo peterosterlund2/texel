@@ -336,7 +336,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             ss << std::fixed << "Time: " << ((tNow - tStart) * .001);
             ss.precision(2);
             ss << " depth:" << (depthS/(double)plyScale)
-               << " nps:" << ((int)(totalNodes / ((tNow - tStart) * .001)));
+               << " nps:" << ((int)(getTotalNodes() / ((tNow - tStart) * .001)));
             std::cout << ss.str() << std::endl;
         }
         if (maxTimeMillis >= 0)
@@ -345,7 +345,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         if (depthS >= maxDepth * plyScale)
             break;
         if (maxNodes >= 0)
-            if (totalNodes >= maxNodes)
+            if (getTotalNodes() >= maxNodes)
                 break;
         int plyToMate = MATE0 - std::abs(bestScore);
         if (depthS >= plyToMate * plyScale)
@@ -368,6 +368,8 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
 
 void
 Search::notifyPV(int depth, int score, bool uBound, bool lBound, const Move& m) {
+    if (!listener)
+        return;
     bool isMate = false;
     if (score > MATE0 / 2) {
         isMate = true;
@@ -378,18 +380,22 @@ Search::notifyPV(int depth, int score, bool uBound, bool lBound, const Move& m) 
     }
     U64 tNow = currentTimeMillis();
     int time = (int) (tNow - tStart);
-    int nps = (time > 0) ? (int)(totalNodes / (time / 1000.0)) : 0;
+    S64 totNodes = getTotalNodes();
+    int nps = (time > 0) ? (int)(totNodes / (time / 1000.0)) : 0;
     std::vector<Move> pv;
     tt.extractPVMoves(pos, m, pv);
-    if (listener) listener->notifyPV(depth, score, time, totalNodes, nps, isMate, uBound, lBound, pv);
+    listener->notifyPV(depth, score, time, totNodes, nps, isMate, uBound, lBound, pv);
 }
 
 void
 Search::notifyStats() {
     S64 tNow = currentTimeMillis();
-    int time = (int) (tNow - tStart);
-    int nps = (time > 0) ? (int)(totalNodes / (time / 1000.0)) : 0;
-    if (listener) listener->notifyStats(totalNodes, nps, time);
+    if (listener) {
+        int time = (int) (tNow - tStart);
+        S64 totNodes = getTotalNodes();
+        int nps = (time > 0) ? (int)(totNodes / (time / 1000.0)) : 0;
+        listener->notifyStats(totNodes, nps, time);
+    }
     tLastStats = tNow;
 }
 
@@ -398,7 +404,7 @@ Search::shouldStop() {
     S64 tNow = currentTimeMillis();
     S64 timeLimit = searchNeedMoreTime ? maxTimeMillis : minTimeMillis;
     if (    ((timeLimit >= 0) && (tNow - tStart >= timeLimit)) ||
-            ((maxNodes >= 0) && (totalNodes >= maxNodes)))
+            ((maxNodes >= 0) && (getTotalNodes() >= maxNodes)))
         return true;
     if (tNow - tLastStats >= 1000)
         notifyStats();

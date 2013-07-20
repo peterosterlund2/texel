@@ -64,28 +64,42 @@ WorkerThread::stop(bool wait) {
 
 class ThreadStopHandler : public Search::StopHandler {
 public:
-    ThreadStopHandler(const WorkerThread& wt, const WorkQueue& wq,
+    ThreadStopHandler(WorkerThread& wt, ParallelData& pd,
                       const SplitPoint& sp, const SplitPointMove& spm,
-                      const FailHighInfo& fhInfo, int moveNo);
+                      int moveNo, const Search& sc);
+
+    /** Destructor. Report searched nodes to ParallelData object. */
+    ~ThreadStopHandler();
 
     bool shouldStop();
 
 private:
+    ThreadStopHandler(const ThreadStopHandler&) = delete;
+    ThreadStopHandler& operator=(const ThreadStopHandler&) = delete;
+
+    /** Report searched nodes since last call to ParallelData object. */
+    void reportNodes();
+
     const WorkerThread& wt;
-    const WorkQueue& wq;
+    ParallelData& pd;
     const SplitPoint& sp;
     const SplitPointMove& spMove;
-    const FailHighInfo& fhInfo;
     const int moveNo;
+    const Search& sc;
     int counter;             // Counts number of calls to shouldStop
     int nextProbCheck;       // Next time test for SplitPoint switch should be performed
+    S64 lastReportedNodes;
 };
 
-ThreadStopHandler::ThreadStopHandler(const WorkerThread& wt0, const WorkQueue& wq0,
+ThreadStopHandler::ThreadStopHandler(WorkerThread& wt0, ParallelData& pd0,
                                      const SplitPoint& sp0, const SplitPointMove& spm0,
-                                     const FailHighInfo& fhInfo0, int moveNo0)
-    : wt(wt0), wq(wq0), sp(sp0), spMove(spm0), fhInfo(fhInfo0), moveNo(moveNo0),
-      counter(0), nextProbCheck(1) {
+                                     int moveNo0, const Search& sc0)
+    : wt(wt0), pd(pd0), sp(sp0), spMove(spm0), moveNo(moveNo0),
+      sc(sc0), counter(0), nextProbCheck(1), lastReportedNodes(0) {
+}
+
+ThreadStopHandler::~ThreadStopHandler() {
+    reportNodes();
 }
 
 bool
@@ -96,17 +110,25 @@ ThreadStopHandler::shouldStop() {
     counter++;
     if (counter >= nextProbCheck) {
         nextProbCheck = counter + 1 + counter / 4;
-        double myProb = sp.getPMoveUseful(fhInfo, moveNo);
+        double myProb = sp.getPMoveUseful(pd.fhInfo, moveNo);
         std::shared_ptr<SplitPoint> bestSp;
-        double bestProb = wq.getBestProbability(bestSp);
+        double bestProb = pd.wq.getBestProbability(bestSp);
         if ((bestProb > myProb + 0.01) && (bestProb >= (myProb + (1.0 - myProb) * 0.25)) &&
             !sp.isAncestorTo(*bestSp))
             return true;
+        reportNodes();
     }
 
     return false;
 }
 
+void
+ThreadStopHandler::reportNodes() {
+    S64 totNodes = sc.getTotalNodesThisThread();
+    S64 nodes = totNodes - lastReportedNodes;
+    lastReportedNodes = totNodes;
+    pd.addSearchedNodes(nodes);
+}
 
 void
 WorkerThread::mainLoop() {
@@ -142,8 +164,9 @@ WorkerThread::mainLoop() {
             int posHashListSize;
             sp->getPosHashList(pos, posHashList, posHashListSize);
             Search sc(pos, posHashList, posHashListSize, st, pd, sp);
-            auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd.wq, *sp,
-                                                                 spMove, pd.fhInfo, moveNo));
+            auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd, *sp,
+                                                                 spMove, moveNo,
+                                                                 sc));
             sc.setStopHandler(stopHandler);
             int alpha = sp->getAlpha();
             int beta = sp->getBeta();
@@ -328,6 +351,7 @@ WorkQueue::cancelInternal(const std::shared_ptr<SplitPoint>& sp) {
 
 ParallelData::ParallelData(TranspositionTable& tt0)
     : wq(cv, fhInfo), tt(tt0) {
+    totalHelperNodes = 0;
 }
 
 void
@@ -342,6 +366,7 @@ ParallelData::addRemoveWorkers(int numWorkers) {
 
 void
 ParallelData::startAll() {
+    totalHelperNodes = 0;
     for (auto& thread : threads)
         thread->start();
 }
@@ -357,6 +382,16 @@ ParallelData::stopAll() {
 bool
 ParallelData::isSMP() const {
     return !threads.empty();
+}
+
+S64
+ParallelData::getNumSearchedNodes() const {
+    return totalHelperNodes;
+}
+
+void
+ParallelData::addSearchedNodes(S64 nNodes) {
+    totalHelperNodes += nNodes;
 }
 
 // ----------------------------------------------------------------------------
