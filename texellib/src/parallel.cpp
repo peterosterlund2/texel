@@ -664,3 +664,13 @@ FailHighInfo::reScaleInternal(int factor) {
     }
     totCount /= factor;
 }
+
+void
+FailHighInfo::print(std::ostream& os) const {
+    for (int i = 0; i < 2; i++) {
+        os << i << ' ' << std::setw(6) << failLoCount[i];
+        for (int j = 0; j < NUM_STAT_MOVES; j++)
+            os << ' ' << std::setw(6) << failHiCount[i][j];
+        os << std::endl;
+    }
+}

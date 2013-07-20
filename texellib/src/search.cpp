@@ -426,6 +426,9 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         if (depth < (int)COUNT_OF(nodesDepthVec)*plyScale) nodesDepthVec[depth/plyScale]++;
     }
     const U64 hKey = pos.historyHash();
+    SearchTreeInfo& sti = searchTreeInfo[ply];
+    sti.currentMove = emptyMove;
+    sti.currentMoveNo = -1;
 
     // Draw tests
     if (canClaimDraw50(pos)) {
@@ -454,7 +457,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     ent.clear();
     tt.probe(hKey, ent);
     Move hashMove;
-    SearchTreeInfo& sti = searchTreeInfo[ply];
     if (ent.getType() != TType::T_EMPTY) {
         int score = ent.getScore(ply);
         evalScore = ent.getEvalScore();
@@ -541,8 +543,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Try null-move pruning
-    sti.currentMove = emptyMove;
-    sti.currentMoveNo = -1;
     if (    (depth >= 3*plyScale) && !inCheck && sti.allowNullMove &&
             (std::abs(beta) <= MATE0 / 2)) {
         bool nullOk;
@@ -710,7 +710,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 if (futilityPrune)
                     doFutility = true;
             }
-            int score;
+            int score = illegalScore;
             if (doFutility) {
                 score = futilityScore;
             } else {
@@ -796,6 +796,11 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         sti.lmr = 0;
                         newDepth += lmr;
                         score = -negaScout(smp, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+                    }
+                    if (canSplit) {
+                        int moveNo = searchTreeInfo[ply+1].currentMoveNo;
+                        if (moveNo >= 0)
+                            pd.fhInfo.addData(mi, moveNo, score <= alpha);
                     }
                     /*
                     if (ply <= 3) {

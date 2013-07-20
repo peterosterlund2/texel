@@ -176,6 +176,9 @@ public:
     /** Rescale the counters, so that future updates have more weight. */
     void reScale();
 
+    /** Print object state to "os", for debugging. */
+    void print(std::ostream& os) const;
+
 private:
     void reScaleInternal(int factor);
 

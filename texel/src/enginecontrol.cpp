@@ -246,6 +246,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
         if (shouldDetach) {
             engineThread->detach();
             pd.stopAll();
+            pd.fhInfo.reScale();
         }
         engineThread.reset();
         sc.reset();
@@ -273,6 +274,7 @@ EngineControl::stopThread() {
     if (myThread)
         myThread->join();
     pd.stopAll();
+    pd.fhInfo.reScale();
 }
 
 void
