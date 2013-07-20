@@ -53,8 +53,8 @@ void
 WorkerThread::stop(bool wait) {
     stopThread = true;
     if (wait) {
-        pd.cv.notify_all();
         if (thread) {
+            pd.cv.notify_all();
             thread->join();
             thread.reset();
             stopThread = false;
@@ -126,6 +126,11 @@ WorkerThread::mainLoop() {
         std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo);
         if (newSp) {
             const SplitPointMove& spMove = newSp->getSpMove(moveNo);
+            int depth = spMove.getDepth();
+            if (depth < 0) { // Move skipped by forward pruning or legality check
+                pd.wq.moveFinished(sp, moveNo, false);
+                continue;
+            }
             if (sp != newSp) {
                 sp = newSp;
                 *ht = sp->getHistory();
@@ -136,25 +141,24 @@ WorkerThread::mainLoop() {
             std::vector<U64> posHashList;
             int posHashListSize;
             sp->getPosHashList(pos, posHashList, posHashListSize);
-            Search sc(pos, posHashList, posHashListSize, st, pd);
+            Search sc(pos, posHashList, posHashListSize, st, pd, sp);
             auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd.wq, *sp,
                                                                  spMove, pd.fhInfo, moveNo));
             sc.setStopHandler(stopHandler);
             int alpha = sp->getAlpha();
             int beta = sp->getBeta();
             int ply = sp->getPly();
-            int depth = spMove.getDepth();
             int lmr = spMove.getLMR();
             int captSquare = spMove.getRecaptureSquare();
             bool inCheck = spMove.getInCheck();
             sc.setSearchTreeInfo(ply-1, sp->getSearchTreeInfo());
             try {
-                int score = sc.negaScout(alpha, beta, ply,
-                                         depth, captSquare, inCheck);
-                if ((lmr > 0) && (score < beta))
-                    score = sc.negaScout(alpha, beta, ply,
-                                         depth + lmr, captSquare, inCheck);
-                bool cancelRemaining = score < beta;
+                int score = -sc.negaScout(true, -beta, -alpha, ply+1,
+                                          depth, captSquare, inCheck);
+                if ((lmr > 0) && (score > alpha))
+                    score = -sc.negaScout(true, -beta, -alpha, ply+1,
+                                          depth + lmr, captSquare, inCheck);
+                bool cancelRemaining = score >= beta;
                 pd.wq.moveFinished(sp, moveNo, cancelRemaining);
             } catch (const Search::StopSearch&) {
                 if (!spMove.isCanceled() && !stopThread)
@@ -195,7 +199,7 @@ std::shared_ptr<SplitPoint>
 WorkQueue::getWork(int& spMove) {
     std::lock_guard<std::mutex> L(mutex);
     if (queue.empty())
-        return std::shared_ptr<SplitPoint>();
+        return nullptr;
     std::shared_ptr<SplitPoint> ret = *queue.begin();
     spMove = ret->getNextMove();
     maybeMoveToWaiting(ret);
@@ -371,7 +375,10 @@ SplitPoint::SplitPoint(const std::shared_ptr<SplitPoint>& parentSp0, int parentM
 }
 
 void
-SplitPoint::addMove(const SplitPointMove& spMove) {
+SplitPoint::addMove(int moveNo, const SplitPointMove& spMove) {
+    assert(moveNo >= (int)spMoves.size());
+    while ((int)spMoves.size() < moveNo)
+        spMoves.push_back(SplitPointMove(Move(), 0, -1, -1, false));
     spMoves.push_back(spMove);
 }
 
@@ -583,9 +590,9 @@ SplitPointHolder::setSp(const std::shared_ptr<SplitPoint>& sp0) {
 }
 
 void
-SplitPointHolder::addMove(const SplitPointMove& spMove) {
+SplitPointHolder::addMove(int moveNo, const SplitPointMove& spMove) {
     assert(state == State::CREATED);
-    sp->addMove(spMove);
+    sp->addMove(moveNo, spMove);
 }
 
 void

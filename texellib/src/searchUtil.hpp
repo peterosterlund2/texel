@@ -35,6 +35,7 @@ struct SearchTreeInfo {
     bool allowNullMove;    // Don't allow two null-moves in a row
     Move bestMove;         // Copy of the best found move at this ply
     Move currentMove;      // Move currently being searched
+    int currentMoveNo;     // Index of currentMove in move list
     int lmr;               // LMR reduction amount
     S64 nodeIdx;           // For tree logging
 };

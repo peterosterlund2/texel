@@ -197,7 +197,7 @@ void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
     Parameters& par = Parameters::instance();
     Search::SearchTables st(tt, kt, ht, *et);
-    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd);
+    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr);
     sc->setListener(std::make_shared<SearchListener>(os));
     sc->setStrength(par.getIntPar("Strength"), randomSeed);
     std::shared_ptr<MoveGen::MoveList> moves(std::make_shared<MoveGen::MoveList>());
@@ -218,6 +218,8 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
             }
         }
     }
+    pd.addRemoveWorkers(par.getIntPar("Threads") - 1);
+    pd.startAll();
     sc->timeLimit(minTimeLimit, maxTimeLimit);
     tt.nextGeneration();
     bool ownBook = par.getBoolPar("OwnBook");
@@ -241,8 +243,10 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
         if (!ponderMove.isEmpty())
             os << " ponder " << moveToString(ponderMove);
         os << std::endl;
-        if (shouldDetach)
+        if (shouldDetach) {
             engineThread->detach();
+            pd.stopAll();
+        }
         engineThread.reset();
         sc.reset();
     };
@@ -268,6 +272,7 @@ EngineControl::stopThread() {
     }
     if (myThread)
         myThread->join();
+    pd.stopAll();
 }
 
 void

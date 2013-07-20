@@ -238,7 +238,7 @@ public:
     void addChild(const std::weak_ptr<SplitPoint>& child);
 
     /** Add a move to the SplitPoint. */
-    void addMove(const SplitPointMove& spMove);
+    void addMove(int moveNo, const SplitPointMove& spMove);
 
     /** Assign sequence number. */
     void setSeqNo();
@@ -375,7 +375,7 @@ public:
     void setSp(const std::shared_ptr<SplitPoint>& sp);
 
     /** Add a move to the SplitPoint. */
-    void addMove(const SplitPointMove& spMove);
+    void addMove(int moveNo, const SplitPointMove& spMove);
 
     /** Add SplitPoint to work queue. */
     void addToQueue();

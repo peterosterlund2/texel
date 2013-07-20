@@ -60,7 +60,8 @@ public:
 
     /** Constructor. */
     Search(const Position& pos, const std::vector<U64>& posHashList,
-           int posHashListSize, SearchTables& st, ParallelData& pd);
+           int posHashListSize, SearchTables& st,
+           ParallelData& pd, const std::shared_ptr<SplitPoint>& rootSp);
 
     /** Interface for reporting search information during search. */
     class Listener {
@@ -133,8 +134,10 @@ private:
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
               int posHashListSize0);
 
+    /** Report PV information to listener. */
     void notifyPV(int depth, int score, bool uBound, bool lBound, const Move& m);
 
+    /** Report search statistics to listener. */
     void notifyStats();
 
     /** Return true if move m2 was made possible by move m1. */
@@ -160,6 +163,7 @@ private:
     /** Return true if SEE(m) < 0. */
     bool negSEE(const Move& m);
 
+    /** Score move list according to most valuable victim / least valuable attacker. */
     void scoreMoveListMvvLva(MoveGen::MoveList& moves) const;
 
     /** Find move with highest score and move it to the front of the list. */

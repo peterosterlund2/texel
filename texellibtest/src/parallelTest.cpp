@@ -109,9 +109,9 @@ ParallelTest::testWorkQueue() {
     auto sp1 = std::make_shared<SplitPoint>(nullRoot, 0,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, -10, 10, 1);
-    sp1->addMove(SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
-    sp1->addMove(SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
-    sp1->addMove(SplitPointMove(TextIO::uciStringToMove("g1f3"), 0, 4, -1, false));
+    sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
+    sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
+    sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("g1f3"), 0, 4, -1, false));
     ASSERT_EQUAL(-10, sp1->getAlpha());
     ASSERT_EQUAL(10, sp1->getBeta());
     ASSERT_EQUAL(1, sp1->getPly());
@@ -180,7 +180,7 @@ ParallelTest::testWorkQueue() {
     sp1 = std::make_shared<SplitPoint>(nullRoot, 0,
                                        pos, posHashList, posHashListSize,
                                        sti, kt, ht, -10, 10, 1);
-    sp1->addMove(SplitPointMove(TextIO::uciStringToMove("f2f4"), 0, 4, -1, false));
+    sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("f2f4"), 0, 4, -1, false));
     wq.addWork(sp1);
     ASSERT_EQUAL(0, wq.queue.size());
     ASSERT_EQUAL(0, wq.waiting.size());
@@ -190,10 +190,10 @@ ParallelTest::testWorkQueue() {
     sp1 = std::make_shared<SplitPoint>(nullRoot, 1,
                                        pos, posHashList, posHashListSize,
                                        sti, kt, ht, -10, 10, 1);
-    sp1->addMove(SplitPointMove(TextIO::uciStringToMove("a2a4"), 0, 4, -1, false));
-    sp1->addMove(SplitPointMove(TextIO::uciStringToMove("b2b4"), 0, 4, -1, false));
-    sp1->addMove(SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
-    sp1->addMove(SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
+    sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("a2a4"), 0, 4, -1, false));
+    sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("b2b4"), 0, 4, -1, false));
+    sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
+    sp1->addMove(3, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
     wq.addWork(sp1);
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL(0, wq.waiting.size());
@@ -251,9 +251,9 @@ ParallelTest::testWorkQueueParentChild() {
     auto sp1 = std::make_shared<SplitPoint>(nullRoot, 0,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, -10, 10, 1);
-    sp1->addMove(SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
-    sp1->addMove(SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
-    sp1->addMove(SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
+    sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
+    sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
+    sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
     wq.addWork(sp1);
     ASSERT(sp1->isAncestorTo(*sp1));
 
@@ -262,8 +262,8 @@ ParallelTest::testWorkQueueParentChild() {
     auto sp2 = std::make_shared<SplitPoint>(sp1, 0,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, -10, 10, 1);
-    sp2->addMove(SplitPointMove(TextIO::uciStringToMove("e7e5"), 0, 4, -1, false));
-    sp2->addMove(SplitPointMove(TextIO::uciStringToMove("c7c5"), 0, 4, -1, false));
+    sp2->addMove(0, SplitPointMove(TextIO::uciStringToMove("e7e5"), 0, 4, -1, false));
+    sp2->addMove(1, SplitPointMove(TextIO::uciStringToMove("c7c5"), 0, 4, -1, false));
     wq.addWork(sp2);
     ASSERT( sp1->isAncestorTo(*sp2));
     ASSERT(!sp2->isAncestorTo(*sp1));
@@ -273,9 +273,9 @@ ParallelTest::testWorkQueueParentChild() {
     auto sp3 = std::make_shared<SplitPoint>(sp2, 0,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, -10, 10, 1);
-    sp3->addMove(SplitPointMove(TextIO::uciStringToMove("g1f3"), 0, 4, -1, false));
-    sp3->addMove(SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
-    sp3->addMove(SplitPointMove(TextIO::uciStringToMove("c2c3"), 0, 4, -1, false));
+    sp3->addMove(0, SplitPointMove(TextIO::uciStringToMove("g1f3"), 0, 4, -1, false));
+    sp3->addMove(1, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
+    sp3->addMove(2, SplitPointMove(TextIO::uciStringToMove("c2c3"), 0, 4, -1, false));
     wq.addWork(sp3);
     ASSERT( sp1->isAncestorTo(*sp3));
     ASSERT( sp2->isAncestorTo(*sp3));
@@ -289,8 +289,8 @@ ParallelTest::testWorkQueueParentChild() {
     auto sp4 = std::make_shared<SplitPoint>(sp1, 2,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, -10, 10, 1);
-    sp4->addMove(SplitPointMove(TextIO::uciStringToMove("d7d5"), 0, 4, -1, false));
-    sp4->addMove(SplitPointMove(TextIO::uciStringToMove("g8f6"), 0, 4, -1, false));
+    sp4->addMove(0, SplitPointMove(TextIO::uciStringToMove("d7d5"), 0, 4, -1, false));
+    sp4->addMove(1, SplitPointMove(TextIO::uciStringToMove("g8f6"), 0, 4, -1, false));
     wq.addWork(sp4);
     ASSERT( sp1->isAncestorTo(*sp4));
     ASSERT(!sp2->isAncestorTo(*sp4));
@@ -407,9 +407,9 @@ ParallelTest::testSplitPointHolder() {
                                                sti, kt, ht, -10, 10, 1));
         ASSERT_EQUAL(0, wq.queue.size());
         ASSERT_EQUAL(0, spVec.size());
-        sph.addMove(SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
-        sph.addMove(SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
-        sph.addMove(SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
+        sph.addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
+        sph.addMove(1, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
+        sph.addMove(2, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
         ASSERT_EQUAL(0, wq.queue.size());
         ASSERT_EQUAL(0, spVec.size());
         sph.addToQueue();
@@ -431,8 +431,8 @@ ParallelTest::testSplitPointHolder() {
                                                     sti, kt, ht, -10, 10, 1));
             ASSERT_EQUAL(1, wq.queue.size());
             ASSERT_EQUAL(1, spVec.size());
-            sph2.addMove(SplitPointMove(TextIO::uciStringToMove("g8f6"), 0, 4, -1, false));
-            sph2.addMove(SplitPointMove(TextIO::uciStringToMove("c7c6"), 0, 4, -1, false));
+            sph2.addMove(0, SplitPointMove(TextIO::uciStringToMove("g8f6"), 0, 4, -1, false));
+            sph2.addMove(1, SplitPointMove(TextIO::uciStringToMove("c7c6"), 0, 4, -1, false));
             ASSERT_EQUAL(1, wq.queue.size());
             ASSERT_EQUAL(1, spVec.size());
             sph2.addToQueue();
@@ -491,9 +491,9 @@ ParallelTest::testWorkerThread() {
         sph.setSp(sp);
         const int plyScale = SearchConst::plyScale;
         int depth = 10 * plyScale;
-        sph.addMove(SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, depth, -1, false));
-        sph.addMove(SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, depth, -1, false));
-        sph.addMove(SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, depth, -1, false));
+        sph.addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, depth, -1, false));
+        sph.addMove(1, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, depth, -1, false));
+        sph.addMove(2, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, depth, -1, false));
         sph.addToQueue();
         pd.startAll();
         while (sp->hasUnFinishedMove()) {
