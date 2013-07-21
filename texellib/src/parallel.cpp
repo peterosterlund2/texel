@@ -46,6 +46,7 @@ WorkerThread::~WorkerThread() {
 void
 WorkerThread::start() {
     assert(!thread);
+    stopThread = false;
     thread = std::make_shared<std::thread>([this](){ mainLoop(); });
 }
 
@@ -132,6 +133,7 @@ ThreadStopHandler::reportNodes() {
 
 void
 WorkerThread::mainLoop() {
+//    pd.log([&](std::ostream& os){os << "mainLoop, th:" << threadNo;});
     if (!et)
         et = Evaluate::getEvalHashTables();
     if (!kt)
@@ -150,7 +152,7 @@ WorkerThread::mainLoop() {
             const SplitPointMove& spMove = newSp->getSpMove(moveNo);
             int depth = spMove.getDepth();
             if (depth < 0) { // Move skipped by forward pruning or legality check
-                pd.wq.moveFinished(sp, moveNo, false);
+                pd.wq.moveFinished(newSp, moveNo, false);
                 continue;
             }
             if (sp != newSp) {
@@ -176,14 +178,22 @@ WorkerThread::mainLoop() {
             bool inCheck = spMove.getInCheck();
             sc.setSearchTreeInfo(ply-1, sp->getSearchTreeInfo());
             try {
+//                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " m:" << moveNo
+//                                                << " a:" << alpha
+//                                                << " d:" << depth/SearchConst::plyScale << " start";});
                 int score = -sc.negaScout(true, -beta, -alpha, ply+1,
                                           depth, captSquare, inCheck);
                 if ((lmr > 0) && (score > alpha))
                     score = -sc.negaScout(true, -beta, -alpha, ply+1,
                                           depth + lmr, captSquare, inCheck);
                 bool cancelRemaining = score >= beta;
+//                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " m:" << moveNo
+//                                                << " a:" << alpha << " s:" << score
+//                                                << " d:" << depth/SearchConst::plyScale << " n:" << sc.getTotalNodesThisThread();});
                 pd.wq.moveFinished(sp, moveNo, cancelRemaining);
             } catch (const Search::StopSearch&) {
+//                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " m:" << moveNo
+//                                                << " aborted n:" << sc.getTotalNodesThisThread();});
                 if (!spMove.isCanceled() && !stopThread)
                     pd.wq.returnMove(sp, moveNo);
             }
@@ -192,6 +202,7 @@ WorkerThread::mainLoop() {
             pd.cv.wait_for(lock, std::chrono::microseconds(1000));
         }
     }
+//    pd.log([&](std::ostream& os){os << "~mainLoop, th:" << threadNo;});
 }
 
 // ----------------------------------------------------------------------------
@@ -610,6 +621,7 @@ SplitPointHolder::SplitPointHolder(ParallelData& pd0,
 
 SplitPointHolder::~SplitPointHolder() {
     if (state == State::QUEUED) {
+//        pd.log([&](std::ostream& os){os << "cancel seqNo:" << sp->getSeqNo();});
         pd.wq.cancel(sp);
         assert(!spVec.empty());
         spVec.pop_back();
@@ -634,8 +646,15 @@ void
 SplitPointHolder::addToQueue() {
     assert(state == State::CREATED);
     pd.wq.addWork(sp);
+//    pd.log([&](std::ostream& os){os << "add seqNo:" << sp->getSeqNo();});
     spVec.push_back(sp);
     state = State::QUEUED;
+}
+
+void
+SplitPointHolder::setOwnerCurrMove(int moveNo) {
+//    pd.log([&](std::ostream& os){os << "seqNo:" << sp->getSeqNo() << " currMove:" << moveNo;});
+    pd.wq.setOwnerCurrMove(sp, moveNo);
 }
 
 // ----------------------------------------------------------------------------

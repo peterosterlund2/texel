@@ -778,24 +778,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     nodesToGo--;
                     sti.currentMove = m;
                     sti.currentMoveNo = mi;
-                    /*
-                    U64 nodes0 = nodes;
-                    U64 qNodes0 = qNodes;
-                    if ((ply < 3) && (newDepth > plyScale)) {
-                        std::cout << std::setw(2) << mi
-                                  << ' ' << std::setw(5) << "-"
-                                  << ' ' << std::setw(5) << alpha
-                                  << ' ' << std::setw(5) << beta
-                                  << ' ' << std::setw(6) << "-"
-                                  << ' ' << std::setw(6) << "-";
-                        for (int i = 0; i < ply; i++)
-                            std::cout << "      ";
-                        std::stringstream ss;
-                        ss << std::setw(6) << std::left << TextIO::moveToUCIString(m) << "...";
-                        std::cout << ss.str() << std::endl;
-                    }
-                    */
                     sti.lmr = lmr;
+//                    S64 n1 = totalNodes; int nomDepth = newDepth;
+                    if (canSplit)
+                        sph.setOwnerCurrMove(mi);
                     score = -negaScout(smp, -b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                     if (((lmr > 0) && (score > alpha)) ||
                         ((score > alpha) && (score < beta) && (b != beta))) {
@@ -804,25 +790,13 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         score = -negaScout(smp, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                     }
                     if (canSplit) {
+//                        pd.log([&](std::ostream& os){os << "main seqNo:" << sph.getSeqNo() << " m:" << mi
+//                                                        << " a:" << alpha << " s:" << score
+//                                                        << " d:" << nomDepth/plyScale << " n:" << (totalNodes-n1);});
                         int moveNo = searchTreeInfo[ply+1].currentMoveNo;
                         if (moveNo >= 0)
                             pd.fhInfo.addData(mi, moveNo, score <= alpha);
                     }
-                    /*
-                    if (ply <= 3) {
-                        std::cout << std::setw(2) << mi
-                                  << ' ' << std::setw(5) << score
-                                  << ' ' << std::setw(5) << alpha
-                                  << ' ' << std::setw(5) << beta
-                                  << ' ' << std::setw(6) << (nodes-nodes0)
-                                  << ' ' << std::setw(6) << (qNodes-qNodes0);
-                        for (int i = 0; i < ply; i++)
-                            std::cout << "      ";
-                        std::stringstream ss;
-                        ss << std::setw(6) << std::left << TextIO::moveToUCIString(m);
-                        std::cout << ss.str() << std::endl;
-                    }
-                    */
                     posHashListSize--;
                     pos.unMakeMove(m, ui);
                 }

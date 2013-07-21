@@ -218,6 +218,9 @@ public:
     void addSearchedNodes(S64 nNodes);
 
 
+    /** Thread-safe logging to std::cout. */
+    template <typename Func> void log(Func func);
+
     // Notified when wq becomes non-empty and when search should stop
     std::condition_variable cv;
 
@@ -232,6 +235,8 @@ private:
     TranspositionTable& tt;
 
     std::atomic<S64> totalHelperNodes; // Number of nodes searched by all helper threads
+
+    std::mutex logMutex;
 };
 
 
@@ -392,6 +397,12 @@ public:
     /** Add SplitPoint to work queue. */
     void addToQueue();
 
+    /** Set which move number the SplitPoint owner is currently searching. */
+    void setOwnerCurrMove(int moveNo);
+
+    /** For debugging. */
+    int getSeqNo() const { return sp->getSeqNo(); }
+
 private:
     SplitPointHolder(const SplitPointHolder&) = delete;
     SplitPointHolder& operator=(const SplitPointHolder&) = delete;
@@ -415,5 +426,17 @@ WorkQueue::SplitPointCompare::operator()(const std::shared_ptr<SplitPoint>& a,
     return a->getSeqNo() < b->getSeqNo();
 }
 
+template <typename Func> void ParallelData::log(Func func) {
+    std::stringstream ss;
+    {
+        std::stringstream t;
+        t.precision(6);
+        t << std::fixed << currentTime() << ' ';
+        ss << t.str();
+    }
+    func(ss);
+    std::lock_guard<std::mutex> L(logMutex);
+    std::cout << ss.str() << std::endl;
+}
 
 #endif /* PARALLEL_HPP_ */

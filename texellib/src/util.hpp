@@ -155,4 +155,7 @@ trim(const std::string& s) {
 /** Return current wall clock time in milliseconds, starting at some arbitrary point in time. */
 S64 currentTimeMillis();
 
+/** Return current wall clock time in seconds, starting at some arbitrary point in time. */
+double currentTime();
+
 #endif /* UTIL_HPP_ */
