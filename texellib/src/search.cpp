@@ -356,6 +356,8 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             // Moves that were hard to search should be searched early in the next iteration
             std::stable_sort(scMoves.begin()+1, scMoves.end(), MoveInfo::SortByNodes());
         }
+//        std::cout << "fhInfo depth:" << depthS / plyScale << std::endl;
+//        pd.fhInfo.print(std::cout);
     }
     } catch (const StopSearch&) {
         pos = origPos;
@@ -363,7 +365,6 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     notifyStats();
 
     log.close();
-//    pd.fhInfo.print(std::cout);
     return bestMove;
 }
 
@@ -575,6 +576,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             searchTreeInfo[ply+1].allowNullMove = true;
             pos.setEpSquare(epSquare);
             pos.setWhiteMove(!pos.whiteMove);
+            if (smp && (depth - R >= MIN_SMP_DEPTH * plyScale))
+                pd.fhInfo.addData(-1, searchTreeInfo[ply+1].currentMoveNo, score < beta, false);
             if (score >= beta) {
                 if (score > MATE0 / 2)
                     score = beta;
@@ -791,12 +794,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         score = -negaScout(smp, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                     }
                     if (canSplit) {
-//                       pd.log([&](std::ostream& os){os << "main seqNo:" << sph.getSeqNo() << " ply:" << ply << " m:" << mi
+//                        pd.log([&](std::ostream& os){os << "main seqNo:" << sph.getSeqNo() << " ply:" << ply << " m:" << mi
 //                                                        << " a:" << alpha << " s:" << score
 //                                                        << " d:" << nomDepth/plyScale << " n:" << (totalNodes-n1);});
-                        int moveNo = searchTreeInfo[ply+1].currentMoveNo;
-                        if (moveNo >= 0)
-                            pd.fhInfo.addData(mi, moveNo, score <= alpha);
+                        pd.fhInfo.addData(mi, searchTreeInfo[ply+1].currentMoveNo, score <= alpha, !sph.isAllNode());
                     }
                     posHashListSize--;
                     pos.unMakeMove(m, ui);

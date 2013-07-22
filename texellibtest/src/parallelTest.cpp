@@ -47,27 +47,27 @@ ParallelTest::testFailHighInfo() {
     // Probability 0.5 when no data available
     for (int i = 0; i < 20; i++) {
         for (int j = 0; i < 20; i++) {
-            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(0, i, j), eps);
-            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(1, i, j), eps);
+            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(0, i, j, true), eps);
+            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(1, i, j, true), eps);
         }
     }
 
     for (int i = 0; i < 15; i++)
-        fhi.addData(0, i, true);
+        fhi.addData(0, i, true, true);
     for (int curr = 0; curr < 15; curr++) {
         for (int m = curr; m < 15; m++) {
             double e = (15 - m) / (double)(15 - curr);
-            ASSERT_EQUAL_DELTA(e, fhi.getMoveNeededProbability(0, curr, m), eps);
-            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(1, curr, m), eps);
+            ASSERT_EQUAL_DELTA(e, fhi.getMoveNeededProbability(0, curr, m, true), eps);
+            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(1, curr, m, true), eps);
         }
     }
     for (int i = 0; i < 15; i++)
-        fhi.addData(0, i, false);
+        fhi.addData(0, i, false, true);
     for (int curr = 0; curr < 15; curr++) {
         for (int m = curr; m < 15; m++) {
             double e = (15 - m + 15) / (double)(15 - curr + 15);
-            ASSERT_EQUAL_DELTA(e, fhi.getMoveNeededProbability(0, curr, m), eps);
-            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(1, curr, m), eps);
+            ASSERT_EQUAL_DELTA(e, fhi.getMoveNeededProbability(0, curr, m, true), eps);
+            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(1, curr, m, true), eps);
         }
     }
 }
@@ -90,9 +90,9 @@ ParallelTest::testWorkQueue() {
     for (int m = 0; m < 2; m++) {
         for (int i = 0; i < 10; i++) {
             for (int cnt = 0; cnt < (1<<(9-i)); cnt++) {
-                fhi.addData(m, i, true);
+                fhi.addData(m, i, true, true);
                 if (m > 0)
-                    fhi.addData(m, i, false);
+                    fhi.addData(m, i, false, true);
             }
         }
     }
@@ -228,12 +228,17 @@ ParallelTest::testWorkQueueParentChild() {
     WorkQueue& wq = pd.wq;
     FailHighInfo& fhi = pd.fhInfo;
 
-    for (int m = 0; m < 2; m++) {
+    for (int m = -1; m < 2; m++) {
         for (int i = 0; i < 10; i++) {
             for (int cnt = 0; cnt < (1<<(9-i)); cnt++) {
-                fhi.addData(m, i, true);
-                if (m == 0)
-                    fhi.addData(m, i, false);
+                fhi.addData(m, i, true, true);
+                if (m <= 0) {
+                    fhi.addData(m, i, false, false);
+                    if (m == 0) {
+                        fhi.addData(m, i, false, true);
+                        fhi.addData(m, i, true, false);
+                    }
+                }
             }
         }
     }
@@ -382,9 +387,9 @@ ParallelTest::testSplitPointHolder() {
     for (int m = 0; m < 2; m++) {
         for (int i = 0; i < 10; i++) {
             for (int cnt = 0; cnt < (1<<(9-i)); cnt++) {
-                fhi.addData(m, i, true);
+                fhi.addData(m, i, true, true);
                 if (m == 0)
-                    fhi.addData(m, i, false);
+                    fhi.addData(m, i, false, true);
             }
         }
     }
@@ -465,9 +470,9 @@ ParallelTest::testWorkerThread() {
     for (int m = 0; m < 2; m++) {
         for (int i = 0; i < 10; i++) {
             for (int cnt = 0; cnt < (1<<(9-i)); cnt++) {
-                fhi.addData(m, i, true);
+                fhi.addData(m, i, true, true);
                 if (m == 0)
-                    fhi.addData(m, i, false);
+                    fhi.addData(m, i, false, true);
             }
         }
     }

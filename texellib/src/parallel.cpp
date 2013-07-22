@@ -444,13 +444,13 @@ SplitPoint::computeProbabilities(const FailHighInfo& fhInfo) {
         double pMoveUseful =
             fhInfo.getMoveNeededProbability(parent->parentMoveNo,
                                             parent->currMoveNo,
-                                            parentMoveNo);
+                                            parentMoveNo, parent->isAllNode());
         pSpUseful = parent->pSpUseful * pMoveUseful;
     } else {
         pSpUseful = 1.0;
     }
     double pNextUseful =
-        fhInfo.getMoveNeededProbability(parentMoveNo, currMoveNo, findNextMove());
+        fhInfo.getMoveNeededProbability(parentMoveNo, currMoveNo, findNextMove(), isAllNode());
     pNextMoveUseful = pSpUseful * pNextUseful;
 
     bool deleted = false;
@@ -479,7 +479,7 @@ double
 SplitPoint::getPMoveUseful(const FailHighInfo& fhInfo, int moveNo) const {
     return pSpUseful * fhInfo.getMoveNeededProbability(parentMoveNo,
                                                        currMoveNo,
-                                                       moveNo);
+                                                       moveNo, isAllNode());
 }
 
 void
@@ -584,6 +584,20 @@ SplitPoint::isAncestorTo(const SplitPoint& sp) const {
     return false;
 }
 
+bool
+SplitPoint::isAllNode() const {
+    int nFirst = 0;
+    const SplitPoint* tmp = this;
+    while (tmp) {
+        if (tmp->parentMoveNo == 0)
+            nFirst++;
+        else
+            break;
+        tmp = &*(tmp->parent);
+    }
+    return (nFirst % 2) != 0;
+}
+
 void
 SplitPoint::print(std::ostream& os, int level, const FailHighInfo& fhInfo) const {
     std::string pad(level*2, ' ');
@@ -599,7 +613,7 @@ SplitPoint::print(std::ostream& os, int level, const FailHighInfo& fhInfo) const
             os << ",c";
         if (spm.isSearching())
             os << ",s";
-        os << "," << fhInfo.getMoveNeededProbability(parentMoveNo, currMoveNo, mi);
+        os << "," << fhInfo.getMoveNeededProbability(parentMoveNo, currMoveNo, mi, isAllNode());
     }
     os << std::endl;
     for (const auto& wChild : children) {
@@ -664,11 +678,16 @@ SplitPointHolder::setOwnerCurrMove(int moveNo) {
     pd.wq.setOwnerCurrMove(sp, moveNo);
 }
 
+bool
+SplitPointHolder::isAllNode() const {
+    return sp->isAllNode();
+}
+
 // ----------------------------------------------------------------------------
 
 FailHighInfo::FailHighInfo()
     : totCount(0) {
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < NUM_NODE_TYPES; i++) {
         for (int j = 0; j < NUM_STAT_MOVES; j++)
             failHiCount[i][j] = 0;
         failLoCount[i] = 0;
@@ -677,9 +696,9 @@ FailHighInfo::FailHighInfo()
 
 double
 FailHighInfo::getMoveNeededProbability(int parentMoveNo,
-                                       int currMoveNo, int moveNo) const {
+                                       int currMoveNo, int moveNo, bool allNode) const {
     std::lock_guard<std::mutex> L(mutex);
-    const int pIdx = parentMoveNo > 0 ? 1 : 0;
+    const int pIdx = getNodeType(parentMoveNo, allNode);
     moveNo = std::min(moveNo, NUM_STAT_MOVES-1);
     if (moveNo < 0)
         return 0.0;
@@ -696,9 +715,11 @@ FailHighInfo::getMoveNeededProbability(int parentMoveNo,
 }
 
 void
-FailHighInfo::addData(int parentMoveNo, int nSearched, bool failHigh) {
+FailHighInfo::addData(int parentMoveNo, int nSearched, bool failHigh, bool allNode) {
+    if (nSearched < 0)
+        return;
     std::lock_guard<std::mutex> L(mutex);
-    const int pIdx = parentMoveNo > 0 ? 1 : 0;
+    const int pIdx = getNodeType(parentMoveNo, allNode);
     if (failHigh) {
         nSearched = std::min(nSearched, NUM_STAT_MOVES-1);
         failHiCount[pIdx][nSearched]++;
@@ -718,7 +739,7 @@ FailHighInfo::reScale() {
 
 void
 FailHighInfo::reScaleInternal(int factor) {
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < NUM_NODE_TYPES; i++) {
         for (int j = 0; j < NUM_STAT_MOVES; j++)
             failHiCount[i][j] /= factor;
         failLoCount[i] /= factor;
@@ -728,8 +749,9 @@ FailHighInfo::reScaleInternal(int factor) {
 
 void
 FailHighInfo::print(std::ostream& os) const {
-    for (int i = 0; i < 2; i++) {
-        os << i << ' ' << std::setw(6) << failLoCount[i];
+    std::lock_guard<std::mutex> L(mutex);
+    for (int i = 0; i < NUM_NODE_TYPES; i++) {
+        os << "fhInfo: " << i << ' ' << std::setw(6) << failLoCount[i];
         for (int j = 0; j < NUM_STAT_MOVES; j++)
             os << ' ' << std::setw(6) << failHiCount[i][j];
         os << std::endl;

@@ -168,14 +168,16 @@ public:
     /** Return probability that move moveNo needs to be searched.
      * @param parentMoveNo        Move number of move leading to this position.
      * @param currSearchedMoveNo  Move currently being searched.
-     * @param moveNo              Move number to get probability for. */
-    double getMoveNeededProbability(int parentMoveNo, int currMoveNo, int moveNo) const;
+     * @param moveNo              Move number to get probability for.
+     * @param allNode             True if this is an expected ALL node. */
+    double getMoveNeededProbability(int parentMoveNo, int currMoveNo, int moveNo, bool allNode) const;
 
     /** Add fail high information.
      * @param parentMoveNo  Move number of move leading to this position.
      * @param nSearched     Number of moves searched at this node.
-     * @param failHigh      True if the node failed high. */
-    void addData(int parentMoveNo, int nSearched, bool failHigh);
+     * @param failHigh      True if the node failed high.
+     * @param allNode       True if this is an expected ALL node. */
+    void addData(int parentMoveNo, int nSearched, bool failHigh, bool allNode);
 
     /** Rescale the counters, so that future updates have more weight. */
     void reScale();
@@ -186,12 +188,16 @@ public:
 private:
     void reScaleInternal(int factor);
 
+    inline int getNodeType(int moveNo, bool allNode) const;
+
+
+    static const int NUM_NODE_TYPES = 4;
     static const int NUM_STAT_MOVES = 15;
     mutable std::mutex mutex;
 
-    int failHiCount[2][NUM_STAT_MOVES];   // [parentMoveNo>0?1:0][moveNo]
-    int failLoCount[2];                   // [parentMoveNo>0?1:0]
-    int totCount;                         // Sum of all counts
+    int failHiCount[NUM_NODE_TYPES][NUM_STAT_MOVES]; // [parentMoveNo>0?1:0][moveNo]
+    int failLoCount[NUM_NODE_TYPES];                 // [parentMoveNo>0?1:0]
+    int totCount;                                    // Sum of all counts
 };
 
 
@@ -317,6 +323,9 @@ public:
     /** Return true if this SplitPoint is an ancestor to "sp". */
     bool isAncestorTo(const SplitPoint& sp) const;
 
+    /** Return true if the held SplitPoint is an estimated ALL node. */
+    bool isAllNode() const;
+
     /** Thread that created this SplitPoint. */
     int owningThread() const { return threadNo; }
 
@@ -417,6 +426,9 @@ public:
     /** For debugging. */
     int getSeqNo() const { return sp->getSeqNo(); }
 
+    /** Return true if the held SplitPoint is an estimated ALL node. */
+    bool isAllNode() const;
+
 private:
     SplitPointHolder(const SplitPointHolder&) = delete;
     SplitPointHolder& operator=(const SplitPointHolder&) = delete;
@@ -438,6 +450,16 @@ WorkQueue::SplitPointCompare::operator()(const std::shared_ptr<SplitPoint>& a,
     if (a->getPly() != b->getPly())
         return a->getPly() < b->getPly();
     return a->getSeqNo() < b->getSeqNo();
+}
+
+inline int
+FailHighInfo::getNodeType(int moveNo, bool allNode) const {
+    if (moveNo == 0)
+        return allNode ? 0 : 3;
+    else if (moveNo > 0)
+        return 1;
+    else
+        return 2;
 }
 
 template <typename Func> void ParallelData::log(Func func) {
