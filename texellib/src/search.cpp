@@ -39,7 +39,7 @@ const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                int posHashListSize0, SearchTables& st, ParallelData& pd0,
                const std::shared_ptr<SplitPoint>& rootSp)
-    : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), pd(pd0) {
+    : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), pd(pd0), threadNo(0) {
     stopHandler = std::make_shared<DefaultStopHandler>(*this);
     spVec.push_back(rootSp);
     init(pos0, posHashList0, posHashListSize0);
@@ -137,7 +137,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     }
 
     kt.clear();
-    const bool smp = pd.isSMP();
+    const bool smp = pd.numHelperThreads() > 0;
     maxNodes = initialMaxNodes;
     nodesToGo = 0;
     Position origPos(pos);
@@ -363,6 +363,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     notifyStats();
 
     log.close();
+//    pd.fhInfo.print(std::cout);
     return bestMove;
 }
 
@@ -657,7 +658,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     SplitPointHolder sph(pd, spVec);
     const bool canSplit = smp && (beta == alpha + 1);
     if (canSplit) {
-        sph.setSp(std::make_shared<SplitPoint>(spVec.back(),
+        sph.setSp(std::make_shared<SplitPoint>(threadNo, spVec.back(),
                                                searchTreeInfo[ply-1].currentMoveNo,
                                                pos, posHashList, posHashListSize,
                                                sti, kt, ht, alpha, beta, ply));
@@ -790,7 +791,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         score = -negaScout(smp, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                     }
                     if (canSplit) {
-//                        pd.log([&](std::ostream& os){os << "main seqNo:" << sph.getSeqNo() << " m:" << mi
+//                       pd.log([&](std::ostream& os){os << "main seqNo:" << sph.getSeqNo() << " ply:" << ply << " m:" << mi
 //                                                        << " a:" << alpha << " s:" << score
 //                                                        << " d:" << nomDepth/plyScale << " n:" << (totalNodes-n1);});
                         int moveNo = searchTreeInfo[ply+1].currentMoveNo;

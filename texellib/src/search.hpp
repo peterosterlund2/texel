@@ -93,6 +93,9 @@ public:
         this->stopHandler = stopHandler;
     }
 
+    /** Set which thread is owning this Search object. */
+    void setThreadNo(int value);
+
     void timeLimit(int minTimeLimit, int maxTimeLimit);
 
     void setStrength(int strength, U64 randomSeed);
@@ -203,6 +206,7 @@ private:
     TranspositionTable& tt;
     ParallelData& pd;
     std::vector<std::shared_ptr<SplitPoint>> spVec;
+    int threadNo;
     TreeLoggerWriter log;
 
     std::shared_ptr<Listener> listener;
@@ -359,6 +363,13 @@ Search::getTotalNodes() const {
 inline S64
 Search::getTotalNodesThisThread() const {
     return totalNodes;
+}
+
+inline void
+Search::setThreadNo(int value) {
+    threadNo = value;
+    if (threadNo > 0)
+        nodesBetweenTimeCheck = 1000;
 }
 
 #endif /* SEARCH_HPP_ */

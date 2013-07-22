@@ -29,8 +29,8 @@
 namespace SearchConst {
     const int MATE0 = 32000;
     const int plyScale = 8; // Fractional ply resolution
-    const int MIN_SMP_DEPTH = 9; // Minimum depth for SMP work sharing
-    const int MAX_SP_PER_THREAD = 10; // Maximum number of SplitPoints per thread
+    const int MIN_SMP_DEPTH = 10; // Minimum depth for SMP work sharing
+    const int MAX_SP_PER_THREAD = 16; // Maximum number of SplitPoints per thread
 }
 
 namespace TType {

@@ -115,7 +115,7 @@ ThreadStopHandler::shouldStop() {
         std::shared_ptr<SplitPoint> bestSp;
         double bestProb = pd.wq.getBestProbability(bestSp);
         if ((bestProb > myProb + 0.01) && (bestProb >= (myProb + (1.0 - myProb) * 0.25)) &&
-            !sp.isAncestorTo(*bestSp))
+            (sp.owningThread() != wt.getThreadNo()))
             return true;
         reportNodes();
     }
@@ -166,6 +166,7 @@ WorkerThread::mainLoop() {
             int posHashListSize;
             sp->getPosHashList(pos, posHashList, posHashListSize);
             Search sc(pos, posHashList, posHashListSize, st, pd, sp);
+            sc.setThreadNo(threadNo);
             auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd, *sp,
                                                                  spMove, moveNo,
                                                                  sc));
@@ -178,16 +179,19 @@ WorkerThread::mainLoop() {
             bool inCheck = spMove.getInCheck();
             sc.setSearchTreeInfo(ply-1, sp->getSearchTreeInfo());
             try {
-//                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " m:" << moveNo
-//                                                << " a:" << alpha
-//                                                << " d:" << depth/SearchConst::plyScale << " start";});
-                int score = -sc.negaScout(true, -beta, -alpha, ply+1,
+//                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
+//                                                << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
+//                                                << " a:" << alpha << " d:" << depth/SearchConst::plyScale
+//                                                << " p:" << sp->getPMoveUseful(pd.fhInfo, moveNo) << " start";});
+                const bool smp = pd.numHelperThreads() > 1;
+                int score = -sc.negaScout(smp, -beta, -alpha, ply+1,
                                           depth, captSquare, inCheck);
                 if ((lmr > 0) && (score > alpha))
-                    score = -sc.negaScout(true, -beta, -alpha, ply+1,
+                    score = -sc.negaScout(smp, -beta, -alpha, ply+1,
                                           depth + lmr, captSquare, inCheck);
                 bool cancelRemaining = score >= beta;
-//                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " m:" << moveNo
+//                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
+//                                                << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
 //                                                << " a:" << alpha << " s:" << score
 //                                                << " d:" << depth/SearchConst::plyScale << " n:" << sc.getTotalNodesThisThread();});
                 pd.wq.moveFinished(sp, moveNo, cancelRemaining);
@@ -390,9 +394,9 @@ ParallelData::stopAll() {
         thread->stop(true);
 }
 
-bool
-ParallelData::isSMP() const {
-    return !threads.empty();
+int
+ParallelData::numHelperThreads() const {
+    return threads.size();
 }
 
 S64
@@ -407,7 +411,8 @@ ParallelData::addSearchedNodes(S64 nNodes) {
 
 // ----------------------------------------------------------------------------
 
-SplitPoint::SplitPoint(const std::shared_ptr<SplitPoint>& parentSp0, int parentMoveNo0,
+SplitPoint::SplitPoint(int threadNo0,
+                       const std::shared_ptr<SplitPoint>& parentSp0, int parentMoveNo0,
                        const Position& pos0, const std::vector<U64>& posHashList0,
                        int posHashListSize0, const SearchTreeInfo& sti0,
                        const KillerTable& kt0, const History& ht0,
@@ -416,7 +421,7 @@ SplitPoint::SplitPoint(const std::shared_ptr<SplitPoint>& parentSp0, int parentM
       searchTreeInfo(sti0), kt(kt0), ht(ht0),
       alpha(alpha0), beta(beta0), ply(ply0),
       pSpUseful(0.0), pNextMoveUseful(0.0),
-      parent(parentSp0), parentMoveNo(parentMoveNo0),
+      threadNo(threadNo0), parent(parentSp0), parentMoveNo(parentMoveNo0),
       seqNo(0), currMoveNo(0) {
 }
 
@@ -646,8 +651,10 @@ void
 SplitPointHolder::addToQueue() {
     assert(state == State::CREATED);
     pd.wq.addWork(sp);
-//    pd.log([&](std::ostream& os){os << "add seqNo:" << sp->getSeqNo();});
     spVec.push_back(sp);
+//    pd.log([&](std::ostream& os){os << "add seqNo:" << sp->getSeqNo() << " ply:" << sp->getPly()
+//                                    << " pNext:" << sp->getPNextMoveUseful()
+//                                    << " pMove:" << sp->getParentMoveNo() << " vec:" << spVec.size();});
     state = State::QUEUED;
 }
 

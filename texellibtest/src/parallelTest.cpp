@@ -106,7 +106,7 @@ ParallelTest::testWorkQueue() {
     KillerTable kt;
     History ht;
 
-    auto sp1 = std::make_shared<SplitPoint>(nullRoot, 0,
+    auto sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, -10, 10, 1);
     sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
@@ -169,7 +169,7 @@ ParallelTest::testWorkQueue() {
 
     // Split point contains no moves, should not be added to queue/waiting
     sp.reset();
-    sp1 = std::make_shared<SplitPoint>(nullRoot, 0,
+    sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                        pos, posHashList, posHashListSize,
                                        sti, kt, ht, -10, 10, 1);
     wq.addWork(sp1);
@@ -177,7 +177,7 @@ ParallelTest::testWorkQueue() {
     ASSERT_EQUAL(0, wq.waiting.size());
 
     // Split point contains only one move, should not be added to queue/waiting
-    sp1 = std::make_shared<SplitPoint>(nullRoot, 0,
+    sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                        pos, posHashList, posHashListSize,
                                        sti, kt, ht, -10, 10, 1);
     sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("f2f4"), 0, 4, -1, false));
@@ -187,7 +187,7 @@ ParallelTest::testWorkQueue() {
 
 
     // Test return non-last currently searched move
-    sp1 = std::make_shared<SplitPoint>(nullRoot, 1,
+    sp1 = std::make_shared<SplitPoint>(0, nullRoot, 1,
                                        pos, posHashList, posHashListSize,
                                        sti, kt, ht, -10, 10, 1);
     sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("a2a4"), 0, 4, -1, false));
@@ -248,7 +248,7 @@ ParallelTest::testWorkQueueParentChild() {
     KillerTable kt;
     History ht;
 
-    auto sp1 = std::make_shared<SplitPoint>(nullRoot, 0,
+    auto sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, -10, 10, 1);
     sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
@@ -259,7 +259,7 @@ ParallelTest::testWorkQueueParentChild() {
 
     pos.makeMove(TextIO::uciStringToMove("e2e4"), ui);
     posHashList[posHashListSize++] = pos.zobristHash();
-    auto sp2 = std::make_shared<SplitPoint>(sp1, 0,
+    auto sp2 = std::make_shared<SplitPoint>(0, sp1, 0,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, -10, 10, 1);
     sp2->addMove(0, SplitPointMove(TextIO::uciStringToMove("e7e5"), 0, 4, -1, false));
@@ -270,7 +270,7 @@ ParallelTest::testWorkQueueParentChild() {
 
     pos.makeMove(TextIO::uciStringToMove("e7e5"), ui);
     posHashList[posHashListSize++] = pos.zobristHash();
-    auto sp3 = std::make_shared<SplitPoint>(sp2, 0,
+    auto sp3 = std::make_shared<SplitPoint>(0, sp2, 0,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, -10, 10, 1);
     sp3->addMove(0, SplitPointMove(TextIO::uciStringToMove("g1f3"), 0, 4, -1, false));
@@ -286,7 +286,7 @@ ParallelTest::testWorkQueueParentChild() {
     posHashListSize = 1;
     pos.makeMove(TextIO::uciStringToMove("d2d4"), ui);
     posHashList[posHashListSize++] = pos.zobristHash();
-    auto sp4 = std::make_shared<SplitPoint>(sp1, 2,
+    auto sp4 = std::make_shared<SplitPoint>(0, sp1, 2,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, -10, 10, 1);
     sp4->addMove(0, SplitPointMove(TextIO::uciStringToMove("d7d5"), 0, 4, -1, false));
@@ -402,7 +402,7 @@ ParallelTest::testSplitPointHolder() {
         SplitPointHolder sph(pd, spVec);
         ASSERT_EQUAL(0, wq.queue.size());
         ASSERT_EQUAL(0, spVec.size());
-        sph.setSp(std::make_shared<SplitPoint>(nullRoot, 0,
+        sph.setSp(std::make_shared<SplitPoint>(0, nullRoot, 0,
                                                pos, posHashList, posHashListSize,
                                                sti, kt, ht, -10, 10, 1));
         ASSERT_EQUAL(0, wq.queue.size());
@@ -426,7 +426,7 @@ ParallelTest::testSplitPointHolder() {
             SplitPointHolder sph2(pd, spVec);
             ASSERT_EQUAL(1, wq.queue.size());
             ASSERT_EQUAL(1, spVec.size());
-            sph2.setSp(std::make_shared<SplitPoint>(spVec.back(), 0,
+            sph2.setSp(std::make_shared<SplitPoint>(0, spVec.back(), 0,
                                                     pos, posHashList, posHashListSize,
                                                     sti, kt, ht, -10, 10, 1));
             ASSERT_EQUAL(1, wq.queue.size());
@@ -485,7 +485,7 @@ ParallelTest::testWorkerThread() {
 
     {
         SplitPointHolder sph(pd, spVec);
-        auto sp = std::make_shared<SplitPoint>(nullRoot, 0,
+        auto sp = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                                pos, posHashList, posHashListSize,
                                                sti, kt, ht, -10, 10, 1);
         sph.setSp(sp);

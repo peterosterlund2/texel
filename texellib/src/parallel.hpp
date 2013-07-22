@@ -70,6 +70,9 @@ public:
     /** Return true if thread is running. */
     bool threadRunning() const { return thread != nullptr; }
 
+    /** Return thread number. The first worker thread is number 1. */
+    int getThreadNo() const { return threadNo; }
+
 private:
     WorkerThread(const WorkerThread&) = delete;
     WorkerThread& operator=(const WorkerThread&) = delete;
@@ -208,8 +211,8 @@ public:
     void stopAll();
 
 
-    /** Return true if multiple threads are in use. */
-    bool isSMP() const;
+    /** Return number of helper threads in use. */
+    int numHelperThreads() const;
 
     /** Get number of nodes searched by all helper threads. */
     S64 getNumSearchedNodes() const;
@@ -245,7 +248,8 @@ class SplitPoint {
     friend class ParallelTest;
 public:
     /** Constructor. */
-    SplitPoint(const std::shared_ptr<SplitPoint>& parentSp, int parentMoveNo,
+    SplitPoint(int threadNo,
+               const std::shared_ptr<SplitPoint>& parentSp, int parentMoveNo,
                const Position& pos, const std::vector<U64>& posHashList,
                int posHashListSize, const SearchTreeInfo& sti,
                const KillerTable& kt, const History& ht,
@@ -313,8 +317,17 @@ public:
     /** Return true if this SplitPoint is an ancestor to "sp". */
     bool isAncestorTo(const SplitPoint& sp) const;
 
+    /** Thread that created this SplitPoint. */
+    int owningThread() const { return threadNo; }
+
     /** Print object state to "os", for debugging. */
     void print(std::ostream& os, int level, const FailHighInfo& fhInfo) const;
+
+    /** For debugging. */
+    int getParentMoveNo() const { return parentMoveNo; }
+
+    /** For debugging. */
+    int getCurrMoveNo() const { return currMoveNo; }
 
 private:
     /** Get index of first unstarted move, or -1 if there is no unstarted move. */
@@ -337,6 +350,7 @@ private:
     double pSpUseful;       // Probability that this SplitPoint is needed. 100% if parent is null.
     double pNextMoveUseful; // Probability that next unstarted move needs to be searched.
 
+    const int threadNo;     // Owning thread
     const std::shared_ptr<SplitPoint> parent;
     const int parentMoveNo; // Move number in parent SplitPoint that generated this SplitPoint
     std::vector<std::weak_ptr<SplitPoint>> children;
