@@ -33,6 +33,53 @@ U64 SplitPoint::nextSeqNo = 0;
 
 // ----------------------------------------------------------------------------
 
+/** Sleep/wake timer. */
+class SWTimer {
+public:
+    SWTimer(ParallelData& pd0, int threadNo0)
+        : pd(pd0), threadNo(threadNo0),
+          working(false), tSleep(0), tWork(0) {
+        t0 = currentTime();
+    }
+
+    ~SWTimer() {
+        pd.log([&](std::ostream& os){os << "timer th:" << threadNo << " total"
+                                        << " s:" << tSleep << " w:" << tWork;});
+    }
+
+    void startSleep() {
+        if (working) {
+            double t1 = currentTime();
+            tWork += t1 - t0;
+//            pd.log([&](std::ostream& os){os << "timer th:" << threadNo << " worked:" << t1 - t0
+//                                            << " s:" << tSleep << " w:" << tWork;});
+            t0 = t1;
+            working = false;
+        }
+    }
+
+    void startWork() {
+        if (!working) {
+            double t1 = currentTime();
+            tSleep += t1 - t0;
+//            pd.log([&](std::ostream& os){os << "timer th:" << threadNo << " slept:" << t1 - t0
+//                                            << " s:" << tSleep << " w:" << tWork;});
+            t0 = t1;
+            working = true;
+        }
+    }
+
+private:
+    ParallelData& pd;
+    int threadNo;
+
+    bool working;
+    double t0;
+    double tSleep, tWork;
+};
+
+// ----------------------------------------------------------------------------
+
 WorkerThread::WorkerThread(int threadNo0, ParallelData& pd0,
                            TranspositionTable& tt0)
     : threadNo(threadNo0), pd(pd0), tt(tt0),
@@ -141,12 +188,12 @@ WorkerThread::mainLoop() {
     if (!ht)
         ht = std::make_shared<History>();
 
+//    SWTimer timer(pd, threadNo);
     std::mutex m;
     std::unique_lock<std::mutex> lock(m);
     Position pos;
     std::shared_ptr<SplitPoint> sp;
     while (!shouldStop()) {
-//        pd.log([&](std::ostream& os){os << "queue:" << pd.wq.queue.size() << " waiting:" << pd.wq.waiting.size();});
         int moveNo = -1;
         std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo);
         if (newSp) {
@@ -156,6 +203,7 @@ WorkerThread::mainLoop() {
                 pd.wq.moveFinished(newSp, moveNo, false);
                 continue;
             }
+//            timer.startWork();
             if (sp != newSp) {
                 sp = newSp;
                 *ht = sp->getHistory();
@@ -204,6 +252,7 @@ WorkerThread::mainLoop() {
             }
         } else {
             sp.reset();
+//            timer.startSleep();
             pd.cv.wait_for(lock, std::chrono::microseconds(1000));
         }
     }
