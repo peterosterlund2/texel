@@ -146,6 +146,7 @@ WorkerThread::mainLoop() {
     Position pos;
     std::shared_ptr<SplitPoint> sp;
     while (!shouldStop()) {
+//        pd.log([&](std::ostream& os){os << "queue:" << pd.wq.queue.size() << " waiting:" << pd.wq.waiting.size();});
         int moveNo = -1;
         std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo);
         if (newSp) {
@@ -222,10 +223,10 @@ WorkQueue::addWork(const std::shared_ptr<SplitPoint>& sp) {
     sp->setSeqNo();
     std::shared_ptr<SplitPoint> parent = sp->getParent();
     if (parent) {
-        if (parent->hasUnFinishedMove())
-            parent->addChild(sp);
-        else
+        if (parent->isCanceled())
             sp->cancel();
+        else
+            parent->addChild(sp);
     }
     if (sp->hasUnFinishedMove()) {
         sp->computeProbabilities(fhInfo);
@@ -422,7 +423,7 @@ SplitPoint::SplitPoint(int threadNo0,
       alpha(alpha0), beta(beta0), ply(ply0),
       pSpUseful(0.0), pNextMoveUseful(0.0),
       threadNo(threadNo0), parent(parentSp0), parentMoveNo(parentMoveNo0),
-      seqNo(0), currMoveNo(0) {
+      seqNo(0), currMoveNo(0), canceled(false) {
 }
 
 void
@@ -521,6 +522,7 @@ SplitPoint::setOwnerCurrMove(int moveNo) {
 
 void
 SplitPoint::cancel() {
+    canceled = true;
     for (SplitPointMove& spMove : spMoves)
         spMove.setCanceled(true);
 }
@@ -537,6 +539,8 @@ SplitPoint::moveFinished(int moveNo, bool cancelRemaining) {
 
 bool
 SplitPoint::hasUnStartedMove() const {
+    if (canceled)
+        return false;
     for (int i = currMoveNo + 1; i < (int)spMoves.size(); i++)
         if (!spMoves[i].isCanceled() && !spMoves[i].isSearching())
             return true;
@@ -545,6 +549,8 @@ SplitPoint::hasUnStartedMove() const {
 
 bool
 SplitPoint::hasUnFinishedMove() const {
+    if (canceled)
+        return false;
     for (int i = currMoveNo + 1; i < (int)spMoves.size(); i++)
         if (!spMoves[i].isCanceled())
             return true;
@@ -603,7 +609,7 @@ SplitPoint::print(std::ostream& os, int level, const FailHighInfo& fhInfo) const
     std::string pad(level*2, ' ');
     os << pad << "seq:" << seqNo << " pos:" << TextIO::toFEN(pos) << std::endl;
     os << pad << "parent:" << parentMoveNo << " hashListSize:" << posHashListSize <<
-        " a:" << alpha << " b:" << beta << " ply:" << ply << std::endl;
+        " a:" << alpha << " b:" << beta << " ply:" << ply << " canceled:" << canceled << std::endl;
     os << pad << "p1:" << pSpUseful << " p2:" << pNextMoveUseful << " curr:" << currMoveNo << std::endl;
     os << pad << "moves:";
     for (int mi = 0; mi < (int)spMoves.size(); mi++) {

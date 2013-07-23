@@ -311,6 +311,9 @@ public:
     /** Cancel this SplitPoint and all children. */
     void cancel();
 
+    /** Return true if this SplitPoint has been canceled. */
+    bool isCanceled() const;
+
     /** Set move to canceled after helper thread finished searching it. */
     void moveFinished(int moveNo, bool cancelRemaining);
 
@@ -339,6 +342,9 @@ public:
     int getCurrMoveNo() const { return currMoveNo; }
 
 private:
+    SplitPoint(const SplitPoint&) = delete;
+    SplitPoint& operator=(const SplitPoint&) = delete;
+
     /** Get index of first unstarted move, or -1 if there is no unstarted move. */
     int findNextMove() const;
 
@@ -368,6 +374,8 @@ private:
     U64 seqNo;      // To break ties when two objects have same priority. Set by addWork() under lock
     int currMoveNo;
     std::vector<SplitPointMove> spMoves;
+
+    bool canceled;
 };
 
 
@@ -460,6 +468,11 @@ FailHighInfo::getNodeType(int moveNo, bool allNode) const {
         return 1;
     else
         return 2;
+}
+
+inline bool
+SplitPoint::isCanceled() const {
+    return canceled;
 }
 
 template <typename Func> void ParallelData::log(Func func) {
