@@ -70,6 +70,17 @@ ParallelTest::testFailHighInfo() {
             ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(1, curr, m, true), eps);
         }
     }
+
+    for (int i = -1; i < 10; i++)
+        for (int j = 0; j < (1<<(10-i)); j++)
+            fhi.addPvData(i, true);
+    for (int curr = 0; curr < 10; curr++) {
+        double prob = 1.0;
+        for (int m = curr; m < 10; m++) {
+            ASSERT_EQUAL_DELTA(prob, fhi.getMoveNeededProbabilityPv(curr, m), eps);
+            prob *= 1.0 - (1<<(10-m)) / (double)(1<<11);
+        }
+    }
 }
 
 void
@@ -108,12 +119,12 @@ ParallelTest::testWorkQueue() {
 
     auto sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                             pos, posHashList, posHashListSize,
-                                            sti, kt, ht, -10, 10, 1);
+                                            sti, kt, ht, 10, 11, 1);
     sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
     sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
     sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("g1f3"), 0, 4, -1, false));
-    ASSERT_EQUAL(-10, sp1->getAlpha());
-    ASSERT_EQUAL(10, sp1->getBeta());
+    ASSERT_EQUAL(10, sp1->getAlpha());
+    ASSERT_EQUAL(11, sp1->getBeta());
     ASSERT_EQUAL(1, sp1->getPly());
     ASSERT_EQUAL(0, sp1->getChildren().size());
     ASSERT_EQUAL(3, sp1->spMoves.size());
@@ -133,7 +144,7 @@ ParallelTest::testWorkQueue() {
     ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL_DELTA(255 / 1023.0, wq.getBestProbability(), eps);
 
-    wq.setOwnerCurrMove(sp1, 1);
+    wq.setOwnerCurrMove(sp1, 1, 10);
     ASSERT_EQUAL(2, sp1->findNextMove());
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL(0, wq.waiting.size());
@@ -171,7 +182,7 @@ ParallelTest::testWorkQueue() {
     sp.reset();
     sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                        pos, posHashList, posHashListSize,
-                                       sti, kt, ht, -10, 10, 1);
+                                       sti, kt, ht, 10, 11, 1);
     wq.addWork(sp1);
     ASSERT_EQUAL(0, wq.queue.size());
     ASSERT_EQUAL(0, wq.waiting.size());
@@ -179,7 +190,7 @@ ParallelTest::testWorkQueue() {
     // Split point contains only one move, should not be added to queue/waiting
     sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                        pos, posHashList, posHashListSize,
-                                       sti, kt, ht, -10, 10, 1);
+                                       sti, kt, ht, 10, 11, 1);
     sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("f2f4"), 0, 4, -1, false));
     wq.addWork(sp1);
     ASSERT_EQUAL(0, wq.queue.size());
@@ -189,7 +200,7 @@ ParallelTest::testWorkQueue() {
     // Test return non-last currently searched move
     sp1 = std::make_shared<SplitPoint>(0, nullRoot, 1,
                                        pos, posHashList, posHashListSize,
-                                       sti, kt, ht, -10, 10, 1);
+                                       sti, kt, ht, 10, 11, 1);
     sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("a2a4"), 0, 4, -1, false));
     sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("b2b4"), 0, 4, -1, false));
     sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
@@ -255,7 +266,7 @@ ParallelTest::testWorkQueueParentChild() {
 
     auto sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                             pos, posHashList, posHashListSize,
-                                            sti, kt, ht, -10, 10, 1);
+                                            sti, kt, ht, 10, 11, 1);
     sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
     sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
     sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
@@ -266,7 +277,7 @@ ParallelTest::testWorkQueueParentChild() {
     posHashList[posHashListSize++] = pos.zobristHash();
     auto sp2 = std::make_shared<SplitPoint>(0, sp1, 0,
                                             pos, posHashList, posHashListSize,
-                                            sti, kt, ht, -10, 10, 1);
+                                            sti, kt, ht, 10, 11, 1);
     sp2->addMove(0, SplitPointMove(TextIO::uciStringToMove("e7e5"), 0, 4, -1, false));
     sp2->addMove(1, SplitPointMove(TextIO::uciStringToMove("c7c5"), 0, 4, -1, false));
     wq.addWork(sp2);
@@ -277,7 +288,7 @@ ParallelTest::testWorkQueueParentChild() {
     posHashList[posHashListSize++] = pos.zobristHash();
     auto sp3 = std::make_shared<SplitPoint>(0, sp2, 0,
                                             pos, posHashList, posHashListSize,
-                                            sti, kt, ht, -10, 10, 1);
+                                            sti, kt, ht, 10, 11, 1);
     sp3->addMove(0, SplitPointMove(TextIO::uciStringToMove("g1f3"), 0, 4, -1, false));
     sp3->addMove(1, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
     sp3->addMove(2, SplitPointMove(TextIO::uciStringToMove("c2c3"), 0, 4, -1, false));
@@ -293,7 +304,7 @@ ParallelTest::testWorkQueueParentChild() {
     posHashList[posHashListSize++] = pos.zobristHash();
     auto sp4 = std::make_shared<SplitPoint>(0, sp1, 2,
                                             pos, posHashList, posHashListSize,
-                                            sti, kt, ht, -10, 10, 1);
+                                            sti, kt, ht, 10, 11, 1);
     sp4->addMove(0, SplitPointMove(TextIO::uciStringToMove("d7d5"), 0, 4, -1, false));
     sp4->addMove(1, SplitPointMove(TextIO::uciStringToMove("g8f6"), 0, 4, -1, false));
     wq.addWork(sp4);
@@ -327,7 +338,7 @@ ParallelTest::testWorkQueueParentChild() {
     ASSERT_EQUAL(sp3, q[2]);
     ASSERT_EQUAL(sp4, q[3]);
 
-    wq.setOwnerCurrMove(sp3, 1);
+    wq.setOwnerCurrMove(sp3, 1, 10);
     ASSERT_EQUAL(4, wq.queue.size());
     ASSERT_EQUAL(0, wq.waiting.size());
 //    sp1->print(std::cout, 0, fhi);
@@ -361,7 +372,7 @@ ParallelTest::testWorkQueueParentChild() {
     ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2), sp4->getPSpUseful(), eps);
     ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2)*511/1023, sp4->getPNextMoveUseful(), eps);
 
-    wq.setOwnerCurrMove(sp1, 1);
+    wq.setOwnerCurrMove(sp1, 1, 10);
 //    sp1->print(std::cout, 0, fhi);
 //    std::cout << std::endl;
     ASSERT_EQUAL(2, wq.queue.size());
@@ -409,7 +420,7 @@ ParallelTest::testSplitPointHolder() {
         ASSERT_EQUAL(0, spVec.size());
         sph.setSp(std::make_shared<SplitPoint>(0, nullRoot, 0,
                                                pos, posHashList, posHashListSize,
-                                               sti, kt, ht, -10, 10, 1));
+                                               sti, kt, ht, 10, 11, 1));
         ASSERT_EQUAL(0, wq.queue.size());
         ASSERT_EQUAL(0, spVec.size());
         sph.addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
@@ -433,7 +444,7 @@ ParallelTest::testSplitPointHolder() {
             ASSERT_EQUAL(1, spVec.size());
             sph2.setSp(std::make_shared<SplitPoint>(0, spVec.back(), 0,
                                                     pos, posHashList, posHashListSize,
-                                                    sti, kt, ht, -10, 10, 1));
+                                                    sti, kt, ht, 10, 11, 1));
             ASSERT_EQUAL(1, wq.queue.size());
             ASSERT_EQUAL(1, spVec.size());
             sph2.addMove(0, SplitPointMove(TextIO::uciStringToMove("g8f6"), 0, 4, -1, false));
@@ -492,7 +503,7 @@ ParallelTest::testWorkerThread() {
         SplitPointHolder sph(pd, spVec);
         auto sp = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                                pos, posHashList, posHashListSize,
-                                               sti, kt, ht, -10, 10, 1);
+                                               sti, kt, ht, 10, 11, 1);
         sph.setSp(sp);
         const int plyScale = SearchConst::plyScale;
         int depth = 10 * plyScale;

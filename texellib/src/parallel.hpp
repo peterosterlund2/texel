@@ -110,7 +110,7 @@ public:
     void returnMove(const std::shared_ptr<SplitPoint>& sp, int moveNo);
 
     /** Set which move number the SplitPoint owner is currently searching. */
-    void setOwnerCurrMove(const std::shared_ptr<SplitPoint>& sp, int moveNo);
+    void setOwnerCurrMove(const std::shared_ptr<SplitPoint>& sp, int moveNo, int alpha);
 
     /** Cancel this SplitPoint and all children. */
     void cancel(const std::shared_ptr<SplitPoint>& sp);
@@ -166,11 +166,17 @@ public:
     FailHighInfo();
 
     /** Return probability that move moveNo needs to be searched.
-     * @param parentMoveNo        Move number of move leading to this position.
-     * @param currSearchedMoveNo  Move currently being searched.
-     * @param moveNo              Move number to get probability for.
-     * @param allNode             True if this is an expected ALL node. */
+     * @param parentMoveNo  Move number of move leading to this position.
+     * @param currMoveNo    Move currently being searched.
+     * @param moveNo        Move number to get probability for.
+     * @param allNode       True if this is an expected ALL node. */
     double getMoveNeededProbability(int parentMoveNo, int currMoveNo, int moveNo, bool allNode) const;
+
+    /** Return probability that move moveNo needs to be searched in a PV node.
+     * @param currMoveNo    Move currently being searched.
+     * @param moveNo        Move number to get probability for.
+     * @param allNode       True if this is an expected ALL node. */
+    double getMoveNeededProbabilityPv(int currMoveNo, int moveNo) const;
 
     /** Add fail high information.
      * @param parentMoveNo  Move number of move leading to this position.
@@ -179,7 +185,12 @@ public:
      * @param allNode       True if this is an expected ALL node. */
     void addData(int parentMoveNo, int nSearched, bool failHigh, bool allNode);
 
-    /** Rescale the counters, so that future updates have more weight. */
+    /** Add "alpha increased" information for PV nodes.
+     * @param  nSearched     Number of moves searched at this node.
+     * @param  alphaChanged  True if alpha increased after searching move. */
+    void addPvData(int nSearched, bool alphaChanged);
+
+    /** Rescale the counters so that future updates have more weight. */
     void reScale();
 
     /** Print object state to "os", for debugging. */
@@ -187,6 +198,7 @@ public:
 
 private:
     void reScaleInternal(int factor);
+    void reScalePv(int factor);
 
     inline int getNodeType(int moveNo, bool allNode) const;
 
@@ -198,6 +210,9 @@ private:
     int failHiCount[NUM_NODE_TYPES][NUM_STAT_MOVES]; // [parentMoveNo>0?1:0][moveNo]
     int failLoCount[NUM_NODE_TYPES];                 // [parentMoveNo>0?1:0]
     int totCount;                                    // Sum of all counts
+
+    int newAlpha[NUM_STAT_MOVES];
+    int totPvCount;
 };
 
 
@@ -306,7 +321,7 @@ public:
     void returnMove(int moveNo);
 
     /** Set which move number the SplitPoint owner is currently searching. */
-    void setOwnerCurrMove(int moveNo);
+    void setOwnerCurrMove(int moveNo, int alpha);
 
     /** Cancel this SplitPoint and all children. */
     void cancel();
@@ -329,6 +344,9 @@ public:
     /** Return true if the held SplitPoint is an estimated ALL node. */
     bool isAllNode() const;
 
+    /** Return true if beta > alpha + 1. */
+    bool isPvNode() const;
+
     /** Thread that created this SplitPoint. */
     int owningThread() const { return threadNo; }
 
@@ -348,6 +366,10 @@ private:
     /** Get index of first unstarted move, or -1 if there is no unstarted move. */
     int findNextMove() const;
 
+    /** Return probability that moveNo needs to be searched, by calling corresponding
+     * function in fhInfo. */
+    double getMoveNeededProbability(const FailHighInfo& fhInfo, int moveNo) const;
+
     /** Remove null entries from children vector. */
     void cleanUpChildren();
 
@@ -358,7 +380,7 @@ private:
     const KillerTable& kt;
     const History& ht;
 
-    const int alpha;
+    int alpha;
     const int beta;
     const int ply;
 
@@ -429,7 +451,7 @@ public:
     void addToQueue();
 
     /** Set which move number the SplitPoint owner is currently searching. */
-    void setOwnerCurrMove(int moveNo);
+    void setOwnerCurrMove(int moveNo, int alpha);
 
     /** For debugging. */
     int getSeqNo() const { return sp->getSeqNo(); }

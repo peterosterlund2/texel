@@ -114,7 +114,7 @@ class ThreadStopHandler : public Search::StopHandler {
 public:
     ThreadStopHandler(WorkerThread& wt, ParallelData& pd,
                       const SplitPoint& sp, const SplitPointMove& spm,
-                      int moveNo, const Search& sc);
+                      int moveNo, const Search& sc, int initialAlpha);
 
     /** Destructor. Report searched nodes to ParallelData object. */
     ~ThreadStopHandler();
@@ -137,13 +137,15 @@ private:
     int counter;             // Counts number of calls to shouldStop
     int nextProbCheck;       // Next time test for SplitPoint switch should be performed
     S64 lastReportedNodes;
+    int initialAlpha;
 };
 
 ThreadStopHandler::ThreadStopHandler(WorkerThread& wt0, ParallelData& pd0,
                                      const SplitPoint& sp0, const SplitPointMove& spm0,
-                                     int moveNo0, const Search& sc0)
+                                     int moveNo0, const Search& sc0, int initialAlpha0)
     : wt(wt0), pd(pd0), sp(sp0), spMove(spm0), moveNo(moveNo0),
-      sc(sc0), counter(0), nextProbCheck(1), lastReportedNodes(0) {
+      sc(sc0), counter(0), nextProbCheck(1), lastReportedNodes(0),
+      initialAlpha(initialAlpha0) {
 }
 
 ThreadStopHandler::~ThreadStopHandler() {
@@ -153,6 +155,8 @@ ThreadStopHandler::~ThreadStopHandler() {
 bool
 ThreadStopHandler::shouldStop() {
     if (wt.shouldStop() || spMove.isCanceled())
+        return true;
+    if (sp.getAlpha() != initialAlpha)
         return true;
 
     counter++;
@@ -198,7 +202,7 @@ WorkerThread::mainLoop() {
         std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo);
         if (newSp) {
             const SplitPointMove& spMove = newSp->getSpMove(moveNo);
-            int depth = spMove.getDepth();
+            const int depth = spMove.getDepth();
             if (depth < 0) { // Move skipped by forward pruning or legality check
                 pd.wq.moveFinished(newSp, moveNo, false);
                 continue;
@@ -216,32 +220,34 @@ WorkerThread::mainLoop() {
             sp->getPosHashList(pos, posHashList, posHashListSize);
             Search sc(pos, posHashList, posHashListSize, st, pd, sp);
             sc.setThreadNo(threadNo);
+            const int alpha = newSp->getAlpha();
+            const int beta = newSp->getBeta();
             auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd, *sp,
                                                                  spMove, moveNo,
-                                                                 sc));
+                                                                 sc, alpha));
             sc.setStopHandler(stopHandler);
-            int alpha = sp->getAlpha();
-            int beta = sp->getBeta();
-            int ply = sp->getPly();
-            int lmr = spMove.getLMR();
-            int captSquare = spMove.getRecaptureSquare();
-            bool inCheck = spMove.getInCheck();
+            const int ply = sp->getPly();
+            const int lmr = spMove.getLMR();
+            const int captSquare = spMove.getRecaptureSquare();
+            const bool inCheck = spMove.getInCheck();
             sc.setSearchTreeInfo(ply-1, sp->getSearchTreeInfo());
             try {
 //                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
 //                                                << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
-//                                                << " a:" << alpha << " d:" << depth/SearchConst::plyScale
+//                                                << " a:" << alpha << " b:" << beta
+//                                                << " d:" << depth/SearchConst::plyScale
 //                                                << " p:" << sp->getPMoveUseful(pd.fhInfo, moveNo) << " start";});
                 const bool smp = pd.numHelperThreads() > 1;
-                int score = -sc.negaScout(smp, -beta, -alpha, ply+1,
+                int score = -sc.negaScout(smp, -(alpha+1), -alpha, ply+1,
                                           depth, captSquare, inCheck);
-                if ((lmr > 0) && (score > alpha))
+                if (((lmr > 0) && (score > alpha)) ||
+                    ((score > alpha) && (score < beta)))
                     score = -sc.negaScout(smp, -beta, -alpha, ply+1,
                                           depth + lmr, captSquare, inCheck);
                 bool cancelRemaining = score >= beta;
 //                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
 //                                                << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
-//                                                << " a:" << alpha << " s:" << score
+//                                                << " a:" << alpha << " b:" << beta << " s:" << score
 //                                                << " d:" << depth/SearchConst::plyScale << " n:" << sc.getTotalNodesThisThread();});
                 pd.wq.moveFinished(sp, moveNo, cancelRemaining);
             } catch (const Search::StopSearch&) {
@@ -317,9 +323,9 @@ WorkQueue::returnMove(const std::shared_ptr<SplitPoint>& sp, int moveNo) {
 }
 
 void
-WorkQueue::setOwnerCurrMove(const std::shared_ptr<SplitPoint>& sp, int moveNo) {
+WorkQueue::setOwnerCurrMove(const std::shared_ptr<SplitPoint>& sp, int moveNo, int alpha) {
     std::lock_guard<std::mutex> L(mutex);
-    sp->setOwnerCurrMove(moveNo);
+    sp->setOwnerCurrMove(moveNo, alpha);
     maybeMoveToWaiting(sp);
     updateProbabilities(sp);
 }
@@ -491,16 +497,12 @@ SplitPoint::setSeqNo() {
 void
 SplitPoint::computeProbabilities(const FailHighInfo& fhInfo) {
     if (parent) {
-        double pMoveUseful =
-            fhInfo.getMoveNeededProbability(parent->parentMoveNo,
-                                            parent->currMoveNo,
-                                            parentMoveNo, parent->isAllNode());
+        double pMoveUseful = parent->getMoveNeededProbability(fhInfo, parentMoveNo);
         pSpUseful = parent->pSpUseful * pMoveUseful;
     } else {
         pSpUseful = 1.0;
     }
-    double pNextUseful =
-        fhInfo.getMoveNeededProbability(parentMoveNo, currMoveNo, findNextMove(), isAllNode());
+    double pNextUseful = getMoveNeededProbability(fhInfo, findNextMove());
     pNextMoveUseful = pSpUseful * pNextUseful;
 
     bool deleted = false;
@@ -527,9 +529,7 @@ SplitPoint::getChildren() const {
 
 double
 SplitPoint::getPMoveUseful(const FailHighInfo& fhInfo, int moveNo) const {
-    return pSpUseful * fhInfo.getMoveNeededProbability(parentMoveNo,
-                                                       currMoveNo,
-                                                       moveNo, isAllNode());
+    return pSpUseful * getMoveNeededProbability(fhInfo, moveNo);
 }
 
 void
@@ -563,10 +563,12 @@ SplitPoint::returnMove(int moveNo) {
 }
 
 void
-SplitPoint::setOwnerCurrMove(int moveNo) {
+SplitPoint::setOwnerCurrMove(int moveNo, int newAlpha) {
     assert((moveNo >= 0) && (moveNo < (int)spMoves.size()));
     spMoves[moveNo].setCanceled(true);
     currMoveNo = moveNo;
+    if (newAlpha > alpha)
+        alpha = newAlpha;
 }
 
 void
@@ -619,6 +621,16 @@ SplitPoint::findNextMove() const {
     return -1;
 }
 
+double
+SplitPoint::getMoveNeededProbability(const FailHighInfo& fhInfo, int moveNo) const {
+    if (isPvNode())
+        return fhInfo.getMoveNeededProbabilityPv(currMoveNo, moveNo);
+    else
+        return fhInfo.getMoveNeededProbability(parentMoveNo,
+                                               currMoveNo,
+                                               moveNo, isAllNode());
+}
+
 void
 SplitPoint::cleanUpChildren() {
     std::vector<std::weak_ptr<SplitPoint>> toKeep;
@@ -653,6 +665,11 @@ SplitPoint::isAllNode() const {
     return (nFirst % 2) != 0;
 }
 
+bool
+SplitPoint::isPvNode() const {
+    return beta > alpha + 1;
+}
+
 void
 SplitPoint::print(std::ostream& os, int level, const FailHighInfo& fhInfo) const {
     std::string pad(level*2, ' ');
@@ -668,7 +685,7 @@ SplitPoint::print(std::ostream& os, int level, const FailHighInfo& fhInfo) const
             os << ",c";
         if (spm.isSearching())
             os << ",s";
-        os << "," << fhInfo.getMoveNeededProbability(parentMoveNo, currMoveNo, mi, isAllNode());
+        os << "," << getMoveNeededProbability(fhInfo, mi);
     }
     os << std::endl;
     for (const auto& wChild : children) {
@@ -707,6 +724,8 @@ SplitPointHolder::setSp(const std::shared_ptr<SplitPoint>& sp0) {
     assert(state == State::EMPTY);
     assert(sp0);
     sp = sp0;
+    if (sp->getBeta() > sp->getAlpha() + 1)
+        pd.fhInfo.addPvData(-1, false);
     state = State::CREATED;
 }
 
@@ -728,9 +747,10 @@ SplitPointHolder::addToQueue() {
 }
 
 void
-SplitPointHolder::setOwnerCurrMove(int moveNo) {
-//    pd.log([&](std::ostream& os){os << "seqNo:" << sp->getSeqNo() << " currMove:" << moveNo;});
-    pd.wq.setOwnerCurrMove(sp, moveNo);
+SplitPointHolder::setOwnerCurrMove(int moveNo, int alpha) {
+//    pd.log([&](std::ostream& os){os << "seqNo:" << sp->getSeqNo() << " currMove:" << moveNo
+//                                    << " a:" << alpha;});
+    pd.wq.setOwnerCurrMove(sp, moveNo, alpha);
 }
 
 bool
@@ -747,6 +767,9 @@ FailHighInfo::FailHighInfo()
             failHiCount[i][j] = 0;
         failLoCount[i] = 0;
     }
+    for (int j = 0; j < NUM_STAT_MOVES; j++)
+        newAlpha[j] = 0;
+    totPvCount = 0;
 }
 
 double
@@ -769,6 +792,21 @@ FailHighInfo::getMoveNeededProbability(int parentMoveNo,
     return (nTotal > 0) ? nNeeded / (double)nTotal : 0.5;
 }
 
+double
+FailHighInfo::getMoveNeededProbabilityPv(int currMoveNo, int moveNo) const {
+    moveNo = std::min(moveNo, NUM_STAT_MOVES-1);
+    if (moveNo < 0)
+        return 0.0;
+    if (totPvCount <= 0)
+        return 0.5;
+
+    double prob = 1.0;
+    double inv = 1.0 / totPvCount;
+    for (int i = currMoveNo; i < moveNo; i++)
+        prob *= std::max(0.0, 1.0 - newAlpha[i] * inv);
+    return prob;
+}
+
 void
 FailHighInfo::addData(int parentMoveNo, int nSearched, bool failHigh, bool allNode) {
     if (nSearched < 0)
@@ -787,9 +825,22 @@ FailHighInfo::addData(int parentMoveNo, int nSearched, bool failHigh, bool allNo
 }
 
 void
+FailHighInfo::addPvData(int nSearched, bool alphaChanged) {
+    if (nSearched >= 0) {
+        if (alphaChanged && nSearched < NUM_STAT_MOVES)
+            newAlpha[nSearched]++;
+    } else {
+        totPvCount++;
+        if (totPvCount >= 10000)
+            reScalePv(2);
+    }
+}
+
+void
 FailHighInfo::reScale() {
     std::lock_guard<std::mutex> L(mutex);
     reScaleInternal(4);
+    reScalePv(4);
 }
 
 void
@@ -803,6 +854,13 @@ FailHighInfo::reScaleInternal(int factor) {
 }
 
 void
+FailHighInfo::reScalePv(int factor) {
+    for (int j = 0; j < NUM_STAT_MOVES; j++)
+        newAlpha[j] /= factor;
+    totPvCount /= factor;
+}
+
+void
 FailHighInfo::print(std::ostream& os) const {
     std::lock_guard<std::mutex> L(mutex);
     for (int i = 0; i < NUM_NODE_TYPES; i++) {
@@ -811,4 +869,8 @@ FailHighInfo::print(std::ostream& os) const {
             os << ' ' << std::setw(6) << failHiCount[i][j];
         os << std::endl;
     }
+    os << "fhInfo: " << NUM_NODE_TYPES << ' ' << std::setw(6) << totPvCount;
+    for (int j = 0; j < NUM_STAT_MOVES; j++)
+        os << ' ' << std::setw(6) << newAlpha[j];
+    os << std::endl;
 }

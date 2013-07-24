@@ -659,8 +659,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     SplitPointHolder sph(pd, spVec);
-    const bool canSplit = smp && (beta == alpha + 1);
-    if (canSplit) {
+    if (smp) {
         sph.setSp(std::make_shared<SplitPoint>(threadNo, spVec.back(),
                                                searchTreeInfo[ply-1].currentMoveNo,
                                                pos, posHashList, posHashListSize,
@@ -675,7 +674,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
     }
     UndoInfo ui;
-    for (int pass = (canSplit?0:1); pass < 2; pass++) {
+    for (int pass = (smp?0:1); pass < 2; pass++) {
         bool haveLegalMoves = false;
         const int illegalScore = -(MATE0-(ply+1));
         int b = beta;
@@ -683,7 +682,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         int bestMove = -1;
         int lmrCount = 0;
         for (int mi = 0; mi < moves.size; mi++) {
-            if (!canSplit) {
+            if (!smp) {
                 if ((mi == 1) && !seeDone) {
                     scoreMoveList(moves, ply, 1);
                     seeDone = true;
@@ -784,8 +783,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     sti.currentMoveNo = mi;
                     sti.lmr = lmr;
 //                    S64 n1 = totalNodes; int nomDepth = newDepth;
-                    if (canSplit)
-                        sph.setOwnerCurrMove(mi);
+                    if (smp)
+                        sph.setOwnerCurrMove(mi, alpha);
                     score = -negaScout(smp, -b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                     if (((lmr > 0) && (score > alpha)) ||
                         ((score > alpha) && (score < beta) && (b != beta))) {
@@ -793,11 +792,16 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         newDepth += lmr;
                         score = -negaScout(smp, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                     }
-                    if (canSplit) {
+                    if (smp) {
 //                        pd.log([&](std::ostream& os){os << "main seqNo:" << sph.getSeqNo() << " ply:" << ply << " m:" << mi
-//                                                        << " a:" << alpha << " s:" << score
+//                                                        << " a:" << alpha << " b:" << beta << " s:" << score
 //                                                        << " d:" << nomDepth/plyScale << " n:" << (totalNodes-n1);});
-                        pd.fhInfo.addData(mi, searchTreeInfo[ply+1].currentMoveNo, score <= alpha, !sph.isAllNode());
+                        if (beta > alpha + 1) {
+                            pd.fhInfo.addPvData(mi, score > alpha);
+                        } else {
+                            pd.fhInfo.addData(mi, searchTreeInfo[ply+1].currentMoveNo,
+                                              score <= alpha, !sph.isAllNode());
+                        }
                     }
                     posHashListSize--;
                     pos.unMakeMove(m, ui);
