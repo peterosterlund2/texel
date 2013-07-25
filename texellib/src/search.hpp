@@ -128,7 +128,8 @@ public:
     void scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx = 0);
 
     /** Set search tree information for a given ply. */
-    void setSearchTreeInfo(int ply, const SearchTreeInfo& sti);
+    void setSearchTreeInfo(int ply, const SearchTreeInfo& sti,
+                           const Move& currMove, int currMoveNo);
 
     /** Get total number of nodes searched by this thread. */
     S64 getTotalNodesThisThread() const;
@@ -328,8 +329,11 @@ Search::selectBest(MoveGen::MoveList& moves, int startIdx) {
 }
 
 inline void
-Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti) {
+Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti, const Move& currMove,
+                          int currMoveNo) {
     searchTreeInfo[ply] = sti;
+    searchTreeInfo[ply].currentMove = currMove;
+    searchTreeInfo[ply].currentMoveNo = currMoveNo;
 }
 
 inline int

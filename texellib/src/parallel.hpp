@@ -73,6 +73,9 @@ public:
     /** Return thread number. The first worker thread is number 1. */
     int getThreadNo() const { return threadNo; }
 
+    /** For debugging. */
+    double getPUseful() const { return pUseful; }
+
 private:
     WorkerThread(const WorkerThread&) = delete;
     WorkerThread& operator=(const WorkerThread&) = delete;
@@ -89,6 +92,8 @@ private:
     std::shared_ptr<History> ht;
     TranspositionTable& tt;
 
+    double pUseful; // Probability that thread is currently doing something useful, for debugging
+
     volatile bool stopThread;
 };
 
@@ -104,7 +109,7 @@ public:
     void addWork(const std::shared_ptr<SplitPoint>& sp);
 
     /** Get best move for helper thread to work on. */
-    std::shared_ptr<SplitPoint> getWork(int& moveNo);
+    std::shared_ptr<SplitPoint> getWork(int& moveNo, ParallelData& pd, int threadNo);
 
     /** A helper thread stopped working on a move before it was finished. */
     void returnMove(const std::shared_ptr<SplitPoint>& sp, int moveNo);
@@ -145,6 +150,12 @@ private:
 
     /** Cancel "sp" and all children. Assumes mutex already locked. */
     void cancelInternal(const std::shared_ptr<SplitPoint>& sp);
+
+    void printSpTree(std::ostream& os, const ParallelData& pd,
+                     int threadNo, const std::shared_ptr<SplitPoint> selectedSp,
+                     int selectedMove);
+    void findLeaves(const std::shared_ptr<SplitPoint>& sp, std::vector<int>& parentThreads,
+                    std::vector<std::shared_ptr<SplitPoint>>& leaves);
 
 
     std::condition_variable& cv;
@@ -242,6 +253,9 @@ public:
     void addSearchedNodes(S64 nNodes);
 
 
+    /** For debugging. */
+    const WorkerThread& getHelperThread(int i) const { return *threads[i]; }
+
     /** Thread-safe logging to std::cout. */
     template <typename Func> void log(Func func);
 
@@ -251,6 +265,9 @@ public:
     FailHighInfo fhInfo;
 
     WorkQueue wq;
+
+    // Move played in Search::iterativeDeepening before calling negaScout. For debugging.
+    Move topMove;
 
 private:
     /** Vector of helper threads. Master thread not included. */
@@ -359,12 +376,12 @@ public:
     /** For debugging. */
     int getCurrMoveNo() const { return currMoveNo; }
 
+    /** Get index of first unstarted move, or -1 if there is no unstarted move. */
+    int findNextMove() const;
+
 private:
     SplitPoint(const SplitPoint&) = delete;
     SplitPoint& operator=(const SplitPoint&) = delete;
-
-    /** Get index of first unstarted move, or -1 if there is no unstarted move. */
-    int findNextMove() const;
 
     /** Return probability that moveNo needs to be searched, by calling corresponding
      * function in fhInfo. */
@@ -473,8 +490,8 @@ private:
 inline bool
 WorkQueue::SplitPointCompare::operator()(const std::shared_ptr<SplitPoint>& a,
                                          const std::shared_ptr<SplitPoint>& b) const {
-    int pa = (int)(a->getPNextMoveUseful() * 65536);
-    int pb = (int)(b->getPNextMoveUseful() * 65536);
+    int pa = (int)(a->getPNextMoveUseful() * 100);
+    int pb = (int)(b->getPNextMoveUseful() * 100);
     if (pa != pb)
         return pa > pb;
     if (a->getPly() != b->getPly())

@@ -162,6 +162,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         for (int mi = 0; mi < (int)scMoves.size(); mi++) {
             searchNeedMoreTime = (mi > 0);
             Move& m = scMoves[mi].move;
+            pd.topMove = m;
             if (currentTimeMillis() - tStart >= 1000)
                 if (listener) listener->notifyCurrMove(m, mi + 1);
             nodes = qNodes = 0;

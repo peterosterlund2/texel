@@ -27,6 +27,7 @@
 #include "search.hpp"
 #include "textio.hpp"
 
+#include <cmath>
 #include <cassert>
 
 U64 SplitPoint::nextSeqNo = 0;
@@ -83,7 +84,7 @@ private:
 WorkerThread::WorkerThread(int threadNo0, ParallelData& pd0,
                            TranspositionTable& tt0)
     : threadNo(threadNo0), pd(pd0), tt(tt0),
-      stopThread(false) {
+      pUseful(0.0), stopThread(false) {
 }
 
 WorkerThread::~WorkerThread() {
@@ -199,7 +200,7 @@ WorkerThread::mainLoop() {
     std::shared_ptr<SplitPoint> sp;
     while (!shouldStop()) {
         int moveNo = -1;
-        std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo);
+        std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo, pd, threadNo);
         if (newSp) {
             const SplitPointMove& spMove = newSp->getSpMove(moveNo);
             const int depth = spMove.getDepth();
@@ -213,6 +214,7 @@ WorkerThread::mainLoop() {
                 *ht = sp->getHistory();
                 *kt = sp->getKillerTable();
             }
+            pUseful = sp->getPMoveUseful(pd.fhInfo, moveNo);
             Search::SearchTables st(tt, *kt, *ht, *et);
             sp->getPos(pos, spMove.getMove());
             std::vector<U64> posHashList;
@@ -230,7 +232,7 @@ WorkerThread::mainLoop() {
             const int lmr = spMove.getLMR();
             const int captSquare = spMove.getRecaptureSquare();
             const bool inCheck = spMove.getInCheck();
-            sc.setSearchTreeInfo(ply-1, sp->getSearchTreeInfo());
+            sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo);
             try {
 //                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
 //                                                << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
@@ -256,7 +258,9 @@ WorkerThread::mainLoop() {
                 if (!spMove.isCanceled() && !stopThread)
                     pd.wq.returnMove(sp, moveNo);
             }
+            pUseful = 0.0;
         } else {
+            pUseful = 0.0;
             sp.reset();
 //            timer.startSleep();
             pd.cv.wait_for(lock, std::chrono::microseconds(1000));
@@ -290,12 +294,13 @@ WorkQueue::addWork(const std::shared_ptr<SplitPoint>& sp) {
 }
 
 std::shared_ptr<SplitPoint>
-WorkQueue::getWork(int& spMove) {
+WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo) {
     std::lock_guard<std::mutex> L(mutex);
     if (queue.empty())
         return nullptr;
     std::shared_ptr<SplitPoint> ret = *queue.begin();
     spMove = ret->getNextMove();
+//    pd.log([&](std::ostream& os){printSpTree(os, pd, threadNo, ret, spMove);});
     maybeMoveToWaiting(ret);
     updateProbabilities(ret);
     return ret;
@@ -417,6 +422,88 @@ WorkQueue::cancelInternal(const std::shared_ptr<SplitPoint>& sp) {
     }
 }
 
+static std::string toPercentStr(double p) {
+    std::stringstream ss;
+    int pc = std::round(p * 100);
+    if (pc == 100)
+        pc = 99;
+    ss << std::setfill('0') << std::setw(2) << pc;
+    return ss.str();
+}
+
+void
+WorkQueue::printSpTree(std::ostream& os, const ParallelData& pd,
+                       int threadNo, const std::shared_ptr<SplitPoint> selectedSp,
+                       int selectedMove) {
+    const int numThreads = pd.numHelperThreads() + 1;
+    std::shared_ptr<SplitPoint> rootSp = *queue.begin();
+    assert(rootSp);
+    while (rootSp->getParent())
+        rootSp = rootSp->getParent();
+    std::vector<int> parentThreads(numThreads, -1);
+    std::vector<std::shared_ptr<SplitPoint>> leaves(numThreads, nullptr);
+    findLeaves(rootSp, parentThreads, leaves);
+
+    os << "th:" << threadNo << " m: " << selectedMove << ':'
+       << TextIO::moveToUCIString(selectedSp->getSpMove(selectedMove).getMove())
+       << " p:" << selectedSp->getPMoveUseful(pd.fhInfo, selectedMove)
+       << std::endl;
+    for (int i = 0; i < numThreads; i++) {
+        std::vector<std::shared_ptr<SplitPoint>> thVec;
+        for (auto sp = leaves[i]; sp; sp = sp->getParent())
+            thVec.push_back(sp);
+        std::reverse(thVec.begin(), thVec.end());
+        os << "thread " << i << ' ';
+        if (parentThreads[i] < 0)
+            os << '-';
+        else
+            os << parentThreads[i];
+        os << ' ' << toPercentStr(i == 0 ? 1 : pd.getHelperThread(i-1).getPUseful());
+        for (const auto& sp : thVec) {
+            if (sp->owningThread() == i) {
+                int pMove = sp->getParentMoveNo();
+                os << ' ' << std::setw(2) << pMove << (sp == selectedSp ? '*' : ':');
+                if (pMove < 0)
+                    os << "null";
+                else if (sp->getParent())
+                    os << TextIO::moveToUCIString(sp->getParent()->getSpMove(pMove).getMove());
+                else
+                    os << TextIO::moveToUCIString(pd.topMove);
+                os << ',' << toPercentStr(sp->getPSpUseful())
+                   << ':' << toPercentStr(sp->getPNextMoveUseful());
+                os << ',' << std::setw(2) << sp->getCurrMoveNo() << ':' << std::setw(2) << sp->findNextMove();
+            } else {
+                os << "                    ";
+            }
+        }
+        os << std::endl;
+    }
+}
+
+void
+WorkQueue::findLeaves(const std::shared_ptr<SplitPoint>& sp,
+                      std::vector<int>& parentThreads,
+                      std::vector<std::shared_ptr<SplitPoint>>& leaves) {
+    bool isLeaf = true;
+    const std::vector<std::weak_ptr<SplitPoint>>& children = sp->getChildren();
+    for (const auto& wChild : children) {
+        std::shared_ptr<SplitPoint> child = wChild.lock();
+        if (child && !child->isCanceled()) {
+            if (child->owningThread() == sp->owningThread()) {
+                isLeaf = false;
+            } else {
+                assert(parentThreads[child->owningThread()] == -1);
+                parentThreads[child->owningThread()] = sp->owningThread();
+            }
+            findLeaves(child, parentThreads, leaves);
+        }
+    }
+    if (isLeaf) {
+        assert(sp->owningThread() >= 0);
+        assert(sp->owningThread() < (int)leaves.size());
+        leaves[sp->owningThread()] = sp;
+    }
+}
 
 // ----------------------------------------------------------------------------
 

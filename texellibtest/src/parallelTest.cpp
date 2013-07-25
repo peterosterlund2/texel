@@ -91,7 +91,7 @@ ParallelTest::testWorkQueue() {
     WorkQueue& wq = pd.wq;
     FailHighInfo& fhi = pd.fhInfo;
     int moveNo = -1;
-    std::shared_ptr<SplitPoint> sp = wq.getWork(moveNo);
+    std::shared_ptr<SplitPoint> sp = wq.getWork(moveNo, pd, 0);
     ASSERT(!sp);
     double prob = wq.getBestProbability();
     ASSERT_EQUAL_DELTA(0.0, prob, eps);
@@ -136,7 +136,7 @@ ParallelTest::testWorkQueue() {
     ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL_DELTA(511 / 1023.0, wq.getBestProbability(), eps);
 
-    sp = wq.getWork(moveNo);
+    sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(1, moveNo);
     ASSERT_EQUAL(sp1, sp);
     ASSERT_EQUAL(2, sp1->findNextMove());
@@ -150,7 +150,7 @@ ParallelTest::testWorkQueue() {
     ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL_DELTA(255 / 511.0, wq.getBestProbability(), eps);
 
-    sp = wq.getWork(moveNo);
+    sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(2, moveNo);
     ASSERT_EQUAL(sp1, sp);
     ASSERT_EQUAL(-1, sp1->findNextMove());
@@ -164,7 +164,7 @@ ParallelTest::testWorkQueue() {
     ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL_DELTA(255 / 511.0, wq.getBestProbability(), eps);
 
-    sp = wq.getWork(moveNo);
+    sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(2, moveNo);
     ASSERT_EQUAL(sp1, sp);
     ASSERT_EQUAL(-1, sp1->findNextMove());
@@ -208,8 +208,8 @@ ParallelTest::testWorkQueue() {
     wq.addWork(sp1);
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL(0, wq.waiting.size());
-    sp = wq.getWork(moveNo);
-    sp = wq.getWork(moveNo);
+    sp = wq.getWork(moveNo, pd, 0);
+    sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(2, moveNo);
     ASSERT_EQUAL(sp1, sp);
     ASSERT_EQUAL(3, sp1->findNextMove());
@@ -217,7 +217,7 @@ ParallelTest::testWorkQueue() {
     wq.returnMove(sp, 1);
     ASSERT_EQUAL(1, sp1->findNextMove());
     ASSERT_EQUAL_DELTA((511 + 1023) / (1023.0*2), wq.getBestProbability(), eps);
-    sp = wq.getWork(moveNo);
+    sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(1, moveNo);
     ASSERT_EQUAL(3, sp1->findNextMove());
     ASSERT_EQUAL_DELTA((127 + 1023) / (1023.0*2), wq.getBestProbability(), eps);
