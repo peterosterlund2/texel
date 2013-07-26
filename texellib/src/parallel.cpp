@@ -232,7 +232,7 @@ WorkerThread::mainLoop() {
             const int lmr = spMove.getLMR();
             const int captSquare = spMove.getRecaptureSquare();
             const bool inCheck = spMove.getInCheck();
-            sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo);
+            sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo, lmr);
             try {
 //                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
 //                                                << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
@@ -244,6 +244,7 @@ WorkerThread::mainLoop() {
                                           depth, captSquare, inCheck);
                 if (((lmr > 0) && (score > alpha)) ||
                     ((score > alpha) && (score < beta)))
+                    sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo, 0);
                     score = -sc.negaScout(smp, -beta, -alpha, ply+1,
                                           depth + lmr, captSquare, inCheck);
                 bool cancelRemaining = score >= beta;
