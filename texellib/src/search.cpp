@@ -137,6 +137,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     }
 
     kt.clear();
+    pd.wq.resetSplitDepth();
     const bool smp = pd.numHelperThreads() > 0;
     maxNodes = initialMaxNodes;
     nodesToGo = 0;

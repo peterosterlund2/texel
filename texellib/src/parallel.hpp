@@ -105,6 +105,9 @@ public:
     /** Constructor. */
     WorkQueue(std::condition_variable& cv, FailHighInfo& fhInfo);
 
+    /** Reset dynamic minimum split depth to default value. */
+    void resetSplitDepth();
+
     /** Add SplitPoint to work queue. */
     void addWork(const std::shared_ptr<SplitPoint>& sp);
 
@@ -127,6 +130,9 @@ public:
      *  Also return the corresponding SplitPoint. */
     double getBestProbability(std::shared_ptr<SplitPoint>& bestSp) const;
     double getBestProbability() const;
+
+    /** Return current dynamic minimum split depth. */
+    int getMinSplitDepth() const;
 
 private:
     /** Move sp to waiting if it has no unstarted moves. */
@@ -157,6 +163,19 @@ private:
     void findLeaves(const std::shared_ptr<SplitPoint>& sp, std::vector<int>& parentThreads,
                     std::vector<std::shared_ptr<SplitPoint>>& leaves);
 
+    /** Scoped lock that measures lock contention and adjusts minSplitDepth accordingly. */
+    class Lock {
+    public:
+        Lock(const WorkQueue* wq0);
+    private:
+        const WorkQueue& wq;
+        std::unique_lock<std::mutex> lock;
+    };
+    friend class Lock;
+
+    mutable int minSplitDepth;      // Dynamic minimum split depth
+    mutable U64 nContended;         // Number of times mutex has been contended
+    mutable U64 nNonContended;      // Number of times mutex has not been contended
 
     std::condition_variable& cv;
     FailHighInfo& fhInfo;
@@ -497,6 +516,11 @@ WorkQueue::SplitPointCompare::operator()(const std::shared_ptr<SplitPoint>& a,
     if (a->getPly() != b->getPly())
         return a->getPly() < b->getPly();
     return a->getSeqNo() < b->getSeqNo();
+}
+
+inline int
+WorkQueue::getMinSplitDepth() const {
+    return minSplitDepth;
 }
 
 inline int

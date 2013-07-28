@@ -342,7 +342,7 @@ Search::negaScout(bool smp,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
     using namespace SearchConst;
-    if (smp && (depth >= MIN_SMP_DEPTH * plyScale) &&
+    if (smp && (depth >= pd.wq.getMinSplitDepth() * plyScale) &&
                ((int)spVec.size() < MAX_SP_PER_THREAD))
         return negaScout<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
     else

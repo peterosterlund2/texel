@@ -277,8 +277,15 @@ WorkQueue::WorkQueue(std::condition_variable& cv0, FailHighInfo& fhInfo0)
 }
 
 void
+WorkQueue::resetSplitDepth() {
+    minSplitDepth = SearchConst::MIN_SMP_DEPTH;
+    nContended = 0;
+    nNonContended = 0;
+}
+
+void
 WorkQueue::addWork(const std::shared_ptr<SplitPoint>& sp) {
-    std::lock_guard<std::mutex> L(mutex);
+    Lock L(this);
     assert(queue.find(sp) == queue.end());
     sp->setSeqNo();
     std::shared_ptr<SplitPoint> parent = sp->getParent();
@@ -296,7 +303,7 @@ WorkQueue::addWork(const std::shared_ptr<SplitPoint>& sp) {
 
 std::shared_ptr<SplitPoint>
 WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo) {
-    std::lock_guard<std::mutex> L(mutex);
+    Lock L(this);
     if (queue.empty())
         return nullptr;
     std::shared_ptr<SplitPoint> ret = *queue.begin();
@@ -309,7 +316,7 @@ WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo) {
 
 void
 WorkQueue::returnMove(const std::shared_ptr<SplitPoint>& sp, int moveNo) {
-    std::lock_guard<std::mutex> L(mutex);
+    Lock L(this);
     sp->returnMove(moveNo);
     if (!sp->hasUnFinishedMove()) {
         waiting.erase(sp);
@@ -330,7 +337,7 @@ WorkQueue::returnMove(const std::shared_ptr<SplitPoint>& sp, int moveNo) {
 
 void
 WorkQueue::setOwnerCurrMove(const std::shared_ptr<SplitPoint>& sp, int moveNo, int alpha) {
-    std::lock_guard<std::mutex> L(mutex);
+    Lock L(this);
     sp->setOwnerCurrMove(moveNo, alpha);
     maybeMoveToWaiting(sp);
     updateProbabilities(sp);
@@ -338,13 +345,13 @@ WorkQueue::setOwnerCurrMove(const std::shared_ptr<SplitPoint>& sp, int moveNo, i
 
 void
 WorkQueue::cancel(const std::shared_ptr<SplitPoint>& sp) {
-    std::lock_guard<std::mutex> L(mutex);
+    Lock L(this);
     cancelInternal(sp);
 }
 
 void
 WorkQueue::moveFinished(const std::shared_ptr<SplitPoint>& sp, int moveNo, bool cancelRemaining) {
-    std::lock_guard<std::mutex> L(mutex);
+    Lock L(this);
     sp->moveFinished(moveNo, cancelRemaining);
     maybeMoveToWaiting(sp);
     updateProbabilities(sp);
@@ -352,7 +359,7 @@ WorkQueue::moveFinished(const std::shared_ptr<SplitPoint>& sp, int moveNo, bool 
 
 double
 WorkQueue::getBestProbability(std::shared_ptr<SplitPoint>& bestSp) const {
-    std::lock_guard<std::mutex> L(mutex);
+    Lock L(this);
     if (queue.empty())
         return 0.0;
     bestSp = *queue.begin();
@@ -504,6 +511,34 @@ WorkQueue::findLeaves(const std::shared_ptr<SplitPoint>& sp,
         assert(sp->owningThread() < (int)leaves.size());
         leaves[sp->owningThread()] = sp;
     }
+}
+
+WorkQueue::Lock::Lock(const WorkQueue* wq0)
+    : wq(*wq0), lock(wq.mutex, std::defer_lock) {
+    bool contended = false;
+    if (!lock.try_lock()) {
+        contended = true;
+        lock.lock();
+    }
+    U64 c = wq.nContended;
+    U64 n = wq.nNonContended;
+    if (contended)
+        c++;
+    else
+        n++;
+    if (n + c > 30000) {
+        c /= 2;
+        n /= 2;
+        if (c * 10 > n) {
+            wq.minSplitDepth++;
+//            std::cout << "contended stat: " << wq.minSplitDepth << " " << c << " " << n << std::endl;
+        } else if ((c * 20 < n) && (wq.minSplitDepth > SearchConst::MIN_SMP_DEPTH)) {
+            wq.minSplitDepth--;
+//            std::cout << "contended stat: " << wq.minSplitDepth << " " << c << " " << n << std::endl;
+        }
+    }
+    wq.nContended = c;
+    wq.nNonContended = n;
 }
 
 // ----------------------------------------------------------------------------
