@@ -166,7 +166,7 @@ ThreadStopHandler::shouldStop() {
         double myProb = sp.getPMoveUseful(pd.fhInfo, moveNo);
         std::shared_ptr<SplitPoint> bestSp;
         double bestProb = pd.wq.getBestProbability(bestSp);
-        if ((bestProb > myProb + 0.01) && (bestProb >= (myProb + (1.0 - myProb) * 0.25)) &&
+        if ((bestProb > myProb + 0.02) && (bestProb >= (myProb + (1.0 - myProb) * 0.25)) &&
             (sp.owningThread() != wt.getThreadNo()))
             return true;
         reportNodes();
@@ -738,10 +738,15 @@ SplitPoint::addChild(const std::weak_ptr<SplitPoint>& child) {
 
 int
 SplitPoint::findNextMove() const {
+    int i0 = -1;
     for (int i = currMoveNo+1; i < (int)spMoves.size(); i++)
-        if (!spMoves[i].isCanceled() && !spMoves[i].isSearching())
-            return i;
-    return -1;
+        if (!spMoves[i].isCanceled() && !spMoves[i].isSearching()) {
+            if ((getPNextMoveUseful() > 0.98) && (i0 == -1))
+                i0 = i;
+            else
+                return i;
+        }
+    return i0;
 }
 
 double
