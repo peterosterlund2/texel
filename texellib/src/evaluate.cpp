@@ -489,7 +489,7 @@ Evaluate::pawnBonus(const Position& pos) {
                 int x = Position::getX(sq);
                 int y = Position::getY(sq);
                 int pawnDist = std::min(5, 7 - y);
-                int kingDist = BitBoard::getDistance(kingPos, Position::getSquare(x, 7));
+                int kingDist = BitBoard::getKingDistance(kingPos, Position::getSquare(x, 7));
                 int kScore = kingDist * 4;
                 if (kingDist > pawnDist) kScore += (kingDist - pawnDist) * (kingDist - pawnDist);
                 score += interpolate(kScore, 0, mhd->wPassedPawnIPF);
@@ -519,7 +519,7 @@ Evaluate::pawnBonus(const Position& pos) {
                 int x = Position::getX(sq);
                 int y = Position::getY(sq);
                 int pawnDist = std::min(5, y);
-                int kingDist = BitBoard::getDistance(kingPos, Position::getSquare(x, 0));
+                int kingDist = BitBoard::getKingDistance(kingPos, Position::getSquare(x, 0));
                 int kScore = kingDist * 4;
                 if (kingDist > pawnDist) kScore += (kingDist - pawnDist) * (kingDist - pawnDist);
                 score -= interpolate(kScore, 0, mhd->bPassedPawnIPF);
@@ -1021,14 +1021,14 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
         int wq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WQUEEN]);
         int bk = pos.getKingSq(false);
         int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
-        return evalKQKP(wk, wq, bk, bp, pos.whiteMove);
+        return kqkpEval(wk, wq, bk, bp, pos.whiteMove);
     }
     case MI::BQ + MI::WP: {
         int bk = pos.getKingSq(false);
         int bq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BQUEEN]);
         int wk = pos.getKingSq(true);
         int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
-        return -evalKQKP(63-bk, 63-bq, 63-wk, 63-wp, !pos.whiteMove);
+        return -kqkpEval(63-bk, 63-bq, 63-wk, 63-wp, !pos.whiteMove);
     }
     case MI::WR + MI::BP: {
         int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::BPAWN]);
@@ -1082,28 +1082,12 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
     case MI::BN * 2:
         return score / 50; // KNNK is a draw
     case MI::WN + MI::WB: {
-        score /= 10;
-        score += nV + bV + 300;
-        const int kSq = pos.getKingSq(false);
-        const int x = Position::getX(kSq);
-        const int y = Position::getY(kSq);
-        if ((pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq) != 0)
-            score += (7 - distToH1A8[7-y][7-x]) * 10;
-        else
-            score += (7 - distToH1A8[7-y][x]) * 10;
-        return score;
+        bool darkBishop = (pos.pieceTypeBB[Piece::WBISHOP] & BitBoard::maskDarkSq) != 0;
+        return kbnkEval(pos.getKingSq(true), pos.getKingSq(false), darkBishop);
     }
     case MI::BN + MI::BB: {
-        score /= 10;
-        score -= nV + bV + 300;
-        const int kSq = pos.getKingSq(true);
-        const int x = Position::getX(kSq);
-        const int y = Position::getY(kSq);
-        if ((pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq) != 0)
-            score -= (7 - distToH1A8[7-y][7-x]) * 10;
-        else
-            score -= (7 - distToH1A8[7-y][x]) * 10;
-        return score;
+        bool darkBishop = (pos.pieceTypeBB[Piece::BBISHOP] & BitBoard::maskDarkSq) != 0;
+        return -kbnkEval(63-pos.getKingSq(false), 63-pos.getKingSq(true), darkBishop);
     }
     case MI::WP: {
         int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB[Piece::WPAWN]);
@@ -1168,7 +1152,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
 }
 
 int
-Evaluate::evalKQKP(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove) {
+Evaluate::kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove) {
     bool canWin = false;
     if (((1ULL << bKing) & 0xFFFF) == 0) {
         canWin = true; // King doesn't support pawn
@@ -1198,7 +1182,7 @@ Evaluate::evalKQKP(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove) 
         }
     }
 
-    const int dist = BitBoard::getDistance(wKing, bPawn);
+    const int dist = BitBoard::getKingDistance(wKing, bPawn);
     int score = qV - pV - 20 * dist;
     if (!canWin)
         score /= 50;
@@ -1280,6 +1264,33 @@ int Evaluate::krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, b
         else
             score /= 4;
     }
+    return score;
+}
+
+int Evaluate::kbnkEval(int wKing, int bKing, bool darkBishop) {
+    int score = nV + bV + 300;
+    if (darkBishop) { // Mirror X
+        wKing ^= 7;
+        bKing ^= 7;
+    }
+    static const int bkTable[64] = { 30, 40, 50, 60, 70, 80, 90, 95,
+                                     40, 20, 30, 40, 50, 60, 80, 90,
+                                     50, 30, 10, 20, 30, 40, 60, 80,
+                                     60, 40, 20, 00, 10, 30, 50, 70,
+                                     70, 50, 30, 10, 00, 20, 40, 60,
+                                     80, 60, 40, 30, 20, 10, 30, 50,
+                                     90, 80, 60, 50, 40, 30, 20, 40,
+                                     95, 90, 80, 70, 60, 50, 40, 30 };
+    static const int wkTable[64] = { 00, 05, 10, 15, 15, 10, 05, 00,
+                                     05, 10, 20, 20, 20, 20, 10, 05,
+                                     10, 20, 25, 25, 25, 25, 20, 10,
+                                     15, 20, 25, 25, 25, 25, 20, 15,
+                                     15, 20, 25, 25, 25, 25, 20, 15,
+                                     10, 20, 25, 25, 25, 25, 20, 10,
+                                     05, 10, 20, 20, 20, 20, 10, 05,
+                                     00, 05, 10, 15, 15, 10, 05, 00 };
+    score += bkTable[bKing] + wkTable[wKing];
+    score -= std::min(0, BitBoard::getTaxiDistance(wKing, bKing) - 3);
     return score;
 }
 

@@ -160,13 +160,15 @@ private:
     /** Implements special knowledge for some endgame situations. */
     int endGameEval(const Position& pos, int oldScore);
 
-    static int evalKQKP(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove);
+    static int kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove);
 
     static int kpkEval(int wKing, int bKing, int wPawn, bool whiteMove);
 
     static int krkpEval(int wKing, int bKing, int bPawn, bool whiteMove);
 
     static int krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bool whiteMove);
+
+    static int kbnkEval(int wKing, int bKing, bool darkBishop);
 
 
     static int castleFactor[256];

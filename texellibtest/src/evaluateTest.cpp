@@ -515,6 +515,24 @@ testKPK() {
 }
 
 static void
+testKBNK() {
+    int s1 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/2k5/8/8 b - - 0 1"));
+    const int nV = Evaluate::nV;
+    const int bV = Evaluate::bV;
+    ASSERT(s1 > nV + bV);
+    int s2 = evalWhite(TextIO::readFEN("1BN5/1K6/8/8/8/2k5/8/8 b - - 1 1"));
+    ASSERT(s2 > s1);
+    int s3 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/2k5/8/8 b - - 0 1"));
+    ASSERT(s3 < s2);
+    int s4 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/5k2/8/8 b - - 0 1"));
+    ASSERT(s4 > s3);
+
+    int s5 = evalWhite(TextIO::readFEN("B1N5/8/8/8/8/4K2k/8/8 b - - 0 1"));
+    int s6 = evalWhite(TextIO::readFEN("B1N5/8/8/8/8/5K1k/8/8 b - - 0 1"));
+    ASSERT(s6 > s5);
+}
+
+static void
 testCantWin() {
     Position pos = TextIO::readFEN("8/8/8/3k4/3p4/3K4/4N3/8 w - - 0 1");
     int score1 = evalWhite(pos);
@@ -573,6 +591,7 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testKQKP));
     s.push_back(CUTE(testKRKP));
     s.push_back(CUTE(testKRPKR));
+    s.push_back(CUTE(testKBNK));
     s.push_back(CUTE(testKPK));
     s.push_back(CUTE(testCantWin));
     s.push_back(CUTE(testPawnRace));
