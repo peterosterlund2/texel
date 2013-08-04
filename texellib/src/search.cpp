@@ -214,6 +214,8 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             if (score >= beta) {
                 int retryDelta = aspirationDelta * 2;
                 while (score >= beta) {
+                    if (score > MATE0 / 2)
+                        retryDelta = MATE0; // Don't use aspiration window when searching for faster mate
                     beta = std::min(score + retryDelta, MATE0);
                     retryDelta = retryDelta * 3 / 2;
                     if (mi != 0)
@@ -241,6 +243,8 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             } else if ((mi == 0) && (score <= alpha)) {
                 int retryDelta = aspirationDelta * 2;
                 while (score <= alpha) {
+                    if (score < -MATE0 / 2)
+                        retryDelta = MATE0; // Don't use aspiration window when searching for faster mate
                     alpha = std::max(score - retryDelta, -MATE0);
                     retryDelta = retryDelta * 3 / 2;
                     needMoreTime = searchNeedMoreTime = true;
