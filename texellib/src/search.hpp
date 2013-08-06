@@ -208,7 +208,7 @@ private:
     ParallelData& pd;
     std::vector<std::shared_ptr<SplitPoint>> spVec;
     int threadNo;
-    TreeLoggerWriter log;
+    TreeLoggerWriter logFile;
 
     std::shared_ptr<Listener> listener;
     std::shared_ptr<StopHandler> stopHandler;

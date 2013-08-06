@@ -26,6 +26,7 @@
 #include "search.hpp"
 #include "treeLogger.hpp"
 #include "textio.hpp"
+#include "logger.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -33,6 +34,7 @@
 #include <limits>
 
 using namespace SearchConst;
+using namespace Logger;
 
 const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 
@@ -52,7 +54,7 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     posHashList = posHashList0;
     posHashListSize = posHashListSize0;
     posHashFirstNew = posHashListSize;
-    log.close();
+    logFile.close();
     initNodeStats();
     minTimeMillis = -1;
     maxTimeMillis = -1;
@@ -92,7 +94,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                            int maxDepth, U64 initialMaxNodes,
                            bool verbose) {
     tStart = currentTimeMillis();
-    log.open("/home/petero/treelog.dmp", pos);
+    logFile.open("/home/petero/treelog.dmp", pos);
     totalNodes = 0;
     if (scMovesIn.size <= 0)
         return Move(); // No moves to search
@@ -370,7 +372,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     }
     notifyStats();
 
-    log.close();
+    logFile.close();
     return bestMove;
 }
 
@@ -423,9 +425,9 @@ template <bool smp>
 int
 Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
-    if (log.isOpened()) {
+    if (logFile.isOpened()) {
         const SearchTreeInfo& sti = searchTreeInfo[ply-1];
-        U64 idx = log.logNodeStart(sti.nodeIdx, sti.currentMove, alpha, beta, ply, depth/plyScale);
+        U64 idx = logFile.logNodeStart(sti.nodeIdx, sti.currentMove, alpha, beta, ply, depth/plyScale);
         searchTreeInfo[ply].nodeIdx = idx;
     }
     if (nodesToGo <= 0) {
@@ -452,15 +454,15 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             MoveGen::removeIllegal(pos, moves);
             if (moves.size == 0) {            // Can't claim draw if already check mated.
                 int score = -(MATE0-(ply+1));
-                log.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, TType::T_EXACT, UNKNOWN_SCORE, hKey);
+                logFile.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, TType::T_EXACT, UNKNOWN_SCORE, hKey);
                 return score;
             }
         }
-        log.logNodeEnd(searchTreeInfo[ply].nodeIdx, 0, TType::T_EXACT, UNKNOWN_SCORE, hKey);
+        logFile.logNodeEnd(searchTreeInfo[ply].nodeIdx, 0, TType::T_EXACT, UNKNOWN_SCORE, hKey);
         return 0;
     }
     if (canClaimDrawRep(pos, posHashList, posHashListSize, posHashFirstNew)) {
-        log.logNodeEnd(searchTreeInfo[ply].nodeIdx, 0, TType::T_EXACT, UNKNOWN_SCORE, hKey);
+        logFile.logNodeEnd(searchTreeInfo[ply].nodeIdx, 0, TType::T_EXACT, UNKNOWN_SCORE, hKey);
         return 0;            // No need to test for mate here, since it would have been
                              // discovered the first time the position came up.
     }
@@ -487,7 +489,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                             kt.addKiller(ply, hashMove);
                 }
                 sti.bestMove = hashMove;
-                log.logNodeEnd(sti.nodeIdx, score, ent.getType(), evalScore, hKey);
+                logFile.logNodeEnd(sti.nodeIdx, score, ent.getType(), evalScore, hKey);
                 return score;
             }
         }
@@ -508,7 +510,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
         sti.bestMove.setScore(score);
         tt.insert(hKey, sti.bestMove, type, ply, depth, q0Eval);
-        log.logNodeEnd(sti.nodeIdx, score, type, q0Eval, hKey);
+        logFile.logNodeEnd(sti.nodeIdx, score, type, q0Eval, hKey);
         return score;
     }
 
@@ -525,7 +527,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             if (score <= alpha-razorMargin) {
                 emptyMove.setScore(score);
                 tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, q0Eval);
-                log.logNodeEnd(sti.nodeIdx, score, TType::T_LE, q0Eval, hKey);
+                logFile.logNodeEnd(sti.nodeIdx, score, TType::T_LE, q0Eval, hKey);
                 return score;
             }
         }
@@ -550,7 +552,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             if (evalScore - margin >= beta) {
                 emptyMove.setScore(evalScore - margin);
                 tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
-                log.logNodeEnd(sti.nodeIdx, evalScore - margin, TType::T_GE, evalScore, hKey);
+                logFile.logNodeEnd(sti.nodeIdx, evalScore - margin, TType::T_GE, evalScore, hKey);
                 return evalScore - margin;
             }
         }
@@ -589,7 +591,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     score = beta;
                 emptyMove.setScore(score);
                 tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
-                log.logNodeEnd(sti.nodeIdx, score, TType::T_GE, evalScore, hKey);
+                logFile.logNodeEnd(sti.nodeIdx, score, TType::T_GE, evalScore, hKey);
                 return score;
             } else {
                 if ((searchTreeInfo[ply-1].lmr > 0) && (depth < 5*plyScale)) {
@@ -599,7 +601,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         // if the threat move was made possible by a reduced
                         // move on the previous ply, the reduction was unsafe.
                         // Return alpha to trigger a non-reduced re-search.
-                        log.logNodeEnd(sti.nodeIdx, alpha, TType::T_LE, evalScore, hKey);
+                        logFile.logNodeEnd(sti.nodeIdx, alpha, TType::T_LE, evalScore, hKey);
                         return alpha;
                     }
                 }
@@ -799,9 +801,9 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         score = -negaScout(smp, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                     }
                     if (smp) {
-//                        pd.log([&](std::ostream& os){os << "main seqNo:" << sph.getSeqNo() << " ply:" << ply << " m:" << mi
-//                                                        << " a:" << alpha << " b:" << beta << " s:" << score
-//                                                        << " d:" << nomDepth/plyScale << " n:" << (totalNodes-n1);});
+//                        log([&](std::ostream& os){os << "main seqNo:" << sph.getSeqNo() << " ply:" << ply << " m:" << mi
+//                                                     << " a:" << alpha << " b:" << beta << " s:" << score
+//                                                     << " d:" << nomDepth/plyScale << " n:" << (totalNodes-n1);});
                         if (beta > alpha + 1) {
                             pd.fhInfo.addPvData(mi, score > alpha);
                         } else {
@@ -838,7 +840,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         }
                     }
                     tt.insert(hKey, m, TType::T_GE, ply, depth, evalScore);
-                    log.logNodeEnd(sti.nodeIdx, alpha, TType::T_GE, evalScore, hKey);
+                    logFile.logNodeEnd(sti.nodeIdx, alpha, TType::T_GE, evalScore, hKey);
                     return alpha;
                 }
                 b = alpha + 1;
@@ -850,16 +852,16 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             if (!haveLegalMoves && !inCheck) {
                 emptyMove.setScore(0);
                 tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
-                log.logNodeEnd(sti.nodeIdx, 0, TType::T_EXACT, evalScore, hKey);
+                logFile.logNodeEnd(sti.nodeIdx, 0, TType::T_EXACT, evalScore, hKey);
                 return 0;       // Stale-mate
             }
             if (bestMove >= 0) {
                 tt.insert(hKey, moves[bestMove], TType::T_EXACT, ply, depth, evalScore);
-                log.logNodeEnd(sti.nodeIdx, bestScore, TType::T_EXACT, evalScore, hKey);
+                logFile.logNodeEnd(sti.nodeIdx, bestScore, TType::T_EXACT, evalScore, hKey);
             } else {
                 emptyMove.setScore(bestScore);
                 tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, evalScore);
-                log.logNodeEnd(sti.nodeIdx, bestScore, TType::T_LE, evalScore, hKey);
+                logFile.logNodeEnd(sti.nodeIdx, bestScore, TType::T_LE, evalScore, hKey);
             }
             return bestScore;
         }

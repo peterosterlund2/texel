@@ -32,6 +32,7 @@
 #include "textio.hpp"
 #include "parameters.hpp"
 #include "moveGen.hpp"
+#include "logger.hpp"
 
 #include <iostream>
 #include <memory>
@@ -45,17 +46,20 @@ EngineControl::SearchListener::SearchListener(std::ostream& os0)
 
 void
 EngineControl::SearchListener::notifyDepth(int depth) {
+//    std::lock_guard<std::mutex> L(Logger::getLogMutex());
     os << "info depth " << depth << std::endl;
 }
 
 void
 EngineControl::SearchListener::notifyCurrMove(const Move& m, int moveNr) {
+//    std::lock_guard<std::mutex> L(Logger::getLogMutex());
     os << "info currmove " << moveToString(m) << " currmovenumber " << moveNr << std::endl;
 }
 
 void
 EngineControl::SearchListener::notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
                                         bool upperBound, bool lowerBound, const std::vector<Move>& pv) {
+//    std::lock_guard<std::mutex> L(Logger::getLogMutex());
     std::string pvBuf;
     for (size_t i = 0; i < pv.size(); i++) {
         pvBuf += ' ';

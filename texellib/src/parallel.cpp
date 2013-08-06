@@ -26,9 +26,12 @@
 #include "parallel.hpp"
 #include "search.hpp"
 #include "textio.hpp"
+#include "logger.hpp"
 
 #include <cmath>
 #include <cassert>
+
+using namespace Logger;
 
 U64 SplitPoint::nextSeqNo = 0;
 
@@ -44,16 +47,16 @@ public:
     }
 
     ~SWTimer() {
-        pd.log([&](std::ostream& os){os << "timer th:" << threadNo << " total"
-                                        << " s:" << tSleep << " w:" << tWork;});
+//        log([&](std::ostream& os){os << "timer th:" << threadNo << " total"
+//                                     << " s:" << tSleep << " w:" << tWork;});
     }
 
     void startSleep() {
         if (working) {
             double t1 = currentTime();
             tWork += t1 - t0;
-//            pd.log([&](std::ostream& os){os << "timer th:" << threadNo << " worked:" << t1 - t0
-//                                            << " s:" << tSleep << " w:" << tWork;});
+//            log([&](std::ostream& os){os << "timer th:" << threadNo << " worked:" << t1 - t0
+//                                         << " s:" << tSleep << " w:" << tWork;});
             t0 = t1;
             working = false;
         }
@@ -63,8 +66,8 @@ public:
         if (!working) {
             double t1 = currentTime();
             tSleep += t1 - t0;
-//            pd.log([&](std::ostream& os){os << "timer th:" << threadNo << " slept:" << t1 - t0
-//                                            << " s:" << tSleep << " w:" << tWork;});
+//            log([&](std::ostream& os){os << "timer th:" << threadNo << " slept:" << t1 - t0
+//                                         << " s:" << tSleep << " w:" << tWork;});
             t0 = t1;
             working = true;
         }
@@ -166,6 +169,7 @@ ThreadStopHandler::shouldStop() {
         double myProb = sp.getPMoveUseful(pd.fhInfo, moveNo);
         std::shared_ptr<SplitPoint> bestSp;
         double bestProb = pd.wq.getBestProbability(bestSp);
+//        log([&](std::ostream& os){os << "shouldStop, th:" << wt.getThreadNo() << " myP:" << myProb << " bestP:" << bestProb;});
         if ((bestProb > myProb + 0.02) && (bestProb >= (myProb + (1.0 - myProb) * 0.25)) &&
             (sp.owningThread() != wt.getThreadNo()))
             return true;
@@ -185,7 +189,7 @@ ThreadStopHandler::reportNodes() {
 
 void
 WorkerThread::mainLoop() {
-//    pd.log([&](std::ostream& os){os << "mainLoop, th:" << threadNo;});
+//    log([&](std::ostream& os){os << "mainLoop, th:" << threadNo;});
     if (!et)
         et = Evaluate::getEvalHashTables();
     if (!kt)
@@ -234,11 +238,11 @@ WorkerThread::mainLoop() {
             const bool inCheck = spMove.getInCheck();
             sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo, lmr);
             try {
-//                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
-//                                                << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
-//                                                << " a:" << alpha << " b:" << beta
-//                                                << " d:" << depth/SearchConst::plyScale
-//                                                << " p:" << sp->getPMoveUseful(pd.fhInfo, moveNo) << " start";});
+//                log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
+//                                             << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
+//                                             << " a:" << alpha << " b:" << beta
+//                                             << " d:" << depth/SearchConst::plyScale
+//                                             << " p:" << sp->getPMoveUseful(pd.fhInfo, moveNo) << " start";});
                 const bool smp = pd.numHelperThreads() > 1;
                 int score = -sc.negaScout(smp, -(alpha+1), -alpha, ply+1,
                                           depth, captSquare, inCheck);
@@ -248,14 +252,14 @@ WorkerThread::mainLoop() {
                     score = -sc.negaScout(smp, -beta, -alpha, ply+1,
                                           depth + lmr, captSquare, inCheck);
                 bool cancelRemaining = score >= beta;
-//                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
-//                                                << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
-//                                                << " a:" << alpha << " b:" << beta << " s:" << score
-//                                                << " d:" << depth/SearchConst::plyScale << " n:" << sc.getTotalNodesThisThread();});
+//                log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
+//                                             << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
+//                                             << " a:" << alpha << " b:" << beta << " s:" << score
+//                                             << " d:" << depth/SearchConst::plyScale << " n:" << sc.getTotalNodesThisThread();});
                 pd.wq.moveFinished(sp, moveNo, cancelRemaining);
             } catch (const Search::StopSearch&) {
-//                pd.log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " m:" << moveNo
-//                                                << " aborted n:" << sc.getTotalNodesThisThread();});
+//                log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " m:" << moveNo
+//                                             << " aborted n:" << sc.getTotalNodesThisThread();});
                 if (!spMove.isCanceled() && !stopThread)
                     pd.wq.returnMove(sp, moveNo);
             }
@@ -267,7 +271,7 @@ WorkerThread::mainLoop() {
             pd.cv.wait_for(lock, std::chrono::microseconds(1000));
         }
     }
-//    pd.log([&](std::ostream& os){os << "~mainLoop, th:" << threadNo;});
+//    log([&](std::ostream& os){os << "~mainLoop, th:" << threadNo;});
 }
 
 // ----------------------------------------------------------------------------
@@ -308,7 +312,7 @@ WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo) {
         return nullptr;
     std::shared_ptr<SplitPoint> ret = *queue.begin();
     spMove = ret->getNextMove();
-//    pd.log([&](std::ostream& os){printSpTree(os, pd, threadNo, ret, spMove);});
+//    log([&](std::ostream& os){printSpTree(os, pd, threadNo, ret, spMove);});
     maybeMoveToWaiting(ret);
     updateProbabilities(ret);
     return ret;
@@ -840,7 +844,7 @@ SplitPointHolder::SplitPointHolder(ParallelData& pd0,
 
 SplitPointHolder::~SplitPointHolder() {
     if (state == State::QUEUED) {
-//        pd.log([&](std::ostream& os){os << "cancel seqNo:" << sp->getSeqNo();});
+//        log([&](std::ostream& os){os << "cancel seqNo:" << sp->getSeqNo();});
         pd.wq.cancel(sp);
         assert(!spVec.empty());
         spVec.pop_back();
@@ -868,16 +872,16 @@ SplitPointHolder::addToQueue() {
     assert(state == State::CREATED);
     pd.wq.addWork(sp);
     spVec.push_back(sp);
-//    pd.log([&](std::ostream& os){os << "add seqNo:" << sp->getSeqNo() << " ply:" << sp->getPly()
-//                                    << " pNext:" << sp->getPNextMoveUseful()
-//                                    << " pMove:" << sp->getParentMoveNo() << " vec:" << spVec.size();});
+//    log([&](std::ostream& os){os << "add seqNo:" << sp->getSeqNo() << " ply:" << sp->getPly()
+//                                 << " pNext:" << sp->getPNextMoveUseful()
+//                                 << " pMove:" << sp->getParentMoveNo() << " vec:" << spVec.size();});
     state = State::QUEUED;
 }
 
 void
 SplitPointHolder::setOwnerCurrMove(int moveNo, int alpha) {
-//    pd.log([&](std::ostream& os){os << "seqNo:" << sp->getSeqNo() << " currMove:" << moveNo
-//                                    << " a:" << alpha;});
+//    log([&](std::ostream& os){os << "seqNo:" << sp->getSeqNo() << " currMove:" << moveNo
+//                                 << " a:" << alpha;});
     pd.wq.setOwnerCurrMove(sp, moveNo, alpha);
 }
 

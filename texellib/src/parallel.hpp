@@ -538,17 +538,4 @@ SplitPoint::isCanceled() const {
     return canceled;
 }
 
-template <typename Func> void ParallelData::log(Func func) {
-    std::stringstream ss;
-    {
-        std::stringstream t;
-        t.precision(6);
-        t << std::fixed << currentTime() << ' ';
-        ss << t.str();
-    }
-    func(ss);
-    std::lock_guard<std::mutex> L(logMutex);
-    std::cout << ss.str() << std::endl;
-}
-
 #endif /* PARALLEL_HPP_ */
