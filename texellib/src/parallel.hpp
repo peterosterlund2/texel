@@ -275,9 +275,6 @@ public:
     /** For debugging. */
     const WorkerThread& getHelperThread(int i) const { return *threads[i]; }
 
-    /** Thread-safe logging to std::cout. */
-    template <typename Func> void log(Func func);
-
     // Notified when wq becomes non-empty and when search should stop
     std::condition_variable cv;
 
@@ -295,8 +292,6 @@ private:
     TranspositionTable& tt;
 
     std::atomic<S64> totalHelperNodes; // Number of nodes searched by all helper threads
-
-    std::mutex logMutex;
 };
 
 
@@ -376,6 +371,9 @@ public:
 
     /** Return true if this SplitPoint is an ancestor to "sp". */
     bool isAncestorTo(const SplitPoint& sp) const;
+
+    /** Return true if some other thread is helping the SplitPoint owner. */
+    bool hasHelperThread() const;
 
     /** Return true if the held SplitPoint is an estimated ALL node. */
     bool isAllNode() const;
@@ -494,6 +492,9 @@ public:
 
     /** Return true if the held SplitPoint is an estimated ALL node. */
     bool isAllNode() const;
+
+    /** Return true if some other thread is helping the help SplitPoint. */
+    bool hasHelperThread() const { return sp->hasHelperThread(); }
 
 private:
     SplitPointHolder(const SplitPointHolder&) = delete;

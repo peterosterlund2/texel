@@ -574,6 +574,16 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 nullOk = false;
         }
         if (nullOk) {
+            SplitPointHolder sph(pd, spVec);
+            if (smp) {
+                sph.setSp(std::make_shared<SplitPoint>(threadNo, spVec.back(),
+                                                       searchTreeInfo[ply-1].currentMoveNo,
+                                                       pos, posHashList, posHashListSize,
+                                                       sti, kt, ht, alpha, beta, ply));
+                sph.addMove(0, SplitPointMove(Move(), 0, 0, -1, false));
+                sph.addToQueue();
+                sph.setOwnerCurrMove(0, alpha);
+            }
             const int R = (depth > 6*plyScale) ? 4*plyScale : 3*plyScale;
             pos.setWhiteMove(!pos.whiteMove);
             int epSquare = pos.getEpSquare();
@@ -801,9 +811,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         score = -negaScout(smp, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                     }
                     if (smp) {
-//                        log([&](std::ostream& os){os << "main seqNo:" << sph.getSeqNo() << " ply:" << ply << " m:" << mi
-//                                                     << " a:" << alpha << " b:" << beta << " s:" << score
-//                                                     << " d:" << nomDepth/plyScale << " n:" << (totalNodes-n1);});
+//                        if (sph.hasHelperThread())
+//                            log([&](std::ostream& os){os << "main seqNo:" << sph.getSeqNo() << " ply:" << ply << " m:" << mi
+//                                                         << " a:" << alpha << " b:" << beta << " s:" << score
+//                                                         << " d:" << nomDepth/plyScale << " n:" << (totalNodes-n1);});
                         if (beta > alpha + 1) {
                             pd.fhInfo.addPvData(mi, score > alpha);
                         } else {

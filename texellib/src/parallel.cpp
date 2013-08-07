@@ -465,12 +465,19 @@ WorkQueue::printSpTree(std::ostream& os, const ParallelData& pd,
         for (auto sp = leaves[i]; sp; sp = sp->getParent())
             thVec.push_back(sp);
         std::reverse(thVec.begin(), thVec.end());
-        os << "thread " << i << ' ';
+        os << "th " << i << ' ';
         if (parentThreads[i] < 0)
             os << '-';
         else
             os << parentThreads[i];
         os << ' ' << toPercentStr(i == 0 ? 1 : pd.getHelperThread(i-1).getPUseful());
+        if (!thVec.empty()) {
+            for (const auto& sp : thVec)
+                if (sp->owningThread() == i) {
+                    os << ' ' << std::setw(6) << sp->getSeqNo();
+                    break;
+                }
+        }
         for (const auto& sp : thVec) {
             if (sp->owningThread() == i) {
                 int pMove = sp->getParentMoveNo();
@@ -624,7 +631,9 @@ SplitPoint::setSeqNo() {
 void
 SplitPoint::computeProbabilities(const FailHighInfo& fhInfo) {
     if (parent) {
-        double pMoveUseful = parent->getMoveNeededProbability(fhInfo, parentMoveNo);
+        double pMoveUseful = 1.0;
+        if (parentMoveNo >= 0)
+            pMoveUseful = parent->getMoveNeededProbability(fhInfo, parentMoveNo);
         pSpUseful = parent->pSpUseful * pMoveUseful;
     } else {
         pSpUseful = 1.0;
@@ -773,6 +782,16 @@ SplitPoint::cleanUpChildren() {
 }
 
 bool
+SplitPoint::hasHelperThread() const {
+    for (const auto& wChild : children) {
+        std::shared_ptr<SplitPoint> child = wChild.lock();
+        if (child && child->owningThread() != owningThread())
+            return true;
+    }
+    return false;
+}
+
+bool
 SplitPoint::isAncestorTo(const SplitPoint& sp) const {
     const SplitPoint* tmp = &sp;
     while (tmp) {
@@ -880,8 +899,9 @@ SplitPointHolder::addToQueue() {
 
 void
 SplitPointHolder::setOwnerCurrMove(int moveNo, int alpha) {
-//    log([&](std::ostream& os){os << "seqNo:" << sp->getSeqNo() << " currMove:" << moveNo
-//                                 << " a:" << alpha;});
+//    if (sp->hasHelperThread())
+//        log([&](std::ostream& os){os << "seqNo:" << sp->getSeqNo() << " currMove:" << moveNo
+//                                     << " a:" << alpha;});
     pd.wq.setOwnerCurrMove(sp, moveNo, alpha);
 }
 
