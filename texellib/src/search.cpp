@@ -425,6 +425,8 @@ template <bool smp>
 int
 Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
+    typedef typename SplitPointTraits<smp>::SpHolder SplitPointHolder;
+
     if (logFile.isOpened()) {
         const SearchTreeInfo& sti = searchTreeInfo[ply-1];
         U64 idx = logFile.logNodeStart(sti.nodeIdx, sti.currentMove, alpha, beta, ply, depth/plyScale);

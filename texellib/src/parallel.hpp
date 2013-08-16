@@ -506,6 +506,25 @@ private:
     enum class State { EMPTY, CREATED, QUEUED } state;
 };
 
+/** Dummy version of SplitPointHolder class. */
+struct DummySplitPointHolder {
+    DummySplitPointHolder(ParallelData& pd, std::vector<std::shared_ptr<SplitPoint>>& spVec) {}
+    void setSp(const std::shared_ptr<SplitPoint>& sp) {}
+    void addMove(int moveNo, const SplitPointMove& spMove) {}
+    void addToQueue() {}
+    void setOwnerCurrMove(int moveNo, int alpha) {}
+    bool isAllNode() const { return false; }
+};
+
+template <bool smp> struct SplitPointTraits {
+};
+template<> struct SplitPointTraits<true> {
+    typedef SplitPointHolder SpHolder;
+};
+template<> struct SplitPointTraits<false> {
+    typedef DummySplitPointHolder SpHolder;
+};
+
 
 inline bool
 WorkQueue::SplitPointCompare::operator()(const std::shared_ptr<SplitPoint>& a,
