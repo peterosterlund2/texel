@@ -1039,7 +1039,7 @@ Search::SEE(const Move& m) {
     pos.makeSEEMove(m, ui);
     bool white = pos.getWhiteMove();
     int valOnSquare = Evaluate::pieceValue[pos.getPiece(square)];
-    U64 occupied = pos.whiteBB() | pos.blackBB();
+    U64 occupied = pos.occupiedBB();
     while (true) {
         int bestValue = std::numeric_limits<int>::max();
         U64 atk;

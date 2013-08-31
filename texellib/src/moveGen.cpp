@@ -37,7 +37,7 @@ MoveGen::MoveList::filter(const std::vector<Move>& searchMoves)
 
 void
 MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
-    const U64 occupied = pos.whiteBB() | pos.blackBB();
+    const U64 occupied = pos.occupiedBB();
     if (pos.getWhiteMove()) {
         // Queen moves
         U64 squares = pos.pieceTypeBB(Piece::WQUEEN);
@@ -76,14 +76,14 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
                 const U64 OO_SQ = 0x60ULL;
                 const U64 OOO_SQ = 0xEULL;
                 if (((pos.getCastleMask() & (1 << Position::H1_CASTLE)) != 0) &&
-                    ((OO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
+                    ((OO_SQ & occupied) == 0) &&
                     (pos.getPiece(k0 + 3) == Piece::WROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 + 1)) {
                     moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                 }
                 if (((pos.getCastleMask() & (1 << Position::A1_CASTLE)) != 0) &&
-                    ((OOO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
+                    ((OOO_SQ & occupied) == 0) &&
                     (pos.getPiece(k0 - 4) == Piece::WROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 - 1)) {
@@ -153,14 +153,14 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
                 const U64 OO_SQ = 0x6000000000000000ULL;
                 const U64 OOO_SQ = 0xE00000000000000ULL;
                 if (((pos.getCastleMask() & (1 << Position::H8_CASTLE)) != 0) &&
-                    ((OO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
+                    ((OO_SQ & occupied) == 0) &&
                     (pos.getPiece(k0 + 3) == Piece::BROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 + 1)) {
                     moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                 }
                 if (((pos.getCastleMask() & (1 << Position::A8_CASTLE)) != 0) &&
-                    ((OOO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
+                    ((OOO_SQ & occupied) == 0) &&
                     (pos.getPiece(k0 - 4) == Piece::BROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 - 1)) {
@@ -197,7 +197,7 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
 
 void
 MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
-    const U64 occupied = pos.whiteBB() | pos.blackBB();
+    const U64 occupied = pos.occupiedBB();
     if (pos.getWhiteMove()) {
         U64 kingThreats = pos.pieceTypeBB(Piece::BKNIGHT) & BitBoard::knightAttacks[pos.wKingSq()];
         U64 rookPieces = pos.pieceTypeBB(Piece::BROOK) | pos.pieceTypeBB(Piece::BQUEEN);
@@ -364,7 +364,7 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
 
 void
 MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
-    U64 occupied = pos.whiteBB() | pos.blackBB();
+    const U64 occupied = pos.occupiedBB();
     if (pos.getWhiteMove()) {
         int bKingSq = pos.getKingSq(false);
         U64 discovered = 0; // Squares that could generate discovered checks
@@ -421,14 +421,14 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
                 const U64 OO_SQ = 0x60ULL;
                 const U64 OOO_SQ = 0xEULL;
                 if (((pos.getCastleMask() & (1 << Position::H1_CASTLE)) != 0) &&
-                    ((OO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
+                    ((OO_SQ & occupied) == 0) &&
                     (pos.getPiece(k0 + 3) == Piece::WROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 + 1)) {
                     moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                 }
                 if (((pos.getCastleMask() & (1 << Position::A1_CASTLE)) != 0) &&
-                    ((OOO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
+                    ((OOO_SQ & occupied) == 0) &&
                     (pos.getPiece(k0 - 4) == Piece::WROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 - 1)) {
@@ -461,15 +461,15 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
 
         // Discovered checks and promotions
         U64 pawnAll = discovered | BitBoard::maskRow7;
-        m = ((pawns & pawnAll) << 8) & ~(pos.whiteBB() | pos.blackBB());
+        m = ((pawns & pawnAll) << 8) & ~occupied;
         addPawnMovesByMask(moveList, pos, m, -8, false);
-        m = ((m & BitBoard::maskRow3) << 8) & ~(pos.whiteBB() | pos.blackBB());
+        m = ((m & BitBoard::maskRow3) << 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m, -16);
 
         // Normal checks
-        m = ((pawns & ~pawnAll) << 8) & ~(pos.whiteBB() | pos.blackBB());
+        m = ((pawns & ~pawnAll) << 8) & ~occupied;
         addPawnMovesByMask(moveList, pos, m & BitBoard::bPawnAttacks[bKingSq], -8, false);
-        m = ((m & BitBoard::maskRow3) << 8) & ~(pos.whiteBB() | pos.blackBB());
+        m = ((m & BitBoard::maskRow3) << 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m & BitBoard::bPawnAttacks[bKingSq], -16);
     } else {
         int wKingSq = pos.getKingSq(true);
@@ -527,14 +527,14 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
                 const U64 OO_SQ = 0x6000000000000000ULL;
                 const U64 OOO_SQ = 0xE00000000000000ULL;
                 if (((pos.getCastleMask() & (1 << Position::H8_CASTLE)) != 0) &&
-                    ((OO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
+                    ((OO_SQ & occupied) == 0) &&
                     (pos.getPiece(k0 + 3) == Piece::BROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 + 1)) {
                     moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                 }
                 if (((pos.getCastleMask() & (1 << Position::A8_CASTLE)) != 0) &&
-                    ((OOO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
+                    ((OOO_SQ & occupied) == 0) &&
                     (pos.getPiece(k0 - 4) == Piece::BROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 - 1)) {
@@ -567,22 +567,22 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
 
         // Discovered checks and promotions
         U64 pawnAll = discovered | BitBoard::maskRow2;
-        m = ((pawns & pawnAll) >> 8) & ~(pos.whiteBB() | pos.blackBB());
+        m = ((pawns & pawnAll) >> 8) & ~occupied;
         addPawnMovesByMask(moveList, pos, m, 8, false);
-        m = ((m & BitBoard::maskRow6) >> 8) & ~(pos.whiteBB() | pos.blackBB());
+        m = ((m & BitBoard::maskRow6) >> 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m, 16);
 
         // Normal checks
-        m = ((pawns & ~pawnAll) >> 8) & ~(pos.whiteBB() | pos.blackBB());
+        m = ((pawns & ~pawnAll) >> 8) & ~occupied;
         addPawnMovesByMask(moveList, pos, m & BitBoard::wPawnAttacks[wKingSq], 8, false);
-        m = ((m & BitBoard::maskRow6) >> 8) & ~(pos.whiteBB() | pos.blackBB());
+        m = ((m & BitBoard::maskRow6) >> 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m & BitBoard::wPawnAttacks[wKingSq], 16);
     }
 }
 
 void
 MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
-    U64 occupied = pos.whiteBB() | pos.blackBB();
+    const U64 occupied = pos.occupiedBB();
     if (pos.getWhiteMove()) {
         // Queen moves
         U64 squares = pos.pieceTypeBB(Piece::WQUEEN);
@@ -627,7 +627,7 @@ MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
 
         // Pawn moves
         U64 pawns = pos.pieceTypeBB(Piece::WPAWN);
-        m = (pawns << 8) & ~(pos.whiteBB() | pos.blackBB());
+        m = (pawns << 8) & ~occupied;
         m &= BitBoard::maskRow8;
         addPawnMovesByMask(moveList, pos, m, -8, false);
 
@@ -681,7 +681,7 @@ MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
 
         // Pawn moves
         U64 pawns = pos.pieceTypeBB(Piece::BPAWN);
-        m = (pawns >> 8) & ~(pos.whiteBB() | pos.blackBB());
+        m = (pawns >> 8) & ~occupied;
         m &= BitBoard::maskRow1;
         addPawnMovesByMask(moveList, pos, m, 8, false);
 
@@ -810,7 +810,7 @@ MoveGen::removeIllegal(Position& pos, MoveList& moveList) {
     UndoInfo ui;
 
     bool isInCheck = inCheck(pos);
-    const U64 occupied = pos.whiteBB() | pos.blackBB();
+    const U64 occupied = pos.occupiedBB();
     int kSq = pos.getKingSq(pos.getWhiteMove());
     U64 kingAtks = BitBoard::rookAttacks(kSq, occupied) | BitBoard::bishopAttacks(kSq, occupied);
     int epSquare = pos.getEpSquare();
@@ -858,7 +858,7 @@ MoveGen::isLegal(Position& pos, const Move& m, bool isInCheck) {
     const int epSquare = pos.getEpSquare();
     if (isInCheck) {
         if ((m.from() != kSq) && (m.to() != epSquare)) {
-            U64 occupied = pos.whiteBB() | pos.blackBB();
+            U64 occupied = pos.occupiedBB();
             U64 toMask = 1ULL << m.to();
             int knight = pos.getWhiteMove() ? Piece::BKNIGHT : Piece::WKNIGHT;
             if (((BitBoard::rookAttacks(kSq, occupied) & toMask) == 0) &&
@@ -874,11 +874,11 @@ MoveGen::isLegal(Position& pos, const Move& m, bool isInCheck) {
         return legal;
     } else {
         if (m.from() == kSq) {
-            U64 occupied = (pos.whiteBB() | pos.blackBB()) & ~(1ULL<<m.from());
+            U64 occupied = pos.occupiedBB() & ~(1ULL<<m.from());
             return !MoveGen::sqAttacked(pos, m.to(), occupied);
         } else {
             if (m.to() != epSquare) {
-                U64 occupied = pos.whiteBB() | pos.blackBB();
+                U64 occupied = pos.occupiedBB();
                 U64 fromMask = 1ULL << m.from();
                 if (((BitBoard::rookAttacks(kSq, occupied) & fromMask) == 0) &&
                     ((BitBoard::bishopAttacks(kSq, occupied) & fromMask) == 0))

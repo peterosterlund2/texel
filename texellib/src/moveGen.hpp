@@ -112,7 +112,7 @@ public:
      * Return true if a square is attacked by the opposite side.
      */
     static bool sqAttacked(const Position& pos, int sq) {
-        U64 occupied = pos.whiteBB() | pos.blackBB();
+        const U64 occupied = pos.occupiedBB();
         return sqAttacked(pos, sq, occupied);
     }
     static bool sqAttacked(const Position& pos, int sq, U64 occupied) {

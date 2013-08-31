@@ -135,12 +135,18 @@ public:
     int psScore1(int piece) const;
     int psScore2(int piece) const;
 
+    /** BitBoard for squares occupied by a piece type. */
     U64 pieceTypeBB(int piece) const;
+    /** BitBoard for all squares occupied by white pieces. */
     U64 whiteBB() const;
+    /** BitBoard for all squares occupied by black pieces. */
     U64 blackBB() const;
+    /** BitBoard for all squares occupied by what and black pieces. */
+    U64 occupiedBB() const;
 
     int wKingSq() const;
     int bKingSq() const;
+
     int wMtrl() const;
     int bMtrl() const;
     int wMtrlPawns() const;
@@ -520,6 +526,10 @@ inline U64 Position::whiteBB() const {
 inline U64 Position::blackBB() const {
     return blackBB_;
 };
+
+inline U64 Position::occupiedBB() const {
+    return whiteBB() | blackBB();
+}
 
 inline int Position::wKingSq() const {
     return wKingSq_;

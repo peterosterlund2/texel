@@ -395,7 +395,7 @@ Evaluate::pieceSquareEval(const Position& pos) {
 
     // Queens
     {
-        const U64 occupied = pos.whiteBB() | pos.blackBB();
+        const U64 occupied = pos.occupiedBB();
         score += pos.psScore1(Piece::WQUEEN);
         U64 m = pos.pieceTypeBB(Piece::WQUEEN);
         while (m != 0) {
@@ -449,7 +449,7 @@ Evaluate::castleBonus(const Position& pos) {
     if (castleValue <= 0)
         return 0;
 
-    U64 occupied = pos.whiteBB() | pos.blackBB();
+    U64 occupied = pos.occupiedBB();
     int tmp = (int) (occupied & 0x6E);
     if (pos.a1Castle()) tmp |= 1;
     if (pos.h1Castle()) tmp |= (1 << 7);
@@ -660,7 +660,7 @@ Evaluate::rookBonus(const Position& pos) {
     int score = 0;
     const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
     const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
-    const U64 occupied = pos.whiteBB() | pos.blackBB();
+    const U64 occupied = pos.occupiedBB();
     U64 m = pos.pieceTypeBB(Piece::WROOK);
     while (m != 0) {
         int sq = BitBoard::numberOfTrailingZeros(m);
@@ -701,7 +701,7 @@ Evaluate::rookBonus(const Position& pos) {
 int
 Evaluate::bishopEval(const Position& pos, int oldScore) {
     int score = 0;
-    const U64 occupied = pos.whiteBB() | pos.blackBB();
+    const U64 occupied = pos.occupiedBB();
     U64 wBishops = pos.pieceTypeBB(Piece::WBISHOP);
     U64 bBishops = pos.pieceTypeBB(Piece::BBISHOP);
     if ((wBishops | bBishops) == 0)
