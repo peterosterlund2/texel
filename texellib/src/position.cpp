@@ -158,7 +158,7 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
     int prevEpSquare = epSquare;
     setEpSquare(-1);
 
-    if ((capP != Piece::EMPTY) || (((pieceTypeBB(Piece::WPAWN) | pieceTypeBB(Piece::BPAWN)) & fromMask) != 0)) {
+    if ((capP != Piece::EMPTY) || ((pieceTypeBB(Piece::WPAWN, Piece::BPAWN) & fromMask) != 0)) {
         halfMoveClock = 0;
 
         // Handle en passant and epSquare
@@ -180,7 +180,7 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
             }
         }
 
-        if (((pieceTypeBB(Piece::WKING) | pieceTypeBB(Piece::BKING)) & fromMask) != 0) {
+        if ((pieceTypeBB(Piece::WKING, Piece::BKING) & fromMask) != 0) {
             if (wtm) {
                 setCastleMask(castleMask & ~(1 << A1_CASTLE));
                 setCastleMask(castleMask & ~(1 << H1_CASTLE));
@@ -202,7 +202,7 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
         halfMoveClock++;
 
         // Handle castling
-        if (((pieceTypeBB(Piece::WKING) | pieceTypeBB(Piece::BKING)) & fromMask) != 0) {
+        if ((pieceTypeBB(Piece::WKING, Piece::BKING) & fromMask) != 0) {
             int k0 = move.from();
             if (move.to() == k0 + 2) { // O-O
                 movePieceNotPawn(k0 + 3, k0 + 1);

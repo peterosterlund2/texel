@@ -286,8 +286,8 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
     int score = pos.wMtrl() - pos.bMtrl();
     score += tradeBonus(pos);
     { // Redundancy of major pieces
-        int wMajor = BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN) | pos.pieceTypeBB(Piece::WROOK));
-        int bMajor = BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN) | pos.pieceTypeBB(Piece::BROOK));
+        int wMajor = BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN, Piece::WROOK));
+        int bMajor = BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN, Piece::BROOK));
         int w = std::min(wMajor, 3);
         int b = std::min(bMajor, 3);
         static const int bonus[4][4] = { {   0, -50,   0,   0 },
@@ -851,10 +851,7 @@ Evaluate::threatBonus(const Position& pos) {
     int score = 0;
 
     // Sum values for all black pieces under attack
-    wAttacksBB &= (pos.pieceTypeBB(Piece::BKNIGHT) |
-                   pos.pieceTypeBB(Piece::BBISHOP) |
-                   pos.pieceTypeBB(Piece::BROOK) |
-                   pos.pieceTypeBB(Piece::BQUEEN));
+    wAttacksBB &= pos.pieceTypeBB(Piece::BKNIGHT, Piece::BBISHOP, Piece::BROOK, Piece::BQUEEN);
     wAttacksBB |= wPawnAttacks;
     U64 m = wAttacksBB & pos.blackBB() & ~pos.pieceTypeBB(Piece::BKING);
     int tmp = 0;
@@ -866,10 +863,7 @@ Evaluate::threatBonus(const Position& pos) {
     score += tmp + tmp * tmp / qV;
 
     // Sum values for all white pieces under attack
-    bAttacksBB &= (pos.pieceTypeBB(Piece::WKNIGHT) |
-                   pos.pieceTypeBB(Piece::WBISHOP) |
-                   pos.pieceTypeBB(Piece::WROOK) |
-                   pos.pieceTypeBB(Piece::WQUEEN));
+    bAttacksBB &= pos.pieceTypeBB(Piece::WKNIGHT, Piece::WBISHOP, Piece::WROOK, Piece::WQUEEN);
     bAttacksBB |= bPawnAttacks;
     m = bAttacksBB & pos.whiteBB() & ~pos.pieceTypeBB(Piece::WKING);
     tmp = 0;
@@ -1108,8 +1102,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
                 return -pos.bMtrl() / 50;
             else
                 return score / 8;        // Too little excess material, probably draw
-        } else if ((pos.pieceTypeBB(Piece::WROOK) | pos.pieceTypeBB(Piece::WKNIGHT) |
-                    pos.pieceTypeBB(Piece::WQUEEN)) == 0) {
+        } else if (pos.pieceTypeBB(Piece::WROOK, Piece::WKNIGHT, Piece::WQUEEN) == 0) {
             // Check for rook pawn + wrong color bishop
             if (((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskBToHFiles) == 0) &&
                 ((pos.pieceTypeBB(Piece::WBISHOP) & BitBoard::maskLightSq) == 0) &&
@@ -1131,8 +1124,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
                 return pos.wMtrl() / 50;
             else
                 return score / 8;        // Too little excess material, probably draw
-        } else if ((pos.pieceTypeBB(Piece::BROOK) | pos.pieceTypeBB(Piece::BKNIGHT) |
-                    pos.pieceTypeBB(Piece::BQUEEN)) == 0) {
+        } else if (pos.pieceTypeBB(Piece::BROOK, Piece::BKNIGHT, Piece::BQUEEN) == 0) {
             // Check for rook pawn + wrong color bishop
             if (((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskBToHFiles) == 0) &&
                 ((pos.pieceTypeBB(Piece::BBISHOP) & BitBoard::maskDarkSq) == 0) &&

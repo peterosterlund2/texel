@@ -31,7 +31,7 @@
  */
 class Piece {
 public:
-    enum {
+    enum Type {
       EMPTY = 0,
       WKING = 1,
       WQUEEN = 2,

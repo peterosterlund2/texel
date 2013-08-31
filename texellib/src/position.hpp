@@ -135,8 +135,11 @@ public:
     int psScore1(int piece) const;
     int psScore2(int piece) const;
 
-    /** BitBoard for squares occupied by a piece type. */
-    U64 pieceTypeBB(int piece) const;
+    /** BitBoard for all squares occupied by a piece type. */
+    U64 pieceTypeBB(Piece::Type piece) const;
+    /** BitBoard for all squares occupied by several piece types. */
+    template <typename Piece0, typename... Pieces> U64 pieceTypeBB(Piece0 piece0, Pieces... pieces) const;
+
     /** BitBoard for all squares occupied by white pieces. */
     U64 whiteBB() const;
     /** BitBoard for all squares occupied by black pieces. */
@@ -515,8 +518,13 @@ inline int Position::psScore2(int piece) const {
     return psScore2_[piece];
 }
 
-inline U64 Position::pieceTypeBB(int piece) const {
+inline U64 Position::pieceTypeBB(Piece::Type piece) const {
     return pieceTypeBB_[piece];
+}
+
+template <typename Piece0, typename... Pieces>
+inline U64 Position::pieceTypeBB(Piece0 piece0, Pieces... pieces) const {
+    return pieceTypeBB(piece0) | pieceTypeBB(pieces...);
 }
 
 inline U64 Position::whiteBB() const {

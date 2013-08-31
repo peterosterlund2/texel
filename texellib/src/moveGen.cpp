@@ -200,10 +200,10 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
     const U64 occupied = pos.occupiedBB();
     if (pos.getWhiteMove()) {
         U64 kingThreats = pos.pieceTypeBB(Piece::BKNIGHT) & BitBoard::knightAttacks[pos.wKingSq()];
-        U64 rookPieces = pos.pieceTypeBB(Piece::BROOK) | pos.pieceTypeBB(Piece::BQUEEN);
+        U64 rookPieces = pos.pieceTypeBB(Piece::BROOK, Piece::BQUEEN);
         if (rookPieces != 0)
             kingThreats |= rookPieces & BitBoard::rookAttacks(pos.wKingSq(), occupied);
-        U64 bishPieces = pos.pieceTypeBB(Piece::BBISHOP) | pos.pieceTypeBB(Piece::BQUEEN);
+        U64 bishPieces = pos.pieceTypeBB(Piece::BBISHOP, Piece::BQUEEN);
         if (bishPieces != 0)
             kingThreats |= bishPieces & BitBoard::bishopAttacks(pos.wKingSq(), occupied);
         kingThreats |= pos.pieceTypeBB(Piece::BPAWN) & BitBoard::wPawnAttacks[pos.wKingSq()];
@@ -273,10 +273,10 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
         addPawnMovesByMask(moveList, pos, m, -9, true);
     } else {
         U64 kingThreats = pos.pieceTypeBB(Piece::WKNIGHT) & BitBoard::knightAttacks[pos.bKingSq()];
-        U64 rookPieces = pos.pieceTypeBB(Piece::WROOK) | pos.pieceTypeBB(Piece::WQUEEN);
+        U64 rookPieces = pos.pieceTypeBB(Piece::WROOK, Piece::WQUEEN);
         if (rookPieces != 0)
             kingThreats |= rookPieces & BitBoard::rookAttacks(pos.bKingSq(), occupied);
-        U64 bishPieces = pos.pieceTypeBB(Piece::WBISHOP) | pos.pieceTypeBB(Piece::WQUEEN);
+        U64 bishPieces = pos.pieceTypeBB(Piece::WBISHOP, Piece::WQUEEN);
         if (bishPieces != 0)
             kingThreats |= bishPieces & BitBoard::bishopAttacks(pos.bKingSq(), occupied);
         kingThreats |= pos.pieceTypeBB(Piece::WPAWN) & BitBoard::bPawnAttacks[pos.bKingSq()];
@@ -370,11 +370,11 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
         U64 discovered = 0; // Squares that could generate discovered checks
         U64 kRookAtk = BitBoard::rookAttacks(bKingSq, occupied);
         if ((BitBoard::rookAttacks(bKingSq, occupied & ~kRookAtk) &
-                (pos.pieceTypeBB(Piece::WQUEEN) | pos.pieceTypeBB(Piece::WROOK))) != 0)
+                pos.pieceTypeBB(Piece::WQUEEN, Piece::WROOK)) != 0)
             discovered |= kRookAtk;
         U64 kBishAtk = BitBoard::bishopAttacks(bKingSq, occupied);
         if ((BitBoard::bishopAttacks(bKingSq, occupied & ~kBishAtk) &
-                (pos.pieceTypeBB(Piece::WQUEEN) | pos.pieceTypeBB(Piece::WBISHOP))) != 0)
+                pos.pieceTypeBB(Piece::WQUEEN, Piece::WBISHOP)) != 0)
             discovered |= kBishAtk;
 
         // Queen moves
@@ -476,11 +476,11 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
         U64 discovered = 0; // Squares that could generate discovered checks
         U64 kRookAtk = BitBoard::rookAttacks(wKingSq, occupied);
         if ((BitBoard::rookAttacks(wKingSq, occupied & ~kRookAtk) &
-                (pos.pieceTypeBB(Piece::BQUEEN) | pos.pieceTypeBB(Piece::BROOK))) != 0)
+                pos.pieceTypeBB(Piece::BQUEEN, Piece::BROOK)) != 0)
             discovered |= kRookAtk;
         U64 kBishAtk = BitBoard::bishopAttacks(wKingSq, occupied);
         if ((BitBoard::bishopAttacks(wKingSq, occupied & ~kBishAtk) &
-                (pos.pieceTypeBB(Piece::BQUEEN) | pos.pieceTypeBB(Piece::BBISHOP))) != 0)
+                pos.pieceTypeBB(Piece::BQUEEN, Piece::BBISHOP)) != 0)
             discovered |= kBishAtk;
 
         // Queen moves
@@ -860,7 +860,7 @@ MoveGen::isLegal(Position& pos, const Move& m, bool isInCheck) {
         if ((m.from() != kSq) && (m.to() != epSquare)) {
             U64 occupied = pos.occupiedBB();
             U64 toMask = 1ULL << m.to();
-            int knight = pos.getWhiteMove() ? Piece::BKNIGHT : Piece::WKNIGHT;
+            Piece::Type knight = pos.getWhiteMove() ? Piece::BKNIGHT : Piece::WKNIGHT;
             if (((BitBoard::rookAttacks(kSq, occupied) & toMask) == 0) &&
                 ((BitBoard::bishopAttacks(kSq, occupied) & toMask) == 0) &&
                 ((BitBoard::knightAttacks[kSq] & pos.pieceTypeBB(knight) & toMask) == 0))
