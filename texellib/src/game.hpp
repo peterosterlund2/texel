@@ -57,6 +57,8 @@ public:
 
     std::string getGameStateString();
 
+    const Position& getPos() const;
+
     /**
      * Get the last played move, or null if no moves played yet.
      */
@@ -96,9 +98,6 @@ public:
     /** Return a list of previous positions in this game, back to the last "zeroing" move. */
     void getHistory(std::vector<Position>& posList);
 
-
-    Position pos;
-
 protected:
     /**
      * Handle a special command.
@@ -131,9 +130,10 @@ private:
 
     bool insufficientMaterial();
 
-    /** Computer PerfT value. */
+    /** Compute PerfT value. */
     static U64 perfT(Position& pos, int depth);
 
+    Position pos;
 
     std::string drawStateMoveStr; // Move required to claim DRAW_REP or DRAW_50
     GameState resignState;
@@ -142,5 +142,8 @@ private:
 
 };
 
+inline const Position& Game::getPos() const {
+    return pos;
+}
 
 #endif /* GAME_HPP_ */
