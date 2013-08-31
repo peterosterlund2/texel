@@ -227,13 +227,17 @@ testTradeBonus() {
     ASSERT(score2 > score1); // White ahead, trading pieces is good
 }
 
+static int material(const Position& pos) {
+    return pos.wMtrl() - pos.bMtrl();
+}
+
 /**
  * Test of material method, of class Evaluate.
  */
 static void
 testMaterial() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
-    ASSERT_EQUAL(0, Evaluate::material(pos));
+    ASSERT_EQUAL(0, material(pos));
 
     const int pV = Evaluate::pV;
     const int qV = Evaluate::qV;
@@ -243,19 +247,19 @@ testMaterial() {
 
     UndoInfo ui;
     pos.makeMove(TextIO::stringToMove(pos, "e4"), ui);
-    ASSERT_EQUAL(0, Evaluate::material(pos));
+    ASSERT_EQUAL(0, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "d5"), ui);
-    ASSERT_EQUAL(0, Evaluate::material(pos));
+    ASSERT_EQUAL(0, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "exd5"), ui);
-    ASSERT_EQUAL(pV, Evaluate::material(pos));
+    ASSERT_EQUAL(pV, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "Qxd5"), ui);
-    ASSERT_EQUAL(0, Evaluate::material(pos));
+    ASSERT_EQUAL(0, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "Nc3"), ui);
-    ASSERT_EQUAL(0, Evaluate::material(pos));
+    ASSERT_EQUAL(0, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "Qxd2"), ui);
-    ASSERT_EQUAL(-pV, Evaluate::material(pos));
+    ASSERT_EQUAL(-pV, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "Qxd2"), ui);
-    ASSERT_EQUAL(-pV+qV, Evaluate::material(pos));
+    ASSERT_EQUAL(-pV+qV, material(pos));
 }
 
 /**

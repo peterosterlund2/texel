@@ -115,9 +115,6 @@ public:
     /** Compute v1 + (v2-v1)*k/IPOLMAX */
     static int interpolate(int v1, int v2, int k);
 
-    /** Compute white_material - black_material. */
-    static int material(const Position& pos);
-
     static void staticInitialize();
 
 private:
@@ -257,11 +254,6 @@ Evaluate::interpolate(int x, int x1, int y1, int x2, int y2) {
 inline int
 Evaluate::interpolate(int v1, int v2, int k) {
     return v1 + (v2 - v1) * k / IPOLMAX;
-}
-
-inline int
-Evaluate::material(const Position& pos) {
-    return pos.wMtrl() - pos.bMtrl();
 }
 
 inline int
