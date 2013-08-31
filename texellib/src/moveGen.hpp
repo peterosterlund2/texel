@@ -89,7 +89,7 @@ public:
      * Return true if the side to move is in check.
      */
     static bool inCheck(const Position& pos) {
-        int kingSq = pos.getKingSq(pos.whiteMove);
+        int kingSq = pos.getKingSq(pos.getWhiteMove());
         return sqAttacked(pos, kingSq);
     }
 
@@ -102,9 +102,9 @@ public:
      * Return true if the side to move can take the opponents king.
      */
     static bool canTakeKing(Position& pos) {
-        pos.setWhiteMove(!pos.whiteMove);
+        pos.setWhiteMove(!pos.getWhiteMove());
         bool ret = inCheck(pos);
-        pos.setWhiteMove(!pos.whiteMove);
+        pos.setWhiteMove(!pos.getWhiteMove());
         return ret;
     }
 
@@ -112,38 +112,38 @@ public:
      * Return true if a square is attacked by the opposite side.
      */
     static bool sqAttacked(const Position& pos, int sq) {
-        U64 occupied = pos.whiteBB | pos.blackBB;
+        U64 occupied = pos.whiteBB() | pos.blackBB();
         return sqAttacked(pos, sq, occupied);
     }
     static bool sqAttacked(const Position& pos, int sq, U64 occupied) {
-        return pos.whiteMove ? sqAttacked<true>(pos, sq, occupied)
+        return pos.getWhiteMove() ? sqAttacked<true>(pos, sq, occupied)
                              : sqAttacked<false>(pos, sq, occupied);
     }
     template <bool wtm>
     static bool sqAttacked(const Position& pos, int sq, U64 occupied) {
         if (wtm) {
-            if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB[Piece::BKNIGHT]) != 0)
+            if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB(Piece::BKNIGHT)) != 0)
                 return true;
-            if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB[Piece::BKING]) != 0)
+            if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB(Piece::BKING)) != 0)
                 return true;
-            if ((BitBoard::wPawnAttacks[sq] & pos.pieceTypeBB[Piece::BPAWN]) != 0)
+            if ((BitBoard::wPawnAttacks[sq] & pos.pieceTypeBB(Piece::BPAWN)) != 0)
                 return true;
-            U64 bbQueen = pos.pieceTypeBB[Piece::BQUEEN];
-            if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::BBISHOP] | bbQueen)) != 0)
+            U64 bbQueen = pos.pieceTypeBB(Piece::BQUEEN);
+            if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB(Piece::BBISHOP) | bbQueen)) != 0)
                 return true;
-            if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::BROOK] | bbQueen)) != 0)
+            if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB(Piece::BROOK) | bbQueen)) != 0)
                 return true;
         } else {
-            if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB[Piece::WKNIGHT]) != 0)
+            if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB(Piece::WKNIGHT)) != 0)
                 return true;
-            if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB[Piece::WKING]) != 0)
+            if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB(Piece::WKING)) != 0)
                 return true;
-            if ((BitBoard::bPawnAttacks[sq] & pos.pieceTypeBB[Piece::WPAWN]) != 0)
+            if ((BitBoard::bPawnAttacks[sq] & pos.pieceTypeBB(Piece::WPAWN)) != 0)
                 return true;
-            U64 bbQueen = pos.pieceTypeBB[Piece::WQUEEN];
-            if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::WBISHOP] | bbQueen)) != 0)
+            U64 bbQueen = pos.pieceTypeBB(Piece::WQUEEN);
+            if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB(Piece::WBISHOP) | bbQueen)) != 0)
                 return true;
-            if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::WROOK] | bbQueen)) != 0)
+            if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB(Piece::WROOK) | bbQueen)) != 0)
                 return true;
         }
         return false;

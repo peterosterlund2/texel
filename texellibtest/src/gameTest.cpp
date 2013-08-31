@@ -120,7 +120,7 @@ GameTest::testHaveDrawOffer() {
     game.processString("undo");
     game.processString("redo");
     game.processString("e5");
-    ASSERT_EQUAL(true,game.pos.whiteMove);
+    ASSERT_EQUAL(true, game.pos.getWhiteMove());
     ASSERT_EQUAL(false, game.haveDrawOffer());
 }
 
@@ -164,7 +164,7 @@ GameTest::testDraw50() {
     game.processString(cmd);
     game.processString("draw 50 Ke3");
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());    // Ke3 is invalid
-    ASSERT_EQUAL(true,game.pos.whiteMove);
+    ASSERT_EQUAL(true, game.pos.getWhiteMove());
     game.processString("a6");
     ASSERT_EQUAL(true, game.haveDrawOffer());   // Previous invalid claim converted to offer
     game.processString("draw 50");
@@ -290,17 +290,17 @@ GameTest::testProcessString() {
     ASSERT_EQUAL(TextIO::startPosFEN, TextIO::toFEN(game.pos));
     bool res = game.processString("Nf3");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(1, game.pos.halfMoveClock);
-    ASSERT_EQUAL(1, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(1, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(1, game.pos.getFullMoveCounter());
     res = game.processString("d5");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(0, game.pos.halfMoveClock);
-    ASSERT_EQUAL(2, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(0, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(2, game.pos.getFullMoveCounter());
 
     res = game.processString("undo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(1, game.pos.halfMoveClock);
-    ASSERT_EQUAL(1, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(1, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(1, game.pos.getFullMoveCounter());
     res = game.processString("undo");
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(TextIO::startPosFEN, TextIO::toFEN(game.pos));
@@ -310,16 +310,16 @@ GameTest::testProcessString() {
 
     res = game.processString("redo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(1, game.pos.halfMoveClock);
-    ASSERT_EQUAL(1, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(1, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(1, game.pos.getFullMoveCounter());
     res = game.processString("redo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(0, game.pos.halfMoveClock);
-    ASSERT_EQUAL(2, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(0, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(2, game.pos.getFullMoveCounter());
     res = game.processString("redo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(0, game.pos.halfMoveClock);
-    ASSERT_EQUAL(2, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(0, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(2, game.pos.getFullMoveCounter());
 
     res = game.processString("new");
     ASSERT_EQUAL(true, res);

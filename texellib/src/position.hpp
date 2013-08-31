@@ -44,46 +44,12 @@
  * in a separate hash table.
  */
 class Position {
-private:
-    int squares[64];
-
-public:
-    // Piece square table scores
-    short psScore1[Piece::nPieceTypes];
-    short psScore2[Piece::nPieceTypes];
-
-    // Bitboards
-    U64 pieceTypeBB[Piece::nPieceTypes];
-    U64 whiteBB, blackBB;
-
-    bool whiteMove;
-
-    /** Number of half-moves since last 50-move reset. */
-    int halfMoveClock;
-
-    /** Game move number, starting from 1. */
-    int fullMoveCounter;
-
-private:
-    int castleMask;
-    int epSquare;
-
-    U64 hashKey;           // Cached Zobrist hash key
-    U64 pHashKey;          // Cached Zobrist pawn hash key
-    MatId matId;           // Cached material identifier
-
 public:
     /** Bit definitions for the castleMask bit mask. */
     static const int A1_CASTLE = 0; /** White long castle. */
     static const int H1_CASTLE = 1; /** White short castle. */
     static const int A8_CASTLE = 2; /** Black long castle. */
     static const int H8_CASTLE = 3; /** Black short castle. */
-
-    int wKingSq, bKingSq;   // Cached king positions
-    int wMtrl;              // Total value of all white pieces and pawns
-    int bMtrl;              // Total value of all black pieces and pawns
-    int wMtrlPawns;         // Total value of all white pawns
-    int bMtrlPawns;         // Total value of all black pawns
 
     /** Initialize board to empty position. */
     Position();
@@ -108,6 +74,8 @@ public:
      * @return True if positions are equal, false otherwise.
      */
     bool drawRuleEquals(Position other) const;
+
+    int getWhiteMove() const;
 
     void setWhiteMove(bool whiteMove);
 
@@ -146,7 +114,6 @@ public:
 
     int getKingSq(bool white) const;
 
-public:
     /** Apply a move to the current position. */
     void makeMove(const Move& move, UndoInfo& ui);
 
@@ -160,6 +127,26 @@ public:
 
     void unMakeSEEMove(const Move& move, UndoInfo& ui);
 
+    int getFullMoveCounter() const;
+    void setFullMoveCounter(int fm);
+    int getHalfMoveClock() const;
+    void setHalfMoveClock(int hm);
+
+    int psScore1(int piece) const;
+    int psScore2(int piece) const;
+
+    U64 pieceTypeBB(int piece) const;
+    U64 whiteBB() const;
+    U64 blackBB() const;
+
+    int wKingSq() const;
+    int bKingSq() const;
+    int wMtrl() const;
+    int bMtrl() const;
+    int wMtrlPawns() const;
+    int bMtrlPawns() const;
+
+
     /** Return index in squares[] vector corresponding to (x,y). */
     static int getSquare(int x, int y);
 
@@ -172,14 +159,13 @@ public:
     /** Return true if (x,y) is a dark square. */
     static bool darkSquare(int x, int y);
 
-    /**
-     * Compute the Zobrist hash value non-incrementally. Only useful for test programs.
-     */
+    /** Compute the Zobrist hash value non-incrementally. Only useful for testing. */
     U64 computeZobristHash();
 
     static void staticInitialize();
 
-    static U64 psHashKeys[Piece::nPieceTypes][64];    // [piece][square]
+    /** Get hash key for a piece at a square. */
+    static U64 getHashKey(int piece, int square);
 
 private:
     /** Move a non-pawn piece to an empty square. */
@@ -187,13 +173,46 @@ private:
 
     void removeCastleRights(int square);
 
+    static U64 getRandomHashVal(int rndNo);
+
+
+    int wKingSq_, bKingSq_;  // Cached king positions
+    int wMtrl_;              // Total value of all white pieces and pawns
+    int bMtrl_;              // Total value of all black pieces and pawns
+    int wMtrlPawns_;         // Total value of all white pawns
+    int bMtrlPawns_;         // Total value of all black pawns
+
+    int squares[64];
+
+    // Piece square table scores
+    short psScore1_[Piece::nPieceTypes];
+    short psScore2_[Piece::nPieceTypes];
+
+    // Bitboards
+    U64 pieceTypeBB_[Piece::nPieceTypes];
+    U64 whiteBB_, blackBB_;
+
+    bool whiteMove;
+
+    /** Number of half-moves since last 50-move reset. */
+    int halfMoveClock;
+
+    /** Game move number, starting from 1. */
+    int fullMoveCounter;
+
+    int castleMask;
+    int epSquare;
+
+    U64 hashKey;           // Cached Zobrist hash key
+    U64 pHashKey;          // Cached Zobrist pawn hash key
+    MatId matId;           // Cached material identifier
+
+    static U64 psHashKeys[Piece::nPieceTypes][64];    // [piece][square]
 
     static U64 whiteHashKey;
     static U64 castleHashKeys[16];   // [castleMask]
     static U64 epHashKeys[9];        // [epFile + 1] (epFile==-1 for no ep)
     static U64 moveCntKeys[101];     // [min(halfMoveClock, 100)]
-
-    static U64 getRandomHashVal(int rndNo);
 
     static const U64 zobristRndKeys[];
 };
@@ -230,8 +249,8 @@ Position::pawnZobristHash() const {
 
 inline uint64_t
 Position::kingZobristHash() const {
-    return psHashKeys[Piece::WKING][wKingSq] ^
-           psHashKeys[Piece::BKING][bKingSq];
+    return psHashKeys[Piece::WKING][wKingSq()] ^
+           psHashKeys[Piece::BKING][bKingSq()];
 }
 
 inline uint64_t
@@ -261,6 +280,10 @@ Position::drawRuleEquals(Position other) const {
     return true;
 }
 
+inline int Position::getWhiteMove() const {
+    return whiteMove;
+}
+
 inline void
 Position::setWhiteMove(bool whiteMove) {
     if (whiteMove != this->whiteMove) {
@@ -283,19 +306,19 @@ Position::setSEEPiece(int square, int piece) {
 
     // Update bitboards
     U64 sqMask = 1ULL << square;
-    pieceTypeBB[removedPiece] &= ~sqMask;
-    pieceTypeBB[piece] |= sqMask;
+    pieceTypeBB_[removedPiece] &= ~sqMask;
+    pieceTypeBB_[piece] |= sqMask;
     if (removedPiece != Piece::EMPTY) {
         if (Piece::isWhite(removedPiece))
-            whiteBB &= ~sqMask;
+            whiteBB_ &= ~sqMask;
         else
-            blackBB &= ~sqMask;
+            blackBB_ &= ~sqMask;
     }
     if (piece != Piece::EMPTY) {
         if (Piece::isWhite(piece))
-            whiteBB |= sqMask;
+            whiteBB_ |= sqMask;
         else
-            blackBB |= sqMask;
+            blackBB_ |= sqMask;
     }
 }
 
@@ -347,7 +370,7 @@ Position::setEpSquare(int epSquare) {
 
 inline int
 Position::getKingSq(bool white) const {
-    return white ? wKingSq : bKingSq;
+    return white ? wKingSq() : bKingSq();
 }
 
 inline void
@@ -460,6 +483,70 @@ Position::removeCastleRights(int square) {
     } else if (square == getSquare(7, 7)) {
         setCastleMask(castleMask & ~(1 << H8_CASTLE));
     }
+}
+
+inline int Position::getFullMoveCounter() const {
+    return fullMoveCounter;
+}
+
+inline void Position::setFullMoveCounter(int fm) {
+    fullMoveCounter = fm;
+}
+
+inline int Position::getHalfMoveClock() const {
+    return halfMoveClock;
+}
+
+inline void Position::setHalfMoveClock(int hm) {
+    halfMoveClock = hm;
+}
+
+inline int Position::psScore1(int piece) const {
+    return psScore1_[piece];
+}
+
+inline int Position::psScore2(int piece) const {
+    return psScore2_[piece];
+}
+
+inline U64 Position::pieceTypeBB(int piece) const {
+    return pieceTypeBB_[piece];
+}
+
+inline U64 Position::whiteBB() const {
+    return whiteBB_;
+}
+
+inline U64 Position::blackBB() const {
+    return blackBB_;
+};
+
+inline int Position::wKingSq() const {
+    return wKingSq_;
+}
+
+inline int Position::bKingSq() const {
+    return bKingSq_;
+}
+
+inline int Position::wMtrl() const {
+    return wMtrl_;
+}
+
+inline int Position::bMtrl() const {
+    return bMtrl_;
+}
+
+inline int Position::wMtrlPawns() const {
+    return wMtrlPawns_;
+}
+
+inline int Position::bMtrlPawns() const {
+    return bMtrlPawns_;
+}
+
+inline U64 Position::getHashKey(int piece, int square) {
+    return psHashKeys[piece][square];
 }
 
 #endif /* POSITION_HPP_ */

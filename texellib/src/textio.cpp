@@ -100,10 +100,16 @@ TextIO::readFEN(const std::string& fen) {
         }
     }
 
-    if (words.size() > 4)
-        str2Num(words[4], pos.halfMoveClock);
-    if (words.size() > 5)
-        str2Num(words[5], pos.fullMoveCounter);
+    if (words.size() > 4) {
+        int halfMoveClock;
+        if (str2Num(words[4], halfMoveClock))
+            pos.setHalfMoveClock(halfMoveClock);
+    }
+    if (words.size() > 5) {
+        int fullMoveCounter;
+        if (str2Num(words[5], fullMoveCounter))
+            pos.setFullMoveCounter(fullMoveCounter);
+    }
 
     // Each side must have exactly one king
     int wKings = 0;
@@ -124,7 +130,7 @@ TextIO::readFEN(const std::string& fen) {
 
     // Make sure king can not be captured
     Position pos2(pos);
-    pos2.setWhiteMove(!pos.whiteMove);
+    pos2.setWhiteMove(!pos.getWhiteMove());
     if (MoveGen::inCheck(pos2))
         throw ChessParseError("King capture possible");
 
@@ -144,7 +150,7 @@ TextIO::fixupEPSquare(Position& pos) {
         for (int mi = 0; mi < moves.size; mi++) {
             const Move& m = moves[mi];
             if (m.to() == epSquare) {
-                if (pos.getPiece(m.from()) == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) {
+                if (pos.getPiece(m.from()) == (pos.getWhiteMove() ? Piece::WPAWN : Piece::BPAWN)) {
                     epValid = true;
                     break;
                 }
@@ -193,7 +199,7 @@ TextIO::toFEN(const Position& pos) {
         if (r > 0)
             ret += '/';
     }
-    ret += (pos.whiteMove ? " w " : " b ");
+    ret += (pos.getWhiteMove() ? " w " : " b ");
 
     // Castling rights
     bool anyCastle = false;
@@ -232,9 +238,9 @@ TextIO::toFEN(const Position& pos) {
 
     // Move counters
     ret += ' ';
-    ret += num2Str(pos.halfMoveClock);
+    ret += num2Str(pos.getHalfMoveClock());
     ret += ' ';
-    ret += num2Str(pos.fullMoveCounter);
+    ret += num2Str(pos.getFullMoveCounter());
 
     return ret;
 }
@@ -316,7 +322,7 @@ isCapture(const Position& pos, const Move& move) {
     if (pos.getPiece(move.to()) != Piece::EMPTY)
         return true;
     int p = pos.getPiece(move.from());
-    return (p == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) &&
+    return (p == (pos.getWhiteMove() ? Piece::WPAWN : Piece::BPAWN)) &&
            (move.to() == pos.getEpSquare());
 }
 
@@ -362,7 +368,7 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveGen::Move
             ret += (char)(y1 + '1');
             ret += isCapture(pos, move) ? 'x' : '-';
         } else {
-            if (p == (pos.whiteMove ? Piece::WPAWN : Piece::BPAWN)) {
+            if (p == (pos.getWhiteMove() ? Piece::WPAWN : Piece::BPAWN)) {
                 if (isCapture(pos, move))
                     ret += (char)(x1 + 'a');
             } else {

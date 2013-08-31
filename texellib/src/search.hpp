@@ -247,7 +247,7 @@ inline bool
 Search::canClaimDrawRep(const Position& pos, const std::vector<U64>& posHashList,
                        int posHashListSize, int posHashFirstNew) {
     int reps = 0;
-    int stop = std::max(0, posHashListSize - pos.halfMoveClock);
+    int stop = std::max(0, posHashListSize - pos.getHalfMoveClock());
     for (int i = posHashListSize - 4; i >= stop; i -= 2) {
         if (pos.zobristHash() == posHashList[i]) {
             reps++;
@@ -271,16 +271,16 @@ Search::relatedMoves(const Move& m1, const Move& m2) {
 inline bool
 Search::passedPawnPush(const Position& pos, const Move& m) {
     int p = pos.getPiece(m.from());
-    if (pos.whiteMove) {
+    if (pos.getWhiteMove()) {
         if (p != Piece::WPAWN)
             return false;
-        if ((BitBoard::wPawnBlockerMask[m.to()] & pos.pieceTypeBB[Piece::BPAWN]) != 0)
+        if ((BitBoard::wPawnBlockerMask[m.to()] & pos.pieceTypeBB(Piece::BPAWN)) != 0)
             return false;
         return m.to() >= 40;
     } else {
         if (p != Piece::BPAWN)
             return false;
-        if ((BitBoard::bPawnBlockerMask[m.to()] & pos.pieceTypeBB[Piece::WPAWN]) != 0)
+        if ((BitBoard::bPawnBlockerMask[m.to()] & pos.pieceTypeBB(Piece::WPAWN)) != 0)
             return false;
         return m.to() <= 23;
     }
@@ -357,7 +357,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
 inline bool
 Search::canClaimDraw50(const Position& pos) {
-    return (pos.halfMoveClock >= 100);
+    return (pos.getHalfMoveClock() >= 100);
 }
 
 inline S64

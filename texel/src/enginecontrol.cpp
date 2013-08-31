@@ -179,7 +179,7 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
         if (moves == 0)
             moves = 999;
         moves = std::min(moves, 45); // Assume 45 more moves until end of game
-        bool white = pos.whiteMove;
+        bool white = pos.getWhiteMove();
         int time = white ? sPar.wTime : sPar.bTime;
         int inc  = white ? sPar.wInc : sPar.bInc;
         const int margin = std::min(1000, time * 9 / 10);
@@ -313,7 +313,7 @@ EngineControl::setupPosition(Position pos, const std::vector<Move>& moves) {
         const Move& m = moves[i];
         posHashList[posHashListSize++] = pos.zobristHash();
         pos.makeMove(m, ui);
-        if (pos.halfMoveClock == 0)
+        if (pos.getHalfMoveClock() == 0)
             posHashListSize = 0;
     }
     this->pos = pos;

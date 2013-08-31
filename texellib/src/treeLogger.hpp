@@ -208,19 +208,13 @@ public:
  * Reader/analysis class for a search tree dumped to a file.
  */
 class TreeLoggerReader : public TreeLoggerBase {
-    std::fstream fs;
-    S64 filePos;
-    S64 fileLen;
-    int numEntries;
-
 public:
     /** Constructor. */
     TreeLoggerReader(const std::string& filename)
         : fs(filename.c_str(), std::ios_base::out |
                                std::ios_base::in |
                                std::ios_base::binary),
-          filePos(-1), fileLen(0), numEntries(0)
-    {
+          filePos(-1), fileLen(0), numEntries(0) {
         fs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         fs.seekg(0, std::ios_base::end);
         fileLen = fs.tellg();
@@ -236,7 +230,6 @@ public:
     static void main(const std::string& filename);
 
 private:
-
     static S64 indexToFileOffs(int index) {
         return 128 + 16 * (S64)index;
     }
@@ -268,7 +261,6 @@ private:
      * @return True if entry was a start entry, false if it was an end entry. */
     bool readEntry(int index, StartEntry& se, EndEntry& ee);
 
-private:
     void mainLoop(Position rootPos);
 
     bool isMove(std::string cmdStr) const;
@@ -314,6 +306,12 @@ private:
     void printNodeInfo(const Position& rootPos, int index);
 
     void printNodeInfo(const Position& rootPos, int index, const std::string& filterMove);
+
+
+    std::fstream fs;
+    S64 filePos;
+    S64 fileLen;
+    int numEntries;
 };
 
 #endif /* TREELOGGER_HPP_ */

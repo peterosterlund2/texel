@@ -102,7 +102,7 @@ testMakeMove() {
     Move move(Position::getSquare(4,1), Position::getSquare(4,3), Piece::EMPTY);
     UndoInfo ui;
     pos.makeMove(move, ui);
-    ASSERT_EQUAL(pos.whiteMove, false);
+    ASSERT_EQUAL(pos.getWhiteMove(), false);
     ASSERT_EQUAL(-1, pos.getEpSquare());
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(4,1)));
     ASSERT_EQUAL(Piece::WPAWN, pos.getPiece(Position::getSquare(4,3)));
@@ -113,7 +113,7 @@ testMakeMove() {
                      (1 << Position::H8_CASTLE);
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     pos.unMakeMove(move, ui);
-    ASSERT_EQUAL(pos.whiteMove, true);
+    ASSERT_EQUAL(pos.getWhiteMove(), true);
     ASSERT_EQUAL(Piece::WPAWN, pos.getPiece(Position::getSquare(4,1)));
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(4,3)));
     ASSERT(pos.equals(origPos));
@@ -249,38 +249,38 @@ testMoveCounters()  {
     Move move = TextIO::stringToMove(pos, "Nc3");
     UndoInfo ui;
     pos.makeMove(move, ui);
-    ASSERT_EQUAL(1, pos.halfMoveClock);
-    ASSERT_EQUAL(7, pos.fullMoveCounter);
+    ASSERT_EQUAL(1, pos.getHalfMoveClock());
+    ASSERT_EQUAL(7, pos.getFullMoveCounter());
     pos.unMakeMove(move, ui);
 
     move = TextIO::stringToMove(pos, "O-O");
     pos.makeMove(move, ui);
-    ASSERT_EQUAL(1, pos.halfMoveClock);     // Castling does not reset 50 move counter
-    ASSERT_EQUAL(7, pos.fullMoveCounter);
+    ASSERT_EQUAL(1, pos.getHalfMoveClock());     // Castling does not reset 50 move counter
+    ASSERT_EQUAL(7, pos.getFullMoveCounter());
     pos.unMakeMove(move, ui);
 
     move = TextIO::stringToMove(pos, "a3");
     pos.makeMove(move, ui);
-    ASSERT_EQUAL(0, pos.halfMoveClock);     // Pawn move resets 50 move counter
-    ASSERT_EQUAL(7, pos.fullMoveCounter);
+    ASSERT_EQUAL(0, pos.getHalfMoveClock());     // Pawn move resets 50 move counter
+    ASSERT_EQUAL(7, pos.getFullMoveCounter());
     pos.unMakeMove(move, ui);
 
     move = TextIO::stringToMove(pos, "Nxe5");
     pos.makeMove(move, ui);
-    ASSERT_EQUAL(0, pos.halfMoveClock);     // Capture move resets 50 move counter
-    ASSERT_EQUAL(7, pos.fullMoveCounter);
+    ASSERT_EQUAL(0, pos.getHalfMoveClock());     // Capture move resets 50 move counter
+    ASSERT_EQUAL(7, pos.getFullMoveCounter());
     pos.unMakeMove(move, ui);
 
     move = TextIO::stringToMove(pos, "cxb6");
     pos.makeMove(move, ui);
-    ASSERT_EQUAL(0, pos.halfMoveClock);     // EP capture move resets 50 move counter
-    ASSERT_EQUAL(7, pos.fullMoveCounter);
+    ASSERT_EQUAL(0, pos.getHalfMoveClock());     // EP capture move resets 50 move counter
+    ASSERT_EQUAL(7, pos.getFullMoveCounter());
     pos.unMakeMove(move, ui);
 
     move = TextIO::stringToMove(pos, "Kf1");
     pos.makeMove(move, ui);
-    ASSERT_EQUAL(1, pos.halfMoveClock);     // Loss of castling rights does not reset 50 move counter
-    ASSERT_EQUAL(7, pos.fullMoveCounter);
+    ASSERT_EQUAL(1, pos.getHalfMoveClock());     // Loss of castling rights does not reset 50 move counter
+    ASSERT_EQUAL(7, pos.getFullMoveCounter());
     pos.unMakeMove(move, ui);
 
     Move firstMove = TextIO::stringToMove(pos, "Nc3");
@@ -288,8 +288,8 @@ testMoveCounters()  {
     pos.makeMove(move, firstUi);
     move = TextIO::stringToMove(pos, "O-O");
     pos.makeMove(move, ui);
-    ASSERT_EQUAL(2, pos.halfMoveClock);
-    ASSERT_EQUAL(8, pos.fullMoveCounter);   // Black move increases fullMoveCounter
+    ASSERT_EQUAL(2, pos.getHalfMoveClock());
+    ASSERT_EQUAL(8, pos.getFullMoveCounter());   // Black move increases fullMoveCounter
     pos.unMakeMove(move, ui);
     pos.unMakeMove(firstMove, firstUi);
 
@@ -298,8 +298,8 @@ testMoveCounters()  {
     move = TextIO::stringToMove(pos, "c1Q");
     ASSERT(!move.isEmpty());
     pos.makeMove(move, ui);
-    ASSERT_EQUAL(0, pos.halfMoveClock);     // Pawn promotion resets 50 move counter
-    ASSERT_EQUAL(69, pos.fullMoveCounter);
+    ASSERT_EQUAL(0, pos.getHalfMoveClock());     // Pawn promotion resets 50 move counter
+    ASSERT_EQUAL(69, pos.getFullMoveCounter());
 }
 
 /**
@@ -362,12 +362,12 @@ testHashCode() {
     pos.unMakeMove(move, ui);
     ASSERT(h1 == pos.zobristHash());
 
-    pos.setWhiteMove(!pos.whiteMove);
+    pos.setWhiteMove(!pos.getWhiteMove());
     U64 h4 = pos.zobristHash();
     ASSERT_EQUAL(h4, pos.computeZobristHash());
     ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     ASSERT(h1 != pos.zobristHash());
-    pos.setWhiteMove(!pos.whiteMove);
+    pos.setWhiteMove(!pos.getWhiteMove());
     ASSERT(h1 == pos.zobristHash());
 
     pos.setCastleMask(0);

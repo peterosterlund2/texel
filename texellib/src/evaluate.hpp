@@ -261,7 +261,7 @@ Evaluate::interpolate(int v1, int v2, int k) {
 
 inline int
 Evaluate::material(const Position& pos) {
-    return pos.wMtrl - pos.bMtrl;
+    return pos.wMtrl() - pos.bMtrl();
 }
 
 inline int

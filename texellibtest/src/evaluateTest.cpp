@@ -35,7 +35,7 @@
 Position
 swapColors(const Position& pos) {
     Position sym;
-    sym.whiteMove = !pos.whiteMove;
+    sym.setWhiteMove(!pos.getWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             int p = pos.getPiece(Position::getSquare(x, y));
@@ -57,8 +57,8 @@ swapColors(const Position& pos) {
         sym.setEpSquare(Position::getSquare(x, 7-y));
     }
 
-    sym.halfMoveClock = pos.halfMoveClock;
-    sym.fullMoveCounter = pos.fullMoveCounter;
+    sym.setHalfMoveClock(pos.getHalfMoveClock());
+    sym.setFullMoveCounter(pos.getFullMoveCounter());
 
     return sym;
 }
@@ -74,7 +74,7 @@ evalWhite(const Position& pos) {
     ASSERT_EQUAL(ret, symScore);
     ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     ASSERT_EQUAL(symPos.materialId(), PositionTest::computeMaterialId(symPos));
-    if (!pos.whiteMove)
+    if (!pos.getWhiteMove())
         ret = -ret;
     return ret;
 }
@@ -372,7 +372,7 @@ testPassedPawns() {
     Position pos = TextIO::readFEN("8/8/8/P3k/8/8/p/K w");
     int score = evalWhite(pos);
     ASSERT(score > 300); // Unstoppable passed pawn
-    pos.whiteMove = false;
+    pos.setWhiteMove(false);
     score = evalWhite(pos);
     ASSERT(score <= 0); // Not unstoppable
 
@@ -486,7 +486,7 @@ testKRKP() {
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
-    pos.whiteMove = !pos.whiteMove;
+    pos.setWhiteMove(!pos.getWhiteMove());
     ASSERT(evalWhite(pos) < drawish);
 }
 
@@ -510,7 +510,7 @@ testKPK() {
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("8/8/8/3k4/8/8/3PK3/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
-    pos.whiteMove = !pos.whiteMove;
+    pos.setWhiteMove(!pos.getWhiteMove());
     ASSERT(evalWhite(pos) < drawish);
 }
 

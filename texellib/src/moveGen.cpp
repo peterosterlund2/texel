@@ -37,31 +37,31 @@ MoveGen::MoveList::filter(const std::vector<Move>& searchMoves)
 
 void
 MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
-    const U64 occupied = pos.whiteBB | pos.blackBB;
-    if (pos.whiteMove) {
+    const U64 occupied = pos.whiteBB() | pos.blackBB();
+    if (pos.getWhiteMove()) {
         // Queen moves
-        U64 squares = pos.pieceTypeBB[Piece::WQUEEN];
+        U64 squares = pos.pieceTypeBB(Piece::WQUEEN);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & ~pos.whiteBB;
+            U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & ~pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Rook moves
-        squares = pos.pieceTypeBB[Piece::WROOK];
+        squares = pos.pieceTypeBB(Piece::WROOK);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.whiteBB;
+            U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Bishop moves
-        squares = pos.pieceTypeBB[Piece::WBISHOP];
+        squares = pos.pieceTypeBB(Piece::WBISHOP);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.whiteBB;
+            U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
@@ -69,21 +69,21 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
         // King moves
         {
             int sq = pos.getKingSq(true);
-            U64 m = BitBoard::kingAttacks[sq] & ~pos.whiteBB;
+            U64 m = BitBoard::kingAttacks[sq] & ~pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             const int k0 = 4;
             if (sq == k0) {
                 const U64 OO_SQ = 0x60ULL;
                 const U64 OOO_SQ = 0xEULL;
                 if (((pos.getCastleMask() & (1 << Position::H1_CASTLE)) != 0) &&
-                    ((OO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
+                    ((OO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
                     (pos.getPiece(k0 + 3) == Piece::WROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 + 1)) {
                     moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                 }
                 if (((pos.getCastleMask() & (1 << Position::A1_CASTLE)) != 0) &&
-                    ((OOO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
+                    ((OOO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
                     (pos.getPiece(k0 - 4) == Piece::WROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 - 1)) {
@@ -93,16 +93,16 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
         }
 
         // Knight moves
-        U64 knights = pos.pieceTypeBB[Piece::WKNIGHT];
+        U64 knights = pos.pieceTypeBB(Piece::WKNIGHT);
         while (knights != 0) {
             int sq = BitBoard::numberOfTrailingZeros(knights);
-            U64 m = BitBoard::knightAttacks[sq] & ~pos.whiteBB;
+            U64 m = BitBoard::knightAttacks[sq] & ~pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             knights &= knights-1;
         }
 
         // Pawn moves
-        U64 pawns = pos.pieceTypeBB[Piece::WPAWN];
+        U64 pawns = pos.pieceTypeBB(Piece::WPAWN);
         U64 m = (pawns << 8) & ~occupied;
         addPawnMovesByMask(moveList, pos, m, -8, true);
         m = ((m & BitBoard::maskRow3) << 8) & ~occupied;
@@ -110,35 +110,35 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
 
         int epSquare = pos.getEpSquare();
         U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-        m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.blackBB | epMask);
+        m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.blackBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, -7, true);
 
-        m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.blackBB | epMask);
+        m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.blackBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, -9, true);
     } else {
         // Queen moves
-        U64 squares = pos.pieceTypeBB[Piece::BQUEEN];
+        U64 squares = pos.pieceTypeBB(Piece::BQUEEN);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & ~pos.blackBB;
+            U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & ~pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Rook moves
-        squares = pos.pieceTypeBB[Piece::BROOK];
+        squares = pos.pieceTypeBB(Piece::BROOK);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.blackBB;
+            U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Bishop moves
-        squares = pos.pieceTypeBB[Piece::BBISHOP];
+        squares = pos.pieceTypeBB(Piece::BBISHOP);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.blackBB;
+            U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
@@ -146,21 +146,21 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
         // King moves
         {
             int sq = pos.getKingSq(false);
-            U64 m = BitBoard::kingAttacks[sq] & ~pos.blackBB;
+            U64 m = BitBoard::kingAttacks[sq] & ~pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             const int k0 = 60;
             if (sq == k0) {
                 const U64 OO_SQ = 0x6000000000000000ULL;
                 const U64 OOO_SQ = 0xE00000000000000ULL;
                 if (((pos.getCastleMask() & (1 << Position::H8_CASTLE)) != 0) &&
-                    ((OO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
+                    ((OO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
                     (pos.getPiece(k0 + 3) == Piece::BROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 + 1)) {
                     moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                 }
                 if (((pos.getCastleMask() & (1 << Position::A8_CASTLE)) != 0) &&
-                    ((OOO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
+                    ((OOO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
                     (pos.getPiece(k0 - 4) == Piece::BROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 - 1)) {
@@ -170,16 +170,16 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
         }
 
         // Knight moves
-        U64 knights = pos.pieceTypeBB[Piece::BKNIGHT];
+        U64 knights = pos.pieceTypeBB(Piece::BKNIGHT);
         while (knights != 0) {
             int sq = BitBoard::numberOfTrailingZeros(knights);
-            U64 m = BitBoard::knightAttacks[sq] & ~pos.blackBB;
+            U64 m = BitBoard::knightAttacks[sq] & ~pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             knights &= knights-1;
         }
 
         // Pawn moves
-        U64 pawns = pos.pieceTypeBB[Piece::BPAWN];
+        U64 pawns = pos.pieceTypeBB(Piece::BPAWN);
         U64 m = (pawns >> 8) & ~occupied;
         addPawnMovesByMask(moveList, pos, m, 8, true);
         m = ((m & BitBoard::maskRow6) >> 8) & ~occupied;
@@ -187,56 +187,56 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
 
         int epSquare = pos.getEpSquare();
         U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-        m = (pawns >> 9) & BitBoard::maskAToGFiles & (pos.whiteBB | epMask);
+        m = (pawns >> 9) & BitBoard::maskAToGFiles & (pos.whiteBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, 9, true);
 
-        m = (pawns >> 7) & BitBoard::maskBToHFiles & (pos.whiteBB | epMask);
+        m = (pawns >> 7) & BitBoard::maskBToHFiles & (pos.whiteBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, 7, true);
     }
 }
 
 void
 MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
-    const U64 occupied = pos.whiteBB | pos.blackBB;
-    if (pos.whiteMove) {
-        U64 kingThreats = pos.pieceTypeBB[Piece::BKNIGHT] & BitBoard::knightAttacks[pos.wKingSq];
-        U64 rookPieces = pos.pieceTypeBB[Piece::BROOK] | pos.pieceTypeBB[Piece::BQUEEN];
+    const U64 occupied = pos.whiteBB() | pos.blackBB();
+    if (pos.getWhiteMove()) {
+        U64 kingThreats = pos.pieceTypeBB(Piece::BKNIGHT) & BitBoard::knightAttacks[pos.wKingSq()];
+        U64 rookPieces = pos.pieceTypeBB(Piece::BROOK) | pos.pieceTypeBB(Piece::BQUEEN);
         if (rookPieces != 0)
-            kingThreats |= rookPieces & BitBoard::rookAttacks(pos.wKingSq, occupied);
-        U64 bishPieces = pos.pieceTypeBB[Piece::BBISHOP] | pos.pieceTypeBB[Piece::BQUEEN];
+            kingThreats |= rookPieces & BitBoard::rookAttacks(pos.wKingSq(), occupied);
+        U64 bishPieces = pos.pieceTypeBB(Piece::BBISHOP) | pos.pieceTypeBB(Piece::BQUEEN);
         if (bishPieces != 0)
-            kingThreats |= bishPieces & BitBoard::bishopAttacks(pos.wKingSq, occupied);
-        kingThreats |= pos.pieceTypeBB[Piece::BPAWN] & BitBoard::wPawnAttacks[pos.wKingSq];
+            kingThreats |= bishPieces & BitBoard::bishopAttacks(pos.wKingSq(), occupied);
+        kingThreats |= pos.pieceTypeBB(Piece::BPAWN) & BitBoard::wPawnAttacks[pos.wKingSq()];
         U64 validTargets = 0;
         if ((kingThreats != 0) && ((kingThreats & (kingThreats-1)) == 0)) { // Exactly one attacking piece
             int threatSq = BitBoard::numberOfTrailingZeros(kingThreats);
-            validTargets = kingThreats | BitBoard::squaresBetween[pos.wKingSq][threatSq];
+            validTargets = kingThreats | BitBoard::squaresBetween[pos.wKingSq()][threatSq];
         }
-        validTargets |= pos.pieceTypeBB[Piece::BKING];
+        validTargets |= pos.pieceTypeBB(Piece::BKING);
         // Queen moves
-        U64 squares = pos.pieceTypeBB[Piece::WQUEEN];
+        U64 squares = pos.pieceTypeBB(Piece::WQUEEN);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
             U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) &
-                        ~pos.whiteBB & validTargets;
+                        ~pos.whiteBB() & validTargets;
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Rook moves
-        squares = pos.pieceTypeBB[Piece::WROOK];
+        squares = pos.pieceTypeBB(Piece::WROOK);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.whiteBB & validTargets;
+            U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.whiteBB() & validTargets;
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Bishop moves
-        squares = pos.pieceTypeBB[Piece::WBISHOP];
+        squares = pos.pieceTypeBB(Piece::WBISHOP);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.whiteBB & validTargets;
+            U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.whiteBB() & validTargets;
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
@@ -244,21 +244,21 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
         // King moves
         {
             int sq = pos.getKingSq(true);
-            U64 m = BitBoard::kingAttacks[sq] & ~pos.whiteBB;
+            U64 m = BitBoard::kingAttacks[sq] & ~pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
         }
 
         // Knight moves
-        U64 knights = pos.pieceTypeBB[Piece::WKNIGHT];
+        U64 knights = pos.pieceTypeBB(Piece::WKNIGHT);
         while (knights != 0) {
             int sq = BitBoard::numberOfTrailingZeros(knights);
-            U64 m = BitBoard::knightAttacks[sq] & ~pos.whiteBB & validTargets;
+            U64 m = BitBoard::knightAttacks[sq] & ~pos.whiteBB() & validTargets;
             addMovesByMask(moveList, pos, sq, m);
             knights &= knights-1;
         }
 
         // Pawn moves
-        U64 pawns = pos.pieceTypeBB[Piece::WPAWN];
+        U64 pawns = pos.pieceTypeBB(Piece::WPAWN);
         U64 m = (pawns << 8) & ~occupied;
         addPawnMovesByMask(moveList, pos, m & validTargets, -8, true);
         m = ((m & BitBoard::maskRow3) << 8) & ~occupied;
@@ -266,50 +266,50 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
 
         int epSquare = pos.getEpSquare();
         U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-        m = (pawns << 7) & BitBoard::maskAToGFiles & ((pos.blackBB & validTargets) | epMask);
+        m = (pawns << 7) & BitBoard::maskAToGFiles & ((pos.blackBB() & validTargets) | epMask);
         addPawnMovesByMask(moveList, pos, m, -7, true);
 
-        m = (pawns << 9) & BitBoard::maskBToHFiles & ((pos.blackBB & validTargets) | epMask);
+        m = (pawns << 9) & BitBoard::maskBToHFiles & ((pos.blackBB() & validTargets) | epMask);
         addPawnMovesByMask(moveList, pos, m, -9, true);
     } else {
-        U64 kingThreats = pos.pieceTypeBB[Piece::WKNIGHT] & BitBoard::knightAttacks[pos.bKingSq];
-        U64 rookPieces = pos.pieceTypeBB[Piece::WROOK] | pos.pieceTypeBB[Piece::WQUEEN];
+        U64 kingThreats = pos.pieceTypeBB(Piece::WKNIGHT) & BitBoard::knightAttacks[pos.bKingSq()];
+        U64 rookPieces = pos.pieceTypeBB(Piece::WROOK) | pos.pieceTypeBB(Piece::WQUEEN);
         if (rookPieces != 0)
-            kingThreats |= rookPieces & BitBoard::rookAttacks(pos.bKingSq, occupied);
-        U64 bishPieces = pos.pieceTypeBB[Piece::WBISHOP] | pos.pieceTypeBB[Piece::WQUEEN];
+            kingThreats |= rookPieces & BitBoard::rookAttacks(pos.bKingSq(), occupied);
+        U64 bishPieces = pos.pieceTypeBB(Piece::WBISHOP) | pos.pieceTypeBB(Piece::WQUEEN);
         if (bishPieces != 0)
-            kingThreats |= bishPieces & BitBoard::bishopAttacks(pos.bKingSq, occupied);
-        kingThreats |= pos.pieceTypeBB[Piece::WPAWN] & BitBoard::bPawnAttacks[pos.bKingSq];
+            kingThreats |= bishPieces & BitBoard::bishopAttacks(pos.bKingSq(), occupied);
+        kingThreats |= pos.pieceTypeBB(Piece::WPAWN) & BitBoard::bPawnAttacks[pos.bKingSq()];
         U64 validTargets = 0;
         if ((kingThreats != 0) && ((kingThreats & (kingThreats-1)) == 0)) { // Exactly one attacking piece
             int threatSq = BitBoard::numberOfTrailingZeros(kingThreats);
-            validTargets = kingThreats | BitBoard::squaresBetween[pos.bKingSq][threatSq];
+            validTargets = kingThreats | BitBoard::squaresBetween[pos.bKingSq()][threatSq];
         }
-        validTargets |= pos.pieceTypeBB[Piece::WKING];
+        validTargets |= pos.pieceTypeBB(Piece::WKING);
         // Queen moves
-        U64 squares = pos.pieceTypeBB[Piece::BQUEEN];
+        U64 squares = pos.pieceTypeBB(Piece::BQUEEN);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
             U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) &
-                        ~pos.blackBB & validTargets;
+                        ~pos.blackBB() & validTargets;
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Rook moves
-        squares = pos.pieceTypeBB[Piece::BROOK];
+        squares = pos.pieceTypeBB(Piece::BROOK);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.blackBB & validTargets;
+            U64 m = BitBoard::rookAttacks(sq, occupied) & ~pos.blackBB() & validTargets;
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Bishop moves
-        squares = pos.pieceTypeBB[Piece::BBISHOP];
+        squares = pos.pieceTypeBB(Piece::BBISHOP);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.blackBB & validTargets;
+            U64 m = BitBoard::bishopAttacks(sq, occupied) & ~pos.blackBB() & validTargets;
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
@@ -317,21 +317,21 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
         // King moves
         {
             int sq = pos.getKingSq(false);
-            U64 m = BitBoard::kingAttacks[sq] & ~pos.blackBB;
+            U64 m = BitBoard::kingAttacks[sq] & ~pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
         }
 
         // Knight moves
-        U64 knights = pos.pieceTypeBB[Piece::BKNIGHT];
+        U64 knights = pos.pieceTypeBB(Piece::BKNIGHT);
         while (knights != 0) {
             int sq = BitBoard::numberOfTrailingZeros(knights);
-            U64 m = BitBoard::knightAttacks[sq] & ~pos.blackBB & validTargets;
+            U64 m = BitBoard::knightAttacks[sq] & ~pos.blackBB() & validTargets;
             addMovesByMask(moveList, pos, sq, m);
             knights &= knights-1;
         }
 
         // Pawn moves
-        U64 pawns = pos.pieceTypeBB[Piece::BPAWN];
+        U64 pawns = pos.pieceTypeBB(Piece::BPAWN);
         U64 m = (pawns >> 8) & ~occupied;
         addPawnMovesByMask(moveList, pos, m & validTargets, 8, true);
         m = ((m & BitBoard::maskRow6) >> 8) & ~occupied;
@@ -339,10 +339,10 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
 
         int epSquare = pos.getEpSquare();
         U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-        m = (pawns >> 9) & BitBoard::maskAToGFiles & ((pos.whiteBB & validTargets) | epMask);
+        m = (pawns >> 9) & BitBoard::maskAToGFiles & ((pos.whiteBB() & validTargets) | epMask);
         addPawnMovesByMask(moveList, pos, m, 9, true);
 
-        m = (pawns >> 7) & BitBoard::maskBToHFiles & ((pos.whiteBB & validTargets) | epMask);
+        m = (pawns >> 7) & BitBoard::maskBToHFiles & ((pos.whiteBB() & validTargets) | epMask);
         addPawnMovesByMask(moveList, pos, m, 7, true);
     }
 
@@ -364,48 +364,48 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
 
 void
 MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
-    U64 occupied = pos.whiteBB | pos.blackBB;
-    if (pos.whiteMove) {
+    U64 occupied = pos.whiteBB() | pos.blackBB();
+    if (pos.getWhiteMove()) {
         int bKingSq = pos.getKingSq(false);
         U64 discovered = 0; // Squares that could generate discovered checks
         U64 kRookAtk = BitBoard::rookAttacks(bKingSq, occupied);
         if ((BitBoard::rookAttacks(bKingSq, occupied & ~kRookAtk) &
-                (pos.pieceTypeBB[Piece::WQUEEN] | pos.pieceTypeBB[Piece::WROOK])) != 0)
+                (pos.pieceTypeBB(Piece::WQUEEN) | pos.pieceTypeBB(Piece::WROOK))) != 0)
             discovered |= kRookAtk;
         U64 kBishAtk = BitBoard::bishopAttacks(bKingSq, occupied);
         if ((BitBoard::bishopAttacks(bKingSq, occupied & ~kBishAtk) &
-                (pos.pieceTypeBB[Piece::WQUEEN] | pos.pieceTypeBB[Piece::WBISHOP])) != 0)
+                (pos.pieceTypeBB(Piece::WQUEEN) | pos.pieceTypeBB(Piece::WBISHOP))) != 0)
             discovered |= kBishAtk;
 
         // Queen moves
-        U64 squares = pos.pieceTypeBB[Piece::WQUEEN];
+        U64 squares = pos.pieceTypeBB(Piece::WQUEEN);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
             U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied));
-            if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB | kRookAtk | kBishAtk);
-            m &= ~pos.whiteBB;
+            if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB() | kRookAtk | kBishAtk);
+            m &= ~pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Rook moves
-        squares = pos.pieceTypeBB[Piece::WROOK];
+        squares = pos.pieceTypeBB(Piece::WROOK);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
             U64 m = BitBoard::rookAttacks(sq, occupied);
-            if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB | kRookAtk);
-            m &= ~pos.whiteBB;
+            if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB() | kRookAtk);
+            m &= ~pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Bishop moves
-        squares = pos.pieceTypeBB[Piece::WBISHOP];
+        squares = pos.pieceTypeBB(Piece::WBISHOP);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
             U64 m = BitBoard::bishopAttacks(sq, occupied);
-            if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB | kBishAtk);
-            m &= ~pos.whiteBB;
+            if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB() | kBishAtk);
+            m &= ~pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
@@ -414,21 +414,21 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
         {
             int sq = pos.getKingSq(true);
             U64 m = BitBoard::kingAttacks[sq];
-            m &= ((discovered & (1ULL<<sq)) == 0) ? pos.blackBB : ~pos.whiteBB;
+            m &= ((discovered & (1ULL<<sq)) == 0) ? pos.blackBB() : ~pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             const int k0 = 4;
             if (sq == k0) {
                 const U64 OO_SQ = 0x60ULL;
                 const U64 OOO_SQ = 0xEULL;
                 if (((pos.getCastleMask() & (1 << Position::H1_CASTLE)) != 0) &&
-                    ((OO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
+                    ((OO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
                     (pos.getPiece(k0 + 3) == Piece::WROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 + 1)) {
                     moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                 }
                 if (((pos.getCastleMask() & (1 << Position::A1_CASTLE)) != 0) &&
-                    ((OOO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
+                    ((OOO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
                     (pos.getPiece(k0 - 4) == Piece::WROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 - 1)) {
@@ -438,80 +438,80 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
         }
 
         // Knight moves
-        U64 knights = pos.pieceTypeBB[Piece::WKNIGHT];
+        U64 knights = pos.pieceTypeBB(Piece::WKNIGHT);
         U64 kKnightAtk = BitBoard::knightAttacks[bKingSq];
         while (knights != 0) {
             int sq = BitBoard::numberOfTrailingZeros(knights);
-            U64 m = BitBoard::knightAttacks[sq] & ~pos.whiteBB;
-            if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB | kKnightAtk);
-            m &= ~pos.whiteBB;
+            U64 m = BitBoard::knightAttacks[sq] & ~pos.whiteBB();
+            if ((discovered & (1ULL<<sq)) == 0) m &= (pos.blackBB() | kKnightAtk);
+            m &= ~pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             knights &= knights-1;
         }
 
         // Pawn moves
         // Captures
-        U64 pawns = pos.pieceTypeBB[Piece::WPAWN];
+        U64 pawns = pos.pieceTypeBB(Piece::WPAWN);
         int epSquare = pos.getEpSquare();
         U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-        U64 m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.blackBB | epMask);
+        U64 m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.blackBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, -7, false);
-        m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.blackBB | epMask);
+        m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.blackBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, -9, false);
 
         // Discovered checks and promotions
         U64 pawnAll = discovered | BitBoard::maskRow7;
-        m = ((pawns & pawnAll) << 8) & ~(pos.whiteBB | pos.blackBB);
+        m = ((pawns & pawnAll) << 8) & ~(pos.whiteBB() | pos.blackBB());
         addPawnMovesByMask(moveList, pos, m, -8, false);
-        m = ((m & BitBoard::maskRow3) << 8) & ~(pos.whiteBB | pos.blackBB);
+        m = ((m & BitBoard::maskRow3) << 8) & ~(pos.whiteBB() | pos.blackBB());
         addPawnDoubleMovesByMask(moveList, pos, m, -16);
 
         // Normal checks
-        m = ((pawns & ~pawnAll) << 8) & ~(pos.whiteBB | pos.blackBB);
+        m = ((pawns & ~pawnAll) << 8) & ~(pos.whiteBB() | pos.blackBB());
         addPawnMovesByMask(moveList, pos, m & BitBoard::bPawnAttacks[bKingSq], -8, false);
-        m = ((m & BitBoard::maskRow3) << 8) & ~(pos.whiteBB | pos.blackBB);
+        m = ((m & BitBoard::maskRow3) << 8) & ~(pos.whiteBB() | pos.blackBB());
         addPawnDoubleMovesByMask(moveList, pos, m & BitBoard::bPawnAttacks[bKingSq], -16);
     } else {
         int wKingSq = pos.getKingSq(true);
         U64 discovered = 0; // Squares that could generate discovered checks
         U64 kRookAtk = BitBoard::rookAttacks(wKingSq, occupied);
         if ((BitBoard::rookAttacks(wKingSq, occupied & ~kRookAtk) &
-                (pos.pieceTypeBB[Piece::BQUEEN] | pos.pieceTypeBB[Piece::BROOK])) != 0)
+                (pos.pieceTypeBB(Piece::BQUEEN) | pos.pieceTypeBB(Piece::BROOK))) != 0)
             discovered |= kRookAtk;
         U64 kBishAtk = BitBoard::bishopAttacks(wKingSq, occupied);
         if ((BitBoard::bishopAttacks(wKingSq, occupied & ~kBishAtk) &
-                (pos.pieceTypeBB[Piece::BQUEEN] | pos.pieceTypeBB[Piece::BBISHOP])) != 0)
+                (pos.pieceTypeBB(Piece::BQUEEN) | pos.pieceTypeBB(Piece::BBISHOP))) != 0)
             discovered |= kBishAtk;
 
         // Queen moves
-        U64 squares = pos.pieceTypeBB[Piece::BQUEEN];
+        U64 squares = pos.pieceTypeBB(Piece::BQUEEN);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
             U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied));
-            if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB | kRookAtk | kBishAtk;
-            m &= ~pos.blackBB;
+            if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB() | kRookAtk | kBishAtk;
+            m &= ~pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Rook moves
-        squares = pos.pieceTypeBB[Piece::BROOK];
+        squares = pos.pieceTypeBB(Piece::BROOK);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
             U64 m = BitBoard::rookAttacks(sq, occupied);
-            if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB | kRookAtk;
-            m &= ~pos.blackBB;
+            if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB() | kRookAtk;
+            m &= ~pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Bishop moves
-        squares = pos.pieceTypeBB[Piece::BBISHOP];
+        squares = pos.pieceTypeBB(Piece::BBISHOP);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
             U64 m = BitBoard::bishopAttacks(sq, occupied);
-            if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB | kBishAtk;
-            m &= ~pos.blackBB;
+            if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB() | kBishAtk;
+            m &= ~pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
@@ -520,21 +520,21 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
         {
             int sq = pos.getKingSq(false);
             U64 m = BitBoard::kingAttacks[sq];
-            m &= ((discovered & (1ULL<<sq)) == 0) ? pos.whiteBB : ~pos.blackBB;
+            m &= ((discovered & (1ULL<<sq)) == 0) ? pos.whiteBB() : ~pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             const int k0 = 60;
             if (sq == k0) {
                 const U64 OO_SQ = 0x6000000000000000ULL;
                 const U64 OOO_SQ = 0xE00000000000000ULL;
                 if (((pos.getCastleMask() & (1 << Position::H8_CASTLE)) != 0) &&
-                    ((OO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
+                    ((OO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
                     (pos.getPiece(k0 + 3) == Piece::BROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 + 1)) {
                     moveList.addMove(k0, k0 + 2, Piece::EMPTY);
                 }
                 if (((pos.getCastleMask() & (1 << Position::A8_CASTLE)) != 0) &&
-                    ((OOO_SQ & (pos.whiteBB | pos.blackBB)) == 0) &&
+                    ((OOO_SQ & (pos.whiteBB() | pos.blackBB())) == 0) &&
                     (pos.getPiece(k0 - 4) == Piece::BROOK) &&
                     !sqAttacked(pos, k0) &&
                     !sqAttacked(pos, k0 - 1)) {
@@ -544,159 +544,159 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
         }
 
         // Knight moves
-        U64 knights = pos.pieceTypeBB[Piece::BKNIGHT];
+        U64 knights = pos.pieceTypeBB(Piece::BKNIGHT);
         U64 kKnightAtk = BitBoard::knightAttacks[wKingSq];
         while (knights != 0) {
             int sq = BitBoard::numberOfTrailingZeros(knights);
-            U64 m = BitBoard::knightAttacks[sq] & ~pos.blackBB;
-            if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB | kKnightAtk;
-            m &= ~pos.blackBB;
+            U64 m = BitBoard::knightAttacks[sq] & ~pos.blackBB();
+            if ((discovered & (1ULL<<sq)) == 0) m &= pos.whiteBB() | kKnightAtk;
+            m &= ~pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             knights &= knights-1;
         }
 
         // Pawn moves
         // Captures
-        U64 pawns = pos.pieceTypeBB[Piece::BPAWN];
+        U64 pawns = pos.pieceTypeBB(Piece::BPAWN);
         int epSquare = pos.getEpSquare();
         U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-        U64 m = (pawns >> 9) & BitBoard::maskAToGFiles & (pos.whiteBB | epMask);
+        U64 m = (pawns >> 9) & BitBoard::maskAToGFiles & (pos.whiteBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, 9, false);
-        m = (pawns >> 7) & BitBoard::maskBToHFiles & (pos.whiteBB | epMask);
+        m = (pawns >> 7) & BitBoard::maskBToHFiles & (pos.whiteBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, 7, false);
 
         // Discovered checks and promotions
         U64 pawnAll = discovered | BitBoard::maskRow2;
-        m = ((pawns & pawnAll) >> 8) & ~(pos.whiteBB | pos.blackBB);
+        m = ((pawns & pawnAll) >> 8) & ~(pos.whiteBB() | pos.blackBB());
         addPawnMovesByMask(moveList, pos, m, 8, false);
-        m = ((m & BitBoard::maskRow6) >> 8) & ~(pos.whiteBB | pos.blackBB);
+        m = ((m & BitBoard::maskRow6) >> 8) & ~(pos.whiteBB() | pos.blackBB());
         addPawnDoubleMovesByMask(moveList, pos, m, 16);
 
         // Normal checks
-        m = ((pawns & ~pawnAll) >> 8) & ~(pos.whiteBB | pos.blackBB);
+        m = ((pawns & ~pawnAll) >> 8) & ~(pos.whiteBB() | pos.blackBB());
         addPawnMovesByMask(moveList, pos, m & BitBoard::wPawnAttacks[wKingSq], 8, false);
-        m = ((m & BitBoard::maskRow6) >> 8) & ~(pos.whiteBB | pos.blackBB);
+        m = ((m & BitBoard::maskRow6) >> 8) & ~(pos.whiteBB() | pos.blackBB());
         addPawnDoubleMovesByMask(moveList, pos, m & BitBoard::wPawnAttacks[wKingSq], 16);
     }
 }
 
 void
 MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
-    U64 occupied = pos.whiteBB | pos.blackBB;
-    if (pos.whiteMove) {
+    U64 occupied = pos.whiteBB() | pos.blackBB();
+    if (pos.getWhiteMove()) {
         // Queen moves
-        U64 squares = pos.pieceTypeBB[Piece::WQUEEN];
+        U64 squares = pos.pieceTypeBB(Piece::WQUEEN);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & pos.blackBB;
+            U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Rook moves
-        squares = pos.pieceTypeBB[Piece::WROOK];
+        squares = pos.pieceTypeBB(Piece::WROOK);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::rookAttacks(sq, occupied) & pos.blackBB;
+            U64 m = BitBoard::rookAttacks(sq, occupied) & pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Bishop moves
-        squares = pos.pieceTypeBB[Piece::WBISHOP];
+        squares = pos.pieceTypeBB(Piece::WBISHOP);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::bishopAttacks(sq, occupied) & pos.blackBB;
+            U64 m = BitBoard::bishopAttacks(sq, occupied) & pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Knight moves
-        U64 knights = pos.pieceTypeBB[Piece::WKNIGHT];
+        U64 knights = pos.pieceTypeBB(Piece::WKNIGHT);
         while (knights != 0) {
             int sq = BitBoard::numberOfTrailingZeros(knights);
-            U64 m = BitBoard::knightAttacks[sq] & pos.blackBB;
+            U64 m = BitBoard::knightAttacks[sq] & pos.blackBB();
             addMovesByMask(moveList, pos, sq, m);
             knights &= knights-1;
         }
 
         // King moves
         int sq = pos.getKingSq(true);
-        U64 m = BitBoard::kingAttacks[sq] & pos.blackBB;
+        U64 m = BitBoard::kingAttacks[sq] & pos.blackBB();
         addMovesByMask(moveList, pos, sq, m);
 
         // Pawn moves
-        U64 pawns = pos.pieceTypeBB[Piece::WPAWN];
-        m = (pawns << 8) & ~(pos.whiteBB | pos.blackBB);
+        U64 pawns = pos.pieceTypeBB(Piece::WPAWN);
+        m = (pawns << 8) & ~(pos.whiteBB() | pos.blackBB());
         m &= BitBoard::maskRow8;
         addPawnMovesByMask(moveList, pos, m, -8, false);
 
         int epSquare = pos.getEpSquare();
         U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
-        m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.blackBB | epMask);
+        m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.blackBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, -7, false);
-        m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.blackBB | epMask);
+        m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.blackBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, -9, false);
     } else {
         // Queen moves
-        U64 squares = pos.pieceTypeBB[Piece::BQUEEN];
+        U64 squares = pos.pieceTypeBB(Piece::BQUEEN);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & pos.whiteBB;
+            U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Rook moves
-        squares = pos.pieceTypeBB[Piece::BROOK];
+        squares = pos.pieceTypeBB(Piece::BROOK);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::rookAttacks(sq, occupied) & pos.whiteBB;
+            U64 m = BitBoard::rookAttacks(sq, occupied) & pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Bishop moves
-        squares = pos.pieceTypeBB[Piece::BBISHOP];
+        squares = pos.pieceTypeBB(Piece::BBISHOP);
         while (squares != 0) {
             int sq = BitBoard::numberOfTrailingZeros(squares);
-            U64 m = BitBoard::bishopAttacks(sq, occupied) & pos.whiteBB;
+            U64 m = BitBoard::bishopAttacks(sq, occupied) & pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             squares &= squares-1;
         }
 
         // Knight moves
-        U64 knights = pos.pieceTypeBB[Piece::BKNIGHT];
+        U64 knights = pos.pieceTypeBB(Piece::BKNIGHT);
         while (knights != 0) {
             int sq = BitBoard::numberOfTrailingZeros(knights);
-            U64 m = BitBoard::knightAttacks[sq] & pos.whiteBB;
+            U64 m = BitBoard::knightAttacks[sq] & pos.whiteBB();
             addMovesByMask(moveList, pos, sq, m);
             knights &= knights-1;
         }
 
         // King moves
         int sq = pos.getKingSq(false);
-        U64 m = BitBoard::kingAttacks[sq] & pos.whiteBB;
+        U64 m = BitBoard::kingAttacks[sq] & pos.whiteBB();
         addMovesByMask(moveList, pos, sq, m);
 
         // Pawn moves
-        U64 pawns = pos.pieceTypeBB[Piece::BPAWN];
-        m = (pawns >> 8) & ~(pos.whiteBB | pos.blackBB);
+        U64 pawns = pos.pieceTypeBB(Piece::BPAWN);
+        m = (pawns >> 8) & ~(pos.whiteBB() | pos.blackBB());
         m &= BitBoard::maskRow1;
         addPawnMovesByMask(moveList, pos, m, 8, false);
 
         int epSquare = pos.getEpSquare();
         U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0L;
-        m = (pawns >> 9) & BitBoard::maskAToGFiles & (pos.whiteBB | epMask);
+        m = (pawns >> 9) & BitBoard::maskAToGFiles & (pos.whiteBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, 9, false);
-        m = (pawns >> 7) & BitBoard::maskBToHFiles & (pos.whiteBB | epMask);
+        m = (pawns >> 7) & BitBoard::maskBToHFiles & (pos.whiteBB() | epMask);
         addPawnMovesByMask(moveList, pos, m, 7, false);
     }
 }
 
 bool
 MoveGen::givesCheck(const Position& pos, const Move& m) {
-    bool wtm = pos.whiteMove;
+    bool wtm = pos.getWhiteMove();
     int oKingSq = pos.getKingSq(!wtm);
     int oKing = wtm ? Piece::BKING : Piece::WKING;
     int p = Piece::makeWhite(m.promoteTo() == Piece::EMPTY ? pos.getPiece(m.from()) : m.promoteTo());
@@ -810,12 +810,12 @@ MoveGen::removeIllegal(Position& pos, MoveList& moveList) {
     UndoInfo ui;
 
     bool isInCheck = inCheck(pos);
-    const U64 occupied = pos.whiteBB | pos.blackBB;
-    int kSq = pos.getKingSq(pos.whiteMove);
+    const U64 occupied = pos.whiteBB() | pos.blackBB();
+    int kSq = pos.getKingSq(pos.getWhiteMove());
     U64 kingAtks = BitBoard::rookAttacks(kSq, occupied) | BitBoard::bishopAttacks(kSq, occupied);
     int epSquare = pos.getEpSquare();
     if (isInCheck) {
-        kingAtks |= pos.pieceTypeBB[pos.whiteMove ? Piece::BKNIGHT : Piece::WKNIGHT];
+        kingAtks |= pos.pieceTypeBB(pos.getWhiteMove() ? Piece::BKNIGHT : Piece::WKNIGHT);
         for (int mi = 0; mi < moveList.size; mi++) {
             const Move& m = moveList[mi];
             bool legal;
@@ -823,9 +823,9 @@ MoveGen::removeIllegal(Position& pos, MoveList& moveList) {
                 legal = false;
             } else {
                 pos.makeMove(m, ui);
-                pos.setWhiteMove(!pos.whiteMove);
+                pos.setWhiteMove(!pos.getWhiteMove());
                 legal = !inCheck(pos);
-                pos.setWhiteMove(!pos.whiteMove);
+                pos.setWhiteMove(!pos.getWhiteMove());
                 pos.unMakeMove(m, ui);
             }
             if (legal)
@@ -839,9 +839,9 @@ MoveGen::removeIllegal(Position& pos, MoveList& moveList) {
                 legal = true;
             } else {
                 pos.makeMove(m, ui);
-                pos.setWhiteMove(!pos.whiteMove);
+                pos.setWhiteMove(!pos.getWhiteMove());
                 legal = !inCheck(pos);
-                pos.setWhiteMove(!pos.whiteMove);
+                pos.setWhiteMove(!pos.getWhiteMove());
                 pos.unMakeMove(m, ui);
             }
             if (legal)
@@ -854,31 +854,31 @@ MoveGen::removeIllegal(Position& pos, MoveList& moveList) {
 bool
 MoveGen::isLegal(Position& pos, const Move& m, bool isInCheck) {
     UndoInfo ui;
-    int kSq = pos.getKingSq(pos.whiteMove);
+    int kSq = pos.getKingSq(pos.getWhiteMove());
     const int epSquare = pos.getEpSquare();
     if (isInCheck) {
         if ((m.from() != kSq) && (m.to() != epSquare)) {
-            U64 occupied = pos.whiteBB | pos.blackBB;
+            U64 occupied = pos.whiteBB() | pos.blackBB();
             U64 toMask = 1ULL << m.to();
-            int knight = pos.whiteMove ? Piece::BKNIGHT : Piece::WKNIGHT;
+            int knight = pos.getWhiteMove() ? Piece::BKNIGHT : Piece::WKNIGHT;
             if (((BitBoard::rookAttacks(kSq, occupied) & toMask) == 0) &&
                 ((BitBoard::bishopAttacks(kSq, occupied) & toMask) == 0) &&
-                ((BitBoard::knightAttacks[kSq] & pos.pieceTypeBB[knight] & toMask) == 0))
+                ((BitBoard::knightAttacks[kSq] & pos.pieceTypeBB(knight) & toMask) == 0))
                 return false;
         }
         pos.makeMove(m, ui);
-        pos.setWhiteMove(!pos.whiteMove);
+        pos.setWhiteMove(!pos.getWhiteMove());
         bool legal = !inCheck(pos);
-        pos.setWhiteMove(!pos.whiteMove);
+        pos.setWhiteMove(!pos.getWhiteMove());
         pos.unMakeMove(m, ui);
         return legal;
     } else {
         if (m.from() == kSq) {
-            U64 occupied = (pos.whiteBB | pos.blackBB) & ~(1ULL<<m.from());
+            U64 occupied = (pos.whiteBB() | pos.blackBB()) & ~(1ULL<<m.from());
             return !MoveGen::sqAttacked(pos, m.to(), occupied);
         } else {
             if (m.to() != epSquare) {
-                U64 occupied = pos.whiteBB | pos.blackBB;
+                U64 occupied = pos.whiteBB() | pos.blackBB();
                 U64 fromMask = 1ULL << m.from();
                 if (((BitBoard::rookAttacks(kSq, occupied) & fromMask) == 0) &&
                     ((BitBoard::bishopAttacks(kSq, occupied) & fromMask) == 0))
@@ -887,9 +887,9 @@ MoveGen::isLegal(Position& pos, const Move& m, bool isInCheck) {
                     return true;
             }
             pos.makeMove(m, ui);
-            pos.setWhiteMove(!pos.whiteMove);
+            pos.setWhiteMove(!pos.getWhiteMove());
             bool legal = !inCheck(pos);
-            pos.setWhiteMove(!pos.whiteMove);
+            pos.setWhiteMove(!pos.getWhiteMove());
             pos.unMakeMove(m, ui);
             return legal;
         }

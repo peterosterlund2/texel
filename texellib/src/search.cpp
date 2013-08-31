@@ -538,10 +538,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     // Reverse futility pruning
     if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) && normalBound) {
         bool mtrlOk;
-        if (pos.whiteMove) {
-            mtrlOk = (pos.wMtrl > pos.wMtrlPawns) && (pos.wMtrlPawns > 0);
+        if (pos.getWhiteMove()) {
+            mtrlOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
         } else {
-            mtrlOk = (pos.bMtrl > pos.bMtrlPawns) && (pos.bMtrlPawns > 0);
+            mtrlOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
         }
         if (mtrlOk) {
             int margin;
@@ -564,10 +564,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     if (    (depth >= 3*plyScale) && !inCheck && sti.allowNullMove &&
             (std::abs(beta) <= MATE0 / 2)) {
         bool nullOk;
-        if (pos.whiteMove) {
-            nullOk = (pos.wMtrl > pos.wMtrlPawns) && (pos.wMtrlPawns > 0);
+        if (pos.getWhiteMove()) {
+            nullOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
         } else {
-            nullOk = (pos.bMtrl > pos.bMtrlPawns) && (pos.bMtrlPawns > 0);
+            nullOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
         }
         if (nullOk) {
             if (evalScore == UNKNOWN_SCORE)
@@ -587,7 +587,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 sph.setOwnerCurrMove(0, alpha);
             }
             const int R = (depth > 6*plyScale) ? 4*plyScale : 3*plyScale;
-            pos.setWhiteMove(!pos.whiteMove);
+            pos.setWhiteMove(!pos.getWhiteMove());
             int epSquare = pos.getEpSquare();
             pos.setEpSquare(-1);
             searchTreeInfo[ply+1].allowNullMove = false;
@@ -595,7 +595,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             int score = -negaScout(smp, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
             searchTreeInfo[ply+1].allowNullMove = true;
             pos.setEpSquare(epSquare);
-            pos.setWhiteMove(!pos.whiteMove);
+            pos.setWhiteMove(!pos.getWhiteMove());
             if (smp && (depth - R >= MIN_SMP_DEPTH * plyScale))
                 pd.fhInfo.addData(-1, searchTreeInfo[ply+1].currentMoveNo, score < beta, false);
             if (score >= beta) {
@@ -721,10 +721,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             if (mayReduce && haveLegalMoves && !givesCheck && !passedPawnPush(pos, m)) {
                 if (normalBound && (bestScore >= -MATE0 / 2)) {
                     bool lmpOk;
-                    if (pos.whiteMove)
-                        lmpOk = (pos.wMtrl > pos.wMtrlPawns) && (pos.wMtrlPawns > 0);
+                    if (pos.getWhiteMove())
+                        lmpOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
                     else
-                        lmpOk = (pos.bMtrl > pos.bMtrlPawns) && (pos.bMtrlPawns > 0);
+                        lmpOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
                     if (lmpOk) {
                         int moveCountLimit;
                         if (depth <= plyScale)          moveCountLimit = 3;
@@ -754,14 +754,14 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         if (sVal > tVal - pV / 2)
                             moveExtend = plyScale;
                     }
-                    if ((moveExtend < plyScale) && isCapture && (pos.wMtrlPawns + pos.bMtrlPawns > pV)) {
+                    if ((moveExtend < plyScale) && isCapture && (pos.wMtrlPawns() + pos.bMtrlPawns() > pV)) {
                         // Extend if going into pawn endgame
                         int capVal = Evaluate::pieceValue[pos.getPiece(m.to())];
-                        if (pos.whiteMove) {
-                            if ((pos.wMtrl == pos.wMtrlPawns) && (pos.bMtrl - pos.bMtrlPawns == capVal))
+                        if (pos.getWhiteMove()) {
+                            if ((pos.wMtrl() == pos.wMtrlPawns()) && (pos.bMtrl() - pos.bMtrlPawns() == capVal))
                                 moveExtend = plyScale;
                         } else {
-                            if ((pos.bMtrl == pos.bMtrlPawns) && (pos.wMtrl - pos.wMtrlPawns == capVal))
+                            if ((pos.bMtrl() == pos.bMtrlPawns()) && (pos.wMtrl() - pos.wMtrlPawns() == capVal))
                                 moveExtend = plyScale;
                         }
                     }
@@ -885,13 +885,13 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
 bool
 Search::weakPlaySkipMove(const Position& pos, const Move& m, int ply) const {
-    U64 rndL = pos.zobristHash() ^ Position::psHashKeys[0][m.from()] ^
-               Position::psHashKeys[0][m.to()] ^ randomSeed;
+    U64 rndL = pos.zobristHash() ^ Position::getHashKey(Piece::EMPTY, m.from()) ^
+               Position::getHashKey(Piece::EMPTY, m.to()) ^ randomSeed;
     double rnd = ((rndL & 0x7fffffffffffffffULL) % 1000000000) / 1e9;
 
     double s = strength * 1e-3;
     double offs = (17 - 50 * s) / 3;
-    double effPly = ply * Evaluate::interpolate(pos.wMtrl + pos.bMtrl, 0, 30, Evaluate::qV * 4, 100) * 1e-2;
+    double effPly = ply * Evaluate::interpolate(pos.wMtrl() + pos.bMtrl(), 0, 30, Evaluate::qV * 4, 100) * 1e-2;
     double t = effPly + offs;
     double p = 1/(1+exp(t)); // Probability to "see" move
     bool easyMove = ((pos.getPiece(m.to()) != Piece::EMPTY) ||
@@ -970,8 +970,8 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
                 int prom = Evaluate::pieceValue[m.promoteTo()];
                 int optimisticScore = evalScore + capt + prom + 200;
                 if (optimisticScore < alpha) { // Delta pruning
-                    if ((pos.wMtrlPawns > 0) && (pos.wMtrl > capt + pos.wMtrlPawns) &&
-                        (pos.bMtrlPawns > 0) && (pos.bMtrl > capt + pos.bMtrlPawns)) {
+                    if ((pos.wMtrlPawns() > 0) && (pos.wMtrl() > capt + pos.wMtrlPawns()) &&
+                        (pos.bMtrlPawns() > 0) && (pos.bMtrl() > capt + pos.bMtrlPawns())) {
                         if (depth -1 > -2) {
                             givesCheck = MoveGen::givesCheck(pos, m);
                             givesCheckComputed = true;
@@ -1037,36 +1037,36 @@ Search::SEE(const Move& m) {
 
     UndoInfo ui;
     pos.makeSEEMove(m, ui);
-    bool white = pos.whiteMove;
+    bool white = pos.getWhiteMove();
     int valOnSquare = Evaluate::pieceValue[pos.getPiece(square)];
-    U64 occupied = pos.whiteBB | pos.blackBB;
+    U64 occupied = pos.whiteBB() | pos.blackBB();
     while (true) {
         int bestValue = std::numeric_limits<int>::max();
         U64 atk;
         if (white) {
-            atk = BitBoard::bPawnAttacks[square] & pos.pieceTypeBB[Piece::WPAWN] & occupied;
+            atk = BitBoard::bPawnAttacks[square] & pos.pieceTypeBB(Piece::WPAWN) & occupied;
             if (atk != 0) {
                 bestValue = Evaluate::pV;
             } else {
-                atk = BitBoard::knightAttacks[square] & pos.pieceTypeBB[Piece::WKNIGHT] & occupied;
+                atk = BitBoard::knightAttacks[square] & pos.pieceTypeBB(Piece::WKNIGHT) & occupied;
                 if (atk != 0) {
                     bestValue = Evaluate::nV;
                 } else {
                     U64 bAtk = BitBoard::bishopAttacks(square, occupied) & occupied;
-                    atk = bAtk & pos.pieceTypeBB[Piece::WBISHOP];
+                    atk = bAtk & pos.pieceTypeBB(Piece::WBISHOP);
                     if (atk != 0) {
                         bestValue = Evaluate::bV;
                     } else {
                         U64 rAtk = BitBoard::rookAttacks(square, occupied) & occupied;
-                        atk = rAtk & pos.pieceTypeBB[Piece::WROOK];
+                        atk = rAtk & pos.pieceTypeBB(Piece::WROOK);
                         if (atk != 0) {
                             bestValue = Evaluate::rV;
                         } else {
-                            atk = (bAtk | rAtk) & pos.pieceTypeBB[Piece::WQUEEN];
+                            atk = (bAtk | rAtk) & pos.pieceTypeBB(Piece::WQUEEN);
                             if (atk != 0) {
                                 bestValue = Evaluate::qV;
                             } else {
-                                atk = BitBoard::kingAttacks[square] & pos.pieceTypeBB[Piece::WKING] & occupied;
+                                atk = BitBoard::kingAttacks[square] & pos.pieceTypeBB(Piece::WKING) & occupied;
                                 if (atk != 0) {
                                     bestValue = kV;
                                 } else {
@@ -1078,29 +1078,29 @@ Search::SEE(const Move& m) {
                 }
             }
         } else {
-            atk = BitBoard::wPawnAttacks[square] & pos.pieceTypeBB[Piece::BPAWN] & occupied;
+            atk = BitBoard::wPawnAttacks[square] & pos.pieceTypeBB(Piece::BPAWN) & occupied;
             if (atk != 0) {
                 bestValue = Evaluate::pV;
             } else {
-                atk = BitBoard::knightAttacks[square] & pos.pieceTypeBB[Piece::BKNIGHT] & occupied;
+                atk = BitBoard::knightAttacks[square] & pos.pieceTypeBB(Piece::BKNIGHT) & occupied;
                 if (atk != 0) {
                     bestValue = Evaluate::nV;
                 } else {
                     U64 bAtk = BitBoard::bishopAttacks(square, occupied) & occupied;
-                    atk = bAtk & pos.pieceTypeBB[Piece::BBISHOP];
+                    atk = bAtk & pos.pieceTypeBB(Piece::BBISHOP);
                     if (atk != 0) {
                         bestValue = Evaluate::bV;
                     } else {
                         U64 rAtk = BitBoard::rookAttacks(square, occupied) & occupied;
-                        atk = rAtk & pos.pieceTypeBB[Piece::BROOK];
+                        atk = rAtk & pos.pieceTypeBB(Piece::BROOK);
                         if (atk != 0) {
                             bestValue = Evaluate::rV;
                         } else {
-                            atk = (bAtk | rAtk) & pos.pieceTypeBB[Piece::BQUEEN];
+                            atk = (bAtk | rAtk) & pos.pieceTypeBB(Piece::BQUEEN);
                             if (atk != 0) {
                                 bestValue = Evaluate::qV;
                             } else {
-                                atk = BitBoard::kingAttacks[square] & pos.pieceTypeBB[Piece::BKING] & occupied;
+                                atk = BitBoard::kingAttacks[square] & pos.pieceTypeBB(Piece::BKING) & occupied;
                                 if (atk != 0) {
                                     bestValue = kV;
                                 } else {
