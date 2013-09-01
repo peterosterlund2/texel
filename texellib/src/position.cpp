@@ -69,8 +69,7 @@ Position::Position() {
     epSquare = -1;
     halfMoveClock = 0;
     fullMoveCounter = 1;
-    hashKey = computeZobristHash();
-    pHashKey = 0;
+    computeZobristHash();
     wKingSq_ = bKingSq_ = -1;
     wMtrl_ = bMtrl_ = -Evaluate::kV;
     wMtrlPawns_ = bMtrlPawns_ = 0;
@@ -279,6 +278,71 @@ Position::movePieceNotPawn(int from, int to) {
     psScore2_[piece] += Evaluate::psTab2[piece][to] - Evaluate::psTab2[piece][from];
 }
 
+// ----------------------------------------------------------------------------
+
+void
+Position::serialize(SerializeData& data) const {
+    for (int i = 0; i < 4; i++) {
+        int sq0 = i * 16;
+        U64 v = 0;
+        for (int sq = 0; sq < 16; sq++)
+            v = (v << 4) | squares[sq0 + sq];
+        data.v[i] = v;
+    }
+    U64 flags = whiteMove;
+    flags = (flags << 4) | castleMask;
+    flags = (flags << 8) | (epSquare & 0xff);
+    flags = (flags << 8) | (halfMoveClock & 0xff);
+    flags = (flags << 16) | (fullMoveCounter & 0xffff);
+    data.v[4] = flags;
+}
+
+void
+Position::deSerialize(const SerializeData& data) {
+    for (int i = 0; i < 4; i++) {
+        int sq0 = i * 16;
+        U64 v = data.v[i];
+        for (int sq = 15; sq >= 0; sq--) {
+            int p = v & 0xf;
+            squares[sq0 + sq] = p;
+            v >>= 4;
+        }
+    }
+    U64 flags = data.v[4];
+    fullMoveCounter = flags & 0xffff;
+    flags >>= 16;
+
+    halfMoveClock = flags & 0xff;
+    flags >>= 8;
+
+    epSquare = flags & 0xff; if (epSquare == 0xff) epSquare = -1;
+    flags >>= 8;
+
+    castleMask = flags & 0xf;
+    flags >>= 4;
+
+    whiteMove = ((flags & 1) != 0);
+
+    for (int p = 0; p < Piece::nPieceTypes; p++)
+        pieceTypeBB_[p] = 0;
+    for (int sq = 0; sq < 64; sq++) {
+        int p = squares[sq];
+        pieceTypeBB_[p] |= 1ULL << sq;
+        if (p == Piece::WKING)
+            wKingSq_ = sq;
+        else if (p == Piece::BKING)
+            bKingSq_ = sq;
+    }
+    whiteBB_ = pieceTypeBB(Piece::WKING, Piece::WQUEEN, Piece::WROOK,
+                           Piece::WBISHOP, Piece::WKNIGHT, Piece::WPAWN);
+    blackBB_ = pieceTypeBB(Piece::BKING, Piece::BQUEEN, Piece::BROOK,
+                           Piece::BBISHOP, Piece::BKNIGHT, Piece::BPAWN);
+
+    computeZobristHash();
+}
+
+// ----------------------------------------------------------------------------
+
 std::ostream&
 operator<<(std::ostream& os, const Position& pos) {
     std::stringstream ss;
@@ -290,8 +354,11 @@ operator<<(std::ostream& os, const Position& pos) {
 U64
 Position::computeZobristHash() {
     U64 hash = 0;
+    pHashKey = 0;
+    matId = {};
     for (int sq = 0; sq < 64; sq++) {
         int p = squares[sq];
+        matId.addPiece(p);
         hash ^= psHashKeys[p][sq];
         if ((p == Piece::WPAWN) || (p == Piece::BPAWN))
             pHashKey ^= psHashKeys[p][sq];
@@ -300,6 +367,7 @@ Position::computeZobristHash() {
         hash ^= whiteHashKey;
     hash ^= castleHashKeys[castleMask];
     hash ^= epHashKeys[(epSquare >= 0) ? getX(epSquare) + 1 : 0];
+    hashKey = hash;
     return hash;
 }
 

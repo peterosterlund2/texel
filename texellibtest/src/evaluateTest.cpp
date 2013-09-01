@@ -67,14 +67,32 @@ swapColors(const Position& pos) {
     return sym;
 }
 
+/** Evaluation position and check position serialization. */
+int evalPos(Evaluate& eval, const Position& pos) {
+    {
+        Position pos1(pos);
+        U64 h1 = pos1.historyHash();
+        pos1.computeZobristHash();
+        U64 h2 = pos1.historyHash();
+        ASSERT_EQUAL(h1, h2);
+    }
+
+    Position pos2;
+    Position::SerializeData data;
+    pos.serialize(data);
+    pos2.deSerialize(data);
+    ASSERT(pos.equals(pos2));
+    return eval.evalPos(pos);
+}
+
 /** Return static evaluation score for white, regardless of whose turn it is to move. */
 int
 evalWhite(const Position& pos) {
     auto et = Evaluate::getEvalHashTables();
     Evaluate eval(*et);
-    int ret = eval.evalPos(pos);
+    int ret = evalPos(eval, pos);
     Position symPos = swapColors(pos);
-    int symScore = eval.evalPos(symPos);
+    int symScore = evalPos(eval, symPos);
     ASSERT_EQUAL(ret, symScore);
     ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     ASSERT_EQUAL(symPos.materialId(), PositionTest::computeMaterialId(symPos));

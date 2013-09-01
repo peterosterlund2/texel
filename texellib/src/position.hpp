@@ -176,6 +176,14 @@ public:
     /** Get hash key for a piece at a square. */
     static U64 getHashKey(int piece, int square);
 
+
+    /** Serialization. Use by tree logging code. */
+    struct SerializeData {
+        U64 v[5];
+    };
+    void serialize(SerializeData& data) const;
+    void deSerialize(const SerializeData& data);
+
 private:
     /** Move a non-pawn piece to an empty square. */
     void movePieceNotPawn(int from, int to);
