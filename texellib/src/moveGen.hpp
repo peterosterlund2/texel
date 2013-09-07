@@ -72,17 +72,26 @@ public:
      * Generate and return a list of pseudo-legal moves.
      * Pseudo-legal means that the moves don't necessarily defend from check threats.
      */
+    template <bool wtm>
+    static void pseudoLegalMoves(const Position& pos, MoveList& moveList);
     static void pseudoLegalMoves(const Position& pos, MoveList& moveList);
 
     /**
      * Generate and return a list of pseudo-legal check evasion moves.
      * Pseudo-legal means that the moves don't necessarily defend from check threats.
      */
+    template <bool wtm>
+    static void checkEvasions(const Position& pos, MoveList& moveList);
     static void checkEvasions(const Position& pos, MoveList& moveList);
 
     /** Generate captures, checks, and possibly some other moves that are too hard to filter out. */
+    template <bool wtm>
+    static void pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList);
     static void pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList);
 
+    /** Generate and return a list of pseudo-legal capture moves. */
+    template <bool wtm>
+    static void pseudoLegalCaptures(const Position& pos, MoveList& moveList);
     static void pseudoLegalCaptures(const Position& pos, MoveList& moveList);
 
     /**
@@ -257,5 +266,37 @@ private:
     MoveGen() = delete;
 };
 
+
+inline void
+MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
+    if (pos.getWhiteMove())
+        pseudoLegalMoves<true>(pos, moveList);
+    else
+        pseudoLegalMoves<false>(pos, moveList);
+}
+
+inline void
+MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
+    if (pos.getWhiteMove())
+        checkEvasions<true>(pos, moveList);
+    else
+        checkEvasions<false>(pos, moveList);
+}
+
+inline void
+MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
+    if (pos.getWhiteMove())
+        pseudoLegalCapturesAndChecks<true>(pos, moveList);
+    else
+        pseudoLegalCapturesAndChecks<false>(pos, moveList);
+}
+
+inline void
+MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
+    if (pos.getWhiteMove())
+        pseudoLegalCaptures<true>(pos, moveList);
+    else
+        pseudoLegalCaptures<false>(pos, moveList);
+}
 
 #endif /* MOVEGEN_HPP_ */

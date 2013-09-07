@@ -144,6 +144,9 @@ public:
     U64 whiteBB() const;
     /** BitBoard for all squares occupied by black pieces. */
     U64 blackBB() const;
+    /** BitBoard for all squares occupied by white or black pieces. */
+    U64 colorBB(int wtm) const;
+
     /** BitBoard for all squares occupied by what and black pieces. */
     U64 occupiedBB() const;
 
@@ -542,6 +545,10 @@ inline U64 Position::whiteBB() const {
 inline U64 Position::blackBB() const {
     return blackBB_;
 };
+
+inline U64 Position::colorBB(int wtm) const {
+    return wtm ? whiteBB_ : blackBB_;
+}
 
 inline U64 Position::occupiedBB() const {
     return whiteBB() | blackBB();

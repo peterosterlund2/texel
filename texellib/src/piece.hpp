@@ -61,6 +61,27 @@ public:
     static int makeBlack(int pType);
 };
 
+template <bool wtm> struct ColorTraits {
+};
+
+template<> struct ColorTraits<true> {
+    static const Piece::Type KING   = Piece::WKING;
+    static const Piece::Type QUEEN  = Piece::WQUEEN;
+    static const Piece::Type ROOK   = Piece::WROOK;
+    static const Piece::Type BISHOP = Piece::WBISHOP;
+    static const Piece::Type KNIGHT = Piece::WKNIGHT;
+    static const Piece::Type PAWN   = Piece::WPAWN;
+};
+
+template<> struct ColorTraits<false> {
+    static const Piece::Type KING   = Piece::BKING;
+    static const Piece::Type QUEEN  = Piece::BQUEEN;
+    static const Piece::Type ROOK   = Piece::BROOK;
+    static const Piece::Type BISHOP = Piece::BBISHOP;
+    static const Piece::Type KNIGHT = Piece::BKNIGHT;
+    static const Piece::Type PAWN   = Piece::BPAWN;
+};
+
 inline bool
 Piece::isWhite(int pType) {
     return pType < BKING;
