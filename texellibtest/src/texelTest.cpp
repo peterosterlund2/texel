@@ -35,6 +35,7 @@
 #include "textioTest.hpp"
 #include "transpositionTableTest.hpp"
 #include "parallelTest.hpp"
+#include "treeLoggerTest.hpp"
 
 void
 runSuite(const SuiteBase& suite) {
@@ -58,5 +59,6 @@ int main() {
     runSuite(TextIOTest());
     runSuite(TranspositionTableTest());
     runSuite(ParallelTest());
+    runSuite(TreeLoggerTest());
     return 0;
 }

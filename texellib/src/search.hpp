@@ -41,6 +41,10 @@
 #include <memory>
 
 
+typedef TreeLoggerWriter TreeLogger;
+//typedef TreeLoggerWriterDummy TreeLogger;
+
+
 class SearchTest;
 
 /** Implements the nega-scout search algorithm. */
@@ -208,7 +212,7 @@ private:
     ParallelData& pd;
     std::vector<std::shared_ptr<SplitPoint>> spVec;
     int threadNo;
-    TreeLoggerWriter logFile;
+    TreeLogger logFile;
 
     std::shared_ptr<Listener> listener;
     std::shared_ptr<StopHandler> stopHandler;

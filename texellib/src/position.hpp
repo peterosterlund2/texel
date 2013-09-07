@@ -180,7 +180,7 @@ public:
     static U64 getHashKey(int piece, int square);
 
 
-    /** Serialization. Use by tree logging code. */
+    /** Serialization. Used by tree logging code. */
     struct SerializeData {
         U64 v[5];
     };
