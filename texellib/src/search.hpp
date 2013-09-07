@@ -41,8 +41,8 @@
 #include <memory>
 
 
-typedef TreeLoggerWriter TreeLogger;
-//typedef TreeLoggerWriterDummy TreeLogger;
+//typedef TreeLoggerWriter TreeLogger;
+typedef TreeLoggerWriterDummy TreeLogger;
 
 
 class SearchTest;
