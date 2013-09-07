@@ -59,6 +59,9 @@ public:
 
     int hashCode() const;
 
+    /** Not declared "nothrow". Avoids nullptr check in generated assembly code when using placement new. */
+    void* operator new (std::size_t size, void* ptr) { return ptr; }
+
     /** For debugging. */
     std::ostream& operator<<(std::ostream& os);
 
