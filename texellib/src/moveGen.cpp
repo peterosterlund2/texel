@@ -114,26 +114,26 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
     const U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
     if (wtm) {
         U64 m = (pawns << 8) & ~occupied;
-        addPawnMovesByMask(moveList, pos, m, -8, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m, -8, true);
         m = ((m & BitBoard::maskRow3) << 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m, -16);
 
         m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, -7, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m, -7, true);
 
         m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, -9, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m, -9, true);
     } else {
         U64 m = (pawns >> 8) & ~occupied;
-        addPawnMovesByMask(moveList, pos, m, 8, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m, 8, true);
         m = ((m & BitBoard::maskRow6) >> 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m, 16);
 
         m = (pawns >> 9) & BitBoard::maskAToGFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, 9, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m, 9, true);
 
         m = (pawns >> 7) & BitBoard::maskBToHFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, 7, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m, 7, true);
     }
 }
 
@@ -213,26 +213,26 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
     const U64 epMask = (epSquare >= 0) ? (1ULL << epSquare) : 0ULL;
     if (wtm) {
         U64 m = (pawns << 8) & ~occupied;
-        addPawnMovesByMask(moveList, pos, m & validTargets, -8, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m & validTargets, -8, true);
         m = ((m & BitBoard::maskRow3) << 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m & validTargets, -16);
 
         m = (pawns << 7) & BitBoard::maskAToGFiles & ((pos.colorBB(!wtm) & validTargets) | epMask);
-        addPawnMovesByMask(moveList, pos, m, -7, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m, -7, true);
 
         m = (pawns << 9) & BitBoard::maskBToHFiles & ((pos.colorBB(!wtm) & validTargets) | epMask);
-        addPawnMovesByMask(moveList, pos, m, -9, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m, -9, true);
     } else {
         U64 m = (pawns >> 8) & ~occupied;
-        addPawnMovesByMask(moveList, pos, m & validTargets, 8, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m & validTargets, 8, true);
         m = ((m & BitBoard::maskRow6) >> 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m & validTargets, 16);
 
         m = (pawns >> 9) & BitBoard::maskAToGFiles & ((pos.colorBB(!wtm) & validTargets) | epMask);
-        addPawnMovesByMask(moveList, pos, m, 9, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m, 9, true);
 
         m = (pawns >> 7) & BitBoard::maskBToHFiles & ((pos.colorBB(!wtm) & validTargets) | epMask);
-        addPawnMovesByMask(moveList, pos, m, 7, true);
+        addPawnMovesByMask<wtm>(moveList, pos, m, 7, true);
     }
 
 #ifdef MOVELIST_DEBUG
@@ -352,39 +352,39 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
     if (wtm) {
         // Captures
         U64 m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, -7, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, -7, false);
         m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, -9, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, -9, false);
 
         // Discovered checks and promotions
         U64 pawnAll = discovered | BitBoard::maskRow7;
         m = ((pawns & pawnAll) << 8) & ~occupied;
-        addPawnMovesByMask(moveList, pos, m, -8, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, -8, false);
         m = ((m & BitBoard::maskRow3) << 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m, -16);
 
         // Normal checks
         m = ((pawns & ~pawnAll) << 8) & ~occupied;
-        addPawnMovesByMask(moveList, pos, m & BitBoard::bPawnAttacks[oKingSq], -8, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m & BitBoard::bPawnAttacks[oKingSq], -8, false);
         m = ((m & BitBoard::maskRow3) << 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m & BitBoard::bPawnAttacks[oKingSq], -16);
     } else {
         // Captures
         U64 m = (pawns >> 9) & BitBoard::maskAToGFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, 9, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, 9, false);
         m = (pawns >> 7) & BitBoard::maskBToHFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, 7, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, 7, false);
 
         // Discovered checks and promotions
         U64 pawnAll = discovered | BitBoard::maskRow2;
         m = ((pawns & pawnAll) >> 8) & ~occupied;
-        addPawnMovesByMask(moveList, pos, m, 8, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, 8, false);
         m = ((m & BitBoard::maskRow6) >> 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m, 16);
 
         // Normal checks
         m = ((pawns & ~pawnAll) >> 8) & ~occupied;
-        addPawnMovesByMask(moveList, pos, m & BitBoard::wPawnAttacks[oKingSq], 8, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m & BitBoard::wPawnAttacks[oKingSq], 8, false);
         m = ((m & BitBoard::maskRow6) >> 8) & ~occupied;
         addPawnDoubleMovesByMask(moveList, pos, m & BitBoard::wPawnAttacks[oKingSq], 16);
     }
@@ -448,21 +448,21 @@ MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
     if (wtm) {
         m = (pawns << 8) & ~occupied;
         m &= BitBoard::maskRow8;
-        addPawnMovesByMask(moveList, pos, m, -8, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, -8, false);
 
         m = (pawns << 7) & BitBoard::maskAToGFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, -7, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, -7, false);
         m = (pawns << 9) & BitBoard::maskBToHFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, -9, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, -9, false);
     } else {
         m = (pawns >> 8) & ~occupied;
         m &= BitBoard::maskRow1;
-        addPawnMovesByMask(moveList, pos, m, 8, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, 8, false);
 
         m = (pawns >> 9) & BitBoard::maskAToGFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, 9, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, 9, false);
         m = (pawns >> 7) & BitBoard::maskBToHFiles & (pos.colorBB(!wtm) | epMask);
-        addPawnMovesByMask(moveList, pos, m, 7, false);
+        addPawnMovesByMask<wtm>(moveList, pos, m, 7, false);
     }
 }
 

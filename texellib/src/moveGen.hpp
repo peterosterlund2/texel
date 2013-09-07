@@ -130,31 +130,24 @@ public:
     }
     template <bool wtm>
     static bool sqAttacked(const Position& pos, int sq, U64 occupied) {
+        typedef ColorTraits<wtm> MyColor;
+        typedef ColorTraits<!wtm> OtherColor;
+        if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB(OtherColor::KNIGHT)) != 0)
+            return true;
+        if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB(OtherColor::KING)) != 0)
+            return true;
         if (wtm) {
-            if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB(Piece::BKNIGHT)) != 0)
-                return true;
-            if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB(Piece::BKING)) != 0)
-                return true;
-            if ((BitBoard::wPawnAttacks[sq] & pos.pieceTypeBB(Piece::BPAWN)) != 0)
-                return true;
-            U64 bbQueen = pos.pieceTypeBB(Piece::BQUEEN);
-            if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB(Piece::BBISHOP) | bbQueen)) != 0)
-                return true;
-            if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB(Piece::BROOK) | bbQueen)) != 0)
+            if ((BitBoard::wPawnAttacks[sq] & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
                 return true;
         } else {
-            if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB(Piece::WKNIGHT)) != 0)
-                return true;
-            if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB(Piece::WKING)) != 0)
-                return true;
-            if ((BitBoard::bPawnAttacks[sq] & pos.pieceTypeBB(Piece::WPAWN)) != 0)
-                return true;
-            U64 bbQueen = pos.pieceTypeBB(Piece::WQUEEN);
-            if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB(Piece::WBISHOP) | bbQueen)) != 0)
-                return true;
-            if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB(Piece::WROOK) | bbQueen)) != 0)
+            if ((BitBoard::bPawnAttacks[sq] & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
                 return true;
         }
+        U64 bbQueen = pos.pieceTypeBB(OtherColor::QUEEN);
+        if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB(OtherColor::BISHOP) | bbQueen)) != 0)
+            return true;
+        if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB(OtherColor::ROOK) | bbQueen)) != 0)
+            return true;
         return false;
     }
 
@@ -213,8 +206,10 @@ private:
         return -1;
     }
 
+    template <bool wtm>
     static void addPawnMovesByMask(MoveList& moveList, const Position& pos, U64 mask,
                                    int delta, bool allPromotions) {
+        typedef ColorTraits<wtm> MyColor;
         if (mask == 0)
             return;
         U64 promMask = mask & BitBoard::maskRow1Row8;
@@ -222,20 +217,11 @@ private:
         while (promMask != 0) {
             int sq = BitBoard::numberOfTrailingZeros(promMask);
             int sq0 = sq + delta;
-            if (sq >= 56) { // White promotion
-                moveList.addMove(sq0, sq, Piece::WQUEEN);
-                moveList.addMove(sq0, sq, Piece::WKNIGHT);
-                if (allPromotions) {
-                    moveList.addMove(sq0, sq, Piece::WROOK);
-                    moveList.addMove(sq0, sq, Piece::WBISHOP);
-                }
-            } else { // Black promotion
-                moveList.addMove(sq0, sq, Piece::BQUEEN);
-                moveList.addMove(sq0, sq, Piece::BKNIGHT);
-                if (allPromotions) {
-                    moveList.addMove(sq0, sq, Piece::BROOK);
-                    moveList.addMove(sq0, sq, Piece::BBISHOP);
-                }
+            moveList.addMove(sq0, sq, MyColor::QUEEN);
+            moveList.addMove(sq0, sq, MyColor::KNIGHT);
+            if (allPromotions) {
+                moveList.addMove(sq0, sq, MyColor::ROOK);
+                moveList.addMove(sq0, sq, MyColor::BISHOP);
             }
             promMask &= (promMask - 1);
         }
