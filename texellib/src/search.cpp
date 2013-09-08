@@ -94,7 +94,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                            int maxDepth, U64 initialMaxNodes,
                            bool verbose) {
     tStart = currentTimeMillis();
-    logFile.open("/home/petero/treelog.dmp", pos);
+    const U64 rootNodeIdx = logFile.open("/home/petero/treelog.dmp", pos);
     totalNodes = 0;
     if (scMovesIn.size <= 0)
         return Move(); // No moves to search
@@ -203,7 +203,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             sti.currentMove = m;
             sti.currentMoveNo = mi;
             sti.lmr = lmrS;
-            sti.nodeIdx = -1;
+            sti.nodeIdx = rootNodeIdx;
             int score = -negaScout(smp, -beta, -alpha, 1, depthS - lmrS - plyScale, -1, givesCheck);
             if ((lmrS > 0) && (score > alpha)) {
                 sti.lmr = 0;
@@ -429,7 +429,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     if (logFile.isOpened()) {
         const SearchTreeInfo& sti = searchTreeInfo[ply-1];
-        U64 idx = logFile.logNodeStart(sti.nodeIdx, sti.currentMove, alpha, beta, ply, depth/plyScale);
+        U64 idx = logFile.logNodeStart(sti.nodeIdx, sti.currentMove, alpha, beta, ply, depth);
         searchTreeInfo[ply].nodeIdx = idx;
     }
     if (nodesToGo <= 0) {
@@ -640,24 +640,24 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         bool isPv = beta > alpha + 1;
         if (isPv || (depth > 8 * plyScale)) {
             // No hash move. Try internal iterative deepening.
-#ifdef TREELOG
+
             SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
             Move savedMove = sti2.currentMove;
             int savedMoveNo = sti2.currentMoveNo;
             S64 savedNodeIdx2 = sti2.nodeIdx;
-            sti2.currentMove = Move(1,1,0);
+            sti2.currentMove = Move(1,1,0); // Represents "no move"
             sti2.currentMoveNo = -1;
             sti2.nodeIdx = sti.nodeIdx;
-#endif
+
             S64 savedNodeIdx = sti.nodeIdx;
             int newDepth = isPv ? depth  - 2 * plyScale : depth * 3 / 8;
             negaScout(smp, alpha, beta, ply, newDepth, -1, inCheck);
             sti.nodeIdx = savedNodeIdx;
-#ifdef TREELOG
+
             sti2.currentMove = savedMove;
             sti2.currentMoveNo = savedMoveNo;
             sti2.nodeIdx = savedNodeIdx2;
-#endif
+
             tt.probe(hKey, ent);
             if (ent.getType() != TType::T_EMPTY)
                 ent.getMove(hashMove);

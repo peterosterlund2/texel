@@ -68,52 +68,56 @@ TreeLoggerTest::testLoggerData() {
     {
         TB::Entry e;
         e.type = TB::EntryType::POSITION_INCOMPLETE;
-        e.h0.word0 = 0x3214876587651234ULL;
-        e.h0.word1 = 0x1234454656345123ULL;
-        e.h0.word2a = 0xfedc;
+        e.p0.nextIndex = 17;
+        e.p0.word0 = 0x3214876587651234ULL;
+        e.p0.word1 = 0x1234454656345123ULL;
+        e.p0.word2a = 0xfedc;
         U8 buffer[TB::Entry::bufSize];
         memset(buffer, 0xde, sizeof(buffer));
         e.serialize(buffer);
         TB::Entry e2;
         e2.deSerialize(buffer);
         ASSERT_EQUAL(e.type, e2.type);
-        ASSERT_EQUAL(e.h0.word0,      e2.h0.word0);
-        ASSERT_EQUAL(e.h0.word1,      e2.h0.word1);
-        ASSERT_EQUAL(e.h0.word2a,     e2.h0.word2a);
+        ASSERT_EQUAL(e.p0.nextIndex, e2.p0.nextIndex);
+        ASSERT_EQUAL(e.p0.word0,     e2.p0.word0);
+        ASSERT_EQUAL(e.p0.word1,     e2.p0.word1);
+        ASSERT_EQUAL(e.p0.word2a,    e2.p0.word2a);
     }
     {
         TB::Entry e;
         e.type = TB::EntryType::POSITION_PART0;
-        e.h0.word0 = 0x3876587651234ULL;
-        e.h0.word1 = 0x1234456345123ULL;
-        e.h0.word2a = 0xfec0;
+        e.p0.nextIndex = 123987654;
+        e.p0.word0 = 0x3876587651234ULL;
+        e.p0.word1 = 0x1234456345123ULL;
+        e.p0.word2a = 0xfec0;
         U8 buffer[TB::Entry::bufSize];
         memset(buffer, 0xde, sizeof(buffer));
         e.serialize(buffer);
         TB::Entry e2;
         e2.deSerialize(buffer);
         ASSERT_EQUAL(e.type, e2.type);
-        ASSERT_EQUAL(e.h0.word0,      e2.h0.word0);
-        ASSERT_EQUAL(e.h0.word1,      e2.h0.word1);
-        ASSERT_EQUAL(e.h0.word2a,     e2.h0.word2a);
+        ASSERT_EQUAL(e.p0.nextIndex, e2.p0.nextIndex);
+        ASSERT_EQUAL(e.p0.word0,     e2.p0.word0);
+        ASSERT_EQUAL(e.p0.word1,     e2.p0.word1);
+        ASSERT_EQUAL(e.p0.word2a,    e2.p0.word2a);
     }
     {
         TB::Entry e;
         e.type = TB::EntryType::POSITION_PART1;
-        e.h1.word2b = 0x1234;
-        e.h1.word2c = 0xabcdef01;
-        e.h1.word3 = 0x1324123434534ULL;
-        e.h1.word4 = 0x834927342342134ULL;
+        e.p1.word2b = 0x1234;
+        e.p1.word2c = 0xabcdef01;
+        e.p1.word3 = 0x1324123434534ULL;
+        e.p1.word4 = 0x834927342342134ULL;
         U8 buffer[TB::Entry::bufSize];
         memset(buffer, 0xde, sizeof(buffer));
         e.serialize(buffer);
         TB::Entry e2;
         e2.deSerialize(buffer);
         ASSERT_EQUAL(e.type, e2.type);
-        ASSERT_EQUAL(e.h1.word2b, e2.h1.word2b);
-        ASSERT_EQUAL(e.h1.word2c, e2.h1.word2c);
-        ASSERT_EQUAL(e.h1.word3,  e2.h1.word3);
-        ASSERT_EQUAL(e.h1.word4,  e2.h1.word4);
+        ASSERT_EQUAL(e.p1.word2b, e2.p1.word2b);
+        ASSERT_EQUAL(e.p1.word2c, e2.p1.word2c);
+        ASSERT_EQUAL(e.p1.word3,  e2.p1.word3);
+        ASSERT_EQUAL(e.p1.word4,  e2.p1.word4);
     }
     {
         TB::Entry e;

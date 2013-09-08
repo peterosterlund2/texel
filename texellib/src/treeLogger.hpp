@@ -97,8 +97,12 @@ class TreeLoggerBase {
     friend class TreeLoggerTest;
 protected:
     /**
-     * Rules for the log file format:
-     * - The log file contains information for a single search.
+     * Rules for the log file format
+     * - A log file contains a search tree dump for one thread.
+     * - The file contains information for 0 or more searches.
+     * - The log file for thread 0 contains information for a single search.
+     * - Information for one search tree starts with a Position0 record and
+     *   ends at the next Position0 record or at the end of the file.
      * - A start entry may not have a corresponding end entry. This happens
      *   if the search was interrupted.
      * - Start and end entries are properly nested (assuming the end entries exist)
@@ -114,16 +118,19 @@ protected:
         NODE_END             // End of a search node.
     };
 
+    static const U32 endMark = 0xffffffff;
+
     struct Position0 {
+        U32 nextIndex;     // Index of next position, or endMark for last position.
         U64 word0;
         U64 word1;
         U16 word2a;
 
         template <int N> U8* serialize(U8 buffer[N]) const {
-            return Serializer::serialize<N>(buffer, word0, word1, word2a);
+            return Serializer::serialize<N>(buffer, nextIndex, word0, word1, word2a);
         }
         template <int N> void deSerialize(const U8 buffer[N]) {
-            Serializer::deSerialize<N>(buffer, word0, word1, word2a);
+            Serializer::deSerialize<N>(buffer, nextIndex, word0, word1, word2a);
         }
     };
 
@@ -143,12 +150,13 @@ protected:
 
     struct StartEntry {
         U32 endIndex;
-        S32 parentIndex;    // -1 for root node
+        U32 parentIndex;    // Points to NODE_START of POSITION_PART0 node.
         U16 move;
         S16 alpha;
         S16 beta;
         U8 ply;
         U16 depth;
+        U32 t0Index;        // Current entry in thread 0
 
         Move getMove() const {
             Move ret;
@@ -158,36 +166,37 @@ protected:
 
         template <int N> U8* serialize(U8 buffer[N]) const {
             return Serializer::serialize<N>(buffer, endIndex, parentIndex, move,
-                                            alpha, beta, ply, depth);
+                                            alpha, beta, ply, depth, t0Index);
         }
         template <int N> void deSerialize(const U8 buffer[N]) {
             Serializer::deSerialize<N>(buffer, endIndex, parentIndex, move,
-                                       alpha, beta, ply, depth);
+                                       alpha, beta, ply, depth, t0Index);
         }
     };
 
     struct EndEntry {
-        S32 startIndex;
+        U32 startIndex;
         S16 score;
         U8 scoreType;
         S16 evalScore;
         U64 hashKey;
+        U32 t0Index;        // Current entry in thread 0
 
         template <int N> U8* serialize(U8 buffer[N]) const {
             return Serializer::serialize<N>(buffer, startIndex, score, scoreType,
-                                            evalScore, hashKey);
+                                            evalScore, hashKey, t0Index);
         }
         template <int N> void deSerialize(const U8 buffer[N]) {
             Serializer::deSerialize<N>(buffer, startIndex, score, scoreType,
-                                       evalScore, hashKey);
+                                       evalScore, hashKey, t0Index);
         }
     };
 
     struct Entry {
         EntryType type;
         union {
-            Position0 h0;
-            Position1 h1;
+            Position0 p0;
+            Position1 p1;
             StartEntry se;
             EndEntry ee;
         };
@@ -202,9 +211,9 @@ protected:
             UType uType = static_cast<UType>(type);
             ptr = Serializer::serialize<bufSize>(ptr, uType);
             switch (type) {
-            case EntryType::POSITION_INCOMPLETE: h0.serialize<bufSize-su>(ptr); break;
-            case EntryType::POSITION_PART0:      h0.serialize<bufSize-su>(ptr); break;
-            case EntryType::POSITION_PART1:      h1.serialize<bufSize-su>(ptr); break;
+            case EntryType::POSITION_INCOMPLETE: p0.serialize<bufSize-su>(ptr); break;
+            case EntryType::POSITION_PART0:      p0.serialize<bufSize-su>(ptr); break;
+            case EntryType::POSITION_PART1:      p1.serialize<bufSize-su>(ptr); break;
             case EntryType::NODE_START:          se.serialize<bufSize-su>(ptr); break;
             case EntryType::NODE_END:            ee.serialize<bufSize-su>(ptr); break;
             }
@@ -218,9 +227,9 @@ protected:
             ptr = Serializer::deSerialize<bufSize>(ptr, uType);
             type = static_cast<EntryType>(uType);
             switch (type) {
-            case EntryType::POSITION_INCOMPLETE: h0.deSerialize<bufSize-su>(ptr); break;
-            case EntryType::POSITION_PART0:      h0.deSerialize<bufSize-su>(ptr); break;
-            case EntryType::POSITION_PART1:      h1.deSerialize<bufSize-su>(ptr); break;
+            case EntryType::POSITION_INCOMPLETE: p0.deSerialize<bufSize-su>(ptr); break;
+            case EntryType::POSITION_PART0:      p0.deSerialize<bufSize-su>(ptr); break;
+            case EntryType::POSITION_PART1:      p1.deSerialize<bufSize-su>(ptr); break;
             case EntryType::NODE_START:          se.deSerialize<bufSize-su>(ptr); break;
             case EntryType::NODE_END:            ee.deSerialize<bufSize-su>(ptr); break;
             }
@@ -244,13 +253,15 @@ public:
     /** Constructor. */
     TreeLoggerWriter() : opened(false) { }
 
-    void open(const std::string& filename, const Position& pos) {
+    /** Return index of root node position entry. */
+    U64 open(const std::string& filename, const Position& pos) {
         os.open(filename.c_str(), std::ios_base::out |
                                   std::ios_base::binary |
                                   std::ios_base::trunc);
         opened = true;
-        writeHeader(pos);
         nextIndex = 0;
+        writeHeader(pos);
+        return 0;
     }
 
     void close() {
@@ -318,7 +329,7 @@ private:
 class TreeLoggerWriterDummy {
 public:
     TreeLoggerWriterDummy() { }
-    void open(const std::string& filename, const Position& pos) { }
+    U64 open(const std::string& filename, const Position& pos) { return 0; }
     void close() { }
     bool isOpened() const { return false; }
     U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) { return 0; }
@@ -339,7 +350,7 @@ public:
         fs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         fs.seekg(0, std::ios_base::end);
         fileLen = fs.tellg();
-        numEntries = (int) (fileLen / Entry::bufSize) - 2;
+        numEntries = fileLen / Entry::bufSize;
         computeForwardPointers();
     }
 
@@ -351,36 +362,28 @@ public:
     static void main(const std::string& filename);
 
 private:
-    static int indexToFileIndex(int index) {
-        return index + 2;
-    }
-
     /** Compute endIndex for all StartNode entries. */
     void computeForwardPointers();
 
     /** Write forward pointer data to disk. */
-    void flushForwardPointerData(std::vector<std::pair<int,int>>& toWrite);
+    void flushForwardPointerData(std::vector<std::pair<U64,U64>>& toWrite);
 
-    /** Get root node position. */
-    void getRootNodePosition(Position& pos);
+    /** Get root node information. */
+    void getRootNode(U64 index, Position& pos);
 
     /** Read an entry. */
-    void readEntry(int index, Entry& entry);
+    void readEntry(U64 index, Entry& entry);
 
     /** Write an entry. */
-    void writeEntry(int index, const Entry& entry);
-
-    /** Read a start/end entry.
-     * @return True if entry was a start entry, false if it was an end entry. */
-    bool readEntry(int index, StartEntry& se, EndEntry& ee);
+    void writeEntry(U64 index, const Entry& entry);
 
     /** Run the interactive analysis main loop. */
-    void mainLoop(Position rootPos);
+    void mainLoop();
 
     bool isMove(std::string cmdStr) const;
 
     /** Return all nodes with a given hash key. */
-    void getNodesForHashKey(U64 hashKey, std::vector<int>& nodes, int maxEntry);
+    void getNodesForHashKey(U64 hashKey, std::vector<U64>& nodes, U64 maxEntry);
 
     /** Get hash key from an input string. */
     U64 getHashKey(std::string& s, U64 defKey) const;
@@ -400,32 +403,31 @@ private:
     bool readEntries(int index, StartEntry& se, EndEntry& ee);
 
     /** Find the parent node to a node. */
-    int findParent(int index);
+    S64 findParent(S64 index);
 
     /** Find all children of a node. */
-    void findChildren(int index, std::vector<int>& childs);
+    void findChildren(S64 index, std::vector<U64>& childs);
 
     /** Get node position in parents children list. */
-    int getChildNo(int index);
+    int getChildNo(U64 index);
 
     /** Get list of nodes from root position to a node. */
-    void getNodeSequence(int index, std::vector<int>& nodes);
+    void getNodeSequence(U64 index, std::vector<U64>& nodes);
 
-    /** Find list of moves from root node to a node. */
-    void getMoveSequence(int index, std::vector<Move>& moves);
+    /** Find list of moves from root node to a node.
+     * Return root node index. */
+    U64 getMoveSequence(U64 index, std::vector<Move>& moves);
 
     /** Find the position corresponding to a node. */
-    Position getPosition(const Position& rootPos, int index);
+    Position getPosition(U64 index);
 
-    void printNodeInfo(const Position& rootPos, int index);
-
-    void printNodeInfo(const Position& rootPos, int index, const std::string& filterMove);
+    void printNodeInfo(U64 index, int childNo = -1, const std::string& filterMove = "");
 
 
     std::fstream fs;
     S64 filePos;        // Current file read position (seekg)
     S64 fileLen;
-    int numEntries;
+    U64 numEntries;
 };
 
 #endif /* TREELOGGER_HPP_ */
