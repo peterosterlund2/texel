@@ -32,6 +32,7 @@
 #include <vector>
 #include <type_traits>
 #include <utility>
+#include <cstring>
 #include <fstream>
 
 
@@ -41,13 +42,9 @@ namespace Serializer {
     template <typename Type>
     typename std::enable_if<std::is_integral<Type>::value, U8*>::type
     putBytes(U8* buffer, Type value) {
-        typedef typename std::make_unsigned<Type>::type UType;
-        UType uVal = static_cast<UType>(value);
-        for (size_t i = 0; i < sizeof(Type); i++) {
-            *buffer++ = uVal & 0xff;
-            uVal >>= 8;
-        }
-        return buffer;
+        int s = sizeof(value);
+        memcpy(buffer, &value, s);
+        return buffer + s;
     }
 
     template <int N>
@@ -67,12 +64,9 @@ namespace Serializer {
     template <typename Type>
     typename std::enable_if<std::is_integral<Type>::value, const U8*>::type
     getBytes(const U8* buffer, Type& value) {
-        typedef typename std::make_unsigned<Type>::type UType;
-        UType uVal = 0;
-        for (size_t i = 0; i < sizeof(Type); i++)
-            uVal |= static_cast<UType>(*buffer++) << (i * 8);
-        value = static_cast<Type>(uVal);
-        return buffer;
+        int s = sizeof(value);
+        memcpy(&value, buffer, s);
+        return buffer + s;
     }
 
     template <int N>
@@ -90,9 +84,7 @@ namespace Serializer {
     }
 }
 
-/**
- * Base class for logging a search tree to file.
- */
+/** Base class for logging search trees to file. */
 class TreeLoggerBase {
     friend class TreeLoggerTest;
 protected:
@@ -240,9 +232,7 @@ protected:
     U8 entryBuffer[Entry::bufSize];
 };
 
-/**
- * Writer class for logging a search tree to file.
- */
+/** Writer class for logging earch trees to file. */
 class TreeLoggerWriter : public TreeLoggerBase {
 private:
     bool opened;
