@@ -234,35 +234,22 @@ protected:
 
 /** Writer class for logging earch trees to file. */
 class TreeLoggerWriter : public TreeLoggerBase {
-private:
-    bool opened;
-    std::ofstream os;
-    U64 nextIndex;
-
 public:
     /** Constructor. */
-    TreeLoggerWriter() : opened(false) { }
+    TreeLoggerWriter();
 
-    /** Return index of root node position entry. */
-    U64 open(const std::string& filename, const Position& pos) {
-        os.open(filename.c_str(), std::ios_base::out |
-                                  std::ios_base::binary |
-                                  std::ios_base::trunc);
-        opened = true;
-        nextIndex = 0;
-        writeHeader(pos);
-        return 0;
-    }
+    /** Destructor. */
+    ~TreeLoggerWriter();
 
-    void close() {
-        opened = false;
-        os.close();
-    }
+    /** Open log file for writing.
+     *  Return index of root node position entry. */
+    U64 open(const std::string& filename, const Position& pos);
 
-    bool isOpened() const { return opened; }
+    /** Flush write cache and close log file. */
+    void close();
 
-    // ----------------------------------------------------------------------------
-    // Functions used for tree logging
+    /** Return true if log file is opened. */
+    bool isOpened() const;
 
     /**
      * Log information when entering a search node.
@@ -274,21 +261,7 @@ public:
      * @param depth        Search parameter
      * @return node index
      */
-    U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) {
-        if (!opened)
-            return 0;
-        entry.type = EntryType::NODE_START;
-        entry.se.endIndex = -1;
-        entry.se.parentIndex = parentIndex;
-        entry.se.move = m.from() + (m.to() << 6) + (m.promoteTo() << 12);
-        entry.se.alpha = alpha;
-        entry.se.beta = beta;
-        entry.se.ply = ply;
-        entry.se.depth = depth;
-        entry.serialize(entryBuffer);
-        os.write((const char*)entryBuffer, sizeof(entryBuffer));
-        return nextIndex++;
-    }
+    U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth);
 
     /**
      * @param startIndex Pointer to corresponding start node entry.
@@ -297,22 +270,23 @@ public:
      * @param evalScore  Score returned by evaluation function at this node, if known.
      * @return node index
      */
-    U64 logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey) {
-        if (!opened)
-            return 0;
-        entry.type = EntryType::NODE_END;
-        entry.ee.startIndex = startIndex;
-        entry.ee.score = score;
-        entry.ee.scoreType = scoreType;
-        entry.ee.evalScore = evalScore;
-        entry.ee.hashKey = hashKey;
-        entry.serialize(entryBuffer);
-        os.write((const char*)entryBuffer, sizeof(entryBuffer));
-        return nextIndex++;
-    }
+    U64 logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey);
 
 private:
-    void writeHeader(const Position& pos);
+    /** Write two position entries to end of file. */
+    void writePosition(const Position& pos);
+
+    /** Write entry to end of file. Uses internal buffering, flushed in close(). */
+    void appendEntry(const Entry& entry);
+
+
+    bool opened;
+    std::ofstream os;
+    U64 nextIndex;
+
+    static const int writeCacheSize = 1024;
+    U8 writeCache[Entry::bufSize * writeCacheSize];
+    int nInWriteCache;
 };
 
 /** Dummy version of TreeLoggerWriter. */
@@ -332,21 +306,9 @@ public:
 class TreeLoggerReader : public TreeLoggerBase {
 public:
     /** Constructor. */
-    TreeLoggerReader(const std::string& filename)
-        : fs(filename.c_str(), std::ios_base::out |
-                               std::ios_base::in |
-                               std::ios_base::binary),
-          filePos(-1), fileLen(0), numEntries(0) {
-        fs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        fs.seekg(0, std::ios_base::end);
-        fileLen = fs.tellg();
-        numEntries = fileLen / Entry::bufSize;
-        computeForwardPointers();
-    }
+    TreeLoggerReader(const std::string& filename);
 
-    void close() {
-        fs.close();
-    }
+    void close();
 
     /** Main loop of the interactive tree browser. */
     static void main(const std::string& filename);
@@ -419,5 +381,62 @@ private:
     S64 fileLen;
     U64 numEntries;
 };
+
+
+inline
+TreeLoggerWriter::TreeLoggerWriter()
+    : opened(false), nInWriteCache(0) {
+}
+
+inline
+TreeLoggerWriter::~TreeLoggerWriter() {
+    close();
+}
+
+inline U64
+TreeLoggerWriter::open(const std::string& filename, const Position& pos) {
+    os.open(filename.c_str(), std::ios_base::out |
+                              std::ios_base::binary |
+                              std::ios_base::trunc);
+    opened = true;
+    nextIndex = 0;
+    writePosition(pos);
+    return 0;
+}
+
+inline bool
+TreeLoggerWriter::isOpened() const {
+    return opened;
+}
+
+inline U64
+TreeLoggerWriter::logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) {
+    if (!opened)
+        return 0;
+    entry.type = EntryType::NODE_START;
+    entry.se.endIndex = -1;
+    entry.se.parentIndex = parentIndex;
+    entry.se.move = m.from() + (m.to() << 6) + (m.promoteTo() << 12);
+    entry.se.alpha = alpha;
+    entry.se.beta = beta;
+    entry.se.ply = ply;
+    entry.se.depth = depth;
+    appendEntry(entry);
+    return nextIndex++;
+}
+
+inline U64
+TreeLoggerWriter::logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey) {
+    if (!opened)
+        return 0;
+    entry.type = EntryType::NODE_END;
+    entry.ee.startIndex = startIndex;
+    entry.ee.score = score;
+    entry.ee.scoreType = scoreType;
+    entry.ee.evalScore = evalScore;
+    entry.ee.hashKey = hashKey;
+    appendEntry(entry);
+    return nextIndex++;
+}
 
 #endif /* TREELOGGER_HPP_ */

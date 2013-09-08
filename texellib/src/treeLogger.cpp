@@ -34,7 +34,19 @@
 #include <cassert>
 
 void
-TreeLoggerWriter::writeHeader(const Position& pos) {
+TreeLoggerWriter::close() {
+    if (opened) {
+        if (nInWriteCache > 0) {
+            os.write((const char*)writeCache, Entry::bufSize * nInWriteCache);
+            nInWriteCache = 0;
+        }
+        opened = false;
+        os.close();
+    }
+}
+
+void
+TreeLoggerWriter::writePosition(const Position& pos) {
     Position::SerializeData data;
     pos.serialize(data);
 
@@ -43,8 +55,7 @@ TreeLoggerWriter::writeHeader(const Position& pos) {
     entry.p0.word0 = data.v[0];
     entry.p0.word1 = data.v[1];
     entry.p0.word2a = data.v[2] & 0xffff;
-    entry.serialize(entryBuffer);
-    os.write((const char*)entryBuffer, sizeof(entryBuffer));
+    appendEntry(entry);
     nextIndex++;
 
     entry.type = EntryType::POSITION_PART1;
@@ -52,9 +63,37 @@ TreeLoggerWriter::writeHeader(const Position& pos) {
     entry.p1.word2c = (data.v[2] >> 32) & 0xffffffffULL;
     entry.p1.word3 = data.v[3];
     entry.p1.word4 = data.v[4];
-    entry.serialize(entryBuffer);
-    os.write((const char*)entryBuffer, sizeof(entryBuffer));
+    appendEntry(entry);
     nextIndex++;
+}
+
+void
+TreeLoggerWriter::appendEntry(const Entry& entry) {
+    entry.serialize(entryBuffer);
+    memcpy(&writeCache[Entry::bufSize * nInWriteCache], entryBuffer, Entry::bufSize);
+    nInWriteCache++;
+    if (nInWriteCache == writeCacheSize) {
+        os.write((const char*)writeCache, Entry::bufSize * nInWriteCache);
+        nInWriteCache = 0;
+    }
+}
+
+
+TreeLoggerReader::TreeLoggerReader(const std::string& filename)
+    : fs(filename.c_str(), std::ios_base::out |
+                           std::ios_base::in |
+                           std::ios_base::binary),
+      filePos(-1), fileLen(0), numEntries(0) {
+    fs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    fs.seekg(0, std::ios_base::end);
+    fileLen = fs.tellg();
+    numEntries = fileLen / Entry::bufSize;
+    computeForwardPointers();
+}
+
+void
+TreeLoggerReader::close() {
+    fs.close();
 }
 
 void
