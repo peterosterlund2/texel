@@ -41,10 +41,6 @@
 #include <memory>
 
 
-//typedef TreeLoggerWriter TreeLogger;
-typedef TreeLoggerWriterDummy TreeLogger;
-
-
 class SearchTest;
 
 /** Implements the nega-scout search algorithm. */

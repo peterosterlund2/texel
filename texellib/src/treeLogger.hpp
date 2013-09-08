@@ -36,6 +36,13 @@
 #include <fstream>
 
 
+class TreeLoggerWriter;
+class TreeLoggerWriterDummy;
+
+/** Change to TreeLoggerWriter to enable tree logging. */
+typedef TreeLoggerWriterDummy TreeLogger;
+
+
 class Position;
 
 namespace Serializer {
@@ -378,7 +385,6 @@ private:
 
     std::fstream fs;
     S64 filePos;        // Current file read position (seekg)
-    S64 fileLen;
     U64 numEntries;
 };
 

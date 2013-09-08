@@ -83,10 +83,10 @@ TreeLoggerReader::TreeLoggerReader(const std::string& filename)
     : fs(filename.c_str(), std::ios_base::out |
                            std::ios_base::in |
                            std::ios_base::binary),
-      filePos(-1), fileLen(0), numEntries(0) {
+      filePos(-1), numEntries(0) {
     fs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     fs.seekg(0, std::ios_base::end);
-    fileLen = fs.tellg();
+    S64 fileLen = fs.tellg();
     numEntries = fileLen / Entry::bufSize;
     computeForwardPointers();
 }
@@ -143,19 +143,49 @@ TreeLoggerReader::computeForwardPointers() {
 
 void
 TreeLoggerReader::flushForwardPointerData(std::vector<std::pair<U64,U64>>& toWrite) {
+    if (toWrite.empty())
+        return;
     std::sort(toWrite.begin(), toWrite.end());
+    const U64 eSize = Entry::bufSize;
+    const U64 cacheSize = 512;
+    U8 cacheBuf[eSize * cacheSize];
+    const U64 emptyMark = std::numeric_limits<U64>::max();
+    U64 cacheStart = emptyMark; // Index for first entry in cache
+
     for (auto p : toWrite) {
-        U64 startIdx = p.first;
-        U64 endIdx = p.second;
-        readEntry(startIdx, entry);
+        const U64 startIdx = p.first;
+        const U64 endIdx = p.second;
+
+        if ((cacheStart != emptyMark) &&
+            ((startIdx < cacheStart) || (startIdx >= cacheStart + cacheSize))) { // flush
+            int nWrite = std::min(cacheSize, numEntries - cacheStart);
+            fs.seekp(cacheStart * eSize, std::ios_base::beg);
+            fs.write((const char*)cacheBuf, nWrite * eSize);
+            cacheStart = emptyMark;
+        }
+        if (cacheStart == emptyMark) {
+            cacheStart = startIdx;
+            int nRead = std::min(cacheSize, numEntries - cacheStart);
+            fs.seekg(cacheStart * eSize, std::ios_base::beg);
+            fs.read((char*)cacheBuf, nRead * eSize);
+        }
+
+        U8* entAddr = &cacheBuf[(startIdx - cacheStart) * eSize];
+        entry.deSerialize(entAddr);
         if (entry.type == EntryType::NODE_START) {
             entry.se.endIndex = endIdx;
         } else if (entry.type == EntryType::POSITION_PART0) {
             entry.p0.nextIndex = endIdx;
         } else
             assert(false);
-        writeEntry(startIdx, entry);
+        entry.serialize(entAddr);
     }
+    if (cacheStart >= 0) { // flush
+        int nWrite = std::min(cacheSize, numEntries - cacheStart);
+        fs.seekp(cacheStart * eSize, std::ios_base::beg);
+        fs.write((const char*)cacheBuf, nWrite * eSize);
+    }
+    filePos = -1;
 }
 
 void
