@@ -60,11 +60,11 @@ public:
      * Return Zobrist hash value for the current position.
      * Everything except the move counters are included in the hash value.
      */
-    uint64_t zobristHash() const;
-    uint64_t pawnZobristHash() const;
-    uint64_t kingZobristHash() const;
+    U64 zobristHash() const;
+    U64 pawnZobristHash() const;
+    U64 kingZobristHash() const;
 
-    uint64_t historyHash() const;
+    U64 historyHash() const;
 
     /** Return the material identifier. */
     int materialId() const;
@@ -257,25 +257,25 @@ Position::equals(const Position& other) const {
     return true;
 }
 
-inline uint64_t
+inline U64
 Position::zobristHash() const {
     return hashKey;
 }
 
-inline uint64_t
+inline U64
 Position::pawnZobristHash() const {
     return pHashKey;
 }
 
-inline uint64_t
+inline U64
 Position::kingZobristHash() const {
     return psHashKeys[Piece::WKING][wKingSq()] ^
            psHashKeys[Piece::BKING][bKingSq()];
 }
 
-inline uint64_t
+inline U64
 Position::historyHash() const {
-    uint64_t ret = hashKey;
+    U64 ret = hashKey;
     if (halfMoveClock >= 80)
         ret ^= moveCntKeys[std::min(halfMoveClock, 100)];
     return ret;
