@@ -40,8 +40,9 @@ const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 
 Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                int posHashListSize0, SearchTables& st, ParallelData& pd0,
-               const std::shared_ptr<SplitPoint>& rootSp)
-    : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), pd(pd0), threadNo(0) {
+               const std::shared_ptr<SplitPoint>& rootSp,
+               TreeLogger& logFile0)
+    : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), pd(pd0), threadNo(0), logFile(logFile0) {
     stopHandler = std::make_shared<DefaultStopHandler>(*this);
     spVec.push_back(rootSp);
     init(pos0, posHashList0, posHashListSize0);
@@ -54,7 +55,6 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     posHashList = posHashList0;
     posHashListSize = posHashListSize0;
     posHashFirstNew = posHashListSize;
-    logFile.close();
     initNodeStats();
     minTimeMillis = -1;
     maxTimeMillis = -1;
@@ -94,7 +94,6 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                            int maxDepth, U64 initialMaxNodes,
                            bool verbose) {
     tStart = currentTimeMillis();
-    const U64 rootNodeIdx = logFile.open("/home/petero/treelog.dmp", pos);
     totalNodes = 0;
     if (scMovesIn.size <= 0)
         return Move(); // No moves to search
@@ -137,6 +136,9 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             }
         }
     }
+
+    logFile.open("/home/petero/treelog.dmp");
+    const U64 rootNodeIdx = logFile.logPosition(pos);
 
     kt.clear();
     pd.wq.resetSplitDepth();

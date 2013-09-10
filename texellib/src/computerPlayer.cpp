@@ -69,7 +69,8 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
     KillerTable kt;
     History ht;
     Search::SearchTables st(tt, kt, ht, *et);
-    Search sc(pos, posHashList, posHashListSize, st, pd, nullptr);
+    TreeLogger treeLog;
+    Search sc(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
 
     // Determine all legal moves
     MoveGen::MoveList moves;
@@ -155,7 +156,8 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     KillerTable kt;
     History ht;
     Search::SearchTables st(tt, kt, ht, *et);
-    Search sc(pos, posHashList, 0, st, pd, nullptr);
+    TreeLogger treeLog;
+    Search sc(pos, posHashList, 0, st, pd, nullptr, treeLog);
 
     // Determine all legal moves
     MoveGen::MoveList moves;

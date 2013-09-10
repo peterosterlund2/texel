@@ -114,6 +114,7 @@ private:
     KillerTable kt;
     History ht;
     std::shared_ptr<Evaluate::EvalHashTables> et;
+    TreeLogger treeLog;
 
     Position pos;
     std::vector<U64> posHashList;

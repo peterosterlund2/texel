@@ -50,7 +50,7 @@ TreeLoggerWriter::writePosition(const Position& pos) {
     Position::SerializeData data;
     pos.serialize(data);
 
-    entry.type = EntryType::POSITION_INCOMPLETE;
+    entry.type = (nextIndex == 0) ? EntryType::POSITION_INCOMPLETE : EntryType::POSITION_PART0;
     entry.p0.nextIndex = endMark;
     entry.p0.word0 = data.v[0];
     entry.p0.word1 = data.v[1];
@@ -174,7 +174,8 @@ TreeLoggerReader::flushForwardPointerData(std::vector<std::pair<U64,U64>>& toWri
         entry.deSerialize(entAddr);
         if (entry.type == EntryType::NODE_START) {
             entry.se.endIndex = endIdx;
-        } else if (entry.type == EntryType::POSITION_PART0) {
+        } else if ((entry.type == EntryType::POSITION_PART0) ||
+                   (entry.type == EntryType::POSITION_INCOMPLETE)) {
             entry.p0.nextIndex = endIdx;
         } else
             assert(false);
@@ -206,7 +207,7 @@ TreeLoggerReader::getRootNode(U64 index, Position& pos) {
     readEntry(index + 1, entry);
     assert(entry.type == EntryType::POSITION_PART1);
 
-    data.v[2] |= (entry.p1.word2b << 16) | (((U64)entry.p1.word2c) << 32);
+    data.v[2] |= (((U64)entry.p1.word2b) << 16) | (((U64)entry.p1.word2c) << 32);
     data.v[3] = entry.p1.word3;
     data.v[4] = entry.p1.word4;
 

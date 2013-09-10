@@ -248,15 +248,18 @@ public:
     /** Destructor. */
     ~TreeLoggerWriter();
 
-    /** Open log file for writing.
-     *  Return index of root node position entry. */
-    U64 open(const std::string& filename, const Position& pos);
+    /** Open log file for writing. */
+    void open(const std::string& filename);
 
     /** Flush write cache and close log file. */
     void close();
 
     /** Return true if log file is opened. */
     bool isOpened() const;
+
+    /** Log information for new position to search.
+     * Return index of position entry. */
+    U64 logPosition(const Position& pos);
 
     /**
      * Log information when entering a search node.
@@ -300,9 +303,10 @@ private:
 class TreeLoggerWriterDummy {
 public:
     TreeLoggerWriterDummy() { }
-    U64 open(const std::string& filename, const Position& pos) { return 0; }
+    void open(const std::string& filename) { }
     void close() { }
     bool isOpened() const { return false; }
+    U64 logPosition(const Position& pos) { return 0; }
     U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) { return 0; }
     U64 logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey) { return 0; }
 };
@@ -391,7 +395,7 @@ private:
 
 inline
 TreeLoggerWriter::TreeLoggerWriter()
-    : opened(false), nInWriteCache(0) {
+    : opened(false), nextIndex(0), nInWriteCache(0) {
 }
 
 inline
@@ -399,20 +403,24 @@ TreeLoggerWriter::~TreeLoggerWriter() {
     close();
 }
 
-inline U64
-TreeLoggerWriter::open(const std::string& filename, const Position& pos) {
+inline void
+TreeLoggerWriter::open(const std::string& filename) {
     os.open(filename.c_str(), std::ios_base::out |
                               std::ios_base::binary |
                               std::ios_base::trunc);
     opened = true;
-    nextIndex = 0;
-    writePosition(pos);
-    return 0;
 }
 
 inline bool
 TreeLoggerWriter::isOpened() const {
     return opened;
+}
+
+inline U64
+TreeLoggerWriter::logPosition(const Position& pos) {
+    U64 ret = nextIndex;
+    writePosition(pos);
+    return ret;
 }
 
 inline U64

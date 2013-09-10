@@ -61,7 +61,8 @@ public:
     /** Constructor. */
     Search(const Position& pos, const std::vector<U64>& posHashList,
            int posHashListSize, SearchTables& st,
-           ParallelData& pd, const std::shared_ptr<SplitPoint>& rootSp);
+           ParallelData& pd, const std::shared_ptr<SplitPoint>& rootSp,
+           TreeLogger& logFile);
 
     /** Interface for reporting search information during search. */
     class Listener {
@@ -129,7 +130,8 @@ public:
 
     /** Set search tree information for a given ply. */
     void setSearchTreeInfo(int ply, const SearchTreeInfo& sti,
-                           const Move& currMove, int currMoveNo, int lmr);
+                           const Move& currMove, int currMoveNo, int lmr,
+                           U64 rootNodeIdx);
 
     /** Get total number of nodes searched by this thread. */
     S64 getTotalNodesThisThread() const;
@@ -208,7 +210,7 @@ private:
     ParallelData& pd;
     std::vector<std::shared_ptr<SplitPoint>> spVec;
     int threadNo;
-    TreeLogger logFile;
+    TreeLogger& logFile;
 
     std::shared_ptr<Listener> listener;
     std::shared_ptr<StopHandler> stopHandler;
@@ -330,11 +332,12 @@ Search::selectBest(MoveGen::MoveList& moves, int startIdx) {
 
 inline void
 Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti, const Move& currMove,
-                          int currMoveNo, int lmr) {
+                          int currMoveNo, int lmr, U64 rootNodeIdx) {
     searchTreeInfo[ply] = sti;
     searchTreeInfo[ply].currentMove = currMove;
     searchTreeInfo[ply].currentMoveNo = currMoveNo;
     searchTreeInfo[ply].lmr = lmr;
+    searchTreeInfo[ply].nodeIdx = rootNodeIdx;
 }
 
 inline int
