@@ -30,7 +30,7 @@
 #include "position.hpp"
 #include "util.hpp"
 
-#include <assert.h>
+#include <cassert>
 
 //#define MOVELIST_DEBUG
 

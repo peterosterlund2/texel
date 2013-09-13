@@ -26,8 +26,8 @@
 #ifndef UTIL_HPP_
 #define UTIL_HPP_
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <cstdlib>
 #include <sstream>

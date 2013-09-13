@@ -26,7 +26,7 @@
 #ifndef ALIGNEDALLOC_HPP_
 #define ALIGNEDALLOC_HPP_
 
-#include <stdint.h>
+#include <cstdint>
 
 /** STL allocator that makes sure all allocated memory
  *  blocks are aligned to a 64-byte boundary. */

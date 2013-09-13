@@ -28,7 +28,7 @@
 
 #include "util.hpp"
 #include "move.hpp"
-#include <assert.h>
+#include <cassert>
 
 
 /**

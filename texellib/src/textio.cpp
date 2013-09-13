@@ -26,7 +26,7 @@
 #include "textio.hpp"
 #include "moveGen.hpp"
 #include "util.hpp"
-#include <assert.h>
+#include <cassert>
 
 const std::string TextIO::startPosFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 

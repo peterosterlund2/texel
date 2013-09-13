@@ -25,7 +25,7 @@
 
 #include "bitBoard.hpp"
 #include "position.hpp"
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 
 U64 BitBoard::kingAttacks[64];

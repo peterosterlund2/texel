@@ -149,7 +149,7 @@ protected:
 
     struct StartEntry {
         U32 endIndex;
-        U32 parentIndex;    // Points to NODE_START of POSITION_PART0 node.
+        U32 parentIndex;    // Points to NODE_START or POSITION_PART0 node.
         U16 move;
         S16 alpha;
         S16 beta;

@@ -28,7 +28,7 @@
 #include "textio.hpp"
 
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 
 U64 Position::psHashKeys[Piece::nPieceTypes][64];
 U64 Position::whiteHashKey;

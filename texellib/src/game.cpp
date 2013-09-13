@@ -29,7 +29,7 @@
 
 #include <iostream>
 #include <iomanip>
-#include <assert.h>
+#include <cassert>
 
 
 Game::Game(const std::shared_ptr<Player>& whitePlayer,

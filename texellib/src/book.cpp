@@ -28,7 +28,7 @@
 #include "moveGen.hpp"
 #include "textio.hpp"
 
-#include <assert.h>
+#include <cassert>
 
 
 Book::BookMap Book::bookMap;

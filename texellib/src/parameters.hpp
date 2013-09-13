@@ -31,7 +31,7 @@
 #include <memory>
 #include <map>
 #include <string>
-#include <assert.h>
+#include <cassert>
 
 
 class Parameters {
