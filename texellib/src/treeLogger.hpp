@@ -113,6 +113,7 @@ protected:
                              // has not yet been computed for all StartEntries.
         POSITION_PART0,      // Position entry, first part.
         POSITION_PART1,      // Position entry, second part.
+        POSITION_PART2,      // Position entry, third part.
         NODE_START,          // Start of a search node.
         NODE_END             // End of a search node.
     };
@@ -123,27 +124,38 @@ protected:
         U32 nextIndex;     // Index of next position, or endMark for last position.
         U64 word0;
         U64 word1;
-        U16 word2a;
 
         template <int N> U8* serialize(U8 buffer[N]) const {
-            return Serializer::serialize<N>(buffer, nextIndex, word0, word1, word2a);
+            return Serializer::serialize<N>(buffer, nextIndex, word0, word1);
         }
         template <int N> void deSerialize(const U8 buffer[N]) {
-            Serializer::deSerialize<N>(buffer, nextIndex, word0, word1, word2a);
+            Serializer::deSerialize<N>(buffer, nextIndex, word0, word1);
         }
     };
 
     struct Position1 {
-        U16 word2b;
-        U32 word2c;
+        U64 word2;
         U64 word3;
-        U64 word4;
 
         template <int N> U8* serialize(U8 buffer[N]) const {
-            return Serializer::serialize<N>(buffer, word2b, word2c, word3, word4);
+            return Serializer::serialize<N>(buffer, word2, word3);
         }
         template <int N> void deSerialize(const U8 buffer[N]) {
-            Serializer::deSerialize<N>(buffer, word2b, word2c, word3, word4);
+            Serializer::deSerialize<N>(buffer, word2, word3);
+        }
+    };
+
+    struct Position2 {
+        U64 word4;
+        U8 owningThread;
+        U8 moveNo;
+        U32 parentIndex;    // Index in owning threads tree log
+
+        template <int N> U8* serialize(U8 buffer[N]) const {
+            return Serializer::serialize<N>(buffer, word4, owningThread, moveNo, parentIndex);
+        }
+        template <int N> void deSerialize(const U8 buffer[N]) {
+            Serializer::deSerialize<N>(buffer, word4, owningThread, moveNo, parentIndex);
         }
     };
 
@@ -196,11 +208,12 @@ protected:
         union {
             Position0 p0;
             Position1 p1;
+            Position2 p2;
             StartEntry se;
             EndEntry ee;
         };
 
-        static const int bufSize = 23;
+        static const int bufSize = 22;
         typedef U8 Buffer[bufSize];
 
         void serialize(U8 buffer[bufSize]) const {
@@ -213,6 +226,7 @@ protected:
             case EntryType::POSITION_INCOMPLETE: p0.serialize<bufSize-su>(ptr); break;
             case EntryType::POSITION_PART0:      p0.serialize<bufSize-su>(ptr); break;
             case EntryType::POSITION_PART1:      p1.serialize<bufSize-su>(ptr); break;
+            case EntryType::POSITION_PART2:      p2.serialize<bufSize-su>(ptr); break;
             case EntryType::NODE_START:          se.serialize<bufSize-su>(ptr); break;
             case EntryType::NODE_END:            ee.serialize<bufSize-su>(ptr); break;
             }
@@ -229,6 +243,7 @@ protected:
             case EntryType::POSITION_INCOMPLETE: p0.deSerialize<bufSize-su>(ptr); break;
             case EntryType::POSITION_PART0:      p0.deSerialize<bufSize-su>(ptr); break;
             case EntryType::POSITION_PART1:      p1.deSerialize<bufSize-su>(ptr); break;
+            case EntryType::POSITION_PART2:      p2.deSerialize<bufSize-su>(ptr); break;
             case EntryType::NODE_START:          se.deSerialize<bufSize-su>(ptr); break;
             case EntryType::NODE_END:            ee.deSerialize<bufSize-su>(ptr); break;
             }
@@ -259,7 +274,7 @@ public:
 
     /** Log information for new position to search.
      * Return index of position entry. */
-    U64 logPosition(const Position& pos);
+    U64 logPosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo);
 
     /**
      * Log information when entering a search node.
@@ -283,8 +298,8 @@ public:
     U64 logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey);
 
 private:
-    /** Write two position entries to end of file. */
-    void writePosition(const Position& pos);
+    /** Write position entries to end of file. */
+    void writePosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo);
 
     /** Write entry to end of file. Uses internal buffering, flushed in close(). */
     void appendEntry(const Entry& entry);
@@ -306,7 +321,7 @@ public:
     void open(const std::string& filename) { }
     void close() { }
     bool isOpened() const { return false; }
-    U64 logPosition(const Position& pos) { return 0; }
+    U64 logPosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo) { return 0; }
     U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) { return 0; }
     U64 logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey) { return 0; }
 };
@@ -333,6 +348,7 @@ private:
 
     /** Get root node information. */
     void getRootNode(U64 index, Position& pos);
+    void getRootNode(U64 index, Position& pos, int& owningThread, U64& parentIndex, int& moveNo);
 
     /** Read an entry. */
     void readEntry(U64 index, Entry& entry);
@@ -417,9 +433,9 @@ TreeLoggerWriter::isOpened() const {
 }
 
 inline U64
-TreeLoggerWriter::logPosition(const Position& pos) {
+TreeLoggerWriter::logPosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo) {
     U64 ret = nextIndex;
-    writePosition(pos);
+    writePosition(pos, owningThread, parentIndex, moveNo);
     return ret;
 }
 
@@ -451,6 +467,14 @@ TreeLoggerWriter::logNodeEnd(U64 startIndex, int score, int scoreType, int evalS
     entry.ee.hashKey = hashKey;
     appendEntry(entry);
     return nextIndex++;
+}
+
+inline void
+TreeLoggerReader::getRootNode(U64 index, Position& pos) {
+    int owningThread;
+    U64 parentIndex;
+    int moveNo;
+    getRootNode(index, pos, owningThread, parentIndex, moveNo);
 }
 
 #endif /* TREELOGGER_HPP_ */

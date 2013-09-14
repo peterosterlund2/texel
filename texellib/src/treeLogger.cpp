@@ -46,7 +46,7 @@ TreeLoggerWriter::close() {
 }
 
 void
-TreeLoggerWriter::writePosition(const Position& pos) {
+TreeLoggerWriter::writePosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo) {
     Position::SerializeData data;
     pos.serialize(data);
 
@@ -54,15 +54,20 @@ TreeLoggerWriter::writePosition(const Position& pos) {
     entry.p0.nextIndex = endMark;
     entry.p0.word0 = data.v[0];
     entry.p0.word1 = data.v[1];
-    entry.p0.word2a = data.v[2] & 0xffff;
     appendEntry(entry);
     nextIndex++;
 
     entry.type = EntryType::POSITION_PART1;
-    entry.p1.word2b = (data.v[2] >> 16) & 0xffff;
-    entry.p1.word2c = (data.v[2] >> 32) & 0xffffffffULL;
+    entry.p1.word2 = data.v[2];
     entry.p1.word3 = data.v[3];
-    entry.p1.word4 = data.v[4];
+    appendEntry(entry);
+    nextIndex++;
+
+    entry.type = EntryType::POSITION_PART2;
+    entry.p2.word4 = data.v[4];
+    entry.p2.owningThread = owningThread;
+    entry.p2.parentIndex = parentIndex;
+    entry.p2.moveNo = moveNo;
     appendEntry(entry);
     nextIndex++;
 }
@@ -190,10 +195,14 @@ TreeLoggerReader::flushForwardPointerData(std::vector<std::pair<U64,U64>>& toWri
 }
 
 void
-TreeLoggerReader::getRootNode(U64 index, Position& pos) {
+TreeLoggerReader::getRootNode(U64 index, Position& pos,
+                              int& owningThread, U64& parentIndex, int& moveNo) {
     readEntry(index, entry);
     if (entry.type == EntryType::POSITION_PART1) {
         index--;
+        readEntry(index, entry);
+    } else if (entry.type == EntryType::POSITION_PART2) {
+        index -= 2;
         readEntry(index, entry);
     }
     assert((entry.type == EntryType::POSITION_INCOMPLETE) ||
@@ -202,14 +211,18 @@ TreeLoggerReader::getRootNode(U64 index, Position& pos) {
     Position::SerializeData data;
     data.v[0] = entry.p0.word0;
     data.v[1] = entry.p0.word1;
-    data.v[2] = entry.p0.word2a;
 
     readEntry(index + 1, entry);
     assert(entry.type == EntryType::POSITION_PART1);
-
-    data.v[2] |= (((U64)entry.p1.word2b) << 16) | (((U64)entry.p1.word2c) << 32);
+    data.v[2] = entry.p1.word2;
     data.v[3] = entry.p1.word3;
-    data.v[4] = entry.p1.word4;
+
+    readEntry(index + 2, entry);
+    assert(entry.type == EntryType::POSITION_PART2);
+    data.v[4] = entry.p2.word4;
+    owningThread = entry.p2.owningThread;
+    parentIndex = entry.p2.parentIndex;
+    moveNo = entry.p2.moveNo;
 
     pos.deSerialize(data);
 }
@@ -542,7 +555,8 @@ TreeLoggerReader::findParent(S64 index) {
     if (entry.type == EntryType::NODE_START) {
         return entry.se.parentIndex;
     } else if ((entry.type == EntryType::POSITION_PART0) ||
-               (entry.type == EntryType::POSITION_PART1)) {
+               (entry.type == EntryType::POSITION_PART1) ||
+               (entry.type == EntryType::POSITION_PART2)) {
         return -1;
     } else
         assert(false);
@@ -570,11 +584,14 @@ TreeLoggerReader::findChildren(S64 index, std::vector<U64>& childs) {
         case EntryType::NODE_START:
             child = index + 1;
             break;
+        case EntryType::POSITION_PART2:
+            index--;
+            // Fall through
         case EntryType::POSITION_PART1:
             index--;
             // Fall through
         case EntryType::POSITION_PART0:
-            child = index + 2;
+            child = index + 3;
             break;
         default:
             assert(false);
@@ -605,6 +622,9 @@ TreeLoggerReader::getChildNo(U64 index) {
         readEntry(index, entry);
     } else if (entry.type == EntryType::POSITION_PART1) {
         index--;
+        readEntry(index, entry);
+    } else if (entry.type == EntryType::POSITION_PART2) {
+        index -= 2;
         readEntry(index, entry);
     }
     std::vector<U64> childs;
@@ -706,11 +726,17 @@ TreeLoggerReader::printNodeInfo(U64 index, int childNo, const std::string& filte
         }
         std::cout << std::endl;
     } else if ((entry.type == EntryType::POSITION_PART0) ||
-               (entry.type == EntryType::POSITION_PART1)) {
+               (entry.type == EntryType::POSITION_PART1) ||
+               (entry.type == EntryType::POSITION_PART2)) {
         Position pos;
-        getRootNode(index, pos);
+        int owningThread, moveNo;
+        U64 parentIndex;
+        getRootNode(index, pos, owningThread, parentIndex, moveNo);
         std::cout << std::setw(3) << childNo
                   << ' ' << std::setw(8) << index
+                  << ' ' << owningThread
+                  << ' ' << std::setw(8) << parentIndex
+                  << ' ' << std::setw(2) << moveNo
                   << ' ' << TextIO::toFEN(pos) << std::endl;
     } else
         assert(false);

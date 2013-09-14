@@ -138,7 +138,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     }
 
     logFile.open("/home/petero/treelog.dmp");
-    const U64 rootNodeIdx = logFile.logPosition(pos);
+    const U64 rootNodeIdx = logFile.logPosition(pos, 0, 0, 0);
 
     kt.clear();
     pd.wq.resetSplitDepth();

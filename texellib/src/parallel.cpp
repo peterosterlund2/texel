@@ -228,7 +228,8 @@ WorkerThread::mainLoop() {
             int posHashListSize;
             sp->getPosHashList(pos, posHashList, posHashListSize);
             Search sc(pos, posHashList, posHashListSize, st, pd, sp, logFile);
-            const U64 rootNodeIdx = logFile.logPosition(pos);
+            const U64 rootNodeIdx = logFile.logPosition(pos, sp->owningThread(),
+                                                        sp->getSearchTreeInfo().nodeIdx, moveNo);
             sc.setThreadNo(threadNo);
             const int alpha = newSp->getAlpha();
             const int beta = newSp->getBeta();

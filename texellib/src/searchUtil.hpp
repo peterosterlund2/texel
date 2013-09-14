@@ -37,7 +37,7 @@ struct SearchTreeInfo {
     Move currentMove;      // Move currently being searched
     int currentMoveNo;     // Index of currentMove in move list
     int lmr;               // LMR reduction amount
-    S64 nodeIdx;           // For tree logging
+    U64 nodeIdx;           // For tree logging
 };
 
 
