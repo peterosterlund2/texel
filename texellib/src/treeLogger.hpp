@@ -28,6 +28,7 @@
 
 #include "util.hpp"
 #include "move.hpp"
+#include "parallel.hpp"
 
 #include <vector>
 #include <type_traits>
@@ -134,14 +135,15 @@ protected:
     };
 
     struct Position1 {
+        U32 t0Index;
         U64 word2;
         U64 word3;
 
         template <int N> U8* serialize(U8 buffer[N]) const {
-            return Serializer::serialize<N>(buffer, word2, word3);
+            return Serializer::serialize<N>(buffer, t0Index, word2, word3);
         }
         template <int N> void deSerialize(const U8 buffer[N]) {
-            Serializer::deSerialize<N>(buffer, word2, word3);
+            Serializer::deSerialize<N>(buffer, t0Index, word2, word3);
         }
     };
 
@@ -264,7 +266,7 @@ public:
     ~TreeLoggerWriter();
 
     /** Open log file for writing. */
-    void open(const std::string& filename);
+    void open(const std::string& filename, ParallelData& pd, int threadNo);
 
     /** Flush write cache and close log file. */
     void close();
@@ -289,6 +291,7 @@ public:
     U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth);
 
     /**
+     * Log information when leaving a search node.
      * @param startIndex Pointer to corresponding start node entry.
      * @param score      Computed score for this node.
      * @param scoreType  See TranspositionTable, T_EXACT, T_GE, T_LE.
@@ -309,6 +312,9 @@ private:
     std::ofstream os;
     U64 nextIndex;
 
+    ParallelData* pd;
+    int threadNo;
+
     static const int writeCacheSize = 1024;
     U8 writeCache[Entry::bufSize * writeCacheSize];
     int nInWriteCache;
@@ -318,7 +324,7 @@ private:
 class TreeLoggerWriterDummy {
 public:
     TreeLoggerWriterDummy() { }
-    void open(const std::string& filename) { }
+    void open(const std::string& filename, ParallelData& pd, int threadNo) { }
     void close() { }
     bool isOpened() const { return false; }
     U64 logPosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo) { return 0; }
@@ -348,7 +354,8 @@ private:
 
     /** Get root node information. */
     void getRootNode(U64 index, Position& pos);
-    void getRootNode(U64 index, Position& pos, int& owningThread, U64& parentIndex, int& moveNo);
+    void getRootNode(U64 index, Position& pos, int& owningThread,
+                     U64& parentIndex, int& moveNo, U64& t0Index);
 
     /** Read an entry. */
     void readEntry(U64 index, Entry& entry);
@@ -411,20 +418,12 @@ private:
 
 inline
 TreeLoggerWriter::TreeLoggerWriter()
-    : opened(false), nextIndex(0), nInWriteCache(0) {
+    : opened(false), nextIndex(0), pd(nullptr), threadNo(-1), nInWriteCache(0) {
 }
 
 inline
 TreeLoggerWriter::~TreeLoggerWriter() {
     close();
-}
-
-inline void
-TreeLoggerWriter::open(const std::string& filename) {
-    os.open(filename.c_str(), std::ios_base::out |
-                              std::ios_base::binary |
-                              std::ios_base::trunc);
-    opened = true;
 }
 
 inline bool
@@ -435,6 +434,8 @@ TreeLoggerWriter::isOpened() const {
 inline U64
 TreeLoggerWriter::logPosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo) {
     U64 ret = nextIndex;
+    if (threadNo == 0)
+        pd->t0Index = ret;
     writePosition(pos, owningThread, parentIndex, moveNo);
     return ret;
 }
@@ -443,6 +444,8 @@ inline U64
 TreeLoggerWriter::logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) {
     if (!opened)
         return 0;
+    if (threadNo == 0)
+        pd->t0Index = nextIndex;
     entry.type = EntryType::NODE_START;
     entry.se.endIndex = -1;
     entry.se.parentIndex = parentIndex;
@@ -451,6 +454,7 @@ TreeLoggerWriter::logNodeStart(U64 parentIndex, const Move& m, int alpha, int be
     entry.se.beta = beta;
     entry.se.ply = ply;
     entry.se.depth = depth;
+    entry.se.t0Index = pd->t0Index;
     appendEntry(entry);
     return nextIndex++;
 }
@@ -459,12 +463,15 @@ inline U64
 TreeLoggerWriter::logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey) {
     if (!opened)
         return 0;
+    if (threadNo == 0)
+        pd->t0Index = nextIndex;
     entry.type = EntryType::NODE_END;
     entry.ee.startIndex = startIndex;
     entry.ee.score = score;
     entry.ee.scoreType = scoreType;
     entry.ee.evalScore = evalScore;
     entry.ee.hashKey = hashKey;
+    entry.ee.t0Index = pd->t0Index;
     appendEntry(entry);
     return nextIndex++;
 }
@@ -474,7 +481,8 @@ TreeLoggerReader::getRootNode(U64 index, Position& pos) {
     int owningThread;
     U64 parentIndex;
     int moveNo;
-    getRootNode(index, pos, owningThread, parentIndex, moveNo);
+    U64 t0Index;
+    getRootNode(index, pos, owningThread, parentIndex, moveNo, t0Index);
 }
 
 #endif /* TREELOGGER_HPP_ */

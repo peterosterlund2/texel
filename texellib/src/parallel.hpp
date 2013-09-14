@@ -282,8 +282,11 @@ public:
 
     WorkQueue wq;
 
-    // Move played in Search::iterativeDeepening before calling negaScout. For debugging.
+    /** Move played in Search::iterativeDeepening before calling negaScout. For debugging. */
     Move topMove;
+
+    /** Current node index in thread 0. Used by tree logging code. */
+    std::atomic<U32> t0Index;
 
 private:
     /** Vector of helper threads. Master thread not included. */

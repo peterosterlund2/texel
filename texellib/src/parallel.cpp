@@ -198,7 +198,7 @@ WorkerThread::mainLoop() {
         ht = std::make_shared<History>();
 
     TreeLogger logFile;
-    logFile.open("/home/petero/treelog.dmp." + num2Str(threadNo));
+    logFile.open("/home/petero/treelog.dmp", pd, threadNo);
 
 //    SWTimer timer(pd, threadNo);
     std::mutex m;
@@ -561,7 +561,7 @@ WorkQueue::Lock::Lock(const WorkQueue* wq0)
 // ----------------------------------------------------------------------------
 
 ParallelData::ParallelData(TranspositionTable& tt0)
-    : wq(cv, fhInfo), tt(tt0) {
+    : wq(cv, fhInfo), t0Index(0), tt(tt0) {
     totalHelperNodes = 0;
 }
 

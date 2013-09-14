@@ -137,7 +137,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         }
     }
 
-    logFile.open("/home/petero/treelog.dmp");
+    logFile.open("/home/petero/treelog.dmp", pd, threadNo);
     const U64 rootNodeIdx = logFile.logPosition(pos, 0, 0, 0);
 
     kt.clear();
