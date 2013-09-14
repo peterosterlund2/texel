@@ -36,6 +36,7 @@
 #include <thread>
 #include <mutex>
 #include <memory>
+#include <atomic>
 
 class SearchParams;
 
@@ -107,7 +108,7 @@ private:
 
     std::shared_ptr<std::thread> engineThread;
     std::mutex threadMutex;
-    volatile bool shouldDetach;
+    std::atomic<bool> shouldDetach;
     std::shared_ptr<Search> sc;
     TranspositionTable tt;
     ParallelData pd;
@@ -119,9 +120,9 @@ private:
     Position pos;
     std::vector<U64> posHashList;
     int posHashListSize;
-    volatile bool ponder;     // True if currently doing pondering
+    std::atomic<bool> ponder;     // True if currently doing pondering
     bool onePossibleMove;
-    volatile bool infinite;
+    std::atomic<bool> infinite;
 
     int minTimeLimit;
     int maxTimeLimit;

@@ -286,7 +286,7 @@ EngineControl::setupTT() {
     int hashSizeMB = Parameters::instance().getIntPar("Hash");
     U64 nEntries = hashSizeMB > 0 ? ((U64)hashSizeMB) * (1 << 20) / sizeof(TranspositionTable::TTEntry)
 	                          : (U64)1024;
-    volatile int logSize = 0;
+    int logSize = 0;
     while (nEntries > 1) {
         logSize++;
         nEntries /= 2;

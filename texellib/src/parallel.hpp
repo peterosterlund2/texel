@@ -94,7 +94,7 @@ private:
 
     double pUseful; // Probability that thread is currently doing something useful, for debugging
 
-    volatile bool stopThread;
+    std::atomic<bool> stopThread;
 };
 
 
