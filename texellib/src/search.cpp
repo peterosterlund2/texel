@@ -584,25 +584,28 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 nullOk = false;
         }
         if (nullOk) {
-            SplitPointHolder sph(pd, spVec);
-            if (smp) {
-                sph.setSp(std::make_shared<SplitPoint>(threadNo, spVec.back(),
-                                                       searchTreeInfo[ply-1].currentMoveNo,
-                                                       pos, posHashList, posHashListSize,
-                                                       sti, kt, ht, alpha, beta, ply));
-                sph.addMove(0, SplitPointMove(Move(), 0, 0, -1, false));
-                sph.addToQueue();
-                sph.setOwnerCurrMove(0, alpha);
+            int score;
+            {
+                SplitPointHolder sph(pd, spVec);
+                if (smp) {
+                    sph.setSp(std::make_shared<SplitPoint>(threadNo, spVec.back(),
+                                                           searchTreeInfo[ply-1].currentMoveNo,
+                                                           pos, posHashList, posHashListSize,
+                                                           sti, kt, ht, alpha, beta, ply));
+                    sph.addMove(0, SplitPointMove(Move(), 0, 0, -1, false));
+                    sph.addToQueue();
+                    sph.setOwnerCurrMove(0, alpha);
+                }
+                pos.setWhiteMove(!pos.getWhiteMove());
+                int epSquare = pos.getEpSquare();
+                pos.setEpSquare(-1);
+                searchTreeInfo[ply+1].allowNullMove = false;
+                searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
+                score = -negaScout(smp, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
+                searchTreeInfo[ply+1].allowNullMove = true;
+                pos.setEpSquare(epSquare);
+                pos.setWhiteMove(!pos.getWhiteMove());
             }
-            pos.setWhiteMove(!pos.getWhiteMove());
-            int epSquare = pos.getEpSquare();
-            pos.setEpSquare(-1);
-            searchTreeInfo[ply+1].allowNullMove = false;
-            searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
-            int score = -negaScout(smp, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
-            searchTreeInfo[ply+1].allowNullMove = true;
-            pos.setEpSquare(epSquare);
-            pos.setWhiteMove(!pos.getWhiteMove());
             bool storeInHash = true;
             if ((score >= beta) && (depth >= 10 * plyScale)) {
                 // Null-move verification search
