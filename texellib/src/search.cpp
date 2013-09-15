@@ -571,6 +571,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         } else {
             nullOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
         }
+        const int R = (depth > 6*plyScale) ? 4*plyScale : 3*plyScale;
+        if (nullOk) {
+            if (((ent.getType() == TType::T_EXACT) || (ent.getType() == TType::T_LE)) &&
+                (ent.getDepth() >= depth - R) && (ent.getScore(ply) < beta))
+                nullOk = false;
+        }
         if (nullOk) {
             if (evalScore == UNKNOWN_SCORE)
                 evalScore = eval.evalPos(pos);
@@ -588,7 +594,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 sph.addToQueue();
                 sph.setOwnerCurrMove(0, alpha);
             }
-            const int R = (depth > 6*plyScale) ? 4*plyScale : 3*plyScale;
             pos.setWhiteMove(!pos.getWhiteMove());
             int epSquare = pos.getEpSquare();
             pos.setEpSquare(-1);
@@ -598,13 +603,35 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             searchTreeInfo[ply+1].allowNullMove = true;
             pos.setEpSquare(epSquare);
             pos.setWhiteMove(!pos.getWhiteMove());
+            bool storeInHash = true;
+            if ((score >= beta) && (depth >= 10 * plyScale)) {
+                // Null-move verification search
+                SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
+                const Move savedMove = sti2.currentMove;
+                const int savedMoveNo = sti2.currentMoveNo;
+                const S64 savedNodeIdx2 = sti2.nodeIdx;
+                sti2.currentMove = Move(1,1,0); // Represents "no move"
+                sti2.currentMoveNo = -1;
+                sti2.nodeIdx = sti.nodeIdx;
+                const S64 savedNodeIdx = sti.nodeIdx;
+                sti.allowNullMove = false;
+                score = negaScout(smp, beta - 1, beta, ply, depth - R, recaptureSquare, inCheck);
+                sti.allowNullMove = true;
+                sti.nodeIdx = savedNodeIdx;
+                sti2.currentMove = savedMove;
+                sti2.currentMoveNo = savedMoveNo;
+                sti2.nodeIdx = savedNodeIdx2;
+                searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
+                storeInHash = false;
+            }
             if (smp && (depth - R >= MIN_SMP_DEPTH * plyScale))
                 pd.fhInfo.addData(-1, searchTreeInfo[ply+1].currentMoveNo, score < beta, false);
             if (score >= beta) {
                 if (score > MATE0 / 2)
                     score = beta;
                 emptyMove.setScore(score);
-                tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
+                if (storeInHash)
+                    tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, score, TType::T_GE, evalScore, hKey);
                 return score;
             } else {

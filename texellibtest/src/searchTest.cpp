@@ -202,7 +202,7 @@ SearchTest::testDrawRep() {
     pos = TextIO::readFEN("qn6/qn4k1/pp3R2/5R2/8/8/8/K7 w - - 0 1");
     sc = std::make_shared<Search>(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc->maxTimeMillis = -1;
-    score = idSearch(*sc.get(), 7).score();
+    score = idSearch(*sc.get(), 9).score();
     ASSERT_EQUAL(0, score); // Draw, black can not escape from perpetual checks
 }
 
