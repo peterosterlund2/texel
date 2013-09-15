@@ -354,6 +354,31 @@ TreeLoggerReader::mainLoop() {
             int n = getArg(cmdStr, 1);
             for (int i = 0; i < n; i++)
                 currIndex = findParent(currIndex);
+        } else if (startsWith(cmdStr, "lp")) {
+            std::vector<int> args;
+            getArgs(cmdStr, 0, args);
+            if (args.size() == 2) {
+                int th = args[0];
+                U64 idx = args[1];
+                std::vector<U64> positions;
+                findChildren(-1, positions);
+                for (size_t p = 0; p < positions.size(); p++) {
+                    U64 posIdx = positions[p];
+                    Position pos;
+                    int owningThread, moveNo;
+                    U64 parentIndex;
+                    U64 t0Index;
+                    getRootNode(posIdx, pos, owningThread, parentIndex, moveNo, t0Index);
+                    if ((owningThread == th) && (parentIndex == idx)) {
+                        printNodeInfo(posIdx, p);
+                        std::vector<U64> children;
+                        findChildren(posIdx, children);
+                        for (size_t c = 0; c < children.size(); c++)
+                            printNodeInfo(children[c], c);
+                    }
+                }
+            }
+            doPrint = false;
         } else if (startsWith(cmdStr, "l")) {
             std::vector<U64> children;
             findChildren(currIndex, children);
@@ -531,6 +556,8 @@ TreeLoggerReader::printHelp() {
     std::cout << "  p              - Print move sequence" << std::endl;
     std::cout << "  n              - Print node info corresponding to move sequence" << std::endl;
     std::cout << "  l [move]       - List child nodes, optionally only for one move" << std::endl;
+    std::cout << "  lb [move]      - List best child nodes, optionally only for one move" << std::endl;
+    std::cout << "  lp th idx      - List positions requested by thread th at index idx" << std::endl;
     std::cout << "  d [n1 [n2...]] - Go to child \"n\"" << std::endl;
     std::cout << "  move           - Go to child \"move\", if unique" << std::endl;
     std::cout << "  u [levels]     - Move up" << std::endl;
