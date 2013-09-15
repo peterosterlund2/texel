@@ -432,6 +432,36 @@ struct Mtrl {
         p(p0), r(r0), n(n0), b(b0), q(q0) {}
 };
 
+
+/** Tests if a series of integers are unique. */
+class UniqCheck {
+public:
+    UniqCheck(int nEntries) {
+        int hSize = 1;
+        while (hSize < nEntries*2)
+            hSize *= 2;
+        table.resize(hSize, -1);
+    }
+
+    bool uniq(int value) {
+        ASSERT(value != -1);
+        const int N = table.size();
+        int h1 = (value) & (N - 1);
+        int h2 = (((value >> 14) + (value << 14)) * 2 + 1) & (N - 1);
+        int idx = h1;
+        while (table[idx] != -1) {
+            if (table[idx] == value)
+                return false;
+            idx = (idx + h2) & (N - 1);
+        }
+        table[idx] = value;
+        return true;
+    }
+
+private:
+    std::vector<int> table;
+};
+
 /**
  * Test that the material identifier is unique for all legal material configurations.
  */
@@ -493,8 +523,7 @@ testMaterialId() {
 
     {
         S64 t0 = currentTimeMillis();
-        std::vector<int> ids;
-        ids.reserve(configs.size()*configs.size());
+        UniqCheck ids(configs.size()*configs.size());
         for (const Mtrl& w : configs) {
             MatId id;
             for (int i = 0; i < w.p; i++) id.addPiece(Piece::WPAWN);
@@ -509,12 +538,14 @@ testMaterialId() {
                 for (int i = 0; i < b.n; i++) id2.addPiece(Piece::BKNIGHT);
                 for (int i = 0; i < b.b; i++) id2.addPiece(Piece::BBISHOP);
                 for (int i = 0; i < b.q; i++) id2.addPiece(Piece::BQUEEN);
-                ids.push_back(id2());
+                bool u = ids.uniq(id2());
+                if (!u) {
+                    std::cout << "w:" << w.p << ' ' << w.r << ' ' << w.n << ' ' << w.b << ' ' << w.q << std::endl;
+                    std::cout << "b:" << b.p << ' ' << b.r << ' ' << b.n << ' ' << b.b << ' ' << b.q << std::endl;
+                }
+                ASSERT(u);
             }
         }
-        std::sort(ids.begin(), ids.end());
-        for (size_t i = 0; i < ids.size()-1; i++)
-            ASSERT(ids[i] != ids[i+1]);
         S64 t1 = currentTimeMillis();
         std::cout << "time:" << t1 - t0 << std::endl;
     }
