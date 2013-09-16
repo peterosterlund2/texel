@@ -82,6 +82,53 @@ private:
     double tSleep, tWork;
 };
 
+/** Measures CPU utilization */
+class UtilTimer {
+public:
+    UtilTimer() {
+        reset();
+    }
+
+    void reset() {
+        t0 = currentTime();
+        pUseful = -1;
+        tElapsed = 0;
+        tUseful = 0;
+        tSleep = 0;
+    }
+
+    void setPUseful(double p) {
+        update();
+        pUseful = p;
+    }
+
+    void getStats(double& elapsed, double& useful, double& sleep) {
+        update();
+        elapsed = tElapsed;
+        useful = tUseful;
+        sleep = tSleep;
+    }
+
+private:
+    void update() {
+        double tNow = currentTime();
+        double dt = tNow - t0;
+        tElapsed += dt;
+        if (pUseful >= 0)
+            tUseful += dt * pUseful;
+        else
+            tSleep += dt;
+        t0 = tNow;
+    }
+
+    double t0;
+    double pUseful;
+
+    double tElapsed;
+    double tUseful;
+    double tSleep;
+};
+
 // ----------------------------------------------------------------------------
 
 WorkerThread::WorkerThread(int threadNo0, ParallelData& pd0,
@@ -201,6 +248,7 @@ WorkerThread::mainLoop() {
     logFile.open("/home/petero/treelog.dmp", pd, threadNo);
 
 //    SWTimer timer(pd, threadNo);
+//    UtilTimer uTimer;
     std::mutex m;
     std::unique_lock<std::mutex> lock(m);
     Position pos;
@@ -222,6 +270,7 @@ WorkerThread::mainLoop() {
                 *kt = sp->getKillerTable();
             }
             pUseful = sp->getPMoveUseful(pd.fhInfo, moveNo);
+//            uTimer.setPUseful(pUseful);
             Search::SearchTables st(tt, *kt, *ht, *et);
             sp->getPos(pos, spMove.getMove());
             std::vector<U64> posHashList;
@@ -270,6 +319,7 @@ WorkerThread::mainLoop() {
                     pd.wq.returnMove(sp, moveNo);
             }
             pUseful = 0.0;
+//            uTimer.setPUseful(-1);
         } else {
             pUseful = 0.0;
             sp.reset();
@@ -277,6 +327,12 @@ WorkerThread::mainLoop() {
             pd.cv.wait_for(lock, std::chrono::microseconds(1000));
         }
     }
+//    double tElapsed, tUseful, tSleep;
+//    uTimer.getStats(tElapsed, tUseful, tSleep);
+//    log([&](std::ostream& os){
+//        os << "~mainLoop, th:" << threadNo << " useful:" << tUseful / tElapsed
+//           << " sleep:" << tSleep / tElapsed;
+//    });
 //    log([&](std::ostream& os){os << "~mainLoop, th:" << threadNo;});
 }
 
