@@ -61,11 +61,8 @@ public:
     /** Start thread. */
     void start();
 
-    /** Tell thread to stop. */
-    void stop(bool wait);
-
-    /** Returns true if thread should stop searching. */
-    bool shouldStop() const { return stopThread; }
+    /** Wait for thread to stop. */
+    void join();
 
     /** Return true if thread is running. */
     bool threadRunning() const { return thread != nullptr; }
@@ -93,8 +90,6 @@ private:
     TranspositionTable& tt;
 
     double pUseful; // Probability that thread is currently doing something useful, for debugging
-
-    std::atomic<bool> stopThread;
 };
 
 
@@ -103,7 +98,11 @@ class WorkQueue {
     friend class ParallelTest;
 public:
     /** Constructor. */
-    WorkQueue(std::condition_variable& cv, FailHighInfo& fhInfo);
+    WorkQueue(FailHighInfo& fhInfo);
+
+    /** Set/get stopped flag. */
+    void setStopped(bool stop);
+    bool isStopped() const;
 
     /** Reset dynamic minimum split depth to default value. */
     void resetSplitDepth();
@@ -167,17 +166,19 @@ private:
     class Lock {
     public:
         Lock(const WorkQueue* wq0);
+        void wait(std::condition_variable& cv);
     private:
         const WorkQueue& wq;
         std::unique_lock<std::mutex> lock;
     };
     friend class Lock;
+    std::atomic<bool> stopped;
 
     mutable int minSplitDepth;      // Dynamic minimum split depth
     mutable U64 nContended;         // Number of times mutex has been contended
     mutable U64 nNonContended;      // Number of times mutex has not been contended
 
-    std::condition_variable& cv;
+    std::condition_variable cv;     // Notified when wq becomes non-empty and when search should stop
     FailHighInfo& fhInfo;
     mutable std::mutex mutex;
 
@@ -274,9 +275,6 @@ public:
 
     /** For debugging. */
     const WorkerThread& getHelperThread(int i) const { return *threads[i]; }
-
-    // Notified when wq becomes non-empty and when search should stop
-    std::condition_variable cv;
 
     FailHighInfo fhInfo;
 

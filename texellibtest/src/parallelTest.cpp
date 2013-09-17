@@ -91,8 +91,6 @@ ParallelTest::testWorkQueue() {
     WorkQueue& wq = pd.wq;
     FailHighInfo& fhi = pd.fhInfo;
     int moveNo = -1;
-    std::shared_ptr<SplitPoint> sp = wq.getWork(moveNo, pd, 0);
-    ASSERT(!sp);
     double prob = wq.getBestProbability();
     ASSERT_EQUAL_DELTA(0.0, prob, eps);
     ASSERT_EQUAL(0, wq.queue.size());
@@ -136,7 +134,7 @@ ParallelTest::testWorkQueue() {
     ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL_DELTA(511 / 1023.0, wq.getBestProbability(), eps);
 
-    sp = wq.getWork(moveNo, pd, 0);
+    std::shared_ptr<SplitPoint> sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(1, moveNo);
     ASSERT_EQUAL(sp1, sp);
     ASSERT_EQUAL(2, sp1->findNextMove());

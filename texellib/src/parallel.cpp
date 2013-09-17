@@ -134,30 +134,24 @@ private:
 WorkerThread::WorkerThread(int threadNo0, ParallelData& pd0,
                            TranspositionTable& tt0)
     : threadNo(threadNo0), pd(pd0), tt(tt0),
-      pUseful(0.0), stopThread(false) {
+      pUseful(0.0) {
 }
 
 WorkerThread::~WorkerThread() {
-    stop(true);
+    assert(!thread);
 }
 
 void
 WorkerThread::start() {
     assert(!thread);
-    stopThread = false;
     thread = std::make_shared<std::thread>([this](){ mainLoop(); });
 }
 
 void
-WorkerThread::stop(bool wait) {
-    stopThread = true;
-    if (wait) {
-        if (thread) {
-            pd.cv.notify_all();
-            thread->join();
-            thread.reset();
-            stopThread = false;
-        }
+WorkerThread::join() {
+    if (thread) {
+        thread->join();
+        thread.reset();
     }
 }
 
@@ -205,7 +199,7 @@ ThreadStopHandler::~ThreadStopHandler() {
 
 bool
 ThreadStopHandler::shouldStop() {
-    if (wt.shouldStop() || spMove.isCanceled())
+    if (pd.wq.isStopped() || spMove.isCanceled())
         return true;
     if (sp.getAlpha() != initialAlpha)
         return true;
@@ -253,79 +247,78 @@ WorkerThread::mainLoop() {
     std::unique_lock<std::mutex> lock(m);
     Position pos;
     std::shared_ptr<SplitPoint> sp;
-    while (!shouldStop()) {
+    while (true) {
         int moveNo = -1;
+//        uTimer.setPUseful(-1);
+//        timer.startSleep();
         std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo, pd, threadNo);
-        if (newSp) {
-            const SplitPointMove& spMove = newSp->getSpMove(moveNo);
-            const int depth = spMove.getDepth();
-            if (depth < 0) { // Move skipped by forward pruning or legality check
-                pd.wq.moveFinished(newSp, moveNo, false);
-                continue;
+        if (!newSp)
+            break;
+
+        const SplitPointMove& spMove = newSp->getSpMove(moveNo);
+        const int depth = spMove.getDepth();
+        if (depth < 0) { // Move skipped by forward pruning or legality check
+            pd.wq.moveFinished(newSp, moveNo, false);
+            continue;
+        }
+        if (sp != newSp) {
+            sp = newSp;
+            *ht = sp->getHistory();
+            *kt = sp->getKillerTable();
+        }
+        pUseful = sp->getPMoveUseful(pd.fhInfo, moveNo);
+        Search::SearchTables st(tt, *kt, *ht, *et);
+        sp->getPos(pos, spMove.getMove());
+        std::vector<U64> posHashList;
+        int posHashListSize;
+        sp->getPosHashList(pos, posHashList, posHashListSize);
+        Search sc(pos, posHashList, posHashListSize, st, pd, sp, logFile);
+        const U64 rootNodeIdx = logFile.logPosition(pos, sp->owningThread(),
+                                                    sp->getSearchTreeInfo().nodeIdx, moveNo);
+        sc.setThreadNo(threadNo);
+        const int alpha = newSp->getAlpha();
+        const int beta = newSp->getBeta();
+        auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd, *sp,
+                                                             spMove, moveNo,
+                                                             sc, alpha));
+        sc.setStopHandler(stopHandler);
+        const int ply = sp->getPly();
+        const int lmr = spMove.getLMR();
+        const int captSquare = spMove.getRecaptureSquare();
+        const bool inCheck = spMove.getInCheck();
+        sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo, lmr, rootNodeIdx);
+        try {
+//            log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
+//                                         << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
+//                                         << " a:" << alpha << " b:" << beta
+//                                         << " d:" << depth/SearchConst::plyScale
+//                                         << " p:" << sp->getPMoveUseful(pd.fhInfo, moveNo) << " start";});
+//            timer.startWork();
+//            uTimer.setPUseful(pUseful);
+            const bool smp = pd.numHelperThreads() > 1;
+            int score = -sc.negaScout(smp, -(alpha+1), -alpha, ply+1,
+                                      depth, captSquare, inCheck);
+            if (((lmr > 0) && (score > alpha)) ||
+                    ((score > alpha) && (score < beta))) {
+                sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo, 0, rootNodeIdx);
+                score = -sc.negaScout(smp, -beta, -alpha, ply+1,
+                                      depth + lmr, captSquare, inCheck);
             }
 //            timer.startWork();
-            if (sp != newSp) {
-                sp = newSp;
-                *ht = sp->getHistory();
-                *kt = sp->getKillerTable();
-            }
-            pUseful = sp->getPMoveUseful(pd.fhInfo, moveNo);
-//            uTimer.setPUseful(pUseful);
-            Search::SearchTables st(tt, *kt, *ht, *et);
-            sp->getPos(pos, spMove.getMove());
-            std::vector<U64> posHashList;
-            int posHashListSize;
-            sp->getPosHashList(pos, posHashList, posHashListSize);
-            Search sc(pos, posHashList, posHashListSize, st, pd, sp, logFile);
-            const U64 rootNodeIdx = logFile.logPosition(pos, sp->owningThread(),
-                                                        sp->getSearchTreeInfo().nodeIdx, moveNo);
-            sc.setThreadNo(threadNo);
-            const int alpha = newSp->getAlpha();
-            const int beta = newSp->getBeta();
-            auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd, *sp,
-                                                                 spMove, moveNo,
-                                                                 sc, alpha));
-            sc.setStopHandler(stopHandler);
-            const int ply = sp->getPly();
-            const int lmr = spMove.getLMR();
-            const int captSquare = spMove.getRecaptureSquare();
-            const bool inCheck = spMove.getInCheck();
-            sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo, lmr, rootNodeIdx);
-            try {
-//                log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
-//                                             << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
-//                                             << " a:" << alpha << " b:" << beta
-//                                             << " d:" << depth/SearchConst::plyScale
-//                                             << " p:" << sp->getPMoveUseful(pd.fhInfo, moveNo) << " start";});
-                const bool smp = pd.numHelperThreads() > 1;
-                int score = -sc.negaScout(smp, -(alpha+1), -alpha, ply+1,
-                                          depth, captSquare, inCheck);
-                if (((lmr > 0) && (score > alpha)) ||
-                    ((score > alpha) && (score < beta))) {
-                    sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo, 0, rootNodeIdx);
-                    score = -sc.negaScout(smp, -beta, -alpha, ply+1,
-                                          depth + lmr, captSquare, inCheck);
-                }
-                bool cancelRemaining = score >= beta;
-//                log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
-//                                             << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
-//                                             << " a:" << alpha << " b:" << beta << " s:" << score
-//                                             << " d:" << depth/SearchConst::plyScale << " n:" << sc.getTotalNodesThisThread();});
-                pd.wq.moveFinished(sp, moveNo, cancelRemaining);
-            } catch (const Search::StopSearch&) {
-//                log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " m:" << moveNo
-//                                             << " aborted n:" << sc.getTotalNodesThisThread();});
-                if (!spMove.isCanceled() && !stopThread)
-                    pd.wq.returnMove(sp, moveNo);
-            }
-            pUseful = 0.0;
-//            uTimer.setPUseful(-1);
-        } else {
-            pUseful = 0.0;
-            sp.reset();
-//            timer.startSleep();
-            pd.cv.wait_for(lock, std::chrono::microseconds(1000));
+//            uTimer.setPUseful(0);
+            bool cancelRemaining = score >= beta;
+//            log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
+//                                         << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
+//                                         << " a:" << alpha << " b:" << beta << " s:" << score
+//                                         << " d:" << depth/SearchConst::plyScale << " n:" << sc.getTotalNodesThisThread();});
+            pd.wq.moveFinished(sp, moveNo, cancelRemaining);
+        } catch (const Search::StopSearch&) {
+//            log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " m:" << moveNo
+//                                         << " aborted n:" << sc.getTotalNodesThisThread();});
+            if (!spMove.isCanceled() && !pd.wq.isStopped())
+                pd.wq.returnMove(sp, moveNo);
         }
+        pUseful = 0.0;
     }
 //    double tElapsed, tUseful, tSleep;
 //    uTimer.getStats(tElapsed, tUseful, tSleep);
@@ -338,8 +331,21 @@ WorkerThread::mainLoop() {
 
 // ----------------------------------------------------------------------------
 
-WorkQueue::WorkQueue(std::condition_variable& cv0, FailHighInfo& fhInfo0)
-    : cv(cv0), fhInfo(fhInfo0) {
+WorkQueue::WorkQueue(FailHighInfo& fhInfo0)
+    : stopped(false), fhInfo(fhInfo0) {
+}
+
+void
+WorkQueue::setStopped(bool stop) {
+    Lock L(this);
+    stopped = stop;
+    if (stopped)
+        cv.notify_all();
+}
+
+bool
+WorkQueue::isStopped() const {
+    return stopped;
 }
 
 void
@@ -370,7 +376,9 @@ WorkQueue::addWork(const std::shared_ptr<SplitPoint>& sp) {
 std::shared_ptr<SplitPoint>
 WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo) {
     Lock L(this);
-    if (queue.empty())
+    while (queue.empty() && !isStopped())
+        L.wait(cv);
+    if (isStopped())
         return nullptr;
     std::shared_ptr<SplitPoint> ret = *queue.begin();
     spMove = ret->getNextMove();
@@ -593,6 +601,8 @@ WorkQueue::Lock::Lock(const WorkQueue* wq0)
         contended = true;
         lock.lock();
     }
+    if (wq.queue.empty())
+        contended = false;
     U64 c = wq.nContended;
     U64 n = wq.nNonContended;
     if (contended)
@@ -602,10 +612,10 @@ WorkQueue::Lock::Lock(const WorkQueue* wq0)
     if (n + c > 30000) {
         c /= 2;
         n /= 2;
-        if (c * 10 > n) {
+        if (c * 100 > n * 50) {
             wq.minSplitDepth++;
 //            std::cout << "contended stat: " << wq.minSplitDepth << " " << c << " " << n << std::endl;
-        } else if ((c * 20 < n) && (wq.minSplitDepth > SearchConst::MIN_SMP_DEPTH)) {
+        } else if ((c * 100 < n * 25) && (wq.minSplitDepth > SearchConst::MIN_SMP_DEPTH)) {
             wq.minSplitDepth--;
 //            std::cout << "contended stat: " << wq.minSplitDepth << " " << c << " " << n << std::endl;
         }
@@ -614,10 +624,15 @@ WorkQueue::Lock::Lock(const WorkQueue* wq0)
     wq.nNonContended = n;
 }
 
+void
+WorkQueue::Lock::wait(std::condition_variable& cv) {
+    cv.wait(lock);
+}
+
 // ----------------------------------------------------------------------------
 
 ParallelData::ParallelData(TranspositionTable& tt0)
-    : wq(cv, fhInfo), t0Index(0), tt(tt0) {
+    : wq(fhInfo), t0Index(0), tt(tt0) {
     totalHelperNodes = 0;
 }
 
@@ -634,16 +649,16 @@ ParallelData::addRemoveWorkers(int numWorkers) {
 void
 ParallelData::startAll() {
     totalHelperNodes = 0;
+    wq.setStopped(false);
     for (auto& thread : threads)
         thread->start();
 }
 
 void
 ParallelData::stopAll() {
+    wq.setStopped(true);
     for (auto& thread : threads)
-        thread->stop(false);
-    for (auto& thread : threads)
-        thread->stop(true);
+        thread->join();
 }
 
 int
