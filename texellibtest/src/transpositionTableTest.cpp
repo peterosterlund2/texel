@@ -125,7 +125,7 @@ testInsert() {
         m.setScore(score);
         int type = TType::T_EXACT;
         int ply = i + 1;
-        int depth = i * 2 + 5;
+        int depth = (i * 2 + 5) * SearchConst::plyScale;
         tt.insert(pos.historyHash(), m, type, ply, depth, score * 2 + 3);
     }
 
@@ -139,7 +139,7 @@ testInsert() {
         ASSERT_EQUAL(TType::T_EXACT, (int)ent.getType());
         int score = i * 17 + 3;
         int ply = i + 1;
-        int depth = i * 2 + 5;
+        int depth = (i * 2 + 5) * SearchConst::plyScale;
         ASSERT_EQUAL(score, ent.getScore(ply));
         ASSERT_EQUAL(depth, ent.getDepth());
         ASSERT_EQUAL(score * 2 + 3, ent.getEvalScore());
