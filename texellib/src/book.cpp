@@ -27,6 +27,7 @@
 #include "position.hpp"
 #include "moveGen.hpp"
 #include "textio.hpp"
+#include "timeUtil.hpp"
 
 #include <cassert>
 

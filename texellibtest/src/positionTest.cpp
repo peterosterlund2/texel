@@ -31,6 +31,7 @@
 #include "piece.hpp"
 #include "material.hpp"
 #include "textio.hpp"
+#include "timeUtil.hpp"
 
 #include <vector>
 #include <set>

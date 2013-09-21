@@ -36,6 +36,7 @@
 #include "transpositionTableTest.hpp"
 #include "parallelTest.hpp"
 #include "treeLoggerTest.hpp"
+#include "utilTest.hpp"
 
 void
 runSuite(const SuiteBase& suite) {
@@ -60,5 +61,6 @@ int main() {
     runSuite(TranspositionTableTest());
     runSuite(ParallelTest());
     runSuite(TreeLoggerTest());
+    runSuite(UtilTest());
     return 0;
 }

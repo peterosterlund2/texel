@@ -24,7 +24,7 @@
  */
 
 #include "random.hpp"
-
+#include "timeUtil.hpp"
 
 Random::Random()
     : gen(currentTimeMillis()) {

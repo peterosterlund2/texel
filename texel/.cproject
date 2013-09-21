@@ -28,7 +28,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/src}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.383137702" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.1910639426" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1910639426" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
 									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
 								</option>
@@ -124,6 +124,7 @@
 							<tool command="g++" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" errorParsers="org.eclipse.cdt.core.GLDErrorParser" id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.207631267" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
 								<option id="gnu.cpp.link.option.libs.459021436" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="texellib"/>
+									<listOptionValue builtIn="false" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.625198876" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/Release}&quot;"/>
@@ -273,11 +274,11 @@
 				</scannerInfoProvider>
 			</profile>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.645099398.1706756419;cdt.managedbuild.config.gnu.exe.release.645099398.1706756419.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.2023906508;cdt.managedbuild.tool.gnu.cpp.compiler.input.1359583299">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.645099398.1706756419;cdt.managedbuild.config.gnu.exe.release.645099398.1706756419.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.469974566;cdt.managedbuild.tool.gnu.c.compiler.input.1078615784">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.645099398.1706756419;cdt.managedbuild.config.gnu.exe.release.645099398.1706756419.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.2023906508;cdt.managedbuild.tool.gnu.cpp.compiler.input.1359583299">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1735355671;cdt.managedbuild.config.gnu.exe.debug.1735355671.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.274157317;cdt.managedbuild.tool.gnu.c.compiler.input.1110871716">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>

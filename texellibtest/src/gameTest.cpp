@@ -27,6 +27,7 @@
 #include "game.hpp"
 #include "humanPlayer.hpp"
 #include "textio.hpp"
+#include "timeUtil.hpp"
 
 #include <iostream>
 

@@ -37,100 +37,6 @@ U64 SplitPoint::nextSeqNo = 0;
 
 // ----------------------------------------------------------------------------
 
-/** Sleep/wake timer. */
-class SWTimer {
-public:
-    SWTimer(ParallelData& pd0, int threadNo0)
-        : pd(pd0), threadNo(threadNo0),
-          working(false), tSleep(0), tWork(0) {
-        t0 = currentTime();
-    }
-
-    ~SWTimer() {
-//        log([&](std::ostream& os){os << "timer th:" << threadNo << " total"
-//                                     << " s:" << tSleep << " w:" << tWork;});
-    }
-
-    void startSleep() {
-        if (working) {
-            double t1 = currentTime();
-            tWork += t1 - t0;
-//            log([&](std::ostream& os){os << "timer th:" << threadNo << " worked:" << t1 - t0
-//                                         << " s:" << tSleep << " w:" << tWork;});
-            t0 = t1;
-            working = false;
-        }
-    }
-
-    void startWork() {
-        if (!working) {
-            double t1 = currentTime();
-            tSleep += t1 - t0;
-//            log([&](std::ostream& os){os << "timer th:" << threadNo << " slept:" << t1 - t0
-//                                         << " s:" << tSleep << " w:" << tWork;});
-            t0 = t1;
-            working = true;
-        }
-    }
-
-private:
-    ParallelData& pd;
-    int threadNo;
-
-    bool working;
-    double t0;
-    double tSleep, tWork;
-};
-
-/** Measures CPU utilization */
-class UtilTimer {
-public:
-    UtilTimer() {
-        reset();
-    }
-
-    void reset() {
-        t0 = currentTime();
-        pUseful = -1;
-        tElapsed = 0;
-        tUseful = 0;
-        tSleep = 0;
-    }
-
-    void setPUseful(double p) {
-        update();
-        pUseful = p;
-    }
-
-    void getStats(double& elapsed, double& useful, double& sleep) {
-        update();
-        elapsed = tElapsed;
-        useful = tUseful;
-        sleep = tSleep;
-    }
-
-private:
-    void update() {
-        double tNow = currentTime();
-        double dt = tNow - t0;
-        tElapsed += dt;
-        if (pUseful >= 0)
-            tUseful += dt * pUseful;
-        else
-            tSleep += dt;
-        t0 = tNow;
-    }
-
-    double t0;
-    double pUseful;
-
-    double tElapsed;
-    double tUseful;
-    double tSleep;
-};
-
-// ----------------------------------------------------------------------------
-
 WorkerThread::WorkerThread(int threadNo0, ParallelData& pd0,
                            TranspositionTable& tt0)
     : threadNo(threadNo0), pd(pd0), tt(tt0),
@@ -241,8 +147,7 @@ WorkerThread::mainLoop() {
     TreeLogger logFile;
     logFile.open("/home/petero/treelog.dmp", pd, threadNo);
 
-//    SWTimer timer(pd, threadNo);
-//    UtilTimer uTimer;
+//    UtilizationTimer uTimer;
     std::mutex m;
     std::unique_lock<std::mutex> lock(m);
     Position pos;
@@ -250,7 +155,6 @@ WorkerThread::mainLoop() {
     while (true) {
         int moveNo = -1;
 //        uTimer.setPUseful(-1);
-//        timer.startSleep();
         std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo, pd, threadNo);
         if (!newSp)
             break;
@@ -293,7 +197,6 @@ WorkerThread::mainLoop() {
 //                                         << " a:" << alpha << " b:" << beta
 //                                         << " d:" << depth/SearchConst::plyScale
 //                                         << " p:" << sp->getPMoveUseful(pd.fhInfo, moveNo) << " start";});
-//            timer.startWork();
 //            uTimer.setPUseful(pUseful);
             const bool smp = pd.numHelperThreads() > 1;
             int score = -sc.negaScout(smp, -(alpha+1), -alpha, ply+1,
@@ -304,7 +207,6 @@ WorkerThread::mainLoop() {
                 score = -sc.negaScout(smp, -beta, -alpha, ply+1,
                                       depth + lmr, captSquare, inCheck);
             }
-//            timer.startWork();
 //            uTimer.setPUseful(0);
             bool cancelRemaining = score >= beta;
 //            log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply

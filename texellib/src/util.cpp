@@ -24,26 +24,3 @@
  */
 
 #include "util.hpp"
-
-#include <chrono>
-#include <iostream>
-
-S64 currentTimeMillis() {
-    auto t = std::chrono::high_resolution_clock::now();
-    auto t0 = t.time_since_epoch();
-    auto x = t0.count();
-    typedef decltype(t0) T0Type;
-    auto n = T0Type::period::num;
-    auto d = T0Type::period::den;
-    return (S64)(x * (1000.0 * n / d));
-}
-
-double currentTime() {
-    auto t = std::chrono::high_resolution_clock::now();
-    auto t0 = t.time_since_epoch();
-    double x = t0.count();
-    typedef decltype(t0) T0Type;
-    double n = T0Type::period::num;
-    double d = T0Type::period::den;
-    return x * n / d;
-}

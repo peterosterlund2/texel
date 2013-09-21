@@ -26,6 +26,7 @@
 #include "game.hpp"
 #include "moveGen.hpp"
 #include "textio.hpp"
+#include "timeUtil.hpp"
 
 #include <iostream>
 #include <iomanip>

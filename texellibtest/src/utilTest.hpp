@@ -17,42 +17,28 @@
 */
 
 /*
- * logger.hpp
+ * utilTest.hpp
  *
- *  Created on: Aug 6, 2013
+ *  Created on: Sep 21, 2013
  *      Author: petero
  */
 
-#ifndef LOGGER_HPP_
-#define LOGGER_HPP_
+#ifndef UTILTEST_HPP_
+#define UTILTEST_HPP_
 
-#include "util.hpp"
-#include "timeUtil.hpp"
+#include "suiteBase.hpp"
 
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-#include <mutex>
+class UtilTest : public SuiteBase {
+public:
+    std::string getName() const { return "UtilTest"; }
 
+    cute::suite getSuite() const;
 
-namespace Logger {
-    /** Get mutex for log synchronization. */
-    std::mutex& getLogMutex();
-
-
-    /** Thread-safe logging to cout. */
-    template <typename Func> void log(Func func) {
-        std::stringstream ss;
-        {
-            std::stringstream t;
-            t.precision(6);
-            t << std::fixed << currentTime() << ' ';
-            ss << t.str();
-        }
-        func(ss);
-        std::lock_guard<std::mutex> L(getLogMutex());
-        std::cout << ss.str() << std::endl;
-    }
+private:
+    static void testUtil();
+    static void testSampleStat();
+    static void testTime();
 };
 
-#endif /* LOGGER_HPP_ */
+
+#endif /* UTILTEST_HPP_ */
