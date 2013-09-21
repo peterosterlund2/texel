@@ -233,28 +233,12 @@ WorkerThread::mainLoop() {
 
 // ----------------------------------------------------------------------------
 
-WorkQueue::WorkQueue(FailHighInfo& fhInfo0)
-    : stopped(false), fhInfo(fhInfo0) {
-}
-
 void
 WorkQueue::setStopped(bool stop) {
     Lock L(this);
     stopped = stop;
     if (stopped)
         cv.notify_all();
-}
-
-bool
-WorkQueue::isStopped() const {
-    return stopped;
-}
-
-void
-WorkQueue::resetSplitDepth() {
-    minSplitDepth = SearchConst::MIN_SMP_DEPTH;
-    nContended = 0;
-    nNonContended = 0;
 }
 
 void
@@ -346,25 +330,6 @@ double
 WorkQueue::getBestProbability() const {
     std::shared_ptr<SplitPoint> bestSp;
     return getBestProbability(bestSp);
-}
-
-void
-WorkQueue::maybeMoveToWaiting(const std::shared_ptr<SplitPoint>& sp) {
-    if (!sp->hasUnStartedMove()) {
-        queue.erase(sp);
-        if (sp->hasUnFinishedMove())
-            waiting.insert(sp);
-        else
-            waiting.erase(sp);
-    }
-}
-
-void
-WorkQueue::insertInQueue(const std::shared_ptr<SplitPoint>& sp) {
-    bool wasEmpty = queue.empty();
-    queue.insert(sp);
-    if (wasEmpty)
-        cv.notify_all();
 }
 
 void
@@ -526,17 +491,7 @@ WorkQueue::Lock::Lock(const WorkQueue* wq0)
     wq.nNonContended = n;
 }
 
-void
-WorkQueue::Lock::wait(std::condition_variable& cv) {
-    cv.wait(lock);
-}
-
 // ----------------------------------------------------------------------------
-
-ParallelData::ParallelData(TranspositionTable& tt0)
-    : wq(fhInfo), t0Index(0), tt(tt0) {
-    totalHelperNodes = 0;
-}
 
 void
 ParallelData::addRemoveWorkers(int numWorkers) {
@@ -561,21 +516,6 @@ ParallelData::stopAll() {
     wq.setStopped(true);
     for (auto& thread : threads)
         thread->join();
-}
-
-int
-ParallelData::numHelperThreads() const {
-    return threads.size();
-}
-
-S64
-ParallelData::getNumSearchedNodes() const {
-    return totalHelperNodes;
-}
-
-void
-ParallelData::addSearchedNodes(S64 nNodes) {
-    totalHelperNodes += nNodes;
 }
 
 // ----------------------------------------------------------------------------
@@ -603,11 +543,6 @@ SplitPoint::addMove(int moveNo, const SplitPointMove& spMove) {
 }
 
 void
-SplitPoint::setSeqNo() {
-    seqNo = nextSeqNo++;
-}
-
-void
 SplitPoint::computeProbabilities(const FailHighInfo& fhInfo) {
     if (parent) {
         double pMoveUseful = 1.0;
@@ -630,16 +565,6 @@ SplitPoint::computeProbabilities(const FailHighInfo& fhInfo) {
     }
     if (deleted)
         cleanUpChildren();
-}
-
-std::shared_ptr<SplitPoint>
-SplitPoint::getParent() const {
-    return parent;
-}
-
-const std::vector<std::weak_ptr<SplitPoint>>&
-SplitPoint::getChildren() const {
-    return children;
 }
 
 double
@@ -671,29 +596,6 @@ SplitPoint::getNextMove() {
 }
 
 void
-SplitPoint::returnMove(int moveNo) {
-    assert((moveNo >= 0) && (moveNo < (int)spMoves.size()));
-    SplitPointMove& spm = spMoves[moveNo];
-    spm.setSearching(false);
-}
-
-void
-SplitPoint::setOwnerCurrMove(int moveNo, int newAlpha) {
-    assert((moveNo >= 0) && (moveNo < (int)spMoves.size()));
-    spMoves[moveNo].setCanceled(true);
-    currMoveNo = moveNo;
-    if (newAlpha > alpha)
-        alpha = newAlpha;
-}
-
-void
-SplitPoint::cancel() {
-    canceled = true;
-    for (SplitPointMove& spMove : spMoves)
-        spMove.setCanceled(true);
-}
-
-void
 SplitPoint::moveFinished(int moveNo, bool cancelRemaining) {
     assert((moveNo >= 0) && (moveNo < (int)spMoves.size()));
     spMoves[moveNo].setSearching(false);
@@ -721,11 +623,6 @@ SplitPoint::hasUnFinishedMove() const {
         if (!spMoves[i].isCanceled())
             return true;
     return false;
-}
-
-void
-SplitPoint::addChild(const std::weak_ptr<SplitPoint>& child) {
-    children.push_back(child);
 }
 
 int
@@ -795,11 +692,6 @@ SplitPoint::isAllNode() const {
     return (nFirst % 2) != 0;
 }
 
-bool
-SplitPoint::isPvNode() const {
-    return beta > alpha + 1;
-}
-
 void
 SplitPoint::print(std::ostream& os, int level, const FailHighInfo& fhInfo) const {
     std::string pad(level*2, ' ');
@@ -827,28 +719,6 @@ SplitPoint::print(std::ostream& os, int level, const FailHighInfo& fhInfo) const
 
 // ----------------------------------------------------------------------------
 
-SplitPointMove::SplitPointMove(const Move& move0, int lmr0, int depth0,
-                               int captSquare0, bool inCheck0)
-    : move(move0), lmr(lmr0), depth(depth0), captSquare(captSquare0),
-      inCheck(inCheck0), canceled(false), searching(false) {
-}
-
-// ----------------------------------------------------------------------------
-
-SplitPointHolder::SplitPointHolder(ParallelData& pd0,
-                                   std::vector<std::shared_ptr<SplitPoint>>& spVec0)
-    : pd(pd0), spVec(spVec0), state(State::EMPTY) {
-}
-
-SplitPointHolder::~SplitPointHolder() {
-    if (state == State::QUEUED) {
-//        log([&](std::ostream& os){os << "cancel seqNo:" << sp->getSeqNo();});
-        pd.wq.cancel(sp);
-        assert(!spVec.empty());
-        spVec.pop_back();
-    }
-}
-
 void
 SplitPointHolder::setSp(const std::shared_ptr<SplitPoint>& sp0) {
     assert(state == State::EMPTY);
@@ -860,12 +730,6 @@ SplitPointHolder::setSp(const std::shared_ptr<SplitPoint>& sp0) {
 }
 
 void
-SplitPointHolder::addMove(int moveNo, const SplitPointMove& spMove) {
-    assert(state == State::CREATED);
-    sp->addMove(moveNo, spMove);
-}
-
-void
 SplitPointHolder::addToQueue() {
     assert(state == State::CREATED);
     pd.wq.addWork(sp);
@@ -874,19 +738,6 @@ SplitPointHolder::addToQueue() {
 //                                 << " pNext:" << sp->getPNextMoveUseful()
 //                                 << " pMove:" << sp->getParentMoveNo() << " vec:" << spVec.size();});
     state = State::QUEUED;
-}
-
-void
-SplitPointHolder::setOwnerCurrMove(int moveNo, int alpha) {
-//    if (sp->hasHelperThread())
-//        log([&](std::ostream& os){os << "seqNo:" << sp->getSeqNo() << " currMove:" << moveNo
-//                                     << " a:" << alpha;});
-    pd.wq.setOwnerCurrMove(sp, moveNo, alpha);
-}
-
-bool
-SplitPointHolder::isAllNode() const {
-    return sp->isAllNode();
 }
 
 // ----------------------------------------------------------------------------

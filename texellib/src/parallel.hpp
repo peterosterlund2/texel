@@ -231,7 +231,7 @@ private:
     void reScaleInternal(int factor);
     void reScalePv(int factor);
 
-    inline int getNodeType(int moveNo, bool allNode) const;
+    int getNodeType(int moveNo, bool allNode) const;
 
 
     static const int NUM_NODE_TYPES = 4;
@@ -527,6 +527,23 @@ template<> struct SplitPointTraits<false> {
 };
 
 
+inline
+WorkQueue::WorkQueue(FailHighInfo& fhInfo0)
+    : stopped(false), fhInfo(fhInfo0) {
+}
+
+inline bool
+WorkQueue::isStopped() const {
+    return stopped;
+}
+
+inline void
+WorkQueue::resetSplitDepth() {
+    minSplitDepth = SearchConst::MIN_SMP_DEPTH;
+    nContended = 0;
+    nNonContended = 0;
+}
+
 inline bool
 WorkQueue::SplitPointCompare::operator()(const std::shared_ptr<SplitPoint>& a,
                                          const std::shared_ptr<SplitPoint>& b) const {
@@ -544,6 +561,26 @@ WorkQueue::getMinSplitDepth() const {
     return minSplitDepth;
 }
 
+inline void
+WorkQueue::maybeMoveToWaiting(const std::shared_ptr<SplitPoint>& sp) {
+    if (!sp->hasUnStartedMove()) {
+        queue.erase(sp);
+        if (sp->hasUnFinishedMove())
+            waiting.insert(sp);
+        else
+            waiting.erase(sp);
+    }
+}
+
+inline void
+WorkQueue::insertInQueue(const std::shared_ptr<SplitPoint>& sp) {
+    bool wasEmpty = queue.empty();
+    queue.insert(sp);
+    if (wasEmpty)
+        cv.notify_all();
+}
+
+
 inline int
 FailHighInfo::getNodeType(int moveNo, bool allNode) const {
     if (moveNo == 0)
@@ -554,9 +591,129 @@ FailHighInfo::getNodeType(int moveNo, bool allNode) const {
         return 2;
 }
 
+
+inline void
+WorkQueue::Lock::wait(std::condition_variable& cv) {
+    cv.wait(lock);
+}
+
+
+inline ParallelData::ParallelData(TranspositionTable& tt0)
+    : wq(fhInfo), t0Index(0), tt(tt0) {
+    totalHelperNodes = 0;
+}
+
+inline int
+ParallelData::numHelperThreads() const {
+    return threads.size();
+}
+
+inline S64
+ParallelData::getNumSearchedNodes() const {
+    return totalHelperNodes;
+}
+
+inline void
+ParallelData::addSearchedNodes(S64 nNodes) {
+    totalHelperNodes += nNodes;
+}
+
 inline bool
 SplitPoint::isCanceled() const {
     return canceled;
+}
+
+inline void
+SplitPoint::setSeqNo() {
+    seqNo = nextSeqNo++;
+}
+
+inline std::shared_ptr<SplitPoint>
+SplitPoint::getParent() const {
+    return parent;
+}
+
+inline const std::vector<std::weak_ptr<SplitPoint>>&
+SplitPoint::getChildren() const {
+    return children;
+}
+
+inline void
+SplitPoint::returnMove(int moveNo) {
+    assert((moveNo >= 0) && (moveNo < (int)spMoves.size()));
+    SplitPointMove& spm = spMoves[moveNo];
+    spm.setSearching(false);
+}
+
+inline void
+SplitPoint::setOwnerCurrMove(int moveNo, int newAlpha) {
+    assert((moveNo >= 0) && (moveNo < (int)spMoves.size()));
+    spMoves[moveNo].setCanceled(true);
+    currMoveNo = moveNo;
+    if (newAlpha > alpha)
+        alpha = newAlpha;
+}
+
+inline void
+SplitPoint::cancel() {
+    canceled = true;
+    for (SplitPointMove& spMove : spMoves)
+        spMove.setCanceled(true);
+}
+
+inline void
+SplitPoint::addChild(const std::weak_ptr<SplitPoint>& child) {
+    children.push_back(child);
+}
+
+inline bool
+SplitPoint::isPvNode() const {
+    return beta > alpha + 1;
+}
+
+
+inline
+SplitPointMove::SplitPointMove(const Move& move0, int lmr0, int depth0,
+                              int captSquare0, bool inCheck0)
+    : move(move0), lmr(lmr0), depth(depth0), captSquare(captSquare0),
+      inCheck(inCheck0), canceled(false), searching(false) {
+}
+
+
+inline
+SplitPointHolder::SplitPointHolder(ParallelData& pd0,
+                                   std::vector<std::shared_ptr<SplitPoint>>& spVec0)
+    : pd(pd0), spVec(spVec0), state(State::EMPTY) {
+}
+
+
+inline
+SplitPointHolder::~SplitPointHolder() {
+    if (state == State::QUEUED) {
+//        log([&](std::ostream& os){os << "cancel seqNo:" << sp->getSeqNo();});
+        pd.wq.cancel(sp);
+        assert(!spVec.empty());
+        spVec.pop_back();
+    }
+}
+
+inline void
+SplitPointHolder::addMove(int moveNo, const SplitPointMove& spMove) {
+    assert(state == State::CREATED);
+    sp->addMove(moveNo, spMove);
+}
+
+inline void
+SplitPointHolder::setOwnerCurrMove(int moveNo, int alpha) {
+//    if (sp->hasHelperThread())
+//        log([&](std::ostream& os){os << "seqNo:" << sp->getSeqNo() << " currMove:" << moveNo
+//                                     << " a:" << alpha;});
+    pd.wq.setOwnerCurrMove(sp, moveNo, alpha);
+}
+
+inline bool
+SplitPointHolder::isAllNode() const {
+    return sp->isAllNode();
 }
 
 #endif /* PARALLEL_HPP_ */
