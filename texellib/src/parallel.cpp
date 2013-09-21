@@ -244,6 +244,7 @@ WorkQueue::setStopped(bool stop) {
 void
 WorkQueue::addWork(const std::shared_ptr<SplitPoint>& sp) {
     Lock L(this);
+//    ScopedTimeSample sts { getAddWorkStat(sp->owningThread()) };
     assert(queue.find(sp) == queue.end());
     sp->setSeqNo();
     std::shared_ptr<SplitPoint> parent = sp->getParent();
@@ -264,6 +265,7 @@ WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo) {
     Lock L(this);
     while (queue.empty() && !isStopped())
         L.wait(cv);
+//    ScopedTimeSample sts { getGetWorkStat(threadNo) };
     if (isStopped())
         return nullptr;
     std::shared_ptr<SplitPoint> ret = *queue.begin();

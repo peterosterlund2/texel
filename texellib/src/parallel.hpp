@@ -31,6 +31,7 @@
 #include "transpositionTable.hpp"
 #include "evaluate.hpp"
 #include "searchUtil.hpp"
+#include "timeUtil.hpp"
 
 #include <memory>
 #include <vector>
@@ -133,6 +134,12 @@ public:
     /** Return current dynamic minimum split depth. */
     int getMinSplitDepth() const;
 
+    /** For performance measurements on queue operations. */
+    void resetStat();
+    TimeSampleStatistics& getAddWorkStat(int th);
+    TimeSampleStatistics& getGetWorkStat(int th);
+    void printStats(std::ostream& os, int nThreads);
+
 private:
     /** Move sp to waiting if it has no unstarted moves. */
     void maybeMoveToWaiting(const std::shared_ptr<SplitPoint>& sp);
@@ -187,6 +194,10 @@ private:
 
     // SplitPoints with no unstarted SplitPointMoves
     std::set<std::shared_ptr<SplitPoint>, SplitPointCompare> waiting;
+
+    // For performance debugging
+    static const int maxStatThreads = 64;
+    TimeSampleStatisticsVector<maxStatThreads*2> wqStat;
 };
 
 
@@ -578,6 +589,35 @@ WorkQueue::insertInQueue(const std::shared_ptr<SplitPoint>& sp) {
     queue.insert(sp);
     if (wasEmpty)
         cv.notify_all();
+}
+
+inline void
+WorkQueue::resetStat() {
+    for (auto& s : wqStat)
+        s.reset();
+}
+
+inline TimeSampleStatistics&
+WorkQueue::getAddWorkStat(int th) {
+    assert(th < maxStatThreads);
+    return wqStat[th];
+}
+
+inline TimeSampleStatistics&
+WorkQueue::getGetWorkStat(int th) {
+    assert(th < maxStatThreads);
+    return wqStat[maxStatThreads+th];
+}
+
+inline void
+WorkQueue::printStats(std::ostream& os, int nThreads) {
+    for (int i = 0; i < nThreads; i++) {
+        os << "th:" << i << " add: ";
+        getAddWorkStat(i).printNs(os);
+        os << " get: ";
+        getGetWorkStat(i).printNs(os);
+        os << std::endl;
+    }
 }
 
 

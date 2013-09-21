@@ -28,6 +28,7 @@
 
 #include "util.hpp"
 
+#include <array>
 #include <cmath>
 #include <cassert>
 
@@ -119,10 +120,27 @@ public:
     /** Return standard deviation of time samples. */
     double std() const;
 
+    /** Print to "os", time values displayed in nanoseconds. */
+    void printNs(std::ostream& os) const;
+
 private:
     double t0;
     bool started;
     SampleStatistics stats;
+};
+
+/** A fixed size vector of TimeSampleStatistics objects. */
+template <int N>
+class TimeSampleStatisticsVector {
+private:
+    std::array<TimeSampleStatistics, N> vec;
+
+public:
+    TimeSampleStatistics& operator[](int i);
+
+    typedef decltype(vec.begin()) iterator;
+    iterator begin();
+    iterator end();
 };
 
 /** Utility function to add a time sample to a TimeSampleStatistics object.
@@ -216,6 +234,13 @@ SampleStatistics::std() const {
     return ::sqrt((sqSum - sum*sum / nSamples) / (nSamples - 1));
 }
 
+inline void
+TimeSampleStatistics::printNs(std::ostream& os) const {
+    os << numSamples()
+       << ' ' << static_cast<int>(avg() * 1e9)
+       << ' ' << static_cast<int>(std() * 1e9);
+}
+
 
 inline
 TimeSampleStatistics::TimeSampleStatistics() {
@@ -259,6 +284,24 @@ TimeSampleStatistics::avg() const {
 inline double
 TimeSampleStatistics::std() const {
     return stats.std();
+}
+
+template <int N>
+inline TimeSampleStatistics&
+TimeSampleStatisticsVector<N>::operator[](int i) {
+    return vec[i];
+}
+
+template <int N>
+inline typename TimeSampleStatisticsVector<N>::iterator
+TimeSampleStatisticsVector<N>::begin() {
+    return vec.begin();
+}
+
+template <int N>
+inline typename TimeSampleStatisticsVector<N>::iterator
+TimeSampleStatisticsVector<N>::end() {
+    return vec.end();
 }
 
 

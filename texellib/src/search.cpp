@@ -142,6 +142,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
 
     kt.clear();
     pd.wq.resetSplitDepth();
+//    pd.wq.resetStat();
     const bool smp = pd.numHelperThreads() > 0;
     maxNodes = initialMaxNodes;
     nodesToGo = 0;
@@ -368,6 +369,8 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         }
 //        std::cout << "fhInfo depth:" << depthS / plyScale << std::endl;
 //        pd.fhInfo.print(std::cout);
+//        std::cout << "wqStats depth:" << depthS / plyScale << std::endl;
+//        pd.wq.printStats(std::cout, pd.numHelperThreads() + 1);
     }
     } catch (const StopSearch&) {
         pos = origPos;
