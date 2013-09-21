@@ -247,7 +247,6 @@ private:
 
     static const int NUM_NODE_TYPES = 4;
     static const int NUM_STAT_MOVES = 15;
-    mutable std::mutex mutex;
 
     int failHiCount[NUM_NODE_TYPES][NUM_STAT_MOVES]; // [parentMoveNo>0?1:0][moveNo]
     int failLoCount[NUM_NODE_TYPES];                 // [parentMoveNo>0?1:0]

@@ -759,7 +759,6 @@ FailHighInfo::FailHighInfo()
 double
 FailHighInfo::getMoveNeededProbability(int parentMoveNo,
                                        int currMoveNo, int moveNo, bool allNode) const {
-    std::lock_guard<std::mutex> L(mutex);
     const int pIdx = getNodeType(parentMoveNo, allNode);
     moveNo = std::min(moveNo, NUM_STAT_MOVES-1);
     if (moveNo < 0)
@@ -795,7 +794,6 @@ void
 FailHighInfo::addData(int parentMoveNo, int nSearched, bool failHigh, bool allNode) {
     if (nSearched < 0)
         return;
-    std::lock_guard<std::mutex> L(mutex);
     const int pIdx = getNodeType(parentMoveNo, allNode);
     if (failHigh) {
         nSearched = std::min(nSearched, NUM_STAT_MOVES-1);
@@ -822,7 +820,6 @@ FailHighInfo::addPvData(int nSearched, bool alphaChanged) {
 
 void
 FailHighInfo::reScale() {
-    std::lock_guard<std::mutex> L(mutex);
     reScaleInternal(4);
     reScalePv(4);
 }
@@ -846,7 +843,6 @@ FailHighInfo::reScalePv(int factor) {
 
 void
 FailHighInfo::print(std::ostream& os) const {
-    std::lock_guard<std::mutex> L(mutex);
     for (int i = 0; i < NUM_NODE_TYPES; i++) {
         os << "fhInfo: " << i << ' ' << std::setw(6) << failLoCount[i];
         for (int j = 0; j < NUM_STAT_MOVES; j++)
