@@ -478,7 +478,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     // Check transposition table
     TranspositionTable::TTEntry ent;
     ent.clear();
-    tt.probe(hKey, ent);
+    const bool useTT = (threadNo < 8) || (depth >= 1 * plyScale); // To reduce memory bandwidth
+    if (useTT) tt.probe(hKey, ent);
     Move hashMove;
     if (ent.getType() != TType::T_EMPTY) {
         int score = ent.getScore(ply);
@@ -516,7 +517,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             type = TType::T_GE;
         }
         sti.bestMove.setScore(score);
-        tt.insert(hKey, sti.bestMove, type, ply, depth, q0Eval);
+        if (useTT) tt.insert(hKey, sti.bestMove, type, ply, depth, q0Eval);
         logFile.logNodeEnd(sti.nodeIdx, score, type, q0Eval, hKey);
         return score;
     }
@@ -533,7 +534,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             int score = quiesce(alpha-razorMargin, beta-razorMargin, ply, 0, inCheck);
             if (score <= alpha-razorMargin) {
                 emptyMove.setScore(score);
-                tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, q0Eval);
+                if (useTT) tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, q0Eval);
                 logFile.logNodeEnd(sti.nodeIdx, score, TType::T_LE, q0Eval, hKey);
                 return score;
             }
@@ -558,7 +559,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 evalScore = eval.evalPos(pos);
             if (evalScore - margin >= beta) {
                 emptyMove.setScore(evalScore - margin);
-                tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
+                if (useTT) tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, evalScore - margin, TType::T_GE, evalScore, hKey);
                 return evalScore - margin;
             }
@@ -637,7 +638,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     score = beta;
                 emptyMove.setScore(score);
                 if (storeInHash)
-                    tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
+                    if (useTT) tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, score, TType::T_GE, evalScore, hKey);
                 return score;
             } else {
@@ -887,7 +888,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                                 ht.addFail(pos, m2, depth/plyScale);
                         }
                     }
-                    tt.insert(hKey, m, TType::T_GE, ply, depth, evalScore);
+                    if (useTT) tt.insert(hKey, m, TType::T_GE, ply, depth, evalScore);
                     logFile.logNodeEnd(sti.nodeIdx, alpha, TType::T_GE, evalScore, hKey);
                     return alpha;
                 }
@@ -899,16 +900,16 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         } else {
             if (!haveLegalMoves && !inCheck) {
                 emptyMove.setScore(0);
-                tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
+                if (useTT) tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, 0, TType::T_EXACT, evalScore, hKey);
                 return 0;       // Stale-mate
             }
             if (bestMove >= 0) {
-                tt.insert(hKey, moves[bestMove], TType::T_EXACT, ply, depth, evalScore);
+                if (useTT) tt.insert(hKey, moves[bestMove], TType::T_EXACT, ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, bestScore, TType::T_EXACT, evalScore, hKey);
             } else {
                 emptyMove.setScore(bestScore);
-                tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, evalScore);
+                if (useTT) tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, bestScore, TType::T_LE, evalScore, hKey);
             }
             return bestScore;
