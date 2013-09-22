@@ -27,6 +27,8 @@
 #include "util.hpp"
 #include "timeUtil.hpp"
 
+#include <iostream>
+
 #include "cute.h"
 
 void
@@ -120,11 +122,33 @@ UtilTest::testTime() {
     ASSERT_EQUAL(1, stat2.numSamples());
 }
 
+void
+UtilTest::testRangeSumArray() {
+    const int N = 15;
+    RangeSumArray<N> arr;
+    for (int i = 0; i < N; i++)
+        ASSERT_EQUAL(0, arr.get(i));
+    for (int i = 0; i < N; i++)
+        arr.add(i, 1<<i);
+    for (int i = 0; i < N; i++)
+        ASSERT_EQUAL(1<<i, arr.get(i));
+    for (int i = 0; i <= N; i++) {
+        for (int j = i; j <= N; j++) {
+            int expected = 0;
+            for (int k = i; k < j; k++)
+                expected += arr.get(k);
+            int sum = arr.sum(i, j);
+            ASSERT_EQUAL(expected, sum);
+        }
+    }
+}
+
 cute::suite
 UtilTest::getSuite() const {
     cute::suite s;
     s.push_back(CUTE(testUtil));
     s.push_back(CUTE(testSampleStat));
     s.push_back(CUTE(testTime));
+    s.push_back(CUTE(testRangeSumArray));
     return s;
 }

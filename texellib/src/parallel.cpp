@@ -746,11 +746,8 @@ SplitPointHolder::addToQueue() {
 
 FailHighInfo::FailHighInfo()
     : totCount(0) {
-    for (int i = 0; i < NUM_NODE_TYPES; i++) {
-        for (int j = 0; j < NUM_STAT_MOVES; j++)
-            failHiCount[i][j] = 0;
+    for (int i = 0; i < NUM_NODE_TYPES; i++)
         failLoCount[i] = 0;
-    }
     for (int j = 0; j < NUM_STAT_MOVES; j++)
         newAlpha[j] = 0;
     totPvCount = 0;
@@ -764,13 +761,8 @@ FailHighInfo::getMoveNeededProbability(int parentMoveNo,
     if (moveNo < 0)
         return 0.0;
 
-    int nNeeded = failLoCount[pIdx];
-    for (int i = moveNo; i < NUM_STAT_MOVES; i++)
-        nNeeded += failHiCount[pIdx][i];
-
-    int nTotal = nNeeded;
-    for (int i = currMoveNo; i < moveNo; i++)
-        nTotal += failHiCount[pIdx][i];
+    int nNeeded = failLoCount[pIdx] + failHiCount[pIdx].sum(moveNo, NUM_STAT_MOVES);
+    int nTotal = nNeeded + failHiCount[pIdx].sum(currMoveNo, moveNo);
 
     return (nTotal > 0) ? nNeeded / (double)nTotal : 0.5;
 }
@@ -797,7 +789,7 @@ FailHighInfo::addData(int parentMoveNo, int nSearched, bool failHigh, bool allNo
     const int pIdx = getNodeType(parentMoveNo, allNode);
     if (failHigh) {
         nSearched = std::min(nSearched, NUM_STAT_MOVES-1);
-        failHiCount[pIdx][nSearched]++;
+        failHiCount[pIdx].add(nSearched, 1);
     } else {
         failLoCount[pIdx]++;
     }
@@ -827,8 +819,10 @@ FailHighInfo::reScale() {
 void
 FailHighInfo::reScaleInternal(int factor) {
     for (int i = 0; i < NUM_NODE_TYPES; i++) {
-        for (int j = 0; j < NUM_STAT_MOVES; j++)
-            failHiCount[i][j] /= factor;
+        for (int j = 0; j < NUM_STAT_MOVES; j++) {
+            int val = failHiCount[i].get(j);
+            failHiCount[i].add(j, val / factor - val);
+        }
         failLoCount[i] /= factor;
     }
     totCount /= factor;
@@ -846,7 +840,7 @@ FailHighInfo::print(std::ostream& os) const {
     for (int i = 0; i < NUM_NODE_TYPES; i++) {
         os << "fhInfo: " << i << ' ' << std::setw(6) << failLoCount[i];
         for (int j = 0; j < NUM_STAT_MOVES; j++)
-            os << ' ' << std::setw(6) << failHiCount[i][j];
+            os << ' ' << std::setw(6) << failHiCount[i].get(j);
         os << std::endl;
     }
     os << "fhInfo: " << NUM_NODE_TYPES << ' ' << std::setw(6) << totPvCount;

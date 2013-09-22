@@ -157,4 +157,79 @@ trim(const std::string& s) {
     return "";
 }
 
+// ----------------------------------------------------------------------------
+
+// A fixed size array that can compute the sum of a range of values in time O(log N)
+template <int N>
+class RangeSumArray {
+public:
+
+    /** Get value at index i. */
+    int get(size_t i) const {
+        return arr[i];
+    }
+
+    /** Add delta to value at index i. */
+    void add(size_t i, int delta) {
+        arr[i] += delta;
+        pairs.add(i/2, delta);
+    }
+
+    /** Compute sum of all elements in [b,e). */
+    int sum(size_t b, size_t e) const {
+        int result = 0;
+        sumHelper(b, e, result);
+        return result;
+    }
+
+private:
+    template <int N2> friend class RangeSumArray;
+
+    void sumHelper(size_t b, size_t e, int& result) const {
+        if (b >= e)
+            return;
+        if (b & 1) {
+            result += arr[b];
+            b++;
+        }
+        if (e & 1) {
+            if (e != N)
+                result -= arr[e];
+            e++;
+        }
+        pairs.sumHelper(b/2, e/2, result);
+    }
+
+    std::array<int, N> arr {};
+    RangeSumArray<(N+1)/2> pairs;
+};
+
+template<>
+class RangeSumArray<1> {
+public:
+    int get(size_t i) const {
+        return value;
+    }
+
+    void add(size_t i, int delta) {
+        value += delta;
+    }
+
+    int sum(size_t b, size_t e) const {
+        int result = 0;
+        sumHelper(b, e, result);
+        return result;
+    }
+
+private:
+    template <int N2> friend class RangeSumArray;
+
+    void sumHelper(size_t b, size_t e, int& result) const {
+        if (b < e)
+            result += value;
+    }
+
+    int value { 0 };
+};
+
 #endif /* UTIL_HPP_ */
