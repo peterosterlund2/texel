@@ -89,6 +89,9 @@ public:
     /** Return standard deviation of samples. */
     double std() const;
 
+    /** Add other to *this. */
+    SampleStatistics& operator+=(const SampleStatistics& other);
+
 private:
     int nSamples;
     double sum;

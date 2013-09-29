@@ -59,3 +59,11 @@ double currentTime() {
     return x * n / d;
 #endif
 }
+
+SampleStatistics&
+SampleStatistics::operator+=(const SampleStatistics& other) {
+    nSamples += other.nSamples;
+    sum += other.sum;
+    sqSum += other.sqSum;
+    return *this;
+}

@@ -95,6 +95,18 @@ UtilTest::testSampleStat() {
     ASSERT_EQUAL(10, stat.numSamples());
     ASSERT_EQUAL_DELTA(4.5, stat.avg(), 1e-14);
     ASSERT_EQUAL_DELTA(::sqrt(55.0/6.0), stat.std(), 1e-14);
+
+    SampleStatistics stat2;
+    for (int i = 10; i < 20; i++)
+        stat2.addSample(i);
+    ASSERT_EQUAL(10, stat2.numSamples());
+    ASSERT_EQUAL_DELTA(14.5, stat2.avg(), 1e-14);
+    ASSERT_EQUAL_DELTA(::sqrt(55.0/6.0), stat2.std(), 1e-14);
+
+    stat += stat2;
+    ASSERT_EQUAL(20, stat.numSamples());
+    ASSERT_EQUAL_DELTA(9.5, stat.avg(), 1e-14);
+    ASSERT_EQUAL_DELTA(::sqrt(35.0), stat.std(), 1e-14);
 }
 
 void
