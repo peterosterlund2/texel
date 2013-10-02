@@ -29,7 +29,7 @@
 #include "parameters.hpp"
 #include "piece.hpp"
 #include "position.hpp"
-#include "alignedAlloc.hpp"
+#include "util/alignedAlloc.hpp"
 
 /** Position evaluation routines. */
 class Evaluate {

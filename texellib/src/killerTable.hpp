@@ -26,7 +26,7 @@
 #ifndef KILLERTABLE_HPP_
 #define KILLERTABLE_HPP_
 
-#include "util.hpp"
+#include "util/util.hpp"
 #include "move.hpp"
 #include <cassert>
 

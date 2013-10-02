@@ -24,8 +24,8 @@
  */
 
 #include "utilTest.hpp"
-#include "util.hpp"
-#include "timeUtil.hpp"
+#include "util/util.hpp"
+#include "util/timeUtil.hpp"
 
 #include <iostream>
 

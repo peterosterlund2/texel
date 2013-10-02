@@ -26,7 +26,7 @@
 #include "search.hpp"
 #include "treeLogger.hpp"
 #include "textio.hpp"
-#include "logger.hpp"
+#include "util/logger.hpp"
 
 #include <iostream>
 #include <iomanip>

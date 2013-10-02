@@ -26,7 +26,7 @@
 #include "parallel.hpp"
 #include "search.hpp"
 #include "textio.hpp"
-#include "logger.hpp"
+#include "util/logger.hpp"
 
 #include <cmath>
 #include <cassert>

@@ -26,7 +26,7 @@
 #ifndef TREELOGGER_HPP_
 #define TREELOGGER_HPP_
 
-#include "util.hpp"
+#include "util/util.hpp"
 #include "move.hpp"
 #include "parallel.hpp"
 

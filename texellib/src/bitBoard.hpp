@@ -26,8 +26,8 @@
 #ifndef BITBOARD_HPP_
 #define BITBOARD_HPP_
 
-#include "util.hpp"
-#include "alignedAlloc.hpp"
+#include "util/util.hpp"
+#include "util/alignedAlloc.hpp"
 
 class BitBoard {
 public:

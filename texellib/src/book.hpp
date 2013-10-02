@@ -27,8 +27,8 @@
 #define BOOK_HPP_
 
 #include "move.hpp"
-#include "util.hpp"
-#include "random.hpp"
+#include "util/util.hpp"
+#include "util/random.hpp"
 
 #include <map>
 #include <vector>

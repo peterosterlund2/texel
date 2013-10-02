@@ -26,10 +26,10 @@
 #ifndef TRANSPOSITIONTABLE_HPP_
 #define TRANSPOSITIONTABLE_HPP_
 
-#include "util.hpp"
+#include "util/util.hpp"
 #include "move.hpp"
 #include "constants.hpp"
-#include "alignedAlloc.hpp"
+#include "util/alignedAlloc.hpp"
 
 #include <vector>
 

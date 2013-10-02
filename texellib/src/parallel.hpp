@@ -31,7 +31,7 @@
 #include "transpositionTable.hpp"
 #include "evaluate.hpp"
 #include "searchUtil.hpp"
-#include "timeUtil.hpp"
+#include "util/timeUtil.hpp"
 
 #include <memory>
 #include <vector>

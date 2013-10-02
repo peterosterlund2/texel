@@ -26,13 +26,13 @@
 #define _GLIBCXX_USE_NANOSLEEP
 
 #include "enginecontrol.hpp"
-#include "random.hpp"
+#include "util/random.hpp"
 #include "searchparams.hpp"
 #include "computerPlayer.hpp"
 #include "textio.hpp"
 #include "parameters.hpp"
 #include "moveGen.hpp"
-#include "logger.hpp"
+#include "util/logger.hpp"
 
 #include <iostream>
 #include <memory>

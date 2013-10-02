@@ -27,7 +27,7 @@
 #define GAMETEST_HPP_
 
 #include "suiteBase.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 
 class Position;
 
