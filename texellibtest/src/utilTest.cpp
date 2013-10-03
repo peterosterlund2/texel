@@ -26,8 +26,10 @@
 #include "utilTest.hpp"
 #include "util/util.hpp"
 #include "util/timeUtil.hpp"
+#include "util/heap.hpp"
 
 #include <iostream>
+#include <memory>
 
 #include "cute.h"
 
@@ -155,6 +157,77 @@ UtilTest::testRangeSumArray() {
     }
 }
 
+void
+UtilTest::testHeap() {
+    class HeapElem : public HeapObject {
+    public:
+        HeapElem(int id) : myId(id) {}
+        int myId;
+    };
+
+    Heap heap;
+
+    std::vector<std::shared_ptr<HeapElem>> elements;
+    for (int i = 0; i < 10; i++) {
+        auto e = std::make_shared<HeapElem>(i+1000);
+        elements.push_back(e);
+        heap.insert(e.get(), i*2);
+    }
+
+//    heap.print(std::cout);
+    HeapElem* e = static_cast<HeapElem*>(heap.front());
+    ASSERT_EQUAL(1009, e->myId);
+    ASSERT_EQUAL(elements[9].get(), e);
+
+    heap.remove(e);
+//    heap.print(std::cout);
+
+    heap.newPrio(elements[5].get(), 15);
+//    heap.print(std::cout);
+
+    heap.newPrio(elements[4].get(), 3);
+//    heap.print(std::cout);
+
+    heap.newPrio(elements[7].get(), 9);
+//    heap.print(std::cout);
+
+    e = static_cast<HeapElem*>(heap.front());
+    ASSERT_EQUAL(1008, e->myId);
+    ASSERT_EQUAL(elements[8].get(), e);
+
+    heap.remove(e);
+    e = static_cast<HeapElem*>(heap.front());
+    ASSERT_EQUAL(1005, e->myId);
+
+    heap.remove(e);
+    e = static_cast<HeapElem*>(heap.front());
+    ASSERT_EQUAL(1006, e->myId);
+
+    heap.remove(e);
+    e = static_cast<HeapElem*>(heap.front());
+    ASSERT_EQUAL(1007, e->myId);
+
+    heap.remove(e);
+    e = static_cast<HeapElem*>(heap.front());
+    ASSERT_EQUAL(1003, e->myId);
+
+    heap.remove(e);
+    e = static_cast<HeapElem*>(heap.front());
+    ASSERT_EQUAL(1002, e->myId);
+
+    heap.remove(e);
+    e = static_cast<HeapElem*>(heap.front());
+    ASSERT_EQUAL(1004, e->myId);
+
+    heap.remove(e);
+    e = static_cast<HeapElem*>(heap.front());
+    ASSERT_EQUAL(1001, e->myId);
+
+    heap.remove(e);
+    e = static_cast<HeapElem*>(heap.front());
+    ASSERT_EQUAL(1000, e->myId);
+}
+
 cute::suite
 UtilTest::getSuite() const {
     cute::suite s;
@@ -162,5 +235,6 @@ UtilTest::getSuite() const {
     s.push_back(CUTE(testSampleStat));
     s.push_back(CUTE(testTime));
     s.push_back(CUTE(testRangeSumArray));
+    s.push_back(CUTE(testHeap));
     return s;
 }

@@ -39,6 +39,7 @@ private:
     static void testSampleStat();
     static void testTime();
     static void testRangeSumArray();
+    static void testHeap();
 };
 
 
