@@ -159,13 +159,13 @@ UtilTest::testRangeSumArray() {
 
 void
 UtilTest::testHeap() {
-    class HeapElem : public HeapObject {
+    class HeapElem : public Heap<HeapElem>::HeapObject {
     public:
         HeapElem(int id) : myId(id) {}
         int myId;
     };
 
-    Heap heap;
+    Heap<HeapElem> heap;
 
     std::vector<std::shared_ptr<HeapElem>> elements;
     for (int i = 0; i < 10; i++) {
@@ -191,40 +191,40 @@ UtilTest::testHeap() {
     heap.newPrio(elements[7].get(), 9);
 //    heap.print(std::cout);
 
-    e = static_cast<HeapElem*>(heap.front());
+    e = heap.front();
     ASSERT_EQUAL(1008, e->myId);
     ASSERT_EQUAL(elements[8].get(), e);
 
     heap.remove(e);
-    e = static_cast<HeapElem*>(heap.front());
+    e = heap.front();
     ASSERT_EQUAL(1005, e->myId);
 
     heap.remove(e);
-    e = static_cast<HeapElem*>(heap.front());
+    e = heap.front();
     ASSERT_EQUAL(1006, e->myId);
 
     heap.remove(e);
-    e = static_cast<HeapElem*>(heap.front());
+    e = heap.front();
     ASSERT_EQUAL(1007, e->myId);
 
     heap.remove(e);
-    e = static_cast<HeapElem*>(heap.front());
+    e = heap.front();
     ASSERT_EQUAL(1003, e->myId);
 
     heap.remove(e);
-    e = static_cast<HeapElem*>(heap.front());
+    e = heap.front();
     ASSERT_EQUAL(1002, e->myId);
 
     heap.remove(e);
-    e = static_cast<HeapElem*>(heap.front());
+    e = heap.front();
     ASSERT_EQUAL(1004, e->myId);
 
     heap.remove(e);
-    e = static_cast<HeapElem*>(heap.front());
+    e = heap.front();
     ASSERT_EQUAL(1001, e->myId);
 
     heap.remove(e);
-    e = static_cast<HeapElem*>(heap.front());
+    e = heap.front();
     ASSERT_EQUAL(1000, e->myId);
 }
 

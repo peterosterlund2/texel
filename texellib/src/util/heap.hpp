@@ -30,31 +30,32 @@
 #include <type_traits>
 #include <iostream>
 
-class Heap;
-
-/** Base class for objects that can be inserted in a heap. */
-class HeapObject {
-public:
-    HeapObject();
-    ~HeapObject();
-
-private:
-    friend class Heap;
-
-    HeapObject(const HeapObject&) = delete;
-    HeapObject& operator=(const HeapObject&) = delete;
-
-    Heap* owner;
-    int prio;
-    int heapIdx;
-};
+template <typename T> class Heap;
 
 /** A Heap that holds pointers to elements of type T.
  * T must inherit from HeapObject.
  * Destructing a T removes it from its heap.
  */
+template <typename T>
 class Heap {
 public:
+    /** Base class for objects that can be inserted in a heap. */
+    class HeapObject {
+    public:
+        HeapObject();
+        ~HeapObject();
+
+    private:
+        friend class Heap;
+
+        HeapObject(const HeapObject&) = delete;
+        HeapObject& operator=(const HeapObject&) = delete;
+
+        Heap<T>* owner;
+        int prio;
+        int heapIdx;
+    };
+
     /** Constructor. Creates an empty heap. */
     Heap();
 
@@ -62,21 +63,24 @@ public:
     ~Heap();
 
     /** Insert an element in the heap. */
-    void insert(HeapObject* e, int prio);
+    void insert(T* e, int prio);
 
     /** Removes an element from the heap. */
-    void remove(HeapObject* e);
+    void remove(T* e);
 
     /** Changes the priority of an element in the heap. */
-    void newPrio(HeapObject* e, int prio);
+    void newPrio(T* e, int prio);
 
     /** Get the element with the highest priority. The element is not removed.
      * Returns null if heap is empty. */
-    HeapObject* front() const;
+    T* front() const;
 
     void print(std::ostream& os) const;
 
 private:
+    Heap(const Heap& other) = delete;
+    Heap& operator=(const Heap& other) = delete;
+
     /** Swap two elements in the heap vector and update heapIdx. */
     void swapElems(int idx1, int idx2);
 
@@ -90,18 +94,19 @@ private:
     void downHeap(int idx);
 
     /** Vector of heap elements. */
-    std::vector<HeapObject*> heap;
+    std::vector<T*> heap;
 };
 
-inline Heap::Heap() {
+template <typename T> inline Heap<T>::Heap() {
+    static_assert(std::is_base_of<HeapObject,T>::value, "T must inherit HeapObject");
 }
 
-inline Heap::~Heap() {
+template <typename T> inline Heap<T>::~Heap() {
     for (int i = heap.size() - 1; i >= 0; i--)
         remove(heap[i]);
 }
 
-inline void Heap::insert(HeapObject* e, int prio) {
+template <typename T> inline void Heap<T>::insert(T* e, int prio) {
     e->owner = this;
     e->prio = prio;
     int idx = heap.size();
@@ -110,7 +115,7 @@ inline void Heap::insert(HeapObject* e, int prio) {
     upHeap(idx);
 }
 
-inline void Heap::remove(HeapObject* e) {
+template <typename T> inline void Heap<T>::remove(T* e) {
     int idx = e->heapIdx;
     int last = heap.size() - 1;
     if (idx < last)
@@ -122,21 +127,21 @@ inline void Heap::remove(HeapObject* e) {
         fixHeap(idx);
 }
 
-inline void Heap::newPrio(HeapObject* e, int prio) {
+template <typename T> inline void Heap<T>::newPrio(T* e, int prio) {
     e->prio = prio;
     fixHeap(e->heapIdx);
 }
 
-inline HeapObject* Heap::front() const {
-    return heap[0];
+template <typename T> inline T* Heap<T>::front() const {
+    return static_cast<T*>(heap[0]);
 }
 
-inline void Heap::swapElems(int idx1, int idx2) {
+template <typename T> inline void Heap<T>::swapElems(int idx1, int idx2) {
     std::swap(heap[idx1]->heapIdx, heap[idx2]->heapIdx);
     std::swap(heap[idx1], heap[idx2]);
 }
 
-inline void Heap::fixHeap(int idx) {
+template <typename T> inline void Heap<T>::fixHeap(int idx) {
     int parent = (idx - 1) / 2;
     if ((idx > 0) && (heap[parent]->prio < heap[idx]->prio)) {
         swapElems(idx, parent);
@@ -146,7 +151,7 @@ inline void Heap::fixHeap(int idx) {
     }
 }
 
-inline void Heap::upHeap(int idx) {
+template <typename T> inline void Heap<T>::upHeap(int idx) {
     while (idx > 0) {
         int parent = (idx - 1) / 2;
         if (heap[parent]->prio >= heap[idx]->prio)
@@ -156,7 +161,7 @@ inline void Heap::upHeap(int idx) {
     }
 }
 
-inline void Heap::downHeap(int idx) {
+template <typename T> inline void Heap<T>::downHeap(int idx) {
     int hSize = heap.size();
     while (true) {
         int child = idx * 2 + 1;
@@ -171,16 +176,16 @@ inline void Heap::downHeap(int idx) {
     }
 }
 
-inline HeapObject::HeapObject()
+template <typename T> inline Heap<T>::HeapObject::HeapObject()
     : owner(nullptr), prio(0), heapIdx(-1) {
 }
 
-inline HeapObject::~HeapObject() {
+template <typename T> inline Heap<T>::HeapObject::~HeapObject() {
     if (owner)
-        owner->remove(this);
+        owner->remove(static_cast<T*>(this));
 }
 
-inline void Heap::print(std::ostream& os) const {
+template <typename T> inline void Heap<T>::print(std::ostream& os) const {
     int hSize = heap.size();
     for (int i = 0; i < hSize; i++)
         os << std::setw(2) << i << ' ';
