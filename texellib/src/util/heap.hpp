@@ -133,6 +133,8 @@ template <typename T> inline void Heap<T>::newPrio(T* e, int prio) {
 }
 
 template <typename T> inline T* Heap<T>::front() const {
+    if (heap.empty())
+        return nullptr;
     return static_cast<T*>(heap[0]);
 }
 

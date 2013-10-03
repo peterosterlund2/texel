@@ -226,6 +226,10 @@ UtilTest::testHeap() {
     heap.remove(e);
     e = heap.front();
     ASSERT_EQUAL(1000, e->myId);
+
+    heap.remove(e);
+    e = heap.front();
+    ASSERT_EQUAL(nullptr, e);
 }
 
 cute::suite
