@@ -683,7 +683,7 @@ SplitPoint::getSpPrio() const {
     if (!hasUnStartedMove())
         return -1;
     int p = (int)(getPNextMoveUseful() * 100);
-    return p * 100 + getPly();
+    return p * 100 + (1000 - getPly());
 }
 
 inline
