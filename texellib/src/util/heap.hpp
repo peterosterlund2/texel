@@ -27,6 +27,7 @@
 #define HEAP_HPP_
 
 #include <vector>
+#include <memory>
 #include <type_traits>
 #include <iostream>
 
@@ -45,6 +46,11 @@ public:
         HeapObject();
         ~HeapObject();
 
+        /** Get priority of element in heap. */
+        int getPrio() const;
+
+        /** Changes the priority. Does nothing if element not in a heap. */
+        void newPrio(int prio);
     private:
         friend class Heap;
 
@@ -63,18 +69,27 @@ public:
     ~Heap();
 
     /** Insert an element in the heap. */
-    void insert(T* e, int prio);
+    void insert(const std::shared_ptr<T>& e, int prio);
 
-    /** Removes an element from the heap. */
+    /** Remove an element from the heap. Does nothing if e not in heap. */
+    void remove(const std::shared_ptr<T>& e);
     void remove(T* e);
 
-    /** Changes the priority of an element in the heap. */
+    /** Change the priority of an element in the heap. */
+    void newPrio(const std::shared_ptr<T>& e, int prio);
     void newPrio(T* e, int prio);
 
     /** Get the element with the highest priority. The element is not removed.
      * Returns null if heap is empty. */
-    T* front() const;
+    std::shared_ptr<T> front() const;
 
+    /** Return true if heap is empty. */
+    bool empty() const;
+
+    /** Return number of elements in the heap. */
+    int size() const;
+
+    /** For debugging. */
     void print(std::ostream& os) const;
 
 private:
@@ -94,7 +109,7 @@ private:
     void downHeap(int idx);
 
     /** Vector of heap elements. */
-    std::vector<T*> heap;
+    std::vector<std::shared_ptr<T>> heap;
 };
 
 template <typename T> inline Heap<T>::Heap() {
@@ -106,7 +121,8 @@ template <typename T> inline Heap<T>::~Heap() {
         remove(heap[i]);
 }
 
-template <typename T> inline void Heap<T>::insert(T* e, int prio) {
+template <typename T> inline void Heap<T>::insert(const std::shared_ptr<T>& e, int prio) {
+    assert(!e->owner);
     e->owner = this;
     e->prio = prio;
     int idx = heap.size();
@@ -115,7 +131,13 @@ template <typename T> inline void Heap<T>::insert(T* e, int prio) {
     upHeap(idx);
 }
 
+template <typename T> inline void Heap<T>::remove(const std::shared_ptr<T>& e) {
+    remove(e.get());
+}
+
 template <typename T> inline void Heap<T>::remove(T* e) {
+    if (!e->owner)
+        return;
     int idx = e->heapIdx;
     int last = heap.size() - 1;
     if (idx < last)
@@ -127,20 +149,32 @@ template <typename T> inline void Heap<T>::remove(T* e) {
         fixHeap(idx);
 }
 
+template <typename T> inline void Heap<T>::newPrio(const std::shared_ptr<T>& e, int prio) {
+    newPrio(e.get(), prio);
+}
+
 template <typename T> inline void Heap<T>::newPrio(T* e, int prio) {
     e->prio = prio;
     fixHeap(e->heapIdx);
 }
 
-template <typename T> inline T* Heap<T>::front() const {
+template <typename T> inline std::shared_ptr<T> Heap<T>::front() const {
     if (heap.empty())
         return nullptr;
-    return static_cast<T*>(heap[0]);
+    return heap[0];
+}
+
+template <typename T> bool Heap<T>::empty() const {
+    return heap.empty();
+}
+
+template <typename T> int Heap<T>::size() const {
+    return heap.size();
 }
 
 template <typename T> inline void Heap<T>::swapElems(int idx1, int idx2) {
     std::swap(heap[idx1]->heapIdx, heap[idx2]->heapIdx);
-    std::swap(heap[idx1], heap[idx2]);
+    heap[idx1].swap(heap[idx2]);
 }
 
 template <typename T> inline void Heap<T>::fixHeap(int idx) {
@@ -185,6 +219,15 @@ template <typename T> inline Heap<T>::HeapObject::HeapObject()
 template <typename T> inline Heap<T>::HeapObject::~HeapObject() {
     if (owner)
         owner->remove(static_cast<T*>(this));
+}
+
+template <typename T> inline int Heap<T>::HeapObject::getPrio() const {
+    return prio;
+}
+
+template <typename T> inline void Heap<T>::HeapObject::newPrio(int prio) {
+    if (owner)
+        owner->newPrio(static_cast<T*>(this), prio);
 }
 
 template <typename T> inline void Heap<T>::print(std::ostream& os) const {

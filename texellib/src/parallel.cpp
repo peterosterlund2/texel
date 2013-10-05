@@ -245,7 +245,6 @@ void
 WorkQueue::addWork(const std::shared_ptr<SplitPoint>& sp) {
     Lock L(this);
 //    ScopedTimeSample sts { getAddWorkStat(sp->owningThread()) };
-    assert(queue.find(sp) == queue.end());
     sp->setSeqNo();
     std::shared_ptr<SplitPoint> parent = sp->getParent();
     if (parent) {
@@ -263,37 +262,28 @@ WorkQueue::addWork(const std::shared_ptr<SplitPoint>& sp) {
 std::shared_ptr<SplitPoint>
 WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo) {
     Lock L(this);
-    while (queue.empty() && !isStopped())
-        L.wait(cv);
-//    ScopedTimeSample sts { getGetWorkStat(threadNo) };
-    if (isStopped())
-        return nullptr;
-    std::shared_ptr<SplitPoint> ret = *queue.begin();
-    spMove = ret->getNextMove();
-//    log([&](std::ostream& os){printSpTree(os, pd, threadNo, ret, spMove);});
-    maybeMoveToWaiting(ret);
-    updateProbabilities(ret);
-    return ret;
+    while (true) {
+        while (queue.empty() && !isStopped())
+            L.wait(cv);
+//        ScopedTimeSample sts { getGetWorkStat(threadNo) };
+        if (isStopped())
+            return nullptr;
+        std::shared_ptr<SplitPoint> ret = queue.front();
+        spMove = ret->getNextMove();
+        if (spMove < 0) {
+            L.wait(cv);
+            continue;
+        }
+//        log([&](std::ostream& os){printSpTree(os, pd, threadNo, ret, spMove);});
+        updateProbabilities(ret);
+        return ret;
+    }
 }
 
 void
 WorkQueue::returnMove(const std::shared_ptr<SplitPoint>& sp, int moveNo) {
     Lock L(this);
     sp->returnMove(moveNo);
-    if (!sp->hasUnFinishedMove()) {
-        waiting.erase(sp);
-        queue.erase(sp);
-    } else if (sp->hasUnStartedMove()) {
-        if (waiting.find(sp) != waiting.end()) {
-            waiting.erase(sp);
-            insertInQueue(sp);
-        }
-    } else {
-        if (queue.find(sp) != queue.end()) {
-            queue.erase(sp);
-            waiting.insert(sp);
-        }
-    }
     updateProbabilities(sp);
 }
 
@@ -301,7 +291,6 @@ void
 WorkQueue::setOwnerCurrMove(const std::shared_ptr<SplitPoint>& sp, int moveNo, int alpha) {
     Lock L(this);
     sp->setOwnerCurrMove(moveNo, alpha);
-    maybeMoveToWaiting(sp);
     updateProbabilities(sp);
 }
 
@@ -315,7 +304,6 @@ void
 WorkQueue::moveFinished(const std::shared_ptr<SplitPoint>& sp, int moveNo, bool cancelRemaining) {
     Lock L(this);
     sp->moveFinished(moveNo, cancelRemaining);
-    maybeMoveToWaiting(sp);
     updateProbabilities(sp);
 }
 
@@ -324,7 +312,7 @@ WorkQueue::getBestProbability(std::shared_ptr<SplitPoint>& bestSp) const {
     Lock L(this);
     if (queue.empty())
         return 0.0;
-    bestSp = *queue.begin();
+    bestSp = queue.front();
     return bestSp->getPNextMoveUseful();
 }
 
@@ -336,35 +324,15 @@ WorkQueue::getBestProbability() const {
 
 void
 WorkQueue::updateProbabilities(const std::shared_ptr<SplitPoint>& sp) {
-    std::vector<std::shared_ptr<SplitPoint>> tmpQueue, tmpWaiting;
-    removeFromSet(sp, queue, tmpQueue);
-    removeFromSet(sp, waiting, tmpWaiting);
+    if (!sp->hasUnFinishedMove())
+        queue.remove(sp);
     sp->computeProbabilities(fhInfo);
-    for (const auto& s : tmpQueue)
-        queue.insert(s);
-    for (const auto& s : tmpWaiting)
-        waiting.insert(s);
-}
-
-void
-WorkQueue::removeFromSet(const std::shared_ptr<SplitPoint>& sp,
-                         std::set<std::shared_ptr<SplitPoint>, SplitPointCompare>& spSet,
-                        std::vector<std::shared_ptr<SplitPoint>>& spVec) {
-    if (spSet.erase(sp) > 0)
-        spVec.push_back(sp);
-    const auto& children = sp->getChildren();
-    for (const auto& wChild : children) {
-        std::shared_ptr<SplitPoint> child = wChild.lock();
-        if (child)
-            removeFromSet(child, spSet, spVec);
-    }
 }
 
 void
 WorkQueue::cancelInternal(const std::shared_ptr<SplitPoint>& sp) {
     sp->cancel();
-    queue.erase(sp);
-    waiting.erase(sp);
+    queue.remove(sp);
 
     for (const auto& wChild : sp->getChildren()) {
         std::shared_ptr<SplitPoint> child = wChild.lock();
@@ -387,7 +355,7 @@ WorkQueue::printSpTree(std::ostream& os, const ParallelData& pd,
                        int threadNo, const std::shared_ptr<SplitPoint> selectedSp,
                        int selectedMove) {
     const int numThreads = pd.numHelperThreads() + 1;
-    std::shared_ptr<SplitPoint> rootSp = *queue.begin();
+    std::shared_ptr<SplitPoint> rootSp = queue.front();
     assert(rootSp);
     while (rootSp->getParent())
         rootSp = rootSp->getParent();
@@ -556,6 +524,7 @@ SplitPoint::computeProbabilities(const FailHighInfo& fhInfo) {
     }
     double pNextUseful = getMoveNeededProbability(fhInfo, findNextMove());
     pNextMoveUseful = pSpUseful * pNextUseful;
+    newPrio(getSpPrio());
 
     bool deleted = false;
     for (const auto& wChild : children) {
@@ -592,7 +561,8 @@ SplitPoint::getPosHashList(const Position& pos, std::vector<U64>& posHashList,
 int
 SplitPoint::getNextMove() {
     int m = findNextMove();
-    assert(m >= 0);
+    if (m < 0)
+        return m;
     spMoves[m].setSearching(true);
     return m;
 }

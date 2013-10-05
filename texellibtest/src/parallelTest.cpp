@@ -94,7 +94,6 @@ ParallelTest::testWorkQueue() {
     double prob = wq.getBestProbability();
     ASSERT_EQUAL_DELTA(0.0, prob, eps);
     ASSERT_EQUAL(0, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
 
     for (int m = 0; m < 2; m++) {
         for (int i = 0; i < 10; i++) {
@@ -118,6 +117,7 @@ ParallelTest::testWorkQueue() {
     auto sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, 10, 11, 1);
+    ASSERT_EQUAL(-1, sp1->getNextMove());
     sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
     sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
     sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("g1f3"), 0, 4, -1, false));
@@ -131,7 +131,6 @@ ParallelTest::testWorkQueue() {
     wq.addWork(sp1);
     ASSERT_EQUAL(1, sp1->findNextMove());
     ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL_DELTA(511 / 1023.0, wq.getBestProbability(), eps);
 
     std::shared_ptr<SplitPoint> sp = wq.getWork(moveNo, pd, 0);
@@ -139,41 +138,35 @@ ParallelTest::testWorkQueue() {
     ASSERT_EQUAL(sp1, sp);
     ASSERT_EQUAL(2, sp1->findNextMove());
     ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL_DELTA(255 / 1023.0, wq.getBestProbability(), eps);
 
     wq.setOwnerCurrMove(sp1, 1, 10);
     ASSERT_EQUAL(2, sp1->findNextMove());
     ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL_DELTA(255 / 511.0, wq.getBestProbability(), eps);
 
     sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(2, moveNo);
     ASSERT_EQUAL(sp1, sp);
     ASSERT_EQUAL(-1, sp1->findNextMove());
-    ASSERT_EQUAL(0, wq.queue.size());
-    ASSERT_EQUAL(1, wq.waiting.size());
+    ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
 
     wq.returnMove(sp, 2);
     ASSERT_EQUAL(2, sp1->findNextMove());
     ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL_DELTA(255 / 511.0, wq.getBestProbability(), eps);
 
     sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(2, moveNo);
     ASSERT_EQUAL(sp1, sp);
     ASSERT_EQUAL(-1, sp1->findNextMove());
-    ASSERT_EQUAL(0, wq.queue.size());
-    ASSERT_EQUAL(1, wq.waiting.size());
+    ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
 
     wq.moveFinished(sp1, 2, false);
     ASSERT_EQUAL(-1, sp1->findNextMove());
     ASSERT_EQUAL(0, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
 
     // Split point contains no moves, should not be added to queue/waiting
@@ -183,7 +176,6 @@ ParallelTest::testWorkQueue() {
                                        sti, kt, ht, 10, 11, 1);
     wq.addWork(sp1);
     ASSERT_EQUAL(0, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
 
     // Split point contains only one move, should not be added to queue/waiting
     sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
@@ -192,7 +184,6 @@ ParallelTest::testWorkQueue() {
     sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("f2f4"), 0, 4, -1, false));
     wq.addWork(sp1);
     ASSERT_EQUAL(0, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
 
 
     // Test return non-last currently searched move
@@ -205,7 +196,6 @@ ParallelTest::testWorkQueue() {
     sp1->addMove(3, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
     wq.addWork(sp1);
     ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
     sp = wq.getWork(moveNo, pd, 0);
     sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(2, moveNo);
@@ -220,13 +210,26 @@ ParallelTest::testWorkQueue() {
     ASSERT_EQUAL(3, sp1->findNextMove());
     ASSERT_EQUAL_DELTA((127 + 1023) / (1023.0*2), wq.getBestProbability(), eps);
     wq.moveFinished(sp1, 2, true);
-    ASSERT_EQUAL(0, wq.queue.size());
-    ASSERT_EQUAL(1, wq.waiting.size());
+    ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
     wq.moveFinished(sp1, 1, true);
     ASSERT_EQUAL(0, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
+}
+
+static std::vector<std::shared_ptr<SplitPoint>>
+extractQueue(Heap<SplitPoint>& heap) {
+    std::vector<std::shared_ptr<SplitPoint>> ret;
+    std::vector<int> prio;
+    while (!heap.empty()) {
+        auto e = heap.front();
+        ret.push_back(e);
+        prio.push_back(e->getPrio());
+        heap.remove(e);
+    }
+    for (int i = 0; i < (int)ret.size(); i++)
+        heap.insert(ret[i], prio[i]);
+    return ret;
 }
 
 void
@@ -314,7 +317,6 @@ ParallelTest::testWorkQueueParentChild() {
     ASSERT(!sp4->isAncestorTo(*sp3));
 
     ASSERT_EQUAL(4, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
     ASSERT_EQUAL(2, sp1->getChildren().size());
     ASSERT_EQUAL(1, sp2->getChildren().size());
     ASSERT_EQUAL(0, sp3->getChildren().size());
@@ -330,15 +332,15 @@ ParallelTest::testWorkQueueParentChild() {
     ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2), sp4->getPSpUseful(), eps);
     ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2)*511/1023, sp4->getPNextMoveUseful(), eps);
 
-    std::vector<std::shared_ptr<SplitPoint>> q(wq.queue.begin(), wq.queue.end());
+    std::vector<std::shared_ptr<SplitPoint>> q = extractQueue(wq.queue);
     ASSERT_EQUAL(sp1, q[0]);
-    ASSERT_EQUAL(sp2, q[1]);
-    ASSERT_EQUAL(sp3, q[2]);
+    ASSERT(q[1] == sp2 || q[1] == sp3);
+    ASSERT(q[2] == sp2 || q[2] == sp3);
+    ASSERT(q[1] != q[2]);
     ASSERT_EQUAL(sp4, q[3]);
 
     wq.setOwnerCurrMove(sp3, 1, 10);
     ASSERT_EQUAL(4, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
 //    sp1->print(std::cout, 0, fhi);
 //    std::cout << std::endl;
     ASSERT_EQUAL_DELTA(1.0, sp1->getPSpUseful(), eps);
@@ -350,19 +352,19 @@ ParallelTest::testWorkQueueParentChild() {
     ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2), sp4->getPSpUseful(), eps);
     ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2)*511/1023, sp4->getPNextMoveUseful(), eps);
 
-    std::vector<std::shared_ptr<SplitPoint>> q2(wq.queue.begin(), wq.queue.end());
+    std::vector<std::shared_ptr<SplitPoint>> q2 = extractQueue(wq.queue);
     ASSERT_EQUAL(sp3, q2[0]);
-    ASSERT_EQUAL(sp1, q2[1]);
-    ASSERT_EQUAL(sp2, q2[2]);
+    ASSERT(q2[1] == sp1 || q2[1] == sp2);
+    ASSERT(q2[2] == sp1 || q2[2] == sp2);
+    ASSERT(q2[1] != q2[2]);
     ASSERT_EQUAL(sp4, q2[3]);
 
     wq.cancel(sp2);
 //    sp1->print(std::cout, 0, fhi);
 //    std::cout << std::endl;
     ASSERT_EQUAL(2, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
 
-    std::vector<std::shared_ptr<SplitPoint>> q3(wq.queue.begin(), wq.queue.end());
+    std::vector<std::shared_ptr<SplitPoint>> q3 = extractQueue(wq.queue);
     ASSERT_EQUAL(sp1, q3[0]);
     ASSERT_EQUAL(sp4, q3[1]);
     ASSERT_EQUAL_DELTA(1.0, sp1->getPSpUseful(), eps);
@@ -374,9 +376,8 @@ ParallelTest::testWorkQueueParentChild() {
 //    sp1->print(std::cout, 0, fhi);
 //    std::cout << std::endl;
     ASSERT_EQUAL(2, wq.queue.size());
-    ASSERT_EQUAL(0, wq.waiting.size());
 
-    std::vector<std::shared_ptr<SplitPoint>> q4(wq.queue.begin(), wq.queue.end());
+    std::vector<std::shared_ptr<SplitPoint>> q4 = extractQueue(wq.queue);
     ASSERT_EQUAL(sp1, q4[0]);
     ASSERT_EQUAL(sp4, q4[1]);
     ASSERT_EQUAL_DELTA(1.0, sp1->getPSpUseful(), eps);

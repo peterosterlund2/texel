@@ -32,6 +32,7 @@
 #include "evaluate.hpp"
 #include "searchUtil.hpp"
 #include "util/timeUtil.hpp"
+#include "util/heap.hpp"
 
 #include <memory>
 #include <vector>
@@ -141,24 +142,11 @@ public:
     void printStats(std::ostream& os, int nThreads);
 
 private:
-    /** Move sp to waiting if it has no unstarted moves. */
-    void maybeMoveToWaiting(const std::shared_ptr<SplitPoint>& sp);
-
     /** Insert sp in queue. Notify condition variable if queue becomes non-empty. */
     void insertInQueue(const std::shared_ptr<SplitPoint>& sp);
 
     /** Recompute probabilities for "sp" and all children. Update "queue" and "waiting". */
     void updateProbabilities(const std::shared_ptr<SplitPoint>& sp);
-
-    struct SplitPointCompare {
-        bool operator()(const std::shared_ptr<SplitPoint>& a,
-                        const std::shared_ptr<SplitPoint>& b) const;
-    };
-
-    /** Move sp and all its children from spSet to spVec. */
-    static void removeFromSet(const std::shared_ptr<SplitPoint>& sp,
-                              std::set<std::shared_ptr<SplitPoint>, SplitPointCompare>& spSet,
-                              std::vector<std::shared_ptr<SplitPoint>>& spVec);
 
     /** Cancel "sp" and all children. Assumes mutex already locked. */
     void cancelInternal(const std::shared_ptr<SplitPoint>& sp);
@@ -190,10 +178,8 @@ private:
     mutable std::mutex mutex;
 
     // SplitPoints with unstarted SplitPointMoves
-    std::set<std::shared_ptr<SplitPoint>, SplitPointCompare> queue;
-
-    // SplitPoints with no unstarted SplitPointMoves
-    std::set<std::shared_ptr<SplitPoint>, SplitPointCompare> waiting;
+    // SplitPoints with no unstarted moves have negative priority.
+    Heap<SplitPoint> queue;
 
     // For performance debugging
     static const int maxStatThreads = 64;
@@ -307,7 +293,7 @@ private:
 
 
 /** SplitPoint does not handle thread safety, WorkQueue must do that.  */
-class SplitPoint {
+class SplitPoint : public Heap<SplitPoint>::HeapObject {
     friend class ParallelTest;
 public:
     /** Constructor. */
@@ -356,7 +342,8 @@ public:
     int getPly() const { return ply; }
 
 
-    /** Get index of first unstarted move. Mark move as being searched. */
+    /** Get index of first unstarted move. Mark move as being searched.
+     * Return -1 if there are no unstarted moves. */
     int getNextMove();
 
     /** A helper thread stopped working on a move before it was finished. */
@@ -391,6 +378,10 @@ public:
 
     /** Return true if beta > alpha + 1. */
     bool isPvNode() const;
+
+    /** Compute SplitPoint priority. The SplitPoint with highest
+     * priority will be selected first by the next available thread. */
+    int getSpPrio() const;
 
     /** Thread that created this SplitPoint. */
     int owningThread() const { return threadNo; }
@@ -554,38 +545,15 @@ WorkQueue::resetSplitDepth() {
     nNonContended = 0;
 }
 
-inline bool
-WorkQueue::SplitPointCompare::operator()(const std::shared_ptr<SplitPoint>& a,
-                                         const std::shared_ptr<SplitPoint>& b) const {
-    int pa = (int)(a->getPNextMoveUseful() * 100);
-    int pb = (int)(b->getPNextMoveUseful() * 100);
-    if (pa != pb)
-        return pa > pb;
-    if (a->getPly() != b->getPly())
-        return a->getPly() < b->getPly();
-    return a->getSeqNo() < b->getSeqNo();
-}
-
 inline int
 WorkQueue::getMinSplitDepth() const {
     return minSplitDepth;
 }
 
 inline void
-WorkQueue::maybeMoveToWaiting(const std::shared_ptr<SplitPoint>& sp) {
-    if (!sp->hasUnStartedMove()) {
-        queue.erase(sp);
-        if (sp->hasUnFinishedMove())
-            waiting.insert(sp);
-        else
-            waiting.erase(sp);
-    }
-}
-
-inline void
 WorkQueue::insertInQueue(const std::shared_ptr<SplitPoint>& sp) {
-    bool wasEmpty = queue.empty();
-    queue.insert(sp);
+    bool wasEmpty = queue.empty() || (queue.front()->getPrio() < 0);
+    queue.insert(sp, sp->getSpPrio());
     if (wasEmpty)
         cv.notify_all();
 }
@@ -710,6 +678,13 @@ SplitPoint::isPvNode() const {
     return beta > alpha + 1;
 }
 
+inline int
+SplitPoint::getSpPrio() const {
+    if (!hasUnStartedMove())
+        return -1;
+    int p = (int)(getPNextMoveUseful() * 100);
+    return p * 100 + getPly();
+}
 
 inline
 SplitPointMove::SplitPointMove(const Move& move0, int lmr0, int depth0,

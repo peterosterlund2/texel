@@ -171,13 +171,15 @@ UtilTest::testHeap() {
     for (int i = 0; i < 10; i++) {
         auto e = std::make_shared<HeapElem>(i+1000);
         elements.push_back(e);
-        heap.insert(e.get(), i*2);
+        heap.remove(e); // e not in heap. Should have no effect.
+        heap.insert(e, i*2);
     }
 
 //    heap.print(std::cout);
-    HeapElem* e = static_cast<HeapElem*>(heap.front());
+    auto e = heap.front();
     ASSERT_EQUAL(1009, e->myId);
-    ASSERT_EQUAL(elements[9].get(), e);
+    ASSERT_EQUAL(elements[9], e);
+    ASSERT_EQUAL(18, e->getPrio());
 
     heap.remove(e);
 //    heap.print(std::cout);
@@ -188,46 +190,57 @@ UtilTest::testHeap() {
     heap.newPrio(elements[4].get(), 3);
 //    heap.print(std::cout);
 
-    heap.newPrio(elements[7].get(), 9);
+    elements[7]->newPrio(9);
 //    heap.print(std::cout);
 
     e = heap.front();
     ASSERT_EQUAL(1008, e->myId);
-    ASSERT_EQUAL(elements[8].get(), e);
+    ASSERT_EQUAL(elements[8], e);
+    ASSERT_EQUAL(16, e->getPrio());
 
     heap.remove(e);
     e = heap.front();
     ASSERT_EQUAL(1005, e->myId);
+    ASSERT_EQUAL(15, e->getPrio());
 
     heap.remove(e);
     e = heap.front();
     ASSERT_EQUAL(1006, e->myId);
+    ASSERT_EQUAL(12, e->getPrio());
 
     heap.remove(e);
     e = heap.front();
     ASSERT_EQUAL(1007, e->myId);
+    ASSERT_EQUAL(9, e->getPrio());
 
     heap.remove(e);
     e = heap.front();
     ASSERT_EQUAL(1003, e->myId);
+    ASSERT_EQUAL(6, e->getPrio());
 
     heap.remove(e);
     e = heap.front();
     ASSERT_EQUAL(1002, e->myId);
+    ASSERT_EQUAL(4, e->getPrio());
 
     heap.remove(e);
     e = heap.front();
     ASSERT_EQUAL(1004, e->myId);
+    ASSERT_EQUAL(3, e->getPrio());
 
     heap.remove(e);
     e = heap.front();
     ASSERT_EQUAL(1001, e->myId);
+    ASSERT_EQUAL(2, e->getPrio());
 
     heap.remove(e);
     e = heap.front();
     ASSERT_EQUAL(1000, e->myId);
+    ASSERT_EQUAL(0, e->getPrio());
 
+    ASSERT(!heap.empty());
     heap.remove(e);
+    ASSERT(heap.empty());
     e = heap.front();
     ASSERT_EQUAL(nullptr, e);
 }
