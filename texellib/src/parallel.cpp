@@ -269,7 +269,7 @@ WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo) {
         if (isStopped())
             return nullptr;
         std::shared_ptr<SplitPoint> ret = queue.front();
-        spMove = ret->getNextMove();
+        spMove = ret->getNextMove(pd.fhInfo);
         if (spMove < 0) {
             L.wait(cv);
             continue;
@@ -343,7 +343,7 @@ WorkQueue::cancelInternal(const std::shared_ptr<SplitPoint>& sp) {
 
 static std::string toPercentStr(double p) {
     std::stringstream ss;
-    int pc = std::round(p * 100);
+    int pc = (int)(p * 100);
     if (pc == 100)
         pc = 99;
     ss << std::setfill('0') << std::setw(2) << pc;
@@ -397,7 +397,7 @@ WorkQueue::printSpTree(std::ostream& os, const ParallelData& pd,
                     os << TextIO::moveToUCIString(pd.topMove);
                 os << ',' << toPercentStr(sp->getPSpUseful())
                    << ':' << toPercentStr(sp->getPNextMoveUseful());
-                os << ',' << std::setw(2) << sp->getCurrMoveNo() << ':' << std::setw(2) << sp->findNextMove();
+                os << ',' << std::setw(2) << sp->getCurrMoveNo() << ':' << std::setw(2) << sp->findNextMove(pd.fhInfo);
             } else {
                 os << "                    ";
             }
@@ -522,7 +522,7 @@ SplitPoint::computeProbabilities(const FailHighInfo& fhInfo) {
     } else {
         pSpUseful = 1.0;
     }
-    double pNextUseful = getMoveNeededProbability(fhInfo, findNextMove());
+    double pNextUseful = getMoveNeededProbability(fhInfo, findNextMove(fhInfo));
     pNextMoveUseful = pSpUseful * pNextUseful;
     newPrio(getSpPrio());
 
@@ -559,8 +559,8 @@ SplitPoint::getPosHashList(const Position& pos, std::vector<U64>& posHashList,
 }
 
 int
-SplitPoint::getNextMove() {
-    int m = findNextMove();
+SplitPoint::getNextMove(const FailHighInfo& fhInfo) {
+    int m = findNextMove(fhInfo);
     if (m < 0)
         return m;
     spMoves[m].setSearching(true);
@@ -598,14 +598,18 @@ SplitPoint::hasUnFinishedMove() const {
 }
 
 int
-SplitPoint::findNextMove() const {
+SplitPoint::findNextMove(const FailHighInfo& fhInfo) const {
     int i0 = -1;
+    const double pGood = 0.98;
     for (int i = currMoveNo+1; i < (int)spMoves.size(); i++)
         if (!spMoves[i].isCanceled() && !spMoves[i].isSearching()) {
-            if ((getPNextMoveUseful() > 0.98) && (i0 == -1))
+            if ((getPNextMoveUseful() > pGood) && (i0 == -1))
                 i0 = i;
-            else
+            else {
+                if ((i0 != -1) && (getPMoveUseful(fhInfo, i) <= pGood))
+                    return i0;
                 return i;
+            }
         }
     return i0;
 }

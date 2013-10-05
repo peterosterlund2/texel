@@ -345,7 +345,7 @@ public:
 
     /** Get index of first unstarted move. Mark move as being searched.
      * Return -1 if there are no unstarted moves. */
-    int getNextMove();
+    int getNextMove(const FailHighInfo& fhInfo);
 
     /** A helper thread stopped working on a move before it was finished. */
     void returnMove(int moveNo);
@@ -397,7 +397,7 @@ public:
     int getCurrMoveNo() const { return currMoveNo; }
 
     /** Get index of first unstarted move, or -1 if there is no unstarted move. */
-    int findNextMove() const;
+    int findNextMove(const FailHighInfo& fhInfo) const;
 
 private:
     SplitPoint(const SplitPoint&) = delete;

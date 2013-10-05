@@ -117,7 +117,7 @@ ParallelTest::testWorkQueue() {
     auto sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
                                             pos, posHashList, posHashListSize,
                                             sti, kt, ht, 10, 11, 1);
-    ASSERT_EQUAL(-1, sp1->getNextMove());
+    ASSERT_EQUAL(-1, sp1->getNextMove(fhi));
     sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
     sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
     sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("g1f3"), 0, 4, -1, false));
@@ -129,43 +129,43 @@ ParallelTest::testWorkQueue() {
     ASSERT(pos.equals(sp1->pos));
 
     wq.addWork(sp1);
-    ASSERT_EQUAL(1, sp1->findNextMove());
+    ASSERT_EQUAL(1, sp1->findNextMove(fhi));
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(511 / 1023.0, wq.getBestProbability(), eps);
 
     std::shared_ptr<SplitPoint> sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(1, moveNo);
     ASSERT_EQUAL(sp1, sp);
-    ASSERT_EQUAL(2, sp1->findNextMove());
+    ASSERT_EQUAL(2, sp1->findNextMove(fhi));
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(255 / 1023.0, wq.getBestProbability(), eps);
 
     wq.setOwnerCurrMove(sp1, 1, 10);
-    ASSERT_EQUAL(2, sp1->findNextMove());
+    ASSERT_EQUAL(2, sp1->findNextMove(fhi));
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(255 / 511.0, wq.getBestProbability(), eps);
 
     sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(2, moveNo);
     ASSERT_EQUAL(sp1, sp);
-    ASSERT_EQUAL(-1, sp1->findNextMove());
+    ASSERT_EQUAL(-1, sp1->findNextMove(fhi));
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
 
     wq.returnMove(sp, 2);
-    ASSERT_EQUAL(2, sp1->findNextMove());
+    ASSERT_EQUAL(2, sp1->findNextMove(fhi));
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(255 / 511.0, wq.getBestProbability(), eps);
 
     sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(2, moveNo);
     ASSERT_EQUAL(sp1, sp);
-    ASSERT_EQUAL(-1, sp1->findNextMove());
+    ASSERT_EQUAL(-1, sp1->findNextMove(fhi));
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
 
     wq.moveFinished(sp1, 2, false);
-    ASSERT_EQUAL(-1, sp1->findNextMove());
+    ASSERT_EQUAL(-1, sp1->findNextMove(fhi));
     ASSERT_EQUAL(0, wq.queue.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
 
@@ -200,14 +200,14 @@ ParallelTest::testWorkQueue() {
     sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(2, moveNo);
     ASSERT_EQUAL(sp1, sp);
-    ASSERT_EQUAL(3, sp1->findNextMove());
+    ASSERT_EQUAL(3, sp1->findNextMove(fhi));
     ASSERT_EQUAL_DELTA((127 + 1023) / (1023.0*2), wq.getBestProbability(), eps);
     wq.returnMove(sp, 1);
-    ASSERT_EQUAL(1, sp1->findNextMove());
+    ASSERT_EQUAL(1, sp1->findNextMove(fhi));
     ASSERT_EQUAL_DELTA((511 + 1023) / (1023.0*2), wq.getBestProbability(), eps);
     sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(1, moveNo);
-    ASSERT_EQUAL(3, sp1->findNextMove());
+    ASSERT_EQUAL(3, sp1->findNextMove(fhi));
     ASSERT_EQUAL_DELTA((127 + 1023) / (1023.0*2), wq.getBestProbability(), eps);
     wq.moveFinished(sp1, 2, true);
     ASSERT_EQUAL(1, wq.queue.size());
