@@ -33,6 +33,7 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <iomanip>
 
@@ -200,7 +201,7 @@ private:
         pairs.sumHelper(b/2, e/2, result);
     }
 
-    std::array<int, N> arr {};
+    std::array<std::atomic<int>, N> arr {};
     RangeSumArray<(N+1)/2> pairs;
 };
 
@@ -229,7 +230,7 @@ private:
             result += value;
     }
 
-    int value { 0 };
+    std::atomic<int> value { 0 };
 };
 
 #endif /* UTIL_HPP_ */

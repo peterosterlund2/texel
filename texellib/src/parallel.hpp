@@ -230,16 +230,17 @@ private:
 
     int getNodeType(int moveNo, bool allNode) const;
 
+    mutable std::mutex mutex;
 
     static const int NUM_NODE_TYPES = 4;
     static const int NUM_STAT_MOVES = 15;
 
     RangeSumArray<NUM_STAT_MOVES> failHiCount[NUM_NODE_TYPES]; // [parentMoveNo>0?1:0][moveNo]
-    int failLoCount[NUM_NODE_TYPES];                           // [parentMoveNo>0?1:0]
-    int totCount;                                              // Sum of all counts
+    std::atomic<int> failLoCount[NUM_NODE_TYPES];              // [parentMoveNo>0?1:0]
+    std::atomic<int> totCount;                                 // Sum of all counts
 
-    int newAlpha[NUM_STAT_MOVES];
-    int totPvCount;
+    std::atomic<int> newAlpha[NUM_STAT_MOVES];
+    std::atomic<int> totPvCount;
 };
 
 

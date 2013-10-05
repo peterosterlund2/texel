@@ -764,8 +764,11 @@ FailHighInfo::addData(int parentMoveNo, int nSearched, bool failHigh, bool allNo
         failLoCount[pIdx]++;
     }
     totCount++;
-    if (totCount >= 1000000)
-        reScaleInternal(2);
+    if (totCount >= 1000000) {
+        std::lock_guard<std::mutex> L(mutex);
+        if (totCount >= 1000000)
+            reScaleInternal(2);
+    }
 }
 
 void
@@ -775,8 +778,11 @@ FailHighInfo::addPvData(int nSearched, bool alphaChanged) {
             newAlpha[nSearched]++;
     } else {
         totPvCount++;
-        if (totPvCount >= 10000)
-            reScalePv(2);
+        if (totPvCount >= 10000) {
+            std::lock_guard<std::mutex> L(mutex);
+            if (totPvCount >= 10000)
+                reScalePv(2);
+        }
     }
 }
 
@@ -793,16 +799,16 @@ FailHighInfo::reScaleInternal(int factor) {
             int val = failHiCount[i].get(j);
             failHiCount[i].add(j, val / factor - val);
         }
-        failLoCount[i] /= factor;
+        failLoCount[i] = failLoCount[i] / factor;
     }
-    totCount /= factor;
+    totCount = totCount / factor;
 }
 
 void
 FailHighInfo::reScalePv(int factor) {
     for (int j = 0; j < NUM_STAT_MOVES; j++)
-        newAlpha[j] /= factor;
-    totPvCount /= factor;
+        newAlpha[j] = newAlpha[j] / factor;
+    totPvCount = totPvCount / factor;
 }
 
 void
