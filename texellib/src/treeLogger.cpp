@@ -604,8 +604,10 @@ TreeLoggerReader::findParent(S64 index) {
                (entry.type == EntryType::POSITION_PART1) ||
                (entry.type == EntryType::POSITION_PART2)) {
         return -1;
-    } else
+    } else {
         assert(false);
+        return -1;
+    }
 }
 
 void
