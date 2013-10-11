@@ -130,7 +130,6 @@ public:
     }
     template <bool wtm>
     static bool sqAttacked(const Position& pos, int sq, U64 occupied) {
-        typedef ColorTraits<wtm> MyColor;
         typedef ColorTraits<!wtm> OtherColor;
         if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB(OtherColor::KNIGHT)) != 0)
             return true;
