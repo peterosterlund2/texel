@@ -256,7 +256,7 @@ protected:
     U8 entryBuffer[Entry::bufSize];
 };
 
-/** Writer class for logging earch trees to file. */
+/** Writer class for logging search trees to file. */
 class TreeLoggerWriter : public TreeLoggerBase {
 public:
     /** Constructor. */
