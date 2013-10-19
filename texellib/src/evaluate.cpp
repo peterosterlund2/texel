@@ -307,7 +307,7 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
     const int wMtrlNoPawns = wMtrl - wMtrlPawns;
     const int bMtrlNoPawns = bMtrl - bMtrlPawns;
     { // Pawn
-        const int loMtrl = rV;
+        const int loMtrl = rV + bV;
         const int hiMtrl = qV + 2 * rV + 2 * bV;
         mhd.wPawnIPF = interpolate(bMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
         mhd.bPawnIPF = interpolate(wMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
