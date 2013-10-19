@@ -327,8 +327,10 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
     { // Passed pawn
         const int loMtrl = 0;
         const int hiMtrl = qV + rV;
-        mhd.wPassedPawnIPF = interpolate(bMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
-        mhd.bPassedPawnIPF = interpolate(wMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
+        const int nWN = BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT));
+        const int nBN = BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT));
+        mhd.wPassedPawnIPF = interpolate(bMtrlNoPawns-nBN*(nV/2), loMtrl, 0, hiMtrl, IPOLMAX);
+        mhd.bPassedPawnIPF = interpolate(wMtrlNoPawns-nWN*(nV/2), loMtrl, 0, hiMtrl, IPOLMAX);
     }
     { // King safety
         const int loMtrl = rV + bV;

@@ -388,6 +388,11 @@ testEndGameEval() {
     ASSERT(score < 0);
     score = moveScore(pos, "Kb1");
     ASSERT(score > 0);
+
+    // Position with passed pawn and opposite side has a knight
+    pos = TextIO::readFEN("8/8/8/1P6/8/B7/1K5n/7k w - - 0 1");
+    score = evalWhite(pos);
+    ASSERT(score > pV);
 }
 
 /**
