@@ -27,6 +27,7 @@
 #include "util/util.hpp"
 #include "util/timeUtil.hpp"
 #include "util/heap.hpp"
+#include "util/histogram.hpp"
 
 #include <iostream>
 #include <memory>
@@ -245,6 +246,37 @@ UtilTest::testHeap() {
     ASSERT_EQUAL(nullptr, e);
 }
 
+void
+UtilTest::testHistogram() {
+    const int maxV = 15;
+    Histogram<0,maxV> hist;
+    for (int i = 0; i < maxV; i++)
+        ASSERT_EQUAL(0, hist.get(i));
+    ASSERT_EQUAL(0, hist.get(-1));
+    ASSERT_EQUAL(0, hist.get(maxV));
+
+    for (int i = -1; i < maxV+2; i++) {
+        for (int j = 0; j <= i; j++)
+            hist.add(j);
+    }
+    for (int i = 0; i < maxV; i++)
+        ASSERT_EQUAL(maxV+2-i, hist.get(i));
+    ASSERT_EQUAL(0, hist.get(-1));
+    ASSERT_EQUAL(0, hist.get(maxV));
+
+    hist.clear();
+    for (int i = 0; i < maxV; i++)
+        ASSERT_EQUAL(0, hist.get(i));
+
+    for (int i = 0; i < maxV; i++) {
+        HistogramAdder<decltype(hist)> ha(hist);
+        for (int j = 0; j <= i; j++)
+            ha.inc();
+    }
+    for (int i = 0; i < maxV; i++)
+        ASSERT_EQUAL(i==0?0:1, hist.get(i));
+}
+
 cute::suite
 UtilTest::getSuite() const {
     cute::suite s;
@@ -253,5 +285,6 @@ UtilTest::getSuite() const {
     s.push_back(CUTE(testTime));
     s.push_back(CUTE(testRangeSumArray));
     s.push_back(CUTE(testHeap));
+    s.push_back(CUTE(testHistogram));
     return s;
 }

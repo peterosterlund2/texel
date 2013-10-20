@@ -40,6 +40,7 @@ private:
     static void testTime();
     static void testRangeSumArray();
     static void testHeap();
+    static void testHistogram();
 };
 
 

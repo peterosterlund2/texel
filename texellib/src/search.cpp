@@ -336,9 +336,9 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         }
         S64 tNow = currentTimeMillis();
         if (verbose) {
-            static_assert(decltype(nodesByPly)::minValue == decltype(nodesByDepth)::minValue, "Incompatible histograms");
-            static_assert(decltype(nodesByPly)::maxValue == decltype(nodesByDepth)::maxValue, "Incompatible histograms");
-            for (int i = decltype(nodesByPly)::minValue; i < decltype(nodesByPly)::maxValue; i++)
+            static_assert(nodesByPly.minValue() == nodesByDepth.minValue(), "Incompatible histograms");
+            static_assert(nodesByPly.maxValue() == nodesByDepth.maxValue(), "Incompatible histograms");
+            for (int i = nodesByPly.minValue(); i < nodesByPly.maxValue(); i++)
                 std::cout << std::setw(2) << i
                           << ' ' << std::setw(7) << nodesByPly.get(i)
                           << ' ' << std::setw(7) << nodesByDepth.get(i)

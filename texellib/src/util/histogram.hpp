@@ -32,8 +32,6 @@
 template <int minV, int maxV>
 class Histogram {
 public:
-    enum { minValue = minV, maxValue = maxV };
-
     /** Create an empty histogram. */
     Histogram();
 
@@ -46,9 +44,33 @@ public:
     /** Get count corresponding to value. */
     int get(int value) const;
 
+    constexpr static int minValue() { return minV; }
+    constexpr static int maxValue() { return maxV; }
+
 private:
     int counts[maxV - minV];
 };
+
+
+/** RAII class that adds a value to a histogram in the destructor.
+ * The value added is equal to the number of times inc() was called. */
+template <typename Histogram>
+class HistogramAdder {
+public:
+    /** Constructor. */
+    HistogramAdder(Histogram& h);
+
+    /** Destructor. Adds current value to histogram. */
+    ~HistogramAdder();
+
+    /** Increment value to be added to histogram. */
+    void inc();
+
+private:
+    int value;
+    Histogram& hist;
+};
+
 
 template <int minV, int maxV>
 inline
@@ -78,6 +100,25 @@ Histogram<minV,maxV>::get(int value) const {
         return counts[value - minV];
     else
         return 0;
+}
+
+
+template <typename Histogram>
+inline
+HistogramAdder<Histogram>::HistogramAdder(Histogram& h)
+    : value(0), hist(h) {
+}
+
+template <typename Histogram>
+inline
+HistogramAdder<Histogram>::~HistogramAdder() {
+    hist.add(value);
+}
+
+template <typename Histogram>
+inline void
+HistogramAdder<Histogram>::inc() {
+    value++;
 }
 
 #endif /* HISTOGRAM_HPP_ */
