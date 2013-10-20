@@ -336,11 +336,12 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         }
         S64 tNow = currentTimeMillis();
         if (verbose) {
-            static_assert(COUNT_OF(nodesPlyVec) == COUNT_OF(nodesDepthVec), "Wrong array size");
-            for (int i = 0; i < (int)COUNT_OF(nodesPlyVec); i++)
+            static_assert(decltype(nodesByPly)::minValue == decltype(nodesByDepth)::minValue, "Incompatible histograms");
+            static_assert(decltype(nodesByPly)::maxValue == decltype(nodesByDepth)::maxValue, "Incompatible histograms");
+            for (int i = decltype(nodesByPly)::minValue; i < decltype(nodesByPly)::maxValue; i++)
                 std::cout << std::setw(2) << i
-                          << ' ' << std::setw(7) << nodesPlyVec[i]
-                          << ' ' << std::setw(7) << nodesDepthVec[i]
+                          << ' ' << std::setw(7) << nodesByPly.get(i)
+                          << ' ' << std::setw(7) << nodesByDepth.get(i)
                           << std::endl;
             std::stringstream ss;
             ss.precision(3);
@@ -445,8 +446,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     // Collect statistics
     if (verbose) {
-        if (ply < (int)COUNT_OF(nodesPlyVec)) nodesPlyVec[ply]++;
-        if (depth < (int)COUNT_OF(nodesDepthVec)*plyScale) nodesDepthVec[depth/plyScale]++;
+        nodesByPly.add(ply);
+        nodesByDepth.add(depth/plyScale);
     }
     const U64 hKey = pos.historyHash();
     SearchTreeInfo& sti = searchTreeInfo[ply];
@@ -1209,8 +1210,6 @@ Search::selectHashMove(MoveGen::MoveList& moves, const Move& hashMove) {
 void
 Search::initNodeStats() {
     nodes = qNodes = 0;
-    for (size_t i = 0; i < COUNT_OF(nodesPlyVec); i++) {
-        nodesPlyVec[i] = 0;
-        nodesDepthVec[i] = 0;
-    }
+    nodesByPly.clear();
+    nodesByDepth.clear();
 }

@@ -36,6 +36,7 @@
 #include "moveGen.hpp"
 #include "searchUtil.hpp"
 #include "parallel.hpp"
+#include "util/histogram.hpp"
 
 #include <limits>
 #include <memory>
@@ -236,8 +237,8 @@ private:
     // Search statistics stuff
     U64 nodes;
     U64 qNodes;
-    int nodesPlyVec[20];
-    int nodesDepthVec[20];
+    Histogram<0,20> nodesByPly;
+    Histogram<0,20> nodesByDepth;
     S64 totalNodes;
     S64 tLastStats;        // Time when notifyStats was last called
     bool verbose;
