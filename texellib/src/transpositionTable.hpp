@@ -146,6 +146,9 @@ public:
     /** Retrieve an entry from the hash table corresponding to position with zobrist key "key". */
     void probe(U64 key, TTEntry& result);
 
+    /** Prefetch cache line. */
+    void prefetch(U64 key);
+
     /**
      * Increase hash table generation. This means that subsequent inserts will be considered
      * more valuable than the entries currently present in the hash table.
@@ -215,6 +218,14 @@ TranspositionTable::probe(U64 key, TTEntry& result) {
         return;
     }
     result.setType(TType::T_EMPTY);
+}
+
+inline void
+TranspositionTable::prefetch(U64 key) {
+#ifdef HAVE_PREFETCH
+    size_t idx0 = getIndex(key);
+    __builtin_prefetch(&table[idx0]);
+#endif
 }
 
 inline void

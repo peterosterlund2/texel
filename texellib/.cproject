@@ -29,8 +29,9 @@
 								<option id="gnu.cpp.compiler.lib.debug.option.optimization.level.1234622339" name="Optimization Level" superClass="gnu.cpp.compiler.lib.debug.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.lib.debug.option.debugging.level.135655849" name="Debug Level" superClass="gnu.cpp.compiler.lib.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.other.other.1579469936" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.202156022" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.202156022" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
+									<listOptionValue builtIn="false" value="HAVE_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.2063498388" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -83,6 +84,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1014915444" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.820704211" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
+									<listOptionValue builtIn="false" value="HAVE_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1234467660" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -129,9 +131,10 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.lib.debug.251844107" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.lib.debug">
 								<option id="gnu.cpp.compiler.lib.debug.option.optimization.level.165363996" name="Optimization Level" superClass="gnu.cpp.compiler.lib.debug.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.lib.debug.option.debugging.level.1699002773" name="Debug Level" superClass="gnu.cpp.compiler.lib.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
-								<option id="gnu.cpp.compiler.option.other.other.981462985" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -fprofile-arcs -ftest-coverage -lgcov -std=c++11 -pthread -march=corei7" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.other.other.981462985" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.2075864462" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
+									<listOptionValue builtIn="false" value="HAVE_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1280315800" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -191,6 +194,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.171135254" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.161202354" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
+									<listOptionValue builtIn="false" value="HAVE_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.747578032" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -247,6 +251,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1698201238" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1303082642" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
+									<listOptionValue builtIn="false" value="HAVE_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.51523081" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -310,6 +315,9 @@
 				</scannerInfoProvider>
 			</profile>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.debug.44444748.304638119;cdt.managedbuild.config.gnu.lib.debug.44444748.304638119.;cdt.managedbuild.tool.gnu.c.compiler.lib.debug.483379739;cdt.managedbuild.tool.gnu.c.compiler.input.1822124769">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="gcov;gcov.;cdt.managedbuild.tool.gnu.cpp.compiler.lib.debug.251844107;cdt.managedbuild.tool.gnu.cpp.compiler.input.1280315800">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 			<profile id="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP">
@@ -322,9 +330,6 @@
 					<parser enabled="true"/>
 				</scannerInfoProvider>
 			</profile>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.debug.44444748.304638119;cdt.managedbuild.config.gnu.lib.debug.44444748.304638119.;cdt.managedbuild.tool.gnu.c.compiler.lib.debug.483379739;cdt.managedbuild.tool.gnu.c.compiler.input.1822124769">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.release.1083459479;cdt.managedbuild.config.gnu.lib.release.1083459479.;cdt.managedbuild.tool.gnu.c.compiler.lib.release.651097142;cdt.managedbuild.tool.gnu.c.compiler.input.1790594162">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
@@ -342,7 +347,7 @@
 				</scannerInfoProvider>
 			</profile>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.release.1083459479.853261495;cdt.managedbuild.config.gnu.lib.release.1083459479.853261495.;cdt.managedbuild.tool.gnu.c.compiler.lib.release.1212767427;cdt.managedbuild.tool.gnu.c.compiler.input.856825276">
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.debug.44444748;cdt.managedbuild.config.gnu.lib.debug.44444748.;cdt.managedbuild.tool.gnu.c.compiler.lib.debug.1223993077;cdt.managedbuild.tool.gnu.c.compiler.input.72861913">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.release.1083459479.853261495;cdt.managedbuild.config.gnu.lib.release.1083459479.853261495.;cdt.managedbuild.tool.gnu.cpp.compiler.lib.release.2058699567;cdt.managedbuild.tool.gnu.cpp.compiler.input.747578032">
@@ -358,7 +363,7 @@
 				</scannerInfoProvider>
 			</profile>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.debug.44444748;cdt.managedbuild.config.gnu.lib.debug.44444748.;cdt.managedbuild.tool.gnu.c.compiler.lib.debug.1223993077;cdt.managedbuild.tool.gnu.c.compiler.input.72861913">
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.release.1083459479.853261495;cdt.managedbuild.config.gnu.lib.release.1083459479.853261495.;cdt.managedbuild.tool.gnu.c.compiler.lib.release.1212767427;cdt.managedbuild.tool.gnu.c.compiler.input.856825276">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 	</storageModule>

@@ -150,6 +150,8 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
     ui.halfMoveClock = halfMoveClock;
     bool wtm = whiteMove;
 
+    hashKey ^= whiteHashKey;
+
     const int p = squares[move.from()];
     int capP = squares[move.to()];
     U64 fromMask = 1ULL << move.from();
@@ -243,7 +245,6 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
         }
     }
 
-    hashKey ^= whiteHashKey;
     whiteMove = !wtm;
 }
 

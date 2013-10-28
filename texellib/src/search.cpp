@@ -833,6 +833,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 } else {
                     posHashList[posHashListSize++] = pos.zobristHash();
                     pos.makeMove(m, ui);
+                    tt.prefetch(pos.historyHash());
                     nodes++;
                     totalNodes++;
                     nodesToGo--;
