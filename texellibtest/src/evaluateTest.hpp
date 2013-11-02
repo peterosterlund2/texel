@@ -36,7 +36,7 @@ public:
 };
 
 class Position;
-int swapSquare(int square);
+int swapSquareY(int square);
 Position swapColors(const Position& pos);
 int evalWhite(const Position& pos);
 

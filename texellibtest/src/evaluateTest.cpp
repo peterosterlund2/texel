@@ -32,7 +32,13 @@
 #include "cute.h"
 
 
-int swapSquare(int square) {
+int swapSquareX(int square) {
+    int x = Position::getX(square);
+    int y = Position::getY(square);
+    return Position::getSquare(7-x, y);
+}
+
+int swapSquareY(int square) {
     int x = Position::getX(square);
     int y = Position::getY(square);
     return Position::getSquare(x, 7-y);
@@ -47,7 +53,7 @@ swapColors(const Position& pos) {
             int sq = Position::getSquare(x, y);
             int p = pos.getPiece(sq);
             p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
-            sym.setPiece(swapSquare(sq), p);
+            sym.setPiece(swapSquareY(sq), p);
         }
     }
 
@@ -59,7 +65,7 @@ swapColors(const Position& pos) {
     sym.setCastleMask(castleMask);
 
     if (pos.getEpSquare() >= 0)
-        sym.setEpSquare(swapSquare(pos.getEpSquare()));
+        sym.setEpSquare(swapSquareY(pos.getEpSquare()));
 
     sym.setHalfMoveClock(pos.getHalfMoveClock());
     sym.setFullMoveCounter(pos.getFullMoveCounter());
@@ -67,8 +73,29 @@ swapColors(const Position& pos) {
     return sym;
 }
 
+/** Mirror position in X direction, remove castling rights. */
+Position mirrorX(const Position& pos) {
+    Position mir;
+    mir.setWhiteMove(pos.getWhiteMove());
+    for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 8; y++) {
+            int sq = Position::getSquare(x, y);
+            int p = pos.getPiece(sq);
+            mir.setPiece(swapSquareX(sq), p);
+        }
+    }
+
+    if (pos.getEpSquare() >= 0)
+        mir.setEpSquare(swapSquareX(pos.getEpSquare()));
+
+    mir.setHalfMoveClock(pos.getHalfMoveClock());
+    mir.setFullMoveCounter(pos.getFullMoveCounter());
+
+    return mir;
+}
+
 /** Evaluation position and check position serialization. */
-int evalPos(Evaluate& eval, const Position& pos) {
+int evalPos(Evaluate& eval, const Position& pos, bool testMirror) {
     {
         Position pos1(pos);
         U64 h1 = pos1.historyHash();
@@ -82,7 +109,17 @@ int evalPos(Evaluate& eval, const Position& pos) {
     pos.serialize(data);
     pos2.deSerialize(data);
     ASSERT(pos.equals(pos2));
+
+    if (testMirror) {
+        Position mir = mirrorX(pos);
+        evalPos(eval, mir, false);
+    }
+
     return eval.evalPos(pos);
+}
+
+int evalPos(Evaluate& eval, const Position& pos) {
+    return evalPos(eval, pos, true);
 }
 
 /** Return static evaluation score for white, regardless of whose turn it is to move. */
@@ -428,6 +465,16 @@ testPassedPawns() {
     //        pos.setPiece(TextIO::getSquare("d5"), Piece::WPAWN);
     //        score2 = evalWhite(pos);
     //        ASSERT(score2 > score); // Advancing passed pawn is good
+
+    // Test symmetry of candidate passed pawn evaluation
+    pos = TextIO::readFEN("rnbqkbnr/p1pppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
+    pos = TextIO::readFEN("rnbqkbnr/p2ppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
+    pos = TextIO::readFEN("rnbqkbnr/p2ppppp/8/P7/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
+    pos = TextIO::readFEN("rnbqkbnr/p2ppppp/8/P2P4/8/2P5/1P2PPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
+    pos = TextIO::readFEN("rnbqkbnr/pp1ppppp/8/P2P4/8/2P5/1P2PPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
+    pos = TextIO::readFEN("rnbqkbnr/pp1ppppp/8/PP1P4/8/2P5/4PPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
+    pos = TextIO::readFEN("rnbqkbnr/p2ppppp/8/PP6/8/2P5/4PPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
+    pos = TextIO::readFEN("rnbqkbnr/p2ppppp/8/P2P4/8/2P5/4PPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
 }
 
 /**

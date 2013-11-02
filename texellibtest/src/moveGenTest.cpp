@@ -174,7 +174,7 @@ getMoveList(Position& pos, bool onlyLegal) {
             promoteTo = Piece::isWhite(promoteTo) ?
                         Piece::makeBlack(promoteTo) :
                         Piece::makeWhite(promoteTo);
-        m.setMove(swapSquare(m.from()), swapSquare(m.to()), promoteTo, 0);
+        m.setMove(swapSquareY(m.from()), swapSquareY(m.to()), promoteTo, 0);
         std::string msSwapped = TextIO::moveToUCIString(m);
         retSwapped.push_back(msSwapped);
     }

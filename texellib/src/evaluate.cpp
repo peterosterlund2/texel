@@ -634,6 +634,39 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
         }
     }
 
+    // Evaluate candidate passed pawn bonus
+    const U64 wLeftAtks  = (wPawns & BitBoard::maskBToHFiles) << 7;
+    const U64 wRightAtks = (wPawns & BitBoard::maskAToGFiles) << 9;
+    const U64 bLeftAtks  = (bPawns & BitBoard::maskBToHFiles) >> 9;
+    const U64 bRightAtks = (bPawns & BitBoard::maskAToGFiles) >> 7;
+    const U64 bBlockSquares = ((bLeftAtks | bRightAtks) & ~(wLeftAtks | wRightAtks)) |
+                              ((bLeftAtks & bRightAtks) & ~(wLeftAtks & wRightAtks));
+    const U64 wCandidates = wPawns & ~BitBoard::southFill(bPawns | (wPawns >> 8) | bBlockSquares) & ~passedPawnsW;
+
+    const U64 wBlockSquares = ((wLeftAtks | wRightAtks) & ~(bLeftAtks | bRightAtks)) |
+                              ((wLeftAtks & wRightAtks) & ~(bLeftAtks & bRightAtks));
+    const U64 bCandidates = bPawns & ~BitBoard::northFill(wPawns | (bPawns << 8) | wBlockSquares) & ~passedPawnsB;
+
+    static const int candBonus[] = {-1,8,9,10,12,18,-1,-1};
+    {
+        U64 m = wCandidates;
+        while (m != 0) {
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            int y = Position::getY(sq);
+            passedBonusW += candBonus[y];
+            m &= m-1;
+        }
+    }
+    {
+        U64 m = bCandidates;
+        while (m != 0) {
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            int y = Position::getY(sq);
+            passedBonusB += candBonus[7-y];
+            m &= m-1;
+        }
+    }
+
     // Connected passed pawn bonus. Seems logical but scored -8 elo in tests
 //    if (passedPawnsW != 0) {
 //        U64 mask = passedPawnsW;
