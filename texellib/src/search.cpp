@@ -239,7 +239,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                     nodes = qNodes = 0;
                     posHashList[posHashListSize++] = pos.zobristHash();
                     pos.makeMove(m, ui);
-                    int score2 = -negaScout(smp, -beta, -score, 1, depthS - plyScale, -1, givesCheck);
+                    int score2 = -negaScout(smp, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
                     score = std::max(score, score2);
                     nodesThisMove += nodes + qNodes;
                     posHashListSize--;
@@ -266,7 +266,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                     nodes = qNodes = 0;
                     posHashList[posHashListSize++] = pos.zobristHash();
                     pos.makeMove(m, ui);
-                    score = -negaScout(smp, -score, -alpha, 1, depthS - plyScale, -1, givesCheck);
+                    score = -negaScout(smp, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
                     nodesThisMove += nodes + qNodes;
                     posHashListSize--;
                     pos.unMakeMove(m, ui);
