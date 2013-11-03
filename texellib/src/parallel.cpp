@@ -65,7 +65,8 @@ class ThreadStopHandler : public Search::StopHandler {
 public:
     ThreadStopHandler(WorkerThread& wt, ParallelData& pd,
                       const SplitPoint& sp, const SplitPointMove& spm,
-                      int moveNo, const Search& sc, int initialAlpha);
+                      int moveNo, const Search& sc, int initialAlpha,
+                      S64 totalNodes);
 
     /** Destructor. Report searched nodes to ParallelData object. */
     ~ThreadStopHandler();
@@ -77,7 +78,7 @@ private:
     ThreadStopHandler& operator=(const ThreadStopHandler&) = delete;
 
     /** Report searched nodes since last call to ParallelData object. */
-    void reportNodes();
+    void reportNodes(bool force);
 
     const WorkerThread& wt;
     ParallelData& pd;
@@ -89,18 +90,20 @@ private:
     int nextProbCheck;       // Next time test for SplitPoint switch should be performed
     S64 lastReportedNodes;
     int initialAlpha;
+    const S64 totalNodes;
 };
 
 ThreadStopHandler::ThreadStopHandler(WorkerThread& wt0, ParallelData& pd0,
                                      const SplitPoint& sp0, const SplitPointMove& spm0,
-                                     int moveNo0, const Search& sc0, int initialAlpha0)
+                                     int moveNo0, const Search& sc0, int initialAlpha0,
+                                     S64 totalNodes0)
     : wt(wt0), pd(pd0), sp(sp0), spMove(spm0), moveNo(moveNo0),
       sc(sc0), counter(0), nextProbCheck(1), lastReportedNodes(0),
-      initialAlpha(initialAlpha0) {
+      initialAlpha(initialAlpha0), totalNodes(totalNodes0) {
 }
 
 ThreadStopHandler::~ThreadStopHandler() {
-    reportNodes();
+    reportNodes(true);
 }
 
 bool
@@ -120,18 +123,20 @@ ThreadStopHandler::shouldStop() {
         if ((bestProb > myProb + 0.02) && (bestProb >= (myProb + (1.0 - myProb) * 0.25)) &&
             (sp.owningThread() != wt.getThreadNo()))
             return true;
-        reportNodes();
+        reportNodes(false);
     }
 
     return false;
 }
 
 void
-ThreadStopHandler::reportNodes() {
+ThreadStopHandler::reportNodes(bool force) {
     S64 totNodes = sc.getTotalNodesThisThread();
     S64 nodes = totNodes - lastReportedNodes;
-    lastReportedNodes = totNodes;
-    pd.addSearchedNodes(nodes);
+    if (force || (nodes * 1024 > totalNodes)) {
+        lastReportedNodes = totNodes;
+        pd.addSearchedNodes(nodes);
+    }
 }
 
 void
@@ -182,9 +187,10 @@ WorkerThread::mainLoop() {
         sc.setThreadNo(threadNo);
         const int alpha = newSp->getAlpha();
         const int beta = newSp->getBeta();
+        const S64 nodes0 = pd.getNumSearchedNodes();
         auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd, *sp,
                                                              spMove, moveNo,
-                                                             sc, alpha));
+                                                             sc, alpha, nodes0));
         sc.setStopHandler(stopHandler);
         const int ply = sp->getPly();
         const int lmr = spMove.getLMR();
