@@ -647,7 +647,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
                               ((wLeftAtks & wRightAtks) & ~(bLeftAtks & bRightAtks));
     const U64 bCandidates = bPawns & ~BitBoard::northFill(wPawns | (bPawns << 8) | wBlockSquares) & ~passedPawnsB;
 
-    static const int candBonus[] = {-1,8,9,10,12,18,-1,-1};
+    static const int candBonus[] = {-1,13,16,19,24,39,-1,-1};
     {
         U64 m = wCandidates;
         while (m != 0) {
