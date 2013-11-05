@@ -652,6 +652,10 @@ testKnightOutPost() {
     pos = TextIO::readFEN("rnrq2nk/ppp1p1pp/8/3PNp2/8/8/P3P3/R1RQ2NK w KQkq - 0 1");
     int s2 = evalWhite(pos);
     ASSERT(s2 < s1);
+
+    // Test knight fork bonus symmetry (currently no such term in the evaluation though)
+    pos = TextIO::readFEN("rnbqkb1r/ppp2Npp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1"); evalWhite(pos);
+    pos = TextIO::readFEN("rnbqkb1r/ppN3pp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1"); evalWhite(pos);
 }
 
 cute::suite
