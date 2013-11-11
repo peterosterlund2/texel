@@ -36,6 +36,7 @@ public:
 
 private:
     static void testFailHighInfo();
+    static void testNpsInfo();
     static void testWorkQueue();
     static void testWorkQueueParentChild();
     static void testSplitPointHolder();

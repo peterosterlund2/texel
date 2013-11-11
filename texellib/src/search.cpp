@@ -142,6 +142,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
 
     kt.clear();
     pd.wq.resetSplitDepth();
+    pd.npsInfo.reset();
 //    pd.wq.resetStat();
     const bool smp = pd.numHelperThreads() > 0;
     maxNodes = initialMaxNodes;
@@ -363,7 +364,8 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         if (depthS >= plyToMate * plyScale)
             break;
         bestScoreLastIter = bestScore;
-
+        if (tNow > tStart)
+            pd.npsInfo.setBaseNps(getTotalNodesThisThread() * 1000.0 / (tNow - tStart));
         if (!firstIteration) {
             // Moves that were hard to search should be searched early in the next iteration
             std::stable_sort(scMoves.begin()+1, scMoves.end(), MoveInfo::SortByNodes());
@@ -372,6 +374,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
 //        pd.fhInfo.print(std::cout);
 //        std::cout << "wqStats depth:" << depthS / plyScale << std::endl;
 //        pd.wq.printStats(std::cout, pd.numHelperThreads() + 1);
+//        log([&](std::ostream& os){pd.npsInfo.print(os, depthS / plyScale);});
     }
     } catch (const StopSearch&) {
         pos = origPos;
@@ -591,12 +594,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         if (nullOk) {
             int score;
             {
-                SplitPointHolder sph(pd, spVec);
+                SplitPointHolder sph(pd, spVec, pending);
                 if (smp) {
                     sph.setSp(std::make_shared<SplitPoint>(threadNo, spVec.back(),
                                                            searchTreeInfo[ply-1].currentMoveNo,
                                                            pos, posHashList, posHashListSize,
-                                                           sti, kt, ht, alpha, beta, ply));
+                                                           sti, kt, ht, alpha, beta, ply, depth / plyScale));
                     sph.addMove(0, SplitPointMove(Move(), 0, 0, -1, false));
                     sph.addToQueue();
                     sph.setOwnerCurrMove(0, alpha);
@@ -715,12 +718,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         hashMoveSelected = false;
     }
 
-    SplitPointHolder sph(pd, spVec);
+    SplitPointHolder sph(pd, spVec, pending);
     if (smp) {
         sph.setSp(std::make_shared<SplitPoint>(threadNo, spVec.back(),
                                                searchTreeInfo[ply-1].currentMoveNo,
                                                pos, posHashList, posHashListSize,
-                                               sti, kt, ht, alpha, beta, ply));
+                                               sti, kt, ht, alpha, beta, ply, depth/plyScale));
         for (int mi = 0; mi < moves.size; mi++) {
             if ((mi == 1) && !seeDone) {
                 scoreMoveList(moves, ply, 1);

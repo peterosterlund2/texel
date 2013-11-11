@@ -50,6 +50,7 @@ class ParallelData;
 class SplitPoint;
 class SplitPointMove;
 class FailHighInfo;
+class DepthNpsInfo;
 
 
 class WorkerThread {
@@ -100,7 +101,7 @@ class WorkQueue {
     friend class ParallelTest;
 public:
     /** Constructor. */
-    WorkQueue(FailHighInfo& fhInfo);
+    WorkQueue(const FailHighInfo& fhInfo, const DepthNpsInfo& npsInfo);
 
     /** Set/get stopped flag. */
     void setStopped(bool stop);
@@ -112,8 +113,14 @@ public:
     /** Add SplitPoint to work queue. */
     void addWork(const std::shared_ptr<SplitPoint>& sp);
 
+    /** Try to add SplitPoint to work queue. If queue is contended add SplitPoint
+     * to pending instead. */
+    void tryAddWork(const std::shared_ptr<SplitPoint>& sp,
+                    std::vector<std::shared_ptr<SplitPoint>>& pending);
+
     /** Get best move for helper thread to work on. */
     std::shared_ptr<SplitPoint> getWork(int& moveNo, ParallelData& pd, int threadNo);
+    std::shared_ptr<SplitPoint> getWork(int& moveNo, ParallelData& pd, int threadNo, int& prio);
 
     /** A helper thread stopped working on a move before it was finished. */
     void returnMove(const std::shared_ptr<SplitPoint>& sp, int moveNo);
@@ -131,6 +138,7 @@ public:
      *  Also return the corresponding SplitPoint. */
     double getBestProbability(std::shared_ptr<SplitPoint>& bestSp) const;
     double getBestProbability() const;
+    int getBestPrio() const;
 
     /** Return current dynamic minimum split depth. */
     int getMinSplitDepth() const;
@@ -157,6 +165,9 @@ private:
     void findLeaves(const std::shared_ptr<SplitPoint>& sp, std::vector<int>& parentThreads,
                     std::vector<std::shared_ptr<SplitPoint>>& leaves);
 
+    /** Helper for addWork() and tryAddWork(). */
+    void addWorkInternal(const std::shared_ptr<SplitPoint>& sp);
+
     /** Scoped lock that measures lock contention and adjusts minSplitDepth accordingly. */
     class Lock {
     public:
@@ -174,7 +185,8 @@ private:
     mutable U64 nNonContended;      // Number of times mutex has not been contended
 
     std::condition_variable cv;     // Notified when wq becomes non-empty and when search should stop
-    FailHighInfo& fhInfo;
+    const FailHighInfo& fhInfo;
+    const DepthNpsInfo& npsInfo;
     mutable std::mutex mutex;
 
     // SplitPoints with unstarted SplitPointMoves
@@ -243,6 +255,47 @@ private:
     std::atomic<int> totPvCount;
 };
 
+class DepthNpsInfo {
+public:
+    /** Constructor. */
+    DepthNpsInfo();
+
+    /** Reset */
+    void reset();
+
+    /** Set thread 0 estimated nps. Used to scale efficiency calculations
+     *  to [0,1] interval. */
+    void setBaseNps(double nps);
+
+    /** Add one data point. */
+    void addData(int depth, U64 nodes, double waitTime, double searchTime);
+
+    /** Return estimate search efficiency when searching to a given depth. */
+    double efficiency(int depth) const;
+
+    /** Print object state to "os", for debugging. */
+    void print(std::ostream& os, int iterDepth);
+
+    /** Maximum depth statistics is kept for. */
+    static const int maxDepth = 48;
+
+private:
+    /** Helper method for efficiency() and print(). */
+    double efficiencyInternal(int depth) const;
+
+    mutable std::mutex mutex;
+
+    struct NpsData {
+        NpsData() : nSearches(0), nodes(0), time(0) {}
+        U32 nSearches;
+        U64 nodes;
+        double time;
+    };
+    NpsData npsData[maxDepth];
+    double nps0;
+    U32 nSearches;      // Total number of searches
+    double waitTime;    // Total waiting time
+};
 
 /** Top-level parallel search data structure. */
 class ParallelData {
@@ -274,6 +327,7 @@ public:
     const WorkerThread& getHelperThread(int i) const { return *threads[i]; }
 
     FailHighInfo fhInfo;
+    DepthNpsInfo npsInfo;
 
     WorkQueue wq;
 
@@ -303,7 +357,7 @@ public:
                const Position& pos, const std::vector<U64>& posHashList,
                int posHashListSize, const SearchTreeInfo& sti,
                const KillerTable& kt, const History& ht,
-               int alpha, int beta, int ply);
+               int alpha, int beta, int ply, int depth);
 
     /** Add a child SplitPoint */
     void addChild(const std::weak_ptr<SplitPoint>& child);
@@ -315,7 +369,7 @@ public:
     void setSeqNo();
 
     /** compute pSpUseful and pnextMoveUseful. */
-    void computeProbabilities(const FailHighInfo& fhInfo);
+    void computeProbabilities(const FailHighInfo& fhInfo, const DepthNpsInfo& npsInfo);
 
     /** Get parent SplitPoint, or null for root SplitPoint. */
     std::shared_ptr<SplitPoint> getParent() const;
@@ -341,6 +395,7 @@ public:
     int getAlpha() const { return alpha; }
     int getBeta() const { return beta; }
     int getPly() const { return ply; }
+    int getDepth() const { return depth; }
 
 
     /** Get index of first unstarted move. Mark move as being searched.
@@ -382,10 +437,16 @@ public:
 
     /** Compute SplitPoint priority. The SplitPoint with highest
      * priority will be selected first by the next available thread. */
-    int getSpPrio() const;
+    int getSpPrio(const DepthNpsInfo& npsInfo) const;
 
     /** Thread that created this SplitPoint. */
     int owningThread() const { return threadNo; }
+
+    /** Return true if object is or has been inserted in WorkQueue. */
+    bool wasInserted() const { return inserted; }
+
+    /** Mark SplitPoint as inserted in WorkQueue. */
+    void setInserted() { inserted = true; }
 
     /** Print object state to "os", for debugging. */
     void print(std::ostream& os, int level, const FailHighInfo& fhInfo) const;
@@ -420,6 +481,7 @@ private:
     int alpha;
     const int beta;
     const int ply;
+    const int depth;
 
     double pSpUseful;       // Probability that this SplitPoint is needed. 100% if parent is null.
     double pNextMoveUseful; // Probability that next unstarted move needs to be searched.
@@ -434,6 +496,7 @@ private:
     int currMoveNo;
     std::vector<SplitPointMove> spMoves;
 
+    bool inserted; // True if sp has been inserted in WorkQueue. Remains true after deletion.
     bool canceled;
 };
 
@@ -473,7 +536,8 @@ private:
 class SplitPointHolder {
 public:
     /** Constructor. */
-    SplitPointHolder(ParallelData& pd, std::vector<std::shared_ptr<SplitPoint>>& spVec);
+    SplitPointHolder(ParallelData& pd, std::vector<std::shared_ptr<SplitPoint>>& spVec,
+                     std::vector<std::shared_ptr<SplitPoint>>& pending);
 
     /** Destructor. Cancel SplitPoint. */
     ~SplitPointHolder();
@@ -484,7 +548,9 @@ public:
     /** Add a move to the SplitPoint. */
     void addMove(int moveNo, const SplitPointMove& spMove);
 
-    /** Add SplitPoint to work queue. */
+    /** Add SplitPoint to work queue. If the queue is contended, store SplitPoint
+     * in pending vector instead. If queue is not contended, also insert all
+     * objects from the pending vector and clear the pending vector. */
     void addToQueue();
 
     /** Set which move number the SplitPoint owner is currently searching. */
@@ -505,13 +571,15 @@ private:
 
     ParallelData& pd;
     std::vector<std::shared_ptr<SplitPoint>>& spVec;
+    std::vector<std::shared_ptr<SplitPoint>>& pending;
     std::shared_ptr<SplitPoint> sp;
     enum class State { EMPTY, CREATED, QUEUED } state;
 };
 
 /** Dummy version of SplitPointHolder class. */
 struct DummySplitPointHolder {
-    DummySplitPointHolder(ParallelData& pd, std::vector<std::shared_ptr<SplitPoint>>& spVec) {}
+    DummySplitPointHolder(ParallelData& pd, std::vector<std::shared_ptr<SplitPoint>>& spVec,
+                          std::vector<std::shared_ptr<SplitPoint>>& pending) {}
     void setSp(const std::shared_ptr<SplitPoint>& sp) {}
     void addMove(int moveNo, const SplitPointMove& spMove) {}
     void addToQueue() {}
@@ -530,8 +598,8 @@ template<> struct SplitPointTraits<false> {
 
 
 inline
-WorkQueue::WorkQueue(FailHighInfo& fhInfo0)
-    : stopped(false), fhInfo(fhInfo0) {
+WorkQueue::WorkQueue(const FailHighInfo& fhInfo0, const DepthNpsInfo& npsInfo0)
+    : stopped(false), fhInfo(fhInfo0), npsInfo(npsInfo0) {
 }
 
 inline bool
@@ -554,7 +622,8 @@ WorkQueue::getMinSplitDepth() const {
 inline void
 WorkQueue::insertInQueue(const std::shared_ptr<SplitPoint>& sp) {
     bool wasEmpty = queue.empty() || (queue.front()->getPrio() < 0);
-    queue.insert(sp, sp->getSpPrio());
+    queue.insert(sp, sp->getSpPrio(npsInfo));
+    sp->setInserted();
     if (wasEmpty)
         cv.notify_all();
 }
@@ -599,6 +668,66 @@ FailHighInfo::getNodeType(int moveNo, bool allNode) const {
         return 2;
 }
 
+inline
+DepthNpsInfo::DepthNpsInfo() {
+    reset();
+}
+
+inline void
+DepthNpsInfo::reset() {
+    std::lock_guard<std::mutex> L(mutex);
+    for (int i = 0; i < maxDepth; i++) {
+        npsData[i].nSearches = 0;
+        npsData[i].nodes = 0;
+        npsData[i].time = 0;
+    }
+    nps0 = 0;
+    nSearches = 0;
+    waitTime = 0;
+}
+
+inline void
+DepthNpsInfo::setBaseNps(double nps) {
+    std::lock_guard<std::mutex> L(mutex);
+    nps0 = nps;
+}
+
+inline void
+DepthNpsInfo::addData(int depth, U64 nodes, double wTime, double searchTime) {
+    if (depth >= maxDepth)
+        depth = maxDepth - 1;
+    std::lock_guard<std::mutex> L(mutex);
+    npsData[depth].nSearches++;
+    npsData[depth].nodes += nodes;
+    npsData[depth].time += searchTime;
+    nSearches++;
+    waitTime += wTime;
+}
+
+inline double
+DepthNpsInfo::efficiency(int depth) const {
+    if (depth >= maxDepth)
+        depth = maxDepth - 1;
+    std::lock_guard<std::mutex> L(mutex);
+    return efficiencyInternal(depth);
+}
+
+inline double
+DepthNpsInfo::efficiencyInternal(int depth) const {
+    if ((npsData[depth].time > 0) && (nps0 > 0)) {
+        U64 nodes = npsData[depth].nodes;
+        double time = npsData[depth].time;
+        const U32 ns = npsData[depth].nSearches;
+        if (nSearches > 0)
+            time += waitTime / nSearches * ns;
+        double nps = nodes / time;
+        double eff = nps / nps0;
+        if (eff > 1.0)
+            eff = 1.0;
+        return (eff * ns + 1 * 500) / (ns + 500);
+    } else
+        return 1.0;
+}
 
 inline void
 WorkQueue::Lock::wait(std::condition_variable& cv) {
@@ -607,7 +736,7 @@ WorkQueue::Lock::wait(std::condition_variable& cv) {
 
 
 inline ParallelData::ParallelData(TranspositionTable& tt0)
-    : wq(fhInfo), t0Index(0), tt(tt0) {
+    : wq(fhInfo, npsInfo), t0Index(0), tt(tt0) {
     totalHelperNodes = 0;
 }
 
@@ -680,11 +809,10 @@ SplitPoint::isPvNode() const {
 }
 
 inline int
-SplitPoint::getSpPrio() const {
+SplitPoint::getSpPrio(const DepthNpsInfo& npsInfo) const {
     if (!hasUnStartedMove())
         return -1;
-    int p = (int)(getPNextMoveUseful() * 100);
-    return p * 100 + (1000 - getPly());
+    return (int)(getPNextMoveUseful() * npsInfo.efficiency(getDepth()) * 1000);
 }
 
 inline
@@ -697,16 +825,24 @@ SplitPointMove::SplitPointMove(const Move& move0, int lmr0, int depth0,
 
 inline
 SplitPointHolder::SplitPointHolder(ParallelData& pd0,
-                                   std::vector<std::shared_ptr<SplitPoint>>& spVec0)
-    : pd(pd0), spVec(spVec0), state(State::EMPTY) {
+                                   std::vector<std::shared_ptr<SplitPoint>>& spVec0,
+                                   std::vector<std::shared_ptr<SplitPoint>>& pending0)
+    : pd(pd0), spVec(spVec0), pending(pending0),
+      state(State::EMPTY) {
 }
-
 
 inline
 SplitPointHolder::~SplitPointHolder() {
     if (state == State::QUEUED) {
 //        log([&](std::ostream& os){os << "cancel seqNo:" << sp->getSeqNo();});
-        pd.wq.cancel(sp);
+        if (sp->wasInserted())
+            pd.wq.cancel(sp);
+        else {
+            if (pending.size() > 0) {
+                assert(pending[pending.size()-1] == sp);
+                pending.pop_back();
+            }
+        }
         assert(!spVec.empty());
         spVec.pop_back();
     }
@@ -723,7 +859,10 @@ SplitPointHolder::setOwnerCurrMove(int moveNo, int alpha) {
 //    if (sp->hasHelperThread())
 //        log([&](std::ostream& os){os << "seqNo:" << sp->getSeqNo() << " currMove:" << moveNo
 //                                     << " a:" << alpha;});
-    pd.wq.setOwnerCurrMove(sp, moveNo, alpha);
+    if (sp->wasInserted())
+        pd.wq.setOwnerCurrMove(sp, moveNo, alpha);
+    else
+        sp->setOwnerCurrMove(moveNo, alpha);
 }
 
 inline bool

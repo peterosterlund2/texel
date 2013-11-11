@@ -210,6 +210,7 @@ private:
     TranspositionTable& tt;
     ParallelData& pd;
     std::vector<std::shared_ptr<SplitPoint>> spVec;
+    std::vector<std::shared_ptr<SplitPoint>> pending;
     int threadNo;
     TreeLogger& logFile;
 
@@ -346,7 +347,10 @@ Search::negaScout(bool smp,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
     using namespace SearchConst;
-    if (smp && (depth >= pd.wq.getMinSplitDepth() * plyScale) &&
+    int minDepth = pd.wq.getMinSplitDepth() * plyScale;
+    if (threadNo == 0)
+        minDepth = (minDepth + MIN_SMP_DEPTH * plyScale) / 2;
+    if (smp && (depth >= minDepth) &&
                ((int)spVec.size() < MAX_SP_PER_THREAD))
         return negaScout<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
     else

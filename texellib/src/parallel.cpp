@@ -66,7 +66,7 @@ public:
     ThreadStopHandler(WorkerThread& wt, ParallelData& pd,
                       const SplitPoint& sp, const SplitPointMove& spm,
                       int moveNo, const Search& sc, int initialAlpha,
-                      S64 totalNodes);
+                      S64 totalNodes, int myPrio);
 
     /** Destructor. Report searched nodes to ParallelData object. */
     ~ThreadStopHandler();
@@ -91,15 +91,16 @@ private:
     S64 lastReportedNodes;
     int initialAlpha;
     const S64 totalNodes;
+    const int myPrio;
 };
 
 ThreadStopHandler::ThreadStopHandler(WorkerThread& wt0, ParallelData& pd0,
                                      const SplitPoint& sp0, const SplitPointMove& spm0,
                                      int moveNo0, const Search& sc0, int initialAlpha0,
-                                     S64 totalNodes0)
+                                     S64 totalNodes0, int myPrio0)
     : wt(wt0), pd(pd0), sp(sp0), spMove(spm0), moveNo(moveNo0),
       sc(sc0), counter(0), nextProbCheck(1), lastReportedNodes(0),
-      initialAlpha(initialAlpha0), totalNodes(totalNodes0) {
+      initialAlpha(initialAlpha0), totalNodes(totalNodes0), myPrio(myPrio0) {
 }
 
 ThreadStopHandler::~ThreadStopHandler() {
@@ -116,11 +117,9 @@ ThreadStopHandler::shouldStop() {
     counter++;
     if (counter >= nextProbCheck) {
         nextProbCheck = counter + 1 + counter / 4;
-        double myProb = sp.getPMoveUseful(pd.fhInfo, moveNo);
-        std::shared_ptr<SplitPoint> bestSp;
-        double bestProb = pd.wq.getBestProbability(bestSp);
-//        log([&](std::ostream& os){os << "shouldStop, th:" << wt.getThreadNo() << " myP:" << myProb << " bestP:" << bestProb;});
-        if ((bestProb > myProb + 0.02) && (bestProb >= (myProb + (1.0 - myProb) * 0.25)) &&
+        int bestPrio = pd.wq.getBestPrio();
+//        log([&](std::ostream& os){os << "shouldStop, th:" << wt.getThreadNo() << " myP:" << myPrio << " bestP:" << bestPrio;});
+        if ((bestPrio > myPrio + 20) && (bestPrio >= (myPrio + (1000 - myPrio) * 0.25)) &&
             (sp.owningThread() != wt.getThreadNo()))
             return true;
         reportNodes(false);
@@ -157,12 +156,16 @@ WorkerThread::mainLoop() {
     std::unique_lock<std::mutex> lock(m);
     Position pos;
     std::shared_ptr<SplitPoint> sp;
-    while (true) {
+    for (int iter = 0; ; iter++) {
+        const bool doTiming = (iter & 15) == 0;
         int moveNo = -1;
 //        uTimer.setPUseful(-1);
-        std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo, pd, threadNo);
+        const double t0 = doTiming ? currentTime() : -1;
+        int prio;
+        std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo, pd, threadNo, prio);
         if (!newSp)
             break;
+        const double tStart = doTiming ? currentTime() : -1;
 
         const SplitPointMove& spMove = newSp->getSpMove(moveNo);
         const int depth = spMove.getDepth();
@@ -185,12 +188,12 @@ WorkerThread::mainLoop() {
         const U64 rootNodeIdx = logFile.logPosition(pos, sp->owningThread(),
                                                     sp->getSearchTreeInfo().nodeIdx, moveNo);
         sc.setThreadNo(threadNo);
-        const int alpha = newSp->getAlpha();
-        const int beta = newSp->getBeta();
+        const int alpha = sp->getAlpha();
+        const int beta = sp->getBeta();
         const S64 nodes0 = pd.getNumSearchedNodes();
         auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd, *sp,
                                                              spMove, moveNo,
-                                                             sc, alpha, nodes0));
+                                                             sc, alpha, nodes0, prio));
         sc.setStopHandler(stopHandler);
         const int ply = sp->getPly();
         const int lmr = spMove.getLMR();
@@ -226,6 +229,10 @@ WorkerThread::mainLoop() {
             if (!spMove.isCanceled() && !pd.wq.isStopped())
                 pd.wq.returnMove(sp, moveNo);
         }
+        if (doTiming) {
+            const double tEnd = currentTime();
+            pd.npsInfo.addData(sp->getDepth(), sc.getTotalNodesThisThread(), tStart - t0, tEnd - tStart);
+        }
         pUseful = 0.0;
     }
 //    double tElapsed, tUseful, tSleep;
@@ -251,6 +258,25 @@ void
 WorkQueue::addWork(const std::shared_ptr<SplitPoint>& sp) {
     Lock L(this);
 //    ScopedTimeSample sts { getAddWorkStat(sp->owningThread()) };
+    addWorkInternal(sp);
+}
+
+void
+WorkQueue::tryAddWork(const std::shared_ptr<SplitPoint>& sp,
+                      std::vector<std::shared_ptr<SplitPoint>>& pending) {
+    std::unique_lock<std::mutex> lock(mutex, std::defer_lock);
+    if (!lock.try_lock()) {
+        pending.push_back(sp);
+        return;
+    }
+    for (const auto& sp : pending)
+        addWorkInternal(sp);
+    pending.clear();
+    addWorkInternal(sp);
+}
+
+void
+WorkQueue::addWorkInternal(const std::shared_ptr<SplitPoint>& sp) {
     sp->setSeqNo();
     std::shared_ptr<SplitPoint> parent = sp->getParent();
     if (parent) {
@@ -260,13 +286,19 @@ WorkQueue::addWork(const std::shared_ptr<SplitPoint>& sp) {
             parent->addChild(sp);
     }
     if (sp->hasUnFinishedMove()) {
-        sp->computeProbabilities(fhInfo);
+        sp->computeProbabilities(fhInfo, npsInfo);
         insertInQueue(sp);
     }
 }
 
 std::shared_ptr<SplitPoint>
 WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo) {
+    int prio;
+    return getWork(spMove, pd, threadNo, prio);
+}
+
+std::shared_ptr<SplitPoint>
+WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo, int& prio) {
     Lock L(this);
     while (true) {
         while (queue.empty() && !isStopped())
@@ -281,6 +313,7 @@ WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo) {
             continue;
         }
 //        log([&](std::ostream& os){printSpTree(os, pd, threadNo, ret, spMove);});
+        prio = ret->getPrio();
         updateProbabilities(ret);
         return ret;
     }
@@ -322,6 +355,14 @@ WorkQueue::getBestProbability(std::shared_ptr<SplitPoint>& bestSp) const {
     return bestSp->getPNextMoveUseful();
 }
 
+int
+WorkQueue::getBestPrio() const {
+    Lock L(this);
+    if (queue.empty())
+        return -1;
+    return queue.front()->getPrio();
+}
+
 double
 WorkQueue::getBestProbability() const {
     std::shared_ptr<SplitPoint> bestSp;
@@ -332,7 +373,7 @@ void
 WorkQueue::updateProbabilities(const std::shared_ptr<SplitPoint>& sp) {
     if (!sp->hasUnFinishedMove())
         queue.remove(sp);
-    sp->computeProbabilities(fhInfo);
+    sp->computeProbabilities(fhInfo, npsInfo);
 }
 
 void
@@ -501,13 +542,13 @@ SplitPoint::SplitPoint(int threadNo0,
                        const Position& pos0, const std::vector<U64>& posHashList0,
                        int posHashListSize0, const SearchTreeInfo& sti0,
                        const KillerTable& kt0, const History& ht0,
-                       int alpha0, int beta0, int ply0)
+                       int alpha0, int beta0, int ply0, int depth0)
     : pos(pos0), posHashList(posHashList0), posHashListSize(posHashListSize0),
       searchTreeInfo(sti0), kt(kt0), ht(ht0),
-      alpha(alpha0), beta(beta0), ply(ply0),
+      alpha(alpha0), beta(beta0), ply(ply0), depth(depth0),
       pSpUseful(0.0), pNextMoveUseful(0.0),
       threadNo(threadNo0), parent(parentSp0), parentMoveNo(parentMoveNo0),
-      seqNo(0), currMoveNo(0), canceled(false) {
+      seqNo(0), currMoveNo(0), inserted(false), canceled(false) {
 }
 
 void
@@ -519,7 +560,7 @@ SplitPoint::addMove(int moveNo, const SplitPointMove& spMove) {
 }
 
 void
-SplitPoint::computeProbabilities(const FailHighInfo& fhInfo) {
+SplitPoint::computeProbabilities(const FailHighInfo& fhInfo, const DepthNpsInfo& npsInfo) {
     if (parent) {
         double pMoveUseful = 1.0;
         if (parentMoveNo >= 0)
@@ -530,13 +571,13 @@ SplitPoint::computeProbabilities(const FailHighInfo& fhInfo) {
     }
     double pNextUseful = getMoveNeededProbability(fhInfo, findNextMove(fhInfo));
     pNextMoveUseful = pSpUseful * pNextUseful;
-    newPrio(getSpPrio());
+    newPrio(getSpPrio(npsInfo));
 
     bool deleted = false;
     for (const auto& wChild : children) {
         std::shared_ptr<SplitPoint> child = wChild.lock();
         if (child)
-            child->computeProbabilities(fhInfo);
+            child->computeProbabilities(fhInfo, npsInfo);
         else
             deleted = true;
     }
@@ -714,7 +755,7 @@ SplitPointHolder::setSp(const std::shared_ptr<SplitPoint>& sp0) {
 void
 SplitPointHolder::addToQueue() {
     assert(state == State::CREATED);
-    pd.wq.addWork(sp);
+    pd.wq.tryAddWork(sp, pending);
     spVec.push_back(sp);
 //    log([&](std::ostream& os){os << "add seqNo:" << sp->getSeqNo() << " ply:" << sp->getPly()
 //                                 << " pNext:" << sp->getPNextMoveUseful()
@@ -833,4 +874,22 @@ FailHighInfo::print(std::ostream& os) const {
     for (int j = 0; j < NUM_STAT_MOVES; j++)
         os << ' ' << std::setw(6) << newAlpha[j];
     os << std::endl;
+}
+
+// ----------------------------------------------------------------------------
+
+void
+DepthNpsInfo::print(std::ostream& os, int iterDepth) {
+    std::lock_guard<std::mutex> L(mutex);
+    os << "npsInfo: depth:" << iterDepth << " nps0:" << nps0
+       << " wait:" << waitTime / nSearches << std::endl;
+    for (int i = SearchConst::MIN_SMP_DEPTH; i < maxDepth; i++) {
+        os << "npsInfo: d:" << i
+           << " n:" << npsData[i].nSearches
+           << " nodes:" << npsData[i].nodes
+           << " time:" << npsData[i].time
+           << " nps:" << npsData[i].nodes / npsData[i].time
+           << " ts:" << npsData[i].nodes / (double)npsData[i].nSearches
+           << " eff:" << efficiencyInternal(i) << std::endl;
+    }
 }
