@@ -733,6 +733,18 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 selectBest(moves, mi);
         }
     }
+    bool lmpOk;
+    if (pos.getWhiteMove())
+        lmpOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
+    else
+        lmpOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
+    int moveCountLimit = 256;
+    if (lmpOk) {
+        if (depth <= plyScale)          moveCountLimit = 3;
+        else if (depth <= 2 * plyScale) moveCountLimit = 6;
+        else if (depth <= 3 * plyScale) moveCountLimit = 12;
+        else if (depth <= 4 * plyScale) moveCountLimit = 24;
+    }
     UndoInfo ui;
     for (int pass = (smp?0:1); pass < 2; pass++) {
         bool haveLegalMoves = false;
@@ -747,8 +759,9 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     scoreMoveList(moves, ply, 1);
                     seeDone = true;
                 }
-                if ((mi > 0) || !hashMoveSelected)
-                    selectBest(moves, mi);
+                if ((mi < moveCountLimit) || (lmrCount <= 3))
+                    if ((mi > 0) || !hashMoveSelected)
+                        selectBest(moves, mi);
             }
             Move& m = moves[mi];
             int newCaptureSquare = -1;
@@ -760,21 +773,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             bool doFutility = false;
             if (mayReduce && haveLegalMoves && !givesCheck && !passedPawnPush(pos, m)) {
                 if (normalBound && (bestScore >= -MATE0 / 2)) {
-                    bool lmpOk;
-                    if (pos.getWhiteMove())
-                        lmpOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
-                    else
-                        lmpOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
-                    if (lmpOk) {
-                        int moveCountLimit;
-                        if (depth <= plyScale)          moveCountLimit = 3;
-                        else if (depth <= 2 * plyScale) moveCountLimit = 6;
-                        else if (depth <= 3 * plyScale) moveCountLimit = 12;
-                        else if (depth <= 4 * plyScale) moveCountLimit = 24;
-                        else moveCountLimit = 256;
-                        if (mi >= moveCountLimit)
-                            continue; // Late move pruning
-                    }
+                    if (lmpOk && (mi >= moveCountLimit))
+                        continue; // Late move pruning
                 }
                 if (futilityPrune)
                     doFutility = true;
