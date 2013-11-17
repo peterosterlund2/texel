@@ -228,6 +228,14 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     tt.nextGeneration();
     bool ownBook = par.getBoolPar("OwnBook");
     bool analyseMode = par.getBoolPar("UCI_AnalyseMode");
+    if (analyseMode) {
+        Evaluate eval(*et);
+        int evScore = eval.evalPos(pos) * (pos.getWhiteMove() ? 1 : -1);
+        std::stringstream ss;
+        ss.precision(2);
+        ss << std::fixed << (evScore / 100.0);
+        os << "info string Eval: " << ss.str() << std::endl;
+    }
     auto f = [this,ownBook,analyseMode,moves,maxDepth,maxNodes]() {
         Move m;
         if (ownBook && !analyseMode) {
