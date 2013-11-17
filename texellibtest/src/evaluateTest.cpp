@@ -321,6 +321,14 @@ testMaterial() {
     ASSERT_EQUAL(-pV+qV, material(pos));
 }
 
+static void movePiece(Position& pos, const std::string& from, const std::string& to) {
+    int f = TextIO::getSquare(from);
+    int t = TextIO::getSquare(to);
+    int p = pos.getPiece(f);
+    pos.setPiece(f, Piece::EMPTY);
+    pos.setPiece(t, p);
+}
+
 /**
  * Test of kingSafety method, of class Evaluate.
  */
@@ -328,25 +336,42 @@ static void
 testKingSafety() {
     Position pos = TextIO::readFEN("r3kb1r/p1p1pppp/b2q1n2/4N3/3P4/2N1PQ2/P2B1PPP/R3R1K1 w kq - 0 1");
     int s1 = evalWhite(pos);
-    pos.setPiece(TextIO::getSquare("g7"), Piece::EMPTY);
-    pos.setPiece(TextIO::getSquare("b7"), Piece::BPAWN);
+    movePiece(pos, "g7", "b7");
     int s2 = evalWhite(pos);
     ASSERT(s2 < s1);    // Half-open g-file is bad for white
 
     // Trapping rook with own king is bad
     pos = TextIO::readFEN("rnbqk1nr/pppp1ppp/8/8/1bBpP3/8/PPP2PPP/RNBQK1NR w KQkq - 2 4");
     s1 = evalWhite(pos);
-    pos.setPiece(TextIO::getSquare("e1"), Piece::EMPTY);
-    pos.setPiece(TextIO::getSquare("f1"), Piece::WKING);
+    movePiece(pos, "e1", "f1");
     s2 = evalWhite(pos);
     ASSERT(s2 < s1);
 
     pos = TextIO::readFEN("rnbqk1nr/pppp1ppp/8/8/1bBpPB2/8/PPP1QPPP/RN1K2NR w kq - 0 1");
     s1 = evalWhite(pos);
-    pos.setPiece(TextIO::getSquare("d1"), Piece::EMPTY);
-    pos.setPiece(TextIO::getSquare("c1"), Piece::WKING);
+    movePiece(pos, "d1", "c1");
     s2 = evalWhite(pos);
     ASSERT(s2 < s1);
+
+    // Opposite castling
+    pos = TextIO::readFEN("rnbq1rk1/1p2ppbp/p2p1np1/8/3NP3/2N1BP2/PPPQ2PP/2KR1B1R w - - 0 1");
+    int sKc1Ph2 = evalWhite(pos);
+    movePiece(pos, "c1", "b1");
+    int sKb1Ph2 = evalWhite(pos);
+    movePiece(pos, "h2", "h3");
+    int sKb1Ph3 = evalWhite(pos);
+    movePiece(pos, "b1", "c1");
+    int sKc1Ph3 = evalWhite(pos);
+    ASSERT_EQUAL(sKb1Ph3 - sKb1Ph2, sKc1Ph3 - sKc1Ph2); // Pawn storm bonus same if own king moves within its flank
+
+    int sKg8Ph3 = evalWhite(pos);
+    movePiece(pos, "h3", "h2");
+    int sKg8Ph2 = evalWhite(pos);
+    movePiece(pos, "g8", "h8");
+    int sKh8Ph2 = evalWhite(pos);
+    movePiece(pos, "h2", "h3");
+    int sKh8Ph3 = evalWhite(pos);
+    ASSERT_EQUAL(sKg8Ph3 - sKg8Ph2, sKh8Ph3 - sKh8Ph2); // Pawn storm bonus same if other king moves within its flank
 }
 
 /**

@@ -958,9 +958,9 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
     KingSafetyHashData& ksh = kingSafetyHash[(int)key & (kingSafetyHash.size() - 1)];
     if (ksh.key != key) {
         int score = 0;
-        U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
-        U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
-        {
+        const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
+        const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
+        { // White pawn shelter bonus
             int safety = 0;
             int halfOpenFiles = 0;
             if (Position::getY(pos.wKingSq()) < 2) {
@@ -990,7 +990,7 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
             const int kSafety = (safety - 9) * 15 - halfOpenFiles;
             score += kSafety;
         }
-        {
+        { // Black pawn shelter bonus
             int safety = 0;
             int halfOpenFiles = 0;
             if (Position::getY(pos.bKingSq()) >= 6) {
@@ -1020,6 +1020,27 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
             const int kSafety = (safety - 9) * 15 - halfOpenFiles;
             score -= kSafety;
         }
+        // Pawn storm bonus
+        static const int kingZone[8] = {0,0,0, 1,1, 2,2,2};
+        static const U64 pStormMask[3] = { 0x0707070707070707ULL, 0, 0xE0E0E0E0E0E0E0E0ULL };
+        const int wKingZone = kingZone[Position::getX(pos.wKingSq())];
+        const int bKingZone = kingZone[Position::getX(pos.bKingSq())];
+        const int kingDiff = std::abs(wKingZone - bKingZone);
+        if (kingDiff > 1) {
+            U64 m = wPawns & pStormMask[bKingZone];
+            while (m != 0) {
+                int sq = BitBoard::numberOfTrailingZeros(m);
+                score += 4*(Position::getY(sq)-5);
+                m &= m - 1;
+            }
+            m = bPawns & pStormMask[wKingZone];
+            while (m != 0) {
+                int sq = BitBoard::numberOfTrailingZeros(m);
+                score += 4*(Position::getY(sq)-2);
+                m &= m - 1;
+            }
+        }
+
         ksh.key = key;
         ksh.score = score;
     }
