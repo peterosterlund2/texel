@@ -638,11 +638,9 @@ MoveGen::isLegal(Position& pos, const Move& m, bool isInCheck) {
                 ((BitBoard::knightAttacks[kSq] & pos.pieceTypeBB(knight) & toMask) == 0))
                 return false;
         }
-        pos.makeMove(m, ui);
-        pos.setWhiteMove(!pos.getWhiteMove());
+        pos.makeMoveB(m, ui);
         bool legal = !inCheck(pos);
-        pos.setWhiteMove(!pos.getWhiteMove());
-        pos.unMakeMove(m, ui);
+        pos.unMakeMoveB(m, ui);
         return legal;
     } else {
         if (m.from() == kSq) {
@@ -658,11 +656,9 @@ MoveGen::isLegal(Position& pos, const Move& m, bool isInCheck) {
                 else if (BitBoard::getDirection(kSq, m.from()) == BitBoard::getDirection(kSq, m.to()))
                     return true;
             }
-            pos.makeMove(m, ui);
-            pos.setWhiteMove(!pos.getWhiteMove());
+            pos.makeMoveB(m, ui);
             bool legal = !inCheck(pos);
-            pos.setWhiteMove(!pos.getWhiteMove());
-            pos.unMakeMove(m, ui);
+            pos.unMakeMoveB(m, ui);
             return legal;
         }
     }

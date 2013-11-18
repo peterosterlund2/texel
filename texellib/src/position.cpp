@@ -249,6 +249,51 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
 }
 
 void
+Position::makeMoveB(const Move& move, UndoInfo& ui) {
+    ui.capturedPiece = squares[move.to()];
+    ui.castleMask = castleMask;
+
+    const int p = squares[move.from()];
+    int capP = squares[move.to()];
+    U64 fromMask = 1ULL << move.from();
+
+    int prevEpSquare = epSquare;
+
+    if ((capP != Piece::EMPTY) || ((pieceTypeBB(Piece::WPAWN, Piece::BPAWN) & fromMask) != 0)) {
+        // Handle en passant
+        if (p == Piece::WPAWN) {
+            if (move.to() == prevEpSquare)
+                setPieceB(move.to() - 8, Piece::EMPTY);
+        } else if (p == Piece::BPAWN) {
+            if (move.to() == prevEpSquare)
+                setPieceB(move.to() + 8, Piece::EMPTY);
+        }
+
+        // Perform move
+        setPieceB(move.from(), Piece::EMPTY);
+        // Handle promotion
+        if (move.promoteTo() != Piece::EMPTY) {
+            setPieceB(move.to(), move.promoteTo());
+        } else {
+            setPieceB(move.to(), p);
+        }
+    } else {
+        // Handle castling
+        if ((pieceTypeBB(Piece::WKING, Piece::BKING) & fromMask) != 0) {
+            int k0 = move.from();
+            if (move.to() == k0 + 2) { // O-O
+                movePieceNotPawnB(k0 + 3, k0 + 1);
+            } else if (move.to() == k0 - 2) { // O-O-O
+                movePieceNotPawnB(k0 - 4, k0 - 1);
+            }
+        }
+
+        // Perform move
+        movePieceNotPawnB(move.from(), move.to());
+    }
+}
+
+void
 Position::movePieceNotPawn(int from, int to) {
     const int piece = squares[from];
     hashKey ^= psHashKeys[piece][from];

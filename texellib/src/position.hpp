@@ -119,6 +119,11 @@ public:
 
     void unMakeMove(const Move& move, UndoInfo& ui);
 
+    /** Special make move functions used by MoveGen::isLegal(). Does not update all data members. */
+    void makeMoveB(const Move& move, UndoInfo& ui);
+    void unMakeMoveB(const Move& move, UndoInfo& ui);
+    void setPieceB(int square, int piece);
+
     /**
      * Apply a move to the current position.
      * Special version that only updates enough of the state for the SEE function to be happy.
@@ -190,6 +195,7 @@ public:
 private:
     /** Move a non-pawn piece to an empty square. */
     void movePieceNotPawn(int from, int to);
+    void movePieceNotPawnB(int from, int to);
 
     void removeCastleRights(int square);
 
@@ -429,6 +435,92 @@ Position::unMakeMove(const Move& move, UndoInfo& ui) {
         } else if (p == Piece::BPAWN) {
             setPiece(move.to() + 8, Piece::WPAWN);
         }
+    }
+}
+
+inline void
+Position::unMakeMoveB(const Move& move, UndoInfo& ui) {
+    int p = squares[move.to()];
+    setPieceB(move.from(), p);
+    setPieceB(move.to(), ui.capturedPiece);
+    bool wtm = whiteMove;
+    if (move.promoteTo() != Piece::EMPTY) {
+        p = wtm ? Piece::WPAWN : Piece::BPAWN;
+        setPieceB(move.from(), p);
+    }
+
+    // Handle castling
+    int king = wtm ? Piece::WKING : Piece::BKING;
+    if (p == king) {
+        int k0 = move.from();
+        if (move.to() == k0 + 2) { // O-O
+            movePieceNotPawnB(k0 + 1, k0 + 3);
+        } else if (move.to() == k0 - 2) { // O-O-O
+            movePieceNotPawnB(k0 - 1, k0 - 4);
+        }
+    }
+
+    // Handle en passant
+    if (move.to() == epSquare) {
+        if (p == Piece::WPAWN) {
+            setPieceB(move.to() - 8, Piece::BPAWN);
+        } else if (p == Piece::BPAWN) {
+            setPieceB(move.to() + 8, Piece::WPAWN);
+        }
+    }
+}
+
+inline void
+Position::setPieceB(int square, int piece) {
+    int removedPiece = squares[square];
+    squares[square] = piece;
+
+    // Update bitboards
+    const U64 sqMask = 1ULL << square;
+    pieceTypeBB_[removedPiece] &= ~sqMask;
+    pieceTypeBB_[piece] |= sqMask;
+
+    if (removedPiece != Piece::EMPTY) {
+        if (Piece::isWhite(removedPiece))
+            whiteBB_ &= ~sqMask;
+        else
+            blackBB_ &= ~sqMask;
+    }
+
+    if (piece != Piece::EMPTY) {
+        if (Piece::isWhite(piece)) {
+            whiteBB_ |= sqMask;
+            if (piece == Piece::WKING)
+                wKingSq_ = square;
+        } else {
+            blackBB_ |= sqMask;
+            if (piece == Piece::BKING)
+                bKingSq_ = square;
+        }
+    }
+}
+
+inline void
+Position::movePieceNotPawnB(int from, int to) {
+    const int piece = squares[from];
+
+    squares[from] = Piece::EMPTY;
+    squares[to] = piece;
+
+    const U64 sqMaskF = 1ULL << from;
+    const U64 sqMaskT = 1ULL << to;
+    pieceTypeBB_[piece] &= ~sqMaskF;
+    pieceTypeBB_[piece] |= sqMaskT;
+    if (Piece::isWhite(piece)) {
+        whiteBB_ &= ~sqMaskF;
+        whiteBB_ |= sqMaskT;
+        if (piece == Piece::WKING)
+            wKingSq_ = to;
+    } else {
+        blackBB_ &= ~sqMaskF;
+        blackBB_ |= sqMaskT;
+        if (piece == Piece::BKING)
+            bKingSq_ = to;
     }
 }
 
