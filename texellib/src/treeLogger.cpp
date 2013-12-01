@@ -398,18 +398,28 @@ TreeLoggerReader::mainLoop() {
                         if ((ee.scoreType == TType::T_EXACT) && (ee.score > se.beta))
                             continue;
                         if ((d > bestDepth) || ((d == bestDepth) && (-ee.score > bestScore))) {
-                            if ((currIndex >= 0) && (i+1 < children.size())) {
-                                StartEntry se2 {};
-                                EndEntry ee2 {};
-                                bool haveEE2 = readEntries(children[i+1], se2, ee2);
-                                if (haveEE2 && (se2.depth == d) && (se2.move == se.move) &&
-                                    ((ee2.scoreType == TType::T_GE) ||
-                                     ((ee2.scoreType == TType::T_EXACT) && (ee2.score == ee.score))))
-                                    continue;
+                            bool falseFH = false;
+                            if (ee.scoreType == TType::T_LE) {
+                                for (size_t ci = i+1; ci < children.size(); ci++) {
+                                    StartEntry se2 {};
+                                    EndEntry ee2 {};
+                                    bool haveEE2 = readEntries(children[ci], se2, ee2);
+                                    if (!haveEE2 || !(se2.move == se.move))
+                                        break;
+                                    if ((ee2.scoreType == TType::T_GE) ||
+                                        ((ee2.scoreType == TType::T_EXACT) && (ee2.score > ee.score))) {
+                                        falseFH = true;
+                                        break;
+                                    }
+                                    if (ee2.scoreType == TType::T_EXACT)
+                                        break;
+                                }
                             }
-                            printNodeInfo(children[i], i, m);
-                            bestDepth = d;
-                            bestScore = -ee.score;
+                            if (!falseFH) {
+                                printNodeInfo(children[i], i, m);
+                                bestDepth = d;
+                                bestScore = -ee.score;
+                            }
                         }
                     }
                 } else {
