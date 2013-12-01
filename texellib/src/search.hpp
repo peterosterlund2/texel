@@ -145,7 +145,7 @@ private:
               int posHashListSize0);
 
     /** Report PV information to listener. */
-    void notifyPV(int depth, int score, bool uBound, bool lBound, const Move& m);
+    void notifyPV(int depth, bool uBound, bool lBound, const Move& m);
 
     /** Report search statistics to listener. */
     void notifyStats();
