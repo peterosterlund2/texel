@@ -80,7 +80,8 @@ private:
         void notifyCurrMove(const Move& m, int moveNr);
 
         void notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
-                      bool upperBound, bool lowerBound, const std::vector<Move>& pv);
+                      bool upperBound, bool lowerBound, const std::vector<Move>& pv,
+                      int multiPVIndex);
 
         void notifyStats(U64 nodes, int nps, int time);
 

@@ -72,7 +72,7 @@ public:
         virtual void notifyCurrMove(const Move& m, int moveNr) = 0;
         virtual void notifyPV(int depth, int score, int time, U64 nodes, int nps,
                               bool isMate, bool upperBound, bool lowerBound,
-                              const std::vector<Move>& pv) = 0;
+                              const std::vector<Move>& pv, int multiPVIndex) = 0;
         virtual void notifyStats(U64 nodes, int nps, int time) = 0;
     };
 
@@ -103,7 +103,8 @@ public:
     void setStrength(int strength, U64 randomSeed);
 
     Move iterativeDeepening(const MoveGen::MoveList& scMovesIn,
-                            int maxDepth, U64 initialMaxNodes, bool verbose);
+                            int maxDepth, U64 initialMaxNodes, bool verbose,
+                            int maxPV = 1);
 
     /**
      * Main recursive search algorithm.
@@ -144,8 +145,36 @@ private:
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
               int posHashListSize0);
 
+    /** Information used for move ordering at root and for PV reporting. */
+    struct MoveInfo {
+        Move move;
+        U64 nodes;
+        int depth, alpha, beta;
+        std::vector<Move> pv;
+        MoveInfo(const Move& m, int n)
+            : move(m), nodes(n), depth(0), alpha(0), beta(0) {}
+
+        int score() const { return move.score(); }
+
+        struct SortByScore {
+            bool operator()(const MoveInfo& mi1, const MoveInfo& mi2) const {
+                return mi1.move.score() > mi2.move.score();
+            }
+        };
+        struct SortByNodes {
+            bool operator()(const MoveInfo& mi1, const MoveInfo& mi2) {
+                return mi1.nodes > mi2.nodes;
+            }
+        };
+    };
+
+    /** Store depth, alpha, beta, score and pv in scMoves[mi]. */
+    void storeSearchResult(std::vector<MoveInfo>& scMoves, int mi, int depth,
+                           int alpha, int beta, int score);
+
     /** Report PV information to listener. */
-    void notifyPV(int depth, bool uBound, bool lBound, const Move& m);
+    void notifyPV(const std::vector<MoveInfo>& moveInfo, int mi, int maxPV);
+    void notifyPV(const MoveInfo& info, int multiPVIndex);
 
     /** Report search statistics to listener. */
     void notifyStats();

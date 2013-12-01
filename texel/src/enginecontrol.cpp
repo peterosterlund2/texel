@@ -58,7 +58,8 @@ EngineControl::SearchListener::notifyCurrMove(const Move& m, int moveNr) {
 
 void
 EngineControl::SearchListener::notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
-                                        bool upperBound, bool lowerBound, const std::vector<Move>& pv) {
+                                        bool upperBound, bool lowerBound, const std::vector<Move>& pv,
+                                        int multiPVIndex) {
 //    std::lock_guard<std::mutex> L(Logger::getLogMutex());
     std::string pvBuf;
     for (size_t i = 0; i < pv.size(); i++) {
@@ -73,7 +74,10 @@ EngineControl::SearchListener::notifyPV(int depth, int score, int time, U64 node
     }
     os << "info depth " << depth << " score " << (isMate ? "mate " : "cp ")
        << score << bound << " time " << time << " nodes " << nodes
-       << " nps " << nps << " pv" << pvBuf << std::endl;
+       << " nps " << nps;
+    if (multiPVIndex >= 0)
+        os << " multipv " << (multiPVIndex + 1);
+    os << " pv" << pvBuf << std::endl;
 }
 
 void
@@ -228,6 +232,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     tt.nextGeneration();
     bool ownBook = par.getBoolPar("OwnBook");
     bool analyseMode = par.getBoolPar("UCI_AnalyseMode");
+    int maxPV = (infinite || analyseMode) ? par.getIntPar("MultiPV") : 1;
     if (analyseMode) {
         Evaluate eval(*et);
         int evScore = eval.evalPos(pos) * (pos.getWhiteMove() ? 1 : -1);
@@ -236,14 +241,14 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
         ss << std::fixed << (evScore / 100.0);
         os << "info string Eval: " << ss.str() << std::endl;
     }
-    auto f = [this,ownBook,analyseMode,moves,maxDepth,maxNodes]() {
+    auto f = [this,ownBook,analyseMode,moves,maxDepth,maxNodes,maxPV]() {
         Move m;
         if (ownBook && !analyseMode) {
             Book book(false);
             book.getBookMove(pos, m);
         }
         if (m.isEmpty())
-            m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, false);
+            m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, false, maxPV);
         while (ponder || infinite) {
             // We should not respond until told to do so. Just wait until
             // we are allowed to respond.

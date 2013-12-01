@@ -92,28 +92,11 @@ Search::setStrength(int strength, U64 randomSeed) {
 Move
 Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                            int maxDepth, U64 initialMaxNodes,
-                           bool verbose) {
+                           bool verbose, int maxPV) {
     tStart = currentTimeMillis();
     totalNodes = 0;
     if (scMovesIn.size <= 0)
         return Move(); // No moves to search
-
-    struct MoveInfo {
-        Move move;
-        U64 nodes;
-        MoveInfo(const Move& m, int n) { move = m;  nodes = n; }
-
-        struct SortByScore {
-            bool operator()(const MoveInfo& mi1, const MoveInfo& mi2) const {
-                return mi1.move.score() > mi2.move.score();
-            }
-        };
-        struct SortByNodes {
-            bool operator()(const MoveInfo& mi1, const MoveInfo& mi2) {
-                return mi1.nodes > mi2.nodes;
-            }
-        };
-    };
 
     std::vector<MoveInfo> scMoves;
     {
@@ -148,12 +131,12 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     maxNodes = initialMaxNodes;
     nodesToGo = 0;
     Position origPos(pos);
-    int bestScoreLastIter = 0;
     bool firstIteration = true;
-    Move bestMove = scMoves[0].move;
+    Move bestMove = scMoves[0].move; // bestMove is != scMoves[0].move when there is an unresolved fail high
     this->verbose = verbose;
     if ((maxDepth < 0) || (maxDepth > MAX_SEARCH_DEPTH))
         maxDepth = MAX_SEARCH_DEPTH;
+    maxPV = std::min(maxPV, (int)scMoves.size());
     for (size_t i = 0; i < COUNT_OF(searchTreeInfo); i++)
         searchTreeInfo[i].allowNullMove = true;
     ht.reScale();
@@ -161,12 +144,20 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     for (int depthS = plyScale; ; depthS += plyScale, firstIteration = false) {
         initNodeStats();
         if (listener) listener->notifyDepth(depthS/plyScale);
-        const int aspirationDelta = (std::abs(bestScoreLastIter) <= MATE0 / 2) ? 15 : 1000;
-        int alpha = firstIteration ? -MATE0 : std::max(bestScoreLastIter - aspirationDelta, -MATE0);
-        int bestScore = -MATE0 * 2;
+        int aspirationDelta = 0;
+        int alpha = 0;
         UndoInfo ui;
         bool needMoreTime = false;
         for (int mi = 0; mi < (int)scMoves.size(); mi++) {
+            if (mi < maxPV)
+                aspirationDelta = (std::abs(scMoves[mi].score()) <= MATE0 / 2) ? 15 : 1000;
+            if (firstIteration)
+                alpha = -MATE0;
+            else if (mi < maxPV)
+                alpha = std::max(scMoves[mi].score() - aspirationDelta, -MATE0);
+            else
+                alpha = scMoves[maxPV-1].score();
+
             searchNeedMoreTime = (mi > 0);
             Move& m = scMoves[mi].move;
             pd.topMove = m;
@@ -178,14 +169,16 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             int beta;
             if (firstIteration)
                 beta = MATE0;
+            else if (mi < maxPV)
+                beta = std::min(scMoves[mi].score() + aspirationDelta, MATE0);
             else
-                beta = (mi == 0) ? std::min(bestScoreLastIter + aspirationDelta, MATE0) : alpha + 1;
+                beta = alpha + 1;
 
             int lmrS = 0;
             bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
             bool isPromotion = (m.promoteTo() != Piece::EMPTY);
             if ((depthS >= 3*plyScale) && !isCapture && !isPromotion &&
-                !givesCheck && !passedPawnPush(pos, m) && (mi >= 3)) {
+                !givesCheck && !passedPawnPush(pos, m) && (mi >= 2+maxPV)) {
                 lmrS = plyScale;
             }
             pos.makeMove(m, ui);
@@ -202,15 +195,12 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             U64 nodesThisMove = nodes + qNodes;
             posHashListSize--;
             pos.unMakeMove(m, ui);
-            m.setScore(score);
-            bool pvNotified = false;
-            if ((verbose && firstIteration) || (score > bestScore)) {
-                notifyPV(depthS/plyScale, score<=alpha, score>=beta, m);
-                pvNotified = true;
-            }
+            storeSearchResult(scMoves, mi, depthS, alpha, beta, score);
+            if ((verbose && firstIteration) || (mi < maxPV) || (score > scMoves[maxPV-1].score()))
+                notifyPV(scMoves, mi, maxPV);
             int betaRetryDelta = (mi == 0) ? aspirationDelta * 2 : aspirationDelta;
             int alphaRetryDelta = aspirationDelta * 2;
-            while ((score >= beta) || ((mi == 0) && (score <= alpha))) {
+            while ((score >= beta) || ((mi < maxPV) && (score <= alpha))) {
                 nodes = qNodes = 0;
                 posHashList[posHashListSize++] = pos.zobristHash();
                 bool fh = score >= beta;
@@ -234,21 +224,18 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                 nodesThisMove += nodes + qNodes;
                 posHashListSize--;
                 pos.unMakeMove(m, ui);
-                m.setScore(score);
-                notifyPV(depthS/plyScale, score<=alpha, score>=beta, m);
-                pvNotified = true;
+                storeSearchResult(scMoves, mi, depthS, alpha, beta, score);
+                notifyPV(scMoves, mi, maxPV);
             }
-            if (pvNotified && (score <= bestScore))
-                notifyPV(depthS/plyScale, false, false, scMoves[0].move);
             scMoves[mi].nodes += nodesThisMove;
-            if (score > bestScore) {
-                if (!firstIteration)
-                    alpha = score;
-                bestScore = score;
+            if ((mi < maxPV) || (score > scMoves[maxPV-1].move.score())) {
                 MoveInfo tmp = scMoves[mi];
-                for (int i = mi - 1; i >= 0;  i--)
-                    scMoves[i + 1] = scMoves[i];
-                scMoves[0] = tmp;
+                int i = mi;
+                while ((i > 0) && (scMoves[i-1].score() < tmp.score())) {
+                    scMoves[i] = scMoves[i-1];
+                    i--;
+                }
+                scMoves[i] = tmp;
             }
             bestMove = scMoves[0].move;
             if (!firstIteration) {
@@ -285,17 +272,16 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         if (maxNodes >= 0)
             if (getTotalNodes() >= maxNodes)
                 break;
-        int plyToMate = MATE0 - std::abs(bestScore);
+        int plyToMate = MATE0 - std::abs(scMoves[0].score());
         if (depthS >= plyToMate * plyScale)
             break;
-        bestScoreLastIter = bestScore;
         if (tNow > tStart)
             pd.npsInfo.setBaseNps(getTotalNodesThisThread() * 1000.0 / (tNow - tStart));
         if (firstIteration) {
-            std::stable_sort(scMoves.begin()+1, scMoves.end(), MoveInfo::SortByScore());
+            std::stable_sort(scMoves.begin()+maxPV, scMoves.end(), MoveInfo::SortByScore());
         } else {
             // Moves that were hard to search should be searched early in the next iteration
-            std::stable_sort(scMoves.begin()+1, scMoves.end(), MoveInfo::SortByNodes());
+            std::stable_sort(scMoves.begin()+maxPV, scMoves.end(), MoveInfo::SortByNodes());
         }
 //        std::cout << "fhInfo depth:" << depthS / plyScale << std::endl;
 //        pd.fhInfo.print(std::cout);
@@ -313,11 +299,53 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
 }
 
 void
-Search::notifyPV(int depth, bool uBound, bool lBound, const Move& m) {
-    int score = m.score();
+Search::storeSearchResult(std::vector<MoveInfo>& scMoves, int mi, int depth,
+                          int alpha, int beta, int score) {
+//    std::cout << "d:" << depth/plyScale << " mi:" << mi << " a:" << alpha
+//              << " b:" << beta << " s:" << score << std::endl;
+    scMoves[mi].depth = depth;
+    scMoves[mi].alpha = alpha;
+    scMoves[mi].beta = beta;
+    scMoves[mi].move.setScore(score);
+    scMoves[mi].pv.clear();
+    tt.extractPVMoves(pos, scMoves[mi].move, scMoves[mi].pv);
+}
+
+void
+Search::notifyPV(const std::vector<MoveInfo>& moveInfo, int mi, int maxPV) {
+    bool miNotified = false;
+    for (int i = 0, n = 0; n < maxPV; i++) {
+        if (!miNotified && (moveInfo[mi].score() > moveInfo[i].score()) &&
+            (moveInfo[mi].score() > moveInfo[mi].alpha)) {
+            notifyPV(moveInfo[mi], maxPV > 1 ? n : -1);
+            miNotified = true;
+            n++;
+            if (n >= maxPV)
+                break;
+        }
+        if (i == mi) {
+            if (!miNotified) {
+                notifyPV(moveInfo[mi], maxPV > 1 ? n : -1);
+                miNotified = true;
+                n++;
+            }
+        } else {
+            notifyPV(moveInfo[i], maxPV > 1 ? n : -1);
+            n++;
+        }
+    }
+}
+
+void
+Search::notifyPV(const MoveInfo& info, int multiPVIndex) {
+    if (info.depth <= 0)
+        return;
+    bool uBound = info.score() <= info.alpha;
+    bool lBound = info.score() >= info.beta;
+    int score = info.move.score();
     if (verbose) {
         std::stringstream ss;
-        ss << std::setw(6) << std::left << TextIO::moveToString(pos, m, false)
+        ss << std::setw(6) << std::left << TextIO::moveToString(pos, info.move, false)
            << ' ' << std::setw(6) << std::right << score
            << ' ' << std::setw(6) << nodes
            << ' ' << std::setw(6) << qNodes;
@@ -326,11 +354,11 @@ Search::notifyPV(int depth, bool uBound, bool lBound, const Move& m) {
         else if (lBound)
             ss << " >=";
         else {
-            std::string PV = TextIO::moveToString(pos, m, false) + " ";
+            std::string PV = TextIO::moveToString(pos, info.move, false) + " ";
             UndoInfo ui;
-            pos.makeMove(m, ui);
+            pos.makeMove(info.move, ui);
             PV += tt.extractPV(pos);
-            pos.unMakeMove(m, ui);
+            pos.unMakeMove(info.move, ui);
             ss << ' ' << PV;
         }
         std::cout << ss.str() << std::endl;
@@ -349,9 +377,8 @@ Search::notifyPV(int depth, bool uBound, bool lBound, const Move& m) {
     int time = (int) (tNow - tStart);
     S64 totNodes = getTotalNodes();
     int nps = (time > 0) ? (int)(totNodes / (time / 1000.0)) : 0;
-    std::vector<Move> pv;
-    tt.extractPVMoves(pos, m, pv);
-    listener->notifyPV(depth, score, time, totNodes, nps, isMate, uBound, lBound, pv);
+    listener->notifyPV(info.depth/plyScale, score, time, totNodes, nps, isMate,
+                       uBound, lBound, info.pv, multiPVIndex);
 }
 
 void
