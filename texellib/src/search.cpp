@@ -314,10 +314,12 @@ Search::storeSearchResult(std::vector<MoveInfo>& scMoves, int mi, int depth,
 void
 Search::notifyPV(const std::vector<MoveInfo>& moveInfo, int mi, int maxPV) {
     bool miNotified = false;
+    int lastReportedDepth = -1;
     for (int i = 0, n = 0; n < maxPV; i++) {
         if (!miNotified && (moveInfo[mi].score() > moveInfo[i].score()) &&
             (moveInfo[mi].score() > moveInfo[mi].alpha)) {
             notifyPV(moveInfo[mi], maxPV > 1 ? n : -1);
+            lastReportedDepth = moveInfo[mi].depth;
             miNotified = true;
             n++;
             if (n >= maxPV)
@@ -326,14 +328,18 @@ Search::notifyPV(const std::vector<MoveInfo>& moveInfo, int mi, int maxPV) {
         if (i == mi) {
             if (!miNotified) {
                 notifyPV(moveInfo[mi], maxPV > 1 ? n : -1);
+                lastReportedDepth = moveInfo[mi].depth;
                 miNotified = true;
                 n++;
             }
         } else {
             notifyPV(moveInfo[i], maxPV > 1 ? n : -1);
+            lastReportedDepth = moveInfo[i].depth;
             n++;
         }
     }
+    if (listener && (moveInfo[mi].depth != lastReportedDepth))
+        listener->notifyDepth(moveInfo[mi].depth/plyScale);
 }
 
 void
