@@ -128,7 +128,7 @@ private:
     void computeMaterialScore(const Position& pos, MaterialHashData& mhd) const;
 
     /** Implement the "when ahead trade pieces, when behind trade pawns" rule. */
-    int tradeBonus(const Position& pos) const;
+    int tradeBonus(const Position& pos, int wCorr, int bCorr) const;
 
     /** Score castling ability. */
     int castleBonus(const Position& pos);

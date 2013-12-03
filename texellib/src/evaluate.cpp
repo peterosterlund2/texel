@@ -280,11 +280,33 @@ Evaluate::evalPos(const Position& pos) {
     return score;
 }
 
+/** Compensate for the fact that many knights are stronger compared to queens
+ * than what the default material scores would predict. */
+static inline int correctionNvsQ(int n, int q) {
+    if (n <= q+1)
+        return 0;
+    int knightBonus = 0;
+    if (q == 1)
+        knightBonus = 70;
+    else if (q == 2)
+        knightBonus = 330;
+    else if (q >= 3)
+        knightBonus = 480;
+    int corr = knightBonus * (n - q - 1);
+    return corr;
+}
+
 void
 Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const {
     // Compute material part of score
     int score = pos.wMtrl() - pos.bMtrl();
-    score += tradeBonus(pos);
+    int wCorr = correctionNvsQ(BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT)),
+                               BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN)));
+    int bCorr = correctionNvsQ(BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT)),
+                               BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)));
+    score += wCorr - bCorr;
+    score += tradeBonus(pos, wCorr, bCorr);
+
     { // Redundancy of major pieces
         int wMajor = BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN, Piece::WROOK));
         int bMajor = BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN, Piece::BROOK));
@@ -311,6 +333,10 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
         const int hiMtrl = qV + 2 * rV + 2 * bV;
         mhd.wPawnIPF = interpolate(bMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
         mhd.bPawnIPF = interpolate(wMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
+        if (wCorr > 100)
+            mhd.wPawnIPF = mhd.wPawnIPF * 100 / wCorr;
+        if (bCorr > 100)
+            mhd.bPawnIPF = mhd.bPawnIPF * 100 / bCorr;
     }
     { // Knight/bishop
         const int loMtrl = nV + 8 * pV;
@@ -337,6 +363,8 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
         const int hiMtrl = qV + 2 * rV + 2 * bV + 2 * nV;
         const int m = (wMtrlNoPawns + bMtrlNoPawns) / 2;
         mhd.kingSafetyIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
+        if (wCorr + bCorr > 200)
+            mhd.kingSafetyIPF = mhd.kingSafetyIPF * 200 / (wCorr + bCorr);
     }
     { // Different color bishops
         const int loMtrl = 2 * bV;
@@ -353,9 +381,9 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
 }
 
 int
-Evaluate::tradeBonus(const Position& pos) const {
-    const int wM = pos.wMtrl();
-    const int bM = pos.bMtrl();
+Evaluate::tradeBonus(const Position& pos, int wCorr, int bCorr) const {
+    const int wM = pos.wMtrl() + wCorr;
+    const int bM = pos.bMtrl() + bCorr;
     const int wPawn = pos.wMtrlPawns();
     const int bPawn = pos.bMtrlPawns();
     const int deltaScore = wM - bM;

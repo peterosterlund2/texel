@@ -319,6 +319,16 @@ testMaterial() {
     ASSERT_EQUAL(-pV, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "Qxd2"), ui);
     ASSERT_EQUAL(-pV+qV, material(pos));
+
+    pos = TextIO::readFEN("6k1/ppp2pp1/1nnnnn1p/8/8/7P/PPP2PP1/3QQ1K1 w - - 0 1");
+    int s1 = evalWhite(pos);
+    ASSERT(s1 < 0);
+    pos = TextIO::readFEN("6k1/ppp2pp1/nnnnnnnp/8/8/7P/PPP2PP1/Q2QQ1K1 w - - 0 1");
+    int s2 = evalWhite(pos);
+    ASSERT(s2 < s1);
+    pos = TextIO::readFEN("nnnnknnn/pppppppp/8/8/8/8/PPPPPPPP/Q2QK2Q w - - 0 1");
+    int s3 = evalWhite(pos);
+    ASSERT(s3 < 0);
 }
 
 static void movePiece(Position& pos, const std::string& from, const std::string& to) {
