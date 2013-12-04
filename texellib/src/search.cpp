@@ -417,6 +417,11 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
     typedef typename SplitPointTraits<smp>::SpHolder SplitPointHolder;
 
+    /** Mate distance pruning */
+    beta = std::min(beta, MATE0-ply-1);
+    if (alpha >= beta)
+        return alpha;
+
     if (logFile.isOpened()) {
         const SearchTreeInfo& sti = searchTreeInfo[ply-1];
         U64 idx = logFile.logNodeStart(sti.nodeIdx, sti.currentMove, alpha, beta, ply, depth);
