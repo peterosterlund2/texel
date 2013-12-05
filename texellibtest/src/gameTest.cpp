@@ -26,8 +26,11 @@
 #include "gameTest.hpp"
 #include "game.hpp"
 #include "humanPlayer.hpp"
+#include "evaluate.hpp"
+#include "moveGen.hpp"
 #include "textio.hpp"
 #include "util/timeUtil.hpp"
+#include "evaluateTest.hpp"
 
 #include <iostream>
 
@@ -397,8 +400,30 @@ GameTest::testInsufficientMaterial() {
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
 }
 
+/**
+ * Test of perfT method, of class Game.
+ */
 void
-GameTest::doTestPerfT(Position& pos, int maxDepth, U64 expectedNodeCounts[]) {
+GameTest::testPerfT() {
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
+    game.processString("new");
+    U64 n1[] = { 20, 400, 8902, 197281, 4865609, 119060324, 3195901860ULL, 84998978956ULL};
+    doTestPerfTFast(game.pos, 5, n1);
+    doTestPerfTExtensive(game.pos, 4, n1);
+
+    game.processString("setpos 8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -");
+    U64 n2[] = { 14, 191, 2812, 43238, 674624, 11030083, 178633661 };
+    doTestPerfTFast(game.pos, 5, n2);
+    doTestPerfTExtensive(game.pos, 4, n2);
+
+    game.processString("setpos r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+    U64 n3[] = { 48, 2039, 97862, 4085603, 193690690 };
+    doTestPerfTFast(game.pos, 4, n3);
+    doTestPerfTExtensive(game.pos, 3, n3);
+}
+
+void
+GameTest::doTestPerfTFast(Position& pos, int maxDepth, U64 expectedNodeCounts[]) {
     for (int d = 1; d <= maxDepth; d++) {
         S64 t0 = currentTimeMillis();
         U64 nodes = Game::perfT(pos, d);
@@ -412,23 +437,52 @@ GameTest::doTestPerfT(Position& pos, int maxDepth, U64 expectedNodeCounts[]) {
     }
 }
 
-/**
- * Test of perfT method, of class Game.
- */
 void
-GameTest::testPerfT() {
-    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
-    game.processString("new");
-    U64 n1[] = { 20, 400, 8902, 197281, 4865609, 119060324, 3195901860ULL, 84998978956ULL};
-    doTestPerfT(game.pos, 5, n1);
+GameTest::doTestPerfTExtensive(Position& pos, int maxDepth, U64 expectedNodeCounts[]) {
+    auto et = Evaluate::getEvalHashTables();
+    Evaluate eval(*et);
+    for (int d = 1; d <= maxDepth; d++) {
+        S64 t0 = currentTimeMillis();
+        U64 nodes = perfT(pos, d, eval);
+        S64 t1 = currentTimeMillis();
+        std::stringstream ss;
+        ss.precision(3);
+        ss << "perft(" << d << ") = " << nodes
+           << ", t=" << std::fixed << ((t1 - t0)*1e-3) << 's';
+        std::cout << ss.str() << std::endl;
+        ASSERT_EQUAL(expectedNodeCounts[d-1], nodes);
+    }
+}
 
-    game.processString("setpos 8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -");
-    U64 n2[] = { 14, 191, 2812, 43238, 674624, 11030083, 178633661 };
-    doTestPerfT(game.pos, 5, n2);
-
-    game.processString("setpos r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
-    U64 n3[] = { 48, 2039, 97862, 4085603, 193690690 };
-    doTestPerfT(game.pos, 4, n3);
+U64
+GameTest::perfT(Position& pos, int depth, Evaluate& eval) {
+    evalWhite(eval, pos);
+    if (depth == 0)
+        return 1;
+    U64 nodes = 0;
+    MoveGen::MoveList moves;
+    MoveGen::pseudoLegalMoves(pos, moves);
+    MoveGen::removeIllegal(pos, moves);
+    UndoInfo ui;
+    for (int mi = 0; mi < moves.size; mi++) {
+        const Move& m = moves[mi];
+        bool givesCheck = MoveGen::givesCheck(pos, m);
+        pos.makeMove(m, ui);
+        bool inCheck = MoveGen::inCheck(pos);
+        ASSERT_EQUAL(givesCheck, inCheck);
+        nodes += perfT(pos, depth - 1, eval);
+        pos.unMakeMove(m, ui);
+        {
+            Position pos2(pos);
+            pos2.makeSEEMove(m, ui);
+            pos2.unMakeSEEMove(m, ui);
+            ASSERT(pos.equals(pos2));
+            pos2.makeMoveB(m, ui);
+            pos2.unMakeMoveB(m, ui);
+            ASSERT(pos.equals(pos2));
+        }
+    }
+    return nodes;
 }
 
 

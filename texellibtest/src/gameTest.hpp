@@ -30,6 +30,7 @@
 #include "util/util.hpp"
 
 class Position;
+class Evaluate;
 
 class GameTest : public SuiteBase {
 public:
@@ -45,7 +46,9 @@ private:
     static void testProcessString();
     static void testGetGameState();
     static void testInsufficientMaterial();
-    static void doTestPerfT(Position& pos, int maxDepth, U64 expectedNodeCounts[]);
+    static void doTestPerfTFast(Position& pos, int maxDepth, U64 expectedNodeCounts[]);
+    static void doTestPerfTExtensive(Position& pos, int maxDepth, U64 expectedNodeCounts[]);
+    static U64 perfT(Position& pos, int depth, Evaluate& eval);
     static void testPerfT();
 };
 

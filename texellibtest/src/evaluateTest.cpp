@@ -127,6 +127,11 @@ int
 evalWhite(const Position& pos) {
     auto et = Evaluate::getEvalHashTables();
     Evaluate eval(*et);
+    return evalWhite(eval, pos);
+}
+
+int
+evalWhite(Evaluate& eval, const Position& pos) {
     int ret = evalPos(eval, pos);
     Position symPos = swapColors(pos);
     int symScore = evalPos(eval, symPos);
