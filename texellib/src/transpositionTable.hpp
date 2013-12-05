@@ -40,6 +40,19 @@ class Position;
  */
 class TranspositionTable {
 public:
+    struct TTEntryStorage {
+        std::atomic<U64> key;
+        std::atomic<U64> data;
+        TTEntryStorage() {
+            key.store(0, std::memory_order_relaxed);
+            data.store(0, std::memory_order_relaxed);
+        }
+        TTEntryStorage(const TTEntryStorage& a) {
+            key.store(a.key.load(std::memory_order_relaxed), std::memory_order_relaxed);
+            data.store(a.data.load(std::memory_order_relaxed), std::memory_order_relaxed);
+        }
+    };
+
     class TTEntry {
     public:
         /** Set type to T_EMPTY. */
@@ -50,15 +63,15 @@ public:
         }
 
         /** Store in transposition table, encoded for thread safety. */
-        void store(TTEntry& ent) {
-            ACCESS_ONCE(ent.key) = key ^ data;
-            ACCESS_ONCE(ent.data) = data;
+        void store(TTEntryStorage& ent) {
+            ent.key.store(key ^ data, std::memory_order_relaxed);
+            ent.data.store(data, std::memory_order_relaxed);
         }
 
         /** Load from transposition table, decode the thread safety encoding. */
-        void load(const TTEntry& ent) {
-            key = ACCESS_ONCE_CONST(ent.key);
-            data = ACCESS_ONCE_CONST(ent.data);
+        void load(const TTEntryStorage& ent) {
+            key = ent.key.load(std::memory_order_relaxed);
+            data = ent.data.load(std::memory_order_relaxed);
             key ^= data;
         }
 
@@ -175,7 +188,7 @@ private:
     static U64 getStoredKey(U64 key);
 
 
-    vector_aligned<TTEntry> table;
+    vector_aligned<TTEntryStorage> table;
     ubyte generation;
 };
 
