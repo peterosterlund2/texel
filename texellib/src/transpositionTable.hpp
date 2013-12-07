@@ -52,6 +52,7 @@ public:
             data.store(a.data.load(std::memory_order_relaxed), std::memory_order_relaxed);
         }
     };
+    static_assert(sizeof(TTEntryStorage) == 16, "TTEntryStorage size wrong");
 
     class TTEntry {
     public:

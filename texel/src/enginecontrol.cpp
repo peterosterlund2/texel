@@ -403,14 +403,14 @@ EngineControl::printOptions(std::ostream& os) {
         case Parameters::CHECK: {
             const Parameters::CheckParam& cp = static_cast<const Parameters::CheckParam&>(*p.get());
             os << "option name " << cp.name << " type check default "
-                    << (cp.defaultValue?"true":"false") << std::endl;
+               << (cp.defaultValue?"true":"false") << std::endl;
             break;
         }
         case Parameters::SPIN: {
             const Parameters::SpinParam& sp = static_cast<const Parameters::SpinParam&>(*p.get());
             os << "option name " << sp.name << " type spin default "
-                    << sp.defaultValue << " min " << sp.minValue
-                    << " max " << sp.maxValue << std::endl;
+               << sp.defaultValue << " min " << sp.minValue
+               << " max " << sp.maxValue << std::endl;
             break;
         }
         case Parameters::COMBO: {
@@ -427,7 +427,7 @@ EngineControl::printOptions(std::ostream& os) {
         case Parameters::STRING: {
             const Parameters::StringParam& sp = static_cast<const Parameters::StringParam&>(*p.get());
             os << "option name " << sp.name << " type string default "
-                    << sp.defaultValue << std::endl;
+               << sp.defaultValue << std::endl;
             break;
         }
         }
