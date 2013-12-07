@@ -182,9 +182,6 @@ private:
     /** Get total number of nodes searched by all threads. */
     S64 getTotalNodes() const;
 
-    /** Return true if move m2 was made possible by move m1. */
-    static bool relatedMoves(const Move& m1, const Move& m2);
-
     /** Return true if move should be skipped in order to make engine play weaker. */
     bool weakPlaySkipMove(const Position& pos, const Move& m, int ply) const;
 
@@ -288,16 +285,6 @@ Search::canClaimDrawRep(const Position& pos, const std::vector<U64>& posHashList
                 return true;
         }
     }
-    return false;
-}
-
-inline bool
-Search::relatedMoves(const Move& m1, const Move& m2) {
-    if ((m1.from() == m1.to()) || (m2.from() == m2.to()))
-        return false;
-    if ((m1.to() == m2.from()) || (m1.from() == m2.to()) ||
-        ((BitBoard::squaresBetween[m2.from()][m2.to()] & (1ULL << m1.from())) != 0))
-        return true;
     return false;
 }
 

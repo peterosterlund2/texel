@@ -631,18 +631,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     if (useTT) tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, score, TType::T_GE, evalScore, hKey);
                 return score;
-            } else {
-                if ((searchTreeInfo[ply-1].lmr > 0) && (depth < 5*plyScale)) {
-                    const Move& m1 = searchTreeInfo[ply-1].currentMove;
-                    const Move& m2 = searchTreeInfo[ply+1].bestMove; // threat move
-                    if (relatedMoves(m1, m2)) {
-                        // if the threat move was made possible by a reduced
-                        // move on the previous ply, the reduction was unsafe.
-                        // Return alpha to trigger a non-reduced re-search.
-                        logFile.logNodeEnd(sti.nodeIdx, alpha, TType::T_LE, evalScore, hKey);
-                        return alpha;
-                    }
-                }
             }
         }
     }
