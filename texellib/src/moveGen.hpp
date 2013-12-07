@@ -206,8 +206,7 @@ private:
     }
 
     template <bool wtm>
-    static void addPawnMovesByMask(MoveList& moveList, const Position& pos, U64 mask,
-                                   int delta, bool allPromotions) {
+    static void addPawnMovesByMask(MoveList& moveList, U64 mask, int delta, bool allPromotions) {
         typedef ColorTraits<wtm> MyColor;
         if (mask == 0)
             return;
@@ -231,8 +230,7 @@ private:
         }
     }
 
-    static void addPawnDoubleMovesByMask(MoveList& moveList, const Position& pos,
-                                         U64 mask, int delta) {
+    static void addPawnDoubleMovesByMask(MoveList& moveList, U64 mask, int delta) {
         while (mask != 0) {
             int sq = BitBoard::numberOfTrailingZeros(mask);
             moveList.addMove(sq + delta, sq, Piece::EMPTY);
@@ -240,7 +238,7 @@ private:
         }
     }
 
-    static void addMovesByMask(MoveList& moveList, const Position& pos, int sq0, U64 mask) {
+    static void addMovesByMask(MoveList& moveList, int sq0, U64 mask) {
         while (mask != 0) {
             int sq = BitBoard::numberOfTrailingZeros(mask);
             moveList.addMove(sq0, sq, Piece::EMPTY);
