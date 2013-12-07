@@ -239,10 +239,10 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             }
             bestMove = scMoves[0].move;
             if (!firstIteration) {
-                U64 timeLimit = needMoreTime ? maxTimeMillis : minTimeMillis;
+                S64 timeLimit = needMoreTime ? maxTimeMillis : minTimeMillis;
                 if (timeLimit >= 0) {
                     U64 tNow = currentTimeMillis();
-                    if (tNow - tStart >= timeLimit)
+                    if (tNow - tStart >= (U64)timeLimit)
                         break;
                 }
             }
