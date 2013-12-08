@@ -53,11 +53,11 @@ public:
 
 private:
     struct Entry {
-        int countSuccess;
-        int countFail;
-        mutable int score;
+        RelaxedShared<int> countSuccess;
+        RelaxedShared<int> countFail;
+        mutable RelaxedShared<int> score;
     };
-    struct Entry ht[Piece::nPieceTypes][64];
+    Entry ht[Piece::nPieceTypes][64];
 };
 
 
@@ -74,7 +74,7 @@ History::addSuccess(const Position& pos, const Move& m, int depth) {
     int val = e.countSuccess + cnt;
     if (val + e.countFail > 1300) {
         val /= 2;
-        e.countFail /= 2;
+        e.countFail = e.countFail / 2;
     }
     e.countSuccess = val;
     e.score = -1;
@@ -88,7 +88,7 @@ History::addFail(const Position& pos, const Move& m, int depth) {
     int val = e.countFail + cnt;
     if (val + e.countSuccess > 1300) {
         val /= 2;
-        e.countSuccess /= 2;
+        e.countSuccess = e.countSuccess / 2;
     }
     e.countFail = val;
     e.score = -1;

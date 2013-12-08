@@ -66,6 +66,8 @@ public:
     }
 };
 
+// ----------------------------------------------------------------------------
+
 /** Split a string using " " as delimiter. Append words to out. */
 inline void
 splitString(const std::string& str, std::vector<std::string>& out)
@@ -127,7 +129,6 @@ startsWith(const std::string& str, const std::string& startsWith) {
             return false;
     return true;
 }
-
 
 /** Return true if vector v contains element e. */
 template <typename T>
@@ -228,6 +229,26 @@ private:
     }
 
     std::atomic<int> value { 0 };
+};
+
+// ----------------------------------------------------------------------------
+
+/** Helper class for shared data where read/write accesses do not have to be sequentially ordered.
+ * This typically generates code as efficient as using a plain T. However using a plain T in this
+ * context would invoke undefined behavior, see section 1.10.21 in the C++11 standard. */
+template <typename T>
+class RelaxedShared {
+public:
+    RelaxedShared<T>() { }
+    RelaxedShared<T>(T value) { set(value); }
+    RelaxedShared<T>(const RelaxedShared<T>& r) { set(r.get()); }
+    RelaxedShared<T>& operator=(const RelaxedShared<T>& r) { set(r.get()); return *this; }
+    RelaxedShared<T>& operator=(const T& t) { set(t); return *this; }
+    operator T() const { return get(); }
+    T get() const { return data.load(std::memory_order_relaxed); }
+    void set(T value) { data.store(value, std::memory_order_relaxed); }
+private:
+    std::atomic<T> data;
 };
 
 #endif /* UTIL_HPP_ */

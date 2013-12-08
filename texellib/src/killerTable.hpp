@@ -59,8 +59,8 @@ private:
     /** There is one KTEntry for each ply in the search tree. */
     struct KTEntry {
         KTEntry() : move0(0), move1(0) { }
-        int move0;
-        int move1;
+        RelaxedShared<int> move0;
+        RelaxedShared<int> move1;
     };
     KTEntry ktList[200];
 };
