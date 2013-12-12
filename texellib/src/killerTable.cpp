@@ -24,3 +24,9 @@
  */
 
 #include "killerTable.hpp"
+
+void
+KillerTable::clear() {
+    for (int i = 0; i < (int)COUNT_OF(ktList); i++)
+        ktList[i] = KTEntry();
+}

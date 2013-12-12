@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,9 +28,9 @@
 
 #include "move.hpp"
 #include "position.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 
-#include <assert.h>
+#include <cassert>
 
 //#define MOVELIST_DEBUG
 
@@ -72,24 +72,33 @@ public:
      * Generate and return a list of pseudo-legal moves.
      * Pseudo-legal means that the moves don't necessarily defend from check threats.
      */
+    template <bool wtm>
+    static void pseudoLegalMoves(const Position& pos, MoveList& moveList);
     static void pseudoLegalMoves(const Position& pos, MoveList& moveList);
 
     /**
      * Generate and return a list of pseudo-legal check evasion moves.
      * Pseudo-legal means that the moves don't necessarily defend from check threats.
      */
+    template <bool wtm>
+    static void checkEvasions(const Position& pos, MoveList& moveList);
     static void checkEvasions(const Position& pos, MoveList& moveList);
 
     /** Generate captures, checks, and possibly some other moves that are too hard to filter out. */
+    template <bool wtm>
+    static void pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList);
     static void pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList);
 
+    /** Generate and return a list of pseudo-legal capture moves. */
+    template <bool wtm>
+    static void pseudoLegalCaptures(const Position& pos, MoveList& moveList);
     static void pseudoLegalCaptures(const Position& pos, MoveList& moveList);
 
     /**
      * Return true if the side to move is in check.
      */
     static bool inCheck(const Position& pos) {
-        int kingSq = pos.getKingSq(pos.whiteMove);
+        int kingSq = pos.getKingSq(pos.getWhiteMove());
         return sqAttacked(pos, kingSq);
     }
 
@@ -102,9 +111,9 @@ public:
      * Return true if the side to move can take the opponents king.
      */
     static bool canTakeKing(Position& pos) {
-        pos.setWhiteMove(!pos.whiteMove);
+        pos.setWhiteMove(!pos.getWhiteMove());
         bool ret = inCheck(pos);
-        pos.setWhiteMove(!pos.whiteMove);
+        pos.setWhiteMove(!pos.getWhiteMove());
         return ret;
     }
 
@@ -112,40 +121,32 @@ public:
      * Return true if a square is attacked by the opposite side.
      */
     static bool sqAttacked(const Position& pos, int sq) {
-        U64 occupied = pos.whiteBB | pos.blackBB;
+        const U64 occupied = pos.occupiedBB();
         return sqAttacked(pos, sq, occupied);
     }
     static bool sqAttacked(const Position& pos, int sq, U64 occupied) {
-        return pos.whiteMove ? sqAttacked<true>(pos, sq, occupied)
+        return pos.getWhiteMove() ? sqAttacked<true>(pos, sq, occupied)
                              : sqAttacked<false>(pos, sq, occupied);
     }
     template <bool wtm>
     static bool sqAttacked(const Position& pos, int sq, U64 occupied) {
+        typedef ColorTraits<!wtm> OtherColor;
+        if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB(OtherColor::KNIGHT)) != 0)
+            return true;
+        if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB(OtherColor::KING)) != 0)
+            return true;
         if (wtm) {
-            if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB[Piece::BKNIGHT]) != 0)
-                return true;
-            if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB[Piece::BKING]) != 0)
-                return true;
-            if ((BitBoard::wPawnAttacks[sq] & pos.pieceTypeBB[Piece::BPAWN]) != 0)
-                return true;
-            U64 bbQueen = pos.pieceTypeBB[Piece::BQUEEN];
-            if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::BBISHOP] | bbQueen)) != 0)
-                return true;
-            if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::BROOK] | bbQueen)) != 0)
+            if ((BitBoard::wPawnAttacks[sq] & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
                 return true;
         } else {
-            if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB[Piece::WKNIGHT]) != 0)
-                return true;
-            if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB[Piece::WKING]) != 0)
-                return true;
-            if ((BitBoard::bPawnAttacks[sq] & pos.pieceTypeBB[Piece::WPAWN]) != 0)
-                return true;
-            U64 bbQueen = pos.pieceTypeBB[Piece::WQUEEN];
-            if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::WBISHOP] | bbQueen)) != 0)
-                return true;
-            if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB[Piece::WROOK] | bbQueen)) != 0)
+            if ((BitBoard::bPawnAttacks[sq] & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
                 return true;
         }
+        U64 bbQueen = pos.pieceTypeBB(OtherColor::QUEEN);
+        if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB(OtherColor::BISHOP) | bbQueen)) != 0)
+            return true;
+        if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB(OtherColor::ROOK) | bbQueen)) != 0)
+            return true;
         return false;
     }
 
@@ -204,8 +205,10 @@ private:
         return -1;
     }
 
+    template <bool wtm>
     static void addPawnMovesByMask(MoveList& moveList, const Position& pos, U64 mask,
                                    int delta, bool allPromotions) {
+        typedef ColorTraits<wtm> MyColor;
         if (mask == 0)
             return;
         U64 promMask = mask & BitBoard::maskRow1Row8;
@@ -213,20 +216,11 @@ private:
         while (promMask != 0) {
             int sq = BitBoard::numberOfTrailingZeros(promMask);
             int sq0 = sq + delta;
-            if (sq >= 56) { // White promotion
-                moveList.addMove(sq0, sq, Piece::WQUEEN);
-                moveList.addMove(sq0, sq, Piece::WKNIGHT);
-                if (allPromotions) {
-                    moveList.addMove(sq0, sq, Piece::WROOK);
-                    moveList.addMove(sq0, sq, Piece::WBISHOP);
-                }
-            } else { // Black promotion
-                moveList.addMove(sq0, sq, Piece::BQUEEN);
-                moveList.addMove(sq0, sq, Piece::BKNIGHT);
-                if (allPromotions) {
-                    moveList.addMove(sq0, sq, Piece::BROOK);
-                    moveList.addMove(sq0, sq, Piece::BBISHOP);
-                }
+            moveList.addMove(sq0, sq, MyColor::QUEEN);
+            moveList.addMove(sq0, sq, MyColor::KNIGHT);
+            if (allPromotions) {
+                moveList.addMove(sq0, sq, MyColor::ROOK);
+                moveList.addMove(sq0, sq, MyColor::BISHOP);
             }
             promMask &= (promMask - 1);
         }
@@ -254,9 +248,40 @@ private:
         }
     }
 
-    /** Not implemented. */
-    MoveGen();
+    MoveGen() = delete;
 };
 
+
+inline void
+MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
+    if (pos.getWhiteMove())
+        pseudoLegalMoves<true>(pos, moveList);
+    else
+        pseudoLegalMoves<false>(pos, moveList);
+}
+
+inline void
+MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
+    if (pos.getWhiteMove())
+        checkEvasions<true>(pos, moveList);
+    else
+        checkEvasions<false>(pos, moveList);
+}
+
+inline void
+MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
+    if (pos.getWhiteMove())
+        pseudoLegalCapturesAndChecks<true>(pos, moveList);
+    else
+        pseudoLegalCapturesAndChecks<false>(pos, moveList);
+}
+
+inline void
+MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
+    if (pos.getWhiteMove())
+        pseudoLegalCaptures<true>(pos, moveList);
+    else
+        pseudoLegalCaptures<false>(pos, moveList);
+}
 
 #endif /* MOVEGEN_HPP_ */

@@ -25,7 +25,6 @@
 
 #include "bookTest.hpp"
 #include "book.hpp"
-#include "util.hpp"
 #include "textio.hpp"
 #include "moveGen.hpp"
 

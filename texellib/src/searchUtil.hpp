@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,30 +17,34 @@
 */
 
 /*
- * humanPlayer.cpp
+ * searchUtil.hpp
  *
- *  Created on: Feb 25, 2012
+ *  Created on: Jul 15, 2013
  *      Author: petero
  */
 
-#include "humanPlayer.hpp"
-#include "position.hpp"
+#ifndef SEARCHUTIL_HPP_
+#define SEARCHUTIL_HPP_
 
-#include <iostream>
+#include "move.hpp"
 
 
-std::string
-HumanPlayer::getCommand(const Position& pos, bool drawOffer, const std::vector<Position>& history) {
-    const char* color = pos.getWhiteMove() ? "white" : "black";
-    std::cout << "Enter move (" << color << "):" << std::flush;
-    std::string moveStr;
-    getline(std::cin, moveStr);
-    if (!std::cin || std::cin.eof())
-        return "quit";
-    if (moveStr.length() == 0) {
-        return lastCmd;
-    } else {
-        lastCmd = moveStr;
-    }
-    return moveStr;
+struct SearchTreeInfo {
+    SearchTreeInfo();
+
+    bool allowNullMove;    // Don't allow two null-moves in a row
+    Move bestMove;         // Copy of the best found move at this ply
+    Move currentMove;      // Move currently being searched
+    int currentMoveNo;     // Index of currentMove in move list
+    int lmr;               // LMR reduction amount
+    U64 nodeIdx;           // For tree logging
+};
+
+
+inline
+SearchTreeInfo::SearchTreeInfo()
+    : allowNullMove(true), lmr(0), nodeIdx(0) {
 }
+
+
+#endif /* SEARCHUTIL_HPP_ */

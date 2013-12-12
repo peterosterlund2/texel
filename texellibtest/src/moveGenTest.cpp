@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -165,7 +165,24 @@ getMoveList(Position& pos, bool onlyLegal) {
     std::vector<std::string> swapList = getMoveList0(swap, onlyLegal);
     std::vector<std::string> ret = getMoveList0(pos, onlyLegal);
     ASSERT_EQUAL(swapList.size(), ret.size());
-    // FIXME! Test that swapList contains swapped moves compared to ret
+
+    std::vector<std::string> retSwapped;
+    for (const auto& ms : ret) {
+        Move m = TextIO::uciStringToMove(ms);
+        int promoteTo = m.promoteTo();
+        if (promoteTo != Piece::EMPTY)
+            promoteTo = Piece::isWhite(promoteTo) ?
+                        Piece::makeBlack(promoteTo) :
+                        Piece::makeWhite(promoteTo);
+        m.setMove(swapSquare(m.from()), swapSquare(m.to()), promoteTo, 0);
+        std::string msSwapped = TextIO::moveToUCIString(m);
+        retSwapped.push_back(msSwapped);
+    }
+    std::sort(swapList.begin(), swapList.end());
+    std::sort(retSwapped.begin(), retSwapped.end());
+    for (size_t i = 0; i < swapList.size(); i++)
+        ASSERT_EQUAL(swapList[i], retSwapped[i]);
+
     return ret;
 }
 

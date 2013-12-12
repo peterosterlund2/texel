@@ -35,19 +35,25 @@
 class ChessParseError : public std::exception {
 public:
     ChessParseError();
+    ~ChessParseError() throw();
+    ChessParseError(const std::string& msg);
 
-    ~ChessParseError() throw() {}
-
-    ChessParseError(const std::string& msg) : msg_(msg)
-    {
-    }
-
-    virtual const char* what() const throw() {
-        return msg_.c_str();
-    }
+    virtual const char* what() const throw();
 
 private:
     std::string msg_;
 };
+
+inline ChessParseError::~ChessParseError() throw() {}
+
+inline
+ChessParseError::ChessParseError(const std::string& msg)
+    : msg_(msg) {
+}
+
+inline const char*
+ChessParseError::what() const throw() {
+    return msg_.c_str();
+}
 
 #endif /* CHESSPARSEERROR_HPP_ */

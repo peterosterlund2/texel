@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,10 +26,11 @@
 #include "game.hpp"
 #include "moveGen.hpp"
 #include "textio.hpp"
+#include "util/timeUtil.hpp"
 
 #include <iostream>
 #include <iomanip>
-#include <assert.h>
+#include <cassert>
 
 
 Game::Game(const std::shared_ptr<Player>& whitePlayer,
@@ -121,9 +122,9 @@ Game::getGameState() {
     MoveGen::removeIllegal(pos, moves);
     if (moves.size == 0) {
         if (MoveGen::inCheck(pos))
-            return pos.whiteMove ? BLACK_MATE : WHITE_MATE;
+            return pos.getWhiteMove() ? BLACK_MATE : WHITE_MATE;
         else
-            return pos.whiteMove ? WHITE_STALEMATE : BLACK_STALEMATE;
+            return pos.getWhiteMove() ? WHITE_STALEMATE : BLACK_STALEMATE;
     }
     if (insufficientMaterial())
         return DRAW_NO_MATE;
@@ -207,7 +208,7 @@ Game::handleCommand(const std::string& moveStr) {
         }
     } else if (moveStr == "resign") {
         if (getGameState()== ALIVE) {
-            resignState = pos.whiteMove ? RESIGN_WHITE : RESIGN_BLACK;
+            resignState = pos.getWhiteMove() ? RESIGN_WHITE : RESIGN_BLACK;
             return true;
         } else {
             return true;
@@ -249,7 +250,7 @@ Game::handleCommand(const std::string& moveStr) {
 
 void
 Game::activateHumanPlayer() {
-    if (!(pos.whiteMove ? whitePlayer : blackPlayer)->isHumanPlayer())
+    if (!(pos.getWhiteMove() ? whitePlayer : blackPlayer)->isHumanPlayer())
         std::swap(whitePlayer, blackPlayer);
 }
 
@@ -293,18 +294,18 @@ Game::getMoveListString(bool compressed) {
         std::string strMove = TextIO::moveToString(pos, move, false);
         if (drawOfferList[i])
             strMove += " (d)";
-        if (pos.whiteMove) {
+        if (pos.getWhiteMove()) {
             whiteMove = strMove;
         } else {
             blackMove = strMove;
             if (whiteMove.length() == 0)
                 whiteMove = "...";
             if (compressed) {
-                ret += num2Str(pos.fullMoveCounter) + ". " + whiteMove +
+                ret += num2Str(pos.getFullMoveCounter()) + ". " + whiteMove +
                        " " + blackMove + " ";
             } else {
                 std::stringstream ss;
-                ss << std::setw(3) << pos.fullMoveCounter << ".  "
+                ss << std::setw(3) << pos.getFullMoveCounter() << ".  "
                    << std::setw(10) << std::left << whiteMove << " "
                    << std::setw(10) << std::left << blackMove << std::endl;
                 ret += ss.str();
@@ -319,11 +320,11 @@ Game::getMoveListString(bool compressed) {
         if (whiteMove.length() == 0)
             whiteMove = "...";
         if (compressed) {
-            ret += num2Str(pos.fullMoveCounter) + ". " + whiteMove +
+            ret += num2Str(pos.getFullMoveCounter()) + ". " + whiteMove +
                    " " + blackMove + " ";
         } else {
             std::stringstream ss;
-            ss << std::setw(3) << pos.fullMoveCounter << ".  "
+            ss << std::setw(3) << pos.getFullMoveCounter() << ".  "
                << std::setw(10) << std::left << whiteMove << " "
                << std::setw(10) << std::left << blackMove << std::endl;
             ret += ss.str();
@@ -370,7 +371,7 @@ Game::getHistory(std::vector<Position>& posList) {
     posList.clear();
     Position pos(this->pos);
     for (int i = currentMove; i > 0; i--) {
-        if (pos.halfMoveClock == 0)
+        if (pos.getHalfMoveClock() == 0)
             break;
         pos.unMakeMove(moveList[i - 1], uiInfoList[i - 1]);
         posList.push_back(pos);
@@ -427,7 +428,7 @@ Game::handleDrawCmd(std::string drawCmd) {
                 UndoInfo ui;
                 tmpPos.makeMove(m, ui);
             }
-            valid = tmpPos.halfMoveClock >= 100;
+            valid = tmpPos.getHalfMoveClock() >= 100;
         }
         if (valid) {
             drawState = rep ? DRAW_REP : DRAW_50;
@@ -474,21 +475,21 @@ Game::handleBookCmd(const std::string& bookCmd) {
 
 bool
 Game::insufficientMaterial() {
-    if (pos.pieceTypeBB[Piece::WQUEEN] != 0) return false;
-    if (pos.pieceTypeBB[Piece::WROOK]  != 0) return false;
-    if (pos.pieceTypeBB[Piece::WPAWN]  != 0) return false;
-    if (pos.pieceTypeBB[Piece::BQUEEN] != 0) return false;
-    if (pos.pieceTypeBB[Piece::BROOK]  != 0) return false;
-    if (pos.pieceTypeBB[Piece::BPAWN]  != 0) return false;
-    int wb = BitBoard::bitCount(pos.pieceTypeBB[Piece::WBISHOP]);
-    int wn = BitBoard::bitCount(pos.pieceTypeBB[Piece::WKNIGHT]);
-    int bb = BitBoard::bitCount(pos.pieceTypeBB[Piece::BBISHOP]);
-    int bn = BitBoard::bitCount(pos.pieceTypeBB[Piece::BKNIGHT]);
+    if (pos.pieceTypeBB(Piece::WQUEEN) != 0) return false;
+    if (pos.pieceTypeBB(Piece::WROOK)  != 0) return false;
+    if (pos.pieceTypeBB(Piece::WPAWN)  != 0) return false;
+    if (pos.pieceTypeBB(Piece::BQUEEN) != 0) return false;
+    if (pos.pieceTypeBB(Piece::BROOK)  != 0) return false;
+    if (pos.pieceTypeBB(Piece::BPAWN)  != 0) return false;
+    int wb = BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP));
+    int wn = BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT));
+    int bb = BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP));
+    int bn = BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT));
     if (wb + wn + bb + bn <= 1)
         return true;    // King + bishop/knight vs king is draw
     if (wn + bn == 0) {
         // Only bishops. If they are all on the same color, the position is a draw.
-        U64 bMask = pos.pieceTypeBB[Piece::WBISHOP] | pos.pieceTypeBB[Piece::BBISHOP];
+        U64 bMask = pos.pieceTypeBB(Piece::WBISHOP) | pos.pieceTypeBB(Piece::BBISHOP);
         if (((bMask & BitBoard::maskDarkSq) == 0) ||
                 ((bMask & BitBoard::maskLightSq) == 0))
             return true;

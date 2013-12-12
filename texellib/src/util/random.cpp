@@ -17,30 +17,35 @@
 */
 
 /*
- * humanPlayer.cpp
+ * random.cpp
  *
- *  Created on: Feb 25, 2012
+ *  Created on: Mar 3, 2012
  *      Author: petero
  */
 
-#include "humanPlayer.hpp"
-#include "position.hpp"
+#include "random.hpp"
+#include "timeUtil.hpp"
 
-#include <iostream>
+Random::Random()
+    : gen(currentTimeMillis()) {
+}
 
+Random::Random(U64 seed)
+    : gen(seed) {
+}
 
-std::string
-HumanPlayer::getCommand(const Position& pos, bool drawOffer, const std::vector<Position>& history) {
-    const char* color = pos.getWhiteMove() ? "white" : "black";
-    std::cout << "Enter move (" << color << "):" << std::flush;
-    std::string moveStr;
-    getline(std::cin, moveStr);
-    if (!std::cin || std::cin.eof())
-        return "quit";
-    if (moveStr.length() == 0) {
-        return lastCmd;
-    } else {
-        lastCmd = moveStr;
-    }
-    return moveStr;
+void
+Random::setSeed(U64 seed) {
+    gen.seed(seed);
+}
+
+int
+Random::nextInt(int modulo) {
+    std::uniform_int_distribution<int> dist(0, modulo-1);
+    return dist(gen);
+}
+
+U64
+Random::nextU64() {
+    return gen();
 }

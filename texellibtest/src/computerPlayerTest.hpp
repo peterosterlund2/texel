@@ -33,6 +33,11 @@ public:
     std::string getName() const { return "ComputerPlayerTest"; }
 
     cute::suite getSuite() const;
+
+private:
+    static void testGetCommand();
+    static void testDrawRep();
+
 };
 
 #endif /* COMPUTERPLAYERTEST_HPP_ */

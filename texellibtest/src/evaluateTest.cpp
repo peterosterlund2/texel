@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,15 +32,22 @@
 #include "cute.h"
 
 
+int swapSquare(int square) {
+    int x = Position::getX(square);
+    int y = Position::getY(square);
+    return Position::getSquare(x, 7-y);
+}
+
 Position
 swapColors(const Position& pos) {
     Position sym;
-    sym.whiteMove = !pos.whiteMove;
+    sym.setWhiteMove(!pos.getWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            int p = pos.getPiece(Position::getSquare(x, y));
+            int sq = Position::getSquare(x, y);
+            int p = pos.getPiece(sq);
             p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
-            sym.setPiece(Position::getSquare(x, 7-y), p);
+            sym.setPiece(swapSquare(sq), p);
         }
     }
 
@@ -51,29 +58,45 @@ swapColors(const Position& pos) {
     if (pos.h8Castle()) castleMask |= 1 << Position::H1_CASTLE;
     sym.setCastleMask(castleMask);
 
-    if (pos.getEpSquare() >= 0) {
-        int x = Position::getX(pos.getEpSquare());
-        int y = Position::getY(pos.getEpSquare());
-        sym.setEpSquare(Position::getSquare(x, 7-y));
-    }
+    if (pos.getEpSquare() >= 0)
+        sym.setEpSquare(swapSquare(pos.getEpSquare()));
 
-    sym.halfMoveClock = pos.halfMoveClock;
-    sym.fullMoveCounter = pos.fullMoveCounter;
+    sym.setHalfMoveClock(pos.getHalfMoveClock());
+    sym.setFullMoveCounter(pos.getFullMoveCounter());
 
     return sym;
+}
+
+/** Evaluation position and check position serialization. */
+int evalPos(Evaluate& eval, const Position& pos) {
+    {
+        Position pos1(pos);
+        U64 h1 = pos1.historyHash();
+        pos1.computeZobristHash();
+        U64 h2 = pos1.historyHash();
+        ASSERT_EQUAL(h1, h2);
+    }
+
+    Position pos2;
+    Position::SerializeData data;
+    pos.serialize(data);
+    pos2.deSerialize(data);
+    ASSERT(pos.equals(pos2));
+    return eval.evalPos(pos);
 }
 
 /** Return static evaluation score for white, regardless of whose turn it is to move. */
 int
 evalWhite(const Position& pos) {
-    Evaluate eval;
-    int ret = eval.evalPos(pos);
+    auto et = Evaluate::getEvalHashTables();
+    Evaluate eval(*et);
+    int ret = evalPos(eval, pos);
     Position symPos = swapColors(pos);
-    int symScore = eval.evalPos(symPos);
+    int symScore = evalPos(eval, symPos);
     ASSERT_EQUAL(ret, symScore);
     ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     ASSERT_EQUAL(symPos.materialId(), PositionTest::computeMaterialId(symPos));
-    if (!pos.whiteMove)
+    if (!pos.getWhiteMove())
         ret = -ret;
     return ret;
 }
@@ -226,13 +249,17 @@ testTradeBonus() {
     ASSERT(score2 > score1); // White ahead, trading pieces is good
 }
 
+static int material(const Position& pos) {
+    return pos.wMtrl() - pos.bMtrl();
+}
+
 /**
  * Test of material method, of class Evaluate.
  */
 static void
 testMaterial() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
-    ASSERT_EQUAL(0, Evaluate::material(pos));
+    ASSERT_EQUAL(0, material(pos));
 
     const int pV = Evaluate::pV;
     const int qV = Evaluate::qV;
@@ -242,19 +269,19 @@ testMaterial() {
 
     UndoInfo ui;
     pos.makeMove(TextIO::stringToMove(pos, "e4"), ui);
-    ASSERT_EQUAL(0, Evaluate::material(pos));
+    ASSERT_EQUAL(0, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "d5"), ui);
-    ASSERT_EQUAL(0, Evaluate::material(pos));
+    ASSERT_EQUAL(0, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "exd5"), ui);
-    ASSERT_EQUAL(pV, Evaluate::material(pos));
+    ASSERT_EQUAL(pV, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "Qxd5"), ui);
-    ASSERT_EQUAL(0, Evaluate::material(pos));
+    ASSERT_EQUAL(0, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "Nc3"), ui);
-    ASSERT_EQUAL(0, Evaluate::material(pos));
+    ASSERT_EQUAL(0, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "Qxd2"), ui);
-    ASSERT_EQUAL(-pV, Evaluate::material(pos));
+    ASSERT_EQUAL(-pV, material(pos));
     pos.makeMove(TextIO::stringToMove(pos, "Qxd2"), ui);
-    ASSERT_EQUAL(-pV+qV, Evaluate::material(pos));
+    ASSERT_EQUAL(-pV+qV, material(pos));
 }
 
 /**
@@ -371,7 +398,7 @@ testPassedPawns() {
     Position pos = TextIO::readFEN("8/8/8/P3k/8/8/p/K w");
     int score = evalWhite(pos);
     ASSERT(score > 300); // Unstoppable passed pawn
-    pos.whiteMove = false;
+    pos.setWhiteMove(false);
     score = evalWhite(pos);
     ASSERT(score <= 0); // Not unstoppable
 
@@ -485,7 +512,7 @@ testKRKP() {
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
-    pos.whiteMove = !pos.whiteMove;
+    pos.setWhiteMove(!pos.getWhiteMove());
     ASSERT(evalWhite(pos) < drawish);
 }
 
@@ -509,8 +536,26 @@ testKPK() {
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("8/8/8/3k4/8/8/3PK3/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
-    pos.whiteMove = !pos.whiteMove;
+    pos.setWhiteMove(!pos.getWhiteMove());
     ASSERT(evalWhite(pos) < drawish);
+}
+
+static void
+testKBNK() {
+    int s1 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/2k5/8/8 b - - 0 1"));
+    const int nV = Evaluate::nV;
+    const int bV = Evaluate::bV;
+    ASSERT(s1 > nV + bV);
+    int s2 = evalWhite(TextIO::readFEN("1BN5/1K6/8/8/8/2k5/8/8 b - - 1 1"));
+    ASSERT(s2 > s1);
+    int s3 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/2k5/8/8 b - - 0 1"));
+    ASSERT(s3 < s2);
+    int s4 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/5k2/8/8 b - - 0 1"));
+    ASSERT(s4 > s3);
+
+    int s5 = evalWhite(TextIO::readFEN("B1N5/8/8/8/8/4K2k/8/8 b - - 0 1"));
+    int s6 = evalWhite(TextIO::readFEN("B1N5/8/8/8/8/5K1k/8/8 b - - 0 1"));
+    ASSERT(s6 > s5);
 }
 
 static void
@@ -572,6 +617,7 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testKQKP));
     s.push_back(CUTE(testKRKP));
     s.push_back(CUTE(testKRPKR));
+    s.push_back(CUTE(testKBNK));
     s.push_back(CUTE(testKPK));
     s.push_back(CUTE(testCantWin));
     s.push_back(CUTE(testPawnRace));

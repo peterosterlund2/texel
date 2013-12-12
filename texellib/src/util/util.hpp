@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,22 +26,33 @@
 #ifndef UTIL_HPP_
 #define UTIL_HPP_
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <cstdlib>
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <atomic>
 #include <cctype>
+#include <iomanip>
 
 typedef uint64_t U64;
-typedef int64_t S64;
+typedef int64_t  S64;
+typedef uint32_t U32;
+typedef int32_t  S32;
+typedef uint16_t U16;
+typedef int16_t  S16;
+typedef int8_t   S8;
+typedef uint8_t  U8;
 typedef signed char byte;
 typedef unsigned char ubyte;
 
-template <typename T, size_t N> char (&_ArraySizeHelper(T(&array)[N]))[N];
-#define COUNT_OF(array) (sizeof(_ArraySizeHelper(array)))
+template <typename T, size_t N> char (&ArraySizeHelper(T(&array)[N]))[N];
+#define COUNT_OF(array) (sizeof(ArraySizeHelper(array)))
+
+#define ACCESS_ONCE(x) (*static_cast<std::remove_reference<decltype(x)>::type volatile*>(&(x)))
+#define ACCESS_ONCE_CONST(x) (*static_cast<std::remove_reference<decltype(x)>::type const volatile*>(&(x)))
 
 template <typename T> class AlignedAllocator;
 /** std::vector with cache line aware allocator. */
@@ -94,6 +105,13 @@ num2Str(const T& num) {
     return ss.str();
 }
 
+inline std::string
+num2Hex(U64 num) {
+    std::stringstream ss;
+    ss << std::hex << std::setw(16) << std::setfill('0') << num;
+    return ss.str();
+}
+
 /** Convert string to lower case. */
 inline std::string
 toLowerCase(std::string str) {
@@ -140,7 +158,79 @@ trim(const std::string& s) {
     return "";
 }
 
-/** Return current wall clock time in milliseconds, starting at some arbitrary point in time. */
-S64 currentTimeMillis();
+// ----------------------------------------------------------------------------
+
+// A fixed size array that can compute the sum of a range of values in time O(log N)
+template <int N>
+class RangeSumArray {
+public:
+
+    /** Get value at index i. */
+    int get(size_t i) const {
+        return arr[i];
+    }
+
+    /** Add delta to value at index i. */
+    void add(size_t i, int delta) {
+        arr[i] += delta;
+        pairs.add(i/2, delta);
+    }
+
+    /** Compute sum of all elements in [b,e). */
+    int sum(size_t b, size_t e) const {
+        int result = 0;
+        sumHelper(b, e, result);
+        return result;
+    }
+
+private:
+    template <int N2> friend class RangeSumArray;
+
+    void sumHelper(size_t b, size_t e, int& result) const {
+        if (b >= e)
+            return;
+        if (b & 1) {
+            result += arr[b];
+            b++;
+        }
+        if (e & 1) {
+            if (e != N)
+                result -= arr[e];
+            e++;
+        }
+        pairs.sumHelper(b/2, e/2, result);
+    }
+
+    std::array<std::atomic<int>, N> arr {};
+    RangeSumArray<(N+1)/2> pairs;
+};
+
+template<>
+class RangeSumArray<1> {
+public:
+    int get(size_t i) const {
+        return value;
+    }
+
+    void add(size_t i, int delta) {
+        value += delta;
+    }
+
+    int sum(size_t b, size_t e) const {
+        int result = 0;
+        sumHelper(b, e, result);
+        return result;
+    }
+
+private:
+    template <int N2> friend class RangeSumArray;
+
+    void sumHelper(size_t b, size_t e, int& result) const {
+        if (b < e)
+            result += value;
+    }
+
+    std::atomic<int> value { 0 };
+};
 
 #endif /* UTIL_HPP_ */

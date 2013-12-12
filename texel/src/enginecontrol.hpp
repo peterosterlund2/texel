@@ -36,6 +36,7 @@
 #include <thread>
 #include <mutex>
 #include <memory>
+#include <atomic>
 
 class SearchParams;
 
@@ -44,58 +45,6 @@ class SearchParams;
  * Control the search thread.
  */
 class EngineControl {
-private:
-    std::ostream& os;
-
-    std::shared_ptr<std::thread> engineThread;
-    std::mutex threadMutex;
-    volatile bool shouldDetach;
-    std::shared_ptr<Search> sc;
-    TranspositionTable tt;
-    History ht;
-
-    Position pos;
-    std::vector<U64> posHashList;
-    int posHashListSize;
-    volatile bool ponder;     // True if currently doing pondering
-    bool onePossibleMove;
-    volatile bool infinite;
-
-    int minTimeLimit;
-    int maxTimeLimit;
-    int maxDepth;
-    int maxNodes;
-    std::vector<Move> searchMoves;
-
-    // Options
-    int hashSizeMB;
-    bool ownBook;
-    bool analyseMode;
-    bool ponderMode;
-
-    // Reduced strength variables
-    int strength;
-    U64 randomSeed;
-
-    /**
-     * This class is responsible for sending "info" strings during search.
-     */
-    class SearchListener : public Search::Listener {
-        std::ostream& os;
-
-    public:
-        SearchListener(std::ostream& os0);
-
-        void notifyDepth(int depth);
-
-        void notifyCurrMove(const Move& m, int moveNr);
-
-        void notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
-                      bool upperBound, bool lowerBound, const std::vector<Move>& pv);
-
-        void notifyStats(U64 nodes, int nps, int time);
-    };
-
 public:
     EngineControl(std::ostream& o);
 
@@ -119,6 +68,26 @@ public:
     void setOption(const std::string& optionName, const std::string& optionValue);
 
 private:
+    /**
+     * This class is responsible for sending "info" strings during search.
+     */
+    class SearchListener : public Search::Listener {
+    public:
+        SearchListener(std::ostream& os0);
+
+        void notifyDepth(int depth);
+
+        void notifyCurrMove(const Move& m, int moveNr);
+
+        void notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
+                      bool upperBound, bool lowerBound, const std::vector<Move>& pv);
+
+        void notifyStats(U64 nodes, int nps, int time);
+
+    private:
+        std::ostream& os;
+    };
+
     void startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes);
 
     void stopThread();
@@ -133,6 +102,36 @@ private:
     Move getPonderMove(Position pos, const Move& m);
 
     static std::string moveToString(const Move& m);
+
+
+    std::ostream& os;
+
+    std::shared_ptr<std::thread> engineThread;
+    std::mutex threadMutex;
+    std::atomic<bool> shouldDetach;
+    std::shared_ptr<Search> sc;
+    TranspositionTable tt;
+    ParallelData pd;
+    KillerTable kt;
+    History ht;
+    std::shared_ptr<Evaluate::EvalHashTables> et;
+    TreeLogger treeLog;
+
+    Position pos;
+    std::vector<U64> posHashList;
+    int posHashListSize;
+    std::atomic<bool> ponder;     // True if currently doing pondering
+    bool onePossibleMove;
+    std::atomic<bool> infinite;
+
+    int minTimeLimit;
+    int maxTimeLimit;
+    int maxDepth;
+    int maxNodes;
+    std::vector<Move> searchMoves;
+
+    // Random seed for reduced strength
+    U64 randomSeed;
 };
 
 

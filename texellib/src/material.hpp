@@ -49,21 +49,32 @@ public:
     MatId() : hash(0) {}
 
     /** Add a piece to the material configuration. */
-    void addPiece(int pType) {
-        hash += materialId[pType];
-    }
+    void addPiece(int pType);
 
     /** Remove a piece from the material configuration. */
-    void removePiece(int pType) {
-        hash -= materialId[pType];
-    }
+    void removePiece(int pType);
 
     /** Get the material configuration identifier. */
-    int operator()() const { return hash; }
+    int operator()() const;
 
 private:
     int hash;
     static const int materialId[Piece::nPieceTypes];
 };
+
+inline void
+MatId::addPiece(int pType) {
+    hash += materialId[pType];
+}
+
+inline void
+MatId::removePiece(int pType) {
+    hash -= materialId[pType];
+}
+
+inline int
+MatId::operator()() const {
+    return hash;
+}
 
 #endif /* MATERIAL_HPP_ */

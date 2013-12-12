@@ -36,8 +36,8 @@
 /**
  * Test of getCommand method, of class ComputerPlayer.
  */
-static void
-testGetCommand() {
+void
+ComputerPlayerTest::testGetCommand() {
     std::vector<Position> nullHist;
 
     Position pos(TextIO::readFEN("7k/5Q2/p5K1/8/8/8/8/8 b - - 99 80"));
@@ -69,8 +69,8 @@ testGetCommand() {
 /**
  * Test of draw by repetition, of class ComputerPlayer.
  */
-static void
-testDrawRep() {
+void
+ComputerPlayerTest::testDrawRep() {
     HumanPlayer hp1, hp2;
 
     Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
@@ -84,28 +84,28 @@ testDrawRep() {
     game.processString("Rhg7");
     std::vector<Position> hist;
     game.getHistory(hist);
-    std::string result = cp.getCommand(game.pos, false, hist);
+    std::string result = cp.getCommand(game.getPos(), false, hist);
     ASSERT_EQUAL("Kh8", result); // Not valid to claim draw here
     game.processString("Kh8");
     game.processString("Rh7");
     game.processString("Kg8");
     game.processString("Rhg7");
     game.getHistory(hist);
-    result = cp.getCommand(game.pos, false, hist);
+    result = cp.getCommand(game.getPos(), false, hist);
     ASSERT_EQUAL("draw rep Kh8", result);   // Can't win, but can claim draw.
 
     game.processString("setpos 7k/R7/1R6/8/8/8/8/K7 w - - 0 1");
     game.processString("Ra8");
     game.processString("Kh7");
     game.getHistory(hist);
-    result = cp.getCommand(game.pos, false, hist);
+    result = cp.getCommand(game.getPos(), false, hist);
     ASSERT_EQUAL("Ra7+", result);       // Ra7 is mate-in-two
     game.processString("Ra7");
     game.processString("Kh8");
     game.processString("Ra8");
     game.processString("Kh7");
     game.getHistory(hist);
-    result = cp.getCommand(game.pos, false, hist);
+    result = cp.getCommand(game.getPos(), false, hist);
     ASSERT(result != "Ra7+"); // Ra7 now leads to a draw by repetition
 }
 

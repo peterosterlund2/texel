@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,35 +17,26 @@
 */
 
 /*
- * random.cpp
+ * treeLoggerTest.hpp
  *
- *  Created on: Mar 3, 2012
+ *  Created on: Sep 7, 2013
  *      Author: petero
  */
 
-#include "random.hpp"
+#ifndef TREELOGGERTEST_HPP_
+#define TREELOGGERTEST_HPP_
 
+#include "suiteBase.hpp"
 
-Random::Random()
-    : gen(currentTimeMillis()) {
-}
+class TreeLoggerTest : public SuiteBase {
+public:
+    std::string getName() const { return "TreeLoggerTest"; }
 
-Random::Random(U64 seed)
-    : gen(seed) {
-}
+    cute::suite getSuite() const;
 
-void
-Random::setSeed(U64 seed) {
-    gen.seed(seed);
-}
+private:
+    static void testSerialize();
+    static void testLoggerData();
+};
 
-int
-Random::nextInt(int modulo) {
-    std::uniform_int_distribution<int> dist(0, modulo-1);
-    return dist(gen);
-}
-
-U64
-Random::nextU64() {
-    return gen();
-}
+#endif /* TREELOGGERTEST_HPP_ */

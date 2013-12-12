@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 
 #include "bitBoard.hpp"
 #include "position.hpp"
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 
 U64 BitBoard::kingAttacks[64];
@@ -130,7 +130,7 @@ const byte BitBoard::dirTable[] = {
     0,  7,  0,  0,  0,  0,  0,  0,  8,  0,  0,  0,  0,  0,  0,  9
 };
 
-const byte BitBoard::distTable[] = {
+const byte BitBoard::kingDistTable[] = {
        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
     0, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7,
     0, 7, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 7,
@@ -146,6 +146,24 @@ const byte BitBoard::distTable[] = {
     0, 7, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 7,
     0, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7,
     0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+};
+
+const byte BitBoard::taxiDistTable[] = {
+      14,13,12,11,10, 9, 8, 7, 8, 9,10,11,12,13,14,
+    0,13,12,11,10, 9, 8, 7, 6, 7, 8, 9,10,11,12,13,
+    0,12,11,10, 9, 8, 7, 6, 5, 6, 7, 8, 9,10,11,12,
+    0,11,10, 9, 8, 7, 6, 5, 4, 5, 6, 7, 8, 9,10,11,
+    0,10, 9, 8, 7, 6, 5, 4, 3, 4, 5, 6, 7, 8, 9,10,
+    0, 9, 8, 7, 6, 5, 4, 3, 2, 3, 4, 5, 6, 7, 8, 9,
+    0, 8, 7, 6, 5, 4, 3, 2, 1, 2, 3, 4, 5, 6, 7, 8,
+    0, 7, 6, 5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5, 6, 7,
+    0, 8, 7, 6, 5, 4, 3, 2, 1, 2, 3, 4, 5, 6, 7, 8,
+    0, 9, 8, 7, 6, 5, 4, 3, 2, 3, 4, 5, 6, 7, 8, 9,
+    0,10, 9, 8, 7, 6, 5, 4, 3, 4, 5, 6, 7, 8, 9,10,
+    0,11,10, 9, 8, 7, 6, 5, 4, 5, 6, 7, 8, 9,10,11,
+    0,12,11,10, 9, 8, 7, 6, 5, 6, 7, 8, 9,10,11,12,
+    0,13,12,11,10, 9, 8, 7, 6, 7, 8, 9,10,11,12,13,
+    0,14,13,12,11,10, 9, 8, 7, 8, 9,10,11,12,13,14
 };
 
 const int BitBoard::trailingZ[64] = {

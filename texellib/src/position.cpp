@@ -28,7 +28,7 @@
 #include "textio.hpp"
 
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 
 U64 Position::psHashKeys[Piece::nPieceTypes][64];
 U64 Position::whiteHashKey;
@@ -59,21 +59,20 @@ Position::Position() {
     for (int i = 0; i < 64; i++)
         squares[i] = Piece::EMPTY;
     for (int i = 0; i < Piece::nPieceTypes; i++) {
-        psScore1[i] = 0;
-        psScore2[i] = 0;
-        pieceTypeBB[i] = 0;
+        psScore1_[i] = 0;
+        psScore2_[i] = 0;
+        pieceTypeBB_[i] = 0;
     }
-    whiteBB = blackBB = 0;
+    whiteBB_ = blackBB_ = 0;
     whiteMove = true;
     castleMask = 0;
     epSquare = -1;
     halfMoveClock = 0;
     fullMoveCounter = 1;
-    hashKey = computeZobristHash();
-    pHashKey = 0;
-    wKingSq = bKingSq = -1;
-    wMtrl = bMtrl = -Evaluate::kV;
-    wMtrlPawns = bMtrlPawns = 0;
+    computeZobristHash();
+    wKingSq_ = bKingSq_ = -1;
+    wMtrl_ = bMtrl_ = -Evaluate::kV;
+    wMtrlPawns_ = bMtrlPawns_ = 0;
 }
 
 void
@@ -91,23 +90,23 @@ Position::setPiece(int square, int piece) {
 
     // Update bitboards
     const U64 sqMask = 1ULL << square;
-    pieceTypeBB[removedPiece] &= ~sqMask;
-    pieceTypeBB[piece] |= sqMask;
+    pieceTypeBB_[removedPiece] &= ~sqMask;
+    pieceTypeBB_[piece] |= sqMask;
 
     if (removedPiece != Piece::EMPTY) {
         int pVal = Evaluate::pieceValue[removedPiece];
         if (Piece::isWhite(removedPiece)) {
-            wMtrl -= pVal;
-            whiteBB &= ~sqMask;
+            wMtrl_ -= pVal;
+            whiteBB_ &= ~sqMask;
             if (removedPiece == Piece::WPAWN) {
-                wMtrlPawns -= pVal;
+                wMtrlPawns_ -= pVal;
                 pHashKey ^= psHashKeys[Piece::WPAWN][square];
             }
         } else {
-            bMtrl -= pVal;
-            blackBB &= ~sqMask;
+            bMtrl_ -= pVal;
+            blackBB_ &= ~sqMask;
             if (removedPiece == Piece::BPAWN) {
-                bMtrlPawns -= pVal;
+                bMtrlPawns_ -= pVal;
                 pHashKey ^= psHashKeys[Piece::BPAWN][square];
             }
         }
@@ -116,31 +115,31 @@ Position::setPiece(int square, int piece) {
     if (piece != Piece::EMPTY) {
         int pVal = Evaluate::pieceValue[piece];
         if (Piece::isWhite(piece)) {
-            wMtrl += pVal;
-            whiteBB |= sqMask;
+            wMtrl_ += pVal;
+            whiteBB_ |= sqMask;
             if (piece == Piece::WPAWN) {
-                wMtrlPawns += pVal;
+                wMtrlPawns_ += pVal;
                 pHashKey ^= psHashKeys[Piece::WPAWN][square];
             }
             if (piece == Piece::WKING)
-                wKingSq = square;
+                wKingSq_ = square;
         } else {
-            bMtrl += pVal;
-            blackBB |= sqMask;
+            bMtrl_ += pVal;
+            blackBB_ |= sqMask;
             if (piece == Piece::BPAWN) {
-                bMtrlPawns += pVal;
+                bMtrlPawns_ += pVal;
                 pHashKey ^= psHashKeys[Piece::BPAWN][square];
             }
             if (piece == Piece::BKING)
-                bKingSq = square;
+                bKingSq_ = square;
         }
     }
 
     // Update piece/square table scores
-    psScore1[removedPiece] -= Evaluate::psTab1[removedPiece][square];
-    psScore2[removedPiece] -= Evaluate::psTab2[removedPiece][square];
-    psScore1[piece]        += Evaluate::psTab1[piece][square];
-    psScore2[piece]        += Evaluate::psTab2[piece][square];
+    psScore1_[removedPiece] -= Evaluate::psTab1[removedPiece][square];
+    psScore2_[removedPiece] -= Evaluate::psTab2[removedPiece][square];
+    psScore1_[piece]        += Evaluate::psTab1[piece][square];
+    psScore2_[piece]        += Evaluate::psTab2[piece][square];
 }
 
 void
@@ -158,14 +157,14 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
     int prevEpSquare = epSquare;
     setEpSquare(-1);
 
-    if ((capP != Piece::EMPTY) || (((pieceTypeBB[Piece::WPAWN] | pieceTypeBB[Piece::BPAWN]) & fromMask) != 0)) {
+    if ((capP != Piece::EMPTY) || ((pieceTypeBB(Piece::WPAWN, Piece::BPAWN) & fromMask) != 0)) {
         halfMoveClock = 0;
 
         // Handle en passant and epSquare
         if (p == Piece::WPAWN) {
             if (move.to() - move.from() == 2 * 8) {
                 int x = getX(move.to());
-                if (BitBoard::epMaskW[x] & pieceTypeBB[Piece::BPAWN])
+                if (BitBoard::epMaskW[x] & pieceTypeBB(Piece::BPAWN))
                     setEpSquare(move.from() + 8);
             } else if (move.to() == prevEpSquare) {
                 setPiece(move.to() - 8, Piece::EMPTY);
@@ -173,14 +172,14 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
         } else if (p == Piece::BPAWN) {
             if (move.to() - move.from() == -2 * 8) {
                 int x = getX(move.to());
-                if (BitBoard::epMaskB[x] & pieceTypeBB[Piece::WPAWN])
+                if (BitBoard::epMaskB[x] & pieceTypeBB(Piece::WPAWN))
                     setEpSquare(move.from() - 8);
             } else if (move.to() == prevEpSquare) {
                 setPiece(move.to() + 8, Piece::EMPTY);
             }
         }
 
-        if (((pieceTypeBB[Piece::WKING] | pieceTypeBB[Piece::BKING]) & fromMask) != 0) {
+        if ((pieceTypeBB(Piece::WKING, Piece::BKING) & fromMask) != 0) {
             if (wtm) {
                 setCastleMask(castleMask & ~(1 << A1_CASTLE));
                 setCastleMask(castleMask & ~(1 << H1_CASTLE));
@@ -202,7 +201,7 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
         halfMoveClock++;
 
         // Handle castling
-        if (((pieceTypeBB[Piece::WKING] | pieceTypeBB[Piece::BKING]) & fromMask) != 0) {
+        if ((pieceTypeBB(Piece::WKING, Piece::BKING) & fromMask) != 0) {
             int k0 = move.from();
             if (move.to() == k0 + 2) { // O-O
                 movePieceNotPawn(k0 + 3, k0 + 1);
@@ -261,37 +260,105 @@ Position::movePieceNotPawn(int from, int to) {
 
     const U64 sqMaskF = 1ULL << from;
     const U64 sqMaskT = 1ULL << to;
-    pieceTypeBB[piece] &= ~sqMaskF;
-    pieceTypeBB[piece] |= sqMaskT;
+    pieceTypeBB_[piece] &= ~sqMaskF;
+    pieceTypeBB_[piece] |= sqMaskT;
     if (Piece::isWhite(piece)) {
-        whiteBB &= ~sqMaskF;
-        whiteBB |= sqMaskT;
+        whiteBB_ &= ~sqMaskF;
+        whiteBB_ |= sqMaskT;
         if (piece == Piece::WKING)
-            wKingSq = to;
+            wKingSq_ = to;
     } else {
-        blackBB &= ~sqMaskF;
-        blackBB |= sqMaskT;
+        blackBB_ &= ~sqMaskF;
+        blackBB_ |= sqMaskT;
         if (piece == Piece::BKING)
-            bKingSq = to;
+            bKingSq_ = to;
     }
 
-    psScore1[piece] += Evaluate::psTab1[piece][to] - Evaluate::psTab1[piece][from];
-    psScore2[piece] += Evaluate::psTab2[piece][to] - Evaluate::psTab2[piece][from];
+    psScore1_[piece] += Evaluate::psTab1[piece][to] - Evaluate::psTab1[piece][from];
+    psScore2_[piece] += Evaluate::psTab2[piece][to] - Evaluate::psTab2[piece][from];
 }
+
+// ----------------------------------------------------------------------------
+
+void
+Position::serialize(SerializeData& data) const {
+    for (int i = 0; i < 4; i++) {
+        int sq0 = i * 16;
+        U64 v = 0;
+        for (int sq = 0; sq < 16; sq++)
+            v = (v << 4) | squares[sq0 + sq];
+        data.v[i] = v;
+    }
+    U64 flags = whiteMove;
+    flags = (flags << 4) | castleMask;
+    flags = (flags << 8) | (epSquare & 0xff);
+    flags = (flags << 8) | (halfMoveClock & 0xff);
+    flags = (flags << 16) | (fullMoveCounter & 0xffff);
+    data.v[4] = flags;
+}
+
+void
+Position::deSerialize(const SerializeData& data) {
+    for (int i = 0; i < 4; i++) {
+        int sq0 = i * 16;
+        U64 v = data.v[i];
+        for (int sq = 15; sq >= 0; sq--) {
+            int p = v & 0xf;
+            squares[sq0 + sq] = p;
+            v >>= 4;
+        }
+    }
+    U64 flags = data.v[4];
+    fullMoveCounter = flags & 0xffff;
+    flags >>= 16;
+
+    halfMoveClock = flags & 0xff;
+    flags >>= 8;
+
+    epSquare = flags & 0xff; if (epSquare == 0xff) epSquare = -1;
+    flags >>= 8;
+
+    castleMask = flags & 0xf;
+    flags >>= 4;
+
+    whiteMove = ((flags & 1) != 0);
+
+    for (int p = 0; p < Piece::nPieceTypes; p++)
+        pieceTypeBB_[p] = 0;
+    for (int sq = 0; sq < 64; sq++) {
+        int p = squares[sq];
+        pieceTypeBB_[p] |= 1ULL << sq;
+        if (p == Piece::WKING)
+            wKingSq_ = sq;
+        else if (p == Piece::BKING)
+            bKingSq_ = sq;
+    }
+    whiteBB_ = pieceTypeBB(Piece::WKING, Piece::WQUEEN, Piece::WROOK,
+                           Piece::WBISHOP, Piece::WKNIGHT, Piece::WPAWN);
+    blackBB_ = pieceTypeBB(Piece::BKING, Piece::BQUEEN, Piece::BROOK,
+                           Piece::BBISHOP, Piece::BKNIGHT, Piece::BPAWN);
+
+    computeZobristHash();
+}
+
+// ----------------------------------------------------------------------------
 
 std::ostream&
 operator<<(std::ostream& os, const Position& pos) {
     std::stringstream ss;
     ss << std::hex << pos.zobristHash();
-    os << TextIO::asciiBoard(pos) << (pos.whiteMove ? "white\n" : "black\n") << ss.str();
+    os << TextIO::asciiBoard(pos) << (pos.getWhiteMove() ? "white\n" : "black\n") << ss.str();
     return os;
 }
 
 U64
 Position::computeZobristHash() {
     U64 hash = 0;
+    pHashKey = 0;
+    matId = {};
     for (int sq = 0; sq < 64; sq++) {
         int p = squares[sq];
+        matId.addPiece(p);
         hash ^= psHashKeys[p][sq];
         if ((p == Piece::WPAWN) || (p == Piece::BPAWN))
             pHashKey ^= psHashKeys[p][sq];
@@ -300,6 +367,7 @@ Position::computeZobristHash() {
         hash ^= whiteHashKey;
     hash ^= castleHashKeys[castleMask];
     hash ^= epHashKeys[(epSquare >= 0) ? getX(epSquare) + 1 : 0];
+    hashKey = hash;
     return hash;
 }
 

@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,10 +26,10 @@
 #ifndef TRANSPOSITIONTABLE_HPP_
 #define TRANSPOSITIONTABLE_HPP_
 
-#include "util.hpp"
+#include "util/util.hpp"
 #include "move.hpp"
 #include "constants.hpp"
-#include "alignedAlloc.hpp"
+#include "util/alignedAlloc.hpp"
 
 #include <vector>
 
@@ -41,41 +41,54 @@ class Position;
 class TranspositionTable {
 public:
     class TTEntry {
-        friend class TranspositionTable;
     public:
-        int key;                 // Zobrist hash key
-    private:
-        short move;              // from + (to<<6) + (promote<<12)
-        short score;             // Score from search
-        unsigned short depth;    // Search depth
-    public:
-        byte generation;         // Increase when OTB position changes
-        byte type;               // exact score, lower bound, upper bound
-        short evalScore;         // Score from static evaluation
-        // FIXME!!! Test storing both upper and lower bound in each hash entry.
+        /** Set type to T_EMPTY. */
+        void clear() {
+            key = 0;
+            data = 0;
+            setType(TType::T_EMPTY);
+        }
+
+        /** Store in transposition table, encoded for thread safety. */
+        void store(TTEntry& ent) {
+            ACCESS_ONCE(ent.key) = key ^ data;
+            ACCESS_ONCE(ent.data) = data;
+        }
+
+        /** Load from transposition table, decode the thread safety encoding. */
+        void load(const TTEntry& ent) {
+            key = ACCESS_ONCE_CONST(ent.key);
+            data = ACCESS_ONCE_CONST(ent.data);
+            key ^= data;
+        }
 
         /** Return true if this object is more valuable than the other, false otherwise. */
         bool betterThan(const TTEntry& other, int currGen) const {
-            if ((generation == currGen) != (other.generation == currGen))
-                return generation == currGen;   // Old entries are less valuable
-            if ((type == TType::T_EXACT) != (other.type == TType::T_EXACT))
-                return type == TType::T_EXACT;         // Exact score more valuable than lower/upper bound
+            if ((getGeneration() == currGen) != (other.getGeneration() == currGen))
+                return getGeneration() == currGen;   // Old entries are less valuable
+            if ((getType() == TType::T_EXACT) != (other.getType() == TType::T_EXACT))
+                return getType() == TType::T_EXACT;         // Exact score more valuable than lower/upper bound
             if (getDepth() != other.getDepth())
                 return getDepth() > other.getDepth();     // Larger depth is more valuable
             return false;   // Otherwise, pretty much equally valuable
         }
 
+        U64 getKey() const { return key; }
+        void setKey(U64 k) { key = k; }
+
         void getMove(Move& m) const {
+            int move = getBits(0, 16);
             m.setMove(move & 63, (move >> 6) & 63, (move >> 12) & 15, m.score());
         }
 
-        void setMove(const Move& move) {
-            this->move = (short)(move.from() + (move.to() << 6) + (move.promoteTo() << 12));
+        void setMove(const Move& m) {
+            int move = (short)(m.from() + (m.to() << 6) + (m.promoteTo() << 12));
+            setBits(0, 16, move);
         }
 
         /** Get the score from the hash entry and convert from "mate in x" to "mate at ply". */
         int getScore(int ply) const {
-            int sc = score;
+            int sc = (S16)getBits(16, 16);
             if (sc > SearchConst::MATE0 - 1000) {
                 sc -= ply;
             } else if (sc < -(SearchConst::MATE0 - 1000)) {
@@ -90,27 +103,40 @@ public:
                 score += ply;
             else if (score < -(SearchConst::MATE0 - 1000))
                 score -= ply;
-            this->score = (short)score;
+            setBits(16, 16, score);
         }
 
-        /** Get depth from the hash entry. */
-        int getDepth() const {
-            return depth;
+        int getDepth() const { return getBits(32, 10); }
+        void setDepth(int d) { setBits(32, 10, d); }
+        int getGeneration() const { return getBits(42, 4); }
+        void setGeneration(int g) { setBits(42, 4, g); }
+        int getType() const { return getBits(46, 2); }
+        void setType(int t) { setBits(46, 2, t); }
+        int getEvalScore() const { return (S16)getBits(48, 16); }
+        void setEvalScore(int s) { setBits(48, 16, s); }
+
+    private:
+        U64 key;        //  0 64 key         Zobrist hash key
+        U64 data;       //  0 16 move        from + (to<<6) ++ (promote<<12)
+                        // 16 16 score       Score from search
+                        // 32 10 depth       Search depth
+                        // 42  4 generation  Increase when OTB position changes
+                        // 46  2 type        exact score, lower bound, upper bound
+                        // 48 16 evalScore   Score from static evaluation
+
+        void setBits(int first, int size, unsigned int value) {
+            U64 mask = ((1ULL << size) - 1) << first;
+            data = (data & ~mask) | (((U64)value << first) & mask);
         }
 
-        /** Set depth. */
-        void setDepth(int d) {
-            depth = d;
+        unsigned int getBits(int first, int size) const {
+            U64 sizeMask = ((1ULL << size) - 1);
+            return (data >> first) & sizeMask;
         }
     };
-    vector_aligned<TTEntry> table;
-    byte generation;
 
-public:
     /** Constructor. Creates an empty transposition table with numEntries slots. */
-    TranspositionTable(int log2Size) {
-        reSize(log2Size);
-    }
+    TranspositionTable(int log2Size);
 
     void reSize(int log2Size);
 
@@ -118,42 +144,18 @@ public:
     void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore);
 
     /** Retrieve an entry from the hash table corresponding to position with zobrist key "key". */
-    void probe(U64 key, TTEntry& result) {
-        size_t idx0 = getIndex(key);
-        int key2 = getStoredKey(key);
-        TTEntry& ent = table[idx0];
-        if (ent.key == key2) {
-            ent.generation = (byte)generation;
-            result = ent;
-            return;
-        }
-        size_t idx1 = idx0 ^ 1;
-        TTEntry& ent2 = table[idx1];
-        if (ent2.key == key2) {
-            ent2.generation = (byte)generation;
-            result = ent2;
-            return;
-        }
-        result.type = TType::T_EMPTY;
-    }
+    void probe(U64 key, TTEntry& result);
 
     /**
      * Increase hash table generation. This means that subsequent inserts will be considered
      * more valuable than the entries currently present in the hash table.
      */
-    void nextGeneration() {
-        generation++;
-    }
+    void nextGeneration();
 
     /** Clear the transposition table. */
-    void clear() {
-        for (size_t i = 0; i < table.size(); i++)
-            table[i].type = TType::T_EMPTY;
-    }
+    void clear();
 
-    /**
-     * Extract a list of PV moves, starting from "rootPos" and first move "mFirst".
-     */
+    /** Extract a list of PV moves, starting from "rootPos" and first move "mFirst". */
     void extractPVMoves(const Position& rootPos, const Move& mFirst, std::vector<Move>& pv);
 
     /** Extract the PV starting from posIn, using hash entries, both exact scores and bounds. */
@@ -167,7 +169,11 @@ private:
     size_t getIndex(U64 key) const;
 
     /** Get part of zobrist key to store in hash table. */
-    static int getStoredKey(U64 key);
+    static U64 getStoredKey(U64 key);
+
+
+    vector_aligned<TTEntry> table;
+    ubyte generation;
 };
 
 inline size_t
@@ -175,9 +181,53 @@ TranspositionTable::getIndex(U64 key) const {
     return (size_t)(key & (table.size() - 1));
 }
 
-inline int
+inline U64
 TranspositionTable::getStoredKey(U64 key) {
-    return (int)(key >> 32);
+    return key;
+}
+
+inline TranspositionTable::TranspositionTable(int log2Size) {
+    reSize(log2Size);
+}
+
+inline void
+TranspositionTable::probe(U64 key, TTEntry& result) {
+    size_t idx0 = getIndex(key);
+    U64 key2 = getStoredKey(key);
+    TTEntry ent;
+    ent.load(table[idx0]);
+    if (ent.getKey() == key2) {
+        if (ent.getGeneration() != generation) {
+            ent.setGeneration(generation);
+            ent.store(table[idx0]);
+        }
+        result = ent;
+        return;
+    }
+    size_t idx1 = idx0 ^ 1;
+    ent.load(table[idx1]);
+    if (ent.getKey() == key2) {
+        if (ent.getGeneration() != generation) {
+            ent.setGeneration(generation);
+            ent.store(table[idx1]);
+        }
+        result = ent;
+        return;
+    }
+    result.setType(TType::T_EMPTY);
+}
+
+inline void
+TranspositionTable::nextGeneration() {
+    generation = (generation + 1) & 15;
+}
+
+inline void
+TranspositionTable::clear() {
+    TTEntry ent;
+    ent.clear();
+    for (size_t i = 0; i < table.size(); i++)
+        ent.store(table[i]);
 }
 
 #endif /* TRANSPOSITIONTABLE_HPP_ */

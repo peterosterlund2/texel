@@ -1,5 +1,12 @@
-#Sat Feb 25 13:54:55 CET 2012
 eclipse.preferences.version=1
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.lib.release.1083459479/CPATH/delimiter=\:
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.lib.release.1083459479/CPATH/operation=remove
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.lib.release.1083459479/CPLUS_INCLUDE_PATH/delimiter=\:
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.lib.release.1083459479/CPLUS_INCLUDE_PATH/operation=remove
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.lib.release.1083459479/C_INCLUDE_PATH/delimiter=\:
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.lib.release.1083459479/C_INCLUDE_PATH/operation=remove
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.lib.release.1083459479/append=true
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.lib.release.1083459479/appendContributed=true
 environment/buildEnvironmentInclude/gcov/CPATH/delimiter=\:
 environment/buildEnvironmentInclude/gcov/CPATH/operation=remove
 environment/buildEnvironmentInclude/gcov/CPLUS_INCLUDE_PATH/delimiter=\:

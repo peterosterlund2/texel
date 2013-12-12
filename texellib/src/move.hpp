@@ -45,13 +45,6 @@ public:
 
     void setScore(int score);
 
-    class SortByScore {
-    public:
-        bool operator()(const Move& m1, const Move& m2) const {
-            return m1.score_ > m2.score_;
-        }
-    };
-
     int from() const;
     int to() const;
     int promoteTo() const;
@@ -65,6 +58,9 @@ public:
     bool operator==(const Move& other) const;
 
     int hashCode() const;
+
+    /** Not declared "nothrow". Avoids nullptr check in generated assembly code when using placement new. */
+    void* operator new (std::size_t size, void* ptr) { return ptr; }
 
     /** For debugging. */
     std::ostream& operator<<(std::ostream& os);

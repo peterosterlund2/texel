@@ -51,20 +51,20 @@ testReadFEN() {
     std::string fen = "rnbqk2r/1p3ppp/p7/1NpPp3/QPP1P1n1/P4N2/4KbPP/R1B2B1R b kq - 0 1";
     Position pos = TextIO::readFEN(fen);
     ASSERT_EQUAL(fen, TextIO::toFEN(pos));
-    ASSERT_EQUAL(pos.getPiece(Position::getSquare(0, 3)), Piece::WQUEEN);
-    ASSERT_EQUAL(pos.getPiece(Position::getSquare(4, 7)), Piece::BKING);
-    ASSERT_EQUAL(pos.getPiece(Position::getSquare(4, 1)), Piece::WKING);
-    ASSERT_EQUAL(pos.whiteMove, false);
-    ASSERT_EQUAL(pos.a1Castle(), false);
-    ASSERT_EQUAL(pos.h1Castle(), false);
-    ASSERT_EQUAL(pos.a8Castle(), true);
-    ASSERT_EQUAL(pos.h8Castle(), true);
+    ASSERT_EQUAL(Piece::WQUEEN, pos.getPiece(Position::getSquare(0, 3)));
+    ASSERT_EQUAL(Piece::BKING, pos.getPiece(Position::getSquare(4, 7)));
+    ASSERT_EQUAL(Piece::WKING, pos.getPiece(Position::getSquare(4, 1)));
+    ASSERT_EQUAL(false, pos.getWhiteMove());
+    ASSERT_EQUAL(false, pos.a1Castle());
+    ASSERT_EQUAL(false, pos.h1Castle());
+    ASSERT_EQUAL(true, pos.a8Castle());
+    ASSERT_EQUAL(true, pos.h8Castle());
 
     fen = "8/3k4/8/5pP1/1P6/1NB5/2QP4/R3K2R w KQ f6 1 2";
     pos = TextIO::readFEN(fen);
     ASSERT_EQUAL(fen, TextIO::toFEN(pos));
-    ASSERT_EQUAL(1, pos.halfMoveClock);
-    ASSERT_EQUAL(2, pos.fullMoveCounter);
+    ASSERT_EQUAL(1, pos.getHalfMoveClock());
+    ASSERT_EQUAL(2, pos.getFullMoveCounter());
 
     // Must have exactly one king
     bool wasError = testFENParseError("8/8/8/8/8/8/8/kk1K4 w - - 0 1");

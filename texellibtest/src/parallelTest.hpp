@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,23 +17,29 @@
 */
 
 /*
- * util.cpp
+ * parallelTest.hpp
  *
- *  Created on: Mar 2, 2012
+ *  Created on: Jul 17, 2013
  *      Author: petero
  */
 
-#include "util.hpp"
+#ifndef PARALLELTEST_HPP_
+#define PARALLELTEST_HPP_
 
-#include <chrono>
-#include <iostream>
+#include "suiteBase.hpp"
 
-S64 currentTimeMillis() {
-    auto t = std::chrono::high_resolution_clock::now();
-    auto t0 = t.time_since_epoch();
-    auto x = t0.count();
-    typedef decltype(t0) T0Type;
-    auto n = T0Type::period::num;
-    auto d = T0Type::period::den;
-    return (S64)(x * (1000.0 * n / d));
-}
+class ParallelTest : public SuiteBase {
+public:
+    std::string getName() const { return "ParallelTest"; }
+
+    cute::suite getSuite() const;
+
+private:
+    static void testFailHighInfo();
+    static void testWorkQueue();
+    static void testWorkQueueParentChild();
+    static void testSplitPointHolder();
+    static void testWorkerThread();
+};
+
+#endif /* PARALLELTEST_HPP_ */

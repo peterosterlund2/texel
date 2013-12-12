@@ -26,8 +26,8 @@
 #ifndef BITBOARD_HPP_
 #define BITBOARD_HPP_
 
-#include "util.hpp"
-#include "alignedAlloc.hpp"
+#include "util/util.hpp"
+#include "util/alignedAlloc.hpp"
 
 class BitBoard {
 public:
@@ -80,9 +80,14 @@ public:
         return dirTable[offs];
     }
 
-    static int getDistance(int from, int to) {
+    static int getKingDistance(int from, int to) {
         int offs = to + (to|7) - from - (from|7) + 0x77;
-        return distTable[offs];
+        return kingDistTable[offs];
+    }
+
+    static int getTaxiDistance(int from, int to) {
+        int offs = to + (to|7) - from - (from|7) + 0x77;
+        return taxiDistTable[offs];
     }
 
     static U64 southFill(U64 mask) {
@@ -147,7 +152,8 @@ private:
     static vector_aligned<U64> tableData;
 
     static const byte dirTable[];
-    static const byte distTable[];
+    static const byte kingDistTable[];
+    static const byte taxiDistTable[];
     static const int trailingZ[64];
 };
 

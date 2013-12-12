@@ -115,17 +115,23 @@ testGetDirection() {
             ASSERT_EQUAL(computeDirection(from, to), BitBoard::getDirection(from, to));
 }
 
-static int computeDistance(int from, int to) {
+static int computeDistance(int from, int to, bool taxi) {
     int dx = Position::getX(to) - Position::getX(from);
     int dy = Position::getY(to) - Position::getY(from);
-    return std::max(std::abs(dx), std::abs(dy));
+    if (taxi)
+        return std::abs(dx) + std::abs(dy);
+    else
+        return std::max(std::abs(dx), std::abs(dy));
 }
 
 static void
 testGetDistance() {
-    for (int from = 0; from < 64; from++)
-        for (int to = 0; to < 64; to++)
-            ASSERT_EQUAL(computeDistance(from, to), BitBoard::getDistance(from, to));
+    for (int from = 0; from < 64; from++) {
+        for (int to = 0; to < 64; to++) {
+            ASSERT_EQUAL(computeDistance(from, to, false), BitBoard::getKingDistance(from, to));
+            ASSERT_EQUAL(computeDistance(from, to, true ), BitBoard::getTaxiDistance(from, to));
+        }
+    }
 }
 
 static void

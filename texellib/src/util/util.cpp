@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,30 +17,10 @@
 */
 
 /*
- * humanPlayer.cpp
+ * util.cpp
  *
- *  Created on: Feb 25, 2012
+ *  Created on: Mar 2, 2012
  *      Author: petero
  */
 
-#include "humanPlayer.hpp"
-#include "position.hpp"
-
-#include <iostream>
-
-
-std::string
-HumanPlayer::getCommand(const Position& pos, bool drawOffer, const std::vector<Position>& history) {
-    const char* color = pos.getWhiteMove() ? "white" : "black";
-    std::cout << "Enter move (" << color << "):" << std::flush;
-    std::string moveStr;
-    getline(std::cin, moveStr);
-    if (!std::cin || std::cin.eof())
-        return "quit";
-    if (moveStr.length() == 0) {
-        return lastCmd;
-    } else {
-        lastCmd = moveStr;
-    }
-    return moveStr;
-}
+#include "util.hpp"

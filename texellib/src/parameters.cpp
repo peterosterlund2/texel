@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,12 +24,23 @@
  */
 
 #include "parameters.hpp"
+#include "computerPlayer.hpp"
 
 Parameters::Parameters() {
-//    addPar(std::make_shared<SpinParam>("doubled", true, 0, 2048, 25));
-//    addPar(std::make_shared<SpinParam>("island", true, 0, 2048, 15));
-//    addPar(std::make_shared<SpinParam>("isolated", true, 0, 2048, 15));
-//    addPar(std::make_shared<SpinParam>("nOutpost", true, 0, 2048, 128));
+    addPar(std::make_shared<SpinParam>("Hash", 1, 524288, 16));
+    addPar(std::make_shared<CheckParam>("OwnBook", false));
+    addPar(std::make_shared<CheckParam>("Ponder", true));
+    addPar(std::make_shared<CheckParam>("UCI_AnalyseMode", false));
+    std::string about = ComputerPlayer::engineName +
+                        " by Peter Osterlund, see http://web.comhem.se/petero2home/javachess/index.html#texel";
+    addPar(std::make_shared<StringParam>("UCI_EngineAbout", about));
+    addPar(std::make_shared<SpinParam>("Strength", 0, 1000, 1000));
+    addPar(std::make_shared<SpinParam>("Threads", 1, 32, 1));
+
+//    addPar(std::make_shared<SpinParam>("doubled", 0, 2048, 25));
+//    addPar(std::make_shared<SpinParam>("island", 0, 2048, 15));
+//    addPar(std::make_shared<SpinParam>("isolated", 0, 2048, 15));
+//    addPar(std::make_shared<SpinParam>("nOutpost", 0, 2048, 128));
 }
 
 Parameters&

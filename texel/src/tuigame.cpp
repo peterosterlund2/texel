@@ -174,13 +174,13 @@ TUIGame::play() {
     while (true) {
         // Print last move
         if (currentMove > 0) {
-            Position prevPos(pos);
+            Position prevPos(getPos());
             prevPos.unMakeMove(moveList[currentMove - 1], uiInfoList[currentMove - 1]);
             std::string moveStr= TextIO::moveToString(prevPos, moveList[currentMove - 1], false);
             if (haveDrawOffer())
                 moveStr += " (offer draw)";
-            std::cout << "Last move: " << prevPos.fullMoveCounter
-                    << (prevPos.whiteMove ? "." : "...")
+            std::cout << "Last move: " << prevPos.getFullMoveCounter()
+                    << (prevPos.getWhiteMove() ? "." : "...")
                     << ' ' << moveStr << std::endl;
         }
         /*
@@ -191,8 +191,9 @@ TUIGame::play() {
         }
         */
         {
-            Evaluate eval;
-            int evScore = eval.evalPos(pos) * (pos.whiteMove ? 1 : -1);
+            auto et = Evaluate::getEvalHashTables();
+            Evaluate eval(*et);
+            int evScore = eval.evalPos(getPos()) * (getPos().getWhiteMove() ? 1 : -1);
             std::stringstream ss;
             ss.precision(2);
             ss << std::fixed << "Eval: " << (evScore / 100.0);
@@ -200,7 +201,7 @@ TUIGame::play() {
         }
 
         // Check game state
-        std::cout << TextIO::asciiBoard(pos);
+        std::cout << TextIO::asciiBoard(getPos());
         std::string stateStr = getGameStateString();
         if (stateStr.length() > 0)
             std::cout << stateStr << std::endl;
@@ -208,10 +209,10 @@ TUIGame::play() {
             activateHumanPlayer();
 
         // Get command from current player and act on it
-        std::shared_ptr<Player> pl = pos.whiteMove ? whitePlayer : blackPlayer;
+        std::shared_ptr<Player> pl = getPos().getWhiteMove() ? whitePlayer : blackPlayer;
         std::vector<Position> posList;
         getHistory(posList);
-        std::string moveStr = pl->getCommand(pos, haveDrawOffer(), posList);
+        std::string moveStr = pl->getCommand(getPos(), haveDrawOffer(), posList);
         if (moveStr == "quit")
             return;
         bool ok = processString(moveStr);

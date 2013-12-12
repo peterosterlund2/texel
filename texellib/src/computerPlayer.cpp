@@ -35,7 +35,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.03a3";
+    std::string name = "Texel 1.03a3 smp4";
     if (sizeof(char*) == 4)
         name += " 32-bit";
     if (sizeof(char*) == 8)
@@ -44,9 +44,10 @@ ComputerPlayer::staticInitialize() {
 }
 
 ComputerPlayer::ComputerPlayer()
-    : tt(15),
+    : tt(15), pd(tt),
       book(verbose)
 {
+    et = Evaluate::getEvalHashTables();
     minTimeMillis = 10000;
     maxTimeMillis = 10000;
     maxDepth = 100;
@@ -65,8 +66,11 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
         posHashList[posHashListSize++] = history[i].zobristHash();
     tt.nextGeneration();
     Position pos(posIn);
+    KillerTable kt;
     History ht;
-    Search sc(pos, posHashList, posHashListSize, tt, ht);
+    Search::SearchTables st(tt, kt, ht, *et);
+    TreeLogger treeLog;
+    Search sc(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
 
     // Determine all legal moves
     MoveGen::MoveList moves;
@@ -149,8 +153,11 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     // Create a search object
     std::vector<U64> posHashList(200);
     tt.nextGeneration();
+    KillerTable kt;
     History ht;
-    Search sc(pos, posHashList, 0, tt, ht);
+    Search::SearchTables st(tt, kt, ht, *et);
+    TreeLogger treeLog;
+    Search sc(pos, posHashList, 0, st, pd, nullptr, treeLog);
 
     // Determine all legal moves
     MoveGen::MoveList moves;

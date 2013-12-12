@@ -31,7 +31,7 @@
 
 #include "chessParseError.hpp"
 #include "position.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 
 
 class MoveGen;

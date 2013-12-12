@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,12 +26,12 @@
 #ifndef PARAMETERS_HPP_
 #define PARAMETERS_HPP_
 
-#include "util.hpp"
+#include "util/util.hpp"
 
 #include <memory>
 #include <map>
 #include <string>
-#include <assert.h>
+#include <cassert>
 
 
 class Parameters {
@@ -44,6 +44,7 @@ public:
         STRING
     };
 
+    /** Base class for UCI parameters. */
     struct ParamBase {
         std::string name;
         Type type;
@@ -56,17 +57,17 @@ public:
         virtual std::string getStringPar() const { assert(false); return ""; }
         virtual void set(const std::string& value) { assert(false); }
     private:
-        // Not implemented
-        ParamBase(const ParamBase& other);
-        ParamBase& operator=(const ParamBase& other);
+        ParamBase(const ParamBase& other) = delete;
+        ParamBase& operator=(const ParamBase& other) = delete;
     };
 
+    /** A boolean parameter. */
     struct CheckParam : public ParamBase {
         bool value;
         bool defaultValue;
 
-        CheckParam(const std::string& name, bool visible, bool def)
-            : ParamBase(name, CHECK, visible) {
+        CheckParam(const std::string& name, bool def)
+            : ParamBase(name, CHECK, true) {
             this->value = def;
             this->defaultValue = def;
         }
@@ -81,14 +82,15 @@ public:
         }
     };
 
+    /** An integer parameter. */
     struct SpinParam : public ParamBase {
         int minValue;
         int maxValue;
         int value;
         int defaultValue;
 
-        SpinParam(const std::string& name, bool visible, int minV, int maxV, int def)
-            : ParamBase(name, SPIN, visible) {
+        SpinParam(const std::string& name, int minV, int maxV, int def)
+            : ParamBase(name, SPIN, true) {
             this->minValue = minV;
             this->maxValue = maxV;
             this->value = def;
@@ -105,14 +107,15 @@ public:
         }
     };
 
+    /** A multi-choice parameter. */
     struct ComboParam : public ParamBase {
         std::vector<std::string> allowedValues;
         std::string value;
         std::string defaultValue;
 
-        ComboParam(const std::string& name, bool visible, const std::vector<std::string>& allowed,
+        ComboParam(const std::string& name, const std::vector<std::string>& allowed,
                    const std::string& def)
-            : ParamBase(name, COMBO, visible) {
+            : ParamBase(name, COMBO, true) {
             this->allowedValues = allowed;
             this->value = def;
             this->defaultValue = def;
@@ -131,20 +134,22 @@ public:
         }
     };
 
+    /** An action parameter. */
     struct ButtonParam : public ParamBase {
-        ButtonParam(const std::string& name, bool visible)
-            : ParamBase(name, BUTTON, visible) { }
+        ButtonParam(const std::string& name)
+            : ParamBase(name, BUTTON, true) { }
 
         virtual void set(const std::string& value) {
         }
     };
 
+    /** A string parameter. */
     struct StringParam : public ParamBase {
         std::string value;
         std::string defaultValue;
 
-        StringParam(const std::string& name, bool visible, const std::string& def)
-            : ParamBase(name, STRING, visible) {
+        StringParam(const std::string& name, const std::string& def)
+            : ParamBase(name, STRING, true) {
             this->value = def;
             this->defaultValue = def;
         }
@@ -156,13 +161,9 @@ public:
         }
     };
 
+    /** Get singleton instance. */
     static Parameters& instance();
 
-private:
-    typedef std::map<std::string, std::shared_ptr<ParamBase> > ParamMap;
-    ParamMap params;
-
-public:
     void getParamNames(std::vector<std::string>& parNames) {
         parNames.clear();
         for (ParamMap::const_iterator it = params.begin(); it != params.end(); ++it)
@@ -174,14 +175,6 @@ public:
         return params[name];
     }
 
-private:
-    Parameters();
-
-    void addPar(const std::shared_ptr<ParamBase>& p) {
-        params[toLowerCase(p->name)] = p;
-    }
-
-public:
     bool getBoolPar(const std::string& name) const {
         return params.find(toLowerCase(name))->second->getBoolPar();
     }
@@ -199,6 +192,16 @@ public:
             return;
         it->second->set(value);
     }
+
+private:
+    Parameters();
+
+    void addPar(const std::shared_ptr<ParamBase>& p) {
+        params[toLowerCase(p->name)] = p;
+    }
+
+    typedef std::map<std::string, std::shared_ptr<ParamBase> > ParamMap;
+    ParamMap params;
 };
 
 

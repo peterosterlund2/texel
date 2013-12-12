@@ -27,6 +27,7 @@
 #include "game.hpp"
 #include "humanPlayer.hpp"
 #include "textio.hpp"
+#include "util/timeUtil.hpp"
 
 #include <iostream>
 
@@ -35,8 +36,8 @@
 /**
  * Test of haveDrawOffer method, of class Game.
  */
-static void
-testHaveDrawOffer() {
+void
+GameTest::testHaveDrawOffer() {
     Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(false, game.haveDrawOffer());
 
@@ -120,15 +121,15 @@ testHaveDrawOffer() {
     game.processString("undo");
     game.processString("redo");
     game.processString("e5");
-    ASSERT_EQUAL(true,game.pos.whiteMove);
+    ASSERT_EQUAL(true, game.pos.getWhiteMove());
     ASSERT_EQUAL(false, game.haveDrawOffer());
 }
 
 /**
  * Test of draw by 50 move rule, of class Game.
  */
-static void
-testDraw50() {
+void
+GameTest::testDraw50() {
     Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(false, game.haveDrawOffer());
     bool res = game.processString("draw 50");
@@ -164,7 +165,7 @@ testDraw50() {
     game.processString(cmd);
     game.processString("draw 50 Ke3");
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());    // Ke3 is invalid
-    ASSERT_EQUAL(true,game.pos.whiteMove);
+    ASSERT_EQUAL(true, game.pos.getWhiteMove());
     game.processString("a6");
     ASSERT_EQUAL(true, game.haveDrawOffer());   // Previous invalid claim converted to offer
     game.processString("draw 50");
@@ -185,8 +186,8 @@ testDraw50() {
 /**
  * Test of draw by repetition, of class Game.
  */
-static void
-testDrawRep() {
+void
+GameTest::testDrawRep() {
     Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(false, game.haveDrawOffer());
     game.processString("Nc3");
@@ -258,8 +259,8 @@ testDrawRep() {
 /**
  * Test of resign command, of class Game.
  */
-static void
-testResign() {
+void
+GameTest::testResign() {
     Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.processString("f3");
@@ -284,23 +285,23 @@ testResign() {
 /**
  * Test of processString method, of class Game.
  */
-static void
-testProcessString() {
+void
+GameTest::testProcessString() {
     Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(TextIO::startPosFEN, TextIO::toFEN(game.pos));
     bool res = game.processString("Nf3");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(1, game.pos.halfMoveClock);
-    ASSERT_EQUAL(1, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(1, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(1, game.pos.getFullMoveCounter());
     res = game.processString("d5");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(0, game.pos.halfMoveClock);
-    ASSERT_EQUAL(2, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(0, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(2, game.pos.getFullMoveCounter());
 
     res = game.processString("undo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(1, game.pos.halfMoveClock);
-    ASSERT_EQUAL(1, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(1, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(1, game.pos.getFullMoveCounter());
     res = game.processString("undo");
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(TextIO::startPosFEN, TextIO::toFEN(game.pos));
@@ -310,16 +311,16 @@ testProcessString() {
 
     res = game.processString("redo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(1, game.pos.halfMoveClock);
-    ASSERT_EQUAL(1, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(1, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(1, game.pos.getFullMoveCounter());
     res = game.processString("redo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(0, game.pos.halfMoveClock);
-    ASSERT_EQUAL(2, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(0, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(2, game.pos.getFullMoveCounter());
     res = game.processString("redo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(0, game.pos.halfMoveClock);
-    ASSERT_EQUAL(2, game.pos.fullMoveCounter);
+    ASSERT_EQUAL(0, game.pos.getHalfMoveClock());
+    ASSERT_EQUAL(2, game.pos.getFullMoveCounter());
 
     res = game.processString("new");
     ASSERT_EQUAL(true, res);
@@ -338,8 +339,8 @@ testProcessString() {
 /**
  * Test of getGameState method, of class Game.
  */
-static void
-testGetGameState() {
+void
+GameTest::testGetGameState() {
     Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.processString("f3");
@@ -355,8 +356,8 @@ testGetGameState() {
 /**
  * Test of insufficientMaterial method, of class Game.
  */
-static void
-testInsufficientMaterial() {
+void
+GameTest::testInsufficientMaterial() {
     Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.processString("setpos 4k3/8/8/8/8/8/8/4K3 w - - 0 1");
@@ -396,8 +397,8 @@ testInsufficientMaterial() {
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
 }
 
-static void
-doTestPerfT(Position& pos, int maxDepth, U64 expectedNodeCounts[]) {
+void
+GameTest::doTestPerfT(Position& pos, int maxDepth, U64 expectedNodeCounts[]) {
     for (int d = 1; d <= maxDepth; d++) {
         S64 t0 = currentTimeMillis();
         U64 nodes = Game::perfT(pos, d);
@@ -414,8 +415,8 @@ doTestPerfT(Position& pos, int maxDepth, U64 expectedNodeCounts[]) {
 /**
  * Test of perfT method, of class Game.
  */
-static void
-testPerfT() {
+void
+GameTest::testPerfT() {
     Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     game.processString("new");
     U64 n1[] = { 20, 400, 8902, 197281, 4865609, 119060324, 3195901860ULL, 84998978956ULL};

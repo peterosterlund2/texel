@@ -31,7 +31,7 @@
  */
 class Piece {
 public:
-    enum {
+    enum Type {
       EMPTY = 0,
       WKING = 1,
       WQUEEN = 2,
@@ -54,17 +54,47 @@ public:
      * Return true if p is a white piece, false otherwise.
      * Note that if p is EMPTY, an unspecified value is returned.
      */
-    static bool isWhite(int pType) {
-        return pType < BKING;
-    }
+    static bool isWhite(int pType);
 
-    static int makeWhite(int pType) {
-        return pType < BKING ? pType : pType - (BKING - WKING);
-    }
+    static int makeWhite(int pType);
 
-    static int makeBlack(int pType) {
-        return ((pType > EMPTY) && (pType < BKING)) ? pType + (BKING - WKING) : pType;
-    }
+    static int makeBlack(int pType);
 };
+
+template <bool wtm> struct ColorTraits {
+};
+
+template<> struct ColorTraits<true> {
+    static const Piece::Type KING   = Piece::WKING;
+    static const Piece::Type QUEEN  = Piece::WQUEEN;
+    static const Piece::Type ROOK   = Piece::WROOK;
+    static const Piece::Type BISHOP = Piece::WBISHOP;
+    static const Piece::Type KNIGHT = Piece::WKNIGHT;
+    static const Piece::Type PAWN   = Piece::WPAWN;
+};
+
+template<> struct ColorTraits<false> {
+    static const Piece::Type KING   = Piece::BKING;
+    static const Piece::Type QUEEN  = Piece::BQUEEN;
+    static const Piece::Type ROOK   = Piece::BROOK;
+    static const Piece::Type BISHOP = Piece::BBISHOP;
+    static const Piece::Type KNIGHT = Piece::BKNIGHT;
+    static const Piece::Type PAWN   = Piece::BPAWN;
+};
+
+inline bool
+Piece::isWhite(int pType) {
+    return pType < BKING;
+}
+
+inline int
+Piece::makeWhite(int pType) {
+    return pType < BKING ? pType : pType - (BKING - WKING);
+}
+
+inline int
+Piece::makeBlack(int pType) {
+    return ((pType > EMPTY) && (pType < BKING)) ? pType + (BKING - WKING) : pType;
+}
 
 #endif /* PIECE_HPP_ */

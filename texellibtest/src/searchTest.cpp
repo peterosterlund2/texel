@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -41,7 +41,12 @@
 
 static std::vector<U64> nullHist(200);
 static TranspositionTable tt(19);
+static ParallelData pd(tt);
+static KillerTable kt;
 static History ht;
+static auto et = Evaluate::getEvalHashTables();
+static Search::SearchTables st(tt, kt, ht, *et);
+static TreeLogger treeLog;
 
 Move
 SearchTest::idSearch(Search& sc, int maxDepth) {
@@ -63,7 +68,7 @@ SearchTest::testNegaScout() {
     const int mate0 = SearchConst::MATE0;
 
     Position pos = TextIO::readFEN("3k4/8/3K2R1/8/8/8/8/8 w - - 0 1");
-    Search sc(pos, nullHist, 0, tt, ht);
+    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     const int plyScale = SearchConst::plyScale;
     int score = sc.negaScout(-mate0, mate0, 0, 2*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT_EQUAL(mate0 - 2, score);     // depth 2 is enough to find mate in 1
@@ -114,7 +119,7 @@ SearchTest::testDraw50() {
     const int mateInThree = mate0 - 6;
 
     Position pos = TextIO::readFEN("8/1R2k3/R7/8/8/8/8/1K6 b - - 0 1");
-    Search sc(pos, nullHist, 0, tt, ht);
+    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc.maxTimeMillis = -1;
     const int plyScale = SearchConst::plyScale;
     int score = sc.negaScout(-mate0, mate0, 0, 2*plyScale, -1, MoveGen::inCheck(pos));
@@ -170,34 +175,34 @@ void
 SearchTest::testDrawRep() {
     const int mate0 = SearchConst::MATE0;
     Position pos = TextIO::readFEN("7k/5RR1/8/8/8/8/q3q3/2K5 w - - 0 1");
-    std::shared_ptr<Search> sc = std::make_shared<Search>(pos, nullHist, 0, tt, ht);
+    std::shared_ptr<Search> sc = std::make_shared<Search>(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc->maxTimeMillis = -1;
     const int plyScale = SearchConst::plyScale;
     int score = sc->negaScout(-mate0, mate0, 0, 3*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT_EQUAL(0, score);
 
     pos = TextIO::readFEN("7k/5RR1/8/8/8/8/q3q3/2K5 w - - 0 1");
-    sc = std::make_shared<Search>(pos, nullHist, 0, tt, ht);
+    sc = std::make_shared<Search>(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc->maxTimeMillis = -1;
     score = idSearch(*sc.get(), 3).score();
     ASSERT_EQUAL(0, score);
 
     pos = TextIO::readFEN("7k/5RR1/8/8/8/8/1q3q2/3K4 w - - 0 1");
-    sc = std::make_shared<Search>(pos, nullHist, 0, tt, ht);
+    sc = std::make_shared<Search>(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc->maxTimeMillis = -1;
     score = idSearch(*sc.get(), 4).score();
     ASSERT(score < 0);
 
     pos = TextIO::readFEN("7k/5RR1/8/8/8/8/1q3q2/3K4 w - - 0 1");
-    sc = std::make_shared<Search>(pos, nullHist, 0, tt, ht);
+    sc = std::make_shared<Search>(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc->maxTimeMillis = -1;
     score = sc->negaScout(-mate0, mate0, 0, 3*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT(score < 0);
 
     pos = TextIO::readFEN("qn6/qn4k1/pp3R2/5R2/8/8/8/K7 w - - 0 1");
-    sc = std::make_shared<Search>(pos, nullHist, 0, tt, ht);
+    sc = std::make_shared<Search>(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc->maxTimeMillis = -1;
-    score = idSearch(*sc.get(), 7).score();
+    score = idSearch(*sc.get(), 9).score();
     ASSERT_EQUAL(0, score); // Draw, black can not escape from perpetual checks
 }
 
@@ -207,7 +212,7 @@ SearchTest::testDrawRep() {
 void
 SearchTest::testHashing() {
     Position pos = TextIO::readFEN("/k/3p/p2P1p/P2P1P///K/ w - -");  // Fine #70
-    Search sc(pos, nullHist, 0, tt, ht);
+    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     Move bestM = idSearch(sc, 28);
     ASSERT_EQUAL(TextIO::stringToMove(pos, "Kb1"), bestM);
 }
@@ -215,7 +220,7 @@ SearchTest::testHashing() {
 void
 SearchTest::testLMP() {
     Position pos(TextIO::readFEN("2r2rk1/6p1/p3pq1p/1p1b1p2/3P1n2/PP3N2/3N1PPP/1Q2RR1K b"));  // WAC 174
-    Search sc(pos, nullHist, 0, tt, ht);
+    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     Move bestM = idSearch(sc, 2);
     ASSERT(bestM.score() < SearchConst::MATE0 / 2);
 }
@@ -223,7 +228,7 @@ SearchTest::testLMP() {
 void
 SearchTest::testCheckEvasion() {
     Position pos = TextIO::readFEN("6r1/R5PK/2p5/1k6/8/8/p7/8 b - - 0 62");
-    Search sc(pos, nullHist, 0, tt, ht);
+    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     Move bestM = idSearch(sc, 3);
     ASSERT(bestM.score() < 0);
 
@@ -237,7 +242,7 @@ SearchTest::testCheckEvasion() {
 void
 SearchTest::testStalemateTrap() {
     Position pos = TextIO::readFEN("7k/1P3R1P/6r1/5K2/8/8/6R1/8 b - - 98 194");
-    Search sc(pos, nullHist, 0, tt, ht);
+    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     Move bestM = idSearch(sc, 3);
     ASSERT_EQUAL(0, bestM.score());
 }
@@ -245,7 +250,7 @@ SearchTest::testStalemateTrap() {
 void
 SearchTest::testKQKRNullMove() {
     Position pos = TextIO::readFEN("7K/6R1/5k2/3q4/8/8/8/8 b - - 0 1");
-    Search sc(pos, nullHist, 0, tt, ht);
+    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     Move bestM = idSearch(sc, 12);
     ASSERT_EQUAL(SearchConst::MATE0-18, bestM.score());
 }
@@ -279,7 +284,7 @@ SearchTest::testSEE() {
 
     // Basic tests
     Position pos = TextIO::readFEN("r2qk2r/ppp2ppp/1bnp1nb1/1N2p3/3PP3/1PP2N2/1P3PPP/R1BQRBK1 w kq - 0 1");
-    Search sc(pos, nullHist, 0, tt, ht);
+    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     ASSERT_EQUAL(0, getSEE(sc, TextIO::stringToMove(pos, "dxe5")));
     ASSERT_EQUAL(pV - nV, getSEE(sc, TextIO::stringToMove(pos, "Nxe5")));
     ASSERT_EQUAL(pV - rV, getSEE(sc, TextIO::stringToMove(pos, "Rxa7")));
@@ -425,7 +430,7 @@ SearchTest::testSEE() {
 void
 SearchTest::testScoreMoveList() {
     Position pos = TextIO::readFEN("r2qk2r/ppp2ppp/1bnp1nb1/1N2p3/3PP3/1PP2N2/1P3PPP/R1BQRBK1 w kq - 0 1");
-    Search sc(pos, nullHist, 0, tt, ht);
+    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     MoveGen::MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     sc.scoreMoveList(moves, 0);

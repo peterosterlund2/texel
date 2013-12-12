@@ -35,28 +35,39 @@
  * A player that reads input from the keyboard.
  */
 class HumanPlayer : public Player {
-private:
-    std::string lastCmd;
-
 public:
-    HumanPlayer() {
-    }
+    HumanPlayer();
 
     std::string getCommand(const Position& pos, bool drawOffer, const std::vector<Position>& history);
+    bool isHumanPlayer();
+    void useBook(bool bookOn);
+    void timeLimit(int minTimeLimit, int maxTimeLimit);
+    void clearTT();
 
-    bool isHumanPlayer() {
-        return true;
-    }
-
-    void useBook(bool bookOn) {
-    }
-
-    void timeLimit(int minTimeLimit, int maxTimeLimit) {
-    }
-
-    void clearTT() {
-    }
+private:
+    std::string lastCmd;
 };
 
+
+inline
+HumanPlayer::HumanPlayer() {
+}
+
+inline bool
+HumanPlayer::isHumanPlayer() {
+    return true;
+}
+
+inline void
+HumanPlayer::useBook(bool bookOn) {
+}
+
+inline void
+HumanPlayer::timeLimit(int minTimeLimit, int maxTimeLimit) {
+}
+
+inline void
+HumanPlayer::clearTT() {
+}
 
 #endif /* HUMANPLAYER_HPP_ */
