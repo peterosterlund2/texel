@@ -785,7 +785,9 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 if ((depth >= 3*plyScale) && mayReduce && (extend == 0)) {
                     if (!givesCheck && !passedPawnPush(pos, m)) {
                         lmrCount++;
-                        if ((lmrCount > 3) && (depth > 3*plyScale) && !isCapture) {
+                        if ((lmrCount > 12) && (depth > 5*plyScale) && !isCapture) {
+                            lmr = 3*plyScale;
+                        } else if ((lmrCount > 3) && (depth > 3*plyScale) && !isCapture) {
                             lmr = 2*plyScale;
                         } else {
                             lmr = 1*plyScale;
