@@ -272,8 +272,13 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         if (maxNodes >= 0)
             if (getTotalNodes() >= maxNodes)
                 break;
-        int plyToMate = MATE0 - std::abs(scMoves[0].score());
-        if (depthS >= plyToMate * plyScale)
+        bool enoughDepth = true;
+        for (int i = 0; i < maxPV; i++) {
+            int plyToMate = MATE0 - std::abs(scMoves[i].score());
+            if (depthS < plyToMate * plyScale)
+                enoughDepth = false;
+        }
+        if (enoughDepth)
             break;
         if (tNow > tStart)
             pd.npsInfo.setBaseNps(getTotalNodesThisThread() * 1000.0 / (tNow - tStart));
