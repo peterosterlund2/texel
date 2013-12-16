@@ -1177,6 +1177,56 @@ Evaluate::endGameEval(const Position& pos, int oldScore) {
         return -kpkEval(63-pos.getKingSq(false), 63-pos.getKingSq(true),
                         63-bp, !pos.getWhiteMove());
     }
+    case MI::WB + MI::WP + MI::BB: {
+        int wb = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WBISHOP));
+        int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WPAWN));
+        int bb = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BBISHOP));
+        return kbpkbEval(pos.getKingSq(true), wb, wp, pos.getKingSq(false), bb, score);
+    }
+    case MI::BB + MI::BP + MI::WB: {
+        int bb = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BBISHOP));
+        int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BPAWN));
+        int wb = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WBISHOP));
+        return -kbpkbEval(63-pos.getKingSq(false), 63-bb, 63-bp, 63-pos.getKingSq(true), 63-wb, -score);
+    }
+    case MI::WB + MI::WP + MI::BN: {
+        int wb = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WBISHOP));
+        int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WPAWN));
+        int bn = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BKNIGHT));
+        return kbpknEval(pos.getKingSq(true), wb, wp, pos.getKingSq(false), bn, score);
+    }
+    case MI::BB + MI::BP + MI::WN: {
+        int bb = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BBISHOP));
+        int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BPAWN));
+        int wn = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WKNIGHT));
+        return -kbpknEval(63-pos.getKingSq(false), 63-bb, 63-bp, 63-pos.getKingSq(true), 63-wn, -score);
+    }
+    case MI::WN + MI::WP + MI::BB: {
+        int wn = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WKNIGHT));
+        int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WPAWN));
+        int bb = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BBISHOP));
+        return knpkbEval(pos.getKingSq(true), wn, wp, pos.getKingSq(false), bb,
+                         score, pos.getWhiteMove());
+    }
+    case MI::BN + MI::BP + MI::WB: {
+        int bn = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BKNIGHT));
+        int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BPAWN));
+        int wb = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WBISHOP));
+        return -knpkbEval(63-pos.getKingSq(false), 63-bn, 63-bp, 63-pos.getKingSq(true), 63-wb,
+                          -score, !pos.getWhiteMove());
+    }
+    case MI::WN + MI::WP: {
+        int wn = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WKNIGHT));
+        int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WPAWN));
+        return knpkEval(pos.getKingSq(true), wn, wp, pos.getKingSq(false),
+                        score, pos.getWhiteMove());
+    }
+    case MI::BN + MI::BP: {
+        int bn = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BKNIGHT));
+        int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BPAWN));
+        return -knpkEval(63-pos.getKingSq(false), 63-bn, 63-bp, 63-pos.getKingSq(true),
+                         -score, !pos.getWhiteMove());
+    }
     }
 
     // Give bonus/penalty if advantage is/isn't large enough to win
@@ -1367,6 +1417,87 @@ int Evaluate::kbnkEval(int wKing, int bKing, bool darkBishop) {
                                      00, 05, 10, 15, 15, 10, 05, 00 };
     score += bkTable[bKing] + wkTable[wKing];
     score -= std::min(0, BitBoard::getTaxiDistance(wKing, bKing) - 3);
+    return score;
+}
+
+int Evaluate::kbpkbEval(int wKing, int wBish, int wPawn, int bKing, int bBish, int score) {
+    U64 wPawnMask = 1ULL << wPawn;
+    U64 pawnPath = BitBoard::northFill(wPawnMask);
+    U64 bKingMask = 1ULL << bKing;
+    U64 wBishMask = 1ULL << wBish;
+    U64 wBishControl = (wBishMask & BitBoard::maskDarkSq) ? BitBoard::maskDarkSq : BitBoard::maskLightSq;
+    if ((bKingMask & pawnPath) && ((bKingMask & wBishControl) == 0))
+        return 0;
+
+    U64 bBishMask = 1ULL << bBish;
+    if (((wBishMask & BitBoard::maskDarkSq) == 0) != ((bBishMask & BitBoard::maskDarkSq) == 0)) { // Different color bishops
+        if (((bBishMask | BitBoard::bishopAttacks(bBish, bKingMask)) & pawnPath & ~wPawnMask) != 0)
+            if (!(((wPawn == 40) && (bBish == 57)) || ((wPawn == 47) && (bBish == 62))))
+                return 0;
+    }
+
+    if (bKingMask & BitBoard::wPawnBlockerMask[wPawn])
+        return score / 4;
+    return score;
+}
+
+int Evaluate::kbpknEval(int wKing, int wBish, int wPawn, int bKing, int bKnight, int score) {
+    U64 wPawnMask = 1ULL << wPawn;
+    U64 pawnPath = BitBoard::northFill(wPawnMask);
+    U64 bKingMask = 1ULL << bKing;
+    U64 wBishMask = 1ULL << wBish;
+    U64 wBishControl = (wBishMask & BitBoard::maskDarkSq) ? BitBoard::maskDarkSq : BitBoard::maskLightSq;
+
+    U64 edges = 0xff818181818181ffULL;
+    U64 bKnightMask = 1ULL << bKnight;
+    if ((bKnightMask & edges & ~wBishControl) != 0) // Knight on edge square where it can be trapped
+        return score;
+
+    if ((bKingMask & pawnPath) && ((bKingMask & wBishControl) == 0))
+        return 0;
+
+    if (bKingMask & BitBoard::wPawnBlockerMask[wPawn])
+        return score / 4;
+    return score;
+}
+
+int Evaluate::knpkbEval(int wKing, int wKnight, int wPawn, int bKing, int bBish, int score, bool wtm) {
+    U64 wPawnMask = 1ULL << wPawn;
+    U64 bBishMask = 1ULL << bBish;
+    U64 bBishControl = (bBishMask & BitBoard::maskDarkSq) ? BitBoard::maskDarkSq : BitBoard::maskLightSq;
+
+    U64 p = wPawnMask;
+    if (bBishControl & wPawnMask) {
+        U64 bKingMask = 1ULL << bKing;
+        U64 wKnightMask = 1ULL << wKnight;
+        if (!wtm && (BitBoard::bishopAttacks(bBish, bKingMask | wKnightMask) & wPawnMask))
+            return 0;
+        p <<= 8;
+    }
+    U64 pawnDrawishMask = 0x183c7e7e7e7eULL;
+    if (p & pawnDrawishMask)
+        return score / 32;
+
+    return score;
+}
+
+int Evaluate::knpkEval(int wKing, int wKnight, int wPawn, int bKing, int score, bool wtm) {
+    if (Position::getX(wPawn) >= 4) { // Mirror X
+        wKing ^= 7;
+        wKnight ^= 7;
+        wPawn ^= 7;
+        bKing ^= 7;
+    }
+    if (wPawn == 48) { // a7
+        if ((bKing == 56) || (bKing == 49)) // Fortress
+            return 0;
+        if ((wKing == 56) && ((bKing == 50) || (bKing == 58))) {
+            bool knightDark = Position::darkSquare(Position::getX(wKnight), Position::getY(wKnight));
+            bool kingDark = Position::darkSquare(Position::getX(bKing), Position::getY(bKing));
+            if (wtm == (knightDark == kingDark)) // King trapped
+                return 0;
+        }
+    }
     return score;
 }
 

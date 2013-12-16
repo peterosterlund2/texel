@@ -167,6 +167,10 @@ private:
 
     static int kbnkEval(int wKing, int bKing, bool darkBishop);
 
+    static int kbpkbEval(int wKing, int wBish, int wPawn, int bKing, int bBish, int score);
+    static int kbpknEval(int wKing, int wBish, int wPawn, int bKing, int bKnight, int score);
+    static int knpkbEval(int wKing, int wKnight, int wPawn, int bKing, int bBish, int score, bool wtm);
+    static int knpkEval(int wKing, int wKnight, int wPawn, int bKing, int score, bool wtm);
 
     static int castleFactor[256];
 

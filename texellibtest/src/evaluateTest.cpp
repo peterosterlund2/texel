@@ -651,6 +651,120 @@ testKBNK() {
 }
 
 static void
+testKBPKB() {
+    const int pV = Evaluate::pV;
+    const int drawish = pV / 5;
+    int score = evalWhite(TextIO::readFEN("8/3b4/3k4/8/3P4/3B4/3K4/8 w - - 0 1"));
+    ASSERT(score >= 0);
+    ASSERT(score < drawish);
+
+    score = evalWhite(TextIO::readFEN("8/1b1k4/8/3PK3/8/3B4/8/8 w - - 0 1"));
+    ASSERT(score >= 0);
+    ASSERT(score < pV); // Close to known draw
+
+    score = evalWhite(TextIO::readFEN("8/1b6/7k/8/P7/KB6/8/8 w - - 0 1"));
+    ASSERT(score > pV);
+
+    score = evalWhite(TextIO::readFEN("8/4k3/P1K5/8/8/4b3/B7/8 w - - 0 1"));
+    ASSERT(score >= 0);
+    ASSERT(score < drawish);
+
+    score = evalWhite(TextIO::readFEN("1b6/4k3/P1K5/8/8/8/B7/8 w - - 0 1"));
+    ASSERT(score > pV / 2);
+
+    score = evalWhite(TextIO::readFEN("1b6/4k3/2K5/P7/8/8/B7/8 w - - 0 1"));
+    ASSERT(score >= 0);
+    ASSERT(score < drawish);
+
+    score = evalWhite(TextIO::readFEN("8/1P3k2/8/8/K3b3/B7/8/8 w - - 0 1"));
+    ASSERT(score >= pV / 2);
+}
+
+static void
+testKBPKN() {
+    const int pV = Evaluate::pV;
+    const int drawish = pV / 5;
+    int score = evalWhite(TextIO::readFEN("8/3k4/8/3P3n/2KB4/8/8/8 w - - 0 1"));
+    ASSERT(score > pV);
+
+    score = evalWhite(TextIO::readFEN("8/3k4/8/3P4/2KB3n/8/8/8 w - - 0 1"));
+    ASSERT(score >= 0);
+    ASSERT(score < drawish);
+
+    score = evalWhite(TextIO::readFEN("8/3k4/8/3P4/2KB2n1/8/8/8 w - - 0 1"));
+    ASSERT(score >= 0);
+    ASSERT(score < drawish);
+
+    score = evalWhite(TextIO::readFEN("2k5/8/8/3P4/2KB2n1/8/8/8 w - - 0 1"));
+    ASSERT(score >= 0);
+    ASSERT(score < pV);
+
+    score = evalWhite(TextIO::readFEN("2k5/8/8/3P3n/2KB4/8/8/8 w - - 0 1"));
+    ASSERT(score > pV);
+
+    score = evalWhite(TextIO::readFEN("2k5/8/8/3P4/2KB3n/8/8/8 w - - 0 1"));
+    ASSERT(score >= 0);
+    ASSERT(score < pV);
+}
+
+static void
+testKNPKB() {
+    const int pV = Evaluate::pV;
+    const int drawish = pV / 5;
+    int score = evalWhite(TextIO::readFEN("8/8/3b4/3P4/3NK3/8/8/7k w - - 0 1"));
+    ASSERT(score >= 0);
+    ASSERT(score < drawish);
+
+    score = evalWhite(TextIO::readFEN("8/8/3P4/8/3NK3/b7/8/7k w - - 0 1"));
+    ASSERT(score > pV);
+
+    score = evalWhite(TextIO::readFEN("8/8/8/3P4/4K3/4N3/b7/7k w - - 0 1"));
+    ASSERT(score < drawish);
+
+    score = evalWhite(TextIO::readFEN("8/8/8/8/1K6/P3N3/b7/7k w - - 0 1"));
+    ASSERT(score > pV);
+
+    score = evalWhite(TextIO::readFEN("8/3P4/4b3/4N3/3K1k2/8/8/8 b - - 0 1"));
+    ASSERT(score == 0);
+    score = evalWhite(TextIO::readFEN("8/3P4/4b3/4N3/3K1k2/8/8/8 w - - 0 1"));
+    ASSERT(score > pV);
+
+    score = evalWhite(TextIO::readFEN("8/3P4/4Nk2/8/3K4/7b/8/8 b - - 0 1"));
+    ASSERT(score > pV);
+
+    score = evalWhite(TextIO::readFEN("8/3P4/3N4/8/3K2k1/7b/8/8 b - - 0 1"));
+    ASSERT(score > pV);
+}
+
+static void
+testKNPK() {
+    const int pV = Evaluate::pV;
+    const int nV = Evaluate::nV;
+    int score = evalWhite(TextIO::readFEN("k7/P7/8/1N6/1K6/8/8/8 w - - 0 1"));
+    ASSERT(score == 0);
+    score = evalWhite(TextIO::readFEN("8/Pk6/8/1N6/1K6/8/8/8 w - - 0 1"));
+    ASSERT(score == 0);
+
+    score = evalWhite(TextIO::readFEN("k7/8/P7/1N6/1K6/8/8/8 w - - 0 1"));
+    ASSERT(score > pV + nV);
+
+    score = evalWhite(TextIO::readFEN("K7/P1k5/8/5N2/8/8/8/8 w - - 0 1"));
+    ASSERT(score > pV + nV);
+    score = evalWhite(TextIO::readFEN("K7/P1k5/8/5N2/8/8/8/8 b - - 0 1"));
+    ASSERT(score == 0);
+
+    score = evalWhite(TextIO::readFEN("K7/P1k5/8/8/7N/8/8/8 b - - 0 1"));
+    ASSERT(score > pV + nV);
+    score = evalWhite(TextIO::readFEN("K7/P1k5/8/8/7N/8/8/8 w - - 0 1"));
+    ASSERT(score == 0);
+
+    score = evalWhite(TextIO::readFEN("K7/P3k3/8/8/7N/8/8/8 w - - 0 1"));
+    ASSERT(score > pV + nV);
+    score = evalWhite(TextIO::readFEN("K7/P3k3/8/8/7N/8/8/8 b - - 0 1"));
+    ASSERT(score > pV + nV);
+}
+
+static void
 testCantWin() {
     Position pos = TextIO::readFEN("8/8/8/3k4/3p4/3K4/4N3/8 w - - 0 1");
     int score1 = evalWhite(pos);
@@ -694,8 +808,10 @@ testKnightOutPost() {
     ASSERT(s2 < s1);
 
     // Test knight fork bonus symmetry (currently no such term in the evaluation though)
-    pos = TextIO::readFEN("rnbqkb1r/ppp2Npp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1"); evalWhite(pos);
-    pos = TextIO::readFEN("rnbqkb1r/ppN3pp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1"); evalWhite(pos);
+    pos = TextIO::readFEN("rnbqkb1r/ppp2Npp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1");
+    evalWhite(pos);
+    pos = TextIO::readFEN("rnbqkb1r/ppN3pp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1");
+    evalWhite(pos);
 }
 
 cute::suite
@@ -718,5 +834,9 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testCantWin));
     s.push_back(CUTE(testPawnRace));
     s.push_back(CUTE(testKnightOutPost));
+    s.push_back(CUTE(testKBPKB));
+    s.push_back(CUTE(testKBPKN));
+    s.push_back(CUTE(testKNPKB));
+    s.push_back(CUTE(testKNPK));
     return s;
 }
