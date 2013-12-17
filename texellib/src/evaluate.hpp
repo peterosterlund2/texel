@@ -57,6 +57,7 @@ private:
         short kingSafetyIPF;
         short diffColorBishopIPF;
         short wKnightOutPostIPF, bKnightOutPostIPF;
+        U8 endGame;
     };
 
     struct KingSafetyHashData {
@@ -154,8 +155,11 @@ private:
 
     int kingSafetyKPPart(const Position& pos);
 
-    /** Implements special knowledge for some endgame situations. */
-    int endGameEval(const Position& pos, int oldScore);
+    /** Implements special knowledge for some endgame situations.
+     * If doEval is false the position is not evaluated. Instead 1 is returned if
+     * this function has special knowledge about the current material balance, and 0
+     * is returned otherwise. */
+    template <bool doEval> int endGameEval(const Position& pos, int oldScore) const;
 
     static int kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove);
 
