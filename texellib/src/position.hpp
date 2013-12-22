@@ -117,11 +117,11 @@ public:
     /** Apply a move to the current position. */
     void makeMove(const Move& move, UndoInfo& ui);
 
-    void unMakeMove(const Move& move, UndoInfo& ui);
+    void unMakeMove(const Move& move, const UndoInfo& ui);
 
     /** Special make move functions used by MoveGen::isLegal(). Does not update all data members. */
     void makeMoveB(const Move& move, UndoInfo& ui);
-    void unMakeMoveB(const Move& move, UndoInfo& ui);
+    void unMakeMoveB(const Move& move, const UndoInfo& ui);
     void setPieceB(int square, int piece);
 
     /**
@@ -130,7 +130,7 @@ public:
      */
     void makeSEEMove(const Move& move, UndoInfo& ui);
 
-    void unMakeSEEMove(const Move& move, UndoInfo& ui);
+    void unMakeSEEMove(const Move& move, const UndoInfo& ui);
 
     int getFullMoveCounter() const;
     void setFullMoveCounter(int fm);
@@ -400,7 +400,7 @@ Position::getKingSq(bool white) const {
 }
 
 inline void
-Position::unMakeMove(const Move& move, UndoInfo& ui) {
+Position::unMakeMove(const Move& move, const UndoInfo& ui) {
     hashKey ^= whiteHashKey;
     whiteMove = !whiteMove;
     int p = squares[move.to()];
@@ -439,7 +439,7 @@ Position::unMakeMove(const Move& move, UndoInfo& ui) {
 }
 
 inline void
-Position::unMakeMoveB(const Move& move, UndoInfo& ui) {
+Position::unMakeMoveB(const Move& move, const UndoInfo& ui) {
     int p = squares[move.to()];
     setPieceB(move.from(), p);
     setPieceB(move.to(), ui.capturedPiece);
@@ -545,7 +545,7 @@ Position::makeSEEMove(const Move& move, UndoInfo& ui) {
 }
 
 inline void
-Position::unMakeSEEMove(const Move& move, UndoInfo& ui) {
+Position::unMakeSEEMove(const Move& move, const UndoInfo& ui) {
     whiteMove = !whiteMove;
     int p = squares[move.to()];
     setSEEPiece(move.from(), p);
