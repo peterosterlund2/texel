@@ -28,6 +28,8 @@ std::string readFile(const std::string& fname) {
     return data;
 }
 
+/** Read score from a PGN comment, assuming cutechess-cli comment format.
+ * Does not handle mate scores. */
 bool getCommentScore(const std::string& comment, int& score) {
     double fScore;
     if (!str2Num(comment, fScore))
@@ -38,10 +40,14 @@ bool getCommentScore(const std::string& comment, int& score) {
 
 class ChessTool {
 public:
-    static bool main(const std::string& fname);
+    /** Read PGN files. For each position, print: "fen : gameResult : searchScore : qScore".
+     * Skip positions where searchScore is a mate score. Also skip positions where corresponding
+     * game score is unknown. All scores are from white's perspective. gameResult is 0.0, 0.5 or 1.0,
+     * also from white's perspective. */
+    static bool pgnToFen(std::istream& is);
 };
 
-bool ChessTool::main(const std::string& fname) {
+bool ChessTool::pgnToFen(std::istream& is) {
     static std::vector<U64> nullHist(200);
     static TranspositionTable tt(19);
     static ParallelData pd(tt);
@@ -56,7 +62,6 @@ bool ChessTool::main(const std::string& fname) {
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     const int plyScale = SearchConst::plyScale;
 
-    std::ifstream is(fname);
     GameTree gt(is);
     while (gt.readPGN()) {
         GameTree::Result result = gt.getResult();
@@ -96,9 +101,6 @@ bool ChessTool::main(const std::string& fname) {
 }
 
 int main(int argc, char* argv[]) {
-    std::string fname = "/home/petero/tmpfile.pgn";
-    if (argc > 1)
-        fname = argv[1];
-    ChessTool::main(fname);
+    ChessTool::pgnToFen(std::cin);
     return 0;
 }
