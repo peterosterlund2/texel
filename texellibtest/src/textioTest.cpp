@@ -250,7 +250,7 @@ testStringToMove() {
     m = TextIO::stringToMove(pos, "axb1Q#");
     ASSERT_EQUAL(maxb1Q, m);
     m = TextIO::stringToMove(pos, "axb1Q+");
-    ASSERT(m.isEmpty());
+    ASSERT_EQUAL(maxb1Q, m);
 
     Move mh5(Position::getSquare(7, 6), Position::getSquare(7, 4), Piece::EMPTY);
     m = TextIO::stringToMove(pos, "h5");
@@ -300,6 +300,36 @@ testStringToMove() {
     m = TextIO::stringToMove(pos, "d8=Q+");
     Move m2 = TextIO::stringToMove(pos, "d8Q");
     ASSERT_EQUAL(m2, m);
+
+    // Test non-standard castling syntax
+    pos = TextIO::readFEN("r3k2r/pppqbppp/2npbn2/4p3/2B1P3/2NPBN2/PPPQ1PPP/R3K2R w KQkq - 0 1");
+    m = TextIO::stringToMove(pos, "0-0");
+    ASSERT_EQUAL(Move(TextIO::getSquare("e1"), TextIO::getSquare("g1"), Piece::EMPTY), m);
+    m = TextIO::stringToMove(pos, "0-0-0");
+    ASSERT_EQUAL(Move(TextIO::getSquare("e1"), TextIO::getSquare("c1"), Piece::EMPTY), m);
+    pos.setWhiteMove(false);
+    m = TextIO::stringToMove(pos, "0-0");
+    ASSERT_EQUAL(Move(TextIO::getSquare("e8"), TextIO::getSquare("g8"), Piece::EMPTY), m);
+    m = TextIO::stringToMove(pos, "0-0-0");
+    ASSERT_EQUAL(Move(TextIO::getSquare("e8"), TextIO::getSquare("c8"), Piece::EMPTY), m);
+
+    // Test non-standard disambiguation
+    pos = TextIO::readFEN("1Q6/1K2q2k/1QQ5/8/7P/8/8/8 w - - 3 88");
+    m = TextIO::stringToMove(pos, "Qb8c7");
+    ASSERT_EQUAL(Move(TextIO::getSquare("b8"), TextIO::getSquare("c7"), Piece::EMPTY), m);
+    m2 = TextIO::stringToMove(pos, "Q8c7");
+    ASSERT_EQUAL(m2, m);
+
+    // Test extra characters
+    pos = TextIO::readFEN(TextIO::startPosFEN);
+    Move mNf3(TextIO::getSquare("g1"), TextIO::getSquare("f3"), Piece::EMPTY);
+    ASSERT_EQUAL(mNf3, TextIO::stringToMove(pos, "Ngf3"));
+    ASSERT_EQUAL(mNf3, TextIO::stringToMove(pos, "Ng1f3"));
+    ASSERT_EQUAL(mNf3, TextIO::stringToMove(pos, "Ng1-f3"));
+    ASSERT_EQUAL(mNf3, TextIO::stringToMove(pos, "g1f3"));
+    ASSERT_EQUAL(mNf3, TextIO::stringToMove(pos, "N1f3"));
+    ASSERT_EQUAL(mNf3, TextIO::stringToMove(pos, "Ngf"));
+    ASSERT_EQUAL(mNf3, TextIO::stringToMove(pos, "Nf"));
 }
 
 /**

@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -430,77 +430,147 @@ TextIO::moveToString(const Position& pos, const Move& move, bool longForm) {
     return ::moveToString(tmpPos, move, longForm, moves);
 }
 
+namespace {
+    struct MoveInfo {
+        int piece = -1;             // -1 for unspecified
+        int fromX = -1, fromY = -1; // -1 for unspecified
+        int toX = -1, toY = -1;     // -1 for unspecified
+        int promPiece = -1;         // -1 for unspecified
+    };
+}
+
 Move
 TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
     std::string strMove;
-    for (size_t i = 0; i < strMoveIn.length(); i++)
-        if (strMoveIn[i] != '=')
+    for (size_t i = 0; i < strMoveIn.length(); i++) {
+        switch (strMoveIn[i]) {
+        case '=':
+        case '+':
+        case '#':
+            break;
+        default:
             strMove += strMoveIn[i];
+            break;
+        }
+    }
+
     Move move;
-    if (strMove.length() == 0)
+    if (strMove == "--")
         return move;
+
+    const bool wtm = pos.getWhiteMove();
+
+    MoveInfo info;
+    bool capture = false;
+    if ((strMove == "O-O") || (strMove =="0-0") || (strMove == "o-o")) {
+        info.piece = wtm ? Piece::WKING : Piece::BKING;
+        info.fromX = 4;
+        info.toX = 6;
+        info.fromY = info.toY = wtm ? 0 : 7;
+        info.promPiece = Piece::EMPTY;
+    } else if ((strMove == "O-O-O") || (strMove == "0-0-0") || (strMove == "o-o-o")) {
+        info.piece = wtm ? Piece::WKING : Piece::BKING;
+        info.fromX = 4;
+        info.toX = 2;
+        info.fromY = info.toY = wtm ? 0 : 7;
+        info.promPiece = Piece::EMPTY;
+    } else {
+        bool atToSq = false;
+        for (size_t i = 0; i < strMove.length(); i++) {
+            char c = strMove[i];
+            if (i == 0) {
+                int piece = charToPiece(wtm, c);
+                if (piece >= 0) {
+                    info.piece = piece;
+                    continue;
+                }
+            }
+            int tmpX = c - 'a';
+            if ((tmpX >= 0) && (tmpX < 8)) {
+                if (atToSq || (info.fromX >= 0))
+                    info.toX = tmpX;
+                else
+                    info.fromX = tmpX;
+            }
+            int tmpY = c - '1';
+            if ((tmpY >= 0) && (tmpY < 8)) {
+                if (atToSq || (info.fromY >= 0))
+                    info.toY = tmpY;
+                else
+                    info.fromY = tmpY;
+            }
+            if ((c == 'x') || (c == '-')) {
+                atToSq = true;
+                if (c == 'x')
+                    capture = true;
+            }
+            if (i == strMove.length() - 1) {
+                int promPiece = charToPiece(wtm, c);
+                if (promPiece >= 0) {
+                    info.promPiece = promPiece;
+                }
+            }
+        }
+        if ((info.fromX >= 0) && (info.toX < 0)) {
+            info.toX = info.fromX;
+            info.fromX = -1;
+        }
+        if ((info.fromY >= 0) && (info.toY < 0)) {
+            info.toY = info.fromY;
+            info.fromY = -1;
+        }
+        if (info.piece < 0) {
+            bool haveAll = (info.fromX >= 0) && (info.fromY >= 0) &&
+                           (info.toX >= 0) && (info.toY >= 0);
+            if (!haveAll)
+                info.piece = wtm ? Piece::WPAWN : Piece::BPAWN;
+        }
+        if (info.promPiece < 0)
+            info.promPiece = Piece::EMPTY;
+    }
+
     MoveGen::MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
-    Position tmpPos(pos);
-    MoveGen::removeIllegal(tmpPos, moves);
-    {
-        char lastChar = strMove[strMove.length() - 1];
-        if ((lastChar == '#') || (lastChar == '+')) {
-            MoveGen::MoveList subMoves;
-            int len = 0;
-            for (int mi = 0; mi < moves.size; mi++) {
-                const Move& m = moves[mi];
-                std::string str1 = ::moveToString(pos, m, true, moves);
-                if (str1[str1.length() - 1] == lastChar) {
-                    subMoves[len++] = m;
-                }
-            }
-            subMoves.size = len;
-            moves = subMoves;
-            strMove = normalizeMoveString(strMove);
-        }
-    }
+    MoveGen::removeIllegal(pos, moves);
 
-    for (int i = 0; i < 2; i++) {
-        // Search for full match
-        for (int mi = 0; mi < moves.size; mi++) {
-            const Move& m = moves[mi];
-            std::string str1 = normalizeMoveString(::moveToString(pos, m, true, moves));
-            std::string str2 = normalizeMoveString(::moveToString(pos, m, false, moves));
-            if (i == 0) {
-                if ((strMove == str1) || (strMove == str2))
-                    return m;
-            } else {
-                if ((toLowerCase(strMove) == toLowerCase(str1)) ||
-                    (toLowerCase(strMove) == toLowerCase(str2)))
-                    return m;
-            }
-        }
+    std::vector<Move> matches;
+    for (int i = 0; i < moves.size; i++) {
+        const Move& m = moves[i];
+        int p = pos.getPiece(m.from());
+        bool match = true;
+        if ((info.piece >= 0) && (info.piece != p))
+            match = false;
+        if ((info.fromX >= 0) && (info.fromX != Position::getX(m.from())))
+            match = false;
+        if ((info.fromY >= 0) && (info.fromY != Position::getY(m.from())))
+            match = false;
+        if ((info.toX >= 0) && (info.toX != Position::getX(m.to())))
+            match = false;
+        if ((info.toY >= 0) && (info.toY != Position::getY(m.to())))
+            match = false;
+        if ((info.promPiece >= 0) && (info.promPiece != m.promoteTo()))
+            match = false;
+        if (match)
+            matches.push_back(m);
     }
-
-    for (int i = 0; i < 2; i++) {
-        // Search for unique substring match
-        for (int mi = 0; mi < moves.size; mi++) {
-            const Move& m = moves[mi];
-            std::string str1 = normalizeMoveString(TextIO::moveToString(pos, m, true));
-            std::string str2 = normalizeMoveString(TextIO::moveToString(pos, m, false));
-            bool match;
-            if (i == 0) {
-                match = startsWith(str1, strMove) || startsWith(str2, strMove);
+    int nMatches = matches.size();
+    if (nMatches == 0)
+        return move;
+    else if (nMatches == 1)
+        return matches[0];
+    if (!capture)
+        return move;
+    for (size_t i = 0; i < matches.size(); i++) {
+        const Move& m = matches[i];
+        int capt = pos.getPiece(m.to());
+        if (capt != Piece::EMPTY) {
+            if (move.isEmpty()) {
+                move = m;
             } else {
-                match = startsWith(toLowerCase(str1), toLowerCase(strMove)) ||
-                        startsWith(toLowerCase(str2), toLowerCase(strMove));
-            }
-            if (match) {
-                if (!move.isEmpty()) {
-                    return Move(); // More than one match, not ok
-                } else {
-                    move = m;
-                }
+                move = Move();
+                return move;
             }
         }
-        if (!move.isEmpty())
-            return move;
     }
     return move;
 }
