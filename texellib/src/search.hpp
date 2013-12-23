@@ -43,10 +43,12 @@
 
 
 class SearchTest;
+class ChessTool;
 
 /** Implements the nega-scout search algorithm. */
 class Search {
     friend class SearchTest;
+    friend class ChessTool;
 public:
     /** Help tables used by the search. */
     struct SearchTables {

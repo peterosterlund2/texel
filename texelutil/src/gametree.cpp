@@ -16,9 +16,16 @@ PgnToken::PgnToken(int type0, const std::string& token0)
 
 // --------------------------------------------------------------------------------
 
-PgnScanner::PgnScanner(const std::string& pgn) {
+PgnScanner::PgnScanner(std::istream& is) {
+    std::vector<char> pgn;
+    {
+        int c;
+        while ((c = is.get()) != EOF)
+            pgn.push_back(c);
+    }
+
     // Skip "escape" lines, ie lines starting with a '%' character
-    int len = pgn.length();
+    int len = pgn.size();
     bool col0 = true;
     for (int i = 0; i < len; i++) {
         char c = pgn[i];
@@ -37,6 +44,10 @@ PgnScanner::PgnScanner(const std::string& pgn) {
     }
     data += '\n'; // Terminating whitespace simplifies the tokenizer
     idx = 0;
+}
+
+void PgnScanner::putBack(const PgnToken& tok) {
+    savedTokens.push_back(tok);
 }
 
 PgnToken PgnScanner::nextToken() {
@@ -239,8 +250,10 @@ void Node::parsePgn(PgnScanner& scanner, Position pos, std::shared_ptr<Node> nod
                     moveAdded = false;
                 }
                 nodeToAdd->move = TextIO::stringToMove(pos, tok.token);
-                if (nodeToAdd->move.isEmpty())
+                if (nodeToAdd->move.isEmpty()) {
+                    std::cerr << TextIO::asciiBoard(pos) << " wtm:" << (pos.getWhiteMove()?1:0) << " move:" << tok.token << std::endl;
                     throw ChessParseError("Invalid move");
+                }
                 moveAdded = true;
             }
             break;
@@ -308,12 +321,12 @@ void GameNode::goForward(int i) {
 
 // --------------------------------------------------------------------------------
 
-GameTree::GameTree() {
+GameTree::GameTree(std::istream& is)
+    : scanner(is) {
     setStartPos(TextIO::readFEN(TextIO::startPosFEN));
 }
 
-bool GameTree::readPGN(const std::string& pgn) {
-    PgnScanner scanner(pgn);
+bool GameTree::readPGN() {
     PgnToken tok = scanner.nextToken();
 
     // Parse tag section
@@ -393,6 +406,17 @@ bool GameTree::readPGN(const std::string& pgn) {
     rootNode = gameRoot;
 
     return true;
+}
+
+GameTree::Result GameTree::getResult() const {
+    if (result =="1-0")
+        return WHITE_WIN;
+    else if (result == "0-1")
+        return BLACK_WIN;
+    else if (result == "1/2-1/2")
+        return DRAW;
+    else
+        return UNKNOWN;
 }
 
 void GameTree::getHeaders(std::map<std::string, std::string>& headers) {

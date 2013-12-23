@@ -44,11 +44,9 @@ public:
 
 class PgnScanner {
 public:
-    PgnScanner(const std::string& pgn);
+    PgnScanner(std::istream& is);
 
-    void putBack(const PgnToken& tok) {
-        savedTokens.push_back(tok);
-    }
+    void putBack(const PgnToken& tok);
 
     PgnToken nextToken();
 
@@ -130,10 +128,20 @@ private:
 class GameTree {
 public:
     /** Creates an empty GameTree starting at the standard start position. */
-    GameTree();
+    GameTree(std::istream& is);
 
-    /** Import PGN data. */
-    bool readPGN(const std::string& pgn);
+    /** Read next game. Return false if no more games to read. */
+    bool readPGN();
+
+    enum Result {
+        WHITE_WIN,
+        DRAW,
+        BLACK_WIN,
+        UNKNOWN,
+    };
+
+    /** Get game result. */
+    Result getResult() const;
 
     /** Get PGN header tags and values. */
     void getHeaders(std::map<std::string, std::string>& headers);
@@ -147,6 +155,8 @@ private:
 
     // Data from the seven tag roster (STR) part of the PGN standard
     std::string event, site, date, round, white, black, result;
+
+    PgnScanner scanner;
 
     // Non-standard tags
     struct TagPair {
