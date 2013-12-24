@@ -33,16 +33,15 @@ const std::string TextIO::startPosFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ
 Position
 TextIO::readFEN(const std::string& fen) {
     Position pos;
-    std::vector<std::string> words;
-    splitString(fen, words);
-    if (words.size() < 2)
-        throw ChessParseError("Too few spaces");
 
     // Piece placement
     int row = 7;
     int col = 0;
-    for (size_t i = 0; i < words[0].length(); i++) {
-        char c = words[0][i];
+    size_t i;
+    for (i = 0; i < fen.length(); i++) {
+        char c = fen[i];
+        if (c == ' ')
+            break;
         switch (c) {
             case '1': col += 1; break;
             case '2': col += 2; break;
@@ -52,7 +51,10 @@ TextIO::readFEN(const std::string& fen) {
             case '6': col += 6; break;
             case '7': col += 7; break;
             case '8': col += 8; break;
-            case '/': row--; col = 0; break;
+            case '/':
+                row--; col = 0;
+                if (row < 0) throw ChessParseError("Too many rows");
+                break;
             case 'P': safeSetPiece(pos, col, row, Piece::WPAWN);   col++; break;
             case 'N': safeSetPiece(pos, col, row, Piece::WKNIGHT); col++; break;
             case 'B': safeSetPiece(pos, col, row, Piece::WBISHOP); col++; break;
@@ -68,45 +70,63 @@ TextIO::readFEN(const std::string& fen) {
             default: throw ChessParseError("Invalid piece");
         }
     }
-    if (words[1].length() == 0)
+    while (i < fen.length() && fen[i] == ' ')
+        i++;
+    if (i >= fen.length())
         throw ChessParseError("Invalid side");
-    pos.setWhiteMove(words[1][0] == 'w');
+    pos.setWhiteMove(fen[i++] == 'w');
 
     // Castling rights
     int castleMask = 0;
-    if (words.size() > 2) {
-        for (size_t i = 0; i < words[2].length(); i++) {
-            char c = words[2][i];
-            switch (c) {
-                case 'K': castleMask |= (1 << Position::H1_CASTLE); break;
-                case 'Q': castleMask |= (1 << Position::A1_CASTLE); break;
-                case 'k': castleMask |= (1 << Position::H8_CASTLE); break;
-                case 'q': castleMask |= (1 << Position::A8_CASTLE); break;
-                case '-': break;
-                default: throw ChessParseError("Invalid castling flags");
-            }
+    while (i < fen.length() && fen[i] == ' ')
+        i++;
+    for ( ; i < fen.length(); i++) {
+        char c = fen[i];
+        if (c == ' ')
+            break;
+        switch (c) {
+        case 'K': castleMask |= (1 << Position::H1_CASTLE); break;
+        case 'Q': castleMask |= (1 << Position::A1_CASTLE); break;
+        case 'k': castleMask |= (1 << Position::H8_CASTLE); break;
+        case 'q': castleMask |= (1 << Position::A8_CASTLE); break;
+        case '-': break;
+        default: throw ChessParseError("Invalid castling flags");
         }
     }
     pos.setCastleMask(castleMask);
 
-    if (words.size() > 3) {
+    while (i < fen.length() && fen[i] == ' ')
+        i++;
+
+    if (i < fen.length()) {
         // En passant target square
-        const std::string& epString = words[3];
-        if (epString != "-") {
-            if (epString.length() < 2)
+        if (fen[i] != '-') {
+            if (i >= fen.length() - 1)
                 throw ChessParseError("Invalid en passant square");
-            pos.setEpSquare(getSquare(epString));
+            pos.setEpSquare(getSquare(fen.substr(i, 2)));
         }
+        while (i < fen.length() && fen[i] != ' ')
+            i++;
     }
 
-    if (words.size() > 4) {
+    while (i < fen.length() && fen[i] == ' ')
+        i++;
+    if (i < fen.length()) {
+        int i0 = i;
+        while (i < fen.length() && fen[i] != ' ')
+            i++;
         int halfMoveClock;
-        if (str2Num(words[4], halfMoveClock))
+        if (str2Num(fen.substr(i0, i - i0), halfMoveClock))
             pos.setHalfMoveClock(halfMoveClock);
     }
-    if (words.size() > 5) {
+    while (i < fen.length() && fen[i] == ' ')
+        i++;
+    if (i < fen.length()) {
+        int i0 = i;
+        while (i < fen.length() && fen[i] != ' ')
+            i++;
         int fullMoveCounter;
-        if (str2Num(words[5], fullMoveCounter))
+        if (str2Num(fen.substr(i0, i - i0), fullMoveCounter))
             pos.setFullMoveCounter(fullMoveCounter);
     }
 

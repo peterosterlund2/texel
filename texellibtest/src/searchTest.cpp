@@ -211,7 +211,7 @@ SearchTest::testDrawRep() {
  */
 void
 SearchTest::testHashing() {
-    Position pos = TextIO::readFEN("/k/3p/p2P1p/P2P1P///K/ w - -");  // Fine #70
+    Position pos = TextIO::readFEN("/k/3p/p2P1p/P2P1P///K w - -");  // Fine #70
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     Move bestM = idSearch(sc, 28);
     ASSERT_EQUAL(TextIO::stringToMove(pos, "Kb1"), bestM);

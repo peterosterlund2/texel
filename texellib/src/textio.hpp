@@ -123,7 +123,6 @@ TextIO::squareToString(int square)
 
 inline void
 TextIO::safeSetPiece(Position& pos, int col, int row, int p) {
-    if (row < 0) throw ChessParseError("Too many rows");
     if (col > 7) throw ChessParseError("Too many columns");
     if ((p == Piece::WPAWN) || (p == Piece::BPAWN))
         if ((row == 0) || (row == 7))
