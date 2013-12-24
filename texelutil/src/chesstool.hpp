@@ -41,6 +41,9 @@ public:
     /** Compute average evaluation error for different pawn advantage values. */
     static void pawnAdvTable(std::istream& is);
 
+    /** Filter out positions where search score and q-search score differ too much. */
+    static void filterFEN(std::istream& is);
+
 private:
     /** Read score from a PGN comment, assuming cutechess-cli comment format.
      * Does not handle mate scores. */

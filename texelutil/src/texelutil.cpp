@@ -27,9 +27,10 @@ std::string readFile(const std::string& fname) {
 }
 
 void usage() {
-    std::cerr << "Usage: texelutil [-p2f] [-pawnadv]" << std::endl;
+    std::cerr << "Usage: texelutil [-p2f] [-pawnadv] [-filter]" << std::endl;
     std::cerr << " -p2f     : Convert from PGN to FEN" << std::endl;
     std::cerr << " -pawnadv : Compute evaluation error for different pawn advantage" << std::endl;
+    std::cerr << " -filter  : " << std::endl;
     ::exit(2);
 }
 
@@ -43,6 +44,8 @@ int main(int argc, char* argv[]) {
         ChessTool::pgnToFen(std::cin);
     } else if (cmd == "-pawnadv") {
         ChessTool::pawnAdvTable(std::cin);
+    } else if (cmd == "-filter") {
+        ChessTool::filterFEN(std::cin);
     } else {
         ScoreToProb sp(300.0);
         for (int i = -100; i <= 100; i++)

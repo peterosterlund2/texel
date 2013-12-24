@@ -110,6 +110,23 @@ ChessTool::pawnAdvTable(std::istream& is) {
     }
 }
 
+void
+ChessTool::filterFEN(std::istream& is) {
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+    ScoreToProb sp(114);
+    Position pos;
+    for (const PositionInfo& pi : positions) {
+        double p1 = sp.getProb(pi.searchScore);
+        double p2 = sp.getProb(pi.qScore);
+        if ((std::abs(p1 - p2) < 0.05) && (std::abs(pi.searchScore - pi.qScore) < 200)) {
+            pos.deSerialize(pi.posData);
+            std::string fen = TextIO::toFEN(pos);
+            std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore << std::endl;
+        }
+    }
+}
+
 bool
 ChessTool::getCommentScore(const std::string& comment, int& score) {
     double fScore;
@@ -149,7 +166,7 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
             std::cout << "fields:" << fields << std::endl;
             throw ChessParseError("Invalid file format");
         }
-        TextIO::readFEN(fields[0]);
+        pos = TextIO::readFEN(fields[0]);
         pos.serialize(pi.posData);
         if (!str2Num(fields[1], pi.result) ||
             !str2Num(fields[2], pi.searchScore) ||
