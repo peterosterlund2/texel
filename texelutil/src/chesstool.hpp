@@ -57,6 +57,9 @@ private:
     };
 
     static void readFENFile(std::istream& is, std::vector<PositionInfo>& data);
+
+    /** Recompute all qScore values. */
+    static void qEval(std::vector<PositionInfo>& positions);
 };
 
 

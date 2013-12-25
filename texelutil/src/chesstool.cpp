@@ -97,6 +97,7 @@ void
 ChessTool::pawnAdvTable(std::istream& is) {
     std::vector<PositionInfo> positions;
     readFENFile(is, positions);
+    qEval(positions);
     for (int pawnAdvantage = 1; pawnAdvantage <= 400; pawnAdvantage += 1) {
         ScoreToProb sp(pawnAdvantage);
         double errSum = 0;
@@ -106,7 +107,9 @@ ChessTool::pawnAdvTable(std::istream& is) {
             errSum += err * err;
         }
         double avgErr = sqrt(errSum / positions.size());
-        std::cout << "pa:" << pawnAdvantage << " err:" << avgErr << std::endl;
+        std::stringstream ss;
+        ss << "pa:" << pawnAdvantage << " err:" << std::setprecision(14) << avgErr;
+        std::cout << ss.str() << std::endl;
     }
 }
 
@@ -173,5 +176,40 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
             !str2Num(fields[3], pi.qScore))
             throw ChessParseError("Invalid file format");
         data.push_back(pi);
+    }
+}
+
+void ChessTool::qEval(std::vector<PositionInfo>& positions) {
+    static TranspositionTable tt(19);
+
+    const int nPos = positions.size();
+    const int chunkSize = 100000;
+
+#pragma omp parallel for default(none) shared(positions,tt)
+    for (int c = 0; c < nPos; c += chunkSize) {
+        std::vector<U64> nullHist(200);
+        ParallelData pd(tt);
+        KillerTable kt;
+        History ht;
+        auto et = Evaluate::getEvalHashTables();
+        Search::SearchTables st(tt, kt, ht, *et);
+        TreeLogger treeLog;
+
+        Position pos;
+        const int mate0 = SearchConst::MATE0;
+        Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+        const int plyScale = SearchConst::plyScale;
+
+        for (int i = 0; i < chunkSize; i++) {
+            if (c + i >= nPos)
+                break;
+            PositionInfo& pi = positions[c + i];
+            pos.deSerialize(pi.posData);
+            sc.init(pos, nullHist, 0);
+            int score = sc.negaScout(-mate0, mate0, 0, 0*plyScale, -1, MoveGen::inCheck(pos));
+            if (!pos.getWhiteMove())
+                score = -score;
+            pi.qScore = score;
+        }
     }
 }
