@@ -350,41 +350,25 @@ Position::deSerialize(const SerializeData& data) {
         U64 v = data.v[i];
         for (int sq = 15; sq >= 0; sq--) {
             int p = v & 0xf;
-            squares[sq0 + sq] = p;
+            setPiece(sq0 + sq, p);
             v >>= 4;
         }
     }
     U64 flags = data.v[4];
-    fullMoveCounter = flags & 0xffff;
+    setFullMoveCounter(flags & 0xffff);
     flags >>= 16;
 
-    halfMoveClock = flags & 0xff;
+    setHalfMoveClock(flags & 0xff);
     flags >>= 8;
 
-    epSquare = flags & 0xff; if (epSquare == 0xff) epSquare = -1;
+    int ep = flags & 0xff; if (ep == 0xff) ep = -1;
+    setEpSquare(ep);
     flags >>= 8;
 
-    castleMask = flags & 0xf;
+    setCastleMask(flags & 0xf);
     flags >>= 4;
 
-    whiteMove = ((flags & 1) != 0);
-
-    for (int p = 0; p < Piece::nPieceTypes; p++)
-        pieceTypeBB_[p] = 0;
-    for (int sq = 0; sq < 64; sq++) {
-        int p = squares[sq];
-        pieceTypeBB_[p] |= 1ULL << sq;
-        if (p == Piece::WKING)
-            wKingSq_ = sq;
-        else if (p == Piece::BKING)
-            bKingSq_ = sq;
-    }
-    whiteBB_ = pieceTypeBB(Piece::WKING, Piece::WQUEEN, Piece::WROOK,
-                           Piece::WBISHOP, Piece::WKNIGHT, Piece::WPAWN);
-    blackBB_ = pieceTypeBB(Piece::BKING, Piece::BQUEEN, Piece::BROOK,
-                           Piece::BBISHOP, Piece::BKNIGHT, Piece::BPAWN);
-
-    computeZobristHash();
+    setWhiteMove((flags & 1) != 0);
 }
 
 // ----------------------------------------------------------------------------

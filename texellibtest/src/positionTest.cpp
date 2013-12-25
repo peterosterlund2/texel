@@ -552,6 +552,20 @@ testMaterialId() {
     }
 }
 
+static void
+testSerialize() {
+    Position pos = TextIO::readFEN("rnbqkb1r/3ppp1p/p4np1/1PpP4/8/5N2/PP2PPPP/RNBQKB1R w KQkq - 0 1");
+    Position pos2;
+    Position::SerializeData data;
+    pos.serialize(data);
+    pos2.deSerialize(data);
+    ASSERT(pos.equals(pos2));
+    ASSERT_EQUAL(pos.wMtrl(), pos2.wMtrl());
+    ASSERT_EQUAL(pos.bMtrl(), pos2.bMtrl());
+    ASSERT_EQUAL(pos.wMtrlPawns(), pos2.wMtrlPawns());
+    ASSERT_EQUAL(pos.bMtrlPawns(), pos2.bMtrlPawns());
+}
+
 cute::suite
 PositionTest::getSuite() const {
     cute::suite s;
@@ -566,5 +580,6 @@ PositionTest::getSuite() const {
     s.push_back(CUTE(testHashCode));
     s.push_back(CUTE(testGetKingSq));
     s.push_back(CUTE(testMaterialId));
+    s.push_back(CUTE(testSerialize));
     return s;
 }

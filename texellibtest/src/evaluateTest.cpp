@@ -109,6 +109,10 @@ int evalPos(Evaluate& eval, const Position& pos, bool testMirror) {
     pos.serialize(data);
     pos2.deSerialize(data);
     ASSERT(pos.equals(pos2));
+    ASSERT_EQUAL(pos.wMtrl(), pos2.wMtrl());
+    ASSERT_EQUAL(pos.bMtrl(), pos2.bMtrl());
+    ASSERT_EQUAL(pos.wMtrlPawns(), pos2.wMtrlPawns());
+    ASSERT_EQUAL(pos.bMtrlPawns(), pos2.bMtrlPawns());
 
     if (testMirror) {
         Position mir = mirrorX(pos);
