@@ -307,8 +307,8 @@ testMaterial() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     ASSERT_EQUAL(0, material(pos));
 
-    const int pV = Evaluate::pV;
-    const int qV = Evaluate::qV;
+    const int pV = ::pV;
+    const int qV = ::qV;
     ASSERT(pV != 0);
     ASSERT(qV != 0);
     ASSERT(qV > pV);
@@ -414,12 +414,12 @@ testEndGameEval() {
 
     pos.setPiece(Position::getSquare(3, 1), Piece::WROOK);
     score = evalWhite(pos);
-    const int rV = Evaluate::rV;
+    const int rV = ::rV;
     ASSERT(std::abs(score) > rV + 100);   // Enough material to force mate
 
     pos.setPiece(Position::getSquare(3, 6), Piece::BBISHOP);
     score = evalWhite(pos);
-    const int bV = Evaluate::bV;
+    const int bV = ::bV;
     ASSERT(score >= 0);
     ASSERT(score < rV - bV);   // Insufficient excess material to mate
 
@@ -435,7 +435,7 @@ testEndGameEval() {
     // KRPKN is win for white
     pos = TextIO::readFEN("8/3bk3/8/8/8/3P4/3RK3/8 w - - 0 1");
     score = evalWhite(pos);
-    const int pV = Evaluate::pV;
+    const int pV = ::pV;
     ASSERT(score > rV + pV - bV - 100);
 
     // KNNK is a draw
@@ -443,7 +443,7 @@ testEndGameEval() {
     score = evalWhite(pos);
     ASSERT(std::abs(score) < 50);
 
-    const int nV = Evaluate::nV;
+    const int nV = ::nV;
     pos = TextIO::readFEN("8/8/8/4k3/N6N/P2K4/8/8 b - - 0 66");
     score = evalWhite(pos);
     ASSERT(score > nV * 2);
@@ -526,8 +526,8 @@ testPassedPawns() {
  */
 static void
 testBishAndRookPawns() {
-    const int pV = Evaluate::pV;
-    const int bV = Evaluate::bV;
+    const int pV = ::pV;
+    const int bV = ::bV;
     const int winScore = pV + bV;
     const int drawish = (pV + bV) / 20;
     Position pos = TextIO::readFEN("k7/8/8/8/2B5/2K5/P7/8 w - - 0 1");
@@ -578,8 +578,8 @@ testTrappedBishop() {
  */
 static void
 testKQKP() {
-    const int pV = Evaluate::pV;
-    const int qV = Evaluate::qV;
+    const int pV = ::pV;
+    const int qV = ::qV;
     const int winScore = qV - pV - 200;
     const int drawish = (pV + qV) / 20;
 
@@ -602,8 +602,8 @@ testKQKP() {
 
 static void
 testKRKP() {
-    const int pV = Evaluate::pV;
-    const int rV = Evaluate::rV;
+    const int pV = ::pV;
+    const int rV = ::rV;
     const int winScore = rV - pV;
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
@@ -614,7 +614,7 @@ testKRKP() {
 
 static void
 testKRPKR() {
-    const int pV = Evaluate::pV;
+    const int pV = ::pV;
     const int winScore = 2 * pV;
     const int drawish = pV * 2 / 3;
     Position pos = TextIO::readFEN("8/r7/4K1k1/4P3/8/5R2/8/8 w - - 0 1");
@@ -626,8 +626,8 @@ testKRPKR() {
 
 static void
 testKPK() {
-    const int pV = Evaluate::pV;
-    const int rV = Evaluate::rV;
+    const int pV = ::pV;
+    const int rV = ::rV;
     const int winScore = rV - pV;
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("8/8/8/3k4/8/8/3PK3/8 w - - 0 1");
@@ -639,8 +639,8 @@ testKPK() {
 static void
 testKBNK() {
     int s1 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/2k5/8/8 b - - 0 1"));
-    const int nV = Evaluate::nV;
-    const int bV = Evaluate::bV;
+    const int nV = ::nV;
+    const int bV = ::bV;
     ASSERT(s1 > nV + bV);
     int s2 = evalWhite(TextIO::readFEN("1BN5/1K6/8/8/8/2k5/8/8 b - - 1 1"));
     ASSERT(s2 > s1);
@@ -656,7 +656,7 @@ testKBNK() {
 
 static void
 testKBPKB() {
-    const int pV = Evaluate::pV;
+    const int pV = ::pV;
     const int drawish = pV / 5;
     int score = evalWhite(TextIO::readFEN("8/3b4/3k4/8/3P4/3B4/3K4/8 w - - 0 1"));
     ASSERT(score >= 0);
@@ -686,7 +686,7 @@ testKBPKB() {
 
 static void
 testKBPKN() {
-    const int pV = Evaluate::pV;
+    const int pV = ::pV;
     const int drawish = pV / 5;
     int score = evalWhite(TextIO::readFEN("8/3k4/8/3P3n/2KB4/8/8/8 w - - 0 1"));
     ASSERT(score > pV);
@@ -713,7 +713,7 @@ testKBPKN() {
 
 static void
 testKNPKB() {
-    const int pV = Evaluate::pV;
+    const int pV = ::pV;
     const int drawish = pV / 5;
     int score = evalWhite(TextIO::readFEN("8/8/3b4/3P4/3NK3/8/8/7k w - - 0 1"));
     ASSERT(score >= 0);
@@ -742,8 +742,8 @@ testKNPKB() {
 
 static void
 testKNPK() {
-    const int pV = Evaluate::pV;
-    const int nV = Evaluate::nV;
+    const int pV = ::pV;
+    const int nV = ::nV;
     int score = evalWhite(TextIO::readFEN("k7/P7/8/1N6/1K6/8/8/8 w - - 0 1"));
     ASSERT(score == 0);
     score = evalWhite(TextIO::readFEN("8/Pk6/8/1N6/1K6/8/8/8 w - - 0 1"));
@@ -782,7 +782,7 @@ testCantWin() {
 
 static void
 testPawnRace() {
-    const int pV = Evaluate::pV;
+    const int pV = ::pV;
     const int winScore = 400;
     const int drawish = 100;
     Position pos = TextIO::readFEN("8/8/K7/1P3p2/8/6k1/8/8 w - - 0 1");
@@ -818,6 +818,41 @@ testKnightOutPost() {
     evalWhite(pos);
 }
 
+
+DECLARE_PARAM(testUciPar1, 60, 10, 80, true);
+DECLARE_PARAM_2REF(testUciPar2, 120, 100, 300, true);
+
+int uciParVec[3];
+
+DEFINE_PARAM(testUciPar1);
+DEFINE_PARAM_2REF(testUciPar2, uciParVec[0], uciParVec[2]);
+
+static void
+testUciParam() {
+    testUciPar1.registerParam("uciPar1", Parameters::instance());
+    testUciPar2.registerParam("uciPar2", Parameters::instance());
+
+    ASSERT_EQUAL(60, static_cast<int>(testUciPar1));
+    ASSERT_EQUAL(120, static_cast<int>(testUciPar2));
+    ASSERT_EQUAL(120, uciParVec[0]);
+    ASSERT_EQUAL(0, uciParVec[1]);
+    ASSERT_EQUAL(120, uciParVec[2]);
+
+    Parameters::instance().set("uciPar1", "70");
+    ASSERT_EQUAL(70, static_cast<int>(testUciPar1));
+    ASSERT_EQUAL(120, static_cast<int>(testUciPar2));
+    ASSERT_EQUAL(120, uciParVec[0]);
+    ASSERT_EQUAL(0, uciParVec[1]);
+    ASSERT_EQUAL(120, uciParVec[2]);
+
+    Parameters::instance().set("uciPar2", "180");
+    ASSERT_EQUAL(70, static_cast<int>(testUciPar1));
+    ASSERT_EQUAL(180, static_cast<int>(testUciPar2));
+    ASSERT_EQUAL(180, uciParVec[0]);
+    ASSERT_EQUAL(0, uciParVec[1]);
+    ASSERT_EQUAL(180, uciParVec[2]);
+}
+
 cute::suite
 EvaluateTest::getSuite() const {
     cute::suite s;
@@ -842,5 +877,6 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testKBPKN));
     s.push_back(CUTE(testKNPKB));
     s.push_back(CUTE(testKNPK));
+    s.push_back(CUTE(testUciParam));
     return s;
 }

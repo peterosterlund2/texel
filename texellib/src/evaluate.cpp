@@ -26,12 +26,6 @@
 #include "evaluate.hpp"
 #include <vector>
 
-int Evaluate::pieceValue[Piece::nPieceTypes] = {
-    0,
-    kV, qV, rV, bV, nV, pV,
-    kV, qV, rV, bV, nV, pV
-};
-
 int Evaluate::pieceValueOrder[Piece::nPieceTypes] = {
     0,
     5, 4, 3, 2, 2, 1,
@@ -611,9 +605,9 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     const int bIslands = BitBoard::bitCount(((~bPawnFiles) >> 1) & bPawnFiles);
     const int bIsolated = BitBoard::bitCount(~(bPawnFiles<<1) & bPawnFiles & ~(bPawnFiles>>1));
 
-    score -= (wDouble - bDouble) * 19;
-    score -= (wIslands - bIslands) * 14;
-    score -= (wIsolated - bIsolated) * 9;
+    score -= (wDouble - bDouble) * pawnDoubledPenalty;
+    score -= (wIslands - bIslands) * pawnIslandPenalty;
+    score -= (wIsolated - bIsolated) * pawnIsolatedPenalty;
 
     // Evaluate backward pawns, defined as a pawn that guards a friendly pawn,
     // can't be guarded by friendly pawns, can advance, but can't advance without
@@ -922,7 +916,7 @@ Evaluate::threatBonus(const Position& pos) {
     int tmp = 0;
     while (m != 0) {
         int sq = BitBoard::numberOfTrailingZeros(m);
-        tmp += pieceValue[pos.getPiece(sq)];
+        tmp += ::pieceValue[pos.getPiece(sq)];
         m &= m-1;
     }
     score += tmp + tmp * tmp / qV;
@@ -934,7 +928,7 @@ Evaluate::threatBonus(const Position& pos) {
     tmp = 0;
     while (m != 0) {
         int sq = BitBoard::numberOfTrailingZeros(m);
-        tmp += pieceValue[pos.getPiece(sq)];
+        tmp += ::pieceValue[pos.getPiece(sq)];
         m &= m-1;
     }
     score -= tmp + tmp * tmp / qV;

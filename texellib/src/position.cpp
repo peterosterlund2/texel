@@ -71,7 +71,7 @@ Position::Position() {
     fullMoveCounter = 1;
     computeZobristHash();
     wKingSq_ = bKingSq_ = -1;
-    wMtrl_ = bMtrl_ = -Evaluate::kV;
+    wMtrl_ = bMtrl_ = -::kV;
     wMtrlPawns_ = bMtrlPawns_ = 0;
 }
 
@@ -94,7 +94,7 @@ Position::setPiece(int square, int piece) {
     pieceTypeBB_[piece] |= sqMask;
 
     if (removedPiece != Piece::EMPTY) {
-        int pVal = Evaluate::pieceValue[removedPiece];
+        int pVal = ::pieceValue[removedPiece];
         if (Piece::isWhite(removedPiece)) {
             wMtrl_ -= pVal;
             whiteBB_ &= ~sqMask;
@@ -113,7 +113,7 @@ Position::setPiece(int square, int piece) {
     }
 
     if (piece != Piece::EMPTY) {
-        int pVal = Evaluate::pieceValue[piece];
+        int pVal = ::pieceValue[piece];
         if (Piece::isWhite(piece)) {
             wMtrl_ += pVal;
             whiteBB_ |= sqMask;

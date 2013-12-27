@@ -27,6 +27,7 @@
 #define PARAMETERS_HPP_
 
 #include "util/util.hpp"
+#include "piece.hpp"
 
 #include <memory>
 #include <map>
@@ -34,6 +35,7 @@
 #include <cassert>
 
 
+/** Handles all UCI parameters. */
 class Parameters {
 public:
     enum Type {
@@ -48,9 +50,8 @@ public:
     struct ParamBase {
         std::string name;
         Type type;
-        bool visible;
 
-        ParamBase(const std::string& n, Type t, bool v) : name(n), type(t), visible(v) { }
+        ParamBase(const std::string& n, Type t) : name(n), type(t) { }
 
         virtual bool getBoolPar() const { assert(false); return false; }
         virtual int getIntPar() const { assert(false); return 0; }
@@ -67,7 +68,7 @@ public:
         bool defaultValue;
 
         CheckParam(const std::string& name, bool def)
-            : ParamBase(name, CHECK, true) {
+            : ParamBase(name, CHECK) {
             this->value = def;
             this->defaultValue = def;
         }
@@ -82,28 +83,56 @@ public:
         }
     };
 
+    class IntRef {
+    public:
+        IntRef(int& value) : valueP(&value) {}
+        void set(int v) { *valueP = v; }
+        int get() const { return *valueP; }
+    private:
+        int* valueP;
+    };
+
+    struct SpinParamBase : public ParamBase {
+        SpinParamBase(const std::string& name) : ParamBase(name, SPIN) {}
+        virtual int getDefaultValue() const = 0;
+        virtual int getMinValue() const = 0;
+        virtual int getMaxValue() const = 0;
+    };
+
     /** An integer parameter. */
-    struct SpinParam : public ParamBase {
+    template <typename Ref>
+    struct SpinParamRef : public SpinParamBase {
         int minValue;
         int maxValue;
-        int value;
+        Ref value;
         int defaultValue;
 
-        SpinParam(const std::string& name, int minV, int maxV, int def)
-            : ParamBase(name, SPIN, true) {
+        SpinParamRef(const std::string& name, int minV, int maxV, int def, Ref valueR)
+            : SpinParamBase(name), value(valueR) {
             this->minValue = minV;
             this->maxValue = maxV;
-            this->value = def;
+            this->value.set(def);
             this->defaultValue = def;
         }
 
-        virtual int getIntPar() const { return value; }
+        virtual int getIntPar() const { return value.get(); }
 
         virtual void set(const std::string& value) {
             int val;
             str2Num(value, val);
             if ((val >= minValue) && (val <= maxValue))
-                this->value = val;
+                this->value.set(val);
+        }
+
+        int getDefaultValue() const { return defaultValue; }
+        int getMinValue() const { return minValue; }
+        int getMaxValue() const { return maxValue; }
+    };
+
+    struct SpinParam : public SpinParamRef<IntRef> {
+        int value;
+        SpinParam(const std::string& name, int minV, int maxV, int def)
+            : SpinParamRef(name, minV, maxV, def, IntRef(value)) {
         }
     };
 
@@ -115,7 +144,7 @@ public:
 
         ComboParam(const std::string& name, const std::vector<std::string>& allowed,
                    const std::string& def)
-            : ParamBase(name, COMBO, true) {
+            : ParamBase(name, COMBO) {
             this->allowedValues = allowed;
             this->value = def;
             this->defaultValue = def;
@@ -137,7 +166,7 @@ public:
     /** An action parameter. */
     struct ButtonParam : public ParamBase {
         ButtonParam(const std::string& name)
-            : ParamBase(name, BUTTON, true) { }
+            : ParamBase(name, BUTTON) { }
 
         virtual void set(const std::string& value) {
         }
@@ -149,7 +178,7 @@ public:
         std::string defaultValue;
 
         StringParam(const std::string& name, const std::string& def)
-            : ParamBase(name, STRING, true) {
+            : ParamBase(name, STRING) {
             this->value = def;
             this->defaultValue = def;
         }
@@ -166,9 +195,8 @@ public:
 
     void getParamNames(std::vector<std::string>& parNames) {
         parNames.clear();
-        for (ParamMap::const_iterator it = params.begin(); it != params.end(); ++it)
-            if (it->second->visible)
-                parNames.push_back(it->first);
+        for (const auto& p : params)
+            parNames.push_back(p.first);
     }
 
     std::shared_ptr<ParamBase> getParam(const std::string& name) {
@@ -187,22 +215,105 @@ public:
     }
 
     void set(const std::string& name, const std::string& value) {
-        ParamMap::iterator it = params.find(toLowerCase(name));
+        auto it = params.find(toLowerCase(name));
         if (it == params.end())
             return;
         it->second->set(value);
     }
 
-private:
-    Parameters();
-
     void addPar(const std::shared_ptr<ParamBase>& p) {
+        assert(params.find(toLowerCase(p->name)) == params.end());
         params[toLowerCase(p->name)] = p;
     }
 
-    typedef std::map<std::string, std::shared_ptr<ParamBase> > ParamMap;
-    ParamMap params;
+private:
+    Parameters();
+
+    std::map<std::string, std::shared_ptr<ParamBase> > params;
 };
+
+// ----------------------------------------------------------------------------
+
+class IntPairRef {
+public:
+    IntPairRef(int& value1, int& value2) : value1P(&value1), value2P(&value2) {}
+    void set(int v) { *value1P = v; *value2P = v; }
+    int get() const { return *value1P; }
+private:
+    int* value1P;
+    int* value2P;
+};
+
+/** Param can be either a UCI parameter or a compile time constant. */
+template <int defaultValue, int minValue, int maxValue, bool uci, typename Ref> class Param;
+
+template <int defaultValue, int minValue, int maxValue, typename Ref>
+class Param<defaultValue, minValue, maxValue, false, Ref> {
+public:
+    Param() : ref(value) {}
+    Param(int& r1, int& r2) : ref(r1, r2) { ref.set(defaultValue); }
+
+    operator int() { return defaultValue; }
+    void setValue(int v) { assert(false); }
+    bool isUCI() const { return false; }
+    void registerParam(const std::string& name, Parameters& pars) {}
+private:
+    int value = defaultValue;
+    Ref ref;
+};
+
+template <int defaultValue, int minValue, int maxValue, typename Ref>
+class Param<defaultValue, minValue, maxValue, true, Ref> {
+public:
+    Param() : ref(value) {}
+    Param(int& r1, int& r2) : ref(r1, r2) { ref.set(defaultValue); }
+
+    operator int() { return  ref.get(); }
+    void setValue(int v) { value = v; }
+    bool isUCI() const { return true; }
+    void registerParam(const std::string& name, Parameters& pars) {
+        pars.addPar(std::make_shared<Parameters::SpinParamRef<Ref>>(name, minValue, maxValue,
+                                                                    defaultValue, ref));
+    }
+private:
+    int value = defaultValue;
+    Ref ref;
+};
+
+#define DECLARE_PARAM(name, defV, minV, maxV, uci) \
+    typedef Param<defV,minV,maxV,uci,Parameters::IntRef> name##ParamType; \
+    extern name##ParamType name;
+
+#define DECLARE_PARAM_2REF(name, defV, minV, maxV, uci) \
+    typedef Param<defV,minV,maxV,uci,IntPairRef> name##ParamType; \
+    extern name##ParamType name;
+
+#define DEFINE_PARAM(name) \
+    name##ParamType name;
+
+#define DEFINE_PARAM_2REF(name, ref1, ref2) \
+    name##ParamType name(ref1, ref2);
+
+
+#define REGISTER_PARAM(varName, uciName) \
+    varName.registerParam(uciName, *this);
+
+// ----------------------------------------------------------------------------
+
+const bool useUciParam = false;
+
+extern int pieceValue[Piece::nPieceTypes];
+
+DECLARE_PARAM_2REF(pV, 92, 0, 200, useUciParam);
+DECLARE_PARAM_2REF(nV, 385, 0, 800, useUciParam);
+DECLARE_PARAM_2REF(bV, 385, 0, 800, useUciParam);
+DECLARE_PARAM_2REF(rV, 593, 0, 1200, useUciParam);
+DECLARE_PARAM_2REF(qV, 1244, 0, 2400, useUciParam);
+DECLARE_PARAM_2REF(kV, 9900, 9900, 9900, false); // Used by SEE algorithm but not included in board material sums
+
+DECLARE_PARAM(pawnDoubledPenalty, 19, 0, 50, useUciParam);
+DECLARE_PARAM(pawnIslandPenalty, 14, 0, 50, useUciParam);
+DECLARE_PARAM(pawnIsolatedPenalty,  9, 0, 50, useUciParam);
 
 
 #endif /* PARAMETERS_HPP_ */

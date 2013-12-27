@@ -47,6 +47,7 @@ ComputerPlayer::ComputerPlayer()
     : tt(15), pd(tt),
       book(verbose)
 {
+    Parameters::instance();
     et = Evaluate::getEvalHashTables();
     minTimeMillis = 10000;
     maxTimeMillis = 10000;

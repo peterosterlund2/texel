@@ -277,10 +277,10 @@ SearchTest::getSEE(Search& sc, const Move& m) {
  */
 void
 SearchTest::testSEE() {
-    const int pV = Evaluate::pV;
-    const int nV = Evaluate::nV;
-    const int bV = Evaluate::bV;
-    const int rV = Evaluate::rV;
+    const int pV = ::pV;
+    const int nV = ::nV;
+    const int bV = ::bV;
+    const int rV = ::rV;
 
     // Basic tests
     Position pos = TextIO::readFEN("r2qk2r/ppp2ppp/1bnp1nb1/1N2p3/3PP3/1PP2N2/1P3PPP/R1BQRBK1 w kq - 0 1");
@@ -364,7 +364,7 @@ SearchTest::testSEE() {
     ASSERT_EQUAL(pV, getSEE(sc, TextIO::stringToMove(pos, "Rxe4+")));
 
     pos = TextIO::readFEN("8/8/8/4k3/r3P1R1/4K3/8/8 b - - 0 1");
-    const int kV = Evaluate::kV;
+    const int kV = ::kV;
     sc.init(pos, nullHist, 0);
     // 1 5 5 99
     //-4 5 0 99

@@ -26,6 +26,21 @@
 #include "parameters.hpp"
 #include "computerPlayer.hpp"
 
+int pieceValue[Piece::nPieceTypes];
+
+DEFINE_PARAM_2REF(pV, pieceValue[Piece::WPAWN]  , pieceValue[Piece::BPAWN]);
+DEFINE_PARAM_2REF(nV, pieceValue[Piece::WKNIGHT], pieceValue[Piece::BKNIGHT]);
+DEFINE_PARAM_2REF(bV, pieceValue[Piece::WBISHOP], pieceValue[Piece::BBISHOP]);
+DEFINE_PARAM_2REF(rV, pieceValue[Piece::WROOK]  , pieceValue[Piece::BROOK]);
+DEFINE_PARAM_2REF(qV, pieceValue[Piece::WQUEEN] , pieceValue[Piece::BQUEEN]);
+DEFINE_PARAM_2REF(kV, pieceValue[Piece::WKING]  , pieceValue[Piece::BKING]);
+
+DEFINE_PARAM(pawnDoubledPenalty);
+DEFINE_PARAM(pawnIslandPenalty);
+DEFINE_PARAM(pawnIsolatedPenalty);
+
+
+
 Parameters::Parameters() {
     addPar(std::make_shared<SpinParam>("Hash", 1, 524288, 16));
     addPar(std::make_shared<CheckParam>("OwnBook", false));
@@ -38,9 +53,17 @@ Parameters::Parameters() {
     addPar(std::make_shared<SpinParam>("Threads", 1, 64, 1));
     addPar(std::make_shared<SpinParam>("MultiPV", 1, 256, 1));
 
-//    addPar(std::make_shared<SpinParam>("doubled", 0, 2048, 25));
-//    addPar(std::make_shared<SpinParam>("island", 0, 2048, 15));
-//    addPar(std::make_shared<SpinParam>("isolated", 0, 2048, 15));
+    REGISTER_PARAM(pV, "PawnValue");
+    REGISTER_PARAM(nV, "KnightValue");
+    REGISTER_PARAM(bV, "BishopValue");
+    REGISTER_PARAM(rV, "RookValue");
+    REGISTER_PARAM(qV, "QueenValue");
+    REGISTER_PARAM(kV, "KingValue");
+
+    REGISTER_PARAM(pawnDoubledPenalty, "PawnDoubledPenalty");
+    REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
+    REGISTER_PARAM(pawnIsolatedPenalty, "PawnIsolatedPenalty");
+
 //    addPar(std::make_shared<SpinParam>("nOutpost", 0, 2048, 128));
 }
 

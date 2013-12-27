@@ -766,16 +766,16 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     continue;
                 int moveExtend = 0;
                 if (posExtend == 0) {
-                    const int pV = Evaluate::pV;
+                    const int pV = ::pV;
                     if ((m.to() == recaptureSquare)) {
                         if (sVal == std::numeric_limits<int>::min()) sVal = SEE(m);
-                        int tVal = Evaluate::pieceValue[pos.getPiece(m.to())];
+                        int tVal = ::pieceValue[pos.getPiece(m.to())];
                         if (sVal > tVal - pV / 2)
                             moveExtend = plyScale;
                     }
                     if ((moveExtend < plyScale) && isCapture && (pos.wMtrlPawns() + pos.bMtrlPawns() > pV)) {
                         // Extend if going into pawn endgame
-                        int capVal = Evaluate::pieceValue[pos.getPiece(m.to())];
+                        int capVal = ::pieceValue[pos.getPiece(m.to())];
                         if (pos.getWhiteMove()) {
                             if ((pos.wMtrl() == pos.wMtrlPawns()) && (pos.bMtrl() - pos.bMtrlPawns() == capVal))
                                 moveExtend = plyScale;
@@ -803,9 +803,9 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 if (isCapture && (givesCheck || (depth + extend) > plyScale)) {
                     // Compute recapture target square, but only if we are not going
                     // into q-search at the next ply.
-                    int fVal = Evaluate::pieceValue[pos.getPiece(m.from())];
-                    int tVal = Evaluate::pieceValue[pos.getPiece(m.to())];
-                    const int pV = Evaluate::pV;
+                    int fVal = ::pieceValue[pos.getPiece(m.from())];
+                    int tVal = ::pieceValue[pos.getPiece(m.to())];
+                    const int pV = ::pV;
                     if (std::abs(tVal - fVal) < pV / 2) {    // "Equal" capture
                         sVal = SEE(m);
                         if (std::abs(sVal) < pV / 2)
@@ -913,7 +913,7 @@ Search::weakPlaySkipMove(const Position& pos, const Move& m, int ply) const {
 
     double s = strength * 1e-3;
     double offs = (17 - 50 * s) / 3;
-    double effPly = ply * Evaluate::interpolate(pos.wMtrl() + pos.bMtrl(), 0, 30, Evaluate::qV * 4, 100) * 1e-2;
+    double effPly = ply * Evaluate::interpolate(pos.wMtrl() + pos.bMtrl(), 0, 30, ::qV * 4, 100) * 1e-2;
     double t = effPly + offs;
     double p = 1/(1+exp(t)); // Probability to "see" move
     bool easyMove = ((pos.getPiece(m.to()) != Piece::EMPTY) ||
@@ -988,8 +988,8 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
             } else {
                 if (negSEE(m))
                     continue;
-                int capt = Evaluate::pieceValue[pos.getPiece(m.to())];
-                int prom = Evaluate::pieceValue[m.promoteTo()];
+                int capt = ::pieceValue[pos.getPiece(m.to())];
+                int prom = ::pieceValue[m.promoteTo()];
                 int optimisticScore = evalScore + capt + prom + 200;
                 if (optimisticScore < alpha) { // Delta pruning
                     if ((pos.wMtrlPawns() > 0) && (pos.wMtrl() > capt + pos.wMtrlPawns()) &&
@@ -1045,13 +1045,13 @@ int
 Search::SEE(const Move& m) {
     int captures[64];   // Value of captured pieces
 
-    const int kV = Evaluate::kV;
+    const int kV = ::kV;
 
     const int square = m.to();
     if (square == pos.getEpSquare()) {
-        captures[0] = Evaluate::pV;
+        captures[0] = ::pV;
     } else {
-        captures[0] = Evaluate::pieceValue[pos.getPiece(square)];
+        captures[0] = ::pieceValue[pos.getPiece(square)];
         if (captures[0] == kV)
             return kV;
     }
@@ -1060,7 +1060,7 @@ Search::SEE(const Move& m) {
     UndoInfo ui;
     pos.makeSEEMove(m, ui);
     bool white = pos.getWhiteMove();
-    int valOnSquare = Evaluate::pieceValue[pos.getPiece(square)];
+    int valOnSquare = ::pieceValue[pos.getPiece(square)];
     U64 occupied = pos.occupiedBB();
     while (true) {
         int bestValue = std::numeric_limits<int>::max();
@@ -1068,25 +1068,25 @@ Search::SEE(const Move& m) {
         if (white) {
             atk = BitBoard::bPawnAttacks[square] & pos.pieceTypeBB(Piece::WPAWN) & occupied;
             if (atk != 0) {
-                bestValue = Evaluate::pV;
+                bestValue = ::pV;
             } else {
                 atk = BitBoard::knightAttacks[square] & pos.pieceTypeBB(Piece::WKNIGHT) & occupied;
                 if (atk != 0) {
-                    bestValue = Evaluate::nV;
+                    bestValue = ::nV;
                 } else {
                     U64 bAtk = BitBoard::bishopAttacks(square, occupied) & occupied;
                     atk = bAtk & pos.pieceTypeBB(Piece::WBISHOP);
                     if (atk != 0) {
-                        bestValue = Evaluate::bV;
+                        bestValue = ::bV;
                     } else {
                         U64 rAtk = BitBoard::rookAttacks(square, occupied) & occupied;
                         atk = rAtk & pos.pieceTypeBB(Piece::WROOK);
                         if (atk != 0) {
-                            bestValue = Evaluate::rV;
+                            bestValue = ::rV;
                         } else {
                             atk = (bAtk | rAtk) & pos.pieceTypeBB(Piece::WQUEEN);
                             if (atk != 0) {
-                                bestValue = Evaluate::qV;
+                                bestValue = ::qV;
                             } else {
                                 atk = BitBoard::kingAttacks[square] & pos.pieceTypeBB(Piece::WKING) & occupied;
                                 if (atk != 0) {
@@ -1102,25 +1102,25 @@ Search::SEE(const Move& m) {
         } else {
             atk = BitBoard::wPawnAttacks[square] & pos.pieceTypeBB(Piece::BPAWN) & occupied;
             if (atk != 0) {
-                bestValue = Evaluate::pV;
+                bestValue = ::pV;
             } else {
                 atk = BitBoard::knightAttacks[square] & pos.pieceTypeBB(Piece::BKNIGHT) & occupied;
                 if (atk != 0) {
-                    bestValue = Evaluate::nV;
+                    bestValue = ::nV;
                 } else {
                     U64 bAtk = BitBoard::bishopAttacks(square, occupied) & occupied;
                     atk = bAtk & pos.pieceTypeBB(Piece::BBISHOP);
                     if (atk != 0) {
-                        bestValue = Evaluate::bV;
+                        bestValue = ::bV;
                     } else {
                         U64 rAtk = BitBoard::rookAttacks(square, occupied) & occupied;
                         atk = rAtk & pos.pieceTypeBB(Piece::BROOK);
                         if (atk != 0) {
-                            bestValue = Evaluate::rV;
+                            bestValue = ::rV;
                         } else {
                             atk = (bAtk | rAtk) & pos.pieceTypeBB(Piece::BQUEEN);
                             if (atk != 0) {
-                                bestValue = Evaluate::qV;
+                                bestValue = ::qV;
                             } else {
                                 atk = BitBoard::kingAttacks[square] & pos.pieceTypeBB(Piece::BKING) & occupied;
                                 if (atk != 0) {

@@ -310,8 +310,8 @@ Search::passedPawnPush(const Position& pos, const Move& m) {
 
 inline int
 Search::signSEE(const Move& m) {
-    int p0 = Evaluate::pieceValue[pos.getPiece(m.from())];
-    int p1 = Evaluate::pieceValue[pos.getPiece(m.to())];
+    int p0 = ::pieceValue[pos.getPiece(m.from())];
+    int p1 = ::pieceValue[pos.getPiece(m.to())];
     if (p0 < p1)
         return 1;
     return SEE(m);
@@ -319,8 +319,8 @@ Search::signSEE(const Move& m) {
 
 inline bool
 Search::negSEE(const Move& m) {
-    int p0 = Evaluate::pieceValue[pos.getPiece(m.from())];
-    int p1 = Evaluate::pieceValue[pos.getPiece(m.to())];
+    int p0 = ::pieceValue[pos.getPiece(m.from())];
+    int p1 = ::pieceValue[pos.getPiece(m.to())];
     if (p1 >= p0)
         return false;
     return SEE(m) < 0;

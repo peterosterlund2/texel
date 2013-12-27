@@ -81,14 +81,6 @@ public:
     /** Constructor. */
     Evaluate(EvalHashTables& et);
 
-    static const int pV =   92; // + Parameters::instance().getIntPar("pV");
-    static const int nV =  385; // + Parameters::instance().getIntPar("nV");
-    static const int bV =  385; // + Parameters::instance().getIntPar("bV");
-    static const int rV =  593; // + Parameters::instance().getIntPar("rV");
-    static const int qV = 1244; // + Parameters::instance().getIntPar("qV");
-    static const int kV = 9900; // Used by SEE algorithm, but not included in board material sums
-
-    static int pieceValue[Piece::nPieceTypes];
     static int pieceValueOrder[Piece::nPieceTypes];
 
     static const int* psTab1[Piece::nPieceTypes];
