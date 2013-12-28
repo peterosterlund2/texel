@@ -182,18 +182,18 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
         int moves = sPar.movesToGo;
         if (moves == 0)
             moves = 999;
-        moves = std::min(moves, 45); // Assume 45 more moves until end of game
+        moves = std::min(moves, static_cast<int>(timeMaxRemainingMoves)); // Assume at most N more moves until end of game
         bool white = pos.getWhiteMove();
         int time = white ? sPar.wTime : sPar.bTime;
         int inc  = white ? sPar.wInc : sPar.bInc;
-        const int margin = std::min(1000, time * 9 / 10);
+        const int margin = std::min(static_cast<int>(bufferTime), time * 9 / 10);
         int timeLimit = (time + inc * (moves - 1) - margin) / moves;
-        minTimeLimit = (int)(timeLimit * 0.85);
+        minTimeLimit = (int)(timeLimit * minTimeUsage * 0.01);
         if (Parameters::instance().getBoolPar("Ponder")) {
-            const double ponderHitRate = 0.35;
+            const double ponderHitRate = timePonderHitRate * 0.01;
             minTimeLimit = (int)ceil(minTimeLimit / (1 - ponderHitRate));
         }
-        maxTimeLimit = (int)(minTimeLimit * clamp(moves * 0.5, 2.5, 4.0));
+        maxTimeLimit = (int)(minTimeLimit * clamp(moves * 0.5, 2.5, static_cast<int>(maxTimeUsage) * 0.01));
 
         // Leave at least 1s on the clock, but can't use negative time
         minTimeLimit = clamp(minTimeLimit, 1, time - margin);

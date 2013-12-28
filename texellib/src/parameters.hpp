@@ -304,16 +304,81 @@ const bool useUciParam = false;
 
 extern int pieceValue[Piece::nPieceTypes];
 
-DECLARE_PARAM_2REF(pV, 92, 0, 200, useUciParam);
-DECLARE_PARAM_2REF(nV, 385, 0, 800, useUciParam);
-DECLARE_PARAM_2REF(bV, 385, 0, 800, useUciParam);
-DECLARE_PARAM_2REF(rV, 593, 0, 1200, useUciParam);
-DECLARE_PARAM_2REF(qV, 1244, 0, 2400, useUciParam);
+
+// Evaluation parameters
+
+DECLARE_PARAM_2REF(pV, 92, 1, 200, useUciParam);
+DECLARE_PARAM_2REF(nV, 385, 1, 800, useUciParam);
+DECLARE_PARAM_2REF(bV, 385, 1, 800, useUciParam);
+DECLARE_PARAM_2REF(rV, 593, 1, 1200, useUciParam);
+DECLARE_PARAM_2REF(qV, 1244, 1, 2400, useUciParam);
 DECLARE_PARAM_2REF(kV, 9900, 9900, 9900, false); // Used by SEE algorithm but not included in board material sums
 
 DECLARE_PARAM(pawnDoubledPenalty, 19, 0, 50, useUciParam);
 DECLARE_PARAM(pawnIslandPenalty, 14, 0, 50, useUciParam);
-DECLARE_PARAM(pawnIsolatedPenalty,  9, 0, 50, useUciParam);
+DECLARE_PARAM(pawnIsolatedPenalty, 9, 0, 50, useUciParam);
+DECLARE_PARAM(pawnBackwardPenalty, 15, 0, 50, useUciParam);
+DECLARE_PARAM(pawnGuardedPassedBonus, 15, 0, 50, useUciParam);
+
+DECLARE_PARAM(knightVsQueenBonus1, 70, 0, 200, useUciParam);
+DECLARE_PARAM(knightVsQueenBonus2, 330, 0, 600, useUciParam);
+DECLARE_PARAM(knightVsQueenBonus3, 480, 0, 800, useUciParam);
+
+DECLARE_PARAM(pawnTradePenalty, 30, 0, 100, useUciParam);
+DECLARE_PARAM(pieceTradeBonus, 30, 0, 100, useUciParam);
+
+DECLARE_PARAM(rookHalfOpenBonus, 12, 0, 100, useUciParam);
+DECLARE_PARAM(rookOpenBonus, 25, 0, 100, useUciParam);
+DECLARE_PARAM(rookDouble7thRowBonus, 30, 0, 100, useUciParam);
+DECLARE_PARAM(trappedRookPenalty, 90, 0, 200, useUciParam);
+
+DECLARE_PARAM(bishopPairValue, 52, 0, 100, useUciParam);
+DECLARE_PARAM(bishopPairPawnPenalty, 3, 0, 10, useUciParam);
+
+DECLARE_PARAM(kingAttackWeight, 4, 0, 20, useUciParam);
+DECLARE_PARAM(kingSafetyHalfOpenBCDEFG, 25, 0, 100, useUciParam);
+DECLARE_PARAM(kingSafetyHalfOpenAH, 10, 0, 100, useUciParam);
+DECLARE_PARAM(kingSafetyWeight, 15, 0, 100, useUciParam);
+DECLARE_PARAM(pawnStormBonus, 4, 0, 20, useUciParam);
+
+
+// Search parameters
+
+DECLARE_PARAM(aspirationWindow, 15, 1, 100, useUciParam);
+DECLARE_PARAM(rootLMRMoveCount, 2, 0, 100, useUciParam);
+
+DECLARE_PARAM(razorMargin1, 125, 1, 500, useUciParam);
+DECLARE_PARAM(razorMargin2, 250, 1, 1000, useUciParam);
+
+DECLARE_PARAM(reverseFutilityMargin1, 204, 1, 1000, useUciParam);
+DECLARE_PARAM(reverseFutilityMargin2, 420, 1, 1000, useUciParam);
+DECLARE_PARAM(reverseFutilityMargin3, 533, 1, 2000, useUciParam);
+DECLARE_PARAM(reverseFutilityMargin4, 788, 1, 3000, useUciParam);
+
+DECLARE_PARAM(futilityMargin1,  61, 1,  500, useUciParam);
+DECLARE_PARAM(futilityMargin2, 144, 1,  500, useUciParam);
+DECLARE_PARAM(futilityMargin3, 268, 1, 1000, useUciParam);
+DECLARE_PARAM(futilityMargin4, 334, 1, 1000, useUciParam);
+
+DECLARE_PARAM(lmpMoveCountLimit1,  3, 1, 256, useUciParam);
+DECLARE_PARAM(lmpMoveCountLimit2,  6, 1, 256, useUciParam);
+DECLARE_PARAM(lmpMoveCountLimit3, 12, 1, 256, useUciParam);
+DECLARE_PARAM(lmpMoveCountLimit4, 24, 1, 256, useUciParam);
+
+DECLARE_PARAM(lmrMoveCountLimit1,  3, 1, 256, useUciParam);
+DECLARE_PARAM(lmrMoveCountLimit2, 12, 1, 256, useUciParam);
+
+DECLARE_PARAM(quiesceMaxSortMoves, 8, 0, 256, useUciParam);
+DECLARE_PARAM(deltaPruningMargin, 200, 0, 1000, useUciParam);
+
+
+// Time management parameters
+
+DECLARE_PARAM(timeMaxRemainingMoves, 45, 2, 200, useUciParam);
+DECLARE_PARAM(bufferTime, 1000, 1, 10000, useUciParam);
+DECLARE_PARAM(minTimeUsage, 85, 1, 100, useUciParam);
+DECLARE_PARAM(maxTimeUsage, 400, 100, 1000, useUciParam);
+DECLARE_PARAM(timePonderHitRate, 35, 1, 100, useUciParam);
 
 
 #endif /* PARAMETERS_HPP_ */

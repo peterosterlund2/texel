@@ -150,7 +150,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         bool needMoreTime = false;
         for (int mi = 0; mi < (int)scMoves.size(); mi++) {
             if (mi < maxPV)
-                aspirationDelta = (std::abs(scMoves[mi].score()) <= MATE0 / 2) ? 15 : 1000;
+                aspirationDelta = (std::abs(scMoves[mi].score()) <= MATE0 / 2) ? aspirationWindow : 1000;
             if (firstIteration)
                 alpha = -MATE0;
             else if (mi < maxPV)
@@ -178,7 +178,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
             bool isPromotion = (m.promoteTo() != Piece::EMPTY);
             if ((depthS >= 3*plyScale) && !isCapture && !isPromotion &&
-                !givesCheck && !passedPawnPush(pos, m) && (mi >= 2+maxPV)) {
+                !givesCheck && !passedPawnPush(pos, m) && (mi >= rootLMRMoveCount + maxPV)) {
                 lmrS = plyScale;
             }
             pos.makeMove(m, ui);
@@ -523,7 +523,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         if (evalScore == UNKNOWN_SCORE) {
             evalScore = eval.evalPos(pos);
         }
-        const int razorMargin = (depth <= plyScale) ? 125 : 250;
+        const int razorMargin = (depth <= plyScale) ? razorMargin1 : razorMargin2;
         if (evalScore < beta - razorMargin) {
             q0Eval = evalScore;
             int score = quiesce(alpha-razorMargin, beta-razorMargin, ply, 0, inCheck);
@@ -546,10 +546,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
         if (mtrlOk) {
             int margin;
-            if (depth <= plyScale)        margin = 204;
-            else if (depth <= 2*plyScale) margin = 420;
-            else if (depth <= 3*plyScale) margin = 533;
-            else                          margin = 788;
+            if (depth <= plyScale)        margin = reverseFutilityMargin1;
+            else if (depth <= 2*plyScale) margin = reverseFutilityMargin2;
+            else if (depth <= 3*plyScale) margin = reverseFutilityMargin3;
+            else                          margin = reverseFutilityMargin4;
             if (evalScore == UNKNOWN_SCORE)
                 evalScore = eval.evalPos(pos);
             if (evalScore - margin >= beta) {
@@ -644,10 +644,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     int futilityScore = alpha;
     if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) && normalBound) {
         int margin;
-        if (depth <= plyScale)        margin = 61;
-        else if (depth <= 2*plyScale) margin = 144;
-        else if (depth <= 3*plyScale) margin = 268;
-        else                          margin = 334;
+        if (depth <= plyScale)        margin = futilityMargin1;
+        else if (depth <= 2*plyScale) margin = futilityMargin2;
+        else if (depth <= 3*plyScale) margin = futilityMargin3;
+        else                          margin = futilityMargin4;
         if (evalScore == UNKNOWN_SCORE)
             evalScore = eval.evalPos(pos);
         futilityScore = evalScore + margin;
@@ -719,10 +719,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         lmpOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
     int moveCountLimit = 256;
     if (lmpOk) {
-        if (depth <= plyScale)          moveCountLimit = 3;
-        else if (depth <= 2 * plyScale) moveCountLimit = 6;
-        else if (depth <= 3 * plyScale) moveCountLimit = 12;
-        else if (depth <= 4 * plyScale) moveCountLimit = 24;
+        if (depth <= plyScale)          moveCountLimit = lmpMoveCountLimit1;
+        else if (depth <= 2 * plyScale) moveCountLimit = lmpMoveCountLimit2;
+        else if (depth <= 3 * plyScale) moveCountLimit = lmpMoveCountLimit3;
+        else if (depth <= 4 * plyScale) moveCountLimit = lmpMoveCountLimit4;
     }
     UndoInfo ui;
     for (int pass = (smp?0:1); pass < 2; pass++) {
@@ -738,7 +738,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     scoreMoveList(moves, ply, 1);
                     seeDone = true;
                 }
-                if ((mi < moveCountLimit) || (lmrCount <= 3))
+                if ((mi < moveCountLimit) || (lmrCount <= lmrMoveCountLimit1))
                     if ((mi > 0) || !hashMoveSelected)
                         selectBest(moves, mi);
             }
@@ -790,9 +790,9 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 if ((depth >= 3*plyScale) && mayReduce && (extend == 0)) {
                     if (!givesCheck && !passedPawnPush(pos, m)) {
                         lmrCount++;
-                        if ((lmrCount > 12) && (depth > 5*plyScale) && !isCapture) {
+                        if ((lmrCount > lmrMoveCountLimit2) && (depth > 5*plyScale) && !isCapture) {
                             lmr = 3*plyScale;
-                        } else if ((lmrCount > 3) && (depth > 3*plyScale) && !isCapture) {
+                        } else if ((lmrCount > lmrMoveCountLimit1) && (depth > 3*plyScale) && !isCapture) {
                             lmr = 2*plyScale;
                         } else {
                             lmr = 1*plyScale;
@@ -964,8 +964,8 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
     scoreMoveListMvvLva(moves);
     UndoInfo ui;
     for (int mi = 0; mi < moves.size; mi++) {
-        if (mi < 8) {
-            // If the first 8 moves didn't fail high, this is probably an ALL-node,
+        if (mi < quiesceMaxSortMoves) {
+            // If the first N moves didn't fail high this is probably an ALL-node,
             // so spending more effort on move ordering is probably wasted time.
             selectBest(moves, mi);
         }
@@ -990,7 +990,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
                     continue;
                 int capt = ::pieceValue[pos.getPiece(m.to())];
                 int prom = ::pieceValue[m.promoteTo()];
-                int optimisticScore = evalScore + capt + prom + 200;
+                int optimisticScore = evalScore + capt + prom + deltaPruningMargin;
                 if (optimisticScore < alpha) { // Delta pruning
                     if ((pos.wMtrlPawns() > 0) && (pos.wMtrl() > capt + pos.wMtrlPawns()) &&
                         (pos.bMtrlPawns() > 0) && (pos.bMtrl() > capt + pos.bMtrlPawns())) {
