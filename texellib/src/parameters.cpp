@@ -337,6 +337,17 @@ ParamTable<28> queenMobScore { -50, 50, useUciParam,
     { 1, 2, 3, 4, 5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28}
 };
 
+ParamTable<16> majorPieceRedundancy { -200, 200, useUciParam,
+    {  0, -50,   0,   0,
+      50,   0,   0,   0,
+       0,   0,   0,  38,
+       0,   0, -38,   0 },
+    {  0,  -1,   0,   0,
+       1,   0,   0,   0,
+       0,   0,   0,   2,
+       0,   0,  -2,   0 }
+};
+
 
 Parameters::Parameters() {
     addPar(std::make_shared<SpinParam>("Hash", 1, 524288, 16));
@@ -385,7 +396,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(kingSafetyWeight, "KingSafetyWeight");
     REGISTER_PARAM(pawnStormBonus, "PawnStormBonus");
 
-
     // Evaluation tables
     kt1b.registerParams("KingTableMG", *this);
     kt2b.registerParams("KingTableEG", *this);
@@ -402,6 +412,7 @@ Parameters::Parameters() {
     rookMobScore.registerParams("RookMobility", *this);
     bishMobScore.registerParams("BishopMobility", *this);
     queenMobScore.registerParams("QueenMobility", *this);
+    majorPieceRedundancy.registerParams("MajorPieceRedundancy", *this);
 
     // Search parameters
     REGISTER_PARAM(aspirationWindow, "AspirationWindow");
@@ -430,7 +441,6 @@ Parameters::Parameters() {
 
     REGISTER_PARAM(quiesceMaxSortMoves, "QuiesceMaxSortMoves");
     REGISTER_PARAM(deltaPruningMargin, "DeltaPruningMargin");
-
 
     // Time management parameters
     REGISTER_PARAM(timeMaxRemainingMoves, "TimeMaxRemainingMoves");

@@ -414,14 +414,16 @@ ParamTable<N>::registerParams(const std::string& name, Parameters& pars) {
     std::map<int,int> parNoToVal;
     int maxParIdx = -1;
     for (int i = 0; i < N; i++) {
-        if (parNo[i] <= 0)
+        if (parNo[i] == 0)
             continue;
-        maxParIdx = std::max(maxParIdx, parNo[i]);
-        auto it = parNoToVal.find(parNo[i]);
+        const int pn = std::abs(parNo[i]);
+        const int sign = parNo[i] > 0 ? 1 : -1;
+        maxParIdx = std::max(maxParIdx, pn);
+        auto it = parNoToVal.find(pn);
         if (it == parNoToVal.end())
-            parNoToVal.insert(std::make_pair(parNo[i], table[i]));
+            parNoToVal.insert(std::make_pair(pn, sign*table[i]));
         else
-            assert(it->second == table[i]);
+            assert(it->second == sign*table[i]);
     }
     if (!uci)
         return;
@@ -439,6 +441,8 @@ ParamTable<N>::modified() {
     for (int i = 0; i < N; i++)
         if (parNo[i] > 0)
             table[i] = params[parNo[i]]->getIntPar();
+        else if (parNo[i] < 0)
+            table[i] = -params[-parNo[i]]->getIntPar();
     for (auto d : dependent)
         d->modified();
 }
@@ -492,6 +496,7 @@ extern ParamTable<64> knightOutpostBonus;
 extern ParamTable<15> rookMobScore;
 extern ParamTable<14> bishMobScore;
 extern ParamTable<28> queenMobScore;
+extern ParamTable<16> majorPieceRedundancy;
 
 
 // Search parameters

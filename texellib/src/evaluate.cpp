@@ -200,11 +200,7 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
         int bMajor = BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN, Piece::BROOK));
         int w = std::min(wMajor, 3);
         int b = std::min(bMajor, 3);
-        static const int bonus[4][4] = { {   0, -50,   0,   0 },
-                                         {  50,   0,   0,   0 },
-                                         {   0,   0,   0,  38 },
-                                         {   0,   0, -38,   0 } };
-        score += bonus[w][b];
+        score += majorPieceRedundancy[w*4+b];
     }
     mhd.id = pos.materialId();
     mhd.score = score;
