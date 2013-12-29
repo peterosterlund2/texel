@@ -853,6 +853,64 @@ testUciParam() {
     ASSERT_EQUAL(180, uciParVec[2]);
 }
 
+ParamTable<10> uciParTable { 0, 100, true,
+    { 0,2,3,5,7,7,5,3,0,2 },
+    { 0,1,2,3,4,4,3,2,0,1 }
+};
+
+ParamTableMirrored<10> uciParTableM(uciParTable);
+
+static void
+testUciParamTable() {
+    ASSERT_EQUAL(0, uciParTable[0]);
+    ASSERT_EQUAL(2, uciParTable[1]);
+    ASSERT_EQUAL(3, uciParTable[2]);
+
+    ASSERT_EQUAL(2, uciParTableM[0]);
+    ASSERT_EQUAL(0, uciParTableM[1]);
+    ASSERT_EQUAL(3, uciParTableM[2]);
+    ASSERT_EQUAL(0, uciParTableM[9]);
+    ASSERT_EQUAL(2, uciParTableM[8]);
+    ASSERT_EQUAL(3, uciParTableM[7]);
+
+    uciParTable.registerParams("uciParTable", Parameters::instance());
+    const int* table = uciParTable.getTable();
+    const int* tableM = uciParTableM.getTable();
+
+    Parameters::instance().set("uciParTable1", "11");
+    {
+        std::vector<int> expected { 0,11,3,5,7,7,5,3,0,11 };
+        for (int i = 0; i < 10; i++) {
+            ASSERT_EQUAL(expected[i], uciParTable[i]);
+            ASSERT_EQUAL(expected[i], table[i]);
+            ASSERT_EQUAL(expected[10-1-i], uciParTableM[i]);
+            ASSERT_EQUAL(expected[10-1-i], tableM[i]);
+        }
+    }
+
+    Parameters::instance().set("uciParTable2", "13");
+    {
+        std::vector<int> expected { 0,11,13,5,7,7,5,13,0,11 };
+        for (int i = 0; i < 10; i++) {
+            ASSERT_EQUAL(expected[i], uciParTable[i]);
+            ASSERT_EQUAL(expected[i], table[i]);
+            ASSERT_EQUAL(expected[10-1-i], uciParTableM[i]);
+            ASSERT_EQUAL(expected[10-1-i], tableM[i]);
+        }
+    }
+
+    Parameters::instance().set("uciParTable3", "17");
+    {
+        std::vector<int> expected { 0,11,13,17,7,7,17,13,0,11 };
+        for (int i = 0; i < 10; i++) {
+            ASSERT_EQUAL(expected[i], uciParTable[i]);
+            ASSERT_EQUAL(expected[i], table[i]);
+            ASSERT_EQUAL(expected[10-1-i], uciParTableM[i]);
+            ASSERT_EQUAL(expected[10-1-i], tableM[i]);
+        }
+    }
+}
+
 cute::suite
 EvaluateTest::getSuite() const {
     cute::suite s;
@@ -878,5 +936,6 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testKNPKB));
     s.push_back(CUTE(testKNPK));
     s.push_back(CUTE(testUciParam));
+    s.push_back(CUTE(testUciParamTable));
     return s;
 }

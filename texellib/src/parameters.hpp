@@ -300,6 +300,151 @@ private:
 
 // ----------------------------------------------------------------------------
 
+class ParamModifiedListener {
+public:
+    virtual void modified() = 0;
+};
+
+class ParamTableBase : public ParamModifiedListener {
+public:
+    virtual int getMinValue() const = 0;
+    virtual int getMaxValue() const = 0;
+};
+
+class TableSpinParam : public Parameters::SpinParamBase {
+public:
+    TableSpinParam(const std::string& name, ParamTableBase& owner, int defaultValue);
+
+    int getDefaultValue() const { return defaultValue; }
+    int getMinValue() const { return owner.getMinValue(); }
+    int getMaxValue() const { return owner.getMaxValue(); }
+    int getIntPar() const { return value; }
+
+    void set(const std::string& value);
+
+private:
+    ParamTableBase& owner;
+    const int defaultValue;
+    int value;
+};
+
+
+template <int N>
+class ParamTable : public ParamTableBase {
+public:
+    ParamTable(int minVal, int maxVal, bool uci,
+               std::initializer_list<int> data,
+               std::initializer_list<int> parNo);
+
+    int operator[](int i) const { return table[i]; }
+    const int* getTable() const { return table; }
+
+    void registerParams(const std::string& name, Parameters& pars);
+
+    void modified();
+    int getMinValue() const { return minValue; }
+    int getMaxValue() const { return maxValue; }
+
+    void addDependent(ParamModifiedListener* dep) { dependent.push_back(dep); }
+
+private:
+    int table[N];
+    int parNo[N];
+
+    const std::string uciName;
+    const int minValue;
+    const int maxValue;
+    const bool uci;
+
+    std::vector<std::shared_ptr<TableSpinParam>> params;
+    std::vector<ParamModifiedListener*> dependent;
+};
+
+template <int N>
+class ParamTableMirrored : public ParamModifiedListener {
+public:
+    ParamTableMirrored(ParamTable<N>& orig0) : orig(orig0) {
+        orig.addDependent(this);
+        modified();
+    }
+    int operator[](int i) const { return table[i]; }
+    const int* getTable() const { return table; }
+    void modified() {
+        for (int i = 0; i < N; i++)
+            table[i] = orig[N-1-i];
+    }
+private:
+    int table[N];
+    ParamTable<N>& orig;
+};
+
+
+inline
+TableSpinParam::TableSpinParam(const std::string& name, ParamTableBase& owner0, int defaultValue0)
+    : SpinParamBase(name), owner(owner0), defaultValue(defaultValue0), value(defaultValue0) {
+}
+
+inline void
+TableSpinParam::set(const std::string& value) {
+    int val;
+    str2Num(value, val);
+    if ((val >= getMinValue()) && (val <= getMaxValue())) {
+        this->value = val;
+        owner.modified();
+    }
+}
+
+template <int N>
+ParamTable<N>::ParamTable(int minVal0, int maxVal0, bool uci0,
+                          std::initializer_list<int> table0,
+                          std::initializer_list<int> parNo0)
+    : minValue(minVal0), maxValue(maxVal0), uci(uci0) {
+    assert(table0.size() == N);
+    assert(parNo0.size() == N);
+    for (int i = 0; i < N; i++) {
+        table[i] = table0.begin()[i];
+        parNo[i] = parNo0.begin()[i];
+    }
+}
+
+template <int N>
+void
+ParamTable<N>::registerParams(const std::string& name, Parameters& pars) {
+    // Check that each parameter has a single value
+    std::map<int,int> parNoToVal;
+    int maxParIdx = -1;
+    for (int i = 0; i < N; i++) {
+        if (parNo[i] <= 0)
+            continue;
+        maxParIdx = std::max(maxParIdx, parNo[i]);
+        auto it = parNoToVal.find(parNo[i]);
+        if (it == parNoToVal.end())
+            parNoToVal.insert(std::make_pair(parNo[i], table[i]));
+        else
+            assert(it->second == table[i]);
+    }
+    if (!uci)
+        return;
+    params.resize(maxParIdx+1);
+    for (const auto& p : parNoToVal) {
+        std::string pName = name + num2Str(p.first);
+        params[p.first] = std::make_shared<TableSpinParam>(pName, *this, p.second);
+        pars.addPar(params[p.first]);
+    }
+}
+
+template <int N>
+void
+ParamTable<N>::modified() {
+    for (int i = 0; i < N; i++)
+        if (parNo[i] > 0)
+            table[i] = params[parNo[i]]->getIntPar();
+    for (auto d : dependent)
+        d->modified();
+}
+
+// ----------------------------------------------------------------------------
+
 const bool useUciParam = false;
 
 extern int pieceValue[Piece::nPieceTypes];
@@ -340,6 +485,13 @@ DECLARE_PARAM(kingSafetyHalfOpenBCDEFG, 25, 0, 100, useUciParam);
 DECLARE_PARAM(kingSafetyHalfOpenAH, 10, 0, 100, useUciParam);
 DECLARE_PARAM(kingSafetyWeight, 15, 0, 100, useUciParam);
 DECLARE_PARAM(pawnStormBonus, 4, 0, 20, useUciParam);
+
+extern ParamTable<64>         kt1b, kt2b, pt1b, pt2b, nt1b, nt2b, bt1b, bt2b, qt1b, rt1b;
+extern ParamTableMirrored<64> kt1w, kt2w, pt1w, pt2w, nt1w, nt2w, bt1w, bt2w, qt1w, rt1w;
+extern ParamTable<64> knightOutpostBonus;
+extern ParamTable<15> rookMobScore;
+extern ParamTable<14> bishMobScore;
+extern ParamTable<28> queenMobScore;
 
 
 // Search parameters

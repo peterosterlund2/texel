@@ -169,45 +169,7 @@ private:
     static int knpkEval(int wKing, int wKnight, int wPawn, int bKing, int score, bool wtm);
 
     static int castleFactor[256];
-
-    /** Piece/square table for king during middle game. */
-    static const int kt1b[64];
-
-    /** Piece/square table for king during end game. */
-    static const int kt2b[64];
-
-    /** Piece/square table for pawns during middle game. */
-    static const int pt1b[64];
-
-    /** Piece/square table for pawns during end game. */
-    static const int pt2b[64];
-
-    /** Piece/square table for knights during middle game. */
-    static const int nt1b[64];
-
-    /** Piece/square table for knights during end game. */
-    static const int nt2b[64];
-
-    /** Piece/square table for bishops during middle game. */
-    static const int bt1b[64];
-
-    /** Piece/square table for bishops during middle game. */
-    static const int bt2b[64];
-
-    /** Piece/square table for queens during middle game. */
-    static const int qt1b[64];
-
-    /** Piece/square table for rooks during middle game. */
-    static const int rt1b[64];
-
-    static int kt1w[64], qt1w[64], rt1w[64], bt1w[64], nt1w[64], pt1w[64];
-    static int kt2w[64], bt2w[64], nt2w[64], pt2w[64];
-
     static const int distToH1A8[8][8];
-
-    static const int rookMobScore[];
-    static const int bishMobScore[];
-    static const int queenMobScore[];
     static int knightMobScore[64][9];
 
     std::vector<PawnHashData>& pawnHash;
