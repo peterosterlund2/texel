@@ -100,13 +100,7 @@ ChessTool::pawnAdvTable(std::istream& is) {
     qEval(positions);
     for (int pawnAdvantage = 1; pawnAdvantage <= 400; pawnAdvantage += 1) {
         ScoreToProb sp(pawnAdvantage);
-        double errSum = 0;
-        for (const PositionInfo& pi : positions) {
-            double p = sp.getProb(pi.qScore);
-            double err = p - pi.result;
-            errSum += err * err;
-        }
-        double avgErr = sqrt(errSum / positions.size());
+        double avgErr = computeAvgError(positions, sp);
         std::stringstream ss;
         ss << "pa:" << pawnAdvantage << " err:" << std::setprecision(14) << avgErr;
         std::cout << ss.str() << std::endl;
@@ -117,7 +111,7 @@ void
 ChessTool::filterFEN(std::istream& is) {
     std::vector<PositionInfo> positions;
     readFENFile(is, positions);
-    ScoreToProb sp(114);
+    ScoreToProb sp;
     Position pos;
     for (const PositionInfo& pi : positions) {
         double p1 = sp.getProb(pi.searchScore);
@@ -127,6 +121,24 @@ ChessTool::filterFEN(std::istream& is) {
             std::string fen = TextIO::toFEN(pos);
             std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore << std::endl;
         }
+    }
+}
+
+void ChessTool::paramEvalRange(std::istream& is, ParamDomain& pd) {
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+
+    ScoreToProb sp;
+    double bestVal = 1e100;
+    for (int i = pd.minV; i <= pd.maxV; i += pd.step) {
+        Parameters::instance().set(pd.name, num2Str(i));
+        qEval(positions);
+        double avgErr = computeAvgError(positions, sp);
+        bool best = avgErr < bestVal;
+        bestVal = std::min(bestVal, avgErr);
+        std::stringstream ss;
+        ss << "i:" << i << " err:" << std::setprecision(14) << avgErr << (best?" *":"");
+        std::cout << ss.str() << std::endl;
     }
 }
 
@@ -180,7 +192,7 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
 }
 
 void ChessTool::qEval(std::vector<PositionInfo>& positions) {
-    static TranspositionTable tt(19);
+    TranspositionTable tt(19);
 
     const int nPos = positions.size();
     const int chunkSize = 100000;
@@ -212,4 +224,16 @@ void ChessTool::qEval(std::vector<PositionInfo>& positions) {
             pi.qScore = score;
         }
     }
+}
+
+double
+ChessTool::computeAvgError(const std::vector<PositionInfo>& positions, ScoreToProb& sp) {
+    double errSum = 0;
+    for (const PositionInfo& pi : positions) {
+        double p = sp.getProb(pi.qScore);
+        double err = p - pi.result;
+        errSum += err * err;
+    }
+    double avgErr = sqrt(errSum / positions.size());
+    return avgErr;
 }

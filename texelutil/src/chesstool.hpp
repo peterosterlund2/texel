@@ -16,7 +16,7 @@
 class ScoreToProb {
 public:
     /** @param pawnAdvantage Rating advantage corresponding to score 100. */
-    ScoreToProb(double pawnAdvantage);
+    ScoreToProb(double pawnAdvantage = 113);
 
     /** Return win probability corresponding to score. */
     double getProb(int score);
@@ -29,6 +29,13 @@ private:
     double cache[MAXCACHE];
 };
 
+
+class ParamDomain {
+public:
+    std::string name;
+    int minV, step, maxV;
+    int value;
+};
 
 class ChessTool {
 public:
@@ -43,6 +50,9 @@ public:
 
     /** Filter out positions where search score and q-search score differ too much. */
     static void filterFEN(std::istream& is);
+
+    /** Use local search to find param values which minimize the average evaluation error. */
+    static void paramEvalRange(std::istream& is, ParamDomain& pd);
 
 private:
     /** Read score from a PGN comment, assuming cutechess-cli comment format.
@@ -60,6 +70,9 @@ private:
 
     /** Recompute all qScore values. */
     static void qEval(std::vector<PositionInfo>& positions);
+
+    /** Compute average evaluation error. */
+    static double computeAvgError(const std::vector<PositionInfo>& positions, ScoreToProb& sp);
 };
 
 

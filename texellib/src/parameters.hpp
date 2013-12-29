@@ -199,8 +199,11 @@ public:
             parNames.push_back(p.first);
     }
 
-    std::shared_ptr<ParamBase> getParam(const std::string& name) {
-        return params[name];
+    std::shared_ptr<ParamBase> getParam(const std::string& name) const {
+        auto it = params.find(toLowerCase(name));
+        if (it == params.end())
+            return nullptr;
+        return it->second;
     }
 
     bool getBoolPar(const std::string& name) const {
