@@ -11,6 +11,8 @@
 #include "gametree.hpp"
 #include "stloutput.hpp"
 
+#include <queue>
+
 
 ScoreToProb::ScoreToProb(double pawnAdvantage0)
     : pawnAdvantage(pawnAdvantage0) {
@@ -124,7 +126,8 @@ ChessTool::filterFEN(std::istream& is) {
     }
 }
 
-void ChessTool::paramEvalRange(std::istream& is, ParamDomain& pd) {
+void
+ChessTool::paramEvalRange(std::istream& is, ParamDomain& pd) {
     std::vector<PositionInfo> positions;
     readFENFile(is, positions);
 
@@ -139,6 +142,78 @@ void ChessTool::paramEvalRange(std::istream& is, ParamDomain& pd) {
         std::stringstream ss;
         ss << "i:" << i << " err:" << std::setprecision(14) << avgErr << (best?" *":"");
         std::cout << ss.str() << std::endl;
+    }
+}
+
+struct PrioParam {
+    PrioParam(ParamDomain& pd0) : priority(1), pd(&pd0) {}
+    double priority;
+    ParamDomain* pd;
+    bool operator<(const PrioParam& o) const {
+        return priority < o.priority;
+    }
+};
+
+void
+ChessTool::localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
+    Parameters& uciPars = Parameters::instance();
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+
+    std::priority_queue<PrioParam> queue;
+    for (ParamDomain& pd : pdVec)
+        queue.push(PrioParam(pd));
+
+    ScoreToProb sp;
+    qEval(positions);
+    double bestAvgErr = computeAvgError(positions, sp);
+    {
+        std::stringstream ss;
+        ss << "Initial error: " << std::setprecision(14) << bestAvgErr;
+        std::cout << ss.str() << std::endl;
+    }
+
+    std::vector<PrioParam> tried;
+    while (!queue.empty()) {
+        PrioParam pp = queue.top(); queue.pop();
+        ParamDomain& pd = *pp.pd;
+        std::cout << pd.name << " prio:" << pp.priority << " min:" << pd.minV << " max:" << pd.maxV << " val:" << pd.value << std::endl;
+        double oldBest = bestAvgErr;
+        bool improved = false;
+        for (int d = 0; d < 2; d++) {
+            while (true) {
+                const int newValue = pd.value + (d ? -1 : 1);
+                if ((newValue < pd.minV) || (newValue > pd.maxV))
+                    break;
+
+                uciPars.set(pd.name, num2Str(newValue));
+                qEval(positions);
+                double avgErr = computeAvgError(positions, sp);
+                uciPars.set(pd.name, num2Str(pd.value));
+
+                std::stringstream ss;
+                ss << pd.name << ' ' << newValue << ' ' << std::setprecision(14) << avgErr << ((avgErr < bestAvgErr) ? " *" : "");
+                std::cout << ss.str() << std::endl;
+
+                if (avgErr >= bestAvgErr)
+                    break;
+                bestAvgErr = avgErr;
+                pd.value = newValue;
+                uciPars.set(pd.name, num2Str(pd.value));
+                improved = true;
+            }
+            if (improved)
+                break;
+        }
+        double improvement = oldBest - bestAvgErr;
+        std::cout << pd.name << " improvement:" << improvement << std::endl;
+        pp.priority = (pp.priority >= 1.0) ? improvement : (pp.priority * 0.1 + improvement * 0.9);
+        if (improved) {
+            for (PrioParam& pp2 : tried)
+                queue.push(pp2);
+            tried.clear();
+        }
+        tried.push_back(pp);
     }
 }
 

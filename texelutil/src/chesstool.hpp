@@ -32,6 +32,7 @@ private:
 
 class ParamDomain {
 public:
+    ParamDomain() : minV(-1), step(-1), maxV(-1), value(-1) {}
     std::string name;
     int minV, step, maxV;
     int value;
@@ -51,8 +52,11 @@ public:
     /** Filter out positions where search score and q-search score differ too much. */
     static void filterFEN(std::istream& is);
 
-    /** Use local search to find param values which minimize the average evaluation error. */
+    /** Compute average evaluation error for a range of parameter values. */
     static void paramEvalRange(std::istream& is, ParamDomain& pd);
+
+    /** Use local search to find param values which minimize the average evaluation error. */
+    static void localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec);
 
 private:
     /** Read score from a PGN comment, assuming cutechess-cli comment format.

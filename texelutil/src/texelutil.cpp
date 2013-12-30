@@ -29,9 +29,11 @@ std::string readFile(const std::string& fname) {
 
 void usage() {
     std::cerr << "Usage: texelutil [-p2f] [-pawnadv] [-filter] [-parrange p a b c]" << std::endl;
+    std::cerr << "                 [-localopt p1 [p2 ...]]" << std::endl;
     std::cerr << " -p2f      : Convert from PGN to FEN" << std::endl;
     std::cerr << " -pawnadv  : Compute evaluation error for different pawn advantage" << std::endl;
-    std::cerr << " -parrange : Compate evaluation error for different parameter values" << std::endl;
+    std::cerr << " -parrange : Compare evaluation error for different parameter values" << std::endl;
+    std::cerr << " -localopt : Optimize parameters using local search" << std::endl;
     std::cerr << " -filter   : Remove positions where qScore and search score deviate too much" << std::endl;
     ::exit(2);
 }
@@ -56,6 +58,36 @@ void parseParamDomains(int argc, char* argv[], std::vector<ParamDomain>& params)
     }
 }
 
+void getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
+    Parameters& uciPars = Parameters::instance();
+    for (int i = 2; i < argc; i++) {
+        ParamDomain pd;
+        std::string parName(argv[i]);
+        if (uciPars.getParam(parName)) {
+            pd.name = parName;
+            params.push_back(pd);
+        } else if (uciPars.getParam(parName + "1")) {
+            for (int n = 1; ; n++) {
+                pd.name = parName + num2Str(n);
+                if (!uciPars.getParam(pd.name))
+                    break;
+                params.push_back(pd);
+            }
+        } else {
+            std::cerr << "No such parameter:" << pd.name << std::endl;
+            ::exit(2);
+        }
+    }
+    for (ParamDomain& pd : params) {
+        std::shared_ptr<Parameters::ParamBase> p = uciPars.getParam(pd.name);
+        const Parameters::SpinParamBase& sp = dynamic_cast<const Parameters::SpinParamBase&>(*p.get());
+        pd.minV = sp.getMinValue();
+        pd.step = 1;
+        pd.maxV = sp.getMaxValue();
+        pd.value = sp.getDefaultValue();
+    }
+}
+
 int main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
     if (argc < 2)
@@ -74,6 +106,10 @@ int main(int argc, char* argv[]) {
         if (params.size() != 1)
             usage();
         ChessTool::paramEvalRange(std::cin, params[0]);
+    } else if (cmd == "-localopt") {
+        std::vector<ParamDomain> params;
+        getParams(argc, argv, params);
+        ChessTool::localOptimize(std::cin, params);
     } else {
         ScoreToProb sp(300.0);
         for (int i = -100; i <= 100; i++)
