@@ -12,29 +12,43 @@
 #include <fstream>
 #include <string>
 
-/** Read a whole file into a string. */
-std::string readFile(const std::string& fname) {
+/** Read a file into a string vector. */
+std::vector<std::string> readFile(const std::string& fname) {
+    std::vector<std::string> ret;
     std::ifstream is(fname);
-    std::string data;
     while (true) {
         std::string line;
         std::getline(is, line);
         if (!is || is.eof())
             break;
-        data += line;
-        data += '\n';
+        ret.push_back(line);
     }
-    return data;
+    return ret;
+}
+
+void setInitialValues(const std::string& fname) {
+    Parameters& uciPars = Parameters::instance();
+    std::vector<std::string> lines = readFile(fname);
+    for (const std::string& line : lines) {
+        std::vector<std::string> fields;
+        splitString(line, fields);
+        if ((fields.size() < 2) || !uciPars.getParam(fields[0]))
+            continue;
+        int value;
+        if (str2Num(fields[1], value))
+            uciPars.set(fields[0], fields[1]);
+    }
 }
 
 void usage() {
-    std::cerr << "Usage: texelutil [-p2f] [-pawnadv] [-filter] [-parrange p a b c]" << std::endl;
-    std::cerr << "                 [-localopt p1 [p2 ...]]" << std::endl;
-    std::cerr << " -p2f      : Convert from PGN to FEN" << std::endl;
-    std::cerr << " -pawnadv  : Compute evaluation error for different pawn advantage" << std::endl;
-    std::cerr << " -parrange : Compare evaluation error for different parameter values" << std::endl;
-    std::cerr << " -localopt : Optimize parameters using local search" << std::endl;
-    std::cerr << " -filter   : Remove positions where qScore and search score deviate too much" << std::endl;
+    std::cerr << "Usage: texelutil [-iv file] cmd params" << std::endl;
+    std::cerr << " -iv file : Set initial parameter values" << std::endl;
+    std::cerr << "cmd is one of:" << std::endl;
+    std::cerr << " p2f      : Convert from PGN to FEN" << std::endl;
+    std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage" << std::endl;
+    std::cerr << " parrange p a b c   : Compare evaluation error for different parameter values" << std::endl;
+    std::cerr << " localopt p1 p2 ... : Optimize parameters using local search" << std::endl;
+    std::cerr << " filter   : Remove positions where qScore and search score deviate too much" << std::endl;
     ::exit(2);
 }
 
@@ -84,29 +98,36 @@ void getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
         pd.minV = sp.getMinValue();
         pd.step = 1;
         pd.maxV = sp.getMaxValue();
-        pd.value = sp.getDefaultValue();
+        pd.value = sp.getIntPar();
     }
 }
 
 int main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
+
+    if ((argc >= 3) && (std::string(argv[1]) == "-iv")) {
+        setInitialValues(argv[2]);
+        argc -= 2;
+        argv += 2;
+    }
+
     if (argc < 2)
         usage();
 
     std::string cmd = argv[1];
-    if (cmd == "-p2f") {
+    if (cmd == "p2f") {
         ChessTool::pgnToFen(std::cin);
-    } else if (cmd == "-pawnadv") {
+    } else if (cmd == "pawnadv") {
         ChessTool::pawnAdvTable(std::cin);
-    } else if (cmd == "-filter") {
+    } else if (cmd == "filter") {
         ChessTool::filterFEN(std::cin);
-    } else if (cmd == "-parrange") {
+    } else if (cmd == "parrange") {
         std::vector<ParamDomain> params;
         parseParamDomains(argc, argv, params);
         if (params.size() != 1)
             usage();
         ChessTool::paramEvalRange(std::cin, params[0]);
-    } else if (cmd == "-localopt") {
+    } else if (cmd == "localopt") {
         std::vector<ParamDomain> params;
         getParams(argc, argv, params);
         ChessTool::localOptimize(std::cin, params);

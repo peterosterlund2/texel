@@ -177,7 +177,8 @@ ChessTool::localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
     while (!queue.empty()) {
         PrioParam pp = queue.top(); queue.pop();
         ParamDomain& pd = *pp.pd;
-        std::cout << pd.name << " prio:" << pp.priority << " min:" << pd.minV << " max:" << pd.maxV << " val:" << pd.value << std::endl;
+        std::cout << pd.name << " prio:" << pp.priority << " q:" << queue.size()
+                  << " min:" << pd.minV << " max:" << pd.maxV << " val:" << pd.value << std::endl;
         double oldBest = bestAvgErr;
         bool improved = false;
         for (int d = 0; d < 2; d++) {
@@ -207,7 +208,7 @@ ChessTool::localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
         }
         double improvement = oldBest - bestAvgErr;
         std::cout << pd.name << " improvement:" << improvement << std::endl;
-        pp.priority = (pp.priority >= 1.0) ? improvement : (pp.priority * 0.1 + improvement * 0.9);
+        pp.priority = pp.priority * 0.1 + improvement * 0.9;
         if (improved) {
             for (PrioParam& pp2 : tried)
                 queue.push(pp2);

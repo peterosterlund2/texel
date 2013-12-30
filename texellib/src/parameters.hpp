@@ -119,8 +119,7 @@ public:
 
         virtual void set(const std::string& value) {
             int val;
-            str2Num(value, val);
-            if ((val >= minValue) && (val <= maxValue))
+            if (str2Num(value, val) && (val >= minValue) && (val <= maxValue))
                 this->value.set(val);
         }
 
@@ -390,8 +389,7 @@ TableSpinParam::TableSpinParam(const std::string& name, ParamTableBase& owner0, 
 inline void
 TableSpinParam::set(const std::string& value) {
     int val;
-    str2Num(value, val);
-    if ((val >= getMinValue()) && (val <= getMaxValue())) {
+    if (str2Num(value, val) && (val >= getMinValue()) && (val <= getMaxValue())) {
         this->value = val;
         owner.modified();
     }
