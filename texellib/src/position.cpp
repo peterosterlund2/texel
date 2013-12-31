@@ -345,30 +345,61 @@ Position::serialize(SerializeData& data) const {
 
 void
 Position::deSerialize(const SerializeData& data) {
+    for (int i = 0; i < Piece::nPieceTypes; i++) {
+        psScore1_[i] = 0;
+        psScore2_[i] = 0;
+        pieceTypeBB_[i] = 0;
+    }
+    whiteBB_ = blackBB_ = 0;
+    wMtrl_ = bMtrl_ = -::kV;
+    wMtrlPawns_ = bMtrlPawns_ = 0;
     for (int i = 0; i < 4; i++) {
         int sq0 = i * 16;
         U64 v = data.v[i];
         for (int sq = 15; sq >= 0; sq--) {
-            int p = v & 0xf;
-            setPiece(sq0 + sq, p);
+            int piece = v & 0xf;
             v >>= 4;
+            int square = sq0 + sq;
+            squares[square] = piece;
+
+            const U64 sqMask = 1ULL << square;
+            pieceTypeBB_[piece] |= sqMask;
+            if (piece != Piece::EMPTY) {
+                int pVal = ::pieceValue[piece];
+                if (Piece::isWhite(piece)) {
+                    wMtrl_ += pVal;
+                    whiteBB_ |= sqMask;
+                    if (piece == Piece::WPAWN)
+                        wMtrlPawns_ += pVal;
+                    if (piece == Piece::WKING)
+                        wKingSq_ = square;
+                } else {
+                    bMtrl_ += pVal;
+                    blackBB_ |= sqMask;
+                    if (piece == Piece::BPAWN)
+                        bMtrlPawns_ += pVal;
+                    if (piece == Piece::BKING)
+                        bKingSq_ = square;
+                }
+            }
+            psScore1_[piece] += Evaluate::psTab1[piece][square];
+            psScore2_[piece] += Evaluate::psTab2[piece][square];
         }
     }
+
     U64 flags = data.v[4];
-    setFullMoveCounter(flags & 0xffff);
+    fullMoveCounter = flags & 0xffff;
     flags >>= 16;
-
-    setHalfMoveClock(flags & 0xff);
+    halfMoveClock = flags & 0xff;
     flags >>= 8;
-
     int ep = flags & 0xff; if (ep == 0xff) ep = -1;
-    setEpSquare(ep);
+    epSquare = ep;
     flags >>= 8;
-
-    setCastleMask(flags & 0xf);
+    castleMask = flags & 0xf;
     flags >>= 4;
+    whiteMove = (flags & 1) != 0;
 
-    setWhiteMove((flags & 1) != 0);
+    computeZobristHash();
 }
 
 // ----------------------------------------------------------------------------
