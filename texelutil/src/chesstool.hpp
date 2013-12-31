@@ -64,6 +64,9 @@ public:
     /** Use local search to find param values which minimize the average evaluation error. */
     static void localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec);
 
+    /** Print evaluation parameters to cout. */
+    static void printParams();
+
 private:
     /** Read score from a PGN comment, assuming cutechess-cli comment format.
      * Does not handle mate scores. */

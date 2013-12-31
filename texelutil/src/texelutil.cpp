@@ -31,10 +31,11 @@ void usage() {
     std::cerr << " -iv file : Set initial parameter values" << std::endl;
     std::cerr << "cmd is one of:" << std::endl;
     std::cerr << " p2f      : Convert from PGN to FEN" << std::endl;
+    std::cerr << " filter   : Remove positions where qScore and search score deviate too much" << std::endl;
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage" << std::endl;
     std::cerr << " parrange p a b c   : Compare evaluation error for different parameter values" << std::endl;
     std::cerr << " localopt p1 p2 ... : Optimize parameters using local search" << std::endl;
-    std::cerr << " filter   : Remove positions where qScore and search score deviate too much" << std::endl;
+    std::cerr << " printpar : Print evaluation tables" << std::endl;
     ::exit(2);
 }
 
@@ -117,6 +118,8 @@ int main(int argc, char* argv[]) {
         std::vector<ParamDomain> params;
         getParams(argc, argv, params);
         ChessTool::localOptimize(std::cin, params);
+    } else if (cmd == "printpar") {
+        ChessTool::printParams();
     } else {
         ScoreToProb sp(300.0);
         for (int i = -100; i <= 100; i++)

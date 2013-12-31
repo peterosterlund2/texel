@@ -237,6 +237,84 @@ ChessTool::localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
     }
 }
 
+template <int N>
+static void
+printTableNxN(const ParamTable<N*N>& pt, const std::string& name) {
+    std::cout << name << ":" << std::endl;
+    for (int y = 0; y < N; y++) {
+        std::cout << "    " << ((y == 0) ? "{" : " ");
+        for (int x = 0; x < N; x++) {
+            std::cout << std::setw(4) << pt[y*N+x] << (((y==N-1) && (x == N-1)) ? " }," : ",");
+        }
+        std::cout << std::endl;
+    }
+}
+
+template <int N>
+static void
+printTable(const ParamTable<N>& pt, const std::string& name) {
+    std::cout << name << ":" << std::endl;
+    std::cout << "    {";
+    for (int i = 0; i < N; i++) {
+        std::cout << std::setw(3) << pt[i] << ((i == N-1) ? "}," : ",");
+    }
+    std::cout << std::endl;
+}
+
+void
+ChessTool::printParams() {
+    printTableNxN<8>(kt1b, "kt1b");
+    printTableNxN<8>(kt2b, "kt2b");
+    printTableNxN<8>(pt1b, "pt1b");
+    printTableNxN<8>(pt2b, "pt2b");
+    printTableNxN<8>(nt1b, "nt1b");
+    printTableNxN<8>(nt2b, "nt2b");
+    printTableNxN<8>(bt1b, "bt1b");
+    printTableNxN<8>(bt2b, "bt2b");
+    printTableNxN<8>(qt1b, "qt1b");
+    printTableNxN<8>(rt1b, "rt1b");
+    printTableNxN<8>(knightOutpostBonus, "knightOutpostBonus");
+
+    printTable(rookMobScore, "rookMobScore");
+    printTable(bishMobScore, "bishMobScore");
+    printTable(queenMobScore, "queenMobScore");
+
+    printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy");
+
+    std::cout << "pV : " << pV << std::endl;
+    std::cout << "nV : " << nV << std::endl;
+    std::cout << "bV : " << bV << std::endl;
+    std::cout << "rV : " << rV << std::endl;
+    std::cout << "qV : " << qV << std::endl;
+
+    std::cout << "pawnDoubledPenalty : " << pawnDoubledPenalty << std::endl;
+    std::cout << "pawnIslandPenalty : " << pawnIslandPenalty << std::endl;
+    std::cout << "pawnIsolatedPenalty : " << pawnIsolatedPenalty << std::endl;
+    std::cout << "pawnBackwardPenalty : " << pawnBackwardPenalty << std::endl;
+    std::cout << "pawnGuardedPassedBonus : " << pawnGuardedPassedBonus << std::endl;
+
+    std::cout << "knightVsQueenBonus1 : " << knightVsQueenBonus1 << std::endl;
+    std::cout << "knightVsQueenBonus2 : " << knightVsQueenBonus2 << std::endl;
+    std::cout << "knightVsQueenBonus3 : " << knightVsQueenBonus3 << std::endl;
+
+    std::cout << "pawnTradePenalty : " << pawnTradePenalty << std::endl;
+    std::cout << "pieceTradeBonus : " << pieceTradeBonus << std::endl;
+
+    std::cout << "rookHalfOpenBonus : " << rookHalfOpenBonus << std::endl;
+    std::cout << "rookOpenBonus : " << rookOpenBonus << std::endl;
+    std::cout << "rookDouble7thRowBonus : " << rookDouble7thRowBonus << std::endl;
+    std::cout << "trappedRookPenalty : " << trappedRookPenalty << std::endl;
+
+    std::cout << "bishopPairValue : " << bishopPairValue << std::endl;
+    std::cout << "bishopPairPawnPenalty : " << bishopPairPawnPenalty << std::endl;
+
+    std::cout << "kingAttackWeight : " << kingAttackWeight << std::endl;
+    std::cout << "kingSafetyHalfOpenBCDEFG : " << kingSafetyHalfOpenBCDEFG << std::endl;
+    std::cout << "kingSafetyHalfOpenAH : " << kingSafetyHalfOpenAH << std::endl;
+    std::cout << "kingSafetyWeight : " << kingSafetyWeight << std::endl;
+    std::cout << "pawnStormBonus : " << pawnStormBonus << std::endl;
+}
+
 bool
 ChessTool::getCommentScore(const std::string& comment, int& score) {
     double fScore;
