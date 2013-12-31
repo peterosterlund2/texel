@@ -498,6 +498,8 @@ extern ParamTable<15> rookMobScore;
 extern ParamTable<14> bishMobScore;
 extern ParamTable<28> queenMobScore;
 extern ParamTable<16> majorPieceRedundancy;
+extern ParamTable<8> passedPawnBonus;
+extern ParamTable<8> candidatePassedBonus;
 
 
 // Search parameters

@@ -518,7 +518,6 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
 
     // Evaluate passed pawn bonus, white
     U64 passedPawnsW = wPawns & ~BitBoard::southFill(bPawns | bPawnAttacks | (wPawns >> 8));
-    static const int ppBonus[] = {-1,24,26,30,36,55,100,-1};
     int passedBonusW = 0;
     if (passedPawnsW != 0) {
         U64 guardedPassedW = passedPawnsW & wPawnAttacks;
@@ -527,7 +526,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
             int y = Position::getY(sq);
-            passedBonusW += ppBonus[y];
+            passedBonusW += passedPawnBonus[y];
             m &= m-1;
         }
     }
@@ -542,7 +541,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
             int y = Position::getY(sq);
-            passedBonusB += ppBonus[7-y];
+            passedBonusB += passedPawnBonus[7-y];
             m &= m-1;
         }
     }
@@ -560,13 +559,12 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
                               ((wLeftAtks & wRightAtks) & ~(bLeftAtks & bRightAtks));
     const U64 bCandidates = bPawns & ~BitBoard::northFill(wPawns | (bPawns << 8) | wBlockSquares) & ~passedPawnsB;
 
-    static const int candBonus[] = {-1,13,16,19,24,39,-1,-1};
     {
         U64 m = wCandidates;
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
             int y = Position::getY(sq);
-            passedBonusW += candBonus[y];
+            passedBonusW += candidatePassedBonus[y];
             m &= m-1;
         }
     }
@@ -575,7 +573,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
             int y = Position::getY(sq);
-            passedBonusB += candBonus[7-y];
+            passedBonusB += candidatePassedBonus[7-y];
             m &= m-1;
         }
     }

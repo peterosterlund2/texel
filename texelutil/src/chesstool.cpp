@@ -278,6 +278,8 @@ ChessTool::printParams() {
     printTable(rookMobScore, "rookMobScore");
     printTable(bishMobScore, "bishMobScore");
     printTable(queenMobScore, "queenMobScore");
+    printTable(passedPawnBonus, "passedPawnBonus");
+    printTable(candidatePassedBonus, "candidatePassedBonus");
 
     printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy");
 

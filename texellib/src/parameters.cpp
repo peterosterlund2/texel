@@ -112,7 +112,7 @@ ParamTable<64> kt1b { -200, 200, useUciParam,
       17, 18, 19, 20, 20, 19, 18, 17,
       21, 22, 23, 24, 24, 23, 22, 21,
       25, 26, 27, 28, 28, 27, 26, 25,
-      29, 30, 31,  0,  0, 31, 30, 29 }
+      29, 30, 31, 32, 32, 31, 30, 29 }
 };
 ParamTableMirrored<64> kt1w(kt1b);
 
@@ -348,6 +348,16 @@ ParamTable<16> majorPieceRedundancy { -200, 200, useUciParam,
        0,   0,  -2,   0 }
 };
 
+ParamTable<8> passedPawnBonus { -200, 200, useUciParam,
+    {-1,24,26,30,36,55,100,-1},
+    { 0, 1, 2, 3, 4, 5,  6, 0}
+};
+
+ParamTable<8> candidatePassedBonus { -200, 200, useUciParam,
+    { -1,13,16,19,24,39,-1,-1},
+    {  0, 1, 2, 3, 4, 5, 0, 0}
+};
+
 
 Parameters::Parameters() {
     addPar(std::make_shared<SpinParam>("Hash", 1, 524288, 16));
@@ -413,6 +423,8 @@ Parameters::Parameters() {
     bishMobScore.registerParams("BishopMobility", *this);
     queenMobScore.registerParams("QueenMobility", *this);
     majorPieceRedundancy.registerParams("MajorPieceRedundancy", *this);
+    passedPawnBonus.registerParams("PassedPawnBonus", *this);
+    candidatePassedBonus.registerParams("CandidatePassedPawnBonus", *this);
 
     // Search parameters
     REGISTER_PARAM(aspirationWindow, "AspirationWindow");
