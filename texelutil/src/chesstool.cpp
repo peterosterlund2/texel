@@ -42,6 +42,25 @@ ScoreToProb::getProb(int score) {
 
 // --------------------------------------------------------------------------------
 
+std::vector<std::string>
+ChessTool::readFile(const std::string& fname) {
+    std::ifstream is(fname);
+    return readStream(is);
+}
+
+std::vector<std::string>
+ChessTool::readStream(std::istream& is) {
+    std::vector<std::string> ret;
+    while (true) {
+        std::string line;
+        std::getline(is, line);
+        if (!is || is.eof())
+            break;
+        ret.push_back(line);
+    }
+    return ret;
+}
+
 void
 ChessTool::pgnToFen(std::istream& is) {
     static std::vector<U64> nullHist(200);
@@ -243,28 +262,38 @@ splitString(const std::string& line, const std::string& delim, std::vector<std::
 
 void
 ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
+    std::vector<std::string> lines = readStream(is);
+    data.resize(lines.size());
     Position pos;
     PositionInfo pi;
-    while (true) {
-        std::string line;
-        std::getline(is, line);
-        if (!is || is.eof())
-            break;
+    const int nLines = lines.size();
+    std::atomic<bool> error(false);
+#pragma omp parallel for default(none) shared(data,error,lines,std::cout) private(pos,pi)
+    for (int i = 0; i < nLines; i++) {
+        if (error)
+            continue;
+        const std::string& line = lines[i];
         std::vector<std::string> fields;
         splitString(line, " : ", fields);
         if (fields.size() != 4) {
-            std::cout << "line:" << line << std::endl;
-            std::cout << "fields:" << fields << std::endl;
-            throw ChessParseError("Invalid file format");
+#pragma omp critical
+            if (!error) {
+                std::cout << "line:" << line << std::endl;
+                std::cout << "fields:" << fields << std::endl;
+                error = true;
+            }
         }
         pos = TextIO::readFEN(fields[0]);
         pos.serialize(pi.posData);
         if (!str2Num(fields[1], pi.result) ||
             !str2Num(fields[2], pi.searchScore) ||
-            !str2Num(fields[3], pi.qScore))
-            throw ChessParseError("Invalid file format");
-        data.push_back(pi);
+            !str2Num(fields[3], pi.qScore)) {
+            error = true;
+        }
+        data[i] = pi;
     }
+    if (error)
+        throw ChessParseError("Invalid file format");
 }
 
 void ChessTool::qEval(std::vector<PositionInfo>& positions) {

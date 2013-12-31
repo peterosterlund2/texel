@@ -12,23 +12,9 @@
 #include <fstream>
 #include <string>
 
-/** Read a file into a string vector. */
-std::vector<std::string> readFile(const std::string& fname) {
-    std::vector<std::string> ret;
-    std::ifstream is(fname);
-    while (true) {
-        std::string line;
-        std::getline(is, line);
-        if (!is || is.eof())
-            break;
-        ret.push_back(line);
-    }
-    return ret;
-}
-
 void setInitialValues(const std::string& fname) {
     Parameters& uciPars = Parameters::instance();
-    std::vector<std::string> lines = readFile(fname);
+    std::vector<std::string> lines = ChessTool::readFile(fname);
     for (const std::string& line : lines) {
         std::vector<std::string> fields;
         splitString(line, fields);

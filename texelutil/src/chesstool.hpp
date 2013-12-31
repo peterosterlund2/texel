@@ -40,6 +40,12 @@ public:
 
 class ChessTool {
 public:
+    /** Read a file into a string vector. */
+    static std::vector<std::string> readFile(const std::string& fname);
+
+    /** Read contents of a stream into a string vector. */
+    static std::vector<std::string> readStream(std::istream& is);
+
     /** Read PGN files. For each position, print: "fen : gameResult : searchScore : qScore".
      * Skip positions where searchScore is a mate score. Also skip positions where corresponding
      * game score is unknown. All scores are from white's perspective. gameResult is 0.0, 0.5 or 1.0,
