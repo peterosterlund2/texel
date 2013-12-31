@@ -256,7 +256,7 @@ printTable(const ParamTable<N>& pt, const std::string& name) {
     std::cout << name << ":" << std::endl;
     std::cout << "    {";
     for (int i = 0; i < N; i++) {
-        std::cout << std::setw(3) << pt[i] << ((i == N-1) ? "}," : ",");
+        std::cout << std::setw(3) << pt[i] << ((i == N-1) ? " }," : ",");
     }
     std::cout << std::endl;
 }
@@ -376,21 +376,24 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
 
 void ChessTool::qEval(std::vector<PositionInfo>& positions) {
     TranspositionTable tt(19);
+    ParallelData pd(tt);
+
+    std::vector<U64> nullHist(200);
+    KillerTable kt;
+    History ht;
+    std::shared_ptr<Evaluate::EvalHashTables> et;
+    TreeLogger treeLog;
+    Position pos;
 
     const int nPos = positions.size();
-    const int chunkSize = 100000;
+    const int chunkSize = 5000;
 
-#pragma omp parallel for default(none) shared(positions,tt)
+#pragma omp parallel for default(none) shared(positions,tt,pd) private(kt,ht,et,treeLog,pos) firstprivate(nullHist)
     for (int c = 0; c < nPos; c += chunkSize) {
-        std::vector<U64> nullHist(200);
-        ParallelData pd(tt);
-        KillerTable kt;
-        History ht;
-        auto et = Evaluate::getEvalHashTables();
+        if (!et)
+            et = Evaluate::getEvalHashTables();
         Search::SearchTables st(tt, kt, ht, *et);
-        TreeLogger treeLog;
 
-        Position pos;
         const int mate0 = SearchConst::MATE0;
         Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
         const int plyScale = SearchConst::plyScale;
