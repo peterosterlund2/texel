@@ -66,6 +66,16 @@ public:
     }
 };
 
+template <typename T>
+T clamp(T val, T min, T max) {
+    if (val < min)
+        return min;
+    else if (val > max)
+        return max;
+    else
+        return val;
+}
+
 // ----------------------------------------------------------------------------
 
 /** Split a string using " " as delimiter. Append words to out. */
