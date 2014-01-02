@@ -431,7 +431,7 @@ testEndGameEval() {
 
     pos.setPiece(Position::getSquare(2, 6), Piece::BBISHOP);
     score = evalWhite(pos);
-    ASSERT(-score > bV * 2 + 100);
+    ASSERT(-score > bV * 2);
 
     // KRPKN is win for white
     pos = TextIO::readFEN("8/3bk3/8/8/8/3P4/3RK3/8 w - - 0 1");
@@ -484,7 +484,7 @@ static void
 testPassedPawns() {
     Position pos = TextIO::readFEN("8/8/8/P3k/8/8/p/K w");
     int score = evalWhite(pos);
-    ASSERT(score > 300); // Unstoppable passed pawn
+    ASSERT(score > 200); // Unstoppable passed pawn
     pos.setWhiteMove(false);
     score = evalWhite(pos);
     ASSERT(score <= 0); // Not unstoppable
@@ -527,10 +527,9 @@ testPassedPawns() {
  */
 static void
 testBishAndRookPawns() {
-    const int pV = ::pV;
     const int bV = ::bV;
-    const int winScore = pV + bV;
-    const int drawish = (pV + bV) / 20;
+    const int winScore = bV;
+    const int drawish = bV / 20;
     Position pos = TextIO::readFEN("k7/8/8/8/2B5/2K5/P7/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
 
@@ -571,7 +570,7 @@ testTrappedBishop() {
     ASSERT(evalWhite(pos) > 0); // Black has trapped bishop
 
     pos = TextIO::readFEN("r2q2k1/pp1b1p1p/2p2np1/3p4/3P4/1BNQ2P1/PPPB1P1b/2KR4 w - - 0 1");
-    ASSERT(evalWhite(pos) > 0); // Black has trapped bishop
+    ASSERT(evalWhite(pos) > -pV/2); // Black has trapped bishop
 }
 
 /**
@@ -751,7 +750,7 @@ testKNPK() {
     ASSERT(score == 0);
 
     score = evalWhite(TextIO::readFEN("k7/8/P7/1N6/1K6/8/8/8 w - - 0 1"));
-    ASSERT(score > pV + nV);
+    ASSERT(score > nV);
 
     score = evalWhite(TextIO::readFEN("K7/P1k5/8/5N2/8/8/8/8 w - - 0 1"));
     ASSERT(score > pV + nV);
@@ -759,7 +758,7 @@ testKNPK() {
     ASSERT(score == 0);
 
     score = evalWhite(TextIO::readFEN("K7/P1k5/8/8/7N/8/8/8 b - - 0 1"));
-    ASSERT(score > pV + nV);
+    ASSERT(score > nV - pV);
     score = evalWhite(TextIO::readFEN("K7/P1k5/8/8/7N/8/8/8 w - - 0 1"));
     ASSERT(score == 0);
 
@@ -784,8 +783,8 @@ testCantWin() {
 static void
 testPawnRace() {
     const int pV = ::pV;
-    const int winScore = 400;
-    const int drawish = 100;
+    const int winScore = 250;
+    const int drawish = 50;
     Position pos = TextIO::readFEN("8/8/K7/1P3p2/8/6k1/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
     pos = TextIO::readFEN("8/8/K7/1P3p2/8/6k1/8/8 b - - 0 1");
@@ -801,7 +800,7 @@ testPawnRace() {
     ASSERT(evalWhite(pos) < drawish + pV);
     ASSERT(evalWhite(pos) > 0);
     pos = TextIO::readFEN("8/K7/8/8/1PP2p1k/8/8/8 b - - 0 1");
-    ASSERT(evalWhite(pos) < -winScore + pV);
+    ASSERT(evalWhite(pos) < -winScore + pV*3/2);
 }
 
 static void

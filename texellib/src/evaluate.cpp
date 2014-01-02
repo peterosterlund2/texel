@@ -214,8 +214,8 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
     const int wMtrlNoPawns = wMtrl - wMtrlPawns;
     const int bMtrlNoPawns = bMtrl - bMtrlPawns;
     { // Pawn
-        const int loMtrl = rV + bV;
-        const int hiMtrl = qV + 2 * rV + 2 * bV;
+        const int loMtrl = pawnLoMtrl;
+        const int hiMtrl = pawnHiMtrl;
         mhd.wPawnIPF = interpolate(bMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
         mhd.bPawnIPF = interpolate(wMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
         if (wCorr > 100)
@@ -224,8 +224,8 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
             mhd.bPawnIPF = mhd.bPawnIPF * 100 / bCorr;
     }
     { // Knight/bishop
-        const int loMtrl = nV + 8 * pV;
-        const int hiMtrl = qV + 2 * rV + 1 * bV + 1 * nV + 6 * pV;
+        const int loMtrl = minorLoMtrl;
+        const int hiMtrl = minorHiMtrl;
         mhd.wKnightIPF = interpolate(bMtrl, loMtrl, 0, hiMtrl, IPOLMAX);
         mhd.bKnightIPF = interpolate(wMtrl, loMtrl, 0, hiMtrl, IPOLMAX);
     }
@@ -237,29 +237,29 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
     }
     { // Passed pawn
         const int loMtrl = 0;
-        const int hiMtrl = qV + rV;
+        const int hiMtrl = passedPawnHiMtrl;
         const int nWN = BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT));
         const int nBN = BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT));
         mhd.wPassedPawnIPF = interpolate(bMtrlNoPawns-nBN*(nV/2), loMtrl, 0, hiMtrl, IPOLMAX);
         mhd.bPassedPawnIPF = interpolate(wMtrlNoPawns-nWN*(nV/2), loMtrl, 0, hiMtrl, IPOLMAX);
     }
     { // King safety
-        const int loMtrl = rV + bV;
-        const int hiMtrl = qV + 2 * rV + 2 * bV + 2 * nV;
+        const int loMtrl = kingSafetyLoMtrl;
+        const int hiMtrl = kingSafetyHiMtrl;
         const int m = (wMtrlNoPawns + bMtrlNoPawns) / 2;
         mhd.kingSafetyIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
         if (wCorr + bCorr > 200)
             mhd.kingSafetyIPF = mhd.kingSafetyIPF * 200 / (wCorr + bCorr);
     }
     { // Different color bishops
-        const int loMtrl = 2 * bV;
-        const int hiMtrl = 2 * (qV + rV + bV);
+        const int loMtrl = oppoBishopLoMtrl;
+        const int hiMtrl = oppoBishopHiMtrl;
         const int m = wMtrlNoPawns + bMtrlNoPawns;
         mhd.diffColorBishopIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
     }
     { // Knight outpost
-        const int loMtrl = 3 * pV;
-        const int hiMtrl = 6 * pV;
+        const int loMtrl = knightOutpostLoMtrl;
+        const int hiMtrl = knightOutpostHiMtrl;
         mhd.wKnightOutPostIPF = interpolate(bMtrlPawns, loMtrl, 0, hiMtrl, IPOLMAX);
         mhd.bKnightOutPostIPF = interpolate(wMtrlPawns, loMtrl, 0, hiMtrl, IPOLMAX);
     }
@@ -274,8 +274,8 @@ Evaluate::tradeBonus(const Position& pos, int wCorr, int bCorr) const {
     const int deltaScore = wM - bM;
 
     int pBonus = 0;
-    pBonus += interpolate((deltaScore > 0) ? wPawn : bPawn, 0, -pawnTradePenalty * deltaScore / 100, 6 * pV, 0);
-    pBonus += interpolate((deltaScore > 0) ? bM : wM, 0, pieceTradeBonus * deltaScore / 100, qV + 2 * rV + 2 * bV + 2 * nV, 0);
+    pBonus += interpolate((deltaScore > 0) ? wPawn : bPawn, 0, -pawnTradePenalty * deltaScore / 100, pawnTradeThreshold, 0);
+    pBonus += interpolate((deltaScore > 0) ? bM : wM, 0, pieceTradeBonus * deltaScore / 100, pieceTradeThreshold * 100, 0);
 
     return pBonus;
 }
@@ -454,25 +454,26 @@ Evaluate::pawnBonus(const Position& pos) {
     }
 
     // Evaluate pawn races in pawn end games
+    const int prBonus = pawnRaceBonus;
     if (bestWPromSq >= 0) {
         if (bestBPromSq >= 0) {
             int wPly = bestWPawnDist * 2; if (pos.getWhiteMove()) wPly--;
             int bPly = bestBPawnDist * 2; if (!pos.getWhiteMove()) bPly--;
             if (wPly < bPly - 1) {
-                score += 500;
+                score += prBonus;
             } else if (wPly == bPly - 1) {
                 if (BitBoard::getDirection(bestWPromSq, pos.getKingSq(false)))
-                    score += 500;
+                    score += prBonus;
             } else if (wPly == bPly + 1) {
                 if (BitBoard::getDirection(bestBPromSq, pos.getKingSq(true)))
-                    score -= 500;
+                    score -= prBonus;
             } else {
-                score -= 500;
+                score -= prBonus;
             }
         } else
-            score += 500;
+            score += prBonus;
     } else if (bestBPromSq >= 0)
-        score -= 500;
+        score -= prBonus;
 
     return score;
 }
@@ -711,22 +712,24 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
 
     // Penalty for bishop trapped behind pawn at a2/h2/a7/h7
     if (((wBishops | bBishops) & 0x0081000000008100L) != 0) {
+        const int bTrapped1 = trappedBishopPenalty1;
+        const int bTrapped2 = trappedBishopPenalty2;
         if ((pos.getPiece(48) == Piece::WBISHOP) && // a7
             (pos.getPiece(41) == Piece::BPAWN) &&
             (pos.getPiece(50) == Piece::BPAWN))
-            score -= pV * 3 / 2;
+            score -= bTrapped1;
         if ((pos.getPiece(55) == Piece::WBISHOP) && // h7
             (pos.getPiece(46) == Piece::BPAWN) &&
             (pos.getPiece(53) == Piece::BPAWN))
-            score -= (pos.pieceTypeBB(Piece::WQUEEN) != 0) ? pV : pV * 3 / 2;
+            score -= (pos.pieceTypeBB(Piece::WQUEEN) != 0) ? bTrapped2 : bTrapped1;
         if ((pos.getPiece(8)  == Piece::BBISHOP) &&  // a2
             (pos.getPiece(17) == Piece::WPAWN) &&
             (pos.getPiece(10) == Piece::WPAWN))
-            score += pV * 3 / 2;
+            score += bTrapped1;
         if ((pos.getPiece(15) == Piece::BBISHOP) && // h2
             (pos.getPiece(22) == Piece::WPAWN) &&
             (pos.getPiece(13) == Piece::WPAWN))
-            score += (pos.pieceTypeBB(Piece::BQUEEN) != 0) ? pV : pV * 3 / 2;
+            score += (pos.pieceTypeBB(Piece::BQUEEN) != 0) ? bTrapped2 : bTrapped1;
     }
 
     return score;

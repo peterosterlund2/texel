@@ -278,10 +278,9 @@ ChessTool::printParams() {
     printTable(rookMobScore, "rookMobScore");
     printTable(bishMobScore, "bishMobScore");
     printTable(queenMobScore, "queenMobScore");
+    printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy");
     printTable(passedPawnBonus, "passedPawnBonus");
     printTable(candidatePassedBonus, "candidatePassedBonus");
-
-    printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy");
 
     std::cout << "pV : " << pV << std::endl;
     std::cout << "nV : " << nV << std::endl;
@@ -294,6 +293,7 @@ ChessTool::printParams() {
     std::cout << "pawnIsolatedPenalty : " << pawnIsolatedPenalty << std::endl;
     std::cout << "pawnBackwardPenalty : " << pawnBackwardPenalty << std::endl;
     std::cout << "pawnGuardedPassedBonus : " << pawnGuardedPassedBonus << std::endl;
+    std::cout << "pawnRaceBonus : " << pawnRaceBonus << std::endl;
 
     std::cout << "knightVsQueenBonus1 : " << knightVsQueenBonus1 << std::endl;
     std::cout << "knightVsQueenBonus2 : " << knightVsQueenBonus2 << std::endl;
@@ -301,6 +301,8 @@ ChessTool::printParams() {
 
     std::cout << "pawnTradePenalty : " << pawnTradePenalty << std::endl;
     std::cout << "pieceTradeBonus : " << pieceTradeBonus << std::endl;
+    std::cout << "pawnTradeThreshold : " << pawnTradeThreshold << std::endl;
+    std::cout << "pieceTradeThreshold : " << pieceTradeThreshold << std::endl;
 
     std::cout << "rookHalfOpenBonus : " << rookHalfOpenBonus << std::endl;
     std::cout << "rookOpenBonus : " << rookOpenBonus << std::endl;
@@ -309,12 +311,26 @@ ChessTool::printParams() {
 
     std::cout << "bishopPairValue : " << bishopPairValue << std::endl;
     std::cout << "bishopPairPawnPenalty : " << bishopPairPawnPenalty << std::endl;
+    std::cout << "trappedBishopPenalty1 : " << trappedBishopPenalty1 << std::endl;
+    std::cout << "trappedBishopPenalty2 : " << trappedBishopPenalty2 << std::endl;
 
     std::cout << "kingAttackWeight : " << kingAttackWeight << std::endl;
     std::cout << "kingSafetyHalfOpenBCDEFG : " << kingSafetyHalfOpenBCDEFG << std::endl;
     std::cout << "kingSafetyHalfOpenAH : " << kingSafetyHalfOpenAH << std::endl;
     std::cout << "kingSafetyWeight : " << kingSafetyWeight << std::endl;
     std::cout << "pawnStormBonus : " << pawnStormBonus << std::endl;
+
+    std::cout << "pawnLoMtrl : " << pawnLoMtrl << std::endl;
+    std::cout << "pawnHiMtrl : " << pawnHiMtrl << std::endl;
+    std::cout << "minorLoMtrl : " << minorLoMtrl << std::endl;
+    std::cout << "minorHiMtrl : " << minorHiMtrl << std::endl;
+    std::cout << "passedPawnHiMtrl : " << passedPawnHiMtrl << std::endl;
+    std::cout << "kingSafetyLoMtrl : " << kingSafetyLoMtrl << std::endl;
+    std::cout << "kingSafetyHiMtrl : " << kingSafetyHiMtrl << std::endl;
+    std::cout << "oppoBishopLoMtrl : " << oppoBishopLoMtrl << std::endl;
+    std::cout << "oppoBishopHiMtrl : " << oppoBishopHiMtrl << std::endl;
+    std::cout << "knightOutpostLoMtrl : " << knightOutpostLoMtrl << std::endl;
+    std::cout << "knightOutpostHiMtrl : " << knightOutpostHiMtrl << std::endl;
 }
 
 bool
