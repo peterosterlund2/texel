@@ -61,6 +61,8 @@ ChessTool::readStream(std::istream& is) {
     return ret;
 }
 
+const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
+
 void
 ChessTool::pgnToFen(std::istream& is) {
     static std::vector<U64> nullHist(200);
@@ -103,7 +105,8 @@ ChessTool::pgnToFen(std::istream& is) {
                 continue;
 
             sc.init(pos, nullHist, 0);
-            int score = sc.negaScout(-mate0, mate0, 0, 0*plyScale, -1, MoveGen::inCheck(pos));
+            sc.q0Eval = UNKNOWN_SCORE;
+            int score = sc.quiesce(-mate0, mate0, 0, 0*plyScale, MoveGen::inCheck(pos));
             if (!pos.getWhiteMove()) {
                 score = -score;
                 commentScore = -commentScore;
@@ -333,6 +336,50 @@ ChessTool::printParams() {
     std::cout << "knightOutpostHiMtrl : " << knightOutpostHiMtrl << std::endl;
 }
 
+void
+ChessTool::evalStat(std::istream& is, std::vector<ParamDomain>& pdVec) {
+    Parameters& uciPars = Parameters::instance();
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+    const int nPos = positions.size();
+
+    qEval(positions);
+    std::vector<int> qScores0;
+    for (const PositionInfo& pi : positions)
+        qScores0.push_back(pi.qScore);
+    ScoreToProb sp;
+    const double avgErr0 = computeAvgError(positions, sp);
+
+    for (ParamDomain& pd : pdVec) {
+        int newVal1 = (pd.value - pd.minV) > (pd.maxV - pd.value) ? pd.minV : pd.maxV;
+        uciPars.set(pd.name, num2Str(newVal1));
+        qEval(positions);
+        double avgErr = computeAvgError(positions, sp);
+        uciPars.set(pd.name, num2Str(pd.value));
+
+        double nChanged = 0;
+        for (int i = 0; i < nPos; i++)
+            if (positions[i].qScore - qScores0[i])
+                nChanged++;
+        double errChange1 = avgErr - avgErr0;
+
+        double errChange2;
+        int newVal2 = clamp(0, pd.minV, pd.maxV);
+        if (newVal2 != newVal1) {
+            uciPars.set(pd.name, num2Str(newVal2));
+            qEval(positions);
+            double avgErr2 = computeAvgError(positions, sp);
+            uciPars.set(pd.name, num2Str(pd.value));
+            errChange2 = avgErr2 - avgErr0;
+        } else {
+            errChange2 = errChange1;
+        }
+
+        std::cout << pd.name << " nChanged:" << (nChanged / nPos)
+                  << " err1:" << errChange1 << " err2:" << errChange2 << std::endl;
+    }
+}
+
 bool
 ChessTool::getCommentScore(const std::string& comment, int& score) {
     double fScore;
@@ -422,7 +469,8 @@ void ChessTool::qEval(std::vector<PositionInfo>& positions) {
             PositionInfo& pi = positions[c + i];
             pos.deSerialize(pi.posData);
             sc.init(pos, nullHist, 0);
-            int score = sc.negaScout(-mate0, mate0, 0, 0*plyScale, -1, MoveGen::inCheck(pos));
+            sc.q0Eval = UNKNOWN_SCORE;
+            int score = sc.quiesce(-mate0, mate0, 0, 0*plyScale, MoveGen::inCheck(pos));
             if (!pos.getWhiteMove())
                 score = -score;
             pi.qScore = score;

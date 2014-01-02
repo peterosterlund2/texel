@@ -35,7 +35,8 @@ void usage() {
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage" << std::endl;
     std::cerr << " parrange p a b c   : Compare evaluation error for different parameter values" << std::endl;
     std::cerr << " localopt p1 p2 ... : Optimize parameters using local search" << std::endl;
-    std::cerr << " printpar : Print evaluation tables" << std::endl;
+    std::cerr << " printpar : Print evaluation tables and parameters" << std::endl;
+    std::cerr << " evalstat p1 p2 ... : Print parameter statistics" << std::endl;
     ::exit(2);
 }
 
@@ -120,6 +121,10 @@ int main(int argc, char* argv[]) {
         ChessTool::localOptimize(std::cin, params);
     } else if (cmd == "printpar") {
         ChessTool::printParams();
+    } else if (cmd == "evalstat") {
+        std::vector<ParamDomain> params;
+        getParams(argc, argv, params);
+        ChessTool::evalStat(std::cin, params);
     } else {
         ScoreToProb sp(300.0);
         for (int i = -100; i <= 100; i++)

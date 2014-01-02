@@ -67,6 +67,9 @@ public:
     /** Print evaluation parameters to cout. */
     static void printParams();
 
+    /** Print statistics about how each parameter affect the eval function. */
+    static void evalStat(std::istream& is, std::vector<ParamDomain>& pdVec);
+
 private:
     /** Read score from a PGN comment, assuming cutechess-cli comment format.
      * Does not handle mate scores. */
