@@ -230,8 +230,8 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
         mhd.bKnightIPF = interpolate(wMtrl, loMtrl, 0, hiMtrl, IPOLMAX);
     }
     { // Castle
-        const int loMtrl = 2 * rV;
-        const int hiMtrl = 2 * (qV + 2 * rV + 2 * bV);
+        const int loMtrl = castleLoMtrl;
+        const int hiMtrl = castleHiMtrl;
         const int m = wMtrlNoPawns + bMtrlNoPawns;
         mhd.castleIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
     }
@@ -388,7 +388,7 @@ Evaluate::pawnBonus(const Position& pos) {
     U64 m = phd.passedPawnsW;
     int score = phd.score;
 
-    const int hiMtrl = qV + rV;
+    const int hiMtrl = passedPawnHiMtrl;
     score += interpolate(2 * phd.passedBonusW, phd.passedBonusW, mhd->wPassedPawnIPF);
     score -= interpolate(2 * phd.passedBonusB, phd.passedBonusB, mhd->bPassedPawnIPF);
 
@@ -693,7 +693,7 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
 
     if ((numWhite == 1) && (numBlack == 1) && (whiteDark != blackDark) &&
         (pos.wMtrl() - pos.wMtrlPawns() == pos.bMtrl() - pos.bMtrlPawns())) {
-        const int penalty = (oldScore + score) / 2;
+        const int penalty = (oldScore + score) * oppoBishopPenalty / 128;
         score -= interpolate(penalty, 0, mhd->diffColorBishopIPF);
     } else {
         if (numWhite == 1) {
@@ -800,7 +800,7 @@ Evaluate::threatBonus(const Position& pos) {
         tmp += ::pieceValue[pos.getPiece(sq)];
         m &= m-1;
     }
-    score += tmp + tmp * tmp / qV;
+    score += tmp + tmp * tmp / threatBonus2;
 
     // Sum values for all white pieces under attack
     bAttacksBB &= pos.pieceTypeBB(Piece::WKNIGHT, Piece::WBISHOP, Piece::WROOK, Piece::WQUEEN);
@@ -812,8 +812,8 @@ Evaluate::threatBonus(const Position& pos) {
         tmp += ::pieceValue[pos.getPiece(sq)];
         m &= m-1;
     }
-    score -= tmp + tmp * tmp / qV;
-    return score / 64;
+    score -= tmp + tmp * tmp / threatBonus2;
+    return score / threatBonus1;
 }
 
 /** Compute king safety for both kings. */

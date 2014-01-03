@@ -50,6 +50,8 @@ DEFINE_PARAM(pawnTradePenalty);
 DEFINE_PARAM(pieceTradeBonus);
 DEFINE_PARAM(pawnTradeThreshold);
 DEFINE_PARAM(pieceTradeThreshold);
+DEFINE_PARAM(threatBonus1);
+DEFINE_PARAM(threatBonus2);
 
 DEFINE_PARAM(rookHalfOpenBonus);
 DEFINE_PARAM(rookOpenBonus);
@@ -60,6 +62,7 @@ DEFINE_PARAM(bishopPairValue);
 DEFINE_PARAM(bishopPairPawnPenalty);
 DEFINE_PARAM(trappedBishopPenalty1);
 DEFINE_PARAM(trappedBishopPenalty2);
+DEFINE_PARAM(oppoBishopPenalty);
 
 DEFINE_PARAM(kingAttackWeight);
 DEFINE_PARAM(kingSafetyHalfOpenBCDEFG);
@@ -71,6 +74,8 @@ DEFINE_PARAM(pawnLoMtrl);
 DEFINE_PARAM(pawnHiMtrl);
 DEFINE_PARAM(minorLoMtrl);
 DEFINE_PARAM(minorHiMtrl);
+DEFINE_PARAM(castleLoMtrl);
+DEFINE_PARAM(castleHiMtrl);
 DEFINE_PARAM(passedPawnHiMtrl);
 DEFINE_PARAM(kingSafetyLoMtrl);
 DEFINE_PARAM(kingSafetyHiMtrl);
@@ -115,14 +120,14 @@ DEFINE_PARAM(timePonderHitRate);
 
 /** Piece/square table for king during middle game. */
 ParamTable<64> kt1b { -200, 200, useUciParam,
-    {  -7,  32, -36,  72,  72, -36,  32,  -7,
-       24,  17, -22, -20, -20, -22,  17,  24,
-      -16,  21, -31,  57,  57, -31,  21, -16,
-       42,  15,  -1,  12,  12,  -1,  15,  42,
-       -1,  58,  57,  67,  67,  57,  58,  -1,
-       -1, -11,  28,  35,  35,  28, -11,  -1,
-       17,  10,  12,  19,  19,  12,  10,  17,
-        3,  19,   1,  -1,  -1,   1,  19,   3 },
+    {   0,  69, -32,  86,  86, -32,  69,   0,
+       35,  17, -17,  -8,  -8, -17,  17,  35,
+      -11,  29, -30,  58,  58, -30,  29, -11,
+       47,  19,   0,  12,  12,   0,  19,  47,
+        5,  58,  58,  67,  67,  58,  58,   5,
+       -2, -10,  28,  43,  43,  28, -10,  -2,
+       17,  11,  11,  19,  19,  11,  11,  17,
+        3,  19,   2,  -1,  -1,   2,  19,   3 },
     {   1,   2,   3,   4,   4,   3,   2,   1,
         5,   6,   7,   8,   8,   7,   6,   5,
         9,  10,  11,  12,  12,  11,  10,   9,
@@ -136,14 +141,14 @@ ParamTableMirrored<64> kt1w(kt1b);
 
 /** Piece/square table for king during end game. */
 ParamTable<64> kt2b { -200, 200, useUciParam,
-    {   0,  11,  21,  20,  20,  21,  11,   0,
+    {   0,  11,  22,  20,  20,  22,  11,   0,
        11,  27,  33,  35,  35,  33,  27,  11,
-       21,  33,  36,  42,  42,  36,  33,  21,
-       20,  35,  42,  43,  43,  42,  35,  20,
-       20,  35,  42,  43,  43,  42,  35,  20,
-       21,  33,  36,  42,  42,  36,  33,  21,
+       22,  33,  36,  43,  43,  36,  33,  22,
+       20,  35,  43,  43,  43,  43,  35,  20,
+       20,  35,  43,  43,  43,  43,  35,  20,
+       22,  33,  36,  43,  43,  36,  33,  22,
        11,  27,  33,  35,  35,  33,  27,  11,
-        0,  11,  21,  20,  20,  21,  11,   0 },
+        0,  11,  22,  20,  20,  22,  11,   0 },
     {   0,   1,   2,   3,   3,   2,   1,   0,
         1,   4,   5,   6,   6,   5,   4,   1,
         2,   5,   7,   8,   8,   7,   5,   2,
@@ -158,9 +163,9 @@ ParamTableMirrored<64> kt2w(kt2b);
 /** Piece/square table for pawns during middle game. */
 ParamTable<64> pt1b { -200, 200, useUciParam,
     {   0,   0,   0,   0,   0,   0,   0,   0,
-      200, 200, 168, 164, 164, 168, 200, 200,
-       32,  81,  68,  86,  86,  68,  81,  32,
-       -1,   8,  13,  27,  27,  13,   8,  -1,
+      197, 200, 163, 164, 164, 163, 200, 197,
+       29,  76,  63,  75,  75,  63,  76,  29,
+       -2,   9,  13,  27,  27,  13,   9,  -2,
        -2,   8,   6,  18,  18,   6,   8,  -2,
         1,   5,   0,   9,   9,   0,   5,   1,
       -10,  -1,  -2, -13, -13,  -2,  -1, -10,
@@ -179,10 +184,10 @@ ParamTableMirrored<64> pt1w(pt1b);
 /** Piece/square table for pawns during end game. */
 ParamTable<64> pt2b { -200, 200, useUciParam,
     {   0,   0,   0,   0,   0,   0,   0,   0,
-     -100, -93, -80, -71, -71, -80, -93,-100,
-       17,   2,  14,   7,   7,  14,   2,  17,
-       13,  16,  12,  14,  14,  12,  16,  13,
-        6,  10,   7,   6,   6,   7,  10,   6,
+      -96, -90, -72, -62, -62, -72, -90, -96,
+       21,   8,  20,  13,  13,  20,   8,  21,
+       14,  16,  12,  14,  14,  12,  16,  14,
+        6,  12,   7,   6,   6,   7,  12,   6,
        -2,   4,   5,   8,   8,   5,   4,  -2,
        -5,   4,   7,  14,  14,   7,   4,  -5,
         0,   0,   0,   0,   0,   0,   0,   0 },
@@ -199,14 +204,14 @@ ParamTableMirrored<64> pt2w(pt2b);
 
 /** Piece/square table for knights during middle game. */
 ParamTable<64> nt1b { -200, 200, useUciParam,
-    {-136,  19, -22,  -8,  -8, -22,  19,-136,
-      -62, -26,  -9,  -1,  -1,  -9, -26, -62,
-      -57,   9,  36,  48,  48,  36,   9, -57,
+    {-143,  17, -20, -12, -12, -20,  17,-143,
+      -63, -32, -11,  -3,  -3, -11, -32, -63,
+      -59,   9,  37,  48,  48,  37,   9, -59,
        -5,   5,  21,  32,  32,  21,   5,  -5,
-      -17,  15,  18,  36,  36,  18,  15, -17,
-      -33,  -1,   7,  16,  16,   7,  -1, -33,
-      -45, -39, -10,   9,   9, -10, -39, -45,
-      -71, -48, -22, -24, -24, -22, -48, -71 },
+      -17,  13,  18,  36,  36,  18,  13, -17,
+      -33,  -1,   7,  17,  17,   7,  -1, -33,
+      -45, -40, -11,   9,   9, -11, -40, -45,
+      -72, -48, -23, -24, -24, -23, -48, -72 },
     {   1,   2,   3,   4,   4,   3,   2,   1,
         5,   6,   7,   8,   8,   7,   6,   5,
         9,  10,  11,  12,  12,  11,  10,   9,
@@ -220,14 +225,14 @@ ParamTableMirrored<64> nt1w(nt1b);
 
 /** Piece/square table for knights during end game. */
 ParamTable<64> nt2b { -200, 200, useUciParam,
-    { -48, -64,  -2,  -9,  -9,  -2, -64, -48,
-      -20, -12,   5,  15,  15,   5, -12, -20,
-       -2,  12,  24,  33,  33,  24,  12,  -2,
+    { -44, -62,   0, -10, -10,   0, -62, -44,
+      -21, -12,   4,  13,  13,   4, -12, -21,
+       -2,  11,  22,  33,  33,  22,  11,  -2,
        -1,  12,  31,  33,  33,  31,  12,  -1,
-      -10,  13,  19,  40,  40,  19,  13, -10,
-      -18,   4,   9,  19,  19,   9,   4, -18,
-      -40, -18,   1,  11,  11,   1, -18, -40,
-      -77, -50, -27, -17, -17, -27, -50, -77 },
+       -9,  14,  19,  41,  41,  19,  14,  -9,
+      -18,   4,   9,  20,  20,   9,   4, -18,
+      -40, -14,   2,  11,  11,   2, -14, -40,
+      -76, -52, -25, -17, -17, -25, -52, -76 },
     {   1,   2,   3,   4,   4,   3,   2,   1,
         5,   6,   7,   8,   8,   7,   6,   5,
         9,  10,  11,  12,  12,  11,  10,   9,
@@ -242,13 +247,13 @@ ParamTableMirrored<64> nt2w(nt2b);
 /** Piece/square table for bishops during middle game. */
 ParamTable<64> bt1b { -200, 200, useUciParam,
     {  -8,  10,  42,  -8,  -8,  42,  10,  -8,
-      -12,  22,  20,  -9,  -9,  20,  22, -12,
-       11,  27,  26,  24,  24,  26,  27,  11,
-        4,  -5,   8,  15,  15,   8,  -5,   4,
-        5,  -2,   3,  11,  11,   3,  -2,   5,
-       -9,   7,   7,   2,   2,   7,   7,  -9,
+      -13,  15,  20,  -5,  -5,  20,  15, -13,
+       11,  27,  25,  24,  24,  25,  27,  11,
+        4,  -5,   9,  14,  14,   9,  -5,   4,
+        5,  -3,   2,  10,  10,   2,  -3,   5,
+      -12,   7,   7,   2,   2,   7,   7, -12,
        -7,   7,  -2,   0,   0,  -2,   7,  -7,
-      -11, -22, -16,   1,   1, -16, -22, -11 },
+      -11, -20, -16,   1,   1, -16, -20, -11 },
     {  1,   2,   3,   4,   4,   3,   2,   1,
        5,   6,   7,   8,   8,   7,   6,   5,
        9,  10,  11,  12,  12,  11,  10,   9,
@@ -264,10 +269,10 @@ ParamTableMirrored<64> bt1w(bt1b);
 ParamTable<64> bt2b { -200, 200, useUciParam,
     {  14,  12,  12,  11,  11,  12,  12,  14,
        12,   6,  15,  17,  17,  15,   6,  12,
-       12,  15,  23,  22,  22,  23,  15,  12,
-       11,  17,  22,  25,  25,  22,  17,  11,
-       11,  17,  22,  25,  25,  22,  17,  11,
-       12,  15,  23,  22,  22,  23,  15,  12,
+       12,  15,  23,  24,  24,  23,  15,  12,
+       11,  17,  24,  27,  27,  24,  17,  11,
+       11,  17,  24,  27,  27,  24,  17,  11,
+       12,  15,  23,  24,  24,  23,  15,  12,
        12,   6,  15,  17,  17,  15,   6,  12,
        14,  12,  12,  11,  11,  12,  12,  14 },
     {  10,   1,   2,   3,   3,   2,   1,  10,
@@ -283,14 +288,14 @@ ParamTableMirrored<64> bt2w(bt2b);
 
 /** Piece/square table for queens during middle game. */
 ParamTable<64> qt1b { -200, 200, useUciParam,
-    { -29, -29, -23, -23, -23, -23, -29, -29,
-      -29, -22, -17, -15, -15, -17, -22, -29,
-      -23, -17, -14, -16, -16, -14, -17, -23,
-      -23, -15, -16, -12, -12, -16, -15, -23,
-      -23, -15, -16, -12, -12, -16, -15, -23,
-      -23, -17, -14, -16, -16, -14, -17, -23,
-      -29, -22, -17, -15, -15, -17, -22, -29,
-      -29, -29, -23, -23, -23, -23, -29, -29 },
+    { -28, -29, -23, -23, -23, -23, -29, -28,
+      -29, -23, -17, -15, -15, -17, -23, -29,
+      -23, -17, -15, -16, -16, -15, -17, -23,
+      -23, -15, -16, -13, -13, -16, -15, -23,
+      -23, -15, -16, -13, -13, -16, -15, -23,
+      -23, -17, -15, -16, -16, -15, -17, -23,
+      -29, -23, -17, -15, -15, -17, -23, -29,
+      -28, -29, -23, -23, -23, -23, -29, -28 },
      { 10,   1,   2,   3,   3,   2,   1,  10,
         1,   4,   5,   6,   6,   5,   4,   1,
         2,   5,   7,   8,   8,   7,   5,   2,
@@ -304,14 +309,14 @@ ParamTableMirrored<64> qt1w(qt1b);
 
 /** Piece/square table for rooks during end game. */
 ParamTable<64> rt1b { -200, 200, useUciParam,
-    {  12,  12,  15,  19,  19,  15,  12,  12,
-       33,  40,  38,  37,  37,  38,  40,  33,
+    {  16,  12,  18,  18,  18,  18,  12,  16,
+       34,  40,  40,  39,  39,  40,  40,  34,
        12,  18,  19,  19,  19,  19,  18,  12,
-        6,  12,  15,  15,  15,  15,  12,   6,
-       -4,  -2,  -1,   3,   3,  -1,  -2,  -4,
-      -13,  -9,  -9,  -5,  -5,  -9,  -9, -13,
-      -21,  -4,   0,   1,   1,   0,  -4, -21,
-        0,  -1,   5,   3,   3,   5,  -1,   0 },
+        6,  12,  16,  15,  15,  16,  12,   6,
+       -1,  -2,  -1,   3,   3,  -1,  -2,  -1,
+      -10, -10,  -8,  -4,  -4,  -8, -10, -10,
+      -20,  -3,   0,   1,   1,   0,  -3, -20,
+        0,   0,   5,   3,   3,   5,   0,   0 },
     {   1,   2,   3,   4,   4,   3,   2,   1,
         5,   6,   7,   8,   8,   7,   6,   5,
         9,  10,  11,  12,  12,  11,  10,   9,
@@ -326,8 +331,8 @@ ParamTableMirrored<64> rt1w(rt1b);
 ParamTable<64> knightOutpostBonus { 0, 150, useUciParam,
     {   0,   0,   0,   0,   0,   0,   0,   0,
         0,   0,   0,   0,   0,   0,   0,   0,
-        0,  37,  21,  67,  67,  21,  37,   0,
-        0,  27,  56,  58,  58,  56,  27,   0,
+        0,  40,  20,  67,  67,  20,  40,   0,
+        0,  27,  55,  60,  60,  55,  27,   0,
         0,   0,  28,  29,  29,  28,   0,   0,
         0,   0,   0,   0,   0,   0,   0,   0,
         0,   0,   0,   0,   0,   0,   0,   0,
@@ -343,23 +348,23 @@ ParamTable<64> knightOutpostBonus { 0, 150, useUciParam,
 };
 
 ParamTable<15> rookMobScore { -50, 50, useUciParam,
-    { -3, -8, -6, -4, -1,  6, 10, 12, 18, 19, 22, 21, 21, 18, 26 },
+    { -3, -8, -6, -4, -1,  6, 10, 12, 18, 19, 22, 22, 22, 19, 27 },
     {   1, 2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 }
 };
 ParamTable<14> bishMobScore = { -50, 50, useUciParam,
-    {-18, -9, -1,  4, 11, 18, 23, 29, 30, 34, 30, 39, 28, 28 },
+    {-18, -9, -1,  4, 11, 18, 24, 29, 31, 33, 29, 37, 28, 26 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14 }
 };
 ParamTable<28> queenMobScore { -50, 50, useUciParam,
-    { 10,  2, -4, -7, -2, -2,  0,  0,  2,  3,  4,  4,  8,  7, 11, 10, 12, 12, 14, 17, 10, 11, 12,  3, 11,  9,-11,  8 },
+    { 13,  1, -4, -7, -2, -3,  0,  0,  2,  3,  4,  4,  7,  7, 10, 10, 12, 11, 14, 17, 12, 12, 14,  5, 10, 14, -2, 11 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28 }
 };
 
 ParamTable<16> majorPieceRedundancy { -200, 200, useUciParam,
-    {   0, -55,   0,   0,
-       55,   0,   0,   0,
-        0,   0,   0,  53,
-        0,   0, -53,   0 },
+    {   0, -54,   0,   0,
+       54,   0,   0,   0,
+        0,   0,   0,  60,
+        0,   0, -60,   0 },
     {   0,  -1,   0,   0,
         1,   0,   0,   0,
         0,   0,   0,   2,
@@ -367,12 +372,12 @@ ParamTable<16> majorPieceRedundancy { -200, 200, useUciParam,
 };
 
 ParamTable<8> passedPawnBonus { -200, 200, useUciParam,
-    { -1, 17, 18, 25, 31, 37, 93, -1 },
+    { -1, 15, 15, 24, 31, 39, 95, -1 },
     {  0,  1,  2,  3,  4,  5,  6,  0 }
 };
 
 ParamTable<8> candidatePassedBonus { -200, 200, useUciParam,
-    { -1,  7, 13, 25, 25, 58, -1, -1 },
+    { -1,  7, 12, 23, 25, 51, -1, -1 },
     {  0,  1,  2,  3,  4,  5,  0,  0 }
 };
 
@@ -412,6 +417,8 @@ Parameters::Parameters() {
     REGISTER_PARAM(pieceTradeBonus, "PieceTradeBonus");
     REGISTER_PARAM(pawnTradeThreshold, "PawnTradeThreshold");
     REGISTER_PARAM(pieceTradeThreshold, "PieceTradeThreshold");
+    REGISTER_PARAM(threatBonus1, "ThreatBonus1");
+    REGISTER_PARAM(threatBonus2, "ThreatBonus2");
 
     REGISTER_PARAM(rookHalfOpenBonus, "RookHalfOpenBonus");
     REGISTER_PARAM(rookOpenBonus, "RookOpenBonus");
@@ -422,6 +429,7 @@ Parameters::Parameters() {
     REGISTER_PARAM(bishopPairPawnPenalty, "BishopPairPawnPenalty");
     REGISTER_PARAM(trappedBishopPenalty1, "TrappedBishopPenalty1");
     REGISTER_PARAM(trappedBishopPenalty2, "TrappedBishopPenalty2");
+    REGISTER_PARAM(oppoBishopPenalty, "OppositeBishopPenalty");
 
     REGISTER_PARAM(kingAttackWeight, "KingAttackWeight");
     REGISTER_PARAM(kingSafetyHalfOpenBCDEFG, "KingSafetyHalfOpenBCDEFG");
@@ -433,6 +441,8 @@ Parameters::Parameters() {
     REGISTER_PARAM(pawnHiMtrl, "PawnHiMtrl");
     REGISTER_PARAM(minorLoMtrl, "MinorLoMtrl");
     REGISTER_PARAM(minorHiMtrl, "MinorHiMtrl");
+    REGISTER_PARAM(castleLoMtrl, "CastleLoMtrl");
+    REGISTER_PARAM(castleHiMtrl, "CastleHiMtrl");
     REGISTER_PARAM(passedPawnHiMtrl, "PassedPawnHiMtrl");
     REGISTER_PARAM(kingSafetyLoMtrl, "KingSafetyLoMtrl");
     REGISTER_PARAM(kingSafetyHiMtrl, "KingSafetyHiMtrl");

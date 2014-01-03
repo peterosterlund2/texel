@@ -12,6 +12,7 @@
 #include "stloutput.hpp"
 
 #include <queue>
+#include <unistd.h>
 
 
 ScoreToProb::ScoreToProb(double pawnAdvantage0)
@@ -178,6 +179,7 @@ struct PrioParam {
 
 void
 ChessTool::localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
+    double t0 = currentTime();
     Parameters& uciPars = Parameters::instance();
     std::vector<PositionInfo> positions;
     readFENFile(is, positions);
@@ -238,6 +240,10 @@ ChessTool::localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
         }
         tried.push_back(pp);
     }
+
+    double t1 = currentTime();
+    ::usleep(100000);
+    std::cerr << "Elapsed time: " << t1 - t0 << std::endl;
 }
 
 template <int N>
@@ -306,6 +312,8 @@ ChessTool::printParams() {
     std::cout << "pieceTradeBonus : " << pieceTradeBonus << std::endl;
     std::cout << "pawnTradeThreshold : " << pawnTradeThreshold << std::endl;
     std::cout << "pieceTradeThreshold : " << pieceTradeThreshold << std::endl;
+    std::cout << "threatBonus1 : " << threatBonus1 << std::endl;
+    std::cout << "threatBonus2 : " << threatBonus2 << std::endl;
 
     std::cout << "rookHalfOpenBonus : " << rookHalfOpenBonus << std::endl;
     std::cout << "rookOpenBonus : " << rookOpenBonus << std::endl;
@@ -316,6 +324,7 @@ ChessTool::printParams() {
     std::cout << "bishopPairPawnPenalty : " << bishopPairPawnPenalty << std::endl;
     std::cout << "trappedBishopPenalty1 : " << trappedBishopPenalty1 << std::endl;
     std::cout << "trappedBishopPenalty2 : " << trappedBishopPenalty2 << std::endl;
+    std::cout << "oppoBishopPenalty : " << oppoBishopPenalty << std::endl;
 
     std::cout << "kingAttackWeight : " << kingAttackWeight << std::endl;
     std::cout << "kingSafetyHalfOpenBCDEFG : " << kingSafetyHalfOpenBCDEFG << std::endl;
@@ -327,6 +336,8 @@ ChessTool::printParams() {
     std::cout << "pawnHiMtrl : " << pawnHiMtrl << std::endl;
     std::cout << "minorLoMtrl : " << minorLoMtrl << std::endl;
     std::cout << "minorHiMtrl : " << minorHiMtrl << std::endl;
+    std::cout << "castleLoMtrl : " << castleLoMtrl << std::endl;
+    std::cout << "castleHiMtrl : " << castleHiMtrl << std::endl;
     std::cout << "passedPawnHiMtrl : " << passedPawnHiMtrl << std::endl;
     std::cout << "kingSafetyLoMtrl : " << kingSafetyLoMtrl << std::endl;
     std::cout << "kingSafetyHiMtrl : " << kingSafetyHiMtrl << std::endl;
