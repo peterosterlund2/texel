@@ -188,10 +188,10 @@ void
 Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const {
     // Compute material part of score
     int score = pos.wMtrl() - pos.bMtrl();
-    int wCorr = correctionNvsQ(BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT)),
-                               BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN)));
-    int bCorr = correctionNvsQ(BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT)),
-                               BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)));
+    const int nWN = BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT));
+    const int nBN = BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT));
+    int wCorr = correctionNvsQ(nWN, BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN)));
+    int bCorr = correctionNvsQ(nBN, BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)));
     score += wCorr - bCorr;
     score += tradeBonus(pos, wCorr, bCorr);
 
@@ -236,10 +236,8 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd) const
         mhd.castleIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
     }
     { // Passed pawn
-        const int loMtrl = 0;
+        const int loMtrl = passedPawnLoMtrl;
         const int hiMtrl = passedPawnHiMtrl;
-        const int nWN = BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT));
-        const int nBN = BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT));
         mhd.wPassedPawnIPF = interpolate(bMtrlNoPawns-nBN*(nV/2), loMtrl, 0, hiMtrl, IPOLMAX);
         mhd.bPassedPawnIPF = interpolate(wMtrlNoPawns-nWN*(nV/2), loMtrl, 0, hiMtrl, IPOLMAX);
     }

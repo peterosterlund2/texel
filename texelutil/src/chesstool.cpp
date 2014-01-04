@@ -338,6 +338,7 @@ ChessTool::printParams() {
     std::cout << "minorHiMtrl : " << minorHiMtrl << std::endl;
     std::cout << "castleLoMtrl : " << castleLoMtrl << std::endl;
     std::cout << "castleHiMtrl : " << castleHiMtrl << std::endl;
+    std::cout << "passedPawnLoMtrl : " << passedPawnLoMtrl << std::endl;
     std::cout << "passedPawnHiMtrl : " << passedPawnHiMtrl << std::endl;
     std::cout << "kingSafetyLoMtrl : " << kingSafetyLoMtrl << std::endl;
     std::cout << "kingSafetyHiMtrl : " << kingSafetyHiMtrl << std::endl;
