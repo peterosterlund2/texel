@@ -416,7 +416,7 @@ testEndGameEval() {
     pos.setPiece(Position::getSquare(3, 1), Piece::WROOK);
     score = evalWhite(pos);
     const int rV = ::rV;
-    ASSERT(std::abs(score) > rV + 100);   // Enough material to force mate
+    ASSERT(std::abs(score) > rV + 90);   // Enough material to force mate
 
     pos.setPiece(Position::getSquare(3, 6), Piece::BBISHOP);
     score = evalWhite(pos);
