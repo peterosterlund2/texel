@@ -31,6 +31,7 @@ void usage() {
     std::cerr << " -iv file : Set initial parameter values" << std::endl;
     std::cerr << "cmd is one of:" << std::endl;
     std::cerr << " p2f      : Convert from PGN to FEN" << std::endl;
+    std::cerr << " f2p      : Convert from FEN to PGN" << std::endl;
     std::cerr << " filter   : Remove positions where qScore and search score deviate too much" << std::endl;
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage" << std::endl;
     std::cerr << " parrange p a b c   : Compare evaluation error for different parameter values" << std::endl;
@@ -105,6 +106,8 @@ int main(int argc, char* argv[]) {
     std::string cmd = argv[1];
     if (cmd == "p2f") {
         ChessTool::pgnToFen(std::cin);
+    } else if (cmd == "f2p") {
+        ChessTool::fenToPgn(std::cin);
     } else if (cmd == "pawnadv") {
         ChessTool::pawnAdvTable(std::cin);
     } else if (cmd == "filter") {

@@ -52,6 +52,9 @@ public:
      * also from white's perspective. */
     static void pgnToFen(std::istream& is);
 
+    /** Read file with one FEN position per line. Output PGN file using "FEN" and "SetUp" tags. */
+    static void fenToPgn(std::istream& is);
+
     /** Compute average evaluation error for different pawn advantage values. */
     static void pawnAdvTable(std::istream& is);
 
@@ -83,6 +86,9 @@ private:
     };
 
     static void readFENFile(std::istream& is, std::vector<PositionInfo>& data);
+
+    /** Write PGN file to cout, with no moves and staring position given by pos. */
+    static void writePGN(const Position& pos);
 
     /** Recompute all qScore values. */
     static void qEval(std::vector<PositionInfo>& positions);

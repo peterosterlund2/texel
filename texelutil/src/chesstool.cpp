@@ -119,6 +119,18 @@ ChessTool::pgnToFen(std::istream& is) {
 }
 
 void
+ChessTool::fenToPgn(std::istream& is) {
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+
+    for (const PositionInfo& pi : positions) {
+        Position pos;
+        pos.deSerialize(pi.posData);
+        writePGN(pos);
+    }
+}
+
+void
 ChessTool::pawnAdvTable(std::istream& is) {
     std::vector<PositionInfo> positions;
     readFENFile(is, positions);
@@ -451,7 +463,22 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
         throw ChessParseError("Invalid file format");
 }
 
-void ChessTool::qEval(std::vector<PositionInfo>& positions) {
+void
+ChessTool::writePGN(const Position& pos) {
+    std::cout << "[Event \"?\"]" << std::endl;
+    std::cout << "[Site \"?\"]" << std::endl;
+    std::cout << "[Date \"????.??.??\"]" << std::endl;
+    std::cout << "[Round \"?\"]" << std::endl;
+    std::cout << "[White \"?\"]" << std::endl;
+    std::cout << "[Black \"?\"]" << std::endl;
+    std::cout << "[Result \"*\"]" << std::endl;
+    std::cout << "[FEN \"" << TextIO::toFEN(pos) << "\"]" << std::endl;
+    std::cout << "[SetUp \"1\"]" << std::endl;
+    std::cout << "*" << std::endl;
+}
+
+void
+ChessTool::qEval(std::vector<PositionInfo>& positions) {
     TranspositionTable tt(19);
     ParallelData pd(tt);
 
