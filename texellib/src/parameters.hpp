@@ -471,9 +471,9 @@ DECLARE_PARAM(pawnBackwardPenalty, 30, 0, 50, useUciParam);
 DECLARE_PARAM(pawnGuardedPassedBonus, 0, 0, 50, useUciParam);
 DECLARE_PARAM(pawnRaceBonus, 317, 0, 1000, useUciParam);
 
-DECLARE_PARAM(knightVsQueenBonus1, 70, 0, 200, useUciParam);
-DECLARE_PARAM(knightVsQueenBonus2, 330, 0, 600, useUciParam);
-DECLARE_PARAM(knightVsQueenBonus3, 480, 0, 800, useUciParam);
+DECLARE_PARAM(knightVsQueenBonus1, 125, 0, 200, useUciParam);
+DECLARE_PARAM(knightVsQueenBonus2, 251, 0, 600, useUciParam);
+DECLARE_PARAM(knightVsQueenBonus3, 357, 0, 800, useUciParam);
 
 DECLARE_PARAM(pawnTradePenalty, 85, 0, 100, useUciParam);
 DECLARE_PARAM(pieceTradeBonus, 33, 0, 100, useUciParam);
