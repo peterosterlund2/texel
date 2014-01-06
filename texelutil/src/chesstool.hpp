@@ -61,6 +61,9 @@ public:
     /** Filter out positions where search score and q-search score differ too much. */
     static void filterFEN(std::istream& is);
 
+    /** Print positions where abs(qScore) >= threshold and game result != (1+sign(qScore))/2. */
+    static void outliers(std::istream& is, int threshold);
+
     /** Compute average evaluation error for a range of parameter values. */
     static void paramEvalRange(std::istream& is, ParamDomain& pd);
 

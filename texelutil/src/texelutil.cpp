@@ -34,6 +34,7 @@ void usage() {
     std::cerr << " p2f      : Convert from PGN to FEN" << std::endl;
     std::cerr << " f2p      : Convert from FEN to PGN" << std::endl;
     std::cerr << " filter   : Remove positions where qScore and search score deviate too much" << std::endl;
+    std::cerr << " outliers threshold : Print positions with unexpected game result" << std::endl;
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage" << std::endl;
     std::cerr << " parrange p a b c   : Compare evaluation error for different parameter values" << std::endl;
     std::cerr << " localopt p1 p2 ... : Optimize parameters using local search" << std::endl;
@@ -114,6 +115,11 @@ int main(int argc, char* argv[]) {
         ChessTool::pawnAdvTable(std::cin);
     } else if (cmd == "filter") {
         ChessTool::filterFEN(std::cin);
+    } else if (cmd == "outliers") {
+        int threshold;
+        if ((argc < 3) || !str2Num(argv[2], threshold))
+            usage();
+        ChessTool::outliers(std::cin, threshold);
     } else if (cmd == "parrange") {
         std::vector<ParamDomain> params;
         parseParamDomains(argc, argv, params);

@@ -159,6 +159,22 @@ ChessTool::filterFEN(std::istream& is) {
 }
 
 void
+ChessTool::outliers(std::istream& is, int threshold) {
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+    qEval(positions);
+    Position pos;
+    for (const PositionInfo& pi : positions) {
+        if (((pi.qScore >=  threshold) && (pi.result < 1.0)) ||
+            ((pi.qScore <= -threshold) && (pi.result > 0.0))) {
+            pos.deSerialize(pi.posData);
+            std::string fen = TextIO::toFEN(pos);
+            std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore << std::endl;
+        }
+    }
+}
+
+void
 ChessTool::paramEvalRange(std::istream& is, ParamDomain& pd) {
     std::vector<PositionInfo> positions;
     readFENFile(is, positions);
