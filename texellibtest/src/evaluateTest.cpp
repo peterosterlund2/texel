@@ -338,7 +338,7 @@ testMaterial() {
     ASSERT(s2 < s1);
     pos = TextIO::readFEN("nnnnknnn/pppppppp/8/8/8/8/PPPPPPPP/Q2QK2Q w - - 0 1");
     int s3 = evalWhite(pos);
-    ASSERT(s3 < 0);
+    ASSERT(s3 < 30);
 }
 
 static void movePiece(Position& pos, const std::string& from, const std::string& to) {
