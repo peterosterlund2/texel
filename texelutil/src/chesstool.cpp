@@ -120,12 +120,9 @@ ChessTool::pgnToFen(std::istream& is) {
 
 void
 ChessTool::fenToPgn(std::istream& is) {
-    std::vector<PositionInfo> positions;
-    readFENFile(is, positions);
-
-    for (const PositionInfo& pi : positions) {
-        Position pos;
-        pos.deSerialize(pi.posData);
+    std::vector<std::string> lines = readStream(is);
+    for (const std::string& line : lines) {
+        Position pos(TextIO::readFEN(line));
         writePGN(pos);
     }
 }

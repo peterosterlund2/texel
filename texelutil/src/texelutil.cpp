@@ -6,6 +6,7 @@
  */
 
 #include "chesstool.hpp"
+#include "posgen.hpp"
 #include "parameters.hpp"
 
 #include <iostream>
@@ -38,6 +39,7 @@ void usage() {
     std::cerr << " localopt p1 p2 ... : Optimize parameters using local search" << std::endl;
     std::cerr << " printpar : Print evaluation tables and parameters" << std::endl;
     std::cerr << " evalstat p1 p2 ... : Print parameter statistics" << std::endl;
+    std::cerr << " genfen qvsn : Generate all positions of a given type" << std::endl;
     ::exit(2);
 }
 
@@ -128,6 +130,9 @@ int main(int argc, char* argv[]) {
         std::vector<ParamDomain> params;
         getParams(argc, argv, params);
         ChessTool::evalStat(std::cin, params);
+    } else if (cmd == "genfen") {
+        if ((argc < 3) || !PosGenerator::generate(argv[2]))
+            usage();
     } else {
         ScoreToProb sp(300.0);
         for (int i = -100; i <= 100; i++)
