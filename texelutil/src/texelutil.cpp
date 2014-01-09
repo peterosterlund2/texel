@@ -80,7 +80,7 @@ void getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
                 params.push_back(pd);
             }
         } else {
-            std::cerr << "No such parameter:" << pd.name << std::endl;
+            std::cerr << "No such parameter:" << parName << std::endl;
             ::exit(2);
         }
     }
