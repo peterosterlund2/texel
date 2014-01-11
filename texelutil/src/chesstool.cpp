@@ -271,6 +271,123 @@ ChessTool::localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
     std::cerr << "Elapsed time: " << t1 - t0 << std::endl;
 }
 
+static void
+updateMinMax(std::map<int,double>& funcValues, int bestV, int& minV, int& maxV) {
+    auto it = funcValues.find(bestV);
+    assert(it != funcValues.end());
+    if (it != funcValues.begin()) {
+        auto it2 = it; --it2;
+        int nextMinV = it2->first;
+        minV = std::max(minV, nextMinV);
+    }
+    auto it2 = it; ++it2;
+    if (it2 != funcValues.end()) {
+        int nextMaxV = it2->first;
+        maxV = std::min(maxV, nextMaxV);
+    }
+}
+
+static int
+estimateMin(std::map<int,double>& funcValues, int bestV, int minV, int maxV) {
+    return (minV + maxV) / 2;
+}
+
+void
+ChessTool::localOptimize2(std::istream& is, std::vector<ParamDomain>& pdVec) {
+    double t0 = currentTime();
+    Parameters& uciPars = Parameters::instance();
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+
+    std::priority_queue<PrioParam> queue;
+    for (ParamDomain& pd : pdVec)
+        queue.push(PrioParam(pd));
+
+    ScoreToProb sp;
+    qEval(positions);
+    double bestAvgErr = computeAvgError(positions, sp);
+    {
+        std::stringstream ss;
+        ss << "Initial error: " << std::setprecision(14) << bestAvgErr;
+        std::cout << ss.str() << std::endl;
+    }
+
+    std::vector<PrioParam> tried;
+    while (!queue.empty()) {
+        PrioParam pp = queue.top(); queue.pop();
+        ParamDomain& pd = *pp.pd;
+        std::cout << pd.name << " prio:" << pp.priority << " q:" << queue.size()
+                  << " min:" << pd.minV << " max:" << pd.maxV << " val:" << pd.value << std::endl;
+        double oldBest = bestAvgErr;
+
+        std::map<int, double> funcValues;
+        funcValues[pd.value] = bestAvgErr;
+        int minV = pd.minV;
+        int maxV = pd.maxV;
+        while (true) {
+            bool improved = false;
+            for (int d = 0; d < 2; d++) {
+                const int newValue = pd.value + (d ? -1 : 1);
+                if ((newValue < minV) || (newValue > maxV))
+                    continue;
+                if (funcValues.count(newValue) == 0) {
+                    uciPars.set(pd.name, num2Str(newValue));
+                    qEval(positions);
+                    double avgErr = computeAvgError(positions, sp);
+                    funcValues[newValue] = avgErr;
+                    uciPars.set(pd.name, num2Str(pd.value));
+                    std::stringstream ss;
+                    ss << pd.name << ' ' << newValue << ' ' << std::setprecision(14) << avgErr << ((avgErr < bestAvgErr) ? " *" : "");
+                    std::cout << ss.str() << std::endl;
+                }
+                if (funcValues[newValue] < bestAvgErr) {
+                    bestAvgErr = funcValues[newValue];
+                    pd.value = newValue;
+                    uciPars.set(pd.name, num2Str(pd.value));
+                    updateMinMax(funcValues, pd.value, minV, maxV);
+                    improved = true;
+
+                    const int estimatedMinValue = estimateMin(funcValues, pd.value, minV, maxV);
+                    if ((estimatedMinValue >= minV) && (estimatedMinValue <= maxV) &&
+                        (funcValues.count(estimatedMinValue) == 0)) {
+                        uciPars.set(pd.name, num2Str(estimatedMinValue));
+                        qEval(positions);
+                        double avgErr = computeAvgError(positions, sp);
+                        funcValues[estimatedMinValue] = avgErr;
+                        uciPars.set(pd.name, num2Str(pd.value));
+                        std::stringstream ss;
+                        ss << pd.name << ' ' << estimatedMinValue << ' ' << std::setprecision(14) << avgErr << ((avgErr < bestAvgErr) ? " *" : "");
+                        std::cout << ss.str() << std::endl;
+
+                        if (avgErr < bestAvgErr) {
+                            bestAvgErr = avgErr;
+                            pd.value = estimatedMinValue;
+                            uciPars.set(pd.name, num2Str(pd.value));
+                            updateMinMax(funcValues, pd.value, minV, maxV);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!improved)
+                break;
+        }
+        double improvement = oldBest - bestAvgErr;
+        std::cout << pd.name << " improvement:" << improvement << std::endl;
+        pp.priority = pp.priority * 0.1 + improvement * 0.9;
+        if (improvement > 0) {
+            for (PrioParam& pp2 : tried)
+                queue.push(pp2);
+            tried.clear();
+        }
+        tried.push_back(pp);
+    }
+
+    double t1 = currentTime();
+    ::usleep(100000);
+    std::cerr << "Elapsed time: " << t1 - t0 << std::endl;
+}
+
 template <int N>
 static void
 printTableNxN(const ParamTable<N*N>& pt, const std::string& name) {
