@@ -392,7 +392,11 @@ Parameters::Parameters() {
                         " by Peter Osterlund, see http://web.comhem.se/petero2home/javachess/index.html#texel";
     addPar(std::make_shared<StringParam>("UCI_EngineAbout", about));
     addPar(std::make_shared<SpinParam>("Strength", 0, 1000, 1000));
+#ifdef __arm__
+    addPar(std::make_shared<SpinParam>("Threads", 1, 1, 1));
+#else
     addPar(std::make_shared<SpinParam>("Threads", 1, 64, 1));
+#endif
     addPar(std::make_shared<SpinParam>("MultiPV", 1, 256, 1));
 
     // Evaluation parameters
