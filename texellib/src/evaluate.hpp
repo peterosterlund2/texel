@@ -96,6 +96,7 @@ public:
      *         Positive values are good for the side to make the next move.
      */
     int evalPos(const Position& pos);
+    int evalPosPrint(const Position& pos);
 
     /**
      * Interpolate between (x1,y1) and (x2,y2).
@@ -111,14 +112,16 @@ public:
     static void staticInitialize();
 
 private:
+    template <bool print> int evalPos(const Position& pos);
+
     /** Compute score based on piece square tables. Positive values are good for white. */
     int pieceSquareEval(const Position& pos);
 
     /** Get material score */
-    int materialScore(const Position& pos);
+    int materialScore(const Position& pos, bool print);
 
     /** Compute material score. */
-    void computeMaterialScore(const Position& pos, MaterialHashData& mhd) const;
+    void computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool print) const;
 
     /** Implement the "when ahead trade pieces, when behind trade pawns" rule. */
     int tradeBonus(const Position& pos, int wCorr, int bCorr) const;
@@ -219,12 +222,12 @@ Evaluate::interpolate(int v1, int v2, int k) {
 }
 
 inline int
-Evaluate::materialScore(const Position& pos) {
+Evaluate::materialScore(const Position& pos, bool print) {
     int mId = pos.materialId();
     int key = (mId >> 16) * 40507 + mId;
     MaterialHashData& newMhd = materialHash[key & (materialHash.size() - 1)];
-    if (newMhd.id != mId)
-        computeMaterialScore(pos, newMhd);
+    if ((newMhd.id != mId) || print)
+        computeMaterialScore(pos, newMhd, print);
     mhd = &newMhd;
     return newMhd.score;
 }

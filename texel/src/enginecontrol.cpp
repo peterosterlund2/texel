@@ -225,7 +225,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     int maxPV = (infinite || analyseMode) ? par.getIntPar("MultiPV") : 1;
     if (analyseMode) {
         Evaluate eval(*et);
-        int evScore = eval.evalPos(pos) * (pos.getWhiteMove() ? 1 : -1);
+        int evScore = eval.evalPosPrint(pos) * (pos.getWhiteMove() ? 1 : -1);
         std::stringstream ss;
         ss.precision(2);
         ss << std::fixed << (evScore / 100.0);
