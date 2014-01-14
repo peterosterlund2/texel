@@ -129,7 +129,9 @@ int evalPos(Evaluate& eval, const Position& pos) {
 /** Return static evaluation score for white, regardless of whose turn it is to move. */
 int
 evalWhite(const Position& pos) {
-    auto et = Evaluate::getEvalHashTables();
+    static std::shared_ptr<Evaluate::EvalHashTables> et;
+    if (!et)
+        et = Evaluate::getEvalHashTables();
     Evaluate eval(*et);
     return evalWhite(eval, pos);
 }
@@ -137,9 +139,11 @@ evalWhite(const Position& pos) {
 int
 evalWhite(Evaluate& eval, const Position& pos) {
     int ret = evalPos(eval, pos);
+    std::string fen = TextIO::toFEN(pos);
     Position symPos = swapColors(pos);
+    std::string symFen = TextIO::toFEN(symPos);
     int symScore = evalPos(eval, symPos);
-    ASSERT_EQUAL(ret, symScore);
+    ASSERT_EQUALM((fen + " == " + symFen).c_str(), ret, symScore);
     ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     ASSERT_EQUAL(symPos.materialId(), PositionTest::computeMaterialId(symPos));
     if (!pos.getWhiteMove())
@@ -157,6 +161,12 @@ moveScore(const Position& pos, const std::string& moveStr) {
     int score2 = evalWhite(tmpPos);
 //    printf("move:%s s1:%d s2:%d\n", moveStr, score1, score2);
     return score2 - score1;
+}
+
+static int
+evalFEN(const std::string& fen) {
+    Position pos = TextIO::readFEN(fen);
+    return evalWhite(pos);
 }
 
 /**
@@ -330,14 +340,11 @@ testMaterial() {
     pos.makeMove(TextIO::stringToMove(pos, "Qxd2"), ui);
     ASSERT_EQUAL(-pV+qV, material(pos));
 
-    pos = TextIO::readFEN("6k1/ppp2pp1/1nnnnn1p/8/8/7P/PPP2PP1/3QQ1K1 w - - 0 1");
-    int s1 = evalWhite(pos);
+    int s1 = evalFEN("6k1/ppp2pp1/1nnnnn1p/8/8/7P/PPP2PP1/3QQ1K1 w - - 0 1");
     ASSERT(s1 < 0);
-    pos = TextIO::readFEN("6k1/ppp2pp1/nnnnnnnp/8/8/7P/PPP2PP1/Q2QQ1K1 w - - 0 1");
-    int s2 = evalWhite(pos);
+    int s2 = evalFEN("6k1/ppp2pp1/nnnnnnnp/8/8/7P/PPP2PP1/Q2QQ1K1 w - - 0 1");
     ASSERT(s2 < s1);
-    pos = TextIO::readFEN("nnnnknnn/pppppppp/8/8/8/8/PPPPPPPP/Q2QK2Q w - - 0 1");
-    int s3 = evalWhite(pos);
+    int s3 = evalFEN("nnnnknnn/pppppppp/8/8/8/8/PPPPPPPP/Q2QK2Q w - - 0 1");
     ASSERT(s3 < 30);
 }
 
@@ -407,11 +414,11 @@ testEndGameEval() {
 
     pos.setPiece(Position::getSquare(3, 1), Piece::WBISHOP);
     score = evalWhite(pos);
-    ASSERT(std::abs(score) < 50);   // Insufficient material to mate
+    ASSERT_EQUAL(0, score);   // Insufficient material to mate
 
     pos.setPiece(Position::getSquare(3, 1), Piece::WKNIGHT);
     score = evalWhite(pos);
-    ASSERT(std::abs(score) < 50);   // Insufficient material to mate
+    ASSERT_EQUAL(0, score);   // Insufficient material to mate
 
     pos.setPiece(Position::getSquare(3, 1), Piece::WROOK);
     score = evalWhite(pos);
@@ -434,32 +441,28 @@ testEndGameEval() {
     ASSERT(-score > bV * 2);
 
     // KRPKN is win for white
-    pos = TextIO::readFEN("8/3bk3/8/8/8/3P4/3RK3/8 w - - 0 1");
-    score = evalWhite(pos);
+    score = evalFEN("8/3bk3/8/8/8/3P4/3RK3/8 w - - 0 1");
     const int pV = ::pV;
     ASSERT(score > rV + pV - bV - 100);
 
     // KNNK is a draw
-    pos = TextIO::readFEN("8/8/4k3/8/8/3NK3/3N4/8 w - - 0 1");
-    score = evalWhite(pos);
-    ASSERT(std::abs(score) < 50);
+    score = evalFEN("8/8/4k3/8/8/3NK3/3N4/8 w - - 0 1");
+    ASSERT_EQUAL(0, score);
 
     const int nV = ::nV;
-    pos = TextIO::readFEN("8/8/8/4k3/N6N/P2K4/8/8 b - - 0 66");
-    score = evalWhite(pos);
+    score = evalFEN("8/8/8/4k3/N6N/P2K4/8/8 b - - 0 66");
     ASSERT(score > nV * 2);
 
     pos = TextIO::readFEN("8/8/3k4/8/8/3NK3/2B5/8 b - - 0 1");
     score = evalWhite(pos);
-    ASSERT(score > bV + nV + 150);  // KBNK is won, should have a bonus
+    ASSERT(score > 575);  // KBNK is won
     score = moveScore(pos, "Kc6");
     ASSERT(score > 0);      // Black king going into wrong corner, good for white
     score = moveScore(pos, "Ke6");
     ASSERT(score < 0);      // Black king going away from wrong corner, good for black
 
     // KRN vs KR is generally drawn
-    pos = TextIO::readFEN("rk/p/8/8/8/8/NKR/8 w - - 0 1");
-    score = evalWhite(pos);
+    score = evalFEN("rk/p/8/8/8/8/NKR/8 w - - 0 1");
     ASSERT(score < nV - 2 * pV);
 
     // KRKB, defending king should prefer corner that bishop cannot attack
@@ -472,9 +475,141 @@ testEndGameEval() {
     ASSERT(score > 0);
 
     // Position with passed pawn and opposite side has a knight
-    pos = TextIO::readFEN("8/8/8/1P6/8/B7/1K5n/7k w - - 0 1");
-    score = evalWhite(pos);
+    score = evalFEN("8/8/8/1P6/8/B7/1K5n/7k w - - 0 1");
     ASSERT(score > pV);
+}
+
+static void
+evalEGConsistency(const std::string& fen, const std::string& wSq, int wPiece,
+                  const std::string& bSq, int bPiece) {
+    Position pos = TextIO::readFEN(fen);
+    int s00 = evalWhite(pos);
+    std::string f00 = TextIO::toFEN(pos);
+    pos.setPiece(TextIO::getSquare(wSq), wPiece);
+    int s10 = evalWhite(pos);
+    std::string f10 = TextIO::toFEN(pos);
+    pos.setPiece(TextIO::getSquare(bSq), bPiece);
+    int s11 = evalWhite(pos);
+    std::string f11 = TextIO::toFEN(pos);
+    pos.setPiece(TextIO::getSquare(wSq), Piece::EMPTY);
+    int s01 = evalWhite(pos);
+    std::string f01 = TextIO::toFEN(pos);
+    ASSERTM(f10 + " >= " + f00, s10 >= s00);
+    ASSERTM(f01 + " <= " + f00, s01 <= s00);
+    ASSERTM(f10 + " >= " + f11, s10 >= s11);
+    ASSERTM(f01 + " <= " + f11, s01 <= s11);
+}
+
+static int
+evalEgFen(const std::string& fen) {
+    for (int wp = Piece::WQUEEN; wp <= Piece::WPAWN; wp++) {
+        for (int bp = Piece::BQUEEN; bp <= Piece::BPAWN; bp++) {
+            evalEGConsistency(fen, "a2", wp, "a7", bp);
+            for (int wp2 = Piece::WQUEEN; wp2 <= Piece::WPAWN; wp2++) {
+                for (int bp2 = Piece::BQUEEN; bp2 <= Piece::BPAWN; bp2++) {
+                    Position pos = TextIO::readFEN(fen);
+                    pos.setPiece(TextIO::getSquare("a2"), wp);
+                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2);
+                    pos.setPiece(TextIO::getSquare("a7"), bp);
+                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2);
+                    pos.setPiece(TextIO::getSquare("a2"), Piece::EMPTY);
+                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2);
+                }
+            }
+        }
+    }
+    return evalFEN(fen);
+}
+
+static void
+testEndGameCorrections() {
+    // Four bishops on same color can not win
+    int score = evalEgFen("8/4k3/8/1B6/2B5/3B4/2K1B3/8 w - - 0 1");
+    ASSERT_EQUAL(0, score);
+    // Two bishops on same color can not win against knight
+    score = evalEgFen("8/3nk3/8/8/2B5/3B4/4K3/8 w - - 0 1");
+    ASSERT(score <= 0);
+
+    int kqk = evalEgFen("8/4k3/8/8/8/3QK3/8/8 w - - 0 1");
+    ASSERT(kqk > 1275);
+
+    int krk = evalEgFen("8/4k3/8/8/8/3RK3/8/8 w - - 0 1");
+    ASSERT(krk > 975);
+    int kqkn = evalEgFen("8/3nk3/8/8/8/3QK3/8/8 w - - 0 1");
+    ASSERT(kqkn > 975);
+    int kqkb = evalEgFen("8/3bk3/8/8/8/3QK3/8/8 w - - 0 1");
+    ASSERT(kqkb > 975);
+
+    ASSERT(kqk > krk);
+    ASSERT(kqk > kqkn);
+    ASSERT(kqk > kqkb);
+
+    int kbbk = evalEgFen("8/4k3/8/8/8/2BBK3/8/8 w - - 0 1");
+    ASSERT(kbbk >= 775);
+
+    ASSERT(krk > kbbk);
+    ASSERT(kqkn > kbbk);
+    ASSERT(kqkb > kbbk);
+
+    int kbnk = evalEgFen("8/4k3/8/8/8/2BNK3/8/8 w - - 0 1");
+    ASSERT(kbnk > 475);
+    ASSERT(kbnk < 625);
+    int kqkr = evalEgFen("8/3rk3/8/8/8/3QK3/8/8 w - - 0 1");
+    ASSERT(kqkr > 475);
+    ASSERT(kqkr < 625);
+
+    ASSERT(kbbk > kbnk);
+    ASSERT(kbbk > kqkr);
+
+    int kqkbn = evalEgFen("8/2bnk3/8/8/8/3QK3/8/8 w - - 0 1");
+    ASSERT(kqkbn >= 200);
+    ASSERT(kqkbn <= 250);
+
+    ASSERT(kbnk > kqkbn);
+    ASSERT(kqkr > kqkbn);
+
+    int kbbkn = evalEgFen("8/3nk3/8/8/8/2BBK3/8/8 w - - 0 1");
+    ASSERT(kbbkn > 75);
+    ASSERT(kbbkn < 125);
+
+    ASSERT(kqkbn > kbbkn);
+
+    int kqknn = evalEgFen("8/2nnk3/8/8/8/3QK3/8/8 w - - 0 1");
+    ASSERT(kqknn > 25);
+    ASSERT(kqknn < 75);
+    int kqkbb = evalEgFen("8/2bbk3/8/8/8/3QK3/8/8 w - - 0 1");
+    ASSERT(kqkbb > 25);
+    ASSERT(kqkbb < 75);
+    int kbbkb = evalEgFen("8/3bk3/8/8/8/2BBK3/8/8 w - - 0 1");
+    ASSERT(kbbkb > 25);
+    ASSERT(kbbkb < 75);
+    int kbnkb = evalEgFen("8/3bk3/8/8/8/2NBK3/8/8 w - - 0 1");
+    ASSERT(kbnkb > 25);
+    ASSERT(kbnkb < 75);
+    int kbnkn = evalEgFen("8/3nk3/8/8/8/2NBK3/8/8 w - - 0 1");
+    ASSERT(kbnkn > 25);
+    ASSERT(kbnkn < 75);
+    int knnkb = evalEgFen("8/3bk3/8/8/8/2NNK3/8/8 w - - 0 1");
+    ASSERT(knnkb > 0);
+    ASSERT(knnkb < 50);
+    int knnkn = evalEgFen("8/3nk3/8/8/8/2NNK3/8/8 w - - 0 1");
+    ASSERT(knnkn > 0);
+    ASSERT(knnkn < 50);
+
+    ASSERT(kbbkn > kqknn);
+    ASSERT(kbbkn > kqkbb);
+    ASSERT(kbbkn > kbbkb);
+    ASSERT(kbbkn > kbnkb);
+    ASSERT(kbbkn > kbnkn);
+    ASSERT(kbbkn > knnkb);
+    ASSERT(kbbkn > knnkn);
+
+    int krkb = evalEgFen("8/3bk3/8/8/8/3RK3/8/8 w - - 0 1");
+    ASSERT(krkb > 0);
+    ASSERT(krkb < 50);
+    int krkn = evalEgFen("8/3nk3/8/8/8/3RK3/8/8 w - - 0 1");
+    ASSERT(krkn > 0);
+    ASSERT(krkn < 50);
 }
 
 /**
@@ -580,7 +715,7 @@ static void
 testKQKP() {
     const int pV = ::pV;
     const int qV = ::qV;
-    const int winScore = qV - pV - 200;
+    const int winScore = 420;
     const int drawish = (pV + qV) / 20;
 
     // Pawn on a2
@@ -604,7 +739,7 @@ static void
 testKRKP() {
     const int pV = ::pV;
     const int rV = ::rV;
-    const int winScore = rV - pV;
+    const int winScore = 320;
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
@@ -639,9 +774,7 @@ testKPK() {
 static void
 testKBNK() {
     int s1 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/2k5/8/8 b - - 0 1"));
-    const int nV = ::nV;
-    const int bV = ::bV;
-    ASSERT(s1 > nV + bV);
+    ASSERT(s1 > 570);
     int s2 = evalWhite(TextIO::readFEN("1BN5/1K6/8/8/8/2k5/8/8 b - - 1 1"));
     ASSERT(s2 > s1);
     int s3 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/2k5/8/8 b - - 0 1"));
@@ -931,6 +1064,7 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testMaterial));
     s.push_back(CUTE(testKingSafety));
     s.push_back(CUTE(testEndGameEval));
+    s.push_back(CUTE(testEndGameCorrections));
     s.push_back(CUTE(testPassedPawns));
     s.push_back(CUTE(testBishAndRookPawns));
     s.push_back(CUTE(testTrappedBishop));
