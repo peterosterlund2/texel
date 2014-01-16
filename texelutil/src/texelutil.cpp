@@ -107,47 +107,51 @@ int main(int argc, char* argv[]) {
     if (argc < 2)
         usage();
 
-    std::string cmd = argv[1];
-    if (cmd == "p2f") {
-        ChessTool::pgnToFen(std::cin);
-    } else if (cmd == "f2p") {
-        ChessTool::fenToPgn(std::cin);
-    } else if (cmd == "pawnadv") {
-        ChessTool::pawnAdvTable(std::cin);
-    } else if (cmd == "filter") {
-        ChessTool::filterFEN(std::cin);
-    } else if (cmd == "outliers") {
-        int threshold;
-        if ((argc < 3) || !str2Num(argv[2], threshold))
-            usage();
-        ChessTool::outliers(std::cin, threshold);
-    } else if (cmd == "parrange") {
-        std::vector<ParamDomain> params;
-        parseParamDomains(argc, argv, params);
-        if (params.size() != 1)
-            usage();
-        ChessTool::paramEvalRange(std::cin, params[0]);
-    } else if (cmd == "localopt") {
-        std::vector<ParamDomain> params;
-        getParams(argc, argv, params);
-        ChessTool::localOptimize(std::cin, params);
-    } else if (cmd == "localopt2") {
-        std::vector<ParamDomain> params;
-        getParams(argc, argv, params);
-        ChessTool::localOptimize2(std::cin, params);
-    } else if (cmd == "printpar") {
-        ChessTool::printParams();
-    } else if (cmd == "evalstat") {
-        std::vector<ParamDomain> params;
-        getParams(argc, argv, params);
-        ChessTool::evalStat(std::cin, params);
-    } else if (cmd == "genfen") {
-        if ((argc < 3) || !PosGenerator::generate(argv[2]))
-            usage();
-    } else {
-        ScoreToProb sp(300.0);
-        for (int i = -100; i <= 100; i++)
-            std::cout << "i:" << i << " p:" << sp.getProb(i) << std::endl;
+    try {
+        std::string cmd = argv[1];
+        if (cmd == "p2f") {
+            ChessTool::pgnToFen(std::cin);
+        } else if (cmd == "f2p") {
+            ChessTool::fenToPgn(std::cin);
+        } else if (cmd == "pawnadv") {
+            ChessTool::pawnAdvTable(std::cin);
+        } else if (cmd == "filter") {
+            ChessTool::filterFEN(std::cin);
+        } else if (cmd == "outliers") {
+            int threshold;
+            if ((argc < 3) || !str2Num(argv[2], threshold))
+                usage();
+            ChessTool::outliers(std::cin, threshold);
+        } else if (cmd == "parrange") {
+            std::vector<ParamDomain> params;
+            parseParamDomains(argc, argv, params);
+            if (params.size() != 1)
+                usage();
+            ChessTool::paramEvalRange(std::cin, params[0]);
+        } else if (cmd == "localopt") {
+            std::vector<ParamDomain> params;
+            getParams(argc, argv, params);
+            ChessTool::localOptimize(std::cin, params);
+        } else if (cmd == "localopt2") {
+            std::vector<ParamDomain> params;
+            getParams(argc, argv, params);
+            ChessTool::localOptimize2(std::cin, params);
+        } else if (cmd == "printpar") {
+            ChessTool::printParams();
+        } else if (cmd == "evalstat") {
+            std::vector<ParamDomain> params;
+            getParams(argc, argv, params);
+            ChessTool::evalStat(std::cin, params);
+        } else if (cmd == "genfen") {
+            if ((argc < 3) || !PosGenerator::generate(argv[2]))
+                usage();
+        } else {
+            ScoreToProb sp(300.0);
+            for (int i = -100; i <= 100; i++)
+                std::cout << "i:" << i << " p:" << sp.getProb(i) << std::endl;
+        }
+    } catch (std::exception& ex) {
+        std::cerr << "Error: " << ex.what() << std::endl;
     }
     return 0;
 }

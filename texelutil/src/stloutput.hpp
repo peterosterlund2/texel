@@ -14,8 +14,13 @@
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& v) {
     os << "[";
-    for (const T& e : v)
-        os << ", " << e;
+    bool first = true;
+    for (const T& e : v) {
+        if (!first)
+            os << ", ";
+        os << e;
+        first = false;
+    }
     os << " ]";
     return os;
 }

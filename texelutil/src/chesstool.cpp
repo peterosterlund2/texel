@@ -81,7 +81,9 @@ ChessTool::pgnToFen(std::istream& is) {
     const int plyScale = SearchConst::plyScale;
 
     GameTree gt(is);
+    int gameNo = 0;
     while (gt.readPGN()) {
+        gameNo++;
         GameTree::Result result = gt.getResult();
         if (result == GameTree::UNKNOWN)
             continue;
@@ -113,7 +115,7 @@ ChessTool::pgnToFen(std::istream& is) {
                 commentScore = -commentScore;
             }
 
-            std::cout << fen << " : " << rScore << " : " << commentScore << " : " << score << std::endl;
+            std::cout << fen << " : " << rScore << " : " << commentScore << " : " << score << " : " << gameNo << std::endl;
         }
     }
 }
@@ -153,7 +155,8 @@ ChessTool::filterFEN(std::istream& is) {
         if ((std::abs(p1 - p2) < 0.05) && (std::abs(pi.searchScore - pi.qScore) < 200)) {
             pos.deSerialize(pi.posData);
             std::string fen = TextIO::toFEN(pos);
-            std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore << std::endl;
+            std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore
+                      << " : " << pi.gameNo << std::endl;
         }
     }
 }
@@ -169,7 +172,8 @@ ChessTool::outliers(std::istream& is, int threshold) {
             ((pi.qScore <= -threshold) && (pi.result > 0.0))) {
             pos.deSerialize(pi.posData);
             std::string fen = TextIO::toFEN(pos);
-            std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore << std::endl;
+            std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore
+                      << " : " << pi.gameNo << std::endl;
         }
     }
 }
@@ -565,18 +569,18 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
     PositionInfo pi;
     const int nLines = lines.size();
     std::atomic<bool> error(false);
-#pragma omp parallel for default(none) shared(data,error,lines,std::cout) private(pos,pi)
+#pragma omp parallel for default(none) shared(data,error,lines,std::cerr) private(pos,pi)
     for (int i = 0; i < nLines; i++) {
         if (error)
             continue;
         const std::string& line = lines[i];
         std::vector<std::string> fields;
         splitString(line, " : ", fields);
-        if (fields.size() != 4) {
+        if ((fields.size() < 4) || (fields.size() > 5)) {
 #pragma omp critical
             if (!error) {
-                std::cout << "line:" << line << std::endl;
-                std::cout << "fields:" << fields << std::endl;
+                std::cerr << "line:" << line << std::endl;
+                std::cerr << "fields:" << fields << std::endl;
                 error = true;
             }
         }
@@ -587,6 +591,10 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
             !str2Num(fields[3], pi.qScore)) {
             error = true;
         }
+        pi.gameNo = -1;
+        if (fields.size() == 5)
+            if (!str2Num(fields[4], pi.gameNo))
+                error = true;
         data[i] = pi;
     }
     if (error)

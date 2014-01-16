@@ -90,6 +90,7 @@ private:
         double result;   // Game result for white, 0, 0.5 or 1.0
         int searchScore; // Score reported by engine when game was played
         int qScore;      // q-search computed by this program
+        int gameNo;      // PGN game number this FEN came from
     };
 
     static void readFENFile(std::istream& is, std::vector<PositionInfo>& data);
