@@ -271,7 +271,7 @@ testPieceSquareEval() {
 //    ASSERT(moveScore(pos, "Rd8") >= 0);      // Rook on 8:th rank also good
     pos.setPiece(TextIO::getSquare("a1"), Piece::WROOK);
     pos.setPiece(TextIO::getSquare("d1"), Piece::EMPTY);
-    ASSERT(moveScore(pos, "Rac1") > 0);     // Rook on c-f files considered good
+    ASSERT(moveScore(pos, "Rac1") >= 0);     // Rook on c-f files considered good
 
     pos = TextIO::readFEN("r4rk1/pppRRppp/1q4b1/n7/8/2N3B1/PPP1QPPP/6K1 w - - 0 1");
     score = evalWhite(pos);
@@ -481,7 +481,7 @@ testEndGameEval() {
 
 static void
 evalEGConsistency(const std::string& fen, const std::string& wSq, int wPiece,
-                  const std::string& bSq, int bPiece) {
+                  const std::string& bSq, int bPiece, int fuzz) {
     Position pos = TextIO::readFEN(fen);
     int s00 = evalWhite(pos);
     std::string f00 = TextIO::toFEN(pos);
@@ -494,26 +494,26 @@ evalEGConsistency(const std::string& fen, const std::string& wSq, int wPiece,
     pos.setPiece(TextIO::getSquare(wSq), Piece::EMPTY);
     int s01 = evalWhite(pos);
     std::string f01 = TextIO::toFEN(pos);
-    ASSERTM(f10 + " >= " + f00, s10 >= s00);
-    ASSERTM(f01 + " <= " + f00, s01 <= s00);
-    ASSERTM(f10 + " >= " + f11, s10 >= s11);
-    ASSERTM(f01 + " <= " + f11, s01 <= s11);
+    ASSERTM(f10 + " >= " + f00, s10 >= s00 - fuzz);
+    ASSERTM(f01 + " <= " + f00, s01 <= s00 + fuzz);
+    ASSERTM(f10 + " >= " + f11, s10 >= s11 - fuzz);
+    ASSERTM(f01 + " <= " + f11, s01 <= s11 + fuzz);
 }
 
 static int
-evalEgFen(const std::string& fen) {
+evalEgFen(const std::string& fen, int fuzz = 0) {
     for (int wp = Piece::WQUEEN; wp <= Piece::WPAWN; wp++) {
         for (int bp = Piece::BQUEEN; bp <= Piece::BPAWN; bp++) {
-            evalEGConsistency(fen, "a2", wp, "a7", bp);
+            evalEGConsistency(fen, "a2", wp, "a7", bp, fuzz);
             for (int wp2 = Piece::WQUEEN; wp2 <= Piece::WPAWN; wp2++) {
                 for (int bp2 = Piece::BQUEEN; bp2 <= Piece::BPAWN; bp2++) {
                     Position pos = TextIO::readFEN(fen);
                     pos.setPiece(TextIO::getSquare("a2"), wp);
-                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2);
+                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2, fuzz);
                     pos.setPiece(TextIO::getSquare("a7"), bp);
-                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2);
+                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2, fuzz);
                     pos.setPiece(TextIO::getSquare("a2"), Piece::EMPTY);
-                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2);
+                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2, fuzz);
                 }
             }
         }
@@ -535,7 +535,7 @@ testEndGameCorrections() {
 
     int krk = evalEgFen("8/4k3/8/8/8/3RK3/8/8 w - - 0 1");
     ASSERT(krk > 975);
-    int kqkn = evalEgFen("8/3nk3/8/8/8/3QK3/8/8 w - - 0 1");
+    int kqkn = evalEgFen("8/3nk3/8/8/8/3QK3/8/8 w - - 0 1", 1);
     ASSERT(kqkn > 975);
     int kqkb = evalEgFen("8/3bk3/8/8/8/3QK3/8/8 w - - 0 1");
     ASSERT(kqkb > 975);
@@ -619,10 +619,11 @@ static void
 testPassedPawns() {
     Position pos = TextIO::readFEN("8/8/8/P3k/8/8/p/K w");
     int score = evalWhite(pos);
-    ASSERT(score > 200); // Unstoppable passed pawn
+    ASSERT(score > 35); // Unstoppable passed pawn
     pos.setWhiteMove(false);
     score = evalWhite(pos);
     ASSERT(score <= 0); // Not unstoppable
+    ASSERT(evalFEN("8/8/P2k4/8/8/8/p7/K7 w - - 0 1") > 90); // Unstoppable passed pawn
 
     pos = TextIO::readFEN("4R3/8/8/p2K4/P7/4pk2/8/8 w - - 0 1");
     score = evalWhite(pos);
@@ -702,7 +703,7 @@ testBishAndRookPawns() {
 static void
 testTrappedBishop() {
     Position pos = TextIO::readFEN("r2q1rk1/ppp2ppp/3p1n2/8/3P4/1P1Q1NP1/b1P2PBP/2KR3R w - - 0 1");
-    ASSERT(evalWhite(pos) > 0); // Black has trapped bishop
+    ASSERT(evalWhite(pos) > -15); // Black has trapped bishop
 
     pos = TextIO::readFEN("r2q2k1/pp1b1p1p/2p2np1/3p4/3P4/1BNQ2P1/PPPB1P1b/2KR4 w - - 0 1");
     ASSERT(evalWhite(pos) > -pV/2); // Black has trapped bishop
@@ -916,7 +917,7 @@ testCantWin() {
 static void
 testPawnRace() {
     const int pV = ::pV;
-    const int winScore = 250;
+    const int winScore = 170;
     const int drawish = 50;
     Position pos = TextIO::readFEN("8/8/K7/1P3p2/8/6k1/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
