@@ -251,12 +251,12 @@ private:
 
     // Time management
     S64 tStart;                // Time when search started
-    S64 minTimeMillis;         // Minimum recommended thinking time
-    S64 maxTimeMillis;         // Maximum allowed thinking time
+    RelaxedShared<S64> minTimeMillis; // Minimum recommended thinking time
+    RelaxedShared<S64> maxTimeMillis; // Maximum allowed thinking time
     bool searchNeedMoreTime;   // True if negaScout should use up to maxTimeMillis time.
     S64 maxNodes;              // Maximum number of nodes to search (approximately)
     int nodesToGo;             // Number of nodes until next time check
-    int nodesBetweenTimeCheck; // How often to check remaining time
+    RelaxedShared<int> nodesBetweenTimeCheck; // How often to check remaining time
 
     // Reduced strength variables
     int strength;              // Strength (0-1000)

@@ -162,7 +162,7 @@ WorkerThread::mainLoop() {
 //        uTimer.setPUseful(-1);
         const double t0 = doTiming ? currentTime() : -1;
         int prio;
-        std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo, pd, threadNo, prio);
+        std::shared_ptr<SplitPoint> newSp = pd.wq.getWork(moveNo, pd, threadNo, prio, pUseful);
         if (!newSp)
             break;
         const double tStart = doTiming ? currentTime() : -1;
@@ -178,7 +178,6 @@ WorkerThread::mainLoop() {
             *ht = sp->getHistory();
             *kt = sp->getKillerTable();
         }
-        pUseful = sp->getPMoveUseful(pd.fhInfo, moveNo);
         Search::SearchTables st(tt, *kt, *ht, *et);
         sp->getPos(pos, spMove.getMove());
         std::vector<U64> posHashList;
@@ -294,11 +293,12 @@ WorkQueue::addWorkInternal(const std::shared_ptr<SplitPoint>& sp) {
 std::shared_ptr<SplitPoint>
 WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo) {
     int prio;
-    return getWork(spMove, pd, threadNo, prio);
+    double pUseful;
+    return getWork(spMove, pd, threadNo, prio, pUseful);
 }
 
 std::shared_ptr<SplitPoint>
-WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo, int& prio) {
+WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo, int& prio, double& pUseful) {
     Lock L(this);
     while (true) {
         while (queue.empty() && !isStopped())
@@ -315,6 +315,7 @@ WorkQueue::getWork(int& spMove, ParallelData& pd, int threadNo, int& prio) {
 //        log([&](std::ostream& os){printSpTree(os, pd, threadNo, ret, spMove);});
         prio = ret->getPrio();
         updateProbabilities(ret);
+        pUseful = ret->getPMoveUseful(pd.fhInfo, spMove);
         return ret;
     }
 }
@@ -546,6 +547,7 @@ SplitPoint::SplitPoint(int threadNo0,
     : pos(pos0), posHashList(posHashList0), posHashListSize(posHashListSize0),
       searchTreeInfo(sti0), kt(kt0), ht(ht0),
       alpha(alpha0), beta(beta0), ply(ply0), depth(depth0),
+      isPV(beta0 > alpha0 + 1),
       pSpUseful(0.0), pNextMoveUseful(0.0),
       threadNo(threadNo0), parent(parentSp0), parentMoveNo(parentMoveNo0),
       seqNo(0), currMoveNo(0), inserted(false), canceled(false) {

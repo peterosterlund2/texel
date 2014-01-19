@@ -217,6 +217,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
         }
     }
     pd.addRemoveWorkers(par.getIntPar("Threads") - 1);
+    pd.wq.resetSplitDepth();
     pd.startAll();
     sc->timeLimit(minTimeLimit, maxTimeLimit);
     tt.nextGeneration();

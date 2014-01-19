@@ -120,7 +120,7 @@ public:
 
     /** Get best move for helper thread to work on. */
     std::shared_ptr<SplitPoint> getWork(int& moveNo, ParallelData& pd, int threadNo);
-    std::shared_ptr<SplitPoint> getWork(int& moveNo, ParallelData& pd, int threadNo, int& prio);
+    std::shared_ptr<SplitPoint> getWork(int& moveNo, ParallelData& pd, int threadNo, int& prio, double& pUseful);
 
     /** A helper thread stopped working on a move before it was finished. */
     void returnMove(const std::shared_ptr<SplitPoint>& sp, int moveNo);
@@ -478,10 +478,11 @@ private:
     const KillerTable& kt;
     const History& ht;
 
-    int alpha;
+    RelaxedShared<int> alpha;
     const int beta;
     const int ply;
     const int depth;
+    const bool isPV;
 
     double pSpUseful;       // Probability that this SplitPoint is needed. 100% if parent is null.
     double pNextMoveUseful; // Probability that next unstarted move needs to be searched.
@@ -527,7 +528,7 @@ private:
     int captSquare; // Recapture square, or -1 if no recapture
     bool inCheck;   // True if side to move is in check
 
-    bool canceled;  // Result is no longer needed
+    RelaxedShared<bool> canceled; // Result is no longer needed
     bool searching; // True if currently searched by a helper thread
 };
 
@@ -805,7 +806,7 @@ SplitPoint::addChild(const std::weak_ptr<SplitPoint>& child) {
 
 inline bool
 SplitPoint::isPvNode() const {
-    return beta > alpha + 1;
+    return isPV;
 }
 
 inline int

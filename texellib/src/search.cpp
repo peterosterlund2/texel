@@ -124,7 +124,6 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     const U64 rootNodeIdx = logFile.logPosition(pos, 0, 0, 0);
 
     kt.clear();
-    pd.wq.resetSplitDepth();
     pd.npsInfo.reset();
 //    pd.wq.resetStat();
     const bool smp = pd.numHelperThreads() > 0;
