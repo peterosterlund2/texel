@@ -545,7 +545,7 @@ ParallelTest::testWorkerThread() {
         int depth = 10 * plyScale;
         sph.addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, depth, -1, false));
         sph.addMove(1, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, depth, -1, false));
-        sph.addMove(2, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, depth, -1, false));
+        sph.addMove(2, SplitPointMove(TextIO::uciStringToMove("f2f4"), 0, depth, -1, false));
         sph.addToQueue();
         pd.startAll();
         while (sp->hasUnFinishedMove()) {
@@ -561,7 +561,7 @@ ParallelTest::testWorkerThread() {
         probeTT(pos, TextIO::uciStringToMove("c2c4"), tt, ent);
         ASSERT(ent.getType() != TType::T_EMPTY);
         ASSERT(ent.getDepth() >= 6 * plyScale);
-        probeTT(pos, TextIO::uciStringToMove("d2d4"), tt, ent);
+        probeTT(pos, TextIO::uciStringToMove("f2f4"), tt, ent);
         ASSERT(ent.getType() != TType::T_EMPTY);
         ASSERT(ent.getDepth() >= 6 * plyScale);
     }

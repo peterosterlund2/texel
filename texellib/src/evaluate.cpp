@@ -60,13 +60,13 @@ Evaluate::staticInitialize() {
 
     psTab2[Piece::EMPTY]   = empty;
     psTab2[Piece::WKING]   = kt2w.getTable();
-    psTab2[Piece::WQUEEN]  = qt1w.getTable();
+    psTab2[Piece::WQUEEN]  = qt2w.getTable();
     psTab2[Piece::WROOK]   = rt1w.getTable();
     psTab2[Piece::WBISHOP] = bt2w.getTable();
     psTab2[Piece::WKNIGHT] = nt2w.getTable();
     psTab2[Piece::WPAWN]   = pt2w.getTable();
     psTab2[Piece::BKING]   = kt2b.getTable();
-    psTab2[Piece::BQUEEN]  = qt1b.getTable();
+    psTab2[Piece::BQUEEN]  = qt2b.getTable();
     psTab2[Piece::BROOK]   = rt1b.getTable();
     psTab2[Piece::BBISHOP] = bt2b.getTable();
     psTab2[Piece::BKNIGHT] = nt2b.getTable();
@@ -274,6 +274,12 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
         const int m = wMtrlNoPawns + bMtrlNoPawns;
         mhd.castleIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
     }
+    {
+        const int loMtrl = queenLoMtrl;
+        const int hiMtrl = queenHiMtrl;
+        const int m = wMtrlNoPawns + bMtrlNoPawns;
+        mhd.queenIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
+    }
     { // Passed pawn
         const int loMtrl = passedPawnLoMtrl;
         const int hiMtrl = passedPawnHiMtrl;
@@ -348,7 +354,9 @@ Evaluate::pieceSquareEval(const Position& pos) {
     // Queens
     {
         const U64 occupied = pos.occupiedBB();
-        score += pos.psScore1(Piece::WQUEEN);
+        int q1 = pos.psScore1(Piece::WQUEEN);
+        int q2 = pos.psScore2(Piece::WQUEEN);
+        score += interpolate(q2, q1, mhd->queenIPF);
         U64 m = pos.pieceTypeBB(Piece::WQUEEN);
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
@@ -358,7 +366,9 @@ Evaluate::pieceSquareEval(const Position& pos) {
             bKingAttacks += BitBoard::bitCount(atk & bKingZone) * 2;
             m &= m-1;
         }
-        score -= pos.psScore1(Piece::BQUEEN);
+        q1 = pos.psScore1(Piece::BQUEEN);
+        q2 = pos.psScore2(Piece::BQUEEN);
+        score -= interpolate(q2, q1, mhd->queenIPF);
         m = pos.pieceTypeBB(Piece::BQUEEN);
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);

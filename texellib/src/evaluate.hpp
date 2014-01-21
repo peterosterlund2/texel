@@ -52,7 +52,7 @@ private:
         int score;
         short wPawnIPF, bPawnIPF;
         short wKnightIPF, bKnightIPF;
-        short castleIPF;
+        short castleIPF, queenIPF;
         short wPassedPawnIPF, bPassedPawnIPF;
         short kingSafetyIPF;
         short diffColorBishopIPF;

@@ -427,6 +427,7 @@ ChessTool::printParams() {
     printTableNxN<8>(bt1b, "bt1b");
     printTableNxN<8>(bt2b, "bt2b");
     printTableNxN<8>(qt1b, "qt1b");
+    printTableNxN<8>(qt2b, "qt2b");
     printTableNxN<8>(rt1b, "rt1b");
     printTableNxN<8>(knightOutpostBonus, "knightOutpostBonus");
 
@@ -484,6 +485,8 @@ ChessTool::printParams() {
     std::cout << "minorHiMtrl : " << minorHiMtrl << std::endl;
     std::cout << "castleLoMtrl : " << castleLoMtrl << std::endl;
     std::cout << "castleHiMtrl : " << castleHiMtrl << std::endl;
+    std::cout << "queenLoMtrl : " << queenLoMtrl << std::endl;
+    std::cout << "queenHiMtrl : " << queenHiMtrl << std::endl;
     std::cout << "passedPawnLoMtrl : " << passedPawnLoMtrl << std::endl;
     std::cout << "passedPawnHiMtrl : " << passedPawnHiMtrl << std::endl;
     std::cout << "kingSafetyLoMtrl : " << kingSafetyLoMtrl << std::endl;
