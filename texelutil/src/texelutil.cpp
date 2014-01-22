@@ -8,6 +8,7 @@
 #include "chesstool.hpp"
 #include "posgen.hpp"
 #include "parameters.hpp"
+#include "chessParseError.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -19,8 +20,10 @@ void setInitialValues(const std::string& fname) {
     for (const std::string& line : lines) {
         std::vector<std::string> fields;
         splitString(line, fields);
-        if ((fields.size() < 2) || !uciPars.getParam(fields[0]))
-            continue;
+        if (fields.size() < 2)
+            throw ChessParseError("Invalid initial value:" + line);
+        if (!uciPars.getParam(fields[0]))
+            throw ChessParseError("No such parameter:" + fields[0]);
         int value;
         if (str2Num(fields[1], value))
             uciPars.set(fields[0], fields[1]);
@@ -54,10 +57,8 @@ void parseParamDomains(int argc, char* argv[], std::vector<ParamDomain>& params)
             !str2Num(std::string(argv[i+2]), pd.step) || (pd.step <= 0) ||
             !str2Num(std::string(argv[i+3]), pd.maxV))
             usage();
-        if (!Parameters::instance().getParam(pd.name)) {
-            std::cerr << "No such parameter:" << pd.name << std::endl;
-            ::exit(2);
-        }
+        if (!Parameters::instance().getParam(pd.name))
+            throw ChessParseError("No such parameter:" + pd.name);
         pd.value = Parameters::instance().getIntPar(pd.name);
         pd.value = (pd.value - pd.minV) / pd.step * pd.step + pd.minV;
         params.push_back(pd);
@@ -80,10 +81,8 @@ void getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
                     break;
                 params.push_back(pd);
             }
-        } else {
-            std::cerr << "No such parameter:" << parName << std::endl;
-            ::exit(2);
-        }
+        } else
+            throw ChessParseError("No such parameter:" + parName);
     }
     for (ParamDomain& pd : params) {
         std::shared_ptr<Parameters::ParamBase> p = uciPars.getParam(pd.name);
@@ -98,16 +97,16 @@ void getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
 int main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
 
-    if ((argc >= 3) && (std::string(argv[1]) == "-iv")) {
-        setInitialValues(argv[2]);
-        argc -= 2;
-        argv += 2;
-    }
-
-    if (argc < 2)
-        usage();
-
     try {
+        if ((argc >= 3) && (std::string(argv[1]) == "-iv")) {
+            setInitialValues(argv[2]);
+            argc -= 2;
+            argv += 2;
+        }
+
+        if (argc < 2)
+            usage();
+
         std::string cmd = argv[1];
         if (cmd == "p2f") {
             ChessTool::pgnToFen(std::cin);
