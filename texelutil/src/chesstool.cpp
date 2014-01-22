@@ -12,6 +12,7 @@
 #include "stloutput.hpp"
 
 #include <queue>
+#include <unordered_set>
 #include <unistd.h>
 
 
@@ -519,10 +520,18 @@ ChessTool::evalStat(std::istream& is, std::vector<ParamDomain>& pdVec) {
         uciPars.set(pd.name, num2Str(pd.value));
 
         double nChanged = 0;
-        for (int i = 0; i < nPos; i++)
-            if (positions[i].qScore - qScores0[i])
+        std::unordered_set<int> games, changedGames;
+        for (int i = 0; i < nPos; i++) {
+            int gameNo = positions[i].gameNo;
+            games.insert(gameNo);
+            if (positions[i].qScore - qScores0[i]) {
                 nChanged++;
+                changedGames.insert(gameNo);
+            }
+        }
         double errChange1 = avgErr - avgErr0;
+        double nChangedGames = changedGames.size();
+        double nGames = games.size();
 
         double errChange2;
         int newVal2 = clamp(0, pd.minV, pd.maxV);
@@ -536,7 +545,8 @@ ChessTool::evalStat(std::istream& is, std::vector<ParamDomain>& pdVec) {
             errChange2 = errChange1;
         }
 
-        std::cout << pd.name << " nChanged:" << (nChanged / nPos)
+        std::cout << pd.name << " nMod:" << (nChanged / nPos)
+                  << " nModG:" << (nChangedGames / nGames)
                   << " err1:" << errChange1 << " err2:" << errChange2 << std::endl;
     }
 }
