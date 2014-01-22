@@ -96,6 +96,26 @@ str2Num(const std::string& str, T& result) {
     ss >> result;
     return !!ss;
 }
+inline bool
+str2Num(const std::string& str, int& result) {
+    try {
+        result = std::stoi(str);
+        return true;
+    } catch (...) {
+        result = 0;
+        return false;
+    }
+}
+inline bool
+str2Num(const std::string& str, double& result) {
+    try {
+        result = std::stod(str);
+        return true;
+    } catch (...) {
+        result = 0.0;
+        return false;
+    }
+}
 
 template <typename T>
 bool
