@@ -80,6 +80,10 @@ public:
     /** Print statistics about how each parameter affect the eval function. */
     static void evalStat(std::istream& is, std::vector<ParamDomain>& pdVec);
 
+    /** Print total material and evaluation error for each position. */
+    static void printResiduals(std::istream& is, const std::string& xTypeStr,
+                               bool includePosGameNr);
+
 private:
     /** Read score from a PGN comment, assuming cutechess-cli comment format.
      * Does not handle mate scores. */

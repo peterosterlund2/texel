@@ -44,6 +44,8 @@ void usage() {
     std::cerr << " localopt2 p1 p2 ... : Optimize parameters using local search with big jumps" << std::endl;
     std::cerr << " printpar : Print evaluation tables and parameters" << std::endl;
     std::cerr << " evalstat p1 p2 ... : Print parameter statistics" << std::endl;
+    std::cerr << " residual xType inclNo : Print evaluation error as function of material" << std::endl;
+    std::cerr << "                         xType is mtrlsum, mtrldiff or eval. inclNo is 0 or 1" << std::endl;
     std::cerr << " genfen qvsn : Generate all positions of a given type" << std::endl;
     ::exit(2);
 }
@@ -141,6 +143,12 @@ int main(int argc, char* argv[]) {
             std::vector<ParamDomain> params;
             getParams(argc, argv, params);
             ChessTool::evalStat(std::cin, params);
+        } else if (cmd == "residual") {
+            if (argc != 4)
+                usage();
+            std::string xTypeStr = argv[2];
+            bool includePosGameNr = (std::string(argv[3]) != "0");
+            ChessTool::printResiduals(std::cin, xTypeStr, includePosGameNr);
         } else if (cmd == "genfen") {
             if ((argc < 3) || !PosGenerator::generate(argv[2]))
                 usage();

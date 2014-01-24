@@ -551,6 +551,53 @@ ChessTool::evalStat(std::istream& is, std::vector<ParamDomain>& pdVec) {
     }
 }
 
+void
+ChessTool::printResiduals(std::istream& is, const std::string& xTypeStr, bool includePosGameNr) {
+    enum XType {
+        MTRL_SUM,
+        MTRL_DIFF,
+        EVAL
+    };
+    XType xType;
+    if (xTypeStr == "mtrlsum") {
+        xType = MTRL_SUM;
+    } else if (xTypeStr == "mtrldiff") {
+        xType = MTRL_DIFF;
+    } else if (xTypeStr == "eval") {
+        xType = EVAL;
+    } else {
+        throw ChessParseError("Invalid X axis type");
+    }
+
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+    qEval(positions);
+    const int nPos = positions.size();
+    Position pos;
+    ScoreToProb sp;
+    for (int i = 0; i < nPos; i++) {
+        const PositionInfo& pi = positions[i];
+        pos.deSerialize(pi.posData);
+        int x;
+        switch (xType) {
+        case MTRL_SUM:
+            x = pos.wMtrl() + pos.bMtrl();
+            break;
+        case MTRL_DIFF:
+            x = pos.wMtrl() - pos.bMtrl();
+            break;
+        case EVAL:
+            x = pi.qScore;
+            break;
+        }
+        double r = pi.result - sp.getProb(pi.qScore);
+        if (includePosGameNr)
+            std::cout << i << ' ' << pi.gameNo << ' ';
+        std::cout << x << ' ' << r << '\n';
+    }
+    std::cout << std::flush;
+}
+
 bool
 ChessTool::getCommentScore(const std::string& comment, int& score) {
     double fScore;
