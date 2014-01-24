@@ -156,9 +156,14 @@ private:
      * is returned otherwise. */
     template <bool doEval> int endGameEval(const Position& pos, int oldScore) const;
 
+    /** Return true if the side with the bishop can not win because the opponent
+     * has a fortress draw. */
+    template <bool whiteBishop> bool isBishopPawnDraw(const Position& pos) const;
+
     static int kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove, int score);
 
     static int kpkEval(int wKing, int bKing, int wPawn, bool whiteMove);
+    static bool kpkpEval(int wKing, int bKing, int wPawn, int bPawn, int& score);
 
     static int krkpEval(int wKing, int bKing, int bPawn, bool whiteMove, int score);
     static int krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bool whiteMove);

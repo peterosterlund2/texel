@@ -701,6 +701,32 @@ testBishAndRookPawns() {
 }
 
 static void
+testBishAndPawnFortress() {
+    ASSERT_EQUAL(0, evalFEN("1k5B/1p6/1P6/3K4/8/8/8/8 w - - 0 1"));
+    ASSERT_EQUAL(0, evalFEN("k6B/1p6/1P6/3K4/8/8/8/8 w - - 0 1"));
+    ASSERT(evalFEN("4k3/1p6/1P3B2/3K4/8/8/8/8 w - - 0 1") > 0);
+
+    ASSERT_EQUAL(0, evalFEN("2k4B/1pP5/1P6/3K4/8/8/8/8 w - - 0 1"));
+    ASSERT_EQUAL(0, evalFEN("7B/1pPk4/1P6/3K4/8/8/8/8 w - - 0 1"));
+    ASSERT(evalFEN("k6B/1pP5/1P6/3K4/8/8/8/8 w - - 0 1") > 0);
+    ASSERT_EQUAL(0, evalFEN("2k4B/1pP5/1P6/3K2B1/1P6/8/8/8 w - - 0 1"));
+    ASSERT(evalFEN("2k4B/1pP5/1P6/3K4/1P6/3B4/8/8 w - - 0 1") > 0);
+
+    ASSERT(evalFEN("nk5B/1p6/1P6/1P6/1P6/1P3K2/1P6/8 w - - 0 1") > 0);
+    ASSERT_EQUAL(0, evalFEN("rk5B/1p6/1P5B/1P4B1/1P6/1P3K2/1P6/8 w - - 0 1"));
+    ASSERT_EQUAL(0, evalFEN("1k5B/1p6/1P6/1P6/1P6/1P3K2/1P6/7n w - - 0 1"));
+
+    ASSERT_EQUAL(0, evalFEN("r1k4B/1pP5/1P6/3K4/1P6/8/3B4/8 w - - 0 1"));
+    ASSERT(evalFEN("n1k4B/1pP5/1P6/3K4/1P6/8/3B4/8 w - - 0 1") > 0);
+
+    ASSERT_EQUAL(0, evalFEN("2k5/1p6/1P6/4B1K1/8/8/8/8 b - - 0 1"));
+    ASSERT(evalFEN("2k5/Kp6/1P6/4B3/8/8/8/8 b - - 0 1") > 0);
+    ASSERT_EQUAL(0, evalFEN("k7/1pK5/1P6/8/3B4/8/8/8 w - - 0 1"));
+    ASSERT_EQUAL(0, evalFEN("3k4/1p6/1P6/5K2/3B4/8/8/8 w - - 0 1"));
+    ASSERT(evalFEN("1K1k4/1p6/1P6/8/3B4/8/8/8 w - - 0 1") > 0);
+}
+
+static void
 testTrappedBishop() {
     Position pos = TextIO::readFEN("r2q1rk1/ppp2ppp/3p1n2/8/3P4/1P1Q1NP1/b1P2PBP/2KR3R w - - 0 1");
     ASSERT(evalWhite(pos) > -15); // Black has trapped bishop
@@ -734,6 +760,9 @@ testKQKP() {
     ASSERT(evalWhite(pos) < drawish);
     pos = TextIO::readFEN("3Q4/8/8/8/8/4K3/1kp5/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
+
+    ASSERT(evalFEN("8/8/8/4K3/8/8/2Q5/k7 w - - 0 1") > 0);
+    ASSERT_EQUAL(0, evalFEN("8/8/8/4K3/8/8/2Q5/k7 b - - 0 1"));
 }
 
 static void
@@ -770,6 +799,13 @@ testKPK() {
     ASSERT(evalWhite(pos) > winScore);
     pos.setWhiteMove(!pos.getWhiteMove());
     ASSERT(evalWhite(pos) < drawish);
+}
+
+static void
+testKPKP() {
+    ASSERT_EQUAL(0, evalFEN("1k6/1p6/1P6/3K4/8/8/8/8 w - - 0 1"));
+    ASSERT_EQUAL(0, evalFEN("3k4/1p6/1P6/3K4/8/8/8/8 w - - 0 1"));
+    ASSERT(evalFEN("2k5/Kp6/1P6/8/8/8/8/8 w - - 0 1") > 0);
 }
 
 static void
@@ -1068,12 +1104,14 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testEndGameCorrections));
     s.push_back(CUTE(testPassedPawns));
     s.push_back(CUTE(testBishAndRookPawns));
+    s.push_back(CUTE(testBishAndPawnFortress));
     s.push_back(CUTE(testTrappedBishop));
     s.push_back(CUTE(testKQKP));
     s.push_back(CUTE(testKRKP));
     s.push_back(CUTE(testKRPKR));
     s.push_back(CUTE(testKBNK));
     s.push_back(CUTE(testKPK));
+    s.push_back(CUTE(testKPKP));
     s.push_back(CUTE(testCantWin));
     s.push_back(CUTE(testPawnRace));
     s.push_back(CUTE(testKnightOutPost));

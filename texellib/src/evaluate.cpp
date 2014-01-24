@@ -1049,6 +1049,26 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
         int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WPAWN));
         return -kqkpEval(63-bk, 63-bq, 63-wk, 63-wp, !pos.getWhiteMove(), -score);
     }
+    case MI::WQ: {
+        if (!doEval) return 1;
+        if (!pos.getWhiteMove() &&
+            (pos.pieceTypeBB(Piece::BKING) & 0x8100000000000081ULL) &&
+            (pos.pieceTypeBB(Piece::WQUEEN) & 0x24420000422400ULL) &&
+            (BitBoard::getTaxiDistance(pos.getKingSq(false),
+                                       BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WQUEEN))) == 3))
+            return 0;
+        break;
+    }
+    case MI::BQ: {
+        if (!doEval) return 1;
+        if (pos.getWhiteMove() &&
+            (pos.pieceTypeBB(Piece::WKING) & 0x8100000000000081ULL) &&
+            (pos.pieceTypeBB(Piece::BQUEEN) & 0x24420000422400ULL) &&
+            (BitBoard::getTaxiDistance(pos.getKingSq(true),
+                                       BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BQUEEN))) == 3))
+            return 0;
+        break;
+    }
     case MI::WR + MI::BP: {
         if (!doEval) return 1;
         int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BPAWN));
@@ -1138,6 +1158,16 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
         int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BPAWN));
         return -kpkEval(63-pos.getKingSq(false), 63-pos.getKingSq(true),
                         63-bp, !pos.getWhiteMove());
+    }
+    case MI::WP + MI::BP: {
+        if (!doEval) return 1;
+        int wk = pos.getKingSq(true);
+        int bk = pos.getKingSq(false);
+        int wp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WPAWN));
+        int bp = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BPAWN));
+        if (kpkpEval(wk, bk, wp, bp, score))
+            return score;
+        break;
     }
     case MI::WB + MI::WP + MI::BB: {
         if (!doEval) return 1;
@@ -1272,22 +1302,15 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
         return -(100 + pos.bMtrl() - pos.wMtrl() + mateEval(pos.getKingSq(false), pos.getKingSq(true)));
     }
 
-    // Only bishops on same color can not win
-    if (pos.pieceTypeBB(Piece::WROOK, Piece::WKNIGHT, Piece::WQUEEN, Piece::WPAWN) == 0) {
+    if (pos.pieceTypeBB(Piece::WROOK, Piece::WKNIGHT, Piece::WQUEEN) == 0) {
         if (!doEval) return 1;
-        if (score > 0) {
-            if (((pos.pieceTypeBB(Piece::WBISHOP) & BitBoard::maskDarkSq) == 0) ||
-                ((pos.pieceTypeBB(Piece::WBISHOP) & BitBoard::maskLightSq) == 0))
-                return 0;
-        }
+        if ((score > 0) && isBishopPawnDraw<true>(pos))
+            return 0;
     }
-    if (pos.pieceTypeBB(Piece::BROOK, Piece::BKNIGHT, Piece::BQUEEN, Piece::BPAWN) == 0) {
+    if (pos.pieceTypeBB(Piece::BROOK, Piece::BKNIGHT, Piece::BQUEEN) == 0) {
         if (!doEval) return 1;
-        if (score < 0) {
-            if (((pos.pieceTypeBB(Piece::BBISHOP) & BitBoard::maskDarkSq) == 0) ||
-                ((pos.pieceTypeBB(Piece::BBISHOP) & BitBoard::maskLightSq) == 0))
-                return 0;
-        }
+        if ((score < 0) && isBishopPawnDraw<false>(pos))
+            return 0;
     }
 
     // Give bonus/penalty if advantage is/isn't large enough to win
@@ -1299,21 +1322,6 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
             else
                 return score / 8;        // Too little excess material, probably draw
         }
-    } else if (pos.pieceTypeBB(Piece::WROOK, Piece::WKNIGHT, Piece::WQUEEN) == 0) {
-        if (!doEval) return 1;
-        if (score > 0) {
-            // Check for rook pawn + wrong color bishop
-            if (((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskBToHFiles) == 0) &&
-                ((pos.pieceTypeBB(Piece::WBISHOP) & BitBoard::maskLightSq) == 0) &&
-                ((pos.pieceTypeBB(Piece::BKING) & 0x0303000000000000ULL) != 0)) {
-                return 0;
-            } else
-            if (((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskAToGFiles) == 0) &&
-                ((pos.pieceTypeBB(Piece::WBISHOP) & BitBoard::maskDarkSq) == 0) &&
-                ((pos.pieceTypeBB(Piece::BKING) & 0xC0C0000000000000ULL) != 0)) {
-                return 0;
-            }
-        }
     }
     if ((bMtrlPawns == 0) && (bMtrlNoPawns <= wMtrlNoPawns + bV)) {
         if (!doEval) return 1;
@@ -1322,21 +1330,6 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
                 return pos.wMtrl() / 50;
             else
                 return score / 8;        // Too little excess material, probably draw
-        }
-    } else if (pos.pieceTypeBB(Piece::BROOK, Piece::BKNIGHT, Piece::BQUEEN) == 0) {
-        if (!doEval) return 1;
-        if (score < 0) {
-            // Check for rook pawn + wrong color bishop
-            if (((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskBToHFiles) == 0) &&
-                ((pos.pieceTypeBB(Piece::BBISHOP) & BitBoard::maskDarkSq) == 0) &&
-                ((pos.pieceTypeBB(Piece::WKING) & 0x0303ULL) != 0)) {
-                return 0;
-            } else
-            if (((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskAToGFiles) == 0) &&
-                ((pos.pieceTypeBB(Piece::BBISHOP) & BitBoard::maskLightSq) == 0) &&
-                ((pos.pieceTypeBB(Piece::WKING) & 0xC0C0ULL) != 0)) {
-                return 0;
-            }
         }
     }
 
@@ -1351,6 +1344,82 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
 
     if (!doEval) return 0;
     return score;
+}
+
+template <bool whiteBishop>
+bool
+Evaluate::isBishopPawnDraw(const Position& pos) const {
+    const Piece::Type bishop = whiteBishop ? Piece::WBISHOP : Piece::BBISHOP;
+    const bool darkBishop  = (pos.pieceTypeBB(bishop) & BitBoard::maskDarkSq) != 0;
+    const bool lightBishop = (pos.pieceTypeBB(bishop) & BitBoard::maskLightSq) != 0;
+    if (darkBishop && lightBishop)
+        return false; // No draw against proper bishop pair
+
+    const Piece::Type pawn = whiteBishop ? Piece::WPAWN : Piece::BPAWN;
+    if (pos.pieceTypeBB(pawn) == 0)
+        return true; // Only bishops on same color can not win
+
+    // Check for rook pawn + wrong color bishop
+    const Piece::Type oKing = whiteBishop ? Piece::BKING : Piece::WKING;
+    if (whiteBishop) {
+        if (((pos.pieceTypeBB(pawn) & BitBoard::maskBToHFiles) == 0) &&
+            !lightBishop &&
+            ((pos.pieceTypeBB(oKing) & 0x0303000000000000ULL) != 0)) {
+            return true;
+        } else
+        if (((pos.pieceTypeBB(pawn) & BitBoard::maskAToGFiles) == 0) &&
+            !darkBishop &&
+            ((pos.pieceTypeBB(oKing) & 0xC0C0000000000000ULL) != 0)) {
+            return true;
+        }
+    } else {
+        if (((pos.pieceTypeBB(pawn) & BitBoard::maskBToHFiles) == 0) &&
+            !darkBishop &&
+            ((pos.pieceTypeBB(oKing) & 0x0303ULL) != 0)) {
+            return true;
+        } else
+        if (((pos.pieceTypeBB(pawn) & BitBoard::maskAToGFiles) == 0) &&
+            !lightBishop &&
+            ((pos.pieceTypeBB(oKing) & 0xC0C0ULL) != 0)) {
+            return true;
+        }
+    }
+
+    // Check for fortress containing WPb6, BPb7, white bishop on dark square
+    const Piece::Type king = whiteBishop ? Piece::WKING : Piece::BKING;
+    const Piece::Type oPawn = whiteBishop ? Piece::BPAWN : Piece::WPAWN;
+    const Piece::Type oKnight = whiteBishop ? Piece::BKNIGHT : Piece::WKNIGHT;
+    const int b7 = whiteBishop ? (darkBishop ? 49 : 54) : (lightBishop ? 9 : 14);
+    const int b6 = whiteBishop ? (darkBishop ? 41 : 46) : (lightBishop ? 17 : 22);
+    const int c7 = whiteBishop ? (darkBishop ? 50 : 53) : (lightBishop ? 10 : 13);
+    const int a8 = whiteBishop ? (darkBishop ? 56 : 63) : (lightBishop ? 0 : 7);
+    const int b8 = whiteBishop ? (darkBishop ? 57 : 62) : (lightBishop ? 1 : 6);
+    const int c8 = whiteBishop ? (darkBishop ? 58 : 61) : (lightBishop ? 2 : 5);
+    const int d8 = whiteBishop ? (darkBishop ? 59 : 60) : (lightBishop ? 3 : 4);
+    const int d7 = whiteBishop ? (darkBishop ? 51 : 52) : (lightBishop ? 11 : 12);
+    const U64 bFile = (whiteBishop == darkBishop) ? 0x0202020202020202ULL : 0x4040404040404040ULL;
+    const U64 corner = whiteBishop ? (darkBishop ? 0x0301000000000000ULL : 0xC080000000000000ULL)
+                                   : (lightBishop ? 0x0103ULL : 0x80C0ULL);
+
+    if ((pos.getPiece(b7) == oPawn) && (pos.getPiece(b6) == pawn) &&
+        (pos.getPiece(a8) != oKnight) && ((pos.pieceTypeBB(king) & corner) == 0)) {
+        if (pos.getPiece(c7) == pawn) {
+            if (BitBoard::bitCount(pos.pieceTypeBB(pawn) & ~bFile) == 1) {
+                int oKingSq = pos.getKingSq(!whiteBishop);
+                if ((oKingSq == c8) || (oKingSq == d7))
+                    return true;
+            }
+        } else {
+            if ((pos.pieceTypeBB(pawn) & ~bFile) == 0) {
+                int oKingSq = pos.getKingSq(!whiteBishop);
+                if ((oKingSq == a8) || (oKingSq == b8) || (oKingSq == c8) ||
+                    (oKingSq == d8) || (oKingSq == d7))
+                    return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 int
@@ -1409,6 +1478,34 @@ Evaluate::kpkEval(int wKing, int bKing, int wPawn, bool whiteMove) {
     if (draw)
         return 0;
     return qV - pV / 4 * (7-Position::getY(wPawn));
+}
+
+bool
+Evaluate::kpkpEval(int wKing, int bKing, int wPawn, int bPawn, int& score) {
+    const U64 wKingMask = 1ULL << wKing;
+    const U64 bKingMask = 1ULL << bKing;
+    if ((wPawn == 41) && (bPawn == 49)) { // b6/b7
+        if ((bKingMask & 0x0F08000000000000ULL) && ((wKingMask & 0x0301000000000000ULL) == 0)) {
+            score = 0;
+            return true;
+        }
+    } else if ((wPawn == 46) && (bPawn == 54)) { // g6/g7
+        if ((bKingMask & 0xF010000000000000ULL) && ((wKingMask & 0xC080000000000000ULL) == 0)) {
+            score = 0;
+            return true;
+        }
+    } else if ((wPawn == 9) && (bPawn == 17)) { // b2/b3
+        if ((wKingMask & 0x080FULL) && ((bKingMask & 0x0103ULL) == 0)) {
+            score = 0;
+            return true;
+        }
+    } else if ((wPawn == 14) && (bPawn == 22)) { // g2/g3
+        if ((wKingMask & 0x10F0ULL) && ((bKingMask & 0x80C0ULL) == 0)) {
+            score = 0;
+            return true;
+        }
+    }
+    return false;
 }
 
 int
