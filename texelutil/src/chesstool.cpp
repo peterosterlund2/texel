@@ -652,6 +652,8 @@ ChessTool::printResiduals(std::istream& is, const std::string& xTypeStr, bool in
     enum XType {
         MTRL_SUM,
         MTRL_DIFF,
+        PAWN_SUM,
+        PAWN_DIFF,
         EVAL
     };
     XType xType;
@@ -659,6 +661,10 @@ ChessTool::printResiduals(std::istream& is, const std::string& xTypeStr, bool in
         xType = MTRL_SUM;
     } else if (xTypeStr == "mtrldiff") {
         xType = MTRL_DIFF;
+    } else if (xTypeStr == "pawnsum") {
+        xType = PAWN_SUM;
+    } else if (xTypeStr == "pawndiff") {
+        xType = PAWN_DIFF;
     } else if (xTypeStr == "eval") {
         xType = EVAL;
     } else {
@@ -681,6 +687,12 @@ ChessTool::printResiduals(std::istream& is, const std::string& xTypeStr, bool in
             break;
         case MTRL_DIFF:
             x = pos.wMtrl() - pos.bMtrl();
+            break;
+        case PAWN_SUM:
+            x = pos.wMtrlPawns() + pos.bMtrlPawns();
+            break;
+        case PAWN_DIFF:
+            x = pos.wMtrlPawns() - pos.bMtrlPawns();
             break;
         case EVAL:
             x = pi.qScore;

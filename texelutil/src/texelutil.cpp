@@ -48,7 +48,8 @@ void usage() {
     std::cerr << " printpar : Print evaluation tables and parameters\n";
     std::cerr << " evalstat p1 p2 ...  : Print parameter statistics\n";
     std::cerr << " residual xType inclNo : Print evaluation error as function of material\n";
-    std::cerr << "                         xType is mtrlsum, mtrldiff or eval. inclNo is 0 or 1\n";
+    std::cerr << "                         xType is mtrlsum, mtrldiff, pawnsum, pawndiff or eval\n";
+    std::cerr << "                         inclNo is 0/1 to exclude/include position/game numbers\n";
     std::cerr << " genfen qvsn : Generate all positions of a given type\n";
     std::cerr << std::flush;
     ::exit(2);
