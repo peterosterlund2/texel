@@ -116,9 +116,10 @@ ChessTool::pgnToFen(std::istream& is) {
                 commentScore = -commentScore;
             }
 
-            std::cout << fen << " : " << rScore << " : " << commentScore << " : " << score << " : " << gameNo << std::endl;
+            std::cout << fen << " : " << rScore << " : " << commentScore << " : " << score << " : " << gameNo << '\n';
         }
     }
+    std::cout << std::flush;
 }
 
 void
@@ -144,8 +145,10 @@ ChessTool::pawnAdvTable(std::istream& is) {
     }
 }
 
+// --------------------------------------------------------------------------------
+
 void
-ChessTool::filterFEN(std::istream& is) {
+ChessTool::filterScore(std::istream& is, int scLimit, double prLimit) {
     std::vector<PositionInfo> positions;
     readFENFile(is, positions);
     ScoreToProb sp;
@@ -153,13 +156,103 @@ ChessTool::filterFEN(std::istream& is) {
     for (const PositionInfo& pi : positions) {
         double p1 = sp.getProb(pi.searchScore);
         double p2 = sp.getProb(pi.qScore);
-        if ((std::abs(p1 - p2) < 0.05) && (std::abs(pi.searchScore - pi.qScore) < 200)) {
+        if ((std::abs(p1 - p2) < prLimit) && (std::abs(pi.searchScore - pi.qScore) < scLimit)) {
             pos.deSerialize(pi.posData);
             std::string fen = TextIO::toFEN(pos);
             std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore
-                      << " : " << pi.gameNo << std::endl;
+                      << " : " << pi.gameNo << '\n';
         }
     }
+    std::cout << std::flush;
+}
+
+static int
+swapSquareY(int square) {
+    int x = Position::getX(square);
+    int y = Position::getY(square);
+    return Position::getSquare(x, 7-y);
+}
+
+static Position
+swapColors(const Position& pos) {
+    Position sym;
+    sym.setWhiteMove(!pos.getWhiteMove());
+    for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 8; y++) {
+            int sq = Position::getSquare(x, y);
+            int p = pos.getPiece(sq);
+            p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
+            sym.setPiece(swapSquareY(sq), p);
+        }
+    }
+
+    int castleMask = 0;
+    if (pos.a1Castle()) castleMask |= 1 << Position::A8_CASTLE;
+    if (pos.h1Castle()) castleMask |= 1 << Position::H8_CASTLE;
+    if (pos.a8Castle()) castleMask |= 1 << Position::A1_CASTLE;
+    if (pos.h8Castle()) castleMask |= 1 << Position::H1_CASTLE;
+    sym.setCastleMask(castleMask);
+
+    if (pos.getEpSquare() >= 0)
+        sym.setEpSquare(swapSquareY(pos.getEpSquare()));
+
+    sym.setHalfMoveClock(pos.getHalfMoveClock());
+    sym.setFullMoveCounter(pos.getFullMoveCounter());
+
+    return sym;
+}
+
+static int nPieces(const Position& pos, Piece::Type piece) {
+    return BitBoard::bitCount(pos.pieceTypeBB(piece));
+}
+
+static bool isMatch(int mtrlDiff, bool compare, int patternDiff) {
+    return !compare || (mtrlDiff == patternDiff);
+}
+
+void
+ChessTool::filterMtrlBalance(std::istream& is, bool minorEqual,
+                             const std::vector<std::pair<bool,int>>& mtrlPattern) {
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+    Position pos;
+    int mtrlDiff[5];
+    for (const PositionInfo& pi : positions) {
+        pos.deSerialize(pi.posData);
+        mtrlDiff[0] = nPieces(pos, Piece::WQUEEN)  - nPieces(pos, Piece::BQUEEN);
+        mtrlDiff[1] = nPieces(pos, Piece::WROOK)   - nPieces(pos, Piece::BROOK);
+        int nComp;
+        if (minorEqual) {
+            mtrlDiff[2] = nPieces(pos, Piece::WBISHOP) - nPieces(pos, Piece::BBISHOP) +
+                          nPieces(pos, Piece::WKNIGHT) - nPieces(pos, Piece::BKNIGHT);
+            mtrlDiff[3] = nPieces(pos, Piece::WPAWN)   - nPieces(pos, Piece::BPAWN);
+            nComp = 4;
+        } else {
+            mtrlDiff[2] = nPieces(pos, Piece::WBISHOP) - nPieces(pos, Piece::BBISHOP);
+            mtrlDiff[3] = nPieces(pos, Piece::WKNIGHT) - nPieces(pos, Piece::BKNIGHT);
+            mtrlDiff[4] = nPieces(pos, Piece::WPAWN)   - nPieces(pos, Piece::BPAWN);
+            nComp = 5;
+        }
+        int inc1 = true, inc2 = true;
+        for (int i = 0; i < nComp; i++) {
+            if (!isMatch(mtrlDiff[i], mtrlPattern[i].first, mtrlPattern[i].second))
+                inc1 = false;
+            if (!isMatch(mtrlDiff[i], mtrlPattern[i].first, -mtrlPattern[i].second))
+                inc2 = false;
+        }
+        int sign = 1;
+        if (inc2 && !inc1) {
+            pos = swapColors(pos);
+            sign = -1;
+        }
+        if (inc1 || inc2) {
+            std::string fen = TextIO::toFEN(pos);
+            std::cout << fen << " : " << ((sign>0)?pi.result:(1-pi.result)) << " : "
+                      << pi.searchScore * sign << " : " << pi.qScore * sign
+                      << " : " << pi.gameNo << '\n';
+        }
+    }
+    std::cout << std::flush;
 }
 
 void
@@ -174,10 +267,13 @@ ChessTool::outliers(std::istream& is, int threshold) {
             pos.deSerialize(pi.posData);
             std::string fen = TextIO::toFEN(pos);
             std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore
-                      << " : " << pi.gameNo << std::endl;
+                      << " : " << pi.gameNo << '\n';
         }
     }
+    std::cout << std::flush;
 }
+
+// --------------------------------------------------------------------------------
 
 void
 ChessTool::paramEvalRange(std::istream& is, ParamDomain& pd) {

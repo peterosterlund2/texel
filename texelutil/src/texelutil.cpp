@@ -31,22 +31,26 @@ void setInitialValues(const std::string& fname) {
 }
 
 void usage() {
-    std::cerr << "Usage: texelutil [-iv file] cmd params" << std::endl;
-    std::cerr << " -iv file : Set initial parameter values" << std::endl;
-    std::cerr << "cmd is one of:" << std::endl;
-    std::cerr << " p2f      : Convert from PGN to FEN" << std::endl;
-    std::cerr << " f2p      : Convert from FEN to PGN" << std::endl;
-    std::cerr << " filter   : Remove positions where qScore and search score deviate too much" << std::endl;
-    std::cerr << " outliers threshold : Print positions with unexpected game result" << std::endl;
-    std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage" << std::endl;
-    std::cerr << " parrange p a b c   : Compare evaluation error for different parameter values" << std::endl;
-    std::cerr << " localopt p1 p2 ... : Optimize parameters using local search" << std::endl;
-    std::cerr << " localopt2 p1 p2 ... : Optimize parameters using local search with big jumps" << std::endl;
-    std::cerr << " printpar : Print evaluation tables and parameters" << std::endl;
-    std::cerr << " evalstat p1 p2 ... : Print parameter statistics" << std::endl;
-    std::cerr << " residual xType inclNo : Print evaluation error as function of material" << std::endl;
-    std::cerr << "                         xType is mtrlsum, mtrldiff or eval. inclNo is 0 or 1" << std::endl;
-    std::cerr << " genfen qvsn : Generate all positions of a given type" << std::endl;
+    std::cerr << "Usage: texelutil [-iv file] cmd params\n";
+    std::cerr << " -iv file : Set initial parameter values\n";
+    std::cerr << "cmd is one of:\n";
+    std::cerr << " p2f      : Convert from PGN to FEN\n";
+    std::cerr << " f2p      : Convert from FEN to PGN\n";
+    std::cerr << " filter type pars : Keep positions that satisfy a condition\n";
+    std::cerr << "        score scLimit prLimit : qScore and search score differ less than limits\n";
+    std::cerr << "        mtrl [-m] dQ dR dB [dN] dP : material difference satisfies pattern\n";
+    std::cerr << "                                     -m treat bishop and knight as same type\n";
+    std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
+    std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage\n";
+    std::cerr << " parrange p a b c    : Compare evaluation error for different parameter values\n";
+    std::cerr << " localopt p1 p2 ...  : Optimize parameters using local search\n";
+    std::cerr << " localopt2 p1 p2 ... : Optimize parameters using local search with big jumps\n";
+    std::cerr << " printpar : Print evaluation tables and parameters\n";
+    std::cerr << " evalstat p1 p2 ...  : Print parameter statistics\n";
+    std::cerr << " residual xType inclNo : Print evaluation error as function of material\n";
+    std::cerr << "                         xType is mtrlsum, mtrldiff or eval. inclNo is 0 or 1\n";
+    std::cerr << " genfen qvsn : Generate all positions of a given type\n";
+    std::cerr << std::flush;
     ::exit(2);
 }
 
@@ -117,7 +121,36 @@ int main(int argc, char* argv[]) {
         } else if (cmd == "pawnadv") {
             ChessTool::pawnAdvTable(std::cin);
         } else if (cmd == "filter") {
-            ChessTool::filterFEN(std::cin);
+            if (argc < 3)
+                usage();
+            std::string type = argv[2];
+            if (type == "score") {
+                if (argc != 5)
+                    usage();
+                int scLimit;
+                double prLimit;
+                if (!str2Num(argv[3], scLimit) || !str2Num(argv[4], prLimit))
+                    usage();
+                ChessTool::filterScore(std::cin, scLimit, prLimit);
+            } else if (type == "mtrl") {
+                if (argc != 8)
+                    usage();
+                bool minorEqual = (std::string(argv[3]) == "-m");
+                int first = minorEqual ? 4 : 3;
+                std::vector<std::pair<bool,int>> mtrlPattern;
+                for (int i = first; i < 8; i++) {
+                    if (std::string(argv[i]) == "x")
+                        mtrlPattern.push_back(std::make_pair(false, 0));
+                    else {
+                        int d;
+                        if (!str2Num(argv[i], d))
+                            usage();
+                        mtrlPattern.push_back(std::make_pair(true, d));
+                    }
+                }
+                ChessTool::filterMtrlBalance(std::cin, minorEqual, mtrlPattern);
+            } else
+                usage();
         } else if (cmd == "outliers") {
             int threshold;
             if ((argc < 3) || !str2Num(argv[2], threshold))

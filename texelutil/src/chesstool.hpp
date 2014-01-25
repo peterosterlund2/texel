@@ -58,8 +58,12 @@ public:
     /** Compute average evaluation error for different pawn advantage values. */
     static void pawnAdvTable(std::istream& is);
 
-    /** Filter out positions where search score and q-search score differ too much. */
-    static void filterFEN(std::istream& is);
+    /** Output positions where search score and q-search score differ less than limits. */
+    static void filterScore(std::istream& is, int scLimit, double prLimit);
+
+    /** Output positions where material balance matches a pattern. */
+    static void filterMtrlBalance(std::istream& is, bool minorEqual,
+                                  const std::vector<std::pair<bool,int>>& mtrlPattern);
 
     /** Print positions where abs(qScore) >= threshold and game result != (1+sign(qScore))/2. */
     static void outliers(std::istream& is, int threshold);
