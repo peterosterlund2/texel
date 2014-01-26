@@ -346,6 +346,14 @@ testMaterial() {
     ASSERT(s2 < s1);
     int s3 = evalFEN("nnnnknnn/pppppppp/8/8/8/8/PPPPPPPP/Q2QK2Q w - - 0 1");
     ASSERT(s3 < 30);
+
+    // Test symmetry of imbalances corrections
+    evalFEN("3rr1k1/pppb1ppp/2n2n2/4p3/1bB1P3/2N1BN2/PPP1QPPP/6K1 w - - 0 1");
+    evalFEN("3q1rk1/1p1bppbp/p2p1np1/8/1n1NP1PP/2Q1BP2/PPP1B3/1K1R3R w - - 0 1");
+    evalFEN("r1bqkbnr/1pp2ppp/p1p5/4p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 0 1");
+    evalFEN("r1bqkbnr/1p3ppp/p7/4p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 0 1");
+    evalFEN("r1bqkbnr/1pp2ppp/p1p5/4p3/4P3/5N2/P2P1PPP/RNBQK2R b KQkq - 0 1");
+    evalFEN("r1bq4/pppp1kpp/2n2n2/2b1p3/4P3/8/PPPP1PPP/RNBQ1RK1 w - - 0 1");
 }
 
 static void movePiece(Position& pos, const std::string& from, const std::string& to) {
@@ -580,7 +588,7 @@ testEndGameCorrections() {
     int kqkbb = evalEgFen("8/2bbk3/8/8/8/3QK3/8/8 w - - 0 1");
     ASSERT(kqkbb > 25);
     ASSERT(kqkbb < 75);
-    int kbbkb = evalEgFen("8/3bk3/8/8/8/2BBK3/8/8 w - - 0 1");
+    int kbbkb = evalEgFen("8/3bk3/8/8/8/2BBK3/8/8 w - - 0 1", 1);
     ASSERT(kbbkb > 25);
     ASSERT(kbbkb < 75);
     int kbnkb = evalEgFen("8/3bk3/8/8/8/2NBK3/8/8 w - - 0 1");
@@ -619,7 +627,7 @@ static void
 testPassedPawns() {
     Position pos = TextIO::readFEN("8/8/8/P3k/8/8/p/K w");
     int score = evalWhite(pos);
-    ASSERT(score > 35); // Unstoppable passed pawn
+    ASSERT(score > 34); // Unstoppable passed pawn
     pos.setWhiteMove(false);
     score = evalWhite(pos);
     ASSERT(score <= 0); // Not unstoppable
@@ -648,14 +656,14 @@ testPassedPawns() {
     //        ASSERT(score2 > score); // Advancing passed pawn is good
 
     // Test symmetry of candidate passed pawn evaluation
-    pos = TextIO::readFEN("rnbqkbnr/p1pppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
-    pos = TextIO::readFEN("rnbqkbnr/p2ppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
-    pos = TextIO::readFEN("rnbqkbnr/p2ppppp/8/P7/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
-    pos = TextIO::readFEN("rnbqkbnr/p2ppppp/8/P2P4/8/2P5/1P2PPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
-    pos = TextIO::readFEN("rnbqkbnr/pp1ppppp/8/P2P4/8/2P5/1P2PPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
-    pos = TextIO::readFEN("rnbqkbnr/pp1ppppp/8/PP1P4/8/2P5/4PPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
-    pos = TextIO::readFEN("rnbqkbnr/p2ppppp/8/PP6/8/2P5/4PPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
-    pos = TextIO::readFEN("rnbqkbnr/p2ppppp/8/P2P4/8/2P5/4PPPP/RNBQKBNR w KQkq - 0 1"); evalWhite(pos);
+    evalFEN("rnbqkbnr/p1pppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    evalFEN("rnbqkbnr/p2ppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    evalFEN("rnbqkbnr/p2ppppp/8/P7/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1");
+    evalFEN("rnbqkbnr/p2ppppp/8/P2P4/8/2P5/1P2PPPP/RNBQKBNR w KQkq - 0 1");
+    evalFEN("rnbqkbnr/pp1ppppp/8/P2P4/8/2P5/1P2PPPP/RNBQKBNR w KQkq - 0 1");
+    evalFEN("rnbqkbnr/pp1ppppp/8/PP1P4/8/2P5/4PPPP/RNBQKBNR w KQkq - 0 1");
+    evalFEN("rnbqkbnr/p2ppppp/8/PP6/8/2P5/4PPPP/RNBQKBNR w KQkq - 0 1");
+    evalFEN("rnbqkbnr/p2ppppp/8/P2P4/8/2P5/4PPPP/RNBQKBNR w KQkq - 0 1");
 }
 
 /**
@@ -982,10 +990,8 @@ testKnightOutPost() {
     ASSERT(s2 < s1);
 
     // Test knight fork bonus symmetry (currently no such term in the evaluation though)
-    pos = TextIO::readFEN("rnbqkb1r/ppp2Npp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1");
-    evalWhite(pos);
-    pos = TextIO::readFEN("rnbqkb1r/ppN3pp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1");
-    evalWhite(pos);
+    evalFEN("rnbqkb1r/ppp2Npp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1");
+    evalFEN("rnbqkb1r/ppN3pp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1");
 }
 
 

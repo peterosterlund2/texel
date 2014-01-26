@@ -241,6 +241,38 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
         score += majorPieceRedundancy[w*4+b];
     }
     if (print) std::cout << "eval majred :" << score << std::endl;
+
+    // Handle imbalances
+    const int nWB = BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP));
+    const int nBB = BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP));
+    const int nWP = BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN));
+    const int nBP = BitBoard::bitCount(pos.pieceTypeBB(Piece::BPAWN));
+    {
+        const int dQ = nWQ - nBQ;
+        const int dR = nWR - nBR;
+        const int dB = nWB - nBB;
+        const int dN = nWN - nBN;
+        int nMinor = nWB + nWN + nBB + nBN;
+        if ((dQ == 1) && (dR == -2)) {
+            score += QvsRRBonus[std::min(4, nMinor)];
+        } else if ((dQ == -1) && (dR == 2)) {
+            score -= QvsRRBonus[std::min(4, nMinor)];
+        }
+
+        const int dP = nWP - nBP;
+        if ((dR == 1) && (dB + dN == -1)) {
+            score += RvsMBonus[clamp(dP, -3, 3)+3];
+        } else if ((dR == -1) && (dB + dN == 1)) {
+            score -= RvsMBonus[clamp(-dP, -3, 3)+3];
+        }
+
+        if ((dR == 1) && (dB + dN == -2)) {
+            score += RvsMMBonus[clamp(dP, -3, 3)+3];
+        } else if ((dR == -1) && (dB + dN == 2)) {
+            score -= RvsMMBonus[clamp(-dP, -3, 3)+3];
+        }
+    }
+    if (print) std::cout << "eval imbala :" << score << std::endl;
     mhd.id = pos.materialId();
     mhd.score = score;
     mhd.endGame = endGameEval<false>(pos, 0);

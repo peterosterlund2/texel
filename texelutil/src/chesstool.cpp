@@ -534,6 +534,9 @@ ChessTool::printParams() {
     printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy");
     printTable(passedPawnBonus, "passedPawnBonus");
     printTable(candidatePassedBonus, "candidatePassedBonus");
+    printTable(QvsRRBonus, "QvsRRBonus");
+    printTable(RvsMBonus, "RvsMBonus");
+    printTable(RvsMMBonus, "RvsMMBonus");
 
     std::cout << "pV : " << pV << std::endl;
     std::cout << "nV : " << nV << std::endl;
@@ -556,6 +559,7 @@ ChessTool::printParams() {
     std::cout << "pieceTradeBonus : " << pieceTradeBonus << std::endl;
     std::cout << "pawnTradeThreshold : " << pawnTradeThreshold << std::endl;
     std::cout << "pieceTradeThreshold : " << pieceTradeThreshold << std::endl;
+
     std::cout << "threatBonus1 : " << threatBonus1 << std::endl;
     std::cout << "threatBonus2 : " << threatBonus2 << std::endl;
 
