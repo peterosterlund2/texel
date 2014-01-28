@@ -537,6 +537,7 @@ ChessTool::printParams() {
     printTable(QvsRRBonus, "QvsRRBonus");
     printTable(RvsMBonus, "RvsMBonus");
     printTable(RvsMMBonus, "RvsMMBonus");
+    printTable(bishopPairValue, "bishopPairValue");
 
     std::cout << "pV : " << pV << std::endl;
     std::cout << "nV : " << nV << std::endl;
@@ -551,6 +552,8 @@ ChessTool::printParams() {
     std::cout << "pawnGuardedPassedBonus : " << pawnGuardedPassedBonus << std::endl;
     std::cout << "pawnRaceBonus : " << pawnRaceBonus << std::endl;
 
+    std::cout << "QvsRMBonus1 : " << QvsRMBonus1 << std::endl;
+    std::cout << "QvsRMBonus2 : " << QvsRMBonus2 << std::endl;
     std::cout << "knightVsQueenBonus1 : " << knightVsQueenBonus1 << std::endl;
     std::cout << "knightVsQueenBonus2 : " << knightVsQueenBonus2 << std::endl;
     std::cout << "knightVsQueenBonus3 : " << knightVsQueenBonus3 << std::endl;
@@ -568,7 +571,6 @@ ChessTool::printParams() {
     std::cout << "rookDouble7thRowBonus : " << rookDouble7thRowBonus << std::endl;
     std::cout << "trappedRookPenalty : " << trappedRookPenalty << std::endl;
 
-    std::cout << "bishopPairValue : " << bishopPairValue << std::endl;
     std::cout << "bishopPairPawnPenalty : " << bishopPairPawnPenalty << std::endl;
     std::cout << "trappedBishopPenalty1 : " << trappedBishopPenalty1 << std::endl;
     std::cout << "trappedBishopPenalty2 : " << trappedBishopPenalty2 << std::endl;

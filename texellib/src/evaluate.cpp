@@ -271,6 +271,12 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
         } else if ((dR == -1) && (dB + dN == 2)) {
             score -= RvsMMBonus[clamp(-dP, -3, 3)+3];
         }
+
+        if ((dQ == 1) && (dR == -1) && (dB + dN == -1)) {
+            score += (nWR == 0) ? QvsRMBonus1 : QvsRMBonus2;
+        } else if ((dQ == -1) && (dR == 1) && (dB + dN == 1)) {
+            score -= (nBR == 0) ? QvsRMBonus1 : QvsRMBonus2;
+        }
     }
     if (print) std::cout << "eval imbala :" << score << std::endl;
     mhd.id = pos.materialId();
@@ -728,8 +734,8 @@ int
 Evaluate::bishopEval(const Position& pos, int oldScore) {
     int score = 0;
     const U64 occupied = pos.occupiedBB();
-    U64 wBishops = pos.pieceTypeBB(Piece::WBISHOP);
-    U64 bBishops = pos.pieceTypeBB(Piece::BBISHOP);
+    const U64 wBishops = pos.pieceTypeBB(Piece::WBISHOP);
+    const U64 bBishops = pos.pieceTypeBB(Piece::BBISHOP);
     if ((wBishops | bBishops) == 0)
         return 0;
     U64 m = wBishops;
@@ -753,21 +759,23 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
         m &= m-1;
     }
 
-    bool whiteDark  = (pos.pieceTypeBB(Piece::WBISHOP) & BitBoard::maskDarkSq ) != 0;
-    bool whiteLight = (pos.pieceTypeBB(Piece::WBISHOP) & BitBoard::maskLightSq) != 0;
-    bool blackDark  = (pos.pieceTypeBB(Piece::BBISHOP) & BitBoard::maskDarkSq ) != 0;
-    bool blackLight = (pos.pieceTypeBB(Piece::BBISHOP) & BitBoard::maskLightSq) != 0;
+    bool whiteDark  = (wBishops & BitBoard::maskDarkSq ) != 0;
+    bool whiteLight = (wBishops & BitBoard::maskLightSq) != 0;
+    bool blackDark  = (bBishops & BitBoard::maskDarkSq ) != 0;
+    bool blackLight = (bBishops & BitBoard::maskLightSq) != 0;
     int numWhite = (whiteDark ? 1 : 0) + (whiteLight ? 1 : 0);
     int numBlack = (blackDark ? 1 : 0) + (blackLight ? 1 : 0);
 
     // Bishop pair bonus
     if (numWhite == 2) {
+        int numMinors = BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP, Piece::BKNIGHT));
         const int numPawns = pos.wMtrlPawns() / pV;
-        score += bishopPairValue - numPawns * bishopPairPawnPenalty;
+        score += bishopPairValue[std::min(numMinors,3)] - numPawns * bishopPairPawnPenalty;
     }
     if (numBlack == 2) {
+        int numMinors = BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP, Piece::WKNIGHT));
         const int numPawns = pos.bMtrlPawns() / pV;
-        score -= bishopPairValue - numPawns * bishopPairPawnPenalty;
+        score -= bishopPairValue[std::min(numMinors,3)] - numPawns * bishopPairPawnPenalty;
     }
 
     if ((numWhite == 1) && (numBlack == 1) && (whiteDark != blackDark) &&

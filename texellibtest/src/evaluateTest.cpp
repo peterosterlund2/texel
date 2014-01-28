@@ -627,7 +627,7 @@ static void
 testPassedPawns() {
     Position pos = TextIO::readFEN("8/8/8/P3k/8/8/p/K w");
     int score = evalWhite(pos);
-    ASSERT(score > 34); // Unstoppable passed pawn
+    ASSERT(score > 33); // Unstoppable passed pawn
     pos.setWhiteMove(false);
     score = evalWhite(pos);
     ASSERT(score <= 0); // Not unstoppable
@@ -777,7 +777,7 @@ static void
 testKRKP() {
     const int pV = ::pV;
     const int rV = ::rV;
-    const int winScore = 319;
+    const int winScore = 315;
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);

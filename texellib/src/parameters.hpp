@@ -257,7 +257,6 @@ public:
 
     operator int() { return defaultValue; }
     void setValue(int v) { assert(false); }
-    bool isUCI() const { return false; }
     void registerParam(const std::string& name, Parameters& pars) {}
 private:
     int value = defaultValue;
@@ -272,7 +271,6 @@ public:
 
     operator int() { return  ref.get(); }
     void setValue(int v) { value = v; }
-    bool isUCI() const { return true; }
     void registerParam(const std::string& name, Parameters& pars) {
         pars.addPar(std::make_shared<Parameters::SpinParamRef<Ref>>(name, minValue, maxValue,
                                                                     defaultValue, ref));
@@ -307,10 +305,28 @@ public:
     virtual void modified() = 0;
 };
 
+class TableSpinParam;
+
 class ParamTableBase : public ParamModifiedListener {
 public:
-    virtual int getMinValue() const = 0;
-    virtual int getMaxValue() const = 0;
+    int getMinValue() const { return minValue; }
+    int getMaxValue() const { return maxValue; }
+
+    void addDependent(ParamModifiedListener* dep) { dependent.push_back(dep); }
+
+protected:
+    ParamTableBase(bool uci0, int minVal0, int maxVal0) :
+        uci(uci0), minValue(minVal0), maxValue(maxVal0) {}
+    void registerParamsN(const std::string& name, Parameters& pars,
+                         int* table, int* parNo, int N);
+    void modifiedN(int* table, int* parNo, int N);
+
+    const bool uci;
+    const int minValue;
+    const int maxValue;
+
+    std::vector<std::shared_ptr<TableSpinParam>> params;
+    std::vector<ParamModifiedListener*> dependent;
 };
 
 class TableSpinParam : public Parameters::SpinParamBase {
@@ -330,7 +346,6 @@ private:
     int value;
 };
 
-
 template <int N>
 class ParamTable : public ParamTableBase {
 public:
@@ -341,25 +356,15 @@ public:
     int operator[](int i) const { return table[i]; }
     const int* getTable() const { return table; }
 
-    void registerParams(const std::string& name, Parameters& pars);
+    void registerParams(const std::string& name, Parameters& pars) {
+        registerParamsN(name, pars, table, parNo, N);
+    }
 
-    void modified();
-    int getMinValue() const { return minValue; }
-    int getMaxValue() const { return maxValue; }
-
-    void addDependent(ParamModifiedListener* dep) { dependent.push_back(dep); }
+    void modified() { modifiedN(table, parNo, N); }
 
 private:
     int table[N];
     int parNo[N];
-
-    const std::string uciName;
-    const int minValue;
-    const int maxValue;
-    const bool uci;
-
-    std::vector<std::shared_ptr<TableSpinParam>> params;
-    std::vector<ParamModifiedListener*> dependent;
 };
 
 template <int N>
@@ -399,53 +404,13 @@ template <int N>
 ParamTable<N>::ParamTable(int minVal0, int maxVal0, bool uci0,
                           std::initializer_list<int> table0,
                           std::initializer_list<int> parNo0)
-    : minValue(minVal0), maxValue(maxVal0), uci(uci0) {
+    : ParamTableBase(uci0, minVal0, maxVal0) {
     assert(table0.size() == N);
     assert(parNo0.size() == N);
     for (int i = 0; i < N; i++) {
         table[i] = table0.begin()[i];
         parNo[i] = parNo0.begin()[i];
     }
-}
-
-template <int N>
-void
-ParamTable<N>::registerParams(const std::string& name, Parameters& pars) {
-    // Check that each parameter has a single value
-    std::map<int,int> parNoToVal;
-    int maxParIdx = -1;
-    for (int i = 0; i < N; i++) {
-        if (parNo[i] == 0)
-            continue;
-        const int pn = std::abs(parNo[i]);
-        const int sign = parNo[i] > 0 ? 1 : -1;
-        maxParIdx = std::max(maxParIdx, pn);
-        auto it = parNoToVal.find(pn);
-        if (it == parNoToVal.end())
-            parNoToVal.insert(std::make_pair(pn, sign*table[i]));
-        else
-            assert(it->second == sign*table[i]);
-    }
-    if (!uci)
-        return;
-    params.resize(maxParIdx+1);
-    for (const auto& p : parNoToVal) {
-        std::string pName = name + num2Str(p.first);
-        params[p.first] = std::make_shared<TableSpinParam>(pName, *this, p.second);
-        pars.addPar(params[p.first]);
-    }
-}
-
-template <int N>
-void
-ParamTable<N>::modified() {
-    for (int i = 0; i < N; i++)
-        if (parNo[i] > 0)
-            table[i] = params[parNo[i]]->getIntPar();
-        else if (parNo[i] < 0)
-            table[i] = -params[-parNo[i]]->getIntPar();
-    for (auto d : dependent)
-        d->modified();
 }
 
 // ----------------------------------------------------------------------------
@@ -457,7 +422,7 @@ extern int pieceValue[Piece::nPieceTypes];
 
 // Evaluation parameters
 
-DECLARE_PARAM_2REF(pV, 96, 1, 200, useUciParam);
+DECLARE_PARAM_2REF(pV, 99, 1, 200, useUciParam);
 DECLARE_PARAM_2REF(nV, 385, 1, 800, useUciParam);
 DECLARE_PARAM_2REF(bV, 385, 1, 800, useUciParam);
 DECLARE_PARAM_2REF(rV, 600, 1, 1200, useUciParam);
@@ -469,16 +434,18 @@ DECLARE_PARAM(pawnIslandPenalty, 14, 0, 50, useUciParam);
 DECLARE_PARAM(pawnIsolatedPenalty, 12, 0, 50, useUciParam);
 DECLARE_PARAM(pawnBackwardPenalty, 19, 0, 50, useUciParam);
 DECLARE_PARAM(pawnGuardedPassedBonus, 1, 0, 50, useUciParam);
-DECLARE_PARAM(pawnRaceBonus, 158, 0, 1000, useUciParam);
+DECLARE_PARAM(pawnRaceBonus, 157, 0, 1000, useUciParam);
 
+DECLARE_PARAM(QvsRMBonus1, 8, -100, 100, useUciParam);
+DECLARE_PARAM(QvsRMBonus2, 9, -100, 100, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus1, 125, 0, 200, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus2, 251, 0, 600, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus3, 357, 0, 800, useUciParam);
 
-DECLARE_PARAM(pawnTradePenalty, 69, 0, 100, useUciParam);
-DECLARE_PARAM(pieceTradeBonus, 19, 0, 100, useUciParam);
-DECLARE_PARAM(pawnTradeThreshold, 373, 100, 1000, useUciParam);
-DECLARE_PARAM(pieceTradeThreshold, 780, 10, 1000, useUciParam);
+DECLARE_PARAM(pawnTradePenalty, 66, 0, 100, useUciParam);
+DECLARE_PARAM(pieceTradeBonus, 15, 0, 100, useUciParam);
+DECLARE_PARAM(pawnTradeThreshold, 368, 100, 1000, useUciParam);
+DECLARE_PARAM(pieceTradeThreshold, 764, 10, 1000, useUciParam);
 
 DECLARE_PARAM(threatBonus1, 63, 5, 500, useUciParam);
 DECLARE_PARAM(threatBonus2, 1187, 100, 10000, useUciParam);
@@ -488,9 +455,8 @@ DECLARE_PARAM(rookOpenBonus, 19, 0, 100, useUciParam);
 DECLARE_PARAM(rookDouble7thRowBonus, 79, 0, 100, useUciParam);
 DECLARE_PARAM(trappedRookPenalty, 73, 0, 200, useUciParam);
 
-DECLARE_PARAM(bishopPairValue, 57, 0, 100, useUciParam);
 DECLARE_PARAM(bishopPairPawnPenalty, 5, 0, 10, useUciParam);
-DECLARE_PARAM(trappedBishopPenalty1, 55, 0, 300, useUciParam);
+DECLARE_PARAM(trappedBishopPenalty1, 54, 0, 300, useUciParam);
 DECLARE_PARAM(trappedBishopPenalty2, 84, 0, 300, useUciParam);
 DECLARE_PARAM(oppoBishopPenalty, 80, 0, 128, useUciParam);
 
@@ -500,22 +466,22 @@ DECLARE_PARAM(kingSafetyHalfOpenAH, 9, 0, 100, useUciParam);
 DECLARE_PARAM(kingSafetyWeight, 13, 0, 100, useUciParam);
 DECLARE_PARAM(pawnStormBonus, 7, 0, 20, useUciParam);
 
-DECLARE_PARAM(pawnLoMtrl, 510, 0, 10000, useUciParam);
+DECLARE_PARAM(pawnLoMtrl, 509, 0, 10000, useUciParam);
 DECLARE_PARAM(pawnHiMtrl, 3200, 0, 10000, useUciParam);
-DECLARE_PARAM(minorLoMtrl, 1111, 0, 10000, useUciParam);
-DECLARE_PARAM(minorHiMtrl, 3740, 0, 10000, useUciParam);
+DECLARE_PARAM(minorLoMtrl, 1116, 0, 10000, useUciParam);
+DECLARE_PARAM(minorHiMtrl, 3745, 0, 10000, useUciParam);
 DECLARE_PARAM(castleLoMtrl, 711, 0, 10000, useUciParam);
 DECLARE_PARAM(castleHiMtrl, 7884, 0, 10000, useUciParam);
 DECLARE_PARAM(queenLoMtrl, 4483, 0, 10000, useUciParam);
-DECLARE_PARAM(queenHiMtrl, 6524, 0, 10000, useUciParam);
-DECLARE_PARAM(passedPawnLoMtrl, 767, 0, 10000, useUciParam);
-DECLARE_PARAM(passedPawnHiMtrl, 2542, 0, 10000, useUciParam);
+DECLARE_PARAM(queenHiMtrl, 6525, 0, 10000, useUciParam);
+DECLARE_PARAM(passedPawnLoMtrl, 765, 0, 10000, useUciParam);
+DECLARE_PARAM(passedPawnHiMtrl, 2545, 0, 10000, useUciParam);
 DECLARE_PARAM(kingSafetyLoMtrl, 945, 0, 10000, useUciParam);
 DECLARE_PARAM(kingSafetyHiMtrl, 3571, 0, 10000, useUciParam);
 DECLARE_PARAM(oppoBishopLoMtrl, 752, 0, 10000, useUciParam);
 DECLARE_PARAM(oppoBishopHiMtrl, 3386, 0, 10000, useUciParam);
-DECLARE_PARAM(knightOutpostLoMtrl, 178, 0, 10000, useUciParam);
-DECLARE_PARAM(knightOutpostHiMtrl, 536, 0, 10000, useUciParam);
+DECLARE_PARAM(knightOutpostLoMtrl, 175, 0, 10000, useUciParam);
+DECLARE_PARAM(knightOutpostHiMtrl, 537, 0, 10000, useUciParam);
 
 extern ParamTable<64>         kt1b, kt2b, pt1b, pt2b, nt1b, nt2b, bt1b, bt2b, qt1b, qt2b, rt1b;
 extern ParamTableMirrored<64> kt1w, kt2w, pt1w, pt2w, nt1w, nt2w, bt1w, bt2w, qt1w, qt2w, rt1w;
@@ -528,6 +494,7 @@ extern ParamTable<8> passedPawnBonus;
 extern ParamTable<8> candidatePassedBonus;
 extern ParamTable<5> QvsRRBonus;
 extern ParamTable<7> RvsMBonus, RvsMMBonus;
+extern ParamTable<4> bishopPairValue;
 
 
 // Search parameters
