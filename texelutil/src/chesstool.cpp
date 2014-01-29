@@ -545,57 +545,57 @@ ChessTool::printParams() {
     std::cout << "rV : " << rV << std::endl;
     std::cout << "qV : " << qV << std::endl;
 
-    std::cout << "pawnDoubledPenalty : " << pawnDoubledPenalty << std::endl;
-    std::cout << "pawnIslandPenalty : " << pawnIslandPenalty << std::endl;
-    std::cout << "pawnIsolatedPenalty : " << pawnIsolatedPenalty << std::endl;
-    std::cout << "pawnBackwardPenalty : " << pawnBackwardPenalty << std::endl;
+    std::cout << "pawnDoubledPenalty     : " << pawnDoubledPenalty << std::endl;
+    std::cout << "pawnIslandPenalty      : " << pawnIslandPenalty << std::endl;
+    std::cout << "pawnIsolatedPenalty    : " << pawnIsolatedPenalty << std::endl;
+    std::cout << "pawnBackwardPenalty    : " << pawnBackwardPenalty << std::endl;
     std::cout << "pawnGuardedPassedBonus : " << pawnGuardedPassedBonus << std::endl;
-    std::cout << "pawnRaceBonus : " << pawnRaceBonus << std::endl;
+    std::cout << "pawnRaceBonus          : " << pawnRaceBonus << std::endl;
 
-    std::cout << "QvsRMBonus1 : " << QvsRMBonus1 << std::endl;
-    std::cout << "QvsRMBonus2 : " << QvsRMBonus2 << std::endl;
+    std::cout << "QvsRMBonus1         : " << QvsRMBonus1 << std::endl;
+    std::cout << "QvsRMBonus2         : " << QvsRMBonus2 << std::endl;
     std::cout << "knightVsQueenBonus1 : " << knightVsQueenBonus1 << std::endl;
     std::cout << "knightVsQueenBonus2 : " << knightVsQueenBonus2 << std::endl;
     std::cout << "knightVsQueenBonus3 : " << knightVsQueenBonus3 << std::endl;
 
-    std::cout << "pawnTradePenalty : " << pawnTradePenalty << std::endl;
-    std::cout << "pieceTradeBonus : " << pieceTradeBonus << std::endl;
-    std::cout << "pawnTradeThreshold : " << pawnTradeThreshold << std::endl;
+    std::cout << "pawnTradePenalty    : " << pawnTradePenalty << std::endl;
+    std::cout << "pieceTradeBonus     : " << pieceTradeBonus << std::endl;
+    std::cout << "pawnTradeThreshold  : " << pawnTradeThreshold << std::endl;
     std::cout << "pieceTradeThreshold : " << pieceTradeThreshold << std::endl;
 
-    std::cout << "threatBonus1 : " << threatBonus1 << std::endl;
-    std::cout << "threatBonus2 : " << threatBonus2 << std::endl;
+    std::cout << "threatBonus1     : " << threatBonus1 << std::endl;
+    std::cout << "threatBonus2     : " << threatBonus2 << std::endl;
 
-    std::cout << "rookHalfOpenBonus : " << rookHalfOpenBonus << std::endl;
-    std::cout << "rookOpenBonus : " << rookOpenBonus << std::endl;
+    std::cout << "rookHalfOpenBonus     : " << rookHalfOpenBonus << std::endl;
+    std::cout << "rookOpenBonus         : " << rookOpenBonus << std::endl;
     std::cout << "rookDouble7thRowBonus : " << rookDouble7thRowBonus << std::endl;
-    std::cout << "trappedRookPenalty : " << trappedRookPenalty << std::endl;
+    std::cout << "trappedRookPenalty    : " << trappedRookPenalty << std::endl;
 
     std::cout << "bishopPairPawnPenalty : " << bishopPairPawnPenalty << std::endl;
     std::cout << "trappedBishopPenalty1 : " << trappedBishopPenalty1 << std::endl;
     std::cout << "trappedBishopPenalty2 : " << trappedBishopPenalty2 << std::endl;
-    std::cout << "oppoBishopPenalty : " << oppoBishopPenalty << std::endl;
+    std::cout << "oppoBishopPenalty     : " << oppoBishopPenalty << std::endl;
 
-    std::cout << "kingAttackWeight : " << kingAttackWeight << std::endl;
+    std::cout << "kingAttackWeight         : " << kingAttackWeight << std::endl;
     std::cout << "kingSafetyHalfOpenBCDEFG : " << kingSafetyHalfOpenBCDEFG << std::endl;
-    std::cout << "kingSafetyHalfOpenAH : " << kingSafetyHalfOpenAH << std::endl;
-    std::cout << "kingSafetyWeight : " << kingSafetyWeight << std::endl;
-    std::cout << "pawnStormBonus : " << pawnStormBonus << std::endl;
+    std::cout << "kingSafetyHalfOpenAH     : " << kingSafetyHalfOpenAH << std::endl;
+    std::cout << "kingSafetyWeight         : " << kingSafetyWeight << std::endl;
+    std::cout << "pawnStormBonus           : " << pawnStormBonus << std::endl;
 
-    std::cout << "pawnLoMtrl : " << pawnLoMtrl << std::endl;
-    std::cout << "pawnHiMtrl : " << pawnHiMtrl << std::endl;
-    std::cout << "minorLoMtrl : " << minorLoMtrl << std::endl;
-    std::cout << "minorHiMtrl : " << minorHiMtrl << std::endl;
-    std::cout << "castleLoMtrl : " << castleLoMtrl << std::endl;
-    std::cout << "castleHiMtrl : " << castleHiMtrl << std::endl;
-    std::cout << "queenLoMtrl : " << queenLoMtrl << std::endl;
-    std::cout << "queenHiMtrl : " << queenHiMtrl << std::endl;
-    std::cout << "passedPawnLoMtrl : " << passedPawnLoMtrl << std::endl;
-    std::cout << "passedPawnHiMtrl : " << passedPawnHiMtrl << std::endl;
-    std::cout << "kingSafetyLoMtrl : " << kingSafetyLoMtrl << std::endl;
-    std::cout << "kingSafetyHiMtrl : " << kingSafetyHiMtrl << std::endl;
-    std::cout << "oppoBishopLoMtrl : " << oppoBishopLoMtrl << std::endl;
-    std::cout << "oppoBishopHiMtrl : " << oppoBishopHiMtrl << std::endl;
+    std::cout << "pawnLoMtrl          : " << pawnLoMtrl << std::endl;
+    std::cout << "pawnHiMtrl          : " << pawnHiMtrl << std::endl;
+    std::cout << "minorLoMtrl         : " << minorLoMtrl << std::endl;
+    std::cout << "minorHiMtrl         : " << minorHiMtrl << std::endl;
+    std::cout << "castleLoMtrl        : " << castleLoMtrl << std::endl;
+    std::cout << "castleHiMtrl        : " << castleHiMtrl << std::endl;
+    std::cout << "queenLoMtrl         : " << queenLoMtrl << std::endl;
+    std::cout << "queenHiMtrl         : " << queenHiMtrl << std::endl;
+    std::cout << "passedPawnLoMtrl    : " << passedPawnLoMtrl << std::endl;
+    std::cout << "passedPawnHiMtrl    : " << passedPawnHiMtrl << std::endl;
+    std::cout << "kingSafetyLoMtrl    : " << kingSafetyLoMtrl << std::endl;
+    std::cout << "kingSafetyHiMtrl    : " << kingSafetyHiMtrl << std::endl;
+    std::cout << "oppoBishopLoMtrl    : " << oppoBishopLoMtrl << std::endl;
+    std::cout << "oppoBishopHiMtrl    : " << oppoBishopHiMtrl << std::endl;
     std::cout << "knightOutpostLoMtrl : " << knightOutpostLoMtrl << std::endl;
     std::cout << "knightOutpostHiMtrl : " << knightOutpostHiMtrl << std::endl;
 }
