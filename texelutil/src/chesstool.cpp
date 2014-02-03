@@ -18,8 +18,10 @@
 
 ScoreToProb::ScoreToProb(double pawnAdvantage0)
     : pawnAdvantage(pawnAdvantage0) {
-    for (int i = 0; i < MAXCACHE; i++)
+    for (int i = 0; i < MAXCACHE; i++) {
         cache[i] = -1;
+        logCacheP[i] = logCacheN[i] = 2;
+    }
 }
 
 double
@@ -40,6 +42,21 @@ ScoreToProb::getProb(int score) {
     if (neg)
         ret = 1 - ret;
     return ret;
+}
+
+double
+ScoreToProb::getLogProb(int score) {
+    if ((score >= 0) && (score < MAXCACHE)) {
+        if (logCacheP[score] > 1)
+            logCacheP[score] = log(getProb(score));
+        return logCacheP[score];
+    }
+    if ((score < 0) && (score > -MAXCACHE)) {
+        if (logCacheN[-score] > 1)
+            logCacheN[-score] = log(getProb(score));
+        return logCacheN[-score];
+    }
+    return log(getProb(score));
 }
 
 // --------------------------------------------------------------------------------
@@ -750,7 +767,34 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
         const std::string& line = lines[i];
         std::vector<std::string> fields;
         splitString(line, " : ", fields);
-        if ((fields.size() < 4) || (fields.size() > 5)) {
+        bool localError = false;
+        if ((fields.size() < 4) || (fields.size() > 5))
+            localError = true;
+        if (!localError) {
+            try {
+                pos = TextIO::readFEN(fields[0]);
+            } catch (ChessParseError& cpe) {
+                localError = true;
+            }
+        }
+        if (!localError) {
+            pos.serialize(pi.posData);
+            if (!str2Num(fields[1], pi.result) ||
+                !str2Num(fields[2], pi.searchScore) ||
+                !str2Num(fields[3], pi.qScore)) {
+                localError = true;
+            }
+        }
+        if (!localError) {
+            pi.gameNo = -1;
+            if (fields.size() == 5)
+                if (!str2Num(fields[4], pi.gameNo))
+                    localError = true;
+        }
+        if (!localError)
+            data[i] = pi;
+
+        if (localError) {
 #pragma omp critical
             if (!error) {
                 std::cerr << "line:" << line << std::endl;
@@ -758,18 +802,6 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
                 error = true;
             }
         }
-        pos = TextIO::readFEN(fields[0]);
-        pos.serialize(pi.posData);
-        if (!str2Num(fields[1], pi.result) ||
-            !str2Num(fields[2], pi.searchScore) ||
-            !str2Num(fields[3], pi.qScore)) {
-            error = true;
-        }
-        pi.gameNo = -1;
-        if (fields.size() == 5)
-            if (!str2Num(fields[4], pi.gameNo))
-                error = true;
-        data[i] = pi;
     }
     if (error)
         throw ChessParseError("Invalid file format");
@@ -832,11 +864,18 @@ ChessTool::qEval(std::vector<PositionInfo>& positions) {
 double
 ChessTool::computeAvgError(const std::vector<PositionInfo>& positions, ScoreToProb& sp) {
     double errSum = 0;
-    for (const PositionInfo& pi : positions) {
-        double p = sp.getProb(pi.qScore);
-        double err = p - pi.result;
-        errSum += err * err;
+    if (useEntropyErrorFunction) {
+        for (const PositionInfo& pi : positions) {
+            double err = -(pi.result * sp.getLogProb(pi.qScore) + (1 - pi.result) * sp.getLogProb(-pi.qScore));
+            errSum += err;
+        }
+    } else {
+        for (const PositionInfo& pi : positions) {
+            double p = sp.getProb(pi.qScore);
+            double err = p - pi.result;
+            errSum += err * err;
+        }
     }
-    double avgErr = sqrt(errSum / positions.size());
+    double avgErr = errSum / positions.size();
     return avgErr;
 }

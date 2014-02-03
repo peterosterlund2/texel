@@ -21,12 +21,17 @@ public:
     /** Return win probability corresponding to score. */
     double getProb(int score);
 
+    /** Return log(getProb(score)). */
+    double getLogProb(int score);
+
 private:
     double computeProb(int score) const;
 
     double pawnAdvantage;
     static const int MAXCACHE = 1024;
     double cache[MAXCACHE];
+    double logCacheP[MAXCACHE];
+    double logCacheN[MAXCACHE];
 };
 
 
@@ -40,6 +45,9 @@ public:
 
 class ChessTool {
 public:
+    /** Constructor. */
+    ChessTool(bool useEntropyErrorFunction);
+
     /** Read a file into a string vector. */
     static std::vector<std::string> readFile(const std::string& fname);
 
@@ -50,48 +58,48 @@ public:
      * Skip positions where searchScore is a mate score. Also skip positions where corresponding
      * game score is unknown. All scores are from white's perspective. gameResult is 0.0, 0.5 or 1.0,
      * also from white's perspective. */
-    static void pgnToFen(std::istream& is);
+    void pgnToFen(std::istream& is);
 
     /** Read file with one FEN position per line. Output PGN file using "FEN" and "SetUp" tags. */
-    static void fenToPgn(std::istream& is);
+    void fenToPgn(std::istream& is);
 
     /** Compute average evaluation error for different pawn advantage values. */
-    static void pawnAdvTable(std::istream& is);
+    void pawnAdvTable(std::istream& is);
 
     /** Output positions where search score and q-search score differ less than limits. */
-    static void filterScore(std::istream& is, int scLimit, double prLimit);
+    void filterScore(std::istream& is, int scLimit, double prLimit);
 
     /** Output positions where material balance matches a pattern. */
-    static void filterMtrlBalance(std::istream& is, bool minorEqual,
-                                  const std::vector<std::pair<bool,int>>& mtrlPattern);
+    void filterMtrlBalance(std::istream& is, bool minorEqual,
+                           const std::vector<std::pair<bool,int>>& mtrlPattern);
 
     /** Print positions where abs(qScore) >= threshold and game result != (1+sign(qScore))/2. */
-    static void outliers(std::istream& is, int threshold);
+    void outliers(std::istream& is, int threshold);
 
     /** Compute average evaluation error for a range of parameter values. */
-    static void paramEvalRange(std::istream& is, ParamDomain& pd);
+    void paramEvalRange(std::istream& is, ParamDomain& pd);
 
     /** Use local search to find param values which minimize the average evaluation error. */
-    static void localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec);
+    void localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec);
 
     /** Use local search to find param values which minimize the average evaluation error.
      * Uses big jumps to speed up finding large changes and to possibly get to a better local minimum. */
-    static void localOptimize2(std::istream& is, std::vector<ParamDomain>& pdVec);
+    void localOptimize2(std::istream& is, std::vector<ParamDomain>& pdVec);
 
     /** Print evaluation parameters to cout. */
-    static void printParams();
+    void printParams();
 
     /** Print statistics about how each parameter affect the eval function. */
-    static void evalStat(std::istream& is, std::vector<ParamDomain>& pdVec);
+    void evalStat(std::istream& is, std::vector<ParamDomain>& pdVec);
 
     /** Print total material and evaluation error for each position. */
-    static void printResiduals(std::istream& is, const std::string& xTypeStr,
-                               bool includePosGameNr);
+    void printResiduals(std::istream& is, const std::string& xTypeStr,
+                        bool includePosGameNr);
 
 private:
     /** Read score from a PGN comment, assuming cutechess-cli comment format.
      * Does not handle mate scores. */
-    static bool getCommentScore(const std::string& comment, int& score);
+    bool getCommentScore(const std::string& comment, int& score);
 
     struct PositionInfo {
         Position::SerializeData posData;
@@ -101,16 +109,18 @@ private:
         int gameNo;      // PGN game number this FEN came from
     };
 
-    static void readFENFile(std::istream& is, std::vector<PositionInfo>& data);
+    void readFENFile(std::istream& is, std::vector<PositionInfo>& data);
 
     /** Write PGN file to cout, with no moves and staring position given by pos. */
-    static void writePGN(const Position& pos);
+    void writePGN(const Position& pos);
 
     /** Recompute all qScore values. */
-    static void qEval(std::vector<PositionInfo>& positions);
+    void qEval(std::vector<PositionInfo>& positions);
 
     /** Compute average evaluation error. */
-    static double computeAvgError(const std::vector<PositionInfo>& positions, ScoreToProb& sp);
+    double computeAvgError(const std::vector<PositionInfo>& positions, ScoreToProb& sp);
+
+    bool useEntropyErrorFunction;
 };
 
 
@@ -119,5 +129,10 @@ double ScoreToProb::computeProb(int score) const {
     return 1 / (1 + pow(10, -score * pawnAdvantage / 40000));
 }
 
+inline
+ChessTool::ChessTool(bool useEntropyErr)
+    : useEntropyErrorFunction(useEntropyErr)
+{
+}
 
 #endif /* CHESSTOOL_HPP_ */

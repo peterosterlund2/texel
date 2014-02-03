@@ -31,8 +31,9 @@ void setInitialValues(const std::string& fname) {
 }
 
 void usage() {
-    std::cerr << "Usage: texelutil [-iv file] cmd params\n";
+    std::cerr << "Usage: texelutil [-iv file] [-e] cmd params\n";
     std::cerr << " -iv file : Set initial parameter values\n";
+    std::cerr << " -e : Use cross entropy error function\n";
     std::cerr << "cmd is one of:\n";
     std::cerr << " p2f      : Convert from PGN to FEN\n";
     std::cerr << " f2p      : Convert from FEN to PGN\n";
@@ -105,22 +106,30 @@ int main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
 
     try {
-        if ((argc >= 3) && (std::string(argv[1]) == "-iv")) {
-            setInitialValues(argv[2]);
-            argc -= 2;
-            argv += 2;
+        bool useEntropyErrorFunction = false;
+        while (true) {
+            if ((argc >= 3) && (std::string(argv[1]) == "-iv")) {
+                setInitialValues(argv[2]);
+                argc -= 2;
+                argv += 2;
+            } else if ((argc >= 2) && (std::string(argv[1]) == "-e")) {
+                useEntropyErrorFunction = true;
+                argc -= 1;
+                argv += 1;
+            } else
+                break;
         }
-
         if (argc < 2)
             usage();
 
         std::string cmd = argv[1];
+        ChessTool chessTool(useEntropyErrorFunction);
         if (cmd == "p2f") {
-            ChessTool::pgnToFen(std::cin);
+            chessTool.pgnToFen(std::cin);
         } else if (cmd == "f2p") {
-            ChessTool::fenToPgn(std::cin);
+            chessTool.fenToPgn(std::cin);
         } else if (cmd == "pawnadv") {
-            ChessTool::pawnAdvTable(std::cin);
+            chessTool.pawnAdvTable(std::cin);
         } else if (cmd == "filter") {
             if (argc < 3)
                 usage();
@@ -132,7 +141,7 @@ int main(int argc, char* argv[]) {
                 double prLimit;
                 if (!str2Num(argv[3], scLimit) || !str2Num(argv[4], prLimit))
                     usage();
-                ChessTool::filterScore(std::cin, scLimit, prLimit);
+                chessTool.filterScore(std::cin, scLimit, prLimit);
             } else if (type == "mtrl") {
                 if (argc != 8)
                     usage();
@@ -149,40 +158,40 @@ int main(int argc, char* argv[]) {
                         mtrlPattern.push_back(std::make_pair(true, d));
                     }
                 }
-                ChessTool::filterMtrlBalance(std::cin, minorEqual, mtrlPattern);
+                chessTool.filterMtrlBalance(std::cin, minorEqual, mtrlPattern);
             } else
                 usage();
         } else if (cmd == "outliers") {
             int threshold;
             if ((argc < 3) || !str2Num(argv[2], threshold))
                 usage();
-            ChessTool::outliers(std::cin, threshold);
+            chessTool.outliers(std::cin, threshold);
         } else if (cmd == "parrange") {
             std::vector<ParamDomain> params;
             parseParamDomains(argc, argv, params);
             if (params.size() != 1)
                 usage();
-            ChessTool::paramEvalRange(std::cin, params[0]);
+            chessTool.paramEvalRange(std::cin, params[0]);
         } else if (cmd == "localopt") {
             std::vector<ParamDomain> params;
             getParams(argc, argv, params);
-            ChessTool::localOptimize(std::cin, params);
+            chessTool.localOptimize(std::cin, params);
         } else if (cmd == "localopt2") {
             std::vector<ParamDomain> params;
             getParams(argc, argv, params);
-            ChessTool::localOptimize2(std::cin, params);
+            chessTool.localOptimize2(std::cin, params);
         } else if (cmd == "printpar") {
-            ChessTool::printParams();
+            chessTool.printParams();
         } else if (cmd == "evalstat") {
             std::vector<ParamDomain> params;
             getParams(argc, argv, params);
-            ChessTool::evalStat(std::cin, params);
+            chessTool.evalStat(std::cin, params);
         } else if (cmd == "residual") {
             if (argc != 4)
                 usage();
             std::string xTypeStr = argv[2];
             bool includePosGameNr = (std::string(argv[3]) != "0");
-            ChessTool::printResiduals(std::cin, xTypeStr, includePosGameNr);
+            chessTool.printResiduals(std::cin, xTypeStr, includePosGameNr);
         } else if (cmd == "genfen") {
             if ((argc < 3) || !PosGenerator::generate(argv[2]))
                 usage();
