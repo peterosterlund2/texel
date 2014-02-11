@@ -869,13 +869,13 @@ ChessTool::computeAvgError(const std::vector<PositionInfo>& positions, ScoreToPr
             double err = -(pi.result * sp.getLogProb(pi.qScore) + (1 - pi.result) * sp.getLogProb(-pi.qScore));
             errSum += err;
         }
+        return errSum / positions.size();
     } else {
         for (const PositionInfo& pi : positions) {
             double p = sp.getProb(pi.qScore);
             double err = p - pi.result;
             errSum += err * err;
         }
+        return sqrt(errSum / positions.size());
     }
-    double avgErr = errSum / positions.size();
-    return avgErr;
 }
