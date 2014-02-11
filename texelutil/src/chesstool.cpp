@@ -320,6 +320,122 @@ struct PrioParam {
     }
 };
 
+// --------------------------------------------------------------------------------
+
+void
+ChessTool::accumulateATA(std::vector<PositionInfo>& positions, int beg, int end,
+                         ScoreToProb& sp,
+                         std::vector<ParamDomain>& pdVec,
+                         arma::mat& aTa, arma::mat& aTb,
+                         arma::mat& ePos, arma::mat& eNeg) {
+    Parameters& uciPars = Parameters::instance();
+    const int M = end - beg;
+    const int N = pdVec.size();
+    const double w = 1.0 / positions.size();
+
+    arma::mat b(M, 1);
+    qEval(positions, beg, end);
+    for (int i = beg; i < end; i++)
+        b.at(i-beg,0) = positions[i].getErr(sp) * w;
+
+    arma::mat A(M, N);
+    for (int j = 0; j < N; j++) {
+        ParamDomain& pd = pdVec[j];
+        std::cout << "j:" << j << " beg:" << beg << " name:" << pd.name << std::endl;
+        const int v0 = pd.value;
+        const int vPos = std::min(pd.maxV, pd.value + 1);
+        const int vNeg = std::max(pd.minV, pd.value - 1);
+        assert(vPos > vNeg);
+
+        uciPars.set(pd.name, num2Str(vPos));
+        qEval(positions, beg, end);
+        double EPos = 0;
+        for (int i = beg; i < end; i++) {
+            const double err = positions[i].getErr(sp);
+            A.at(i-beg,j) = err;
+            EPos += err * err;
+        }
+        ePos.at(j, 0) += sqrt(EPos * w);
+
+        uciPars.set(pd.name, num2Str(vNeg));
+        qEval(positions, beg, end);
+        double ENeg = 0;
+        for (int i = beg; i < end; i++) {
+            const double err = positions[i].getErr(sp);
+            A.at(i-beg,j) = (A.at(i-beg,j) - err) / (vPos - vNeg) * w;
+            ENeg += err * err;
+        }
+        eNeg.at(j, 0) += sqrt(ENeg * w);
+
+        uciPars.set(pd.name, num2Str(v0));
+    }
+
+    aTa += A.t() * A;
+    aTb += A.t() * b;
+}
+
+void
+ChessTool::gnOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
+    double t0 = currentTime();
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+    const int nPos = positions.size();
+
+    const int N = pdVec.size();
+    arma::mat bestP(N, 1);
+    for (int i = 0; i < N; i++)
+        bestP.at(i, 0) = pdVec[i].value;
+    ScoreToProb sp;
+    double bestAvgErr = computeAvgError(positions, sp, pdVec, bestP);
+    {
+        std::stringstream ss;
+        ss << "Initial error: " << std::setprecision(14) << bestAvgErr;
+        std::cout << ss.str() << std::endl;
+    }
+
+    const int chunkSize = 250000000 / N;
+
+    while (true) {
+        arma::mat aTa(N, N);  aTa.fill(0.0);
+        arma::mat aTb(N, 1);  aTb.fill(0.0);
+        arma::mat ePos(N, 1); ePos.fill(0.0);
+        arma::mat eNeg(N, 1); eNeg.fill(0.0);
+
+        for (int i = 0; i < nPos; i += chunkSize) {
+            const int end = std::min(nPos, i + chunkSize);
+            accumulateATA(positions, i, end, sp, pdVec, aTa, aTb, ePos, eNeg);
+        }
+
+        arma::mat delta = pinv(aTa) * aTb;
+        bool improved = false;
+        for (double alpha = 1.0; alpha >= 0.25; alpha /= 2) {
+            arma::mat newP = bestP - delta * alpha;
+            for (int i = 0; i < N; i++)
+                newP.at(i, 0) = clamp((int)std::round(newP.at(i, 0)), pdVec[i].minV, pdVec[i].maxV);
+            double avgErr = computeAvgError(positions, sp, pdVec, newP);
+            for (int i = 0; i < N; i++) {
+                ParamDomain& pd = pdVec[i];
+                std::stringstream ss;
+                ss << pd.name << ' ' << newP.at(i, 0) << ' ' << std::setprecision(14) << avgErr << ((avgErr < bestAvgErr) ? " *" : "");
+                std::cout << ss.str() << std::endl;
+            }
+            if (avgErr < bestAvgErr) {
+                bestP = newP;
+                bestAvgErr = avgErr;
+                improved = true;
+                break;
+            }
+        }
+        if (!improved)
+            break;
+    }
+    double t1 = currentTime();
+    ::usleep(100000);
+    std::cerr << "Elapsed time: " << t1 - t0 << std::endl;
+}
+
+// --------------------------------------------------------------------------------
+
 void
 ChessTool::localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
     double t0 = currentTime();
@@ -823,6 +939,11 @@ ChessTool::writePGN(const Position& pos) {
 
 void
 ChessTool::qEval(std::vector<PositionInfo>& positions) {
+    qEval(positions, 0, positions.size());
+}
+
+void
+ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int end) {
     TranspositionTable tt(19);
     ParallelData pd(tt);
 
@@ -833,11 +954,10 @@ ChessTool::qEval(std::vector<PositionInfo>& positions) {
     TreeLogger treeLog;
     Position pos;
 
-    const int nPos = positions.size();
     const int chunkSize = 5000;
 
 #pragma omp parallel for default(none) shared(positions,tt,pd) private(kt,ht,et,treeLog,pos) firstprivate(nullHist)
-    for (int c = 0; c < nPos; c += chunkSize) {
+    for (int c = beg; c < end; c += chunkSize) {
         if (!et)
             et = Evaluate::getEvalHashTables();
         Search::SearchTables st(tt, kt, ht, *et);
@@ -847,7 +967,7 @@ ChessTool::qEval(std::vector<PositionInfo>& positions) {
         const int plyScale = SearchConst::plyScale;
 
         for (int i = 0; i < chunkSize; i++) {
-            if (c + i >= nPos)
+            if (c + i >= end)
                 break;
             PositionInfo& pi = positions[c + i];
             pos.deSerialize(pi.posData);
@@ -859,6 +979,19 @@ ChessTool::qEval(std::vector<PositionInfo>& positions) {
             pi.qScore = score;
         }
     }
+}
+
+double
+ChessTool::computeAvgError(std::vector<PositionInfo>& positions, ScoreToProb& sp,
+                           const std::vector<ParamDomain>& pdVec, arma::mat& pdVal) {
+    assert(pdVal.n_rows == pdVec.size());
+    assert(pdVal.n_cols == 1);
+
+    Parameters& uciPars = Parameters::instance();
+    for (int i = 0; i < (int)pdVal.n_rows; i++)
+        uciPars.set(pdVec[i].name, num2Str(pdVal.at(i, 0)));
+    qEval(positions);
+    return computeAvgError(positions, sp);
 }
 
 double

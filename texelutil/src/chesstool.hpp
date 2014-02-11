@@ -12,6 +12,8 @@
 #include <vector>
 #include <iostream>
 
+#include "armadillo"
+
 /** Convert evaluation score to win probability using logistic model. */
 class ScoreToProb {
 public:
@@ -79,6 +81,9 @@ public:
     /** Compute average evaluation error for a range of parameter values. */
     void paramEvalRange(std::istream& is, ParamDomain& pd);
 
+    /** Use local search (Gauss-Newton) to find param values which minimize the average evaluation error. */
+    void gnOptimize(std::istream& is, std::vector<ParamDomain>& pdVec);
+
     /** Use local search to find param values which minimize the average evaluation error. */
     void localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec);
 
@@ -107,6 +112,8 @@ private:
         int searchScore; // Score reported by engine when game was played
         int qScore;      // q-search computed by this program
         int gameNo;      // PGN game number this FEN came from
+
+        double getErr(ScoreToProb& sp) const { return sp.getProb(qScore) - result; }
     };
 
     void readFENFile(std::istream& is, std::vector<PositionInfo>& data);
@@ -114,8 +121,20 @@ private:
     /** Write PGN file to cout, with no moves and staring position given by pos. */
     void writePGN(const Position& pos);
 
+    void accumulateATA(std::vector<PositionInfo>& positions, int beg, int end,
+                       ScoreToProb& sp,
+                       std::vector<ParamDomain>& pdVec,
+                       arma::mat& aTa, arma::mat& aTb,
+                       arma::mat& ePos, arma::mat& eNeg);
+
     /** Recompute all qScore values. */
     void qEval(std::vector<PositionInfo>& positions);
+    /** Recompute all qScore values between indices beg and end. */
+    void qEval(std::vector<PositionInfo>& positions, const int beg, const int end);
+
+    /** Compute average evaluation corresponding to a set of parameter values. */
+    double computeAvgError(std::vector<PositionInfo>& positions, ScoreToProb& sp,
+                           const std::vector<ParamDomain>& pdVec, arma::mat& pdVal);
 
     /** Compute average evaluation error. */
     double computeAvgError(const std::vector<PositionInfo>& positions, ScoreToProb& sp);

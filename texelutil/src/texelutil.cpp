@@ -44,6 +44,7 @@ void usage() {
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage\n";
     std::cerr << " parrange p a b c    : Compare evaluation error for different parameter values\n";
+    std::cerr << " gnopt p1 p2 ...     : Optimize parameters using Gauss-Newton method\n";
     std::cerr << " localopt p1 p2 ...  : Optimize parameters using local search\n";
     std::cerr << " localopt2 p1 p2 ... : Optimize parameters using local search with big jumps\n";
     std::cerr << " printpar : Print evaluation tables and parameters\n";
@@ -172,6 +173,12 @@ int main(int argc, char* argv[]) {
             if (params.size() != 1)
                 usage();
             chessTool.paramEvalRange(std::cin, params[0]);
+        } else if (cmd == "gnopt") {
+            if (useEntropyErrorFunction)
+                usage();
+            std::vector<ParamDomain> params;
+            getParams(argc, argv, params);
+            chessTool.gnOptimize(std::cin, params);
         } else if (cmd == "localopt") {
             std::vector<ParamDomain> params;
             getParams(argc, argv, params);
