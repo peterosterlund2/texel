@@ -255,7 +255,7 @@ public:
     Param() : ref(value) {}
     Param(int& r1, int& r2) : ref(r1, r2) { ref.set(defaultValue); }
 
-    operator int() { return defaultValue; }
+    operator int() const { return defaultValue; }
     void setValue(int v) { assert(false); }
     void registerParam(const std::string& name, Parameters& pars) {}
 private:
@@ -269,7 +269,7 @@ public:
     Param() : ref(value) {}
     Param(int& r1, int& r2) : ref(r1, r2) { ref.set(defaultValue); }
 
-    operator int() { return  ref.get(); }
+    operator int() const { return  ref.get(); }
     void setValue(int v) { value = v; }
     void registerParam(const std::string& name, Parameters& pars) {
         pars.addPar(std::make_shared<Parameters::SpinParamRef<Ref>>(name, minValue, maxValue,
