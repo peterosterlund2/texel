@@ -48,6 +48,7 @@ void usage() {
     std::cerr << " localopt p1 p2 ...  : Optimize parameters using local search\n";
     std::cerr << " localopt2 p1 p2 ... : Optimize parameters using local search with big jumps\n";
     std::cerr << " printpar : Print evaluation tables and parameters\n";
+    std::cerr << " patchpar srcdir : Update parameter values in parameters.[ch]pp\n";
     std::cerr << " evalstat p1 p2 ...  : Print parameter statistics\n";
     std::cerr << " residual xType inclNo : Print evaluation error as function of material\n";
     std::cerr << "                         xType is mtrlsum, mtrldiff, pawnsum, pawndiff or eval\n";
@@ -189,6 +190,11 @@ int main(int argc, char* argv[]) {
             chessTool.localOptimize2(std::cin, params);
         } else if (cmd == "printpar") {
             chessTool.printParams();
+        } else if (cmd == "patchpar") {
+            if (argc != 3)
+                usage();
+            std::string directory = argv[2];
+            chessTool.patchParams(directory);
         } else if (cmd == "evalstat") {
             std::vector<ParamDomain> params;
             getParams(argc, argv, params);

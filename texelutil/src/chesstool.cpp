@@ -622,116 +622,316 @@ ChessTool::localOptimize2(std::istream& is, std::vector<ParamDomain>& pdVec) {
     std::cerr << "Elapsed time: " << t1 - t0 << std::endl;
 }
 
+// --------------------------------------------------------------------------------
+
 template <int N>
 static void
-printTableNxN(const ParamTable<N*N>& pt, const std::string& name) {
-    std::cout << name << ":" << std::endl;
+printTableNxN(const ParamTable<N*N>& pt, const std::string& name,
+              std::ostream& os) {
+    os << name << ":" << std::endl;
     for (int y = 0; y < N; y++) {
-        std::cout << "    " << ((y == 0) ? "{" : " ");
+        os << "    " << ((y == 0) ? "{" : " ");
         for (int x = 0; x < N; x++) {
-            std::cout << std::setw(4) << pt[y*N+x] << (((y==N-1) && (x == N-1)) ? " }," : ",");
+            os << std::setw(4) << pt[y*N+x] << (((y==N-1) && (x == N-1)) ? " }," : ",");
         }
-        std::cout << std::endl;
+        os << std::endl;
     }
 }
 
 template <int N>
 static void
-printTable(const ParamTable<N>& pt, const std::string& name) {
-    std::cout << name << ":" << std::endl;
-    std::cout << "    {";
-    for (int i = 0; i < N; i++) {
-        std::cout << std::setw(3) << pt[i] << ((i == N-1) ? " }," : ",");
-    }
-    std::cout << std::endl;
+printTable(const ParamTable<N>& pt, const std::string& name, std::ostream& os) {
+    os << name << ":" << std::endl;
+    os << "    {";
+    for (int i = 0; i < N; i++)
+        os << std::setw(3) << pt[i] << ((i == N-1) ? " }," : ",");
+    os << std::endl;
 }
 
 void
 ChessTool::printParams() {
-    printTableNxN<8>(kt1b, "kt1b");
-    printTableNxN<8>(kt2b, "kt2b");
-    printTableNxN<8>(pt1b, "pt1b");
-    printTableNxN<8>(pt2b, "pt2b");
-    printTableNxN<8>(nt1b, "nt1b");
-    printTableNxN<8>(nt2b, "nt2b");
-    printTableNxN<8>(bt1b, "bt1b");
-    printTableNxN<8>(bt2b, "bt2b");
-    printTableNxN<8>(qt1b, "qt1b");
-    printTableNxN<8>(qt2b, "qt2b");
-    printTableNxN<8>(rt1b, "rt1b");
-    printTableNxN<8>(knightOutpostBonus, "knightOutpostBonus");
+    std::ostream& os = std::cout;
+    printTableNxN<8>(kt1b, "kt1b", os);
+    printTableNxN<8>(kt2b, "kt2b", os);
+    printTableNxN<8>(pt1b, "pt1b", os);
+    printTableNxN<8>(pt2b, "pt2b", os);
+    printTableNxN<8>(nt1b, "nt1b", os);
+    printTableNxN<8>(nt2b, "nt2b", os);
+    printTableNxN<8>(bt1b, "bt1b", os);
+    printTableNxN<8>(bt2b, "bt2b", os);
+    printTableNxN<8>(qt1b, "qt1b", os);
+    printTableNxN<8>(qt2b, "qt2b", os);
+    printTableNxN<8>(rt1b, "rt1b", os);
+    printTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", os);
 
-    printTable(rookMobScore, "rookMobScore");
-    printTable(bishMobScore, "bishMobScore");
-    printTable(queenMobScore, "queenMobScore");
-    printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy");
-    printTable(passedPawnBonus, "passedPawnBonus");
-    printTable(candidatePassedBonus, "candidatePassedBonus");
-    printTable(QvsRRBonus, "QvsRRBonus");
-    printTable(RvsMBonus, "RvsMBonus");
-    printTable(RvsMMBonus, "RvsMMBonus");
-    printTable(bishopPairValue, "bishopPairValue");
+    printTable(rookMobScore, "rookMobScore", os);
+    printTable(bishMobScore, "bishMobScore", os);
+    printTable(queenMobScore, "queenMobScore", os);
+    printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", os);
+    printTable(passedPawnBonus, "passedPawnBonus", os);
+    printTable(candidatePassedBonus, "candidatePassedBonus", os);
+    printTable(QvsRRBonus, "QvsRRBonus", os);
+    printTable(RvsMBonus, "RvsMBonus", os);
+    printTable(RvsMMBonus, "RvsMMBonus", os);
+    printTable(bishopPairValue, "bishopPairValue", os);
 
-    std::cout << "pV : " << pV << std::endl;
-    std::cout << "nV : " << nV << std::endl;
-    std::cout << "bV : " << bV << std::endl;
-    std::cout << "rV : " << rV << std::endl;
-    std::cout << "qV : " << qV << std::endl;
+    os << "pV : " << pV << std::endl;
+    os << "nV : " << nV << std::endl;
+    os << "bV : " << bV << std::endl;
+    os << "rV : " << rV << std::endl;
+    os << "qV : " << qV << std::endl;
 
-    std::cout << "pawnDoubledPenalty     : " << pawnDoubledPenalty << std::endl;
-    std::cout << "pawnIslandPenalty      : " << pawnIslandPenalty << std::endl;
-    std::cout << "pawnIsolatedPenalty    : " << pawnIsolatedPenalty << std::endl;
-    std::cout << "pawnBackwardPenalty    : " << pawnBackwardPenalty << std::endl;
-    std::cout << "pawnGuardedPassedBonus : " << pawnGuardedPassedBonus << std::endl;
-    std::cout << "pawnRaceBonus          : " << pawnRaceBonus << std::endl;
+    os << "pawnDoubledPenalty     : " << pawnDoubledPenalty << std::endl;
+    os << "pawnIslandPenalty      : " << pawnIslandPenalty << std::endl;
+    os << "pawnIsolatedPenalty    : " << pawnIsolatedPenalty << std::endl;
+    os << "pawnBackwardPenalty    : " << pawnBackwardPenalty << std::endl;
+    os << "pawnGuardedPassedBonus : " << pawnGuardedPassedBonus << std::endl;
+    os << "pawnRaceBonus          : " << pawnRaceBonus << std::endl;
 
-    std::cout << "QvsRMBonus1         : " << QvsRMBonus1 << std::endl;
-    std::cout << "QvsRMBonus2         : " << QvsRMBonus2 << std::endl;
-    std::cout << "knightVsQueenBonus1 : " << knightVsQueenBonus1 << std::endl;
-    std::cout << "knightVsQueenBonus2 : " << knightVsQueenBonus2 << std::endl;
-    std::cout << "knightVsQueenBonus3 : " << knightVsQueenBonus3 << std::endl;
+    os << "QvsRMBonus1         : " << QvsRMBonus1 << std::endl;
+    os << "QvsRMBonus2         : " << QvsRMBonus2 << std::endl;
+    os << "knightVsQueenBonus1 : " << knightVsQueenBonus1 << std::endl;
+    os << "knightVsQueenBonus2 : " << knightVsQueenBonus2 << std::endl;
+    os << "knightVsQueenBonus3 : " << knightVsQueenBonus3 << std::endl;
 
-    std::cout << "pawnTradePenalty    : " << pawnTradePenalty << std::endl;
-    std::cout << "pieceTradeBonus     : " << pieceTradeBonus << std::endl;
-    std::cout << "pawnTradeThreshold  : " << pawnTradeThreshold << std::endl;
-    std::cout << "pieceTradeThreshold : " << pieceTradeThreshold << std::endl;
+    os << "pawnTradePenalty    : " << pawnTradePenalty << std::endl;
+    os << "pieceTradeBonus     : " << pieceTradeBonus << std::endl;
+    os << "pawnTradeThreshold  : " << pawnTradeThreshold << std::endl;
+    os << "pieceTradeThreshold : " << pieceTradeThreshold << std::endl;
 
-    std::cout << "threatBonus1     : " << threatBonus1 << std::endl;
-    std::cout << "threatBonus2     : " << threatBonus2 << std::endl;
+    os << "threatBonus1     : " << threatBonus1 << std::endl;
+    os << "threatBonus2     : " << threatBonus2 << std::endl;
 
-    std::cout << "rookHalfOpenBonus     : " << rookHalfOpenBonus << std::endl;
-    std::cout << "rookOpenBonus         : " << rookOpenBonus << std::endl;
-    std::cout << "rookDouble7thRowBonus : " << rookDouble7thRowBonus << std::endl;
-    std::cout << "trappedRookPenalty    : " << trappedRookPenalty << std::endl;
+    os << "rookHalfOpenBonus     : " << rookHalfOpenBonus << std::endl;
+    os << "rookOpenBonus         : " << rookOpenBonus << std::endl;
+    os << "rookDouble7thRowBonus : " << rookDouble7thRowBonus << std::endl;
+    os << "trappedRookPenalty    : " << trappedRookPenalty << std::endl;
 
-    std::cout << "bishopPairPawnPenalty : " << bishopPairPawnPenalty << std::endl;
-    std::cout << "trappedBishopPenalty1 : " << trappedBishopPenalty1 << std::endl;
-    std::cout << "trappedBishopPenalty2 : " << trappedBishopPenalty2 << std::endl;
-    std::cout << "oppoBishopPenalty     : " << oppoBishopPenalty << std::endl;
+    os << "bishopPairPawnPenalty : " << bishopPairPawnPenalty << std::endl;
+    os << "trappedBishopPenalty1 : " << trappedBishopPenalty1 << std::endl;
+    os << "trappedBishopPenalty2 : " << trappedBishopPenalty2 << std::endl;
+    os << "oppoBishopPenalty     : " << oppoBishopPenalty << std::endl;
 
-    std::cout << "kingAttackWeight         : " << kingAttackWeight << std::endl;
-    std::cout << "kingSafetyHalfOpenBCDEFG : " << kingSafetyHalfOpenBCDEFG << std::endl;
-    std::cout << "kingSafetyHalfOpenAH     : " << kingSafetyHalfOpenAH << std::endl;
-    std::cout << "kingSafetyWeight         : " << kingSafetyWeight << std::endl;
-    std::cout << "pawnStormBonus           : " << pawnStormBonus << std::endl;
+    os << "kingAttackWeight         : " << kingAttackWeight << std::endl;
+    os << "kingSafetyHalfOpenBCDEFG : " << kingSafetyHalfOpenBCDEFG << std::endl;
+    os << "kingSafetyHalfOpenAH     : " << kingSafetyHalfOpenAH << std::endl;
+    os << "kingSafetyWeight         : " << kingSafetyWeight << std::endl;
+    os << "pawnStormBonus           : " << pawnStormBonus << std::endl;
 
-    std::cout << "pawnLoMtrl          : " << pawnLoMtrl << std::endl;
-    std::cout << "pawnHiMtrl          : " << pawnHiMtrl << std::endl;
-    std::cout << "minorLoMtrl         : " << minorLoMtrl << std::endl;
-    std::cout << "minorHiMtrl         : " << minorHiMtrl << std::endl;
-    std::cout << "castleLoMtrl        : " << castleLoMtrl << std::endl;
-    std::cout << "castleHiMtrl        : " << castleHiMtrl << std::endl;
-    std::cout << "queenLoMtrl         : " << queenLoMtrl << std::endl;
-    std::cout << "queenHiMtrl         : " << queenHiMtrl << std::endl;
-    std::cout << "passedPawnLoMtrl    : " << passedPawnLoMtrl << std::endl;
-    std::cout << "passedPawnHiMtrl    : " << passedPawnHiMtrl << std::endl;
-    std::cout << "kingSafetyLoMtrl    : " << kingSafetyLoMtrl << std::endl;
-    std::cout << "kingSafetyHiMtrl    : " << kingSafetyHiMtrl << std::endl;
-    std::cout << "oppoBishopLoMtrl    : " << oppoBishopLoMtrl << std::endl;
-    std::cout << "oppoBishopHiMtrl    : " << oppoBishopHiMtrl << std::endl;
-    std::cout << "knightOutpostLoMtrl : " << knightOutpostLoMtrl << std::endl;
-    std::cout << "knightOutpostHiMtrl : " << knightOutpostHiMtrl << std::endl;
+    os << "pawnLoMtrl          : " << pawnLoMtrl << std::endl;
+    os << "pawnHiMtrl          : " << pawnHiMtrl << std::endl;
+    os << "minorLoMtrl         : " << minorLoMtrl << std::endl;
+    os << "minorHiMtrl         : " << minorHiMtrl << std::endl;
+    os << "castleLoMtrl        : " << castleLoMtrl << std::endl;
+    os << "castleHiMtrl        : " << castleHiMtrl << std::endl;
+    os << "queenLoMtrl         : " << queenLoMtrl << std::endl;
+    os << "queenHiMtrl         : " << queenHiMtrl << std::endl;
+    os << "passedPawnLoMtrl    : " << passedPawnLoMtrl << std::endl;
+    os << "passedPawnHiMtrl    : " << passedPawnHiMtrl << std::endl;
+    os << "kingSafetyLoMtrl    : " << kingSafetyLoMtrl << std::endl;
+    os << "kingSafetyHiMtrl    : " << kingSafetyHiMtrl << std::endl;
+    os << "oppoBishopLoMtrl    : " << oppoBishopLoMtrl << std::endl;
+    os << "oppoBishopHiMtrl    : " << oppoBishopHiMtrl << std::endl;
+    os << "knightOutpostLoMtrl : " << knightOutpostLoMtrl << std::endl;
+    os << "knightOutpostHiMtrl : " << knightOutpostHiMtrl << std::endl;
 }
+
+static bool strContains(const std::string& str, const std::string& sub) {
+    return str.find(sub) != std::string::npos;
+}
+
+static int
+findLine(const std::string start, const std::string& contain, const std::vector<std::string>& lines) {
+    for (int i = 0; i < (int)lines.size(); i++) {
+        const std::string& line = lines[i];
+        if (startsWith(line, start) && strContains(line, contain))
+            return i;
+    }
+    return -1;
+}
+
+std::vector<std::string> splitLines(const std::string& lines) {
+    std::vector<std::string> ret;
+    int start = 0;
+    for (int i = 0; i < (int)lines.size(); i++) {
+        if (lines[i] == '\n') {
+            ret.push_back(lines.substr(start, i - start));
+            start = i + 1;
+        }
+    }
+    return ret;
+}
+
+template <int N>
+static void
+replaceTableNxN(const ParamTable<N*N>& pt, const std::string& name,
+             std::vector<std::string>& cppFile) {
+    int lineNo = findLine("ParamTable", " " + name + " ", cppFile);
+    if (lineNo < 0)
+        throw ChessParseError(name + " not found");
+    if (lineNo + N >= (int)cppFile.size())
+        throw ChessParseError("unexpected end of file");
+
+    std::stringstream ss;
+    printTableNxN<N>(pt, name, ss);
+    std::vector<std::string> replaceLines = splitLines(ss.str());
+    if (replaceLines.size() != N + 1)
+        throw ChessParseError("Wrong number of replacement lines");
+    for (int i = 1; i <= N; i++)
+        cppFile[lineNo + i] = replaceLines[i];
+}
+
+template <int N>
+static void
+replaceTable(const ParamTable<N>& pt, const std::string& name,
+           std::vector<std::string>& cppFile) {
+    int lineNo = findLine("ParamTable", " " + name + " ", cppFile);
+    if (lineNo < 0)
+        throw ChessParseError(name + " not found");
+    if (lineNo + 1 >= (int)cppFile.size())
+        throw ChessParseError("unexpected end of file");
+
+    std::stringstream ss;
+    printTable<N>(pt, name, ss);
+    std::vector<std::string> replaceLines = splitLines(ss.str());
+    if (replaceLines.size() != 2)
+        throw ChessParseError("Wrong number of replacement lines");
+    cppFile[lineNo + 1] = replaceLines[1];
+}
+
+template <typename ParType>
+static void replaceValue(const ParType& par, const std::string& name,
+                         std::vector<std::string>& hppFile) {
+    int lineNo = findLine("DECLARE_PARAM", "(" + name + ", ", hppFile);
+    if (lineNo < 0)
+        throw ChessParseError(name + " not found");
+
+    const std::string& line = hppFile[lineNo];
+    const int len = line.length();
+    for (int i = 0; i < len; i++) {
+        if (line[i] == ',') {
+            for (int j = i + 1; j < len; j++) {
+                if (line[j] != ' ') {
+                    int p1 = j;
+                    for (int k = p1 + 1; k < len; k++) {
+                        if (line[k] == ',') {
+                            int p2 = k;
+                            int val = par;
+                            hppFile[lineNo] = line.substr(0, p1) +
+                                              num2Str(val) +
+                                              line.substr(p2);
+                            return;
+                        }
+                    }
+                    goto error;
+                }
+            }
+            goto error;
+        }
+    }
+ error:
+    throw ChessParseError("Failed to patch name : " + name);
+}
+
+void
+ChessTool::patchParams(const std::string& directory) {
+    std::vector<std::string> cppFile = readFile(directory + "/parameters.cpp");
+    std::vector<std::string> hppFile = readFile(directory + "/parameters.hpp");
+
+    replaceTableNxN<8>(kt1b, "kt1b", cppFile);
+    replaceTableNxN<8>(kt2b, "kt2b", cppFile);
+    replaceTableNxN<8>(pt1b, "pt1b", cppFile);
+    replaceTableNxN<8>(pt2b, "pt2b", cppFile);
+    replaceTableNxN<8>(nt1b, "nt1b", cppFile);
+    replaceTableNxN<8>(nt2b, "nt2b", cppFile);
+    replaceTableNxN<8>(bt1b, "bt1b", cppFile);
+    replaceTableNxN<8>(bt2b, "bt2b", cppFile);
+    replaceTableNxN<8>(qt1b, "qt1b", cppFile);
+    replaceTableNxN<8>(qt2b, "qt2b", cppFile);
+    replaceTableNxN<8>(rt1b, "rt1b", cppFile);
+    replaceTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", cppFile);
+
+    replaceTable(rookMobScore, "rookMobScore", cppFile);
+    replaceTable(bishMobScore, "bishMobScore", cppFile);
+    replaceTable(queenMobScore, "queenMobScore", cppFile);
+    replaceTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", cppFile);
+    replaceTable(passedPawnBonus, "passedPawnBonus", cppFile);
+    replaceTable(candidatePassedBonus, "candidatePassedBonus", cppFile);
+    replaceTable(QvsRRBonus, "QvsRRBonus", cppFile);
+    replaceTable(RvsMBonus, "RvsMBonus", cppFile);
+    replaceTable(RvsMMBonus, "RvsMMBonus", cppFile);
+    replaceTable(bishopPairValue, "bishopPairValue", cppFile);
+
+    replaceValue(pV, "pV", hppFile);
+    replaceValue(nV, "nV", hppFile);
+    replaceValue(bV, "bV", hppFile);
+    replaceValue(rV, "rV", hppFile);
+    replaceValue(qV, "qV", hppFile);
+
+    replaceValue(pawnDoubledPenalty, "pawnDoubledPenalty", hppFile);
+    replaceValue(pawnIslandPenalty, "pawnIslandPenalty", hppFile);
+    replaceValue(pawnIsolatedPenalty, "pawnIsolatedPenalty", hppFile);
+    replaceValue(pawnBackwardPenalty, "pawnBackwardPenalty", hppFile);
+    replaceValue(pawnGuardedPassedBonus, "pawnGuardedPassedBonus", hppFile);
+    replaceValue(pawnRaceBonus, "pawnRaceBonus", hppFile);
+
+    replaceValue(QvsRMBonus1, "QvsRMBonus1", hppFile);
+    replaceValue(QvsRMBonus2, "QvsRMBonus2", hppFile);
+    replaceValue(knightVsQueenBonus1, "knightVsQueenBonus1", hppFile);
+    replaceValue(knightVsQueenBonus2, "knightVsQueenBonus2", hppFile);
+    replaceValue(knightVsQueenBonus3, "knightVsQueenBonus3", hppFile);
+
+    replaceValue(pawnTradePenalty, "pawnTradePenalty", hppFile);
+    replaceValue(pieceTradeBonus, "pieceTradeBonus", hppFile);
+    replaceValue(pawnTradeThreshold, "pawnTradeThreshold", hppFile);
+    replaceValue(pieceTradeThreshold, "pieceTradeThreshold", hppFile);
+
+    replaceValue(threatBonus1, "threatBonus1", hppFile);
+    replaceValue(threatBonus2, "threatBonus2", hppFile);
+
+    replaceValue(rookHalfOpenBonus, "rookHalfOpenBonus", hppFile);
+    replaceValue(rookOpenBonus, "rookOpenBonus", hppFile);
+    replaceValue(rookDouble7thRowBonus, "rookDouble7thRowBonus", hppFile);
+    replaceValue(trappedRookPenalty, "trappedRookPenalty", hppFile);
+
+    replaceValue(bishopPairPawnPenalty, "bishopPairPawnPenalty", hppFile);
+    replaceValue(trappedBishopPenalty1, "trappedBishopPenalty1", hppFile);
+    replaceValue(trappedBishopPenalty2, "trappedBishopPenalty2", hppFile);
+    replaceValue(oppoBishopPenalty, "oppoBishopPenalty", hppFile);
+
+    replaceValue(kingAttackWeight, "kingAttackWeight", hppFile);
+    replaceValue(kingSafetyHalfOpenBCDEFG, "kingSafetyHalfOpenBCDEFG", hppFile);
+    replaceValue(kingSafetyHalfOpenAH, "kingSafetyHalfOpenAH", hppFile);
+    replaceValue(kingSafetyWeight, "kingSafetyWeight", hppFile);
+    replaceValue(pawnStormBonus, "pawnStormBonus", hppFile);
+
+    replaceValue(pawnLoMtrl, "pawnLoMtrl", hppFile);
+    replaceValue(pawnHiMtrl, "pawnHiMtrl", hppFile);
+    replaceValue(minorLoMtrl, "minorLoMtrl", hppFile);
+    replaceValue(minorHiMtrl, "minorHiMtrl", hppFile);
+    replaceValue(castleLoMtrl, "castleLoMtrl", hppFile);
+    replaceValue(castleHiMtrl, "castleHiMtrl", hppFile);
+    replaceValue(queenLoMtrl, "queenLoMtrl", hppFile);
+    replaceValue(queenHiMtrl, "queenHiMtrl", hppFile);
+    replaceValue(passedPawnLoMtrl, "passedPawnLoMtrl", hppFile);
+    replaceValue(passedPawnHiMtrl, "passedPawnHiMtrl", hppFile);
+    replaceValue(kingSafetyLoMtrl, "kingSafetyLoMtrl", hppFile);
+    replaceValue(kingSafetyHiMtrl, "kingSafetyHiMtrl", hppFile);
+    replaceValue(oppoBishopLoMtrl, "oppoBishopLoMtrl", hppFile);
+    replaceValue(oppoBishopHiMtrl, "oppoBishopHiMtrl", hppFile);
+    replaceValue(knightOutpostLoMtrl, "knightOutpostLoMtrl", hppFile);
+    replaceValue(knightOutpostHiMtrl, "knightOutpostHiMtrl", hppFile);
+
+    std::ofstream osc(directory + "/parameters.cpp");
+    for (const std::string& line : cppFile)
+        osc << line << std::endl;
+
+    std::ofstream osh(directory + "/parameters.hpp");
+    for (const std::string& line : hppFile)
+        osh << line << std::endl;
+}
+
+// --------------------------------------------------------------------------------
 
 void
 ChessTool::evalStat(std::istream& is, std::vector<ParamDomain>& pdVec) {

@@ -94,6 +94,9 @@ public:
     /** Print evaluation parameters to cout. */
     void printParams();
 
+    /** Update parameter values in directory/parameters.[ch]pp. */
+    void patchParams(const std::string& directory);
+
     /** Print statistics about how each parameter affect the eval function. */
     void evalStat(std::istream& is, std::vector<ParamDomain>& pdVec);
 
