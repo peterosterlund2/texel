@@ -944,6 +944,33 @@ Evaluate::kingSafety(const Position& pos) {
     return kSafety;
 }
 
+template <bool white, bool right>
+static inline int
+evalKingPawnShelter(const Position& pos) {
+    const int mPawn = white ? Piece::WPAWN : Piece::BPAWN;
+    const int oPawn = white ? Piece::BPAWN : Piece::WPAWN;
+
+    const int yBeg = white ? 1 :  6;
+    const int yInc = white ? 1 : -1;
+    const int yEnd = white ? 4 :  3;
+    const int xBeg = right ? 5 :  2;
+    const int xInc = right ? 1 : -1;
+    const int xEnd = right ? 8 : -1;
+    int idx = 0;
+    int score = 0;
+    for (int y = yBeg; y != yEnd; y += yInc) {
+        for (int x = xBeg; x != xEnd; x += xInc) {
+            int p = pos.getPiece(Position::getSquare(x, y));
+            if (p == mPawn)
+                score += pawnShelterTable[idx];
+            else if (p == oPawn)
+                score -= pawnStormTable[idx];
+            idx++;
+        }
+    }
+    return score;
+}
+
 int
 Evaluate::kingSafetyKPPart(const Position& pos) {
     const U64 key = pos.pawnZobristHash() ^ pos.kingZobristHash();
@@ -978,6 +1005,12 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
                     halfOpenFiles += kingSafetyHalfOpenAH * BitBoard::bitCount(bOpen & 0x18);
                 }
                 safety = std::min(safety, 8);
+
+                const int xKing = Position::getX(pos.wKingSq());
+                if (xKing >= 5)
+                    score += evalKingPawnShelter<true, true>(pos);
+                else if (xKing <= 2)
+                    score += evalKingPawnShelter<true, false>(pos);
             }
             const int kSafety = (safety - 9) * kingSafetyWeight - halfOpenFiles;
             score += kSafety;
@@ -1008,6 +1041,12 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
                     halfOpenFiles += kingSafetyHalfOpenAH * BitBoard::bitCount(bOpen & 0x18);
                 }
                 safety = std::min(safety, 8);
+
+                const int xKing = Position::getX(pos.bKingSq());
+                if (xKing >= 5)
+                    score -= evalKingPawnShelter<false, true>(pos);
+                else if (xKing <= 2)
+                    score -= evalKingPawnShelter<false, false>(pos);
             }
             const int kSafety = (safety - 9) * kingSafetyWeight - halfOpenFiles;
             score -= kSafety;

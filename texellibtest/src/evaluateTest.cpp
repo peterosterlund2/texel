@@ -194,7 +194,7 @@ void testEvalPos() {
     pos.setCastleMask(pos.getCastleMask() & ~(1 << Position::H1_CASTLE));
     ASSERT_EQUAL(false, pos.h1Castle());
     int cs2 = evalWhite(pos);
-    ASSERT(cs2 >= cs1);    // No bonus for useless castle right
+    ASSERT(cs2 >= cs1 - 1);    // No bonus for useless castle right
 
     // Test rook open file bonus
     pos = TextIO::readFEN("r4rk1/1pp1qppp/3b1n2/4p3/2B1P1b1/1QN2N2/PP3PPP/R3R1K1 w - - 0 1");
@@ -615,7 +615,7 @@ testEndGameCorrections() {
     int krkb = evalEgFen("8/3bk3/8/8/8/3RK3/8/8 w - - 0 1");
     ASSERT(krkb > 0);
     ASSERT(krkb < 50);
-    int krkn = evalEgFen("8/3nk3/8/8/8/3RK3/8/8 w - - 0 1");
+    int krkn = evalEgFen("8/3nk3/8/8/8/3RK3/8/8 w - - 0 1", 1);
     ASSERT(krkn > 0);
     ASSERT(krkn < 50);
 }
@@ -777,7 +777,7 @@ static void
 testKRKP() {
     const int pV = ::pV;
     const int rV = ::rV;
-    const int winScore = 315;
+    const int winScore = 310;
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);

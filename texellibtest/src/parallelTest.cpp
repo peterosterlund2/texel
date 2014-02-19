@@ -563,7 +563,7 @@ ParallelTest::testWorkerThread() {
         ASSERT(ent.getDepth() >= 6 * plyScale);
         probeTT(pos, TextIO::uciStringToMove("f2f4"), tt, ent);
         ASSERT(ent.getType() != TType::T_EMPTY);
-        ASSERT(ent.getDepth() >= 6 * plyScale);
+        ASSERT(ent.getDepth() >= 5 * plyScale);
     }
 }
 
