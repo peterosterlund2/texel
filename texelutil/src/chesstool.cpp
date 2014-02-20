@@ -290,6 +290,42 @@ ChessTool::outliers(std::istream& is, int threshold) {
     std::cout << std::flush;
 }
 
+void
+ChessTool::evalEffect(std::istream& is, const std::vector<ParamValue>& parValues) {
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+    qEval(positions);
+
+    for (PositionInfo& pi : positions)
+        pi.searchScore = pi.qScore;
+
+    Parameters& uciPars = Parameters::instance();
+    for (const ParamValue& pv : parValues)
+        uciPars.set(pv.name, num2Str(pv.value));
+
+    qEval(positions);
+    ScoreToProb sp;
+    Position pos;
+    for (const PositionInfo& pi : positions) {
+        if (pi.qScore == pi.searchScore)
+            continue;
+
+        double evErr0 = std::abs(sp.getProb(pi.searchScore) - pi.result);
+        double evErr1 = std::abs(sp.getProb(pi.qScore)      - pi.result);
+        double improvement = evErr0 - evErr1;
+
+        std::stringstream ss;
+        ss.precision(6);
+        ss << std::fixed << improvement;
+
+        pos.deSerialize(pi.posData);
+        std::string fen = TextIO::toFEN(pos);
+        std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore
+                  << " : " << pi.gameNo << " : " << ss.str() << '\n';
+    }
+    std::cout << std::flush;
+}
+
 // --------------------------------------------------------------------------------
 
 void

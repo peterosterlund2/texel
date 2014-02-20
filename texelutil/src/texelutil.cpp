@@ -14,23 +14,38 @@
 #include <fstream>
 #include <string>
 
-void setInitialValues(const std::string& fname) {
+void
+parseParValues(const std::string& fname, std::vector<ParamValue>& parValues) {
     Parameters& uciPars = Parameters::instance();
     std::vector<std::string> lines = ChessTool::readFile(fname);
     for (const std::string& line : lines) {
         std::vector<std::string> fields;
         splitString(line, fields);
         if (fields.size() < 2)
-            throw ChessParseError("Invalid initial value:" + line);
+            throw ChessParseError("Invalid parameter specification:" + line);
         if (!uciPars.getParam(fields[0]))
             throw ChessParseError("No such parameter:" + fields[0]);
         int value;
-        if (str2Num(fields[1], value))
-            uciPars.set(fields[0], fields[1]);
+        if (str2Num(fields[1], value)) {
+            ParamValue pv;
+            pv.name = fields[0];
+            pv.value = value;
+            parValues.push_back(pv);
+        }
     }
 }
 
-void usage() {
+void
+setInitialValues(const std::string& fname) {
+    Parameters& uciPars = Parameters::instance();
+    std::vector<ParamValue> parValues;
+    parseParValues(fname, parValues);
+    for (const ParamValue& pv : parValues)
+        uciPars.set(pv.name, num2Str(pv.value));
+}
+
+void
+usage() {
     std::cerr << "Usage: texelutil [-iv file] [-e] cmd params\n";
     std::cerr << " -iv file : Set initial parameter values\n";
     std::cerr << " -e : Use cross entropy error function\n";
@@ -42,6 +57,7 @@ void usage() {
     std::cerr << "        mtrl [-m] dQ dR dB [dN] dP : material difference satisfies pattern\n";
     std::cerr << "                                     -m treat bishop and knight as same type\n";
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
+    std::cerr << " evaleffect evalfile : Print eval improvement when parameters are changed\n";
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage\n";
     std::cerr << " parrange p a b c    : Compare evaluation error for different parameter values\n";
     std::cerr << " gnopt p1 p2 ...     : Optimize parameters using Gauss-Newton method\n";
@@ -58,7 +74,8 @@ void usage() {
     ::exit(2);
 }
 
-void parseParamDomains(int argc, char* argv[], std::vector<ParamDomain>& params) {
+void
+parseParamDomains(int argc, char* argv[], std::vector<ParamDomain>& params) {
     int i = 2;
     while (i + 3 < argc) {
         ParamDomain pd;
@@ -76,7 +93,8 @@ void parseParamDomains(int argc, char* argv[], std::vector<ParamDomain>& params)
     }
 }
 
-void getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
+void
+getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
     Parameters& uciPars = Parameters::instance();
     for (int i = 2; i < argc; i++) {
         ParamDomain pd;
@@ -104,7 +122,8 @@ void getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
     }
 }
 
-int main(int argc, char* argv[]) {
+int
+main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
 
     try {
@@ -168,6 +187,12 @@ int main(int argc, char* argv[]) {
             if ((argc < 3) || !str2Num(argv[2], threshold))
                 usage();
             chessTool.outliers(std::cin, threshold);
+        } else if (cmd == "evaleffect") {
+            if (argc != 3)
+                usage();
+            std::vector<ParamValue> parValues;
+            parseParValues(argv[2], parValues);
+            chessTool.evalEffect(std::cin, parValues);
         } else if (cmd == "parrange") {
             std::vector<ParamDomain> params;
             parseParamDomains(argc, argv, params);

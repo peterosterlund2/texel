@@ -45,6 +45,13 @@ public:
     int value;
 };
 
+class ParamValue {
+public:
+    ParamValue() : value(-1) {}
+    std::string name;
+    int value;
+};
+
 class ChessTool {
 public:
     /** Constructor. */
@@ -77,6 +84,10 @@ public:
 
     /** Print positions where abs(qScore) >= threshold and game result != (1+sign(qScore))/2. */
     void outliers(std::istream& is, int threshold);
+
+    /** Print how much position evaluation improves when parValues are applied to evaluation function.
+     * Positions with no change are not printed. */
+    void evalEffect(std::istream& is, const std::vector<ParamValue>& parValues);
 
     /** Compute average evaluation error for a range of parameter values. */
     void paramEvalRange(std::istream& is, ParamDomain& pd);
