@@ -407,6 +407,12 @@ testKingSafety() {
     movePiece(pos, "h2", "h3");
     int sKh8Ph3 = evalWhite(pos);
     ASSERT_EQUAL(sKg8Ph3 - sKg8Ph2, sKh8Ph3 - sKh8Ph2); // Pawn storm bonus same if other king moves within its flank
+
+    // Test symmetry of king safety evaluation
+    evalFEN("rnbq1r1k/pppp1ppp/4pn2/2b5/8/5NP1/PPPPPPBP/RNBQ1RK1 w - - 0 1");
+    evalFEN("rn3r1k/pppq1ppp/3p1n2/2b1p3/8/5NPb/PPPPPPBP/RNBQ1RK1 w - - 0 1");
+    evalFEN("rn3r1k/ppp2ppp/3p1n2/2b1p3/4P1q1/5bP1/PPPP1PNP/RNB1QRK1 w - - 0 1");
+    evalFEN("rn3r1k/ppp1b1pp/3p1n2/2b1p3/4P1q1/5pP1/PPPP1P1P/RNB1QRKB w - - 0 1");
 }
 
 /**
