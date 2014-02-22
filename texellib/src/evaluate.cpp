@@ -470,14 +470,50 @@ Evaluate::pawnBonus(const Position& pos) {
     if (phd.key != key)
         computePawnHashData(pos, phd);
     this->phd = &phd;
-    U64 m = phd.passedPawnsW;
     int score = phd.score;
 
-    const int hiMtrl = passedPawnHiMtrl;
-    score += interpolate(2 * phd.passedBonusW, phd.passedBonusW, mhd->wPassedPawnIPF);
-    score -= interpolate(2 * phd.passedBonusB, phd.passedBonusB, mhd->bPassedPawnIPF);
+    // Bonus for own king supporting passed pawns
+    int passedScore = phd.passedBonusW;
+    U64 m = phd.passedPawnsW;
+    if (m != 0) {
+        U64 kMask = pos.pieceTypeBB(Piece::WKING);
+        int ky = Position::getY(pos.getKingSq(true));
+        if ((m << 8) & kMask)
+            passedScore += kingPPSupportK[0] * kingPPSupportP[ky-1] / 32;
+        else if ((m << 16) & kMask)
+            passedScore += kingPPSupportK[1] * kingPPSupportP[ky-2] / 32;
+        m = ((m & BitBoard::maskAToGFiles) << 1) | ((m & BitBoard::maskBToHFiles) >> 1);
+        if (m & kMask)
+            passedScore += kingPPSupportK[2] * kingPPSupportP[ky-0] / 32;
+        if ((m << 8) & kMask)
+            passedScore += kingPPSupportK[3] * kingPPSupportP[ky-1] / 32;
+        if ((m << 16) & kMask)
+            passedScore += kingPPSupportK[4] * kingPPSupportP[ky-2] / 32;
+    }
+    score += interpolate(2 * passedScore, passedScore, mhd->wPassedPawnIPF);
+
+    passedScore = phd.passedBonusB;
+    m = phd.passedPawnsB;
+    if (m != 0) {
+        U64 kMask = pos.pieceTypeBB(Piece::BKING);
+        int ky = Position::getY(pos.getKingSq(false));
+        if ((m >> 8) & kMask)
+            passedScore += kingPPSupportK[0] * kingPPSupportP[6-ky] / 32;
+        else if ((m >> 16) & kMask)
+            passedScore += kingPPSupportK[1] * kingPPSupportP[5-ky] / 32;
+        m = ((m & BitBoard::maskAToGFiles) << 1) | ((m & BitBoard::maskBToHFiles) >> 1);
+        if (m & kMask)
+            passedScore += kingPPSupportK[2] * kingPPSupportP[7-ky] / 32;
+        if ((m >> 8) & kMask)
+            passedScore += kingPPSupportK[3] * kingPPSupportP[6-ky] / 32;
+        if ((m >> 16) & kMask)
+            passedScore += kingPPSupportK[4] * kingPPSupportP[5-ky] / 32;
+    }
+    score -= interpolate(2 * passedScore, passedScore, mhd->bPassedPawnIPF);
 
     // Passed pawns are more dangerous if enemy king is far away
+    const int hiMtrl = passedPawnHiMtrl;
+    m = phd.passedPawnsW;
     int bestWPawnDist = 8;
     int bestWPromSq = -1;
     if (m != 0) {

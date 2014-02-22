@@ -712,6 +712,8 @@ ChessTool::printParams() {
     printTable(bishopPairValue, "bishopPairValue", os);
     printTable(pawnShelterTable, "pawnShelterTable", os);
     printTable(pawnStormTable, "pawnStormTable", os);
+    printTable(kingPPSupportK, "kingPPSupportK", os);
+    printTable(kingPPSupportP, "kingPPSupportP", os);
 
     os << "pV : " << pV << std::endl;
     os << "nV : " << nV << std::endl;
@@ -901,6 +903,8 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(bishopPairValue, "bishopPairValue", cppFile);
     replaceTable(pawnShelterTable, "pawnShelterTable", cppFile);
     replaceTable(pawnStormTable, "pawnStormTable", cppFile);
+    replaceTable(kingPPSupportK, "kingPPSupportK", cppFile);
+    replaceTable(kingPPSupportP, "kingPPSupportP", cppFile);
 
     replaceValue(pV, "pV", hppFile);
     replaceValue(nV, "nV", hppFile);
