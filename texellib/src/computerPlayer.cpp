@@ -45,7 +45,7 @@ ComputerPlayer::staticInitialize() {
 
 ComputerPlayer::ComputerPlayer()
     : tt(15), pd(tt),
-      book(verbose)
+      book(false)
 {
     Parameters::instance();
     et = Evaluate::getEvalHashTables();
