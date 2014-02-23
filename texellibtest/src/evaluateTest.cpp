@@ -618,7 +618,7 @@ testEndGameCorrections() {
     ASSERT(kbbkn > knnkb);
     ASSERT(kbbkn > knnkn);
 
-    int krkb = evalEgFen("8/3bk3/8/8/8/3RK3/8/8 w - - 0 1");
+    int krkb = evalEgFen("8/3bk3/8/8/8/3RK3/8/8 w - - 0 1", 1);
     ASSERT(krkb > 0);
     ASSERT(krkb < 50);
     int krkn = evalEgFen("8/3nk3/8/8/8/3RK3/8/8 w - - 0 1", 1);
@@ -644,7 +644,7 @@ testPassedPawns() {
     pos.setPiece(TextIO::getSquare("d5"), Piece::EMPTY);
     pos.setPiece(TextIO::getSquare("d4"), Piece::WKING);
     int score2 = evalWhite(pos);
-    ASSERT(score2 >= score); // King closer to passed pawn promotion square
+    ASSERT(score2 >= score - 1); // King closer to passed pawn promotion square
 
     pos = TextIO::readFEN("4R3/8/8/3K4/8/4pk2/8/8 w - - 0 1");
     score = evalWhite(pos);
@@ -971,7 +971,7 @@ static void
 testPawnRace() {
     const int pV = ::pV;
     const int winScore = 167;
-    const int drawish = 73;
+    const int drawish = 74;
     Position pos = TextIO::readFEN("8/8/K7/1P3p2/8/6k1/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
     pos = TextIO::readFEN("8/8/K7/1P3p2/8/6k1/8/8 b - - 0 1");

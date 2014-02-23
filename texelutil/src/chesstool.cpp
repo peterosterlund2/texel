@@ -714,6 +714,8 @@ ChessTool::printParams() {
     printTable(pawnStormTable, "pawnStormTable", os);
     printTable(kingPPSupportK, "kingPPSupportK", os);
     printTable(kingPPSupportP, "kingPPSupportP", os);
+    printTable(pawnDoubledPenalty, "pawnDoubledPenalty", os);
+    printTable(pawnIsolatedPenalty, "pawnIsolatedPenalty", os);
 
     os << "pV : " << pV << std::endl;
     os << "nV : " << nV << std::endl;
@@ -721,9 +723,7 @@ ChessTool::printParams() {
     os << "rV : " << rV << std::endl;
     os << "qV : " << qV << std::endl;
 
-    os << "pawnDoubledPenalty     : " << pawnDoubledPenalty << std::endl;
     os << "pawnIslandPenalty      : " << pawnIslandPenalty << std::endl;
-    os << "pawnIsolatedPenalty    : " << pawnIsolatedPenalty << std::endl;
     os << "pawnBackwardPenalty    : " << pawnBackwardPenalty << std::endl;
     os << "pawnGuardedPassedBonus : " << pawnGuardedPassedBonus << std::endl;
     os << "pawnRaceBonus          : " << pawnRaceBonus << std::endl;
@@ -905,6 +905,8 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(pawnStormTable, "pawnStormTable", cppFile);
     replaceTable(kingPPSupportK, "kingPPSupportK", cppFile);
     replaceTable(kingPPSupportP, "kingPPSupportP", cppFile);
+    replaceTable(pawnDoubledPenalty, "pawnDoubledPenalty", cppFile);
+    replaceTable(pawnIsolatedPenalty, "pawnIsolatedPenalty", cppFile);
 
     replaceValue(pV, "pV", hppFile);
     replaceValue(nV, "nV", hppFile);
@@ -912,9 +914,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(rV, "rV", hppFile);
     replaceValue(qV, "qV", hppFile);
 
-    replaceValue(pawnDoubledPenalty, "pawnDoubledPenalty", hppFile);
     replaceValue(pawnIslandPenalty, "pawnIslandPenalty", hppFile);
-    replaceValue(pawnIsolatedPenalty, "pawnIsolatedPenalty", hppFile);
     replaceValue(pawnBackwardPenalty, "pawnBackwardPenalty", hppFile);
     replaceValue(pawnGuardedPassedBonus, "pawnGuardedPassedBonus", hppFile);
     replaceValue(pawnRaceBonus, "pawnRaceBonus", hppFile);

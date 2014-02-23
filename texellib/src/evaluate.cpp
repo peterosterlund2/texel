@@ -606,19 +606,48 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     // Evaluate double pawns and pawn islands
     const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
     const U64 wPawnFiles = BitBoard::southFill(wPawns) & 0xff;
-    const int wDouble = BitBoard::bitCount(wPawns) - BitBoard::bitCount(wPawnFiles);
     const int wIslands = BitBoard::bitCount(((~wPawnFiles) >> 1) & wPawnFiles);
-    const int wIsolated = BitBoard::bitCount(~(wPawnFiles<<1) & wPawnFiles & ~(wPawnFiles>>1));
 
     const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
     const U64 bPawnFiles = BitBoard::southFill(bPawns) & 0xff;
-    const int bDouble = BitBoard::bitCount(bPawns) - BitBoard::bitCount(bPawnFiles);
     const int bIslands = BitBoard::bitCount(((~bPawnFiles) >> 1) & bPawnFiles);
-    const int bIsolated = BitBoard::bitCount(~(bPawnFiles<<1) & bPawnFiles & ~(bPawnFiles>>1));
-
-    score -= (wDouble - bDouble) * pawnDoubledPenalty;
     score -= (wIslands - bIslands) * pawnIslandPenalty;
-    score -= (wIsolated - bIsolated) * pawnIsolatedPenalty;
+
+    // Evaluate doubled pawns
+    const U64 wDoubled = BitBoard::northFill(wPawns << 8) & wPawns;
+    U64 m = wDoubled;
+    while (m != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(m);
+        score -= pawnDoubledPenalty[Position::getX(sq)];
+        m &= m-1;
+    }
+    const U64 bDoubled = BitBoard::southFill(bPawns >> 8) & bPawns;
+    m = bDoubled;
+    while (m != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(m);
+        score += pawnDoubledPenalty[Position::getX(sq)];
+        m &= m-1;
+    }
+
+    // Evaluate isolated pawns
+    const U64 wIsolated = wPawns & ~BitBoard::northFill(BitBoard::southFill(
+            ((wPawns & BitBoard::maskAToGFiles) << 1) |
+            ((wPawns & BitBoard::maskBToHFiles) >> 1)));
+    m = wIsolated;
+    while (m != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(m);
+        score -= pawnIsolatedPenalty[Position::getX(sq)];
+        m &= m-1;
+    }
+    const U64 bIsolated = bPawns & ~BitBoard::northFill(BitBoard::southFill(
+            ((bPawns & BitBoard::maskAToGFiles) << 1) |
+            ((bPawns & BitBoard::maskBToHFiles) >> 1)));
+    m = bIsolated;
+    while (m != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(m);
+        score += pawnIsolatedPenalty[Position::getX(sq)];
+        m &= m-1;
+    }
 
     // Evaluate backward pawns, defined as a pawn that guards a friendly pawn,
     // can't be guarded by friendly pawns, can advance, but can't advance without

@@ -509,7 +509,7 @@ probeTT(Position& pos, const Move& m, TranspositionTable& tt, TranspositionTable
 
 void
 ParallelTest::testWorkerThread() {
-    TranspositionTable tt(17);
+    TranspositionTable tt(18);
     ParallelData pd(tt);
     FailHighInfo& fhi = pd.fhInfo;
     std::vector<std::shared_ptr<SplitPoint>> spVec, pending;
