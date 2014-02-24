@@ -704,7 +704,8 @@ ChessTool::printParams() {
     printTable(bishMobScore, "bishMobScore", os);
     printTable(queenMobScore, "queenMobScore", os);
     printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", os);
-    printTable(passedPawnBonus, "passedPawnBonus", os);
+    printTable(passedPawnBonusX, "passedPawnBonusX", os);
+    printTable(passedPawnBonusY, "passedPawnBonusY", os);
     printTable(candidatePassedBonus, "candidatePassedBonus", os);
     printTable(QvsRRBonus, "QvsRRBonus", os);
     printTable(RvsMBonus, "RvsMBonus", os);
@@ -727,6 +728,7 @@ ChessTool::printParams() {
     os << "pawnBackwardPenalty    : " << pawnBackwardPenalty << std::endl;
     os << "pawnGuardedPassedBonus : " << pawnGuardedPassedBonus << std::endl;
     os << "pawnRaceBonus          : " << pawnRaceBonus << std::endl;
+    os << "passedPawnEGFactor     : " << passedPawnEGFactor << std::endl;
 
     os << "QvsRMBonus1         : " << QvsRMBonus1 << std::endl;
     os << "QvsRMBonus2         : " << QvsRMBonus2 << std::endl;
@@ -895,7 +897,8 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(bishMobScore, "bishMobScore", cppFile);
     replaceTable(queenMobScore, "queenMobScore", cppFile);
     replaceTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", cppFile);
-    replaceTable(passedPawnBonus, "passedPawnBonus", cppFile);
+    replaceTable(passedPawnBonusX, "passedPawnBonusX", cppFile);
+    replaceTable(passedPawnBonusY, "passedPawnBonusY", cppFile);
     replaceTable(candidatePassedBonus, "candidatePassedBonus", cppFile);
     replaceTable(QvsRRBonus, "QvsRRBonus", cppFile);
     replaceTable(RvsMBonus, "RvsMBonus", cppFile);
@@ -918,6 +921,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(pawnBackwardPenalty, "pawnBackwardPenalty", hppFile);
     replaceValue(pawnGuardedPassedBonus, "pawnGuardedPassedBonus", hppFile);
     replaceValue(pawnRaceBonus, "pawnRaceBonus", hppFile);
+    replaceValue(passedPawnEGFactor, "passedPawnEGFactor", hppFile);
 
     replaceValue(QvsRMBonus1, "QvsRMBonus1", hppFile);
     replaceValue(QvsRMBonus2, "QvsRMBonus2", hppFile);

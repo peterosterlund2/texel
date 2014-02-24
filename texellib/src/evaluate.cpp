@@ -490,7 +490,7 @@ Evaluate::pawnBonus(const Position& pos) {
         if ((m << 16) & kMask)
             passedScore += kingPPSupportK[4] * kingPPSupportP[ky-2] / 32;
     }
-    score += interpolate(2 * passedScore, passedScore, mhd->wPassedPawnIPF);
+    score += interpolate(passedScore * passedPawnEGFactor / 32, passedScore, mhd->wPassedPawnIPF);
 
     passedScore = phd.passedBonusB;
     m = phd.passedPawnsB;
@@ -509,7 +509,7 @@ Evaluate::pawnBonus(const Position& pos) {
         if ((m >> 16) & kMask)
             passedScore += kingPPSupportK[4] * kingPPSupportP[5-ky] / 32;
     }
-    score -= interpolate(2 * passedScore, passedScore, mhd->bPassedPawnIPF);
+    score -= interpolate(passedScore * passedPawnEGFactor / 32, passedScore, mhd->bPassedPawnIPF);
 
     // Passed pawns are more dangerous if enemy king is far away
     const int hiMtrl = passedPawnHiMtrl;
@@ -672,12 +672,14 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     int passedBonusW = 0;
     if (passedPawnsW != 0) {
         U64 guardedPassedW = passedPawnsW & wPawnAttacks;
-        passedBonusW += pawnGuardedPassedBonus * BitBoard::bitCount(guardedPassedW);
+        if (pos.wMtrl() - pos.wMtrlPawns() == pos.bMtrl() - pos.bMtrlPawns())
+            passedBonusW += pawnGuardedPassedBonus * BitBoard::bitCount(guardedPassedW);
         U64 m = passedPawnsW;
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
+            int x = Position::getX(sq);
             int y = Position::getY(sq);
-            passedBonusW += passedPawnBonus[y];
+            passedBonusW += passedPawnBonusX[x] + passedPawnBonusY[y];
             m &= m-1;
         }
     }
@@ -687,12 +689,14 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     int passedBonusB = 0;
     if (passedPawnsB != 0) {
         U64 guardedPassedB = passedPawnsB & bPawnAttacks;
-        passedBonusB += pawnGuardedPassedBonus * BitBoard::bitCount(guardedPassedB);
+        if (pos.wMtrl() - pos.wMtrlPawns() == pos.bMtrl() - pos.bMtrlPawns())
+            passedBonusB += pawnGuardedPassedBonus * BitBoard::bitCount(guardedPassedB);
         U64 m = passedPawnsB;
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
+            int x = Position::getX(sq);
             int y = Position::getY(sq);
-            passedBonusB += passedPawnBonus[7-y];
+            passedBonusB += passedPawnBonusX[x] + passedPawnBonusY[7-y];
             m &= m-1;
         }
     }
