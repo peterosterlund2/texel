@@ -44,7 +44,7 @@ S64 currentTimeMillis() {
 }
 
 double currentTime() {
-#if defined(__GNUC__) || defined(__LINUX__)
+#if defined(__GNUC__) || defined(__linux__)
     clockid_t c = CLOCK_MONOTONIC;
     timespec sp;
     clock_gettime(c, &sp);

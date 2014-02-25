@@ -96,6 +96,7 @@ str2Num(const std::string& str, T& result) {
     ss >> result;
     return !!ss;
 }
+#if defined(__linux__) && !defined(__arm__)
 inline bool
 str2Num(const std::string& str, int& result) {
     try {
@@ -116,6 +117,7 @@ str2Num(const std::string& str, double& result) {
         return false;
     }
 }
+#endif
 
 template <typename T>
 bool
