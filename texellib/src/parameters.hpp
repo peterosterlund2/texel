@@ -35,6 +35,11 @@
 #include <cassert>
 
 
+namespace EvaluateNS {
+    void computeKnightMobility();
+}
+
+
 /** Handles all UCI parameters. */
 class Parameters {
 public:
@@ -385,6 +390,16 @@ private:
     ParamTable<N>& orig;
 };
 
+template <int N>
+class ParamTableEv : public ParamTable<N> {
+public:
+    ParamTableEv(int minVal, int maxVal, bool uci,
+                 std::initializer_list<int> data,
+                 std::initializer_list<int> parNo);
+
+    void modified();
+};
+
 
 inline
 TableSpinParam::TableSpinParam(const std::string& name, ParamTableBase& owner0, int defaultValue0)
@@ -413,6 +428,19 @@ ParamTable<N>::ParamTable(int minVal0, int maxVal0, bool uci0,
     }
 }
 
+template <int N>
+ParamTableEv<N>::ParamTableEv(int minVal0, int maxVal0, bool uci0,
+                              std::initializer_list<int> table0,
+                              std::initializer_list<int> parNo0)
+    : ParamTable<N>(minVal0, maxVal0, uci0, table0, parNo0) {
+}
+
+template <int N>
+void ParamTableEv<N>::modified() {
+    ParamTable<N>::modified();
+    EvaluateNS::computeKnightMobility();
+}
+
 // ----------------------------------------------------------------------------
 
 const bool useUciParam = false;
@@ -435,8 +463,8 @@ DECLARE_PARAM(pawnGuardedPassedBonus, 3, 0, 50, useUciParam);
 DECLARE_PARAM(pawnRaceBonus,          170, 0, 1000, useUciParam);
 DECLARE_PARAM(passedPawnEGFactor,     62, 1, 128, useUciParam);
 
-DECLARE_PARAM(QvsRMBonus1,         15, -100, 100, useUciParam);
-DECLARE_PARAM(QvsRMBonus2,         14, -100, 100, useUciParam);
+DECLARE_PARAM(QvsRMBonus1,         17, -100, 100, useUciParam);
+DECLARE_PARAM(QvsRMBonus2,         15, -100, 100, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus1, 125, 0, 200, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus2, 251, 0, 600, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus3, 357, 0, 800, useUciParam);
@@ -447,16 +475,16 @@ DECLARE_PARAM(pawnTradeThreshold,  365, 100, 1000, useUciParam);
 DECLARE_PARAM(pieceTradeThreshold, 753, 10, 1000, useUciParam);
 
 DECLARE_PARAM(threatBonus1,     63, 5, 500, useUciParam);
-DECLARE_PARAM(threatBonus2,     1187, 100, 10000, useUciParam);
+DECLARE_PARAM(threatBonus2,     1190, 100, 10000, useUciParam);
 
 DECLARE_PARAM(rookHalfOpenBonus,     18, 0, 100, useUciParam);
 DECLARE_PARAM(rookOpenBonus,         19, 0, 100, useUciParam);
-DECLARE_PARAM(rookDouble7thRowBonus, 72, 0, 100, useUciParam);
+DECLARE_PARAM(rookDouble7thRowBonus, 71, 0, 100, useUciParam);
 DECLARE_PARAM(trappedRookPenalty,    65, 0, 200, useUciParam);
 
 DECLARE_PARAM(bishopPairPawnPenalty, 5, 0, 10, useUciParam);
-DECLARE_PARAM(trappedBishopPenalty1, 56, 0, 300, useUciParam);
-DECLARE_PARAM(trappedBishopPenalty2, 79, 0, 300, useUciParam);
+DECLARE_PARAM(trappedBishopPenalty1, 54, 0, 300, useUciParam);
+DECLARE_PARAM(trappedBishopPenalty2, 74, 0, 300, useUciParam);
 DECLARE_PARAM(oppoBishopPenalty,     80, 0, 128, useUciParam);
 
 DECLARE_PARAM(kingAttackWeight,         8, 0, 20, useUciParam);
@@ -468,11 +496,11 @@ DECLARE_PARAM(pawnStormBonus,           7, 0, 20, useUciParam);
 DECLARE_PARAM(pawnLoMtrl,          498, 0, 10000, useUciParam);
 DECLARE_PARAM(pawnHiMtrl,          3206, 0, 10000, useUciParam);
 DECLARE_PARAM(minorLoMtrl,         1115, 0, 10000, useUciParam);
-DECLARE_PARAM(minorHiMtrl,         3745, 0, 10000, useUciParam);
+DECLARE_PARAM(minorHiMtrl,         3744, 0, 10000, useUciParam);
 DECLARE_PARAM(castleLoMtrl,        711, 0, 10000, useUciParam);
 DECLARE_PARAM(castleHiMtrl,        7884, 0, 10000, useUciParam);
-DECLARE_PARAM(queenLoMtrl,         4484, 0, 10000, useUciParam);
-DECLARE_PARAM(queenHiMtrl,         6528, 0, 10000, useUciParam);
+DECLARE_PARAM(queenLoMtrl,         4487, 0, 10000, useUciParam);
+DECLARE_PARAM(queenHiMtrl,         6530, 0, 10000, useUciParam);
 DECLARE_PARAM(passedPawnLoMtrl,    767, 0, 10000, useUciParam);
 DECLARE_PARAM(passedPawnHiMtrl,    2516, 0, 10000, useUciParam);
 DECLARE_PARAM(kingSafetyLoMtrl,    945, 0, 10000, useUciParam);
@@ -487,6 +515,7 @@ extern ParamTableMirrored<64> kt1w, kt2w, pt1w, pt2w, nt1w, nt2w, bt1w, bt2w, qt
 extern ParamTable<64> knightOutpostBonus;
 extern ParamTable<15> rookMobScore;
 extern ParamTable<14> bishMobScore;
+extern ParamTableEv<28> knightMobScore;
 extern ParamTable<28> queenMobScore;
 extern ParamTable<16> majorPieceRedundancy;
 extern ParamTable<8> passedPawnBonusX, passedPawnBonusY;

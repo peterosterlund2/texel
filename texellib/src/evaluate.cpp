@@ -83,7 +83,17 @@ Evaluate::staticInitialize() {
             a1Dist = 2 + BitBoard::bitCount(i & 0x000000000000000EL); // b1,c1,d1
         castleFactor[i] = 1024 / std::min(a1Dist, h1Dist);
     }
+    computeKnightMobility();
+}
 
+namespace EvaluateNS {
+    void computeKnightMobility() {
+        Evaluate::computeKnightMobility();
+    }
+}
+
+void
+Evaluate::computeKnightMobility() {
     // Knight mobility scores
     for (int sq = 0; sq < 64; sq++) {
         int x = Position::getX(sq);
@@ -106,8 +116,17 @@ Evaluate::staticInitialize() {
         default:
             assert(false);
         }
-        for (int m = 0; m <= 8; m++)
-            knightMobScore[sq][m] = m * 16 / maxMob - 12;
+        for (int m = 0; m <= 8; m++) {
+            int offs = 0;
+            switch (maxMob) {
+            case 2: offs = 0; break;
+            case 3: offs = 3; break;
+            case 4: offs = 7; break;
+            case 6: offs = 12; break;
+            case 8: offs = 19; break;
+            }
+            knightMobScoreA[sq][m] = knightMobScore[offs + std::min(m, maxMob)];
+        }
     }
 }
 
@@ -134,7 +153,7 @@ static const int winKingTable[64] = {
     0,   4,  10,  10,  10,  10,   4,   0
 };
 
-int Evaluate::knightMobScore[64][9];
+int Evaluate::knightMobScoreA[64][9];
 
 Evaluate::Evaluate(EvalHashTables& et)
     : pawnHash(et.pawnHash),
@@ -905,7 +924,7 @@ Evaluate::knightEval(const Position& pos) {
         int sq = BitBoard::numberOfTrailingZeros(m);
         U64 atk = BitBoard::knightAttacks[sq];
         wAttacksBB |= atk;
-        score += knightMobScore[sq][BitBoard::bitCount(atk & ~pos.whiteBB())];
+        score += knightMobScoreA[sq][BitBoard::bitCount(atk & ~pos.whiteBB() & ~bPawnAttacks)];
         m &= m-1;
     }
     m = bKnights;
@@ -913,7 +932,7 @@ Evaluate::knightEval(const Position& pos) {
         int sq = BitBoard::numberOfTrailingZeros(m);
         U64 atk = BitBoard::knightAttacks[sq];
         bAttacksBB |= atk;
-        score -= knightMobScore[sq][BitBoard::bitCount(atk & ~pos.blackBB())];
+        score -= knightMobScoreA[sq][BitBoard::bitCount(atk & ~pos.blackBB() & ~wPawnAttacks)];
         m &= m-1;
     }
 

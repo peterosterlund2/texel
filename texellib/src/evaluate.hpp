@@ -110,6 +110,7 @@ public:
     static int interpolate(int v1, int v2, int k);
 
     static void staticInitialize();
+    static void computeKnightMobility();
 
 private:
     template <bool print> int evalPos(const Position& pos);
@@ -178,7 +179,7 @@ private:
 
     static int castleFactor[256];
     static const int distToH1A8[8][8];
-    static int knightMobScore[64][9];
+    static int knightMobScoreA[64][9];
 
     std::vector<PawnHashData>& pawnHash;
     const PawnHashData* phd;
