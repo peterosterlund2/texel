@@ -24,9 +24,9 @@
 								<option id="gnu.cpp.compiler.exe.debug.option.optimization.level.1425964190" name="Optimization Level" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.596296844" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1049018984" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
-									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
-									<listOptionValue builtIn="false" value="HAVE_PREFETCH"/>
+									<listOptionValue builtIn="false" value="HAS_CTZ"/>
+									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
+									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.24005174" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib}&quot;"/>
@@ -106,9 +106,9 @@
 								<option id="gnu.cpp.compiler.exe.release.option.optimization.level.1743738062" name="Optimization Level" superClass="gnu.cpp.compiler.exe.release.option.optimization.level" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.exe.release.option.debugging.level.1826750980" name="Debug Level" superClass="gnu.cpp.compiler.exe.release.option.debugging.level" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1332950559" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
-									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
-									<listOptionValue builtIn="false" value="HAVE_PREFETCH"/>
+									<listOptionValue builtIn="false" value="HAS_CTZ"/>
+									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
+									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.906930031" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib}&quot;"/>

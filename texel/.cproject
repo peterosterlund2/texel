@@ -29,8 +29,9 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.383137702" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1910639426" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
-									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
+									<listOptionValue builtIn="false" value="HAS_CTZ"/>
+									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
+									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.263772406" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -107,9 +108,9 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1087135514" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.237750881" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
-									<listOptionValue builtIn="false" value="HAVE_PREFETCH"/>
-									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
+									<listOptionValue builtIn="false" value="HAS_CTZ"/>
+									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
+									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.146033721" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -188,8 +189,9 @@
 								<option id="gnu.cpp.compiler.option.other.other.275396237" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.debugging.gprof.1734747791" name="Generate gprof information (-pg)" superClass="gnu.cpp.compiler.option.debugging.gprof" value="true" valueType="boolean"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1914824252" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="HAVE_CTZ"/>
-									<listOptionValue builtIn="false" value="HAVE_POPCNT"/>
+									<listOptionValue builtIn="false" value="HAS_CTZ"/>
+									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
+									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1359583299" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>

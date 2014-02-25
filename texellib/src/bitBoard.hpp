@@ -105,7 +105,7 @@ public:
     }
 
     static int numberOfTrailingZeros(U64 mask) {
-#ifdef HAVE_CTZ
+#ifdef HAS_CTZ
         if (sizeof(U64) == sizeof(long))
             return __builtin_ctzl(mask);
         else if (sizeof(U64) == sizeof(long long))
@@ -116,7 +116,7 @@ public:
 
     /** Return number of 1 bits in mask. */
     static int bitCount(U64 mask) {
-#ifdef HAVE_POPCNT
+#ifdef HAS_POPCNT
         if (sizeof(U64) == sizeof(long))
             return __builtin_popcountl(mask);
         else if (sizeof(U64) == sizeof(long long))

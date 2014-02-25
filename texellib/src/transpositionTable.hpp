@@ -236,7 +236,7 @@ TranspositionTable::probe(U64 key, TTEntry& result) {
 
 inline void
 TranspositionTable::prefetch(U64 key) {
-#ifdef HAVE_PREFETCH
+#ifdef HAS_PREFETCH
     size_t idx0 = getIndex(key);
     __builtin_prefetch(&table[idx0]);
 #endif
