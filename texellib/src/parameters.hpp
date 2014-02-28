@@ -536,8 +536,8 @@ extern ParamTable<8> pawnIsolatedPenalty;
 DECLARE_PARAM(aspirationWindow, 15, 1, 100, useUciParam);
 DECLARE_PARAM(rootLMRMoveCount, 2, 0, 100, useUciParam);
 
-DECLARE_PARAM(razorMargin1, 125, 1, 500, useUciParam);
-DECLARE_PARAM(razorMargin2, 250, 1, 1000, useUciParam);
+DECLARE_PARAM(razorMargin1, 86, 1, 500, useUciParam);
+DECLARE_PARAM(razorMargin2, 353, 1, 1000, useUciParam);
 
 DECLARE_PARAM(reverseFutilityMargin1, 204, 1, 1000, useUciParam);
 DECLARE_PARAM(reverseFutilityMargin2, 420, 1, 1000, useUciParam);
@@ -558,7 +558,7 @@ DECLARE_PARAM(lmrMoveCountLimit1,  3, 1, 256, useUciParam);
 DECLARE_PARAM(lmrMoveCountLimit2, 12, 1, 256, useUciParam);
 
 DECLARE_PARAM(quiesceMaxSortMoves, 8, 0, 256, useUciParam);
-DECLARE_PARAM(deltaPruningMargin, 200, 0, 1000, useUciParam);
+DECLARE_PARAM(deltaPruningMargin, 152, 0, 1000, useUciParam);
 
 
 // Time management parameters
