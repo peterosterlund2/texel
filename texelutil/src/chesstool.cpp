@@ -715,6 +715,7 @@ ChessTool::printParams() {
     printTable(bishopPairValue, "bishopPairValue", os);
     printTable(pawnShelterTable, "pawnShelterTable", os);
     printTable(pawnStormTable, "pawnStormTable", os);
+    printTable(kingAttackWeight, "kingAttackWeight", os);
     printTable(kingPPSupportK, "kingPPSupportK", os);
     printTable(kingPPSupportP, "kingPPSupportP", os);
     printTable(pawnDoubledPenalty, "pawnDoubledPenalty", os);
@@ -756,11 +757,16 @@ ChessTool::printParams() {
     os << "trappedBishopPenalty2 : " << trappedBishopPenalty2 << std::endl;
     os << "oppoBishopPenalty     : " << oppoBishopPenalty << std::endl;
 
-    os << "kingAttackWeight         : " << kingAttackWeight << std::endl;
-    os << "kingSafetyHalfOpenBCDEFG : " << kingSafetyHalfOpenBCDEFG << std::endl;
-    os << "kingSafetyHalfOpenAH     : " << kingSafetyHalfOpenAH << std::endl;
-    os << "kingSafetyWeight         : " << kingSafetyWeight << std::endl;
-    os << "pawnStormBonus           : " << pawnStormBonus << std::endl;
+    os << "kingSafetyHalfOpenBCDEFG1 : " << kingSafetyHalfOpenBCDEFG1 << std::endl;
+    os << "kingSafetyHalfOpenBCDEFG2 : " << kingSafetyHalfOpenBCDEFG2 << std::endl;
+    os << "kingSafetyHalfOpenAH1     : " << kingSafetyHalfOpenAH1 << std::endl;
+    os << "kingSafetyHalfOpenAH2     : " << kingSafetyHalfOpenAH2 << std::endl;
+    os << "kingSafetyWeight1         : " << kingSafetyWeight1 << std::endl;
+    os << "kingSafetyWeight2         : " << kingSafetyWeight2 << std::endl;
+    os << "kingSafetyWeight3         : " << kingSafetyWeight3 << std::endl;
+    os << "kingSafetyWeight4         : " << kingSafetyWeight4 << std::endl;
+    os << "kingSafetyThreshold       : " << kingSafetyThreshold << std::endl;
+    os << "pawnStormBonus            : " << pawnStormBonus << std::endl;
 
     os << "pawnLoMtrl          : " << pawnLoMtrl << std::endl;
     os << "pawnHiMtrl          : " << pawnHiMtrl << std::endl;
@@ -910,6 +916,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(bishopPairValue, "bishopPairValue", cppFile);
     replaceTable(pawnShelterTable, "pawnShelterTable", cppFile);
     replaceTable(pawnStormTable, "pawnStormTable", cppFile);
+    replaceTable(kingAttackWeight, "kingAttackWeight", cppFile);
     replaceTable(kingPPSupportK, "kingPPSupportK", cppFile);
     replaceTable(kingPPSupportP, "kingPPSupportP", cppFile);
     replaceTable(pawnDoubledPenalty, "pawnDoubledPenalty", cppFile);
@@ -951,10 +958,15 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(trappedBishopPenalty2, "trappedBishopPenalty2", hppFile);
     replaceValue(oppoBishopPenalty, "oppoBishopPenalty", hppFile);
 
-    replaceValue(kingAttackWeight, "kingAttackWeight", hppFile);
-    replaceValue(kingSafetyHalfOpenBCDEFG, "kingSafetyHalfOpenBCDEFG", hppFile);
-    replaceValue(kingSafetyHalfOpenAH, "kingSafetyHalfOpenAH", hppFile);
-    replaceValue(kingSafetyWeight, "kingSafetyWeight", hppFile);
+    replaceValue(kingSafetyHalfOpenBCDEFG1, "kingSafetyHalfOpenBCDEFG1", hppFile);
+    replaceValue(kingSafetyHalfOpenBCDEFG2, "kingSafetyHalfOpenBCDEFG2", hppFile);
+    replaceValue(kingSafetyHalfOpenAH1, "kingSafetyHalfOpenAH1", hppFile);
+    replaceValue(kingSafetyHalfOpenAH2, "kingSafetyHalfOpenAH2", hppFile);
+    replaceValue(kingSafetyWeight1, "kingSafetyWeight1", hppFile);
+    replaceValue(kingSafetyWeight2, "kingSafetyWeight2", hppFile);
+    replaceValue(kingSafetyWeight3, "kingSafetyWeight3", hppFile);
+    replaceValue(kingSafetyWeight4, "kingSafetyWeight4", hppFile);
+    replaceValue(kingSafetyThreshold, "kingSafetyThreshold", hppFile);
     replaceValue(pawnStormBonus, "pawnStormBonus", hppFile);
 
     replaceValue(pawnLoMtrl, "pawnLoMtrl", hppFile);

@@ -194,7 +194,7 @@ void testEvalPos() {
     pos.setCastleMask(pos.getCastleMask() & ~(1 << Position::H1_CASTLE));
     ASSERT_EQUAL(false, pos.h1Castle());
     int cs2 = evalWhite(pos);
-    ASSERT(cs2 >= cs1 - 6);    // No bonus for useless castle right
+    ASSERT(cs2 >= cs1 - 7);    // No bonus for useless castle right
 
     // Test rook open file bonus
     pos = TextIO::readFEN("r4rk1/1pp1qppp/3b1n2/4p3/2B1P1b1/1QN2N2/PP3PPP/R3R1K1 w - - 0 1");
@@ -378,7 +378,7 @@ testKingSafety() {
     // Trapping rook with own king is bad
     pos = TextIO::readFEN("rnbqk1nr/pppp1ppp/8/8/1bBpP3/8/PPP2PPP/RNBQK1NR w KQkq - 2 4");
     s1 = evalWhite(pos);
-    movePiece(pos, "e1", "f1");
+    pos = TextIO::readFEN("rnbqk1nr/pppp1ppp/8/8/1bBpP3/8/PPP2PPP/RNBQ1KNR w kq - 2 4");
     s2 = evalWhite(pos);
     ASSERT(s2 < s1);
 
@@ -786,7 +786,7 @@ static void
 testKRKP() {
     const int pV = ::pV;
     const int rV = ::rV;
-    const int winScore = 218;
+    const int winScore = 216;
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
