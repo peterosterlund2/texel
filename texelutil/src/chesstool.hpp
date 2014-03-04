@@ -82,6 +82,10 @@ public:
     void filterMtrlBalance(std::istream& is, bool minorEqual,
                            const std::vector<std::pair<bool,int>>& mtrlPattern);
 
+    /** Output positions where remaining material matches a pattern. */
+    void filterTotalMaterial(std::istream& is, bool minorEqual,
+                             const std::vector<std::pair<bool,int>>& mtrlPattern);
+
     /** Print positions where abs(qScore) >= threshold and game result != (1+sign(qScore))/2. */
     void outliers(std::istream& is, int threshold);
 

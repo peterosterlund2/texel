@@ -223,8 +223,8 @@ static int nPieces(const Position& pos, Piece::Type piece) {
     return BitBoard::bitCount(pos.pieceTypeBB(piece));
 }
 
-static bool isMatch(int mtrlDiff, bool compare, int patternDiff) {
-    return !compare || (mtrlDiff == patternDiff);
+static bool isMatch(int v1, bool compare, int v2) {
+    return !compare || (v1 == v2);
 }
 
 void
@@ -250,12 +250,87 @@ ChessTool::filterMtrlBalance(std::istream& is, bool minorEqual,
             mtrlDiff[4] = nPieces(pos, Piece::WPAWN)   - nPieces(pos, Piece::BPAWN);
             nComp = 5;
         }
-        int inc1 = true, inc2 = true;
+        bool inc1 = true, inc2 = true;
         for (int i = 0; i < nComp; i++) {
             if (!isMatch(mtrlDiff[i], mtrlPattern[i].first, mtrlPattern[i].second))
                 inc1 = false;
             if (!isMatch(mtrlDiff[i], mtrlPattern[i].first, -mtrlPattern[i].second))
                 inc2 = false;
+        }
+        int sign = 1;
+        if (inc2 && !inc1) {
+            pos = swapColors(pos);
+            sign = -1;
+        }
+        if (inc1 || inc2) {
+            std::string fen = TextIO::toFEN(pos);
+            std::cout << fen << " : " << ((sign>0)?pi.result:(1-pi.result)) << " : "
+                      << pi.searchScore * sign << " : " << pi.qScore * sign
+                      << " : " << pi.gameNo << '\n';
+        }
+    }
+    std::cout << std::flush;
+}
+
+void
+ChessTool::filterTotalMaterial(std::istream& is, bool minorEqual,
+                               const std::vector<std::pair<bool,int>>& mtrlPattern) {
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+
+    Position pos;
+    for (const PositionInfo& pi : positions) {
+        pos.deSerialize(pi.posData);
+        int wQ = nPieces(pos, Piece::WQUEEN);
+        int wR = nPieces(pos, Piece::WROOK);
+        int wB = nPieces(pos, Piece::WBISHOP);
+        int wN = nPieces(pos, Piece::WKNIGHT);
+        int wP = nPieces(pos, Piece::WPAWN);
+        int bQ = nPieces(pos, Piece::BQUEEN);
+        int bR = nPieces(pos, Piece::BROOK);
+        int bB = nPieces(pos, Piece::BBISHOP);
+        int bN = nPieces(pos, Piece::BKNIGHT);
+        int bP = nPieces(pos, Piece::BPAWN);
+
+        bool inc1, inc2;
+        if (minorEqual) {
+            inc1 = isMatch(wQ,    mtrlPattern[0].first, mtrlPattern[0].second) &&
+                   isMatch(wR,    mtrlPattern[1].first, mtrlPattern[1].second) &&
+                   isMatch(wB+wN, mtrlPattern[2].first, mtrlPattern[2].second) &&
+                   isMatch(wP,    mtrlPattern[3].first, mtrlPattern[3].second) &&
+                   isMatch(bQ,    mtrlPattern[4].first, mtrlPattern[4].second) &&
+                   isMatch(bR,    mtrlPattern[5].first, mtrlPattern[5].second) &&
+                   isMatch(bB+bN, mtrlPattern[6].first, mtrlPattern[6].second) &&
+                   isMatch(bP,    mtrlPattern[7].first, mtrlPattern[7].second);
+            inc2 = isMatch(bQ,    mtrlPattern[0].first, mtrlPattern[0].second) &&
+                   isMatch(bR,    mtrlPattern[1].first, mtrlPattern[1].second) &&
+                   isMatch(bB+bN, mtrlPattern[2].first, mtrlPattern[2].second) &&
+                   isMatch(bP,    mtrlPattern[3].first, mtrlPattern[3].second) &&
+                   isMatch(wQ,    mtrlPattern[4].first, mtrlPattern[4].second) &&
+                   isMatch(wR,    mtrlPattern[5].first, mtrlPattern[5].second) &&
+                   isMatch(wB+wN, mtrlPattern[6].first, mtrlPattern[6].second) &&
+                   isMatch(wP,    mtrlPattern[7].first, mtrlPattern[7].second);
+        } else {
+            inc1 = isMatch(wQ, mtrlPattern[0].first, mtrlPattern[0].second) &&
+                   isMatch(wR, mtrlPattern[1].first, mtrlPattern[1].second) &&
+                   isMatch(wB, mtrlPattern[2].first, mtrlPattern[2].second) &&
+                   isMatch(wN, mtrlPattern[3].first, mtrlPattern[3].second) &&
+                   isMatch(wP, mtrlPattern[4].first, mtrlPattern[4].second) &&
+                   isMatch(bQ, mtrlPattern[5].first, mtrlPattern[5].second) &&
+                   isMatch(bR, mtrlPattern[6].first, mtrlPattern[6].second) &&
+                   isMatch(bB, mtrlPattern[7].first, mtrlPattern[7].second) &&
+                   isMatch(bN, mtrlPattern[8].first, mtrlPattern[8].second) &&
+                   isMatch(bP, mtrlPattern[9].first, mtrlPattern[9].second);
+            inc2 = isMatch(bQ, mtrlPattern[0].first, mtrlPattern[0].second) &&
+                   isMatch(bR, mtrlPattern[1].first, mtrlPattern[1].second) &&
+                   isMatch(bB, mtrlPattern[2].first, mtrlPattern[2].second) &&
+                   isMatch(bN, mtrlPattern[3].first, mtrlPattern[3].second) &&
+                   isMatch(bP, mtrlPattern[4].first, mtrlPattern[4].second) &&
+                   isMatch(wQ, mtrlPattern[5].first, mtrlPattern[5].second) &&
+                   isMatch(wR, mtrlPattern[6].first, mtrlPattern[6].second) &&
+                   isMatch(wB, mtrlPattern[7].first, mtrlPattern[7].second) &&
+                   isMatch(wN, mtrlPattern[8].first, mtrlPattern[8].second) &&
+                   isMatch(wP, mtrlPattern[9].first, mtrlPattern[9].second);
         }
         int sign = 1;
         if (inc2 && !inc1) {

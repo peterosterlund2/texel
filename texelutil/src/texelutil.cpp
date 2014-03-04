@@ -54,7 +54,9 @@ usage() {
     std::cerr << " f2p      : Convert from FEN to PGN\n";
     std::cerr << " filter type pars : Keep positions that satisfy a condition\n";
     std::cerr << "        score scLimit prLimit : qScore and search score differ less than limits\n";
-    std::cerr << "        mtrl [-m] dQ dR dB [dN] dP : material difference satisfies pattern\n";
+    std::cerr << "        mtrldiff [-m] dQ dR dB [dN] dP : material difference satisfies pattern\n";
+    std::cerr << "                                     -m treat bishop and knight as same type\n";
+    std::cerr << "        mtrl [-m] wQ wR wB [wN] wP bQ bR bB [bN] bP : material satisfies pattern\n";
     std::cerr << "                                     -m treat bishop and knight as same type\n";
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
     std::cerr << " evaleffect evalfile : Print eval improvement when parameters are changed\n";
@@ -163,10 +165,10 @@ main(int argc, char* argv[]) {
                 if (!str2Num(argv[3], scLimit) || !str2Num(argv[4], prLimit))
                     usage();
                 chessTool.filterScore(std::cin, scLimit, prLimit);
-            } else if (type == "mtrl") {
+            } else if (type == "mtrldiff") {
                 if (argc != 8)
                     usage();
-                bool minorEqual = (std::string(argv[3]) == "-m");
+                bool minorEqual = std::string(argv[3]) == "-m";
                 int first = minorEqual ? 4 : 3;
                 std::vector<std::pair<bool,int>> mtrlPattern;
                 for (int i = first; i < 8; i++) {
@@ -180,6 +182,25 @@ main(int argc, char* argv[]) {
                     }
                 }
                 chessTool.filterMtrlBalance(std::cin, minorEqual, mtrlPattern);
+            } else if (type == "mtrl") {
+                if (argc < 4)
+                    usage();
+                bool minorEqual = std::string(argv[3]) == "-m";
+                if (argc != (minorEqual ? 12 : 13))
+                    usage();
+                int first = minorEqual ? 4 : 3;
+                std::vector<std::pair<bool,int>> mtrlPattern;
+                for (int i = first; i < argc; i++) {
+                    if (std::string(argv[i]) == "x")
+                        mtrlPattern.push_back(std::make_pair(false, 0));
+                    else {
+                        int d;
+                        if (!str2Num(argv[i], d))
+                            usage();
+                        mtrlPattern.push_back(std::make_pair(true, d));
+                    }
+                }
+                chessTool.filterTotalMaterial(std::cin, minorEqual, mtrlPattern);
             } else
                 usage();
         } else if (cmd == "outliers") {
