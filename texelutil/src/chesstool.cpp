@@ -780,6 +780,7 @@ ChessTool::printParams() {
     printTable(knightMobScore, "knightMobScore", os);
     printTable(queenMobScore, "queenMobScore", os);
     printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", os);
+    printTableNxN<6>(connectedPPBonus, "connectedPPBonus", os);
     printTable(passedPawnBonusX, "passedPawnBonusX", os);
     printTable(passedPawnBonusY, "passedPawnBonusY", os);
     printTable(ppBlockerBonus, "ppBlockerBonus", os);
@@ -982,6 +983,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(knightMobScore, "knightMobScore", cppFile);
     replaceTable(queenMobScore, "queenMobScore", cppFile);
     replaceTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", cppFile);
+    replaceTableNxN<6>(connectedPPBonus, "connectedPPBonus", cppFile);
     replaceTable(passedPawnBonusX, "passedPawnBonusX", cppFile);
     replaceTable(passedPawnBonusY, "passedPawnBonusY", cppFile);
     replaceTable(ppBlockerBonus, "ppBlockerBonus", cppFile);

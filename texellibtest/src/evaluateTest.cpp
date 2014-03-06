@@ -667,7 +667,7 @@ testPassedPawns() {
     pos.setPiece(TextIO::getSquare("d5"), Piece::EMPTY);
     pos.setPiece(TextIO::getSquare("d4"), Piece::WKING); // 4R3/8/8/p7/P2K4/4pk2/8/8 w - - 0 1
     int score2 = evalWhite(pos);
-    ASSERT(score2 >= score - 3); // King closer to passed pawn promotion square
+    ASSERT(score2 >= score - 4); // King closer to passed pawn promotion square
 
     pos = TextIO::readFEN("4R3/8/8/3K4/8/4pk2/8/8 w - - 0 1");
     score = evalWhite(pos);

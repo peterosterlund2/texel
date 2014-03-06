@@ -658,6 +658,40 @@ Evaluate::pawnBonus(const Position& pos) {
     return score;
 }
 
+template <bool white>
+static inline int
+evalConnectedPP(int x, int y, U64 ppMask) {
+    if ((x >= 7) || !(BitBoard::maskFile[x+1] & ppMask))
+        return 0;
+
+    int y2 = 0;
+    if (white) {
+        for (int i = 6; i >= 1; i--) {
+            int sq = Position::getSquare(x+1, i);
+            if (ppMask & (1ULL << sq)) {
+                y2 = i;
+                break;
+            }
+        }
+    } else {
+        for (int i = 1; i <= 6; i++) {
+            int sq = Position::getSquare(x+1, i);
+            if (ppMask & (1ULL << sq)) {
+                y2 = i;
+                break;
+            }
+        }
+    }
+    if (y2 == 0)
+        return 0;
+
+    if (!white) {
+        y = 7 - y;
+        y2 = 7 - y2;
+    }
+    return connectedPPBonus[(y-1)*6 + (y2-1)];
+}
+
 void
 Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     int score = 0;
@@ -739,6 +773,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
             int x = Position::getX(sq);
             int y = Position::getY(sq);
             passedBonusW += passedPawnBonusX[x] + passedPawnBonusY[y];
+            passedBonusW += evalConnectedPP<true>(x, y, passedPawnsW);
             m &= m-1;
         }
     }
@@ -756,6 +791,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
             int x = Position::getX(sq);
             int y = Position::getY(sq);
             passedBonusB += passedPawnBonusX[x] + passedPawnBonusY[7-y];
+            passedBonusB += evalConnectedPP<false>(x, y, passedPawnsB);
             m &= m-1;
         }
     }
@@ -791,20 +827,6 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
             m &= m-1;
         }
     }
-
-    // Connected passed pawn bonus. Seems logical but scored -8 elo in tests
-//    if (passedPawnsW != 0) {
-//        U64 mask = passedPawnsW;
-//        mask = (((mask >> 7) | (mask << 1) | (mask << 9)) & BitBoard::maskBToHFiles) |
-//               (((mask >> 9) | (mask >> 1) | (mask << 7)) & BitBoard::maskAToGFiles);
-//        passedBonusW += 13 * BitBoard::bitCount(passedPawnsW & mask);
-//    }
-//    if (passedPawnsB != 0) {
-//        U64 mask = passedPawnsB;
-//        mask = (((mask >> 7) | (mask << 1) | (mask << 9)) & BitBoard::maskBToHFiles) |
-//               (((mask >> 9) | (mask >> 1) | (mask << 7)) & BitBoard::maskAToGFiles);
-//        passedBonusB += 13 * BitBoard::bitCount(passedPawnsB & mask);
-//    }
 
     ph.key = pos.pawnZobristHash();
     ph.score = score;

@@ -459,16 +459,16 @@ DECLARE_PARAM_2REF(kV, 9900, 9900, 9900, false); // Used by SEE algorithm but no
 
 DECLARE_PARAM(pawnIslandPenalty,      12, 0, 50, useUciParam);
 DECLARE_PARAM(pawnBackwardPenalty,    20, 0, 50, useUciParam);
-DECLARE_PARAM(pawnGuardedPassedBonus, 4, 0, 50, useUciParam);
-DECLARE_PARAM(pawnRaceBonus,          168, 0, 1000, useUciParam);
-DECLARE_PARAM(passedPawnEGFactor,     63, 1, 128, useUciParam);
+DECLARE_PARAM(pawnGuardedPassedBonus, 5, 0, 50, useUciParam);
+DECLARE_PARAM(pawnRaceBonus,          173, 0, 1000, useUciParam);
+DECLARE_PARAM(passedPawnEGFactor,     61, 1, 128, useUciParam);
 
 DECLARE_PARAM(QvsRMBonus1,         17, -100, 100, useUciParam);
 DECLARE_PARAM(QvsRMBonus2,         15, -100, 100, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus1, 125, 0, 200, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus2, 251, 0, 600, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus3, 357, 0, 800, useUciParam);
-DECLARE_PARAM(krkpBonus,           228, 0, 800, useUciParam);
+DECLARE_PARAM(krkpBonus,           225, 0, 800, useUciParam);
 
 DECLARE_PARAM(pawnTradePenalty,    62, 0, 100, useUciParam);
 DECLARE_PARAM(pieceTradeBonus,     10, 0, 100, useUciParam);
@@ -476,7 +476,7 @@ DECLARE_PARAM(pawnTradeThreshold,  365, 100, 1000, useUciParam);
 DECLARE_PARAM(pieceTradeThreshold, 753, 10, 1000, useUciParam);
 
 DECLARE_PARAM(threatBonus1,     63, 5, 500, useUciParam);
-DECLARE_PARAM(threatBonus2,     1189, 100, 10000, useUciParam);
+DECLARE_PARAM(threatBonus2,     1190, 100, 10000, useUciParam);
 
 DECLARE_PARAM(rookHalfOpenBonus,     19, 0, 100, useUciParam);
 DECLARE_PARAM(rookOpenBonus,         18, 0, 100, useUciParam);
@@ -524,6 +524,7 @@ extern ParamTable<14> bishMobScore;
 extern ParamTableEv<28> knightMobScore;
 extern ParamTable<28> queenMobScore;
 extern ParamTable<16> majorPieceRedundancy;
+extern ParamTable<36> connectedPPBonus;
 extern ParamTable<8> passedPawnBonusX, passedPawnBonusY;
 extern ParamTable<5> ppBlockerBonus;
 extern ParamTable<8> candidatePassedBonus;
