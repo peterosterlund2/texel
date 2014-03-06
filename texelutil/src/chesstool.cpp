@@ -813,6 +813,7 @@ ChessTool::printParams() {
     os << "knightVsQueenBonus1 : " << knightVsQueenBonus1 << std::endl;
     os << "knightVsQueenBonus2 : " << knightVsQueenBonus2 << std::endl;
     os << "knightVsQueenBonus3 : " << knightVsQueenBonus3 << std::endl;
+    os << "krkpBonus           : " << krkpBonus << std::endl;
 
     os << "pawnTradePenalty    : " << pawnTradePenalty << std::endl;
     os << "pieceTradeBonus     : " << pieceTradeBonus << std::endl;
@@ -1014,6 +1015,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(knightVsQueenBonus1, "knightVsQueenBonus1", hppFile);
     replaceValue(knightVsQueenBonus2, "knightVsQueenBonus2", hppFile);
     replaceValue(knightVsQueenBonus3, "knightVsQueenBonus3", hppFile);
+    replaceValue(krkpBonus, "krkpBonus", hppFile);
 
     replaceValue(pawnTradePenalty, "pawnTradePenalty", hppFile);
     replaceValue(pieceTradeBonus, "pieceTradeBonus", hppFile);

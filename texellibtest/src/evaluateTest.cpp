@@ -494,6 +494,29 @@ testEndGameEval() {
 }
 
 static void
+testEndGameSymmetry() {
+    // Test symmetry for pawnless endings
+    {
+        int score1 = evalFEN("8/8/3rk3/8/8/8/8/3QK3 w - - 0 1");
+        int score2 = evalFEN("8/8/8/Q4r2/K4k2/8/8/8 w - - 0 1");
+        ASSERT_EQUAL(score2, score1);
+        int score3 = evalFEN("3KQ3/8/8/8/8/3kr3/8/8 w - - 0 1");
+        ASSERT_EQUAL(score3, score1);
+        int score4 = evalFEN("8/8/8/2k4K/2r4Q/8/8/8 w - - 0 1");
+        ASSERT_EQUAL(score4, score1);
+    }
+    {
+        int score1 = evalFEN("8/8/3rk3/8/8/8/8/3RK3 w - - 0 1");
+        int score2 = evalFEN("8/8/8/R4r2/K4k2/8/8/8 w - - 0 1");
+        ASSERT_EQUAL(score2, score1);
+        int score3 = evalFEN("3KR3/8/8/8/8/3kr3/8/8 w - - 0 1");
+        ASSERT_EQUAL(score3, score1);
+        int score4 = evalFEN("8/8/8/2k4K/2r4R/8/8/8 w - - 0 1");
+        ASSERT_EQUAL(score4, score1);
+    }
+}
+
+static void
 evalEGConsistency(const std::string& fen, const std::string& wSq, int wPiece,
                   const std::string& bSq, int bPiece, int fuzz) {
     Position pos = TextIO::readFEN(fen);
@@ -786,7 +809,7 @@ static void
 testKRKP() {
     const int pV = ::pV;
     const int rV = ::rV;
-    const int winScore = 216;
+    const int winScore = 420;
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
@@ -1116,6 +1139,7 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testMaterial));
     s.push_back(CUTE(testKingSafety));
     s.push_back(CUTE(testEndGameEval));
+    s.push_back(CUTE(testEndGameSymmetry));
     s.push_back(CUTE(testEndGameCorrections));
     s.push_back(CUTE(testPassedPawns));
     s.push_back(CUTE(testBishAndRookPawns));

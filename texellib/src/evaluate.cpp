@@ -380,6 +380,21 @@ Evaluate::tradeBonus(const Position& pos, int wCorr, int bCorr) const {
     return pBonus;
 }
 
+static int
+mateEval(int k1, int k2) {
+    static const int loseKingTable[64] = {
+        0,   4,   8,  12,  12,   8,   4,   0,
+        4,   8,  12,  16,  16,  12,   8,   4,
+        8,  12,  16,  20,  20,  16,  12,   8,
+       12,  16,  20,  24,  24,  20,  16,  12,
+       12,  16,  20,  24,  24,  20,  16,  12,
+        8,  12,  16,  20,  20,  16,  12,   8,
+        4,   8,  12,  16,  16,  12,   8,   4,
+        0,   4,   8,  12,  12,   8,   4,   0
+    };
+    return winKingTable[k1] - loseKingTable[k2];
+}
+
 int
 Evaluate::pieceSquareEval(const Position& pos) {
     int score = 0;
@@ -387,15 +402,24 @@ Evaluate::pieceSquareEval(const Position& pos) {
     const int bMtrlPawns = pos.bMtrlPawns();
 
     // Kings/pawns
-    {
-        const int k1 = pos.psScore1(Piece::WKING) + pos.psScore1(Piece::WPAWN);
-        const int k2 = pos.psScore2(Piece::WKING) + pos.psScore2(Piece::WPAWN);
-        score += interpolate(k2, k1, mhd->wPawnIPF);
-    }
-    {
-        const int k1 = pos.psScore1(Piece::BKING) + pos.psScore1(Piece::BPAWN);
-        const int k2 = pos.psScore2(Piece::BKING) + pos.psScore2(Piece::BPAWN);
-        score -= interpolate(k2, k1, mhd->bPawnIPF);
+    if (pos.wMtrlPawns() + pos.bMtrlPawns() > 0) {
+        {
+            const int k1 = pos.psScore1(Piece::WKING) + pos.psScore1(Piece::WPAWN);
+            const int k2 = pos.psScore2(Piece::WKING) + pos.psScore2(Piece::WPAWN);
+            score += interpolate(k2, k1, mhd->wPawnIPF);
+        }
+        {
+            const int k1 = pos.psScore1(Piece::BKING) + pos.psScore1(Piece::BPAWN);
+            const int k2 = pos.psScore2(Piece::BKING) + pos.psScore2(Piece::BPAWN);
+            score -= interpolate(k2, k1, mhd->bPawnIPF);
+        }
+    } else { // Use symmetric tables if no pawns left
+        if (pos.wMtrl() > pos.bMtrl())
+            score += mateEval(pos.getKingSq(true), pos.getKingSq(false));
+        else if (pos.wMtrl() < pos.bMtrl())
+            score -= mateEval(pos.getKingSq(false), pos.getKingSq(true));
+        else
+            score += winKingTable[pos.getKingSq(true)] - winKingTable[pos.getKingSq(false)];
     }
 
     // Knights/bishops
@@ -1184,21 +1208,6 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
     return ksh.score;
 }
 
-static int
-mateEval(int k1, int k2) {
-    static const int loseKingTable[64] = {
-        0,   4,   8,  12,  12,   8,   4,   0,
-        4,   8,  12,  16,  16,  12,   8,   4,
-        8,  12,  16,  20,  20,  16,  12,   8,
-       12,  16,  20,  24,  24,  20,  16,  12,
-       12,  16,  20,  24,  24,  20,  16,  12,
-        8,  12,  16,  20,  20,  16,  12,   8,
-        4,   8,  12,  16,  16,  12,   8,   4,
-        0,   4,   8,  12,  12,   8,   4,   0
-    };
-    return winKingTable[k1] - loseKingTable[k2];
-}
-
 /** Implements special knowledge for some endgame situations. */
 template <bool doEval>
 int
@@ -1527,6 +1536,16 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
         return score - 300;       // Enough excess material, should win
     }
 
+    // Give bonus for advantage larger than KRKP, to avoid evaluation discontinuity
+    if ((pos.bMtrl() == pV) && pos.pieceTypeBB(Piece::WROOK) && (pos.wMtrl() > rV)) {
+        if (!doEval) return 1;
+        return score + krkpBonus;
+    }
+    if ((pos.wMtrl() == pV) && pos.pieceTypeBB(Piece::BROOK) && (pos.bMtrl() > rV)) {
+        if (!doEval) return 1;
+        return score - krkpBonus;
+    }
+
     if (!doEval) return 0;
     return score;
 }
@@ -1710,6 +1729,8 @@ Evaluate::krkpEval(int wKing, int bKing, int bPawn, bool whiteMove, int score) {
     score = score + Position::getY(bPawn) * pV / 4;
     if (!canWin)
         score /= 50;
+    else
+        score += krkpBonus;
     return score;
 }
 
