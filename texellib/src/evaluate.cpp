@@ -1568,6 +1568,21 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
         return score - krkpBonus;
     }
 
+    // Account for draw factor in rook endgames
+    if ((BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK)) == 1) &&
+        (BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK)) == 1) &&
+        (pos.pieceTypeBB(Piece::WQUEEN, Piece::WBISHOP, Piece::WKNIGHT,
+                         Piece::BQUEEN, Piece::BBISHOP, Piece::BKNIGHT) == 0) &&
+        (BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) > 1)) {
+        if (!doEval) return 1;
+        int f1 = BitBoard::southFill(pos.pieceTypeBB(Piece::WPAWN)) & 0xff;
+        int f2 = BitBoard::southFill(pos.pieceTypeBB(Piece::BPAWN)) & 0xff;
+        int asymmetry = BitBoard::bitCount((f1 & ~f2) | (f2 & ~f1));
+        asymmetry += BitBoard::bitCount(phd->passedPawnsW) + BitBoard::bitCount(phd->passedPawnsB);
+        score = score * rookEGDrawFactor[std::min(asymmetry, 6)] / 128;
+        return score;
+    }
+
     if (!doEval) return 0;
     return score;
 }
