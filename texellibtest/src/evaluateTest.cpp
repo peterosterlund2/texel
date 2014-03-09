@@ -345,7 +345,7 @@ testMaterial() {
     int s2 = evalFEN("6k1/ppp2pp1/nnnnnnnp/8/8/7P/PPP2PP1/Q2QQ1K1 w - - 0 1");
     ASSERT(s2 < s1);
     int s3 = evalFEN("nnnnknnn/pppppppp/8/8/8/8/PPPPPPPP/Q2QK2Q w - - 0 1");
-    ASSERT(s3 < 30);
+    ASSERT(s3 < 50);
 
     // Test symmetry of imbalances corrections
     evalFEN("3rr1k1/pppb1ppp/2n2n2/4p3/1bB1P3/2N1BN2/PPP1QPPP/6K1 w - - 0 1");

@@ -457,18 +457,18 @@ DECLARE_PARAM_2REF(rV, 600, 1, 1200, useUciParam);
 DECLARE_PARAM_2REF(qV, 1215, 1, 2400, useUciParam);
 DECLARE_PARAM_2REF(kV, 9900, 9900, 9900, false); // Used by SEE algorithm but not included in board material sums
 
-DECLARE_PARAM(pawnIslandPenalty,      12, 0, 50, useUciParam);
-DECLARE_PARAM(pawnBackwardPenalty,    19, 0, 50, useUciParam);
+DECLARE_PARAM(pawnIslandPenalty,      11, 0, 50, useUciParam);
+DECLARE_PARAM(pawnBackwardPenalty,    18, 0, 50, useUciParam);
 DECLARE_PARAM(pawnGuardedPassedBonus, 5, 0, 50, useUciParam);
-DECLARE_PARAM(pawnRaceBonus,          173, 0, 1000, useUciParam);
+DECLARE_PARAM(pawnRaceBonus,          169, 0, 1000, useUciParam);
 DECLARE_PARAM(passedPawnEGFactor,     61, 1, 128, useUciParam);
 
-DECLARE_PARAM(QvsRMBonus1,         15, -100, 100, useUciParam);
-DECLARE_PARAM(QvsRMBonus2,         15, -100, 100, useUciParam);
+DECLARE_PARAM(QvsRMBonus1,         24, -100, 100, useUciParam);
+DECLARE_PARAM(QvsRMBonus2,         11, -100, 100, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus1, 125, 0, 200, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus2, 251, 0, 600, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus3, 357, 0, 800, useUciParam);
-DECLARE_PARAM(krkpBonus,           225, 0, 800, useUciParam);
+DECLARE_PARAM(krkpBonus,           194, 0, 800, useUciParam);
 
 DECLARE_PARAM(pawnTradePenalty,    62, 0, 100, useUciParam);
 DECLARE_PARAM(pieceTradeBonus,     10, 0, 100, useUciParam);
@@ -476,44 +476,44 @@ DECLARE_PARAM(pawnTradeThreshold,  365, 100, 1000, useUciParam);
 DECLARE_PARAM(pieceTradeThreshold, 753, 10, 1000, useUciParam);
 
 DECLARE_PARAM(threatBonus1,     63, 5, 500, useUciParam);
-DECLARE_PARAM(threatBonus2,     1189, 100, 10000, useUciParam);
+DECLARE_PARAM(threatBonus2,     1192, 100, 10000, useUciParam);
 
-DECLARE_PARAM(rookHalfOpenBonus,     19, 0, 100, useUciParam);
-DECLARE_PARAM(rookOpenBonus,         18, 0, 100, useUciParam);
-DECLARE_PARAM(rookDouble7thRowBonus, 70, 0, 100, useUciParam);
-DECLARE_PARAM(trappedRookPenalty,    66, 0, 200, useUciParam);
+DECLARE_PARAM(rookHalfOpenBonus,     18, 0, 100, useUciParam);
+DECLARE_PARAM(rookOpenBonus,         19, 0, 100, useUciParam);
+DECLARE_PARAM(rookDouble7thRowBonus, 75, 0, 100, useUciParam);
+DECLARE_PARAM(trappedRookPenalty,    67, 0, 200, useUciParam);
 
 DECLARE_PARAM(bishopPairPawnPenalty, 5, 0, 10, useUciParam);
-DECLARE_PARAM(trappedBishopPenalty1, 56, 0, 300, useUciParam);
-DECLARE_PARAM(trappedBishopPenalty2, 79, 0, 300, useUciParam);
-DECLARE_PARAM(oppoBishopPenalty,     80, 0, 128, useUciParam);
+DECLARE_PARAM(trappedBishopPenalty1, 75, 0, 300, useUciParam);
+DECLARE_PARAM(trappedBishopPenalty2, 88, 0, 300, useUciParam);
+DECLARE_PARAM(oppoBishopPenalty,     84, 0, 128, useUciParam);
 
-DECLARE_PARAM(kingSafetyHalfOpenBCDEFG1, 20, 0, 100, useUciParam);
+DECLARE_PARAM(kingSafetyHalfOpenBCDEFG1, 22, 0, 100, useUciParam);
 DECLARE_PARAM(kingSafetyHalfOpenBCDEFG2, 0, 0, 100, useUciParam);
-DECLARE_PARAM(kingSafetyHalfOpenAH1,     11, 0, 100, useUciParam);
-DECLARE_PARAM(kingSafetyHalfOpenAH2,     8, 0, 100, useUciParam);
-DECLARE_PARAM(kingSafetyWeight1,         28, -50, 200, useUciParam);
-DECLARE_PARAM(kingSafetyWeight2,         9, -50, 200, useUciParam);
-DECLARE_PARAM(kingSafetyWeight3,         12, -50, 200, useUciParam);
+DECLARE_PARAM(kingSafetyHalfOpenAH1,     13, 0, 100, useUciParam);
+DECLARE_PARAM(kingSafetyHalfOpenAH2,     10, 0, 100, useUciParam);
+DECLARE_PARAM(kingSafetyWeight1,         27, -50, 200, useUciParam);
+DECLARE_PARAM(kingSafetyWeight2,         -8, -50, 200, useUciParam);
+DECLARE_PARAM(kingSafetyWeight3,         11, -50, 200, useUciParam);
 DECLARE_PARAM(kingSafetyWeight4,         14, -50, 200, useUciParam);
-DECLARE_PARAM(kingSafetyThreshold,       58, 0, 200, useUciParam);
-DECLARE_PARAM(pawnStormBonus,            6, 0, 20, useUciParam);
+DECLARE_PARAM(kingSafetyThreshold,       56, 0, 200, useUciParam);
+DECLARE_PARAM(pawnStormBonus,            9, 0, 20, useUciParam);
 
-DECLARE_PARAM(pawnLoMtrl,          498, 0, 10000, useUciParam);
+DECLARE_PARAM(pawnLoMtrl,          500, 0, 10000, useUciParam);
 DECLARE_PARAM(pawnHiMtrl,          3206, 0, 10000, useUciParam);
-DECLARE_PARAM(minorLoMtrl,         1116, 0, 10000, useUciParam);
-DECLARE_PARAM(minorHiMtrl,         3743, 0, 10000, useUciParam);
+DECLARE_PARAM(minorLoMtrl,         1117, 0, 10000, useUciParam);
+DECLARE_PARAM(minorHiMtrl,         3744, 0, 10000, useUciParam);
 DECLARE_PARAM(castleLoMtrl,        711, 0, 10000, useUciParam);
 DECLARE_PARAM(castleHiMtrl,        7884, 0, 10000, useUciParam);
 DECLARE_PARAM(queenLoMtrl,         4491, 0, 10000, useUciParam);
-DECLARE_PARAM(queenHiMtrl,         6531, 0, 10000, useUciParam);
+DECLARE_PARAM(queenHiMtrl,         6530, 0, 10000, useUciParam);
 DECLARE_PARAM(passedPawnLoMtrl,    767, 0, 10000, useUciParam);
 DECLARE_PARAM(passedPawnHiMtrl,    2516, 0, 10000, useUciParam);
 DECLARE_PARAM(kingSafetyLoMtrl,    945, 0, 10000, useUciParam);
 DECLARE_PARAM(kingSafetyHiMtrl,    3571, 0, 10000, useUciParam);
 DECLARE_PARAM(oppoBishopLoMtrl,    752, 0, 10000, useUciParam);
 DECLARE_PARAM(oppoBishopHiMtrl,    3386, 0, 10000, useUciParam);
-DECLARE_PARAM(knightOutpostLoMtrl, 170, 0, 10000, useUciParam);
+DECLARE_PARAM(knightOutpostLoMtrl, 168, 0, 10000, useUciParam);
 DECLARE_PARAM(knightOutpostHiMtrl, 538, 0, 10000, useUciParam);
 
 extern ParamTable<64>         kt1b, kt2b, pt1b, pt2b, nt1b, nt2b, bt1b, bt2b, qt1b, qt2b, rt1b;
