@@ -47,6 +47,9 @@ DEFINE_PARAM(knightVsQueenBonus1);
 DEFINE_PARAM(knightVsQueenBonus2);
 DEFINE_PARAM(knightVsQueenBonus3);
 DEFINE_PARAM(krkpBonus);
+DEFINE_PARAM(krpkbBonus);
+DEFINE_PARAM(krpkbPenalty);
+DEFINE_PARAM(krpknBonus);
 
 DEFINE_PARAM(pawnTradePenalty);
 DEFINE_PARAM(pieceTradeBonus);
@@ -174,7 +177,7 @@ ParamTableMirrored<64> kt2w(kt2b);
 ParamTable<64> pt1b { -200, 300, useUciParam,
     {   0,   0,   0,   0,   0,   0,   0,   0,
       169,  94, 108, 140, 140, 108,  94, 169,
-       32,  37,  37,  46,  46,  37,  37,  32,
+       32,  37,  38,  46,  46,  38,  37,  32,
         8,   1,   0,  17,  17,   0,   1,   8,
         0,  -5,   4,   9,   9,   4,  -5,   0,
        -2,  -6,  -9,   7,   7,  -9,  -6,  -2,
@@ -195,7 +198,7 @@ ParamTableMirrored<64> pt1w(pt1b);
 ParamTable<64> pt2b { -200, 200, useUciParam,
     {   0,   0,   0,   0,   0,   0,   0,   0,
       -51, -34, -27, -33, -33, -27, -34, -51,
-       27,  27,  31,  21,  21,  31,  27,  27,
+       27,  27,  32,  21,  21,  32,  27,  27,
        21,  22,  21,  15,  15,  21,  22,  21,
         7,  20,  15,  15,  15,  15,  20,   7,
         2,  13,  17,  26,  26,  17,  13,   2,
@@ -214,7 +217,7 @@ ParamTableMirrored<64> pt2w(pt2b);
 
 /** Piece/square table for knights during middle game. */
 ParamTable<64> nt1b { -300, 200, useUciParam,
-    {-252, -10, -42, -11, -11, -42, -10,-252,
+    {-252, -13, -42, -11, -11, -42, -13,-252,
       -26, -44,  16,  43,  43,  16, -44, -26,
       -26,   8,  40,  43,  43,  40,   8, -26,
         2,   0,  31,  22,  22,  31,   0,   2,
@@ -256,9 +259,9 @@ ParamTableMirrored<64> nt2w(nt2b);
 
 /** Piece/square table for bishops during middle game. */
 ParamTable<64> bt1b { -200, 200, useUciParam,
-    { -16,  -7, -17, -16, -16, -17,  -7, -16,
+    { -18,  -7, -17, -16, -16, -17,  -7, -18,
       -37, -43,  -5, -31, -31,  -5, -43, -37,
-        3,  21,  25,  17,  17,  25,  21,   3,
+        3,  21,  24,  17,  17,  24,  21,   3,
       -22, -14,   5,  26,  26,   5, -14, -22,
         2,  -6, -10,  12,  12, -10,  -6,   2,
        -6,   4,   1,  -1,  -1,   1,   4,  -6,
@@ -299,7 +302,7 @@ ParamTableMirrored<64> bt2w(bt2b);
 /** Piece/square table for queens during middle game. */
 ParamTable<64> qt1b { -200, 200, useUciParam,
     {  13,  11,  22, -17, -17,  22,  11,  13,
-      -45,-112, -53, -97, -97, -53,-112, -45,
+      -45,-112, -53, -96, -96, -53,-112, -45,
       -49, -41, -74, -67, -67, -74, -41, -49,
       -52, -50, -64, -69, -69, -64, -50, -52,
       -33, -17, -29, -37, -37, -29, -17, -33,
@@ -386,21 +389,21 @@ ParamTable<14> bishMobScore = { -50, 50, useUciParam,
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14 }
 };
 ParamTableEv<28> knightMobScore { -200, 200, useUciParam,
-    {-32,-29, 15,-36,-10,  0,  4,-50,-19, -6,  8, 15,-23,-23,-16, -7,  2,  8, 11,-31,-31,-22,-14, -5,  1,  6,  9,  3 },
+    {-31,-32, 15,-36,-10,  0,  4,-51,-19, -6,  8, 15,-23,-23,-16, -7,  2,  8, 11,-32,-32,-22,-14, -5,  1,  6,  9,  3 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 23, 24, 25, 26 }
 };
 ParamTable<28> queenMobScore { -100, 100, useUciParam,
-    {  4,  0, -6, -5, -2, -1,  2,  3,  7, 10, 14, 17, 19, 22, 25, 29, 32, 34, 35, 37, 43, 41, 42, 40, 39, 34, 37, 36 },
+    {  4,  0, -6, -5, -2, -1,  2,  3,  7, 10, 14, 17, 19, 22, 25, 29, 32, 34, 35, 37, 43, 41, 42, 40, 39, 34, 36, 36 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28 }
 };
 
 ParamTable<36> connectedPPBonus { -200, 300, useUciParam,
-    {   3,  -3,   0,   5,   1,  -1,
+    {   3,  -3,   0,   5,   1,   0,
        -3,  -5,  -4,   6,  11,   7,
         0,  -4,  18,   6,  18,  15,
         5,   6,   6,  36,  10,  38,
-        1,  11,  18,  10,  88,  25,
-       -1,   7,  15,  38,  25, 269 },
+        1,  11,  18,  10,  86,  25,
+        0,   7,  15,  38,  25, 269 },
     {   1,   2,   4,   7,  11,  16,
         2,   3,   5,   8,  12,  17,
         4,   5,   6,   9,  13,  18,
@@ -425,13 +428,13 @@ ParamTable<5> ppBlockerBonus { -50, 50, useUciParam,
 };
 
 ParamTable<8> candidatePassedBonus { -200, 200, useUciParam,
-    { -1, -3,  0, 18, 38, 66, -1, -1 },
+    { -1, -3,  0, 18, 39, 65, -1, -1 },
     {  0,  1,  2,  3,  4,  5,  0,  0 }
 };
 
 ParamTable<16> majorPieceRedundancy { -200, 200, useUciParam,
-    {   0, -73,   0,   0,
-       73,   0,   0,   0,
+    {   0, -74,   0,   0,
+       74,   0,   0,   0,
         0,   0,   0,  80,
         0,   0, -80,   0 },
     {   0,  -1,   0,   0,
@@ -441,17 +444,17 @@ ParamTable<16> majorPieceRedundancy { -200, 200, useUciParam,
 };
 
 ParamTable<5> QvsRRBonus { -200, 200, useUciParam,
-    { -8,-19, 40, 80, 80 },
+    { -8,-19, 40, 78, 79 },
     {  1,  2,  3,  4,  5 }
 };
 
 ParamTable<7> RvsMBonus { -200, 200, useUciParam,
-    {  0, 17, 30, 20, 32, 23,-77 },
+    { -1, 17, 31, 22, 32, 11,-83 },
     {  1,  2,  3,  4,  5,  6,  7 }
 };
 
 ParamTable<7> RvsMMBonus { -200, 200, useUciParam,
-    {-106,-106,-38,  3, -4,  8,  6 },
+    {-106,-106,-37,  3, -4,  8,  6 },
     {   1,   1,  2,  3,  4,  5,  6 }
 };
 
@@ -461,7 +464,7 @@ ParamTable<4> bishopPairValue { 0, 100, useUciParam,
 };
 
 ParamTable<7> rookEGDrawFactor { 0, 255, useUciParam,
-    { 76, 73,111,138,129,161,152 },
+    { 75, 73,111,137,129,161,152 },
     {  1,  2,  3,  4,  5,  6,  7 }
 };
 
@@ -471,12 +474,12 @@ ParamTable<9> pawnShelterTable { -100, 100, useUciParam,
 };
 
 ParamTable<9> pawnStormTable { -300, 100, useUciParam,
-    {-121,-212,-300, 43, 36,-31, 12,-29,-34 },
+    {-127,-210,-300, 44, 44,-32, 13,-29,-33 },
     {  1,   2,   3,  4,  5,  6,  7,  8,  9 }
 };
 
 ParamTable<10> kingAttackWeight { 0, 200, useUciParam,
-    {  0,  1,  0,  5,  8, 18, 30, 53, 69,155 },
+    {  0,  1,  0,  5,  8, 18, 30, 54, 69,155 },
     {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9 }
 };
 
@@ -537,6 +540,9 @@ Parameters::Parameters() {
     REGISTER_PARAM(knightVsQueenBonus2, "KnightVsQueenBonus2");
     REGISTER_PARAM(knightVsQueenBonus3, "KnightVsQueenBonus3");
     REGISTER_PARAM(krkpBonus, "RookVsPawnBonus");
+    REGISTER_PARAM(krpkbBonus, "RookPawnVsBishopBonus");
+    REGISTER_PARAM(krpkbPenalty, "RookPawnVsBishopPenalty");
+    REGISTER_PARAM(krpknBonus, "RookPawnVsKnightBonus");
 
     REGISTER_PARAM(pawnTradePenalty, "PawnTradePenalty");
     REGISTER_PARAM(pieceTradeBonus, "PieceTradeBonus");

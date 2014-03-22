@@ -468,7 +468,10 @@ DECLARE_PARAM(QvsRMBonus2,         11, -100, 100, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus1, 125, 0, 200, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus2, 251, 0, 600, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus3, 357, 0, 800, useUciParam);
-DECLARE_PARAM(krkpBonus,           194, 0, 800, useUciParam);
+DECLARE_PARAM(krkpBonus,           193, 0, 800, useUciParam);
+DECLARE_PARAM(krpkbBonus,          36,  -200, 200, useUciParam);
+DECLARE_PARAM(krpkbPenalty,        41,  0, 128, useUciParam);
+DECLARE_PARAM(krpknBonus,          189, 0, 400, useUciParam);
 
 DECLARE_PARAM(pawnTradePenalty,    62, 0, 100, useUciParam);
 DECLARE_PARAM(pieceTradeBonus,     10, 0, 100, useUciParam);
@@ -484,18 +487,18 @@ DECLARE_PARAM(rookDouble7thRowBonus, 75, 0, 100, useUciParam);
 DECLARE_PARAM(trappedRookPenalty,    67, 0, 200, useUciParam);
 
 DECLARE_PARAM(bishopPairPawnPenalty, 5, 0, 10, useUciParam);
-DECLARE_PARAM(trappedBishopPenalty1, 75, 0, 300, useUciParam);
+DECLARE_PARAM(trappedBishopPenalty1, 76, 0, 300, useUciParam);
 DECLARE_PARAM(trappedBishopPenalty2, 88, 0, 300, useUciParam);
 DECLARE_PARAM(oppoBishopPenalty,     84, 0, 128, useUciParam);
 
 DECLARE_PARAM(kingSafetyHalfOpenBCDEFG1, 22, 0, 100, useUciParam);
 DECLARE_PARAM(kingSafetyHalfOpenBCDEFG2, 0, 0, 100, useUciParam);
-DECLARE_PARAM(kingSafetyHalfOpenAH1,     13, 0, 100, useUciParam);
+DECLARE_PARAM(kingSafetyHalfOpenAH1,     14, 0, 100, useUciParam);
 DECLARE_PARAM(kingSafetyHalfOpenAH2,     10, 0, 100, useUciParam);
 DECLARE_PARAM(kingSafetyWeight1,         27, -50, 200, useUciParam);
-DECLARE_PARAM(kingSafetyWeight2,         -8, -50, 200, useUciParam);
+DECLARE_PARAM(kingSafetyWeight2,         -11, -50, 200, useUciParam);
 DECLARE_PARAM(kingSafetyWeight3,         11, -50, 200, useUciParam);
-DECLARE_PARAM(kingSafetyWeight4,         14, -50, 200, useUciParam);
+DECLARE_PARAM(kingSafetyWeight4,         13, -50, 200, useUciParam);
 DECLARE_PARAM(kingSafetyThreshold,       56, 0, 200, useUciParam);
 DECLARE_PARAM(pawnStormBonus,            9, 0, 20, useUciParam);
 

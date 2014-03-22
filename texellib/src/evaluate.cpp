@@ -1568,6 +1568,57 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
         return score - krkpBonus;
     }
 
+    // Bonus for KRPKN
+    if (pos.pieceTypeBB(Piece::WROOK) && pos.pieceTypeBB(Piece::WPAWN) &&
+        !pos.pieceTypeBB(Piece::BBISHOP) && (pos.bMtrl() == nV)  && (pos.bMtrlPawns() == 0)) {
+        if (!doEval) return 1;
+        return score + krpknBonus;
+    }
+    if (pos.pieceTypeBB(Piece::BROOK) && pos.pieceTypeBB(Piece::BPAWN) &&
+        !pos.pieceTypeBB(Piece::WBISHOP) && (pos.wMtrl() == nV)  && (pos.wMtrlPawns() == 0)) {
+        if (!doEval) return 1;
+        return score - krpknBonus;
+    }
+
+    // Bonus for KRPKB
+    int krpkbAdjustment = 0;
+    if (pos.pieceTypeBB(Piece::WROOK) && pos.pieceTypeBB(Piece::WPAWN) &&
+        !pos.pieceTypeBB(Piece::BKNIGHT) && (pos.bMtrl() == bV)  && (pos.bMtrlPawns() == 0)) {
+        if (!doEval) return 1;
+        score += krpkbBonus;
+        krpkbAdjustment += krpkbBonus;
+    }
+    if (pos.pieceTypeBB(Piece::BROOK) && pos.pieceTypeBB(Piece::BPAWN) &&
+        !pos.pieceTypeBB(Piece::WKNIGHT) && (pos.wMtrl() == bV)  && (pos.wMtrlPawns() == 0)) {
+        if (!doEval) return 1;
+        score -= krpkbBonus;
+        krpkbAdjustment += krpkbBonus;
+    }
+    // Penalty for KRPKB when pawn is on a/h file
+    if ((pos.wMtrl() - pos.wMtrlPawns() == rV) && (pos.wMtrlPawns() <= pV) && pos.pieceTypeBB(Piece::BBISHOP)) {
+        if (!doEval) return 1;
+        if (score - krpkbAdjustment > 0) {
+            U64 pMask = pos.pieceTypeBB(Piece::WPAWN);
+            U64 bMask = pos.pieceTypeBB(Piece::BBISHOP);
+            if (((pMask & BitBoard::maskFile[0]) && (bMask & BitBoard::maskDarkSq)) ||
+                ((pMask & BitBoard::maskFile[7]) && (bMask & BitBoard::maskLightSq))) {
+                score = (score - krpkbAdjustment) * krpkbPenalty / 128;
+                return score;
+            }
+        }
+    }
+    if ((pos.bMtrl() - pos.bMtrlPawns() == rV) && (pos.bMtrlPawns() <= pV) && pos.pieceTypeBB(Piece::WBISHOP)) {
+        if (!doEval) return 1;
+        if (score + krpkbAdjustment < 0) {
+            U64 pMask = pos.pieceTypeBB(Piece::BPAWN);
+            U64 bMask = pos.pieceTypeBB(Piece::WBISHOP);
+            if (((pMask & BitBoard::maskFile[0]) && (bMask & BitBoard::maskLightSq)) ||
+                ((pMask & BitBoard::maskFile[7]) && (bMask & BitBoard::maskDarkSq)))
+                score = (score + krpkbAdjustment) * krpkbPenalty / 128;
+                return score;
+        }
+    }
+
     // Account for draw factor in rook endgames
     if ((BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK)) == 1) &&
         (BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK)) == 1) &&

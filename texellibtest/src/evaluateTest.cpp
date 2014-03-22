@@ -345,7 +345,7 @@ testMaterial() {
     int s2 = evalFEN("6k1/ppp2pp1/nnnnnnnp/8/8/7P/PPP2PP1/Q2QQ1K1 w - - 0 1");
     ASSERT(s2 < s1);
     int s3 = evalFEN("nnnnknnn/pppppppp/8/8/8/8/PPPPPPPP/Q2QK2Q w - - 0 1");
-    ASSERT(s3 < 50);
+    ASSERT(s3 < 55);
 
     // Test symmetry of imbalances corrections
     evalFEN("3rr1k1/pppb1ppp/2n2n2/4p3/1bB1P3/2N1BN2/PPP1QPPP/6K1 w - - 0 1");
@@ -454,7 +454,7 @@ testEndGameEval() {
     score = evalWhite(pos);
     ASSERT(-score > bV * 2);
 
-    // KRPKN is win for white
+    // KRPKB is win for white
     score = evalFEN("8/3bk3/8/8/8/3P4/3RK3/8 w - - 0 1");
     const int pV = ::pV;
     ASSERT(score > rV + pV - bV - 100);
@@ -491,6 +491,19 @@ testEndGameEval() {
     // Position with passed pawn and opposite side has a knight
     score = evalFEN("8/8/8/1P6/8/B7/1K5n/7k w - - 0 1");
     ASSERT(score > pV);
+
+    { // Test KRPKM
+        int score1 = evalFEN("8/2b5/k7/P7/RK6/8/8/8 w - - 0 1");
+        ASSERT(score1 < 150);
+        int score2 = evalFEN("8/1b6/k7/P7/RK6/8/8/8 w - - 0 1");
+        ASSERT(score2 > 300);
+        int score3 = evalFEN("8/3b4/1k6/1P6/1RK5/8/8/8 w - - 0 1");
+        ASSERT(score3 > 300);
+        int score4 = evalFEN("8/3n4/1k6/1P6/1RK5/8/8/8 w - - 0 1");
+        ASSERT(score4 > 400);
+        int score5 = evalFEN("8/2n5/k7/P7/RK6/8/8/8 w - - 0 1");
+        ASSERT(score5 > 400);
+    }
 }
 
 static void
