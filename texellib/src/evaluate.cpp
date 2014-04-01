@@ -828,6 +828,35 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
         }
     }
 
+    { // Bonus for pawns protected by pawns
+        U64 m = wPawnAttacks & wPawns;
+        while (m != 0) {
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            score += protectedPawnBonus[63-sq];
+            m &= m-1;
+        }
+        m = bPawnAttacks & bPawns;
+        while (m != 0) {
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            score -= protectedPawnBonus[sq];
+            m &= m-1;
+        }
+    }
+    { // Bonus for pawns attacked by pawns
+        U64 m = wPawnAttacks & bPawns;
+        while (m != 0) {
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            score += attackedPawnBonus[63-sq];
+            m &= m-1;
+        }
+        m = bPawnAttacks & wPawns;
+        while (m != 0) {
+            int sq = BitBoard::numberOfTrailingZeros(m);
+            score -= attackedPawnBonus[sq];
+            m &= m-1;
+        }
+    }
+
     ph.key = pos.pawnZobristHash();
     ph.score = score;
     ph.passedBonusW = (short)passedBonusW;

@@ -774,6 +774,8 @@ ChessTool::printParams() {
     printTableNxN<8>(qt2b, "qt2b", os);
     printTableNxN<8>(rt1b, "rt1b", os);
     printTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", os);
+    printTableNxN<8>(protectedPawnBonus, "protectedPawnBonus", os);
+    printTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", os);
 
     printTable(rookMobScore, "rookMobScore", os);
     printTable(bishMobScore, "bishMobScore", os);
@@ -981,6 +983,8 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTableNxN<8>(qt2b, "qt2b", cppFile);
     replaceTableNxN<8>(rt1b, "rt1b", cppFile);
     replaceTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", cppFile);
+    replaceTableNxN<8>(protectedPawnBonus, "protectedPawnBonus", cppFile);
+    replaceTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", cppFile);
 
     replaceTable(rookMobScore, "rookMobScore", cppFile);
     replaceTable(bishMobScore, "bishMobScore", cppFile);
