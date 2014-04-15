@@ -978,24 +978,23 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
 
     // Penalty for bishop trapped behind pawn at a2/h2/a7/h7
     if (((wBishops | bBishops) & 0x0081000000008100L) != 0) {
-        const int bTrapped1 = trappedBishopPenalty1;
-        const int bTrapped2 = trappedBishopPenalty2;
+        const int bTrapped = trappedBishopPenalty;
         if ((pos.getPiece(48) == Piece::WBISHOP) && // a7
             (pos.getPiece(41) == Piece::BPAWN) &&
             (pos.getPiece(50) == Piece::BPAWN))
-            score -= bTrapped1;
+            score -= bTrapped;
         if ((pos.getPiece(55) == Piece::WBISHOP) && // h7
             (pos.getPiece(46) == Piece::BPAWN) &&
             (pos.getPiece(53) == Piece::BPAWN))
-            score -= (pos.pieceTypeBB(Piece::WQUEEN) != 0) ? bTrapped2 : bTrapped1;
+            score -= bTrapped;
         if ((pos.getPiece(8)  == Piece::BBISHOP) &&  // a2
             (pos.getPiece(17) == Piece::WPAWN) &&
             (pos.getPiece(10) == Piece::WPAWN))
-            score += bTrapped1;
+            score += bTrapped;
         if ((pos.getPiece(15) == Piece::BBISHOP) && // h2
             (pos.getPiece(22) == Piece::WPAWN) &&
             (pos.getPiece(13) == Piece::WPAWN))
-            score += (pos.pieceTypeBB(Piece::BQUEEN) != 0) ? bTrapped2 : bTrapped1;
+            score += bTrapped;
     }
 
     return score;

@@ -836,8 +836,7 @@ ChessTool::printParams() {
     os << "trappedRookPenalty    : " << trappedRookPenalty << std::endl;
 
     os << "bishopPairPawnPenalty : " << bishopPairPawnPenalty << std::endl;
-    os << "trappedBishopPenalty1 : " << trappedBishopPenalty1 << std::endl;
-    os << "trappedBishopPenalty2 : " << trappedBishopPenalty2 << std::endl;
+    os << "trappedBishopPenalty  : " << trappedBishopPenalty << std::endl;
     os << "oppoBishopPenalty     : " << oppoBishopPenalty << std::endl;
 
     os << "kingSafetyHalfOpenBCDEFG1 : " << kingSafetyHalfOpenBCDEFG1 << std::endl;
@@ -1045,8 +1044,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(trappedRookPenalty, "trappedRookPenalty", hppFile);
 
     replaceValue(bishopPairPawnPenalty, "bishopPairPawnPenalty", hppFile);
-    replaceValue(trappedBishopPenalty1, "trappedBishopPenalty1", hppFile);
-    replaceValue(trappedBishopPenalty2, "trappedBishopPenalty2", hppFile);
+    replaceValue(trappedBishopPenalty, "trappedBishopPenalty", hppFile);
     replaceValue(oppoBishopPenalty, "oppoBishopPenalty", hppFile);
 
     replaceValue(kingSafetyHalfOpenBCDEFG1, "kingSafetyHalfOpenBCDEFG1", hppFile);
