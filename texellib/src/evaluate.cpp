@@ -534,12 +534,22 @@ Evaluate::pawnBonus(const Position& pos) {
             passedScore += kingPPSupportK[4] * kingPPSupportP[ky-2] / 32;
 
         // Penalty for opponent pieces blocking passed pawns
-        U64 ppBlockSquares = BitBoard::northFill(phd.passedPawnsW);
-        passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BKNIGHT)) * ppBlockerBonus[0];
-        passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BBISHOP)) * ppBlockerBonus[1];
-        passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BROOK))   * ppBlockerBonus[2];
-        passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BQUEEN))  * ppBlockerBonus[3];
-        passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BKING))   * ppBlockerBonus[4];
+        U64 ppBlockSquares = phd.passedPawnsW << 8;
+        if (ppBlockSquares & pos.blackBB()) {
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BKNIGHT)) * ppBlockerBonus[0];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BBISHOP)) * ppBlockerBonus[1];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BROOK))   * ppBlockerBonus[2];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BQUEEN))  * ppBlockerBonus[3];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BKING))   * ppBlockerBonus[4];
+        }
+        ppBlockSquares = BitBoard::northFill(phd.passedPawnsW << 16);
+        if (ppBlockSquares & pos.blackBB()) {
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BKNIGHT)) * ppBlockerBonus[5];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BBISHOP)) * ppBlockerBonus[6];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BROOK))   * ppBlockerBonus[7];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BQUEEN))  * ppBlockerBonus[8];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BKING))   * ppBlockerBonus[9];
+        }
     }
     score += interpolate(passedScore * passedPawnEGFactor / 32, passedScore, mhd->wPassedPawnIPF);
 
@@ -561,12 +571,22 @@ Evaluate::pawnBonus(const Position& pos) {
             passedScore += kingPPSupportK[4] * kingPPSupportP[5-ky] / 32;
 
         // Penalty for opponent pieces blocking passed pawns
-        U64 ppBlockSquares = BitBoard::southFill(phd.passedPawnsB);
-        passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WKNIGHT)) * ppBlockerBonus[0];
-        passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WBISHOP)) * ppBlockerBonus[1];
-        passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WROOK))   * ppBlockerBonus[2];
-        passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WQUEEN))  * ppBlockerBonus[3];
-        passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WKING))   * ppBlockerBonus[4];
+        U64 ppBlockSquares = phd.passedPawnsB >> 8;
+        if (ppBlockSquares & pos.whiteBB()) {
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WKNIGHT)) * ppBlockerBonus[0];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WBISHOP)) * ppBlockerBonus[1];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WROOK))   * ppBlockerBonus[2];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WQUEEN))  * ppBlockerBonus[3];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WKING))   * ppBlockerBonus[4];
+        }
+        ppBlockSquares = BitBoard::southFill(phd.passedPawnsB >> 16);
+        if (ppBlockSquares && pos.whiteBB()) {
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WKNIGHT)) * ppBlockerBonus[5];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WBISHOP)) * ppBlockerBonus[6];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WROOK))   * ppBlockerBonus[7];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WQUEEN))  * ppBlockerBonus[8];
+            passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WKING))   * ppBlockerBonus[9];
+        }
     }
     score -= interpolate(passedScore * passedPawnEGFactor / 32, passedScore, mhd->bPassedPawnIPF);
 
