@@ -1137,6 +1137,23 @@ Evaluate::kingSafety(const Position& pos) {
             score += trappedRookPenalty;
         }
     }
+
+    // Bonus for minor pieces protecting king
+    {
+        U64 kAdj = pos.pieceTypeBB(Piece::WKING);
+        kAdj |= ((kAdj & BitBoard::maskAToGFiles) << 8) | ((kAdj & BitBoard::maskBToHFiles) >> 8);
+        kAdj |= kAdj << 8;
+        kAdj &= pos.pieceTypeBB(Piece::WKNIGHT, Piece::WBISHOP);
+        score += BitBoard::bitCount(kAdj) * minorKingProtectBonus;
+    }
+    {
+        U64 kAdj = pos.pieceTypeBB(Piece::BKING);
+        kAdj |= ((kAdj & BitBoard::maskAToGFiles) << 8) | ((kAdj & BitBoard::maskBToHFiles) >> 8);
+        kAdj |= kAdj >> 8;
+        kAdj &= pos.pieceTypeBB(Piece::BKNIGHT, Piece::BBISHOP);
+        score -= BitBoard::bitCount(kAdj) * minorKingProtectBonus;
+    }
+
     score += kingAttackWeight[std::min(bKingAttacks, 9)] - kingAttackWeight[std::min(wKingAttacks, 9)];
     const int kSafety = interpolate(0, score, mhd->kingSafetyIPF);
     return kSafety;

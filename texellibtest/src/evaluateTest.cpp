@@ -587,14 +587,14 @@ testEndGameCorrections() {
     ASSERT(krk > 975);
     int kqkn = evalEgFen("8/3nk3/8/8/8/3QK3/8/8 w - - 0 1", 1);
     ASSERT(kqkn > 975);
-    int kqkb = evalEgFen("8/3bk3/8/8/8/3QK3/8/8 w - - 0 1", 1);
+    int kqkb = evalEgFen("8/3bk3/8/8/8/3QK3/8/8 w - - 0 1", 3);
     ASSERT(kqkb > 975);
 
     ASSERT(kqk > krk);
     ASSERT(kqk > kqkn);
     ASSERT(kqk > kqkb);
 
-    int kbbk = evalEgFen("8/4k3/8/8/8/2BBK3/8/8 w - - 0 1");
+    int kbbk = evalEgFen("8/4k3/8/8/8/2BBK3/8/8 w - - 0 1", 6);
     ASSERT(kbbk >= 775);
 
     ASSERT(krk > kbbk);
@@ -822,7 +822,7 @@ static void
 testKRKP() {
     const int pV = ::pV;
     const int rV = ::rV;
-    const int winScore = 420;
+    const int winScore = 418;
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
