@@ -42,6 +42,17 @@ int Evaluate::castleFactor[256];
 
 static StaticInitializer<Evaluate> evInit;
 
+
+/** Get bitboard mask for a square translated (dx,dy). Return 0 if square outside board. */
+static inline U64 getMask(int sq, int dx, int dy) {
+    int x = Position::getX(sq) + dx;
+    int y = Position::getY(sq) + dy;
+    if (x >= 0 && x < 8 && y >= 0 && y < 8)
+        return 1ULL << Position::getSquare(x, y);
+    else
+        return 0;
+}
+
 void
 Evaluate::staticInitialize() {
     psTab1[Piece::EMPTY]   = empty;
@@ -84,6 +95,18 @@ Evaluate::staticInitialize() {
         castleFactor[i] = 1024 / std::min(a1Dist, h1Dist);
     }
     computeKnightMobility();
+
+    // Initialize knight/bishop king safety patterns
+    for (int sq = 0; sq < 64; sq++) {
+        const int x = Position::getX(sq);
+        const int y = Position::getY(sq);
+        int dx = (x < 4) ? -1 : 1;
+        int dy = (y < 4) ? 1 : -1;
+        U64 n = getMask(sq, -dx, 0) | getMask(sq, dx, 0) | getMask(sq, 0, dy) | getMask(sq, 0, 2*dy) | getMask(sq, dx, 2*dy);
+        U64 b = getMask(sq, -dx, 0) | getMask(sq, 0, dy) | getMask(sq, dx, 2*dy);
+        knightKingProtectPattern[sq] = n;
+        bishopKingProtectPattern[sq] = b;
+    }
 }
 
 namespace EvaluateNS {
@@ -154,6 +177,8 @@ static const int winKingTable[64] = {
 };
 
 int Evaluate::knightMobScoreA[64][9];
+U64 Evaluate::knightKingProtectPattern[64];
+U64 Evaluate::bishopKingProtectPattern[64];
 
 Evaluate::Evaluate(EvalHashTables& et)
     : pawnHash(et.pawnHash),
@@ -1104,12 +1129,15 @@ Evaluate::threatBonus(const Position& pos) {
 /** Compute king safety for both kings. */
 int
 Evaluate::kingSafety(const Position& pos) {
-    const int minM = rV + bV;
-    const int m = (pos.wMtrl() - pos.wMtrlPawns() + pos.bMtrl() - pos.bMtrlPawns()) / 2;
+    const int minM = (rV + bV) * 2;
+    const int m = pos.wMtrl() - pos.wMtrlPawns() + pos.bMtrl() - pos.bMtrlPawns();
     if (m <= minM)
         return 0;
+
+    const int wKing = pos.getKingSq(true);
+    const int bKing = pos.getKingSq(false);
     int score = kingSafetyKPPart(pos);
-    if (Position::getY(pos.wKingSq()) == 0) {
+    if (Position::getY(wKing) == 0) {
         if (((pos.pieceTypeBB(Piece::WKING) & 0x60L) != 0) && // King on f1 or g1
             ((pos.pieceTypeBB(Piece::WROOK) & 0xC0L) != 0) && // Rook on g1 or h1
             ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[6]) != 0) &&
@@ -1123,7 +1151,7 @@ Evaluate::kingSafety(const Position& pos) {
             score -= trappedRookPenalty;
         }
     }
-    if (Position::getY(pos.bKingSq()) == 7) {
+    if (Position::getY(bKing) == 7) {
         if (((pos.pieceTypeBB(Piece::BKING) & 0x6000000000000000L) != 0) && // King on f8 or g8
             ((pos.pieceTypeBB(Piece::BROOK) & 0xC000000000000000L) != 0) && // Rook on g8 or h8
             ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[6]) != 0) &&
@@ -1139,20 +1167,10 @@ Evaluate::kingSafety(const Position& pos) {
     }
 
     // Bonus for minor pieces protecting king
-    {
-        U64 kAdj = pos.pieceTypeBB(Piece::WKING);
-        kAdj |= ((kAdj & BitBoard::maskAToGFiles) << 8) | ((kAdj & BitBoard::maskBToHFiles) >> 8);
-        kAdj |= kAdj << 8;
-        kAdj &= pos.pieceTypeBB(Piece::WKNIGHT, Piece::WBISHOP);
-        score += BitBoard::bitCount(kAdj) * minorKingProtectBonus;
-    }
-    {
-        U64 kAdj = pos.pieceTypeBB(Piece::BKING);
-        kAdj |= ((kAdj & BitBoard::maskAToGFiles) << 8) | ((kAdj & BitBoard::maskBToHFiles) >> 8);
-        kAdj |= kAdj >> 8;
-        kAdj &= pos.pieceTypeBB(Piece::BKNIGHT, Piece::BBISHOP);
-        score -= BitBoard::bitCount(kAdj) * minorKingProtectBonus;
-    }
+    score += BitBoard::bitCount(Evaluate::knightKingProtectPattern[wKing] & pos.pieceTypeBB(Piece::WKNIGHT)) * knightKingProtectBonus;
+    score += BitBoard::bitCount(Evaluate::bishopKingProtectPattern[wKing] & pos.pieceTypeBB(Piece::WBISHOP)) * bishopKingProtectBonus;
+    score -= BitBoard::bitCount(Evaluate::knightKingProtectPattern[bKing] & pos.pieceTypeBB(Piece::BKNIGHT)) * knightKingProtectBonus;
+    score -= BitBoard::bitCount(Evaluate::bishopKingProtectPattern[bKing] & pos.pieceTypeBB(Piece::BBISHOP)) * bishopKingProtectBonus;
 
     score += kingAttackWeight[std::min(bKingAttacks, 9)] - kingAttackWeight[std::min(wKingAttacks, 9)];
     const int kSafety = interpolate(0, score, mhd->kingSafetyIPF);

@@ -585,7 +585,7 @@ testEndGameCorrections() {
 
     int krk = evalEgFen("8/4k3/8/8/8/3RK3/8/8 w - - 0 1");
     ASSERT(krk > 975);
-    int kqkn = evalEgFen("8/3nk3/8/8/8/3QK3/8/8 w - - 0 1", 1);
+    int kqkn = evalEgFen("8/3nk3/8/8/8/3QK3/8/8 w - - 0 1", 2);
     ASSERT(kqkn > 975);
     int kqkb = evalEgFen("8/3bk3/8/8/8/3QK3/8/8 w - - 0 1", 3);
     ASSERT(kqkb > 975);
