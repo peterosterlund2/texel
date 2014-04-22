@@ -805,6 +805,15 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     bBackward &= ~BitBoard::northFill(wPawnFiles);
     score -= (BitBoard::bitCount(wBackward) - BitBoard::bitCount(bBackward)) * pawnBackwardPenalty;
 
+    // Evaluate "semi-backward pawns", defined as pawns on 2:nd or 3:rd rank that can advance,
+    // but the advanced pawn is attacked by an enemy pawn.
+    U64 wSemiBackward = wPawns & ~((wPawns | bPawns) >> 8) & (bPawnAttacks >> 8);
+    score -= BitBoard::bitCount(wSemiBackward & BitBoard::maskRow2) * pawnSemiBackwardPenalty1;
+    score -= BitBoard::bitCount(wSemiBackward & BitBoard::maskRow3) * pawnSemiBackwardPenalty2;
+    U64 bSemiBackward = bPawns & ~((wPawns | bPawns) << 8) & (wPawnAttacks << 8);
+    score += BitBoard::bitCount(bSemiBackward & BitBoard::maskRow7) * pawnSemiBackwardPenalty1;
+    score += BitBoard::bitCount(bSemiBackward & BitBoard::maskRow6) * pawnSemiBackwardPenalty2;
+
     // Evaluate passed pawn bonus, white
     U64 passedPawnsW = wPawns & ~BitBoard::southFill(bPawns | bPawnAttacks | (wPawns >> 8));
     int passedBonusW = 0;

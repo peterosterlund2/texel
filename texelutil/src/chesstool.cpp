@@ -806,11 +806,13 @@ ChessTool::printParams() {
     os << "rV : " << rV << std::endl;
     os << "qV : " << qV << std::endl;
 
-    os << "pawnIslandPenalty      : " << pawnIslandPenalty << std::endl;
-    os << "pawnBackwardPenalty    : " << pawnBackwardPenalty << std::endl;
-    os << "pawnGuardedPassedBonus : " << pawnGuardedPassedBonus << std::endl;
-    os << "pawnRaceBonus          : " << pawnRaceBonus << std::endl;
-    os << "passedPawnEGFactor     : " << passedPawnEGFactor << std::endl;
+    os << "pawnIslandPenalty        : " << pawnIslandPenalty << std::endl;
+    os << "pawnBackwardPenalty      : " << pawnBackwardPenalty << std::endl;
+    os << "pawnSemiBackwardPenalty1 : " << pawnSemiBackwardPenalty1 << std::endl;
+    os << "pawnSemiBackwardPenalty2 : " << pawnSemiBackwardPenalty2 << std::endl;
+    os << "pawnGuardedPassedBonus   : " << pawnGuardedPassedBonus << std::endl;
+    os << "pawnRaceBonus            : " << pawnRaceBonus << std::endl;
+    os << "passedPawnEGFactor       : " << passedPawnEGFactor << std::endl;
 
     os << "QvsRMBonus1         : " << QvsRMBonus1 << std::endl;
     os << "QvsRMBonus2         : " << QvsRMBonus2 << std::endl;
@@ -1018,6 +1020,8 @@ ChessTool::patchParams(const std::string& directory) {
 
     replaceValue(pawnIslandPenalty, "pawnIslandPenalty", hppFile);
     replaceValue(pawnBackwardPenalty, "pawnBackwardPenalty", hppFile);
+    replaceValue(pawnSemiBackwardPenalty1, "pawnSemiBackwardPenalty1", hppFile);
+    replaceValue(pawnSemiBackwardPenalty2, "pawnSemiBackwardPenalty2", hppFile);
     replaceValue(pawnGuardedPassedBonus, "pawnGuardedPassedBonus", hppFile);
     replaceValue(pawnRaceBonus, "pawnRaceBonus", hppFile);
     replaceValue(passedPawnEGFactor, "passedPawnEGFactor", hppFile);
