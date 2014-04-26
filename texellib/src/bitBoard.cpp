@@ -49,8 +49,18 @@ const U64 BitBoard::maskFile[8] = {
 U64 BitBoard::epMaskW[8];
 U64 BitBoard::epMaskB[8];
 
+const U64 BitBoard::maskRow1;
+const U64 BitBoard::maskRow2;
+const U64 BitBoard::maskRow3;
+const U64 BitBoard::maskRow4;
+const U64 BitBoard::maskRow5;
+const U64 BitBoard::maskRow6;
+const U64 BitBoard::maskRow7;
+const U64 BitBoard::maskRow8;
+const U64 BitBoard::maskRow1Row8;
 const U64 BitBoard::maskDarkSq;
 const U64 BitBoard::maskLightSq;
+const U64 BitBoard::maskCorners;
 
 U64* BitBoard::rTables[64];
 U64 BitBoard::rMasks[64];
@@ -371,4 +381,30 @@ BitBoard::staticInitialize() {
             }
         }
     }
+}
+
+U64 BitBoard::mirrorX(U64 mask) {
+    U64 ret = 0;
+    while (mask != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(mask);
+        int x = Position::getX(sq);
+        int y = Position::getY(sq);
+        int sq2 = Position::getSquare(7-x, y);
+        ret |= (1ULL << sq2);
+        mask &= mask-1;
+    }
+    return ret;
+}
+
+U64 BitBoard::mirrorY(U64 mask) {
+    U64 ret = 0;
+    while (mask != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(mask);
+        int x = Position::getX(sq);
+        int y = Position::getY(sq);
+        int sq2 = Position::getSquare(x, 7-y);
+        ret |= (1ULL << sq2);
+        mask &= mask-1;
+    }
+    return ret;
 }

@@ -142,6 +142,59 @@ testTrailingZeros() {
     }
 }
 
+static void
+testMaskAndMirror() {
+    ASSERT_EQUAL(BitBoard::sqMask(A1,H1,A8,H8), BitBoard::maskCorners);
+    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,C1,D1,E1,F1,G1,H1), BitBoard::maskRow1);
+    ASSERT_EQUAL(BitBoard::sqMask(A2,B2,C2,D2,E2,F2,G2,H2), BitBoard::maskRow2);
+    ASSERT_EQUAL(BitBoard::sqMask(A3,B3,C3,D3,E3,F3,G3,H3), BitBoard::maskRow3);
+    ASSERT_EQUAL(BitBoard::sqMask(A4,B4,C4,D4,E4,F4,G4,H4), BitBoard::maskRow4);
+    ASSERT_EQUAL(BitBoard::sqMask(A5,B5,C5,D5,E5,F5,G5,H5), BitBoard::maskRow5);
+    ASSERT_EQUAL(BitBoard::sqMask(A6,B6,C6,D6,E6,F6,G6,H6), BitBoard::maskRow6);
+    ASSERT_EQUAL(BitBoard::sqMask(A7,B7,C7,D7,E7,F7,G7,H7), BitBoard::maskRow7);
+    ASSERT_EQUAL(BitBoard::sqMask(A8,B8,C8,D8,E8,F8,G8,H8), BitBoard::maskRow8);
+
+    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,C1,D1,E1,F1,G1,H1,
+                                  A8,B8,C8,D8,E8,F8,G8,H8), BitBoard::maskRow1Row8);
+    ASSERT_EQUAL(BitBoard::mirrorX(BitBoard::maskRow1Row8), BitBoard::maskRow1Row8);
+    ASSERT_EQUAL(BitBoard::mirrorY(BitBoard::maskRow1Row8), BitBoard::maskRow1Row8);
+
+    ASSERT_EQUAL(BitBoard::mirrorX(BitBoard::maskDarkSq), BitBoard::maskLightSq);
+    ASSERT_EQUAL(BitBoard::mirrorY(BitBoard::maskDarkSq), BitBoard::maskLightSq);
+    ASSERT_EQUAL(BitBoard::mirrorX(BitBoard::maskLightSq), BitBoard::maskDarkSq);
+    ASSERT_EQUAL(BitBoard::mirrorY(BitBoard::maskLightSq), BitBoard::maskDarkSq);
+
+    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,C1), 7);
+    ASSERT_EQUAL(BitBoard::sqMask(B1,C1,D1,F1,G1), 0x6E);
+    ASSERT_EQUAL(BitBoard::sqMask(F1,G1), 0x60L);
+    ASSERT_EQUAL(BitBoard::sqMask(B1,C1,D1), 0xEL);
+    ASSERT_EQUAL(BitBoard::sqMask(G1,H1), 0xC0L);
+    ASSERT_EQUAL(BitBoard::sqMask(B1,C1), 0x6L);
+    ASSERT_EQUAL(BitBoard::sqMask(A1,B1), 0x3L);
+    ASSERT_EQUAL(BitBoard::sqMask(F8,G8), 0x6000000000000000L);
+    ASSERT_EQUAL(BitBoard::sqMask(G8,H8), 0xC000000000000000L);
+    ASSERT_EQUAL(BitBoard::sqMask(B8,C8), 0x600000000000000L);
+    ASSERT_EQUAL(BitBoard::sqMask(A8,B8), 0x300000000000000L);
+
+    ASSERT_EQUAL(BitBoard::sqMask(C2,B3,F2,G3,B6,C7,G6,F7), 0x24420000422400ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(A8,B8,A7,B7), 0x0303000000000000ULL);
+
+    ASSERT_EQUAL(BitBoard::sqMask(G8,H8,G7,H7), 0xC0C0000000000000ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,A2,B2), 0x0303ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(G1,H1,G2,H2), 0xC0C0ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(A8,B8,A7), 0x0301000000000000ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(G8,H8,H7), 0xC080000000000000ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,A2), 0x0103ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(G1,H1,H2), 0x80C0ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(A8,B8,C8,D8,D7), 0x0F08000000000000ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(A8,B8,A7), 0x0301000000000000ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(E8,F8,G8,H8,E7), 0xF010000000000000ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(G8,H8,H7), 0xC080000000000000ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,C1,D1,D2), 0x080FULL);
+    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,A2), 0x0103ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(E1,F1,G1,H1,E2), 0x10F0ULL);
+    ASSERT_EQUAL(BitBoard::sqMask(G1,H1,H2), 0x80C0ULL);
+}
 
 cute::suite
 BitBoardTest::getSuite() const {
@@ -152,5 +205,6 @@ BitBoardTest::getSuite() const {
     s.push_back(CUTE(testGetDirection));
     s.push_back(CUTE(testGetDistance));
     s.push_back(CUTE(testTrailingZeros));
+    s.push_back(CUTE(testMaskAndMirror));
     return s;
 }

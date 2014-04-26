@@ -87,11 +87,11 @@ Evaluate::staticInitialize() {
         int h1Dist = 100;
         bool h1Castle = (i & (1<<7)) != 0;
         if (h1Castle)
-            h1Dist = 2 + BitBoard::bitCount(i & 0x0000000000000060L); // f1,g1
+            h1Dist = 2 + BitBoard::bitCount(i & BitBoard::sqMask(F1,G1));
         int a1Dist = 100;
         bool a1Castle = (i & 1) != 0;
         if (a1Castle)
-            a1Dist = 2 + BitBoard::bitCount(i & 0x000000000000000EL); // b1,c1,d1
+            a1Dist = 2 + BitBoard::bitCount(i & BitBoard::sqMask(B1,C1,D1));
         castleFactor[i] = 1024 / std::min(a1Dist, h1Dist);
     }
     computeKnightMobility();
@@ -518,12 +518,12 @@ Evaluate::castleBonus(const Position& pos) {
         return 0;
 
     U64 occupied = pos.occupiedBB();
-    int tmp = (int) (occupied & 0x6E);
+    int tmp = (int) (occupied & BitBoard::sqMask(B1,C1,D1,F1,G1));
     if (pos.a1Castle()) tmp |= 1;
     if (pos.h1Castle()) tmp |= (1 << 7);
     const int wBonus = (castleValue * castleFactor[tmp]) >> 10;
 
-    tmp = (int) ((occupied >> 56) & 0x6E);
+    tmp = (int) ((occupied >> 56) & BitBoard::sqMask(B1,C1,D1,F1,G1));
     if (pos.a8Castle()) tmp |= 1;
     if (pos.h8Castle()) tmp |= (1 << 7);
     const int bBonus = (castleValue * castleFactor[tmp]) >> 10;
@@ -939,9 +939,9 @@ Evaluate::rookBonus(const Position& pos) {
             bKingAttacks += BitBoard::bitCount(atk & bKingZone);
         m &= m-1;
     }
-    U64 r7 = pos.pieceTypeBB(Piece::WROOK) & 0x00ff000000000000ULL;
+    U64 r7 = pos.pieceTypeBB(Piece::WROOK) & BitBoard::maskRow7;
     if (((r7 & (r7 - 1)) != 0) &&
-        ((pos.pieceTypeBB(Piece::BKING) & 0xff00000000000000ULL) != 0))
+        ((pos.pieceTypeBB(Piece::BKING) & BitBoard::maskRow8) != 0))
         score += rookDouble7thRowBonus; // Two rooks on 7:th row
     m = pos.pieceTypeBB(Piece::BROOK);
     while (m != 0) {
@@ -956,9 +956,9 @@ Evaluate::rookBonus(const Position& pos) {
             wKingAttacks += BitBoard::bitCount(atk & wKingZone);
         m &= m-1;
     }
-    r7 = pos.pieceTypeBB(Piece::BROOK) & 0xff00L;
+    r7 = pos.pieceTypeBB(Piece::BROOK) & BitBoard::maskRow2;
     if (((r7 & (r7 - 1)) != 0) &&
-        ((pos.pieceTypeBB(Piece::WKING) & 0xffL) != 0))
+        ((pos.pieceTypeBB(Piece::WKING) & BitBoard::maskRow1) != 0))
       score -= rookDouble7thRowBonus; // Two rooks on 2:nd row
     return score;
 }
@@ -1031,23 +1031,23 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
     }
 
     // Penalty for bishop trapped behind pawn at a2/h2/a7/h7
-    if (((wBishops | bBishops) & 0x0081000000008100L) != 0) {
+    if (((wBishops | bBishops) & BitBoard::sqMask(A2,H2,A7,H7)) != 0) {
         const int bTrapped = trappedBishopPenalty;
-        if ((pos.getPiece(48) == Piece::WBISHOP) && // a7
-            (pos.getPiece(41) == Piece::BPAWN) &&
-            (pos.getPiece(50) == Piece::BPAWN))
+        if ((pos.getPiece(A7) == Piece::WBISHOP) &&
+            (pos.getPiece(B6) == Piece::BPAWN) &&
+            (pos.getPiece(C7) == Piece::BPAWN))
             score -= bTrapped;
-        if ((pos.getPiece(55) == Piece::WBISHOP) && // h7
-            (pos.getPiece(46) == Piece::BPAWN) &&
-            (pos.getPiece(53) == Piece::BPAWN))
+        if ((pos.getPiece(H7) == Piece::WBISHOP) &&
+            (pos.getPiece(G6) == Piece::BPAWN) &&
+            (pos.getPiece(F7) == Piece::BPAWN))
             score -= bTrapped;
-        if ((pos.getPiece(8)  == Piece::BBISHOP) &&  // a2
-            (pos.getPiece(17) == Piece::WPAWN) &&
-            (pos.getPiece(10) == Piece::WPAWN))
+        if ((pos.getPiece(A2)  == Piece::BBISHOP) &&
+            (pos.getPiece(B3) == Piece::WPAWN) &&
+            (pos.getPiece(C2) == Piece::WPAWN))
             score += bTrapped;
-        if ((pos.getPiece(15) == Piece::BBISHOP) && // h2
-            (pos.getPiece(22) == Piece::WPAWN) &&
-            (pos.getPiece(13) == Piece::WPAWN))
+        if ((pos.getPiece(H2) == Piece::BBISHOP) &&
+            (pos.getPiece(G3) == Piece::WPAWN) &&
+            (pos.getPiece(F2) == Piece::WPAWN))
             score += bTrapped;
     }
 
@@ -1147,28 +1147,28 @@ Evaluate::kingSafety(const Position& pos) {
     const int bKing = pos.getKingSq(false);
     int score = kingSafetyKPPart(pos);
     if (Position::getY(wKing) == 0) {
-        if (((pos.pieceTypeBB(Piece::WKING) & 0x60L) != 0) && // King on f1 or g1
-            ((pos.pieceTypeBB(Piece::WROOK) & 0xC0L) != 0) && // Rook on g1 or h1
+        if (((pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(F1,G1)) != 0) &&
+            ((pos.pieceTypeBB(Piece::WROOK) & BitBoard::sqMask(G1,H1)) != 0) &&
             ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[6]) != 0) &&
             ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[7]) != 0)) {
             score -= trappedRookPenalty;
         } else
-        if (((pos.pieceTypeBB(Piece::WKING) & 0x6L) != 0) && // King on b1 or c1
-            ((pos.pieceTypeBB(Piece::WROOK) & 0x3L) != 0) && // Rook on a1 or b1
+        if (((pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(B1,C1)) != 0) &&
+            ((pos.pieceTypeBB(Piece::WROOK) & BitBoard::sqMask(A1,B1)) != 0) &&
             ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[0]) != 0) &&
             ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[1]) != 0)) {
             score -= trappedRookPenalty;
         }
     }
     if (Position::getY(bKing) == 7) {
-        if (((pos.pieceTypeBB(Piece::BKING) & 0x6000000000000000L) != 0) && // King on f8 or g8
-            ((pos.pieceTypeBB(Piece::BROOK) & 0xC000000000000000L) != 0) && // Rook on g8 or h8
+        if (((pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(F8,G8)) != 0) &&
+            ((pos.pieceTypeBB(Piece::BROOK) & BitBoard::sqMask(G8,H8)) != 0) &&
             ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[6]) != 0) &&
             ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[7]) != 0)) {
             score += trappedRookPenalty;
         } else
-        if (((pos.pieceTypeBB(Piece::BKING) & 0x600000000000000L) != 0) && // King on b8 or c8
-            ((pos.pieceTypeBB(Piece::BROOK) & 0x300000000000000L) != 0) && // Rook on a8 or b8
+        if (((pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(B8,C8)) != 0) &&
+            ((pos.pieceTypeBB(Piece::BROOK) & BitBoard::sqMask(A8,B8)) != 0) &&
             ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[0]) != 0) &&
             ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[1]) != 0)) {
             score += trappedRookPenalty;
@@ -1360,8 +1360,8 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
     case MI::WQ: {
         if (!doEval) return 1;
         if (!pos.getWhiteMove() &&
-            (pos.pieceTypeBB(Piece::BKING) & 0x8100000000000081ULL) &&
-            (pos.pieceTypeBB(Piece::WQUEEN) & 0x24420000422400ULL) &&
+            (pos.pieceTypeBB(Piece::BKING) & BitBoard::maskCorners) &&
+            (pos.pieceTypeBB(Piece::WQUEEN) & BitBoard::sqMask(C2,B3,F2,G3,B6,C7,G6,F7)) &&
             (BitBoard::getTaxiDistance(pos.getKingSq(false),
                                        BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WQUEEN))) == 3))
             return 0;
@@ -1370,8 +1370,8 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
     case MI::BQ: {
         if (!doEval) return 1;
         if (pos.getWhiteMove() &&
-            (pos.pieceTypeBB(Piece::WKING) & 0x8100000000000081ULL) &&
-            (pos.pieceTypeBB(Piece::BQUEEN) & 0x24420000422400ULL) &&
+            (pos.pieceTypeBB(Piece::WKING) & BitBoard::maskCorners) &&
+            (pos.pieceTypeBB(Piece::BQUEEN) & BitBoard::sqMask(C2,B3,F2,G3,B6,C7,G6,F7)) &&
             (BitBoard::getTaxiDistance(pos.getKingSq(true),
                                        BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BQUEEN))) == 3))
             return 0;
@@ -1744,27 +1744,26 @@ Evaluate::isBishopPawnDraw(const Position& pos) const {
         return true; // Only bishops on same color can not win
 
     // Check for rook pawn + wrong color bishop
-    const Piece::Type oKing = whiteBishop ? Piece::BKING : Piece::WKING;
     if (whiteBishop) {
         if (((pos.pieceTypeBB(pawn) & BitBoard::maskBToHFiles) == 0) &&
             !lightBishop &&
-            ((pos.pieceTypeBB(oKing) & 0x0303000000000000ULL) != 0)) {
+            ((pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(A8,B8,A7,B7)) != 0)) {
             return true;
         } else
         if (((pos.pieceTypeBB(pawn) & BitBoard::maskAToGFiles) == 0) &&
             !darkBishop &&
-            ((pos.pieceTypeBB(oKing) & 0xC0C0000000000000ULL) != 0)) {
+            ((pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(G8,H8,G7,H7)) != 0)) {
             return true;
         }
     } else {
         if (((pos.pieceTypeBB(pawn) & BitBoard::maskBToHFiles) == 0) &&
             !darkBishop &&
-            ((pos.pieceTypeBB(oKing) & 0x0303ULL) != 0)) {
+            ((pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(A1,B1,A2,B2)) != 0)) {
             return true;
         } else
         if (((pos.pieceTypeBB(pawn) & BitBoard::maskAToGFiles) == 0) &&
             !lightBishop &&
-            ((pos.pieceTypeBB(oKing) & 0xC0C0ULL) != 0)) {
+            ((pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(G1,H1,G2,H2)) != 0)) {
             return true;
         }
     }
@@ -1773,17 +1772,17 @@ Evaluate::isBishopPawnDraw(const Position& pos) const {
     const Piece::Type king = whiteBishop ? Piece::WKING : Piece::BKING;
     const Piece::Type oPawn = whiteBishop ? Piece::BPAWN : Piece::WPAWN;
     const Piece::Type oKnight = whiteBishop ? Piece::BKNIGHT : Piece::WKNIGHT;
-    const int b7 = whiteBishop ? (darkBishop ? 49 : 54) : (lightBishop ? 9 : 14);
-    const int b6 = whiteBishop ? (darkBishop ? 41 : 46) : (lightBishop ? 17 : 22);
-    const int c7 = whiteBishop ? (darkBishop ? 50 : 53) : (lightBishop ? 10 : 13);
-    const int a8 = whiteBishop ? (darkBishop ? 56 : 63) : (lightBishop ? 0 : 7);
-    const int b8 = whiteBishop ? (darkBishop ? 57 : 62) : (lightBishop ? 1 : 6);
-    const int c8 = whiteBishop ? (darkBishop ? 58 : 61) : (lightBishop ? 2 : 5);
-    const int d8 = whiteBishop ? (darkBishop ? 59 : 60) : (lightBishop ? 3 : 4);
-    const int d7 = whiteBishop ? (darkBishop ? 51 : 52) : (lightBishop ? 11 : 12);
+    const int b7 = whiteBishop ? (darkBishop ? B7 : G7) : (lightBishop ? B2 : G2);
+    const int b6 = whiteBishop ? (darkBishop ? B6 : G6) : (lightBishop ? B3 : G3);
+    const int c7 = whiteBishop ? (darkBishop ? C7 : F7) : (lightBishop ? C2 : F2);
+    const int a8 = whiteBishop ? (darkBishop ? A8 : H8) : (lightBishop ? A1 : H1);
+    const int b8 = whiteBishop ? (darkBishop ? B8 : G8) : (lightBishop ? B1 : G1);
+    const int c8 = whiteBishop ? (darkBishop ? C8 : F8) : (lightBishop ? C1 : F1);
+    const int d8 = whiteBishop ? (darkBishop ? D8 : E8) : (lightBishop ? D1 : E1);
+    const int d7 = whiteBishop ? (darkBishop ? D7 : E7) : (lightBishop ? D2 : E2);
     const U64 bFile = (whiteBishop == darkBishop) ? 0x0202020202020202ULL : 0x4040404040404040ULL;
-    const U64 corner = whiteBishop ? (darkBishop ? 0x0301000000000000ULL : 0xC080000000000000ULL)
-                                   : (lightBishop ? 0x0103ULL : 0x80C0ULL);
+    const U64 corner = whiteBishop ? (darkBishop ? BitBoard::sqMask(A8,B8,A7) : BitBoard::sqMask(G8,H8,H7))
+                                   : (lightBishop ? BitBoard::sqMask(A1,B1,A2) : BitBoard::sqMask(G1,H1,H2));
 
     if ((pos.getPiece(b7) == oPawn) && (pos.getPiece(b6) == pawn) &&
         (pos.getPiece(a8) != oKnight) && ((pos.pieceTypeBB(king) & corner) == 0)) {
@@ -1869,22 +1868,26 @@ Evaluate::kpkpEval(int wKing, int bKing, int wPawn, int bPawn, int& score) {
     const U64 wKingMask = 1ULL << wKing;
     const U64 bKingMask = 1ULL << bKing;
     if ((wPawn == 41) && (bPawn == 49)) { // b6/b7
-        if ((bKingMask & 0x0F08000000000000ULL) && ((wKingMask & 0x0301000000000000ULL) == 0)) {
+        if ((bKingMask & BitBoard::sqMask(A8,B8,C8,D8,D7)) &&
+            ((wKingMask & BitBoard::sqMask(A8,B8,A7)) == 0)) {
             score = 0;
             return true;
         }
     } else if ((wPawn == 46) && (bPawn == 54)) { // g6/g7
-        if ((bKingMask & 0xF010000000000000ULL) && ((wKingMask & 0xC080000000000000ULL) == 0)) {
+        if ((bKingMask & BitBoard::sqMask(E8,F8,G8,H8,E7)) &&
+            ((wKingMask & BitBoard::sqMask(G8,H8,H7)) == 0)) {
             score = 0;
             return true;
         }
     } else if ((wPawn == 9) && (bPawn == 17)) { // b2/b3
-        if ((wKingMask & 0x080FULL) && ((bKingMask & 0x0103ULL) == 0)) {
+        if ((wKingMask & BitBoard::sqMask(A1,B1,C1,D1,D2)) &&
+            ((bKingMask & BitBoard::sqMask(A1,B1,A2)) == 0)) {
             score = 0;
             return true;
         }
     } else if ((wPawn == 14) && (bPawn == 22)) { // g2/g3
-        if ((wKingMask & 0x10F0ULL) && ((bKingMask & 0x80C0ULL) == 0)) {
+        if ((wKingMask & BitBoard::sqMask(E1,F1,G1,H1,E2)) &&
+            ((bKingMask & BitBoard::sqMask(G1,H1,H2)) == 0)) {
             score = 0;
             return true;
         }
