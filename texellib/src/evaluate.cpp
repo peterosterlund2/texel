@@ -509,11 +509,11 @@ int
 Evaluate::castleBonus(const Position& pos) {
     if (pos.getCastleMask() == 0) return 0;
 
-    const int k1 = kt1b[7*8+6] - kt1b[7*8+4];
-    const int k2 = kt2b[7*8+6] - kt2b[7*8+4];
+    const int k1 = kt1b[G8] - kt1b[E8];
+    const int k2 = kt2b[G8] - kt2b[E8];
     const int ks = interpolate(k2, k1, mhd->castleIPF);
 
-    const int castleValue = ks + rt1b[7*8+5] - rt1b[7*8+7];
+    const int castleValue = ks + rt1b[F8] - rt1b[H8];
     if (castleValue <= 0)
         return 0;
 
