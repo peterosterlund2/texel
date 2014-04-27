@@ -36,7 +36,7 @@
 
 
 namespace EvaluateNS {
-    void computeKnightMobility();
+    void updateEvalParams();
 }
 
 
@@ -438,7 +438,7 @@ ParamTableEv<N>::ParamTableEv(int minVal0, int maxVal0, bool uci0,
 template <int N>
 void ParamTableEv<N>::modified() {
     ParamTable<N>::modified();
-    EvaluateNS::computeKnightMobility();
+    EvaluateNS::updateEvalParams();
 }
 
 // ----------------------------------------------------------------------------
@@ -478,7 +478,7 @@ DECLARE_PARAM(krpknBonus,          187, 0, 400, useUciParam);
 DECLARE_PARAM(pawnTradePenalty,    62, 0, 100, useUciParam);
 DECLARE_PARAM(pieceTradeBonus,     9, 0, 100, useUciParam);
 DECLARE_PARAM(pawnTradeThreshold,  365, 100, 1000, useUciParam);
-DECLARE_PARAM(pieceTradeThreshold, 738, 10, 1000, useUciParam);
+DECLARE_PARAM(pieceTradeThreshold, 735, 10, 1000, useUciParam);
 
 DECLARE_PARAM(threatBonus1,     63, 5, 500, useUciParam);
 DECLARE_PARAM(threatBonus2,     1192, 100, 10000, useUciParam);
@@ -486,7 +486,7 @@ DECLARE_PARAM(threatBonus2,     1192, 100, 10000, useUciParam);
 DECLARE_PARAM(rookHalfOpenBonus,     18, 0, 100, useUciParam);
 DECLARE_PARAM(rookOpenBonus,         19, 0, 100, useUciParam);
 DECLARE_PARAM(rookDouble7thRowBonus, 74, 0, 100, useUciParam);
-DECLARE_PARAM(trappedRookPenalty,    71, 0, 200, useUciParam);
+DECLARE_PARAM(trappedRookPenalty,    72, 0, 200, useUciParam);
 
 DECLARE_PARAM(bishopPairPawnPenalty, 5, 0, 10, useUciParam);
 DECLARE_PARAM(trappedBishopPenalty,  83, 0, 300, useUciParam);
@@ -497,9 +497,9 @@ DECLARE_PARAM(kingSafetyHalfOpenBCDEFG2, -11, -50, 100, useUciParam);
 DECLARE_PARAM(kingSafetyHalfOpenAH1,     18, 0, 100, useUciParam);
 DECLARE_PARAM(kingSafetyHalfOpenAH2,     11, 0, 100, useUciParam);
 DECLARE_PARAM(kingSafetyWeight1,         33, -50, 200, useUciParam);
-DECLARE_PARAM(kingSafetyWeight2,         -40, -50, 200, useUciParam);
+DECLARE_PARAM(kingSafetyWeight2,         -39, -50, 200, useUciParam);
 DECLARE_PARAM(kingSafetyWeight3,         8, -50, 200, useUciParam);
-DECLARE_PARAM(kingSafetyWeight4,         1, -50, 200, useUciParam);
+DECLARE_PARAM(kingSafetyWeight4,         2, -50, 200, useUciParam);
 DECLARE_PARAM(kingSafetyThreshold,       45, 0, 200, useUciParam);
 DECLARE_PARAM(knightKingProtectBonus,    16, -50, 50, useUciParam);
 DECLARE_PARAM(bishopKingProtectBonus,    19, -50, 50, useUciParam);
@@ -544,6 +544,7 @@ extern ParamTable<7> RvsMBonus, RvsMMBonus;
 extern ParamTable<4> bishopPairValue;
 extern ParamTable<7> rookEGDrawFactor;
 
+extern ParamTableEv<4> castleFactor;
 extern ParamTable<9> pawnShelterTable, pawnStormTable;
 extern ParamTable<10> kingAttackWeight;
 extern ParamTable<5> kingPPSupportK;

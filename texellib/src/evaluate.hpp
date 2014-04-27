@@ -110,7 +110,7 @@ public:
     static int interpolate(int v1, int v2, int k);
 
     static void staticInitialize();
-    static void computeKnightMobility();
+    static void updateEvalParams();
 
 private:
     template <bool print> int evalPos(const Position& pos);
@@ -177,7 +177,7 @@ private:
     static int knpkbEval(int wKing, int wKnight, int wPawn, int bKing, int bBish, int score, bool wtm);
     static int knpkEval(int wKing, int wKnight, int wPawn, int bKing, int score, bool wtm);
 
-    static int castleFactor[256];
+    static int castleMaskFactor[256];
     static const int distToH1A8[8][8];
     static int knightMobScoreA[64][9];
     static U64 knightKingProtectPattern[64];

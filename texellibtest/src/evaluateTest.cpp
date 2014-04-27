@@ -384,9 +384,9 @@ testKingSafety() {
 
     pos = TextIO::readFEN("rnbqk1nr/pppp1ppp/8/8/1bBpPB2/8/PPP1QPPP/RN1K2NR w kq - 0 1");
     s1 = evalWhite(pos);
-    movePiece(pos, "d1", "c1");
+    movePiece(pos, "d1", "c1"); // rnbqk1nr/pppp1ppp/8/8/1bBpPB2/8/PPP1QPPP/RNK3NR w kq - 0 1
     s2 = evalWhite(pos);
-    ASSERT(s2 < s1);
+    ASSERT(s2 <= s1);
 
     // Opposite castling
     pos = TextIO::readFEN("rnbq1rk1/1p2ppbp/p2p1np1/8/3NP3/2N1BP2/PPPQ2PP/2KR1B1R w - - 0 1");

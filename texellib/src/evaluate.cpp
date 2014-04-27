@@ -38,7 +38,7 @@ static const int empty[64] = { 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
                                0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
                                0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0};
 
-int Evaluate::castleFactor[256];
+int Evaluate::castleMaskFactor[256];
 
 static StaticInitializer<Evaluate> evInit;
 
@@ -83,18 +83,7 @@ Evaluate::staticInitialize() {
     psTab2[Piece::BKNIGHT] = nt2b.getTable();
     psTab2[Piece::BPAWN]   = pt2b.getTable();
 
-    for (int i = 0; i < 256; i++) {
-        int h1Dist = 100;
-        bool h1Castle = (i & (1<<7)) != 0;
-        if (h1Castle)
-            h1Dist = 2 + BitBoard::bitCount(i & BitBoard::sqMask(F1,G1));
-        int a1Dist = 100;
-        bool a1Castle = (i & 1) != 0;
-        if (a1Castle)
-            a1Dist = 2 + BitBoard::bitCount(i & BitBoard::sqMask(B1,C1,D1));
-        castleFactor[i] = 1024 / std::min(a1Dist, h1Dist);
-    }
-    computeKnightMobility();
+    updateEvalParams();
 
     // Initialize knight/bishop king safety patterns
     for (int sq = 0; sq < 64; sq++) {
@@ -110,13 +99,26 @@ Evaluate::staticInitialize() {
 }
 
 namespace EvaluateNS {
-    void computeKnightMobility() {
-        Evaluate::computeKnightMobility();
+    void updateEvalParams() {
+        Evaluate::updateEvalParams();
     }
 }
 
 void
-Evaluate::computeKnightMobility() {
+Evaluate::updateEvalParams() {
+    // Castle bonus
+    for (int i = 0; i < 256; i++) {
+        int h1Dist = 100;
+        bool h1Castle = (i & (1<<7)) != 0;
+        if (h1Castle)
+            h1Dist = BitBoard::bitCount(i & BitBoard::sqMask(F1,G1));
+        int a1Dist = 100;
+        bool a1Castle = (i & 1) != 0;
+        if (a1Castle)
+            a1Dist = BitBoard::bitCount(i & BitBoard::sqMask(B1,C1,D1));
+        castleMaskFactor[i] = castleFactor[std::min(a1Dist, h1Dist)];
+    }
+
     // Knight mobility scores
     for (int sq = 0; sq < 64; sq++) {
         int x = Position::getX(sq);
@@ -521,12 +523,12 @@ Evaluate::castleBonus(const Position& pos) {
     int tmp = (int) (occupied & BitBoard::sqMask(B1,C1,D1,F1,G1));
     if (pos.a1Castle()) tmp |= 1;
     if (pos.h1Castle()) tmp |= (1 << 7);
-    const int wBonus = (castleValue * castleFactor[tmp]) >> 10;
+    const int wBonus = (castleValue * castleMaskFactor[tmp]) >> 7;
 
     tmp = (int) ((occupied >> 56) & BitBoard::sqMask(B1,C1,D1,F1,G1));
     if (pos.a8Castle()) tmp |= 1;
     if (pos.h8Castle()) tmp |= (1 << 7);
-    const int bBonus = (castleValue * castleFactor[tmp]) >> 10;
+    const int bBonus = (castleValue * castleMaskFactor[tmp]) >> 7;
 
     return wBonus - bBonus;
 }
