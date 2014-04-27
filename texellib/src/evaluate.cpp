@@ -128,16 +128,16 @@ Evaluate::updateEvalParams() {
         if (x < y) std::swap(x, y);
         int maxMob = 0;
         switch (y*8+x) {
-        case  0: maxMob = 2; break; // a1
-        case  1: maxMob = 3; break; // b1
-        case  2: maxMob = 4; break; // c1
-        case  3: maxMob = 4; break; // d1
-        case  9: maxMob = 4; break; // b2
-        case 10: maxMob = 6; break; // c2
-        case 11: maxMob = 6; break; // d2
-        case 18: maxMob = 8; break; // c3
-        case 19: maxMob = 8; break; // d3
-        case 27: maxMob = 8; break; // d4
+        case A1: maxMob = 2; break;
+        case B1: maxMob = 3; break;
+        case C1: maxMob = 4; break;
+        case D1: maxMob = 4; break;
+        case B2: maxMob = 4; break;
+        case C2: maxMob = 6; break;
+        case D2: maxMob = 6; break;
+        case C3: maxMob = 8; break;
+        case D3: maxMob = 8; break;
+        case D4: maxMob = 8; break;
         default:
             assert(false);
         }
@@ -1816,20 +1816,20 @@ Evaluate::kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove, 
         canWin = true; // King doesn't support pawn
     } else {
         switch (bPawn) {
-        case 8:  // a2
+        case A2:
             canWin = ((1ULL << wKing) & 0x0F1F1F1F1FULL) != 0;
-            if (canWin && (bKing == 0) && (Position::getX(wQueen) == 1) && !whiteMove)
+            if (canWin && (bKing == A1) && (Position::getX(wQueen) == 1) && !whiteMove)
                 canWin = false; // Stale-mate
             break;
-        case 10: // c2
+        case C2:
             canWin = ((1ULL << wKing) & 0x071F1F1FULL) != 0;
             break;
-        case 13: // f2
+        case F2:
             canWin = ((1ULL << wKing) & 0xE0F8F8F8ULL) != 0;
             break;
-        case 15: // h2
+        case H2:
             canWin = ((1ULL << wKing) & 0xF0F8F8F8F8ULL) != 0;
-            if (canWin && (bKing == 7) && (Position::getX(wQueen) == 6) && !whiteMove)
+            if (canWin && (bKing == H1) && (Position::getX(wQueen) == 6) && !whiteMove)
                 canWin = false; // Stale-mate
             break;
         default:
@@ -1869,25 +1869,25 @@ bool
 Evaluate::kpkpEval(int wKing, int bKing, int wPawn, int bPawn, int& score) {
     const U64 wKingMask = 1ULL << wKing;
     const U64 bKingMask = 1ULL << bKing;
-    if ((wPawn == 41) && (bPawn == 49)) { // b6/b7
+    if (wPawn == B6 && bPawn == B7) {
         if ((bKingMask & BitBoard::sqMask(A8,B8,C8,D8,D7)) &&
             ((wKingMask & BitBoard::sqMask(A8,B8,A7)) == 0)) {
             score = 0;
             return true;
         }
-    } else if ((wPawn == 46) && (bPawn == 54)) { // g6/g7
+    } else if (wPawn == G6 && bPawn == G7) {
         if ((bKingMask & BitBoard::sqMask(E8,F8,G8,H8,E7)) &&
             ((wKingMask & BitBoard::sqMask(G8,H8,H7)) == 0)) {
             score = 0;
             return true;
         }
-    } else if ((wPawn == 9) && (bPawn == 17)) { // b2/b3
+    } else if (wPawn == B2 && bPawn == B3) {
         if ((wKingMask & BitBoard::sqMask(A1,B1,C1,D1,D2)) &&
             ((bKingMask & BitBoard::sqMask(A1,B1,A2)) == 0)) {
             score = 0;
             return true;
         }
-    } else if ((wPawn == 14) && (bPawn == 22)) { // g2/g3
+    } else if (wPawn == G2 && bPawn == G3) {
         if ((wKingMask & BitBoard::sqMask(E1,F1,G1,H1,E2)) &&
             ((bKingMask & BitBoard::sqMask(G1,H1,H2)) == 0)) {
             score = 0;
@@ -2001,7 +2001,7 @@ Evaluate::kbpkbEval(int wKing, int wBish, int wPawn, int bKing, int bBish, int s
     U64 bBishMask = 1ULL << bBish;
     if (((wBishMask & BitBoard::maskDarkSq) == 0) != ((bBishMask & BitBoard::maskDarkSq) == 0)) { // Different color bishops
         if (((bBishMask | BitBoard::bishopAttacks(bBish, bKingMask)) & pawnPath & ~wPawnMask) != 0)
-            if (!(((wPawn == 40) && (bBish == 57)) || ((wPawn == 47) && (bBish == 62))))
+            if (!(wPawn == A6 && bBish == B8) && !(wPawn == H6 && bBish == G8))
                 return 0;
     }
 
@@ -2060,10 +2060,10 @@ Evaluate::knpkEval(int wKing, int wKnight, int wPawn, int bKing, int score, bool
         wPawn ^= 7;
         bKing ^= 7;
     }
-    if (wPawn == 48) { // a7
-        if ((bKing == 56) || (bKing == 49)) // Fortress
+    if (wPawn == A7) {
+        if (bKing == A8 || bKing == B7) // Fortress
             return 0;
-        if ((wKing == 56) && ((bKing == 50) || (bKing == 58))) {
+        if (wKing == A8 && (bKing == C7 || bKing == C8)) {
             bool knightDark = Position::darkSquare(Position::getX(wKnight), Position::getY(wKnight));
             bool kingDark = Position::darkSquare(Position::getX(bKing), Position::getY(bKing));
             if (wtm == (knightDark == kingDark)) // King trapped
