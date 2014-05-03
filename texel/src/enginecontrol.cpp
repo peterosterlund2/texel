@@ -170,7 +170,9 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
         if (sPar.nodes > 0)
             maxNodes = sPar.nodes;
 
-        if (sPar.wTime > 0 && sPar.bTime > 0) {
+        if (sPar.moveTime > 0) {
+             minTimeLimit = maxTimeLimit = sPar.moveTime;
+         } else {
             int moves = sPar.movesToGo;
             if (moves == 0)
                 moves = 999;
@@ -190,11 +192,6 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
             // Leave at least 1s on the clock, but can't use negative time
             minTimeLimit = clamp(minTimeLimit, 1, time - margin);
             maxTimeLimit = clamp(maxTimeLimit, 1, time - margin);
-        }
-
-        if (sPar.moveTime > 0) {
-            minTimeLimit = minTimeLimit == -1 ? sPar.moveTime : std::min(minTimeLimit, sPar.moveTime);
-            maxTimeLimit = maxTimeLimit == -1 ? sPar.moveTime : std::min(maxTimeLimit, sPar.moveTime);
         }
     }
 }
