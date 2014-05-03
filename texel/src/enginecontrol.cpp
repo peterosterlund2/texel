@@ -160,34 +160,42 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
         minTimeLimit = -1;
         maxTimeLimit = -1;
         maxDepth = -1;
-    } else if (sPar.depth > 0) {
-        maxDepth = sPar.depth;
-    } else if (sPar.mate > 0) {
-        maxDepth = sPar.mate * 2 - 1;
-    } else if (sPar.moveTime > 0) {
-        minTimeLimit = maxTimeLimit = sPar.moveTime;
-    } else if (sPar.nodes > 0) {
-        maxNodes = sPar.nodes;
     } else {
-        int moves = sPar.movesToGo;
-        if (moves == 0)
-            moves = 999;
-        moves = std::min(moves, static_cast<int>(timeMaxRemainingMoves)); // Assume at most N more moves until end of game
-        bool white = pos.getWhiteMove();
-        int time = white ? sPar.wTime : sPar.bTime;
-        int inc  = white ? sPar.wInc : sPar.bInc;
-        const int margin = std::min(static_cast<int>(bufferTime), time * 9 / 10);
-        int timeLimit = (time + inc * (moves - 1) - margin) / moves;
-        minTimeLimit = (int)(timeLimit * minTimeUsage * 0.01);
-        if (Parameters::instance().getBoolPar("Ponder")) {
-            const double ponderHitRate = timePonderHitRate * 0.01;
-            minTimeLimit = (int)ceil(minTimeLimit / (1 - ponderHitRate));
+        if (sPar.depth > 0)
+            maxDepth = sPar.depth;
+        if (sPar.mate > 0) {
+            int md = sPar.mate * 2 - 1;
+            maxDepth = maxDepth == -1 ? md : std::min(maxDepth, md);
         }
-        maxTimeLimit = (int)(minTimeLimit * clamp(moves * 0.5, 2.5, static_cast<int>(maxTimeUsage) * 0.01));
+        if (sPar.nodes > 0)
+            maxNodes = sPar.nodes;
 
-        // Leave at least 1s on the clock, but can't use negative time
-        minTimeLimit = clamp(minTimeLimit, 1, time - margin);
-        maxTimeLimit = clamp(maxTimeLimit, 1, time - margin);
+        if (sPar.wTime > 0 && sPar.bTime > 0) {
+            int moves = sPar.movesToGo;
+            if (moves == 0)
+                moves = 999;
+            moves = std::min(moves, static_cast<int>(timeMaxRemainingMoves)); // Assume at most N more moves until end of game
+            bool white = pos.getWhiteMove();
+            int time = white ? sPar.wTime : sPar.bTime;
+            int inc  = white ? sPar.wInc : sPar.bInc;
+            const int margin = std::min(static_cast<int>(bufferTime), time * 9 / 10);
+            int timeLimit = (time + inc * (moves - 1) - margin) / moves;
+            minTimeLimit = (int)(timeLimit * minTimeUsage * 0.01);
+            if (Parameters::instance().getBoolPar("Ponder")) {
+                const double ponderHitRate = timePonderHitRate * 0.01;
+                minTimeLimit = (int)ceil(minTimeLimit / (1 - ponderHitRate));
+            }
+            maxTimeLimit = (int)(minTimeLimit * clamp(moves * 0.5, 2.5, static_cast<int>(maxTimeUsage) * 0.01));
+
+            // Leave at least 1s on the clock, but can't use negative time
+            minTimeLimit = clamp(minTimeLimit, 1, time - margin);
+            maxTimeLimit = clamp(maxTimeLimit, 1, time - margin);
+        }
+
+        if (sPar.moveTime > 0) {
+            minTimeLimit = minTimeLimit == -1 ? sPar.moveTime : std::min(minTimeLimit, sPar.moveTime);
+            maxTimeLimit = maxTimeLimit == -1 ? sPar.moveTime : std::min(maxTimeLimit, sPar.moveTime);
+        }
     }
 }
 
