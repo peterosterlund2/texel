@@ -234,7 +234,8 @@ Book::promToPiece(int prom, bool whiteMove) {
 const char*
 Book::bookLines[] = {
     // Philidors defense
-    "e4 e5 Nf3 d6 d4 exd4 Nxd4 Nf6 Nc3 Be7 Bf4 O-O Qd2 d5 exd5 Nxd5 Nxd5 Qxd5 Nb5 Qe4+",
+    "e4 e5 Nf3 d6? d4 exd4 Nxd4 Nf6 Nc3 Be7 Bf4 O-O Qd2 d5 exd5 Nxd5 Nxd5 Qxd5 Nb5 Qe4+",
+    "e4 e5 Nf3 d6? d4 exd4 Nxd4 Nf6 Nc3 Be7 Bf4 O-O Qd2 a6 O-O-O b5 f3 c5",
     "e4 e5 Nf3 d6? d4 exd4 Qxd4 Nf6 Nc3 Be7 Bg5 Nc6 Bb5 O-O",
     "e4 e5 Nf3 d6? d4 Nd7 Bc4 c6 Ng5 Nh6 O-O Nb6",
 
@@ -246,7 +247,7 @@ Book::bookLines[] = {
     "e4 e5 d4? exd4 c3? d5 exd5 Qxd5 Nf3 Nc6 Be2 Bg4 O-O O-O-O cxd4",
     "e4 e5 d4? exd4 Qxd4 Nc6 Qe3 Nf6 Nc3 Bb4 Bd2 O-O O-O-O Re8 Bc4 d6",
 
-    //Scottish game
+    // Scottish game
     "e4 e5 Nf3 Nc6 d4 exd4 Nxd4 Nf6 Nc3 Bb4 Nxc6 bxc6 Bd3 d5 exd5",
     "e4 e5 Nf3 Nc6 d4 exd4 Nxd4 Bc5 Be3 Qf6 c3 Nge7",
     "e4 e5 Nf3 Nc6 d4 exd4 Nxd4 Bc5 Nb3 Bb6 a4 a5 Nc3 Qf6 Qe2 Nge7",
@@ -271,7 +272,7 @@ Book::bookLines[] = {
     "e4 e5 Nf3 Nc6 d4 exd4 Bc4 Bc5 O-O Nf6",
 
     // Scottish gambit
-    "e4 e5 Nf3 Nc6 Bc4 Nf6 d4 exd4 O-O Nxe4 Re1 d5 Bxd5 Qxd5 Nc3 Qa5 Nxe4 Be6",
+    "e4 e5 Nf3 Nc6 Bc4 Nf6 d4 exd4 O-O Nxe4 Re1 d5 Bxd5 Qxd5 Nc3 Qa5 Nxe4 Be6 Neg5 O-O-O Nxe6 fxe6 Rxe6",
     "e4 e5 Nf3 Nc6 d4 exd4 Bc4 Nf6 e5 d5 Bb5 Ne4 Nxd4 Bd7 Bxc6 bxc6 O-O Be7 f3 Nc5 f4 Ne4",
     "e4 e5 Nf3 Nc6 d4 exd4 Bc4 Nf6 e5 d5 Bb5 Ne4 Nxd4 Bd7 Bxc6 bxc6 O-O Bc5 Be3 O-O f3 Ng5 Qd2 f6 Kh1 Ne6",
     "e4 e5 Nf3 Nc6 d4 exd4 Bc4 Bc5 O-O d6 c3 Bg4 Qb3 Bxf3 Bxf7 Kf8 gxf3 Ne5 cxd4 Bxd4",
@@ -285,8 +286,8 @@ Book::bookLines[] = {
     "e4 e5 Nf3 Nf6 Nc3? Nc6 d4 exd4 Nxd4",
 
     // Russian defense
-    "e4 e5 Nf3 Nf6 Nxe5 d6 Nf3 Nxe4 Qe2 Qe7 d3 Nf6 Bg5 Nbd7 Nc3 Qxe2+ Bxe2 h6 Bh4 g6",
-    "e4 e5 Nf3 Nf6 Nxe5 d6 Nf3 Nxe4 d4 d5 Bd3 Be7 O-O Nc6 Re1 Bg4 c4 Nf6 cxd5 Nxd5 Nc3 O-O Be4 Be6",
+    "e4 e5 Nf3 Nf6? Nxe5 d6 Nf3 Nxe4 Qe2 Qe7 d3 Nf6 Bg5 Nbd7 Nc3 Qxe2+ Bxe2 h6 Bh4 g6",
+    "e4 e5 Nf3 Nf6? Nxe5 d6 Nf3 Nxe4 d4 d5 Bd3 Be7 O-O Nc6 Re1 Bg4 c4 Nf6 cxd5 Nxd5 Nc3 O-O Be4 Be6",
     "e4 e5 Nf3 Nf6? d4 Nxe4 dxe5 d5 Nbd2 Nc6",
 
     // Kings gambit
@@ -297,19 +298,21 @@ Book::bookLines[] = {
     "e4 e5 f4? d5? exd5 e4? d3 Nf6 dxe4 Nxe4 Nf3 Bc5 Qe2",
 
     // Spanish
-    "e4 e5 Nf3 Nc6 Bb5 d6 d4 Bd7 Nc3 Nf6 O-O Be7 Re1 exd4 Nxd4 O-O",
-    "e4 e5 Nf3 Nc6 Bb5 Nf6 O-O Nxe4 Re1 Nd6 Nxe5 Be7 Bd3 O-O",
-    "e4 e5 Nf3 Nc6 Bb5 Nf6 O-O Nxe4 d4 Nd6",
+    "e4 e5 Nf3 Nc6 Bb5 d6 d4 Bd7? Nc3 Nf6 O-O Be7 Re1 exd4 Nxd4 O-O",
+    "e4 e5 Nf3 Nc6 Bb5 d6? d4 exd4 Nxd4 Bd7 Nxc6 bxc6 Bc4 Nf6",
+    "e4 e5 Nf3 Nc6 Bb5 Nf6? O-O Nxe4 Re1 Nd6 Nxe5 Be7 Bd3 O-O",
+    "e4 e5 Nf3 Nc6 Bb5 Nf6? O-O Nxe4 d4 Nd6",
     "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 O-O c3 d6 h3 h6 d4 Re8 Nbd2 Bf8 Nf1 Bb7 Ng3 Na5 Bc2 Nc4 a4 d5",
+    "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 O-O c3 d6 d4 Bg4 Be3 exd4 cxd4 Na5 Bc2 Nc4 Bc1 c5 b3",
     "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 d6 c3 O-O d4 Bg4 d5 Na5 Bc2 c6 h3 Bc8 dxc6 Qc7 Nbd2 Qxc6 Nf1 Nc4",
     "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 d6 c3 Na5 Bc2 c5 d4 Nc6 d5",
     "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 d6 c3 Na5 Bc2 c5 d4 Nc6 h3 Qc7 d5",
     "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 d6 c3 Na5 Bc2 c5 d4 cxd4 cxd4 Qc7",
     "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 d6 c3 Na5 Bc2 c5 d3 Nc6 Nbd2 O-O Nf1 Re8 h3 h6 Ne3 Bf8",
     "Nf3? Nc6 e4 e5 Bb5 a6 Ba4 Nf6 O-O Nxe4 d4 b5 Bb3 d5 dxe5 Be6 c3 Bc5",
-    "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 d6 O-O Bd7 c3 g6 d4 Bg7 Re1 Nge7 Be3 O-O Nbd2 h6 dxe5 dxe5 Bb3 b6 a4",
-    "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 d6 c3 Bd7 d4 Nge7 Bb3 h6 Nbd2 Ng6 Nc4 Be7 Ne3 O-O",
-    "e4 e5 Nf3 Nc6 Bb5 Nf6 O-O Bc5 c3 O-O d4 Bb6 Bg5 h6 Bh4 d6 a4 a5 Re1 exd4 Bxc6 bxc6 Nxd4",
+    "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 d6? O-O Bd7 c3 g6 d4 Bg7 Re1 Nge7 Be3 O-O Nbd2 h6 dxe5 dxe5 Bb3 b6 a4",
+    "e4 e5 Nf3 Nc6 Bb5 a6 Ba4 d6? c3 Bd7 d4 Nge7 Bb3 h6 Nbd2 Ng6 Nc4 Be7 Ne3 O-O",
+    "e4 e5 Nf3 Nc6 Bb5 Nf6? O-O Bc5 c3 O-O d4 Bb6 Bg5 h6 Bh4 d6 a4 a5 Re1 exd4 Bxc6 bxc6 Nxd4",
     "e4 e5 Nf3 Nc6 Bb5 Nf6? O-O Bc5 Nxe5 Nxe5 d4 a6 Ba4 b5 Bb3 Bxd4 Qxd4 d6",
     "e4 e5 Nf3 Nc6 Bb5 Nf6? O-O Bc5? Nc3? O-O d3 d6",
 
@@ -326,13 +329,15 @@ Book::bookLines[] = {
     "d4 d5 c4 dxc4? e3? Nf6 Nf3 e6 Bxc4 c5 O-O a6",
 
     // Queens gambit declined
-    "d4 d5 c4 e6 Nc3 Nf6 Bg5 Nbd7 e3 Be7 Nf3 O-O Rc1 c6",
+    "d4 d5 c4 e6 Nc3 Nf6 Bg5 Nbd7 e3 Be7 Nf3 O-O Rc1 c6 Qc2 h6 Bh4",
     "c4 e6 d4 d5 Nf3 Be7 Nc3 Nf6 Bg5 O-O e3 h6",
     "c4 Nf6 Nc3 e6 Nf3 d5 d4 Be7 Bg5 O-O e3 Nbd7 Qc2 c5",
     "c4? Nf6 Nc3 e6 Nf3 d5 d4 Be7 e3 O-O Bd3 c5",
     "Nf3? d5 d4 Nf6 c4 e6 Nc3 Be7 Bf4 O-O e3 c5 dxc5 Bxc5 Qc2 Nc6",
     "d4 d5 c4 c6 Nf3 Nf6 Nc3 e6 e3 Nbd7 Bd3 dxc4 Bxc4 b5 Bd3 a6 O-O",
     "d4 d5 c4 c6 Nf3 Nf6 Nc3 e6 Bg5 h6 Bh4 dxc4 e4 g5 Bg3 b5 Be2 Bb7",
+    "d4 d5 c4 c6? Nf3 e6 Nc3 Nf6 e3 Nbd7 Qc2 Bd6 Bd3 O-O O-O dxc4 Bxc4",
+    "d4 d5 c4 c6? Nf3 e6 Qc2 Nf6 e3 Nbd7 Nc3 Bd6 Bd3 O-O O-O dxc4",
     "d4 d5 c4 c6? cxd5 cxd5 Nc3 Nf6 Bf4 Nc6 e3 a6",
     "d4 d5 c4 c6? Nc3 Nf6 e3 e6 Nf3",
 
@@ -343,16 +348,19 @@ Book::bookLines[] = {
     "d4 Nf6 c4 e5 dxe5 Ng4 Nf3 Bc5 e3 Nc6 Be2 Ngxe5 O-O d6",
 
     // Sicilian
-    "e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 e6 Nc3 Qc7",
+    "e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 e6 Nc3 Qc7 Be2 a6 O-O Nf6 Be3 Be7 f4 d6 Qe1 O-O Rd1 Nxd4 Bxd4 b5 a3",
     "e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 Nf6 Nc3 e5 Ndb5 d6 Bg5 a6 Na3 b5",
-    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 f4 e5 Nf3 Qc7 Bd3",
-    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 f4 e6 Qf3 Qb6 Nb3 Qc7",
-    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 f4 Nbd7? Be2",
-    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Be2 e5 Nb3 Be7 O-O O-O Be3",
+    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 f4? e5 Nf3 Qc7 Bd3",
+    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 f4? e6 Qf3 Qb6 Nb3 Qc7",
+    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 f4? Nbd7? Be2",
+    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Be2 e5 Nb3 Be7 O-O O-O Be3 Be6",
     "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Be3 e5 Nb3 Be6 Qd2 Nbd7 f3 b5",
-    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Bg5 e6 f4 Be7 Qf3 Qc7 O-O-O Nbd7 g4 b5",
-    "e4 c5 Nf3 e6 d4 cxd4 Nxd4 a6 Bd3 Nf6 O-O Qc7 Qe2 d6 c4 g6 Nc3 Bg7 Rd1 O-O",
+    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Be3 e5 Nb3 Be6 Qd2 Nbd7 f3 h5 Be2 Be7 Nd5",
+    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Bg5 e6 f4 Be7 Qf3 Qc7 O-O-O Nbd7? g4 b5",
+    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Bg5 e6 f4 Be7 Qf3 Qc7 O-O-O h6 Bh4 Nbd7",
     "e4 c5 Nf3 e6 d4 cxd4 Nxd4 Nf6 Nc3 d6 Be2 a6 O-O Be7 f4 O-O",
+    "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 Nc6 Bg5 e6 Qd2 a6 O-O-O h6 Nxc6 bxc6 Bf4 d5",
+    "e4 c5 Nf3 e6 d4 cxd4 Nxd4 a6 Bd3 Nf6 O-O Qc7 Qe2 d6 c4 g6 Nc3 Bg7 Rd1 O-O",
     "e4 c5 Nf3 e6 d4 cxd4 Nxd4 Nc6 Nc3 Qc7 Be3 a6 Bd3 Nf6 O-O Ne5 h3 Bc5 Qe2 d6",
     "e4 c5 Nf3 e6 d4 cxd4 Nxd4 Nc6 Nc3 Qc7 f4 a6 Be2 b5",
     "e4 c5 Nf3 e6? Nc3 Nc6 d4 cxd4 Nxd4 Qc7 Be3 a6 Qd2 Nf6 O-O-O Be7",
@@ -363,9 +371,13 @@ Book::bookLines[] = {
     "e4 c5 Nc3? e6? g3? Nc6 Bg2 Nf6",
     "e4 c5 Nc3? a6 Nf3 d6 d4 cxd4 Nxd4 Nf6",
     "e4 c5 Nc3? d6 f4 g6 Nf3 Bg7 Bc4 Nc6 O-O Nf6",
+    "e4 c5 Nc3? Nc6 Nf3 e6 Bb5 Nge7 O-O a6 Bxc6 Nxc6 d4 cxd4 Nxd4 Qc7",
     "Nc3? c5 Nf3 Nc6 d4 cxd4 Nxd4 Nf6 e4 d6 Bg5 e6 Qd2 a6 O-O-O Bd7 f4 b5",
-    "e4 c5 d4 cxd4 c3 dxc3 Nxc3 Nc6 Nf3 d6 Bc4 e6 O-O Nf6 Qe2 Be7 Rd1 e5",
+    "e4 c5 d4 cxd4 c3? dxc3 Nxc3 Nc6 Nf3 d6 Bc4 e6 O-O Nf6 Qe2 Be7 Rd1 e5",
+    "e4 c5 d4? cxd4 c3? dxc3 Nxc3 Nc6 Nf3 e6 Bc4 a6 O-O b5 Bd3 Bb7",
+    "e4 c5 d4? cxd4 Nf3 d6 Nxd4",
     "e4 c5 c3 d5 exd5 Qxd5 d4 Nf6 Nf3 Bg4 Be2 e6 O-O Nc6 Be3 cxd4 cxd4 Be7",
+    "e4 c5 c3? d5 exd5 Qxd5 d4 Nf6 Nf3 e6 Na3 Nc6 Be2 Qd8 Nc2 b6 O-O Bb7",
     "e4 c5 c3? Nf6 e5 Nd5 Nf3 Nc6 Bc4 Nb6 Bb3 c4 Bc2 Qc7 Qe2 g5",
     "e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6 Be3 Bg7 f3 O-O Qd2 Nc6 Bc4 Bd7 O-O-O Rc8 Bb3 Ne5 h4 Nc4 Bxc4 Rxc4 g4 Qa5",
 
@@ -376,6 +388,7 @@ Book::bookLines[] = {
     "e4 e6 d4 d5 e5 c5 c3 Nc6 Nf3 Qb6 Be2 cxd4 cxd4 Nge7 Nc3 Nf5 Na4 Qa5+ Bd2 Bb4 Bc3",
     "e4 e6 d4 d5 e5 c5 c3 Nc6 Nf3 Qb6 Bd3 cxd4 cxd4 Bd7",
     "e4 e6 d4 d5 e5 c5 c3 Nc6 Nf3 Qb6 a3 c4 Nbd2 Na5 Be2 Bd7",
+    "e4 e6 d4 d5 e5 c5 c3 Nc6 Nf3 Bd7 Be2 Nge7 O-O Rc8",
     "e4 e6 d4 d5 Nc3 Nf6 Bg5 Be7 e5 Nfd7 Bxe7",
     "e4 e6 d4 d5 Nd2 Nf6 e5 Nfd7 Bd3 c5 c3 Nc6 Ne2 cxd4 cxd4 f6 exf6 Nxf6",
     "e4 e6? d4 d5 Nc3 Nf6 e5 Nfd7 f4 c5 Nf3 Nc6 Be3 cxd4 Nxd4 Bc5 Qd2 O-O O-O-O a6",
@@ -396,19 +409,21 @@ Book::bookLines[] = {
     "e4 c6? d4 d5 Nc3 dxe4 Nxe4 Bf5 Ng3 Bg6 Nf3 Nd7 h4 h6 h5 Bh7 Bd3 Bxd3 Qxd3 e6",
 
     // Aljechins defense
-    "e4 Nf6 e5 Nd5 d4 d6 c4 Nb6 exd6 cxd6 Be3 g6",
-    "e4 Nf6 e5 Nd5 c4 Nb6 d4 d6 exd6 cxd6 Nf3 g6 Be2 Bg7 O-O O-O Nc3 Nc6 Be3 Bg4 b3 d5",
-    "e4 Nf6 e5 Nd5 d4 d6 Nf3 Bg4 Be2 e6 c4 Nb6 exd6 cxd6",
+    "e4 Nf6? e5 Nd5 d4 d6 c4 Nb6 exd6 cxd6 Be3 g6",
+    "e4 Nf6? e5 Nd5 d4 d6 Nf3 Bg4 Be2 e6 c4 Nb6 exd6 cxd6",
+    "e4 Nf6? e5 Nd5 d4 d6 Nf3 Bg4 Be2 e6 O-O Be7 c4 Nb6 Nc3 O-O Be3 N8d7 exd6 cxd6 b3",
+    "e4 Nf6? e5 Nd5 c4 Nb6 d4 d6 exd6 cxd6 Nf3 g6 Be2 Bg7 O-O O-O Nc3 Nc6 Be3 Bg4 b3 d5",
+    "e4 Nf6? e5 Nd5 c4 Nb6 d4 d6 Nf3 Bg4 exd6 exd6 Be2 Be7 O-O O-O Nc3 Nc6 b3 Bf6 Be3 d5",
     "e4 Nf6? Nc3 d5 e5 Nfd7 d4 e6 f4 c5 Nf3 Nc6 Be3 a6 Qd2 b5 dxc5 Bxc5 Bxc5 Nxc5",
     "e4 Nf6? Nc3 d5 e5 Nfd7 d4 e6 f4 c5 Nf3 Nc6 Be3 cxd4 Nxd4 Bc5 Qd2 O-O O-O-O a6",
-    "e4 Nf6? e5 Nd5 c4 Nb6 d4 d6 Nf3 Bg4 exd6 exd6 Be2 Be7 O-O O-O Nc3 Nc6 b3 Bf6 Be3 d5",
 
     // Kings indian
-    "d4 Nf6 c4 g6 Nc3 Bg7 e4 d6 Nf3 O-O Be2 e5 O-O Nc6",
-    "d4 Nf6 c4 g6 Nc3 Bg7 g3 O-O Bg2 d6 Nf3 Nbd7 O-O e5",
+    "d4 Nf6 c4 g6? Nc3 Bg7? e4 d6 Nf3 O-O Be2 e5 O-O Nc6",
+    "d4 Nf6 c4 g6? Nc3 Bg7? e4 d6 Nf3 O-O Be2 e5 O-O exd4 Nxd4 Re8",
+    "d4 Nf6 c4 g6? Nc3 Bg7? g3 O-O Bg2 d6 Nf3 Nbd7 O-O e5",
+    "d4 Nf6 c4 g6 Nc3 d5 cxd5 Nxd5 e4 Nxc3 bxc3 Bg7 Nf3 c5 Rb1 O-O Be2 cxd4 cxd4 Qa5",
     "c4 Nf6 Nf3 g6 d4 Bg7 Nc3 O-O e4 d6 Be2",
     "c4 Nf6 Nc3 g6 d4 d5 cxd5 Nxd5 e4 Nxc3 bxc3 Bg7 Bc4 c5",
-    "d4 Nf6 c4 g6 Nc3 d5 cxd5 Nxd5 e4 Nxc3 bxc3 Bg7 Nf3 c5",
     "Nf3? Nf6 c4 g6 Nc3 Bg7 d4 O-O",
 
     // Queen indian
@@ -417,18 +432,18 @@ Book::bookLines[] = {
     "d4 e6 Nf3 Nf6 c4 b6 g3 Bb7 Bg2 Bb4 Bd2 Bxd2 Qxd2",
 
     // Nimzo indian
-    "d4 e6 c4 Nf6 Nc3 Bb4 Bg5 h6 Bh4 c5 d5 d6",
+    "d4 e6 c4 Nf6 Nc3 Bb4 Bg5? h6 Bh4 c5 d5 d6",
     "c4 e6 d4 Nf6 Nc3 Bb4 a3 Bxc3+ bxc3 c5 f3 d5",
     "d4 Nf6 c4 e6 Nc3 Bb4 Qc2 d5 a3 Bxc3+ Qxc3 Ne4 Qc2 Nc6 e3 e5",
     "d4 Nf6 c4 e6 Nc3 Bb4 Qc2 O-O a3 Bxc3+ Qxc3 b6 Bg5 Bb7 e3 d6",
     "d4 Nf6 c4 e6 Nc3 Bb4 Nf3 O-O Bg5 c5 Rc1 cxd4",
     "d4 Nf6 c4 e6 Nc3 Bb4 f3 d5 a3 Bxc3+ bxc3 c5",
     "d4 Nf6 c4 e6 Nc3 Bb4 e3 c5 Bd3 d5 Nf3 O-O O-O Nc6",
-    "d4 Nf6 c4 e6? Nc3 Bb4 e3 O-O Bd3 d5 Nf3 c5 O-O",
+    "d4 Nf6 c4 e6? Nc3 Bb4 e3 O-O Bd3 d5 Nf3 c5 O-O dxc4 Bxc4 Nbd7 Qe2 b6",
     "c4 Nf6 Nc3 e6 d4",
 
     // Benoni
-    "d4 Nf6 Nf3 e6 c4 c5 d5 exd5 cxd5 d6 Nc3 g6 e4 Bg7",
+    "d4 Nf6 Nf3 e6 c4 c5? d5 exd5 cxd5 d6 Nc3 g6 e4 Bg7",
     "d4 Nf6 c4 c5 d5 e6 Nc3 exd5 cxd5 d6 e4 g6 f4 Bg7 Bb5 Nfd7 a4 O-O Nf3 Na6 O-O Nc7",
     "d4 c5 d5 Nf6 c4 e6 Nc3 exd5 cxd5 d6 Nf3 g6 Bf4 a6 a4 Bg7 e4 O-O",
     "c4 Nf6 d4 g6 Nc3 Bg7 g3 O-O Bg2 c5 d5 e6 Nf3 exd5 cxd5 d6 O-O",
@@ -441,6 +456,7 @@ Book::bookLines[] = {
     "Nf3? Nf6 g3 d5 Bg2 c6 d4 Bf5 O-O g6",
     "Nf3? d5 d4 Nf6 c4 e6 g3 dxc4 Bg2 Nc6 Qa4 Bb4 Bd2 Nd5 Bxb4 Nxb4 O-O Rb8",
     "Nf3? c5 c4 Nf6 Nc3 e6 g3 Be7 Bg2 O-O O-O a6 d4 cxd4 Nxd4 Qc7",
+    "Nf3? Nf6 c4 e6 d4 d5 Nc3 c6 e3 Nbd7 Bd3 dxc4 Bxc4 b5 Bd3 Bb7 O-O",
     "g3 g6 Bg2 Bg7 c4 Nf6 Nc3 O-O Nf3 d6 d4 Nbd7 O-O e5 e4",
     "g3? d5 Bg2 Nf6 Nf3 c6 O-O Bf5 d3 e6 Nbd2 h6 b3 Be7 Bb2 O-O",
     "g3? Nf6 Bg2 d5 d3 c6 Nd2 e5 e4 Bd6 Ngf3 O-O O-O",
@@ -456,6 +472,7 @@ Book::bookLines[] = {
     "Nc3? d5 e4 d4 Nce2 e5 Ng3 Be6 Nf3 Nd7 c3 c5 Bb5 Bd6 O-O a6",
     "Nc3? d5 d4 Nf6 Bg5 Nbd7 Nf3 h6 Bh4 c6 e3 e6 Bd3 Be7 O-O O-O",
     "Nc3? d5 e4 c6 Nf3 Bg4 h3 Bh5 d4",
+    "Nc3? d5 Nf3 Nf6 d4 e6 Bg5 Nbd7 a3 Be7 e3 h6 Bf4 Nh5 Be5",
     "Nc3? e5 e4 Nf6 Bc4 Nc6 d3 Bb4 Bg5 h6 Bxf6 Bxc3 bxc3 Qxf6 Ne2 d6",
     "c4 e5 Nc3 Nf6 Nf3 Nc6 g3 d5 cxd5 Nxd5 Bg2 Nb6 O-O Be7 d3 O-O a3 Be6 b4",
     "c4 e5 Nc3 Nf6 g3 d5 cxd5 Nxd5 Bg2 Nb6 Nf3 Nc6 O-O Be7 a3 O-O b4 Be6 d3",
@@ -475,6 +492,7 @@ Book::bookLines[] = {
     "c4 Nf6 g3 g6 Bg2 Bg7 Nc3 O-O e4 d6 Nge2 c5 O-O Nc6 d3 a6 h3 Rb8 a4",
     "c4 Nf6 g3? e6 d4 d5 Nf3 dxc4 Bg2 a6 O-O Nc6",
     "b3? e6 Bb2 Nf6 e3 c5 Nf3 Be7 d4 O-O Bd3 d5 O-O Nc6",
+    "d4 Nf6 c4 g6? g3 c6 Bg2 d5 cxd5 cxd5 Nf3 Bg7 Nc3 O-O O-O Ne4 Ne5 Bf5",
 
     NULL
 };
