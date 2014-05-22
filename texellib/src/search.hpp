@@ -106,7 +106,7 @@ public:
 
     Move iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                             int maxDepth, U64 initialMaxNodes, bool verbose,
-                            int maxPV = 1);
+                            int maxPV = 1, bool onlyExact = false);
 
     /**
      * Main recursive search algorithm.

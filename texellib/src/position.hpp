@@ -65,6 +65,8 @@ public:
     U64 kingZobristHash() const;
 
     U64 historyHash() const;
+    /** Hash including halfMoveClock, to avoid opening book cycles. */
+    U64 bookHash() const;
 
     /** Return the material identifier. */
     int materialId() const;
@@ -284,6 +286,13 @@ Position::historyHash() const {
     U64 ret = hashKey;
     if (halfMoveClock >= 80)
         ret ^= moveCntKeys[std::min(halfMoveClock, 100)];
+    return ret;
+}
+
+inline U64
+Position::bookHash() const {
+    U64 ret = hashKey;
+    ret ^= moveCntKeys[std::min(halfMoveClock, 100)];
     return ret;
 }
 

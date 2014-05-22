@@ -27,6 +27,7 @@
 #define MOVE_HPP_
 
 #include <iosfwd>
+#include "util/util.hpp"
 
 /** Represents a chess move. */
 class Move {
@@ -44,6 +45,12 @@ public:
     void setMove(int from, int to, int promoteTo, int score);
 
     void setScore(int score);
+
+    /** Get 16 bit compressed representation of move, not including score. */
+    U16 getCompressedMove() const;
+
+    /** Set move from 16 bit compressed representation. Score not changed. */
+    void setFromCompressed(U16 move);
 
     int from() const;
     int to() const;
@@ -107,6 +114,16 @@ Move::setMove(int from, int to, int promoteTo, int score)
 inline void
 Move::setScore(int score) {
     score_ = score;
+}
+
+inline U16
+Move::getCompressedMove() const {
+    return (U16)(from() + (to() << 6) + (promoteTo() << 12));
+}
+
+inline void
+Move::setFromCompressed(U16 move) {
+    setMove(move & 63, (move >> 6) & 63, (move >> 12) & 15, score());
 }
 
 inline int

@@ -92,7 +92,7 @@ Search::setStrength(int strength, U64 randomSeed) {
 Move
 Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                            int maxDepth, U64 initialMaxNodes,
-                           bool verbose, int maxPV) {
+                           bool verbose, int maxPV, bool onlyExact) {
     tStart = currentTimeMillis();
     totalNodes = 0;
     if (scMovesIn.size <= 0)
@@ -132,6 +132,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     Position origPos(pos);
     bool firstIteration = true;
     Move bestMove = scMoves[0].move; // bestMove is != scMoves[0].move when there is an unresolved fail high
+    Move bestExactMove = scMoves[0].move; // Only updated when new best move has exact score
     this->verbose = verbose;
     if ((maxDepth < 0) || (maxDepth > MAX_SEARCH_DEPTH))
         maxDepth = MAX_SEARCH_DEPTH;
@@ -237,6 +238,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                 scMoves[i] = tmp;
             }
             bestMove = scMoves[0].move;
+            bestExactMove = bestMove;
             if (!firstIteration) {
                 S64 timeLimit = needMoreTime ? maxTimeMillis : minTimeMillis;
                 if (timeLimit >= 0) {
@@ -299,7 +301,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     notifyStats();
 
     logFile.close();
-    return bestMove;
+    return onlyExact ? bestExactMove : bestMove;
 }
 
 void
