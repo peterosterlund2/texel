@@ -239,6 +239,11 @@ Evaluate::evalPos(const Position& pos) {
     if (mhd->endGame)
         score = endGameEval<true>(pos, score);
     if (print) std::cout << "eval endgame:" << score << std::endl;
+    if (pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) {
+        int hmc = clamp(pos.getHalfMoveClock() / 10, 0, 9);
+        score = score * halfMoveFactor[hmc] / 128;
+    }
+    if (print) std::cout << "eval halfmove:" << score << std::endl;
 
     if (!pos.getWhiteMove())
         score = -score;

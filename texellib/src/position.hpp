@@ -284,8 +284,12 @@ Position::kingZobristHash() const {
 inline U64
 Position::historyHash() const {
     U64 ret = hashKey;
-    if (halfMoveClock >= 80)
-        ret ^= moveCntKeys[std::min(halfMoveClock, 100)];
+    if (halfMoveClock >= 40) {
+        if (halfMoveClock < 80)
+            ret ^= moveCntKeys[halfMoveClock / 10];
+        else
+            ret ^= moveCntKeys[std::min(halfMoveClock, 100)];
+    }
     return ret;
 }
 

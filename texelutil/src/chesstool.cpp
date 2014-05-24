@@ -800,6 +800,7 @@ ChessTool::printParams() {
     printTable(kingPPSupportP, "kingPPSupportP", os);
     printTable(pawnDoubledPenalty, "pawnDoubledPenalty", os);
     printTable(pawnIsolatedPenalty, "pawnIsolatedPenalty", os);
+    printTable(halfMoveFactor, "halfMoveFactor", os);
 
     os << "pV : " << pV << std::endl;
     os << "nV : " << nV << std::endl;
@@ -1013,6 +1014,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(kingPPSupportP, "kingPPSupportP", cppFile);
     replaceTable(pawnDoubledPenalty, "pawnDoubledPenalty", cppFile);
     replaceTable(pawnIsolatedPenalty, "pawnIsolatedPenalty", cppFile);
+    replaceTable(halfMoveFactor, "halfMoveFactor", cppFile);
 
     replaceValue(pV, "pV", hppFile);
     replaceValue(nV, "nV", hppFile);
