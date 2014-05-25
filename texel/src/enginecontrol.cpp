@@ -172,7 +172,7 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 
         if (sPar.moveTime > 0) {
              minTimeLimit = maxTimeLimit = sPar.moveTime;
-         } else {
+        } else if (sPar.wTime || sPar.bTime) {
             int moves = sPar.movesToGo;
             if (moves == 0)
                 moves = 999;
