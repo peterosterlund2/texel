@@ -792,6 +792,7 @@ ChessTool::printParams() {
     printTable(RvsMMBonus, "RvsMMBonus", os);
     printTable(bishopPairValue, "bishopPairValue", os);
     printTable(rookEGDrawFactor, "rookEGDrawFactor", os);
+    printTable(RvsBPDrawFactor, "RvsBPDrawFactor", os);
     printTable(castleFactor, "castleFactor", os);
     printTable(pawnShelterTable, "pawnShelterTable", os);
     printTable(pawnStormTable, "pawnStormTable", os);
@@ -825,6 +826,7 @@ ChessTool::printParams() {
     os << "krpkbBonus           : " << krpkbBonus << std::endl;
     os << "krpkbPenalty         : " << krpkbPenalty << std::endl;
     os << "krpknBonus           : " << krpknBonus << std::endl;
+    os << "RvsBPBonus           : " << RvsBPBonus << std::endl;
 
     os << "pawnTradePenalty    : " << pawnTradePenalty << std::endl;
     os << "pieceTradeBonus     : " << pieceTradeBonus << std::endl;
@@ -1006,6 +1008,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(RvsMMBonus, "RvsMMBonus", cppFile);
     replaceTable(bishopPairValue, "bishopPairValue", cppFile);
     replaceTable(rookEGDrawFactor, "rookEGDrawFactor", cppFile);
+    replaceTable(RvsBPDrawFactor, "RvsBPDrawFactor", cppFile);
     replaceTable(castleFactor, "castleFactor", cppFile);
     replaceTable(pawnShelterTable, "pawnShelterTable", cppFile);
     replaceTable(pawnStormTable, "pawnStormTable", cppFile);
@@ -1039,6 +1042,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(krpkbBonus,   "krpkbBonus", hppFile);
     replaceValue(krpkbPenalty, "krpkbPenalty", hppFile);
     replaceValue(krpknBonus,   "krpknBonus", hppFile);
+    replaceValue(RvsBPBonus,   "RvsBPBonus", hppFile);
 
     replaceValue(pawnTradePenalty, "pawnTradePenalty", hppFile);
     replaceValue(pieceTradeBonus, "pieceTradeBonus", hppFile);

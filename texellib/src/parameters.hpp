@@ -471,9 +471,10 @@ DECLARE_PARAM(knightVsQueenBonus1, 125, 0, 200, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus2, 251, 0, 600, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus3, 357, 0, 800, useUciParam);
 DECLARE_PARAM(krkpBonus,           400, 0, 400, useUciParam);
-DECLARE_PARAM(krpkbBonus,          108,  -200, 200, useUciParam);
+DECLARE_PARAM(krpkbBonus,          108, -200, 200, useUciParam);
 DECLARE_PARAM(krpkbPenalty,        52,  0, 128, useUciParam);
 DECLARE_PARAM(krpknBonus,          170, 0, 400, useUciParam);
+DECLARE_PARAM(RvsBPBonus,          -16, -200, 200, useUciParam);
 
 DECLARE_PARAM(pawnTradePenalty,    58, 0, 100, useUciParam);
 DECLARE_PARAM(pieceTradeBonus,     10, 0, 100, useUciParam);
@@ -486,10 +487,10 @@ DECLARE_PARAM(threatBonus2,     1192, 100, 10000, useUciParam);
 DECLARE_PARAM(rookHalfOpenBonus,     18, 0, 100, useUciParam);
 DECLARE_PARAM(rookOpenBonus,         19, 0, 100, useUciParam);
 DECLARE_PARAM(rookDouble7thRowBonus, 77, 0, 100, useUciParam);
-DECLARE_PARAM(trappedRookPenalty,    72, 0, 200, useUciParam);
+DECLARE_PARAM(trappedRookPenalty,    71, 0, 200, useUciParam);
 
 DECLARE_PARAM(bishopPairPawnPenalty, 5, 0, 10, useUciParam);
-DECLARE_PARAM(trappedBishopPenalty,  84, 0, 300, useUciParam);
+DECLARE_PARAM(trappedBishopPenalty,  83, 0, 300, useUciParam);
 DECLARE_PARAM(oppoBishopPenalty,     72, 0, 128, useUciParam);
 
 DECLARE_PARAM(kingSafetyHalfOpenBCDEFG1, 19, 0, 100, useUciParam);
@@ -542,7 +543,7 @@ extern ParamTable<16> majorPieceRedundancy;
 extern ParamTable<5> QvsRRBonus;
 extern ParamTable<7> RvsMBonus, RvsMMBonus;
 extern ParamTable<4> bishopPairValue;
-extern ParamTable<7> rookEGDrawFactor;
+extern ParamTable<7> rookEGDrawFactor, RvsBPDrawFactor;
 
 extern ParamTableEv<4> castleFactor;
 extern ParamTable<9> pawnShelterTable, pawnStormTable;

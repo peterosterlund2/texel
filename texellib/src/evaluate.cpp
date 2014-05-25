@@ -116,7 +116,8 @@ Evaluate::updateEvalParams() {
         bool a1Castle = (i & 1) != 0;
         if (a1Castle)
             a1Dist = BitBoard::bitCount(i & BitBoard::sqMask(B1,C1,D1));
-        castleMaskFactor[i] = castleFactor[std::min(a1Dist, h1Dist)];
+        int dist = std::min(a1Dist, h1Dist);
+        castleMaskFactor[i] = dist < 4 ? castleFactor[dist] : 0;
     }
 
     // Knight mobility scores
@@ -293,6 +294,13 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     }
     if (print) std::cout << "eval majred :" << score << std::endl;
 
+    const int wMtrl = pos.wMtrl();
+    const int bMtrl = pos.bMtrl();
+    const int wMtrlPawns = pos.wMtrlPawns();
+    const int bMtrlPawns = pos.bMtrlPawns();
+    const int wMtrlNoPawns = wMtrl - wMtrlPawns;
+    const int bMtrlNoPawns = bMtrl - bMtrlPawns;
+
     // Handle imbalances
     const int nWB = BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP));
     const int nBB = BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP));
@@ -313,8 +321,12 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
         const int dP = nWP - nBP;
         if ((dR == 1) && (dB + dN == -1)) {
             score += RvsMBonus[clamp(dP, -3, 3)+3];
+            if (wMtrlNoPawns == rV && dB == -1 && dP == -1)
+                score += RvsBPBonus;
         } else if ((dR == -1) && (dB + dN == 1)) {
             score -= RvsMBonus[clamp(-dP, -3, 3)+3];
+            if (bMtrlNoPawns == rV && dB == 1 && dP == 1)
+                score -= RvsBPBonus;
         }
 
         if ((dR == 1) && (dB + dN == -2)) {
@@ -335,12 +347,6 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     mhd.endGame = endGameEval<false>(pos, 0);
 
     // Compute interpolation factors
-    const int wMtrl = pos.wMtrl();
-    const int bMtrl = pos.bMtrl();
-    const int wMtrlPawns = pos.wMtrlPawns();
-    const int bMtrlPawns = pos.bMtrlPawns();
-    const int wMtrlNoPawns = wMtrl - wMtrlPawns;
-    const int bMtrlNoPawns = bMtrl - bMtrlPawns;
     { // Pawn
         const int loMtrl = pawnLoMtrl;
         const int hiMtrl = pawnHiMtrl;
@@ -1712,11 +1718,20 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
             U64 pMask = pos.pieceTypeBB(Piece::BPAWN);
             U64 bMask = pos.pieceTypeBB(Piece::WBISHOP);
             if (((pMask & BitBoard::maskFile[0]) && (bMask & BitBoard::maskLightSq)) ||
-                ((pMask & BitBoard::maskFile[7]) && (bMask & BitBoard::maskDarkSq)))
+                ((pMask & BitBoard::maskFile[7]) && (bMask & BitBoard::maskDarkSq))) {
                 score = (score + krpkbAdjustment) * krpkbPenalty / 128;
                 return score;
+            }
         }
     }
+
+    auto getPawnAsymmetry = [this, &pos]() {
+        int f1 = BitBoard::southFill(pos.pieceTypeBB(Piece::WPAWN)) & 0xff;
+        int f2 = BitBoard::southFill(pos.pieceTypeBB(Piece::BPAWN)) & 0xff;
+        int asymmetry = BitBoard::bitCount((f1 & ~f2) | (f2 & ~f1));
+        asymmetry += BitBoard::bitCount(phd->passedPawnsW) + BitBoard::bitCount(phd->passedPawnsB);
+        return asymmetry;
+    };
 
     // Account for draw factor in rook endgames
     if ((BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK)) == 1) &&
@@ -1725,11 +1740,31 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
                          Piece::BQUEEN, Piece::BBISHOP, Piece::BKNIGHT) == 0) &&
         (BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) > 1)) {
         if (!doEval) return 1;
-        int f1 = BitBoard::southFill(pos.pieceTypeBB(Piece::WPAWN)) & 0xff;
-        int f2 = BitBoard::southFill(pos.pieceTypeBB(Piece::BPAWN)) & 0xff;
-        int asymmetry = BitBoard::bitCount((f1 & ~f2) | (f2 & ~f1));
-        asymmetry += BitBoard::bitCount(phd->passedPawnsW) + BitBoard::bitCount(phd->passedPawnsB);
+        int asymmetry = getPawnAsymmetry();
         score = score * rookEGDrawFactor[std::min(asymmetry, 6)] / 128;
+        return score;
+    }
+
+    // Correction for draw factor in RvsB endgames
+    if ((BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK)) == 1) &&
+        (BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP)) == 1) &&
+        (pos.pieceTypeBB(Piece::WQUEEN, Piece::WBISHOP, Piece::WKNIGHT,
+                         Piece::BQUEEN, Piece::BROOK, Piece::BKNIGHT) == 0) &&
+        (pos.wMtrlPawns() - pos.bMtrlPawns() == -pV)) {
+        if (!doEval) return 1;
+        int asymmetry = getPawnAsymmetry();
+        score = score * RvsBPDrawFactor[std::min(asymmetry, 6)] / 128;
+        return score;
+    }
+    // Correction for draw factor in RvsB endgames
+    if ((BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK)) == 1) &&
+        (BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP)) == 1) &&
+        (pos.pieceTypeBB(Piece::BQUEEN, Piece::BBISHOP, Piece::BKNIGHT,
+                         Piece::WQUEEN, Piece::WROOK, Piece::WKNIGHT) == 0) &&
+        (pos.wMtrlPawns() - pos.bMtrlPawns() == pV)) {
+        if (!doEval) return 1;
+        int asymmetry = getPawnAsymmetry();
+        score = score * RvsBPDrawFactor[std::min(asymmetry, 6)] / 128;
         return score;
     }
 
