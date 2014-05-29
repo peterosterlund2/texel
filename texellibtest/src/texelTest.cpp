@@ -38,6 +38,8 @@
 #include "treeLoggerTest.hpp"
 #include "utilTest.hpp"
 
+#include "evaluate.hpp"
+
 void
 runSuite(const SuiteBase& suite) {
     cute::ide_listener lis;
@@ -45,6 +47,7 @@ runSuite(const SuiteBase& suite) {
 }
 
 int main() {
+    Evaluate::updateEvalParams();
     runSuite(BitBoardTest());
     runSuite(BookTest());
     runSuite(ComputerPlayerTest());
