@@ -48,6 +48,7 @@ ComputerPlayer::ComputerPlayer()
       book(false)
 {
     Parameters::instance();
+    Evaluate::updateEvalParams();
     et = Evaluate::getEvalHashTables();
     minTimeMillis = 10000;
     maxTimeMillis = 10000;

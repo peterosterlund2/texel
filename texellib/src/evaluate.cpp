@@ -83,8 +83,6 @@ Evaluate::staticInitialize() {
     psTab2[Piece::BKNIGHT] = nt2b.getTable();
     psTab2[Piece::BPAWN]   = pt2b.getTable();
 
-    updateEvalParams();
-
     // Initialize knight/bishop king safety patterns
     for (int sq = 0; sq < 64; sq++) {
         const int x = Position::getX(sq);
@@ -1094,6 +1092,7 @@ Evaluate::knightEval(const Position& pos) {
         score += knightMobScoreA[sq][BitBoard::bitCount(atk & ~pos.whiteBB() & ~bPawnAttacks)];
         m &= m-1;
     }
+
     m = bKnights;
     while (m != 0) {
         int sq = BitBoard::numberOfTrailingZeros(m);

@@ -182,6 +182,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                 lmrS = plyScale;
             }
             pos.makeMove(m, ui);
+            totalNodes++;
             SearchTreeInfo& sti = searchTreeInfo[0];
             sti.currentMove = m;
             sti.currentMoveNo = mi;
@@ -220,6 +221,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                     needMoreTime = searchNeedMoreTime = true;
                 }
                 pos.makeMove(m, ui);
+                totalNodes++;
                 score = -negaScout(smp, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
                 nodesThisMove += nodes + qNodes;
                 posHashListSize--;

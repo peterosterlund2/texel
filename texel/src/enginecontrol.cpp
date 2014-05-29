@@ -93,6 +93,7 @@ EngineControl::EngineControl(std::ostream& o)
       randomSeed(0)
 {
     setupTT();
+    Evaluate::updateEvalParams();
     et = Evaluate::getEvalHashTables();
 }
 
