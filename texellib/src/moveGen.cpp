@@ -258,7 +258,6 @@ template <bool wtm>
 void
 MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
     typedef ColorTraits<wtm> MyColor;
-    typedef ColorTraits<!wtm> OtherColor;
     const U64 occupied = pos.occupiedBB();
 
     const int oKingSq = pos.getKingSq(!wtm);
@@ -397,7 +396,6 @@ template <bool wtm>
 void
 MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
     typedef ColorTraits<wtm> MyColor;
-    typedef ColorTraits<!wtm> OtherColor;
     const U64 occupied = pos.occupiedBB();
 
     // Queen moves
