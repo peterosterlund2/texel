@@ -37,8 +37,10 @@
 #include "parallelTest.hpp"
 #include "treeLoggerTest.hpp"
 #include "utilTest.hpp"
+#include "tbTest.hpp"
 
 #include "evaluate.hpp"
+#include "tbprobe.hpp"
 
 void
 runSuite(const SuiteBase& suite) {
@@ -48,6 +50,7 @@ runSuite(const SuiteBase& suite) {
 
 int main() {
     Evaluate::updateEvalParams();
+    TBProbe::initialize("/home/petero/chess/gtb");
     runSuite(BitBoardTest());
     runSuite(BookTest());
     runSuite(ComputerPlayerTest());
@@ -65,5 +68,6 @@ int main() {
     runSuite(ParallelTest());
     runSuite(TreeLoggerTest());
     runSuite(UtilTest());
+    runSuite(TBTest());
     return 0;
 }

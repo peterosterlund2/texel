@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,31 +17,36 @@
 */
 
 /*
- * evaluateTest.hpp
+ * tbprobe.hpp
  *
- *  Created on: Feb 25, 2012
+ *  Created on: Jun 2, 2014
  *      Author: petero
  */
 
-#ifndef EVALUATETEST_HPP_
-#define EVALUATETEST_HPP_
+#ifndef TBPROBE_HPP_
+#define TBPROBE_HPP_
 
-#include "suiteBase.hpp"
+#include <string>
 
-class EvaluateTest : public SuiteBase {
-public:
-    std::string getName() const { return "EvaluateTest"; }
-
-    cute::suite getSuite() const;
-};
 
 class Position;
-class Evaluate;
-int swapSquareY(int square);
-Position swapColors(const Position& pos);
-Position mirrorX(const Position& pos);
-int evalWhite(const Position& pos);
-int evalWhite(Evaluate& eval, const Position& pos);
+
+/**
+ * Handle tablebase probing.
+ */
+class TBProbe {
+public:
+    /** Initialize external libraries. */
+    static void initialize(const std::string& path);
+
+    /** Probe gaviota tablebases.
+     * @param pos  The position to probe.
+     * @param ply  The ply value used to adjust mate scores.
+     * @param score The table base score. Only modified for tablebase hits.
+     * @return True if pos was found in the tablebases.
+     */
+    static bool gtbProbe(const Position& pos, int ply, int& score);
+};
 
 
-#endif /* EVALUATETEST_HPP_ */
+#endif /* TBPROBE_HPP_ */

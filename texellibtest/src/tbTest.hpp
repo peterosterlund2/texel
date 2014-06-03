@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,31 +17,26 @@
 */
 
 /*
- * evaluateTest.hpp
+ * tbTest.hpp
  *
- *  Created on: Feb 25, 2012
+ *  Created on: Jun 2, 2014
  *      Author: petero
  */
 
-#ifndef EVALUATETEST_HPP_
-#define EVALUATETEST_HPP_
+#ifndef TBTEST_HPP_
+#define TBTEST_HPP_
 
 #include "suiteBase.hpp"
 
-class EvaluateTest : public SuiteBase {
+class TBTest : public SuiteBase {
 public:
-    std::string getName() const { return "EvaluateTest"; }
+    std::string getName() const { return "tbTest"; }
 
     cute::suite getSuite() const;
+
+private:
+    static void gtbTest();
+    static void kpkTest();
 };
 
-class Position;
-class Evaluate;
-int swapSquareY(int square);
-Position swapColors(const Position& pos);
-Position mirrorX(const Position& pos);
-int evalWhite(const Position& pos);
-int evalWhite(Evaluate& eval, const Position& pos);
-
-
-#endif /* EVALUATETEST_HPP_ */
+#endif /* TBTEST_HPP_ */
