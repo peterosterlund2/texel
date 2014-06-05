@@ -9,6 +9,7 @@
 #include "posgen.hpp"
 #include "parameters.hpp"
 #include "chessParseError.hpp"
+#include "computerPlayer.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -116,7 +117,7 @@ getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
     }
     for (ParamDomain& pd : params) {
         std::shared_ptr<Parameters::ParamBase> p = uciPars.getParam(pd.name);
-        const Parameters::SpinParamBase& sp = dynamic_cast<const Parameters::SpinParamBase&>(*p.get());
+        const Parameters::SpinParam& sp = dynamic_cast<const Parameters::SpinParam&>(*p.get());
         pd.minV = sp.getMinValue();
         pd.step = 1;
         pd.maxV = sp.getMaxValue();
@@ -129,6 +130,7 @@ main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
 
     try {
+        ComputerPlayer::initEngine();
         bool useEntropyErrorFunction = false;
         while (true) {
             if ((argc >= 3) && (std::string(argv[1]) == "-iv")) {

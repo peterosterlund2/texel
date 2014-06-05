@@ -46,8 +46,12 @@ TBProbe::initialize(const std::string& path) {
         tbpaths_done(paths);
 
     isInitialized = false;
+    gtbMaxPieces = 0;
     paths = tbpaths_init();
     if (paths == NULL)
+        return;
+
+    if (path.empty())
         return;
 
     paths = tbpaths_add(paths, path.c_str());
@@ -68,7 +72,6 @@ TBProbe::initialize(const std::string& path) {
     isInitialized = true;
 
     unsigned int av = tb_availability();
-    gtbMaxPieces = 0;
     if (av & 3)
         gtbMaxPieces = 3;
     if (av & 12)

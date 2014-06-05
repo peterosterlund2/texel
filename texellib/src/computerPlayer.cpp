@@ -25,6 +25,7 @@
 
 #include "computerPlayer.hpp"
 #include "textio.hpp"
+#include "tbprobe.hpp"
 
 #include <iostream>
 
@@ -43,12 +44,25 @@ ComputerPlayer::staticInitialize() {
     engineName = name;
 }
 
+void
+ComputerPlayer::initEngine() {
+    Parameters::instance();
+    knightMobScore.addListener([]() { Evaluate::updateEvalParams(); });
+    castleFactor.addListener([]() { Evaluate::updateEvalParams(); }, false);
+
+    pV.addListener([]() { pieceValue[Piece::WPAWN]   = pieceValue[Piece::BPAWN]   = pV; });
+    nV.addListener([]() { pieceValue[Piece::WKNIGHT] = pieceValue[Piece::BKNIGHT] = nV; });
+    bV.addListener([]() { pieceValue[Piece::WBISHOP] = pieceValue[Piece::BBISHOP] = bV; });
+    rV.addListener([]() { pieceValue[Piece::WROOK]   = pieceValue[Piece::BROOK]   = rV; });
+    qV.addListener([]() { pieceValue[Piece::WQUEEN]  = pieceValue[Piece::BQUEEN]  = qV; });
+    kV.addListener([]() { pieceValue[Piece::WKING]   = pieceValue[Piece::BKING]   = kV; });
+}
+
 ComputerPlayer::ComputerPlayer()
     : tt(15), pd(tt),
       book(false)
 {
-    Parameters::instance();
-    Evaluate::updateEvalParams();
+    initEngine();
     et = Evaluate::getEvalHashTables();
     minTimeMillis = 10000;
     maxTimeMillis = 10000;

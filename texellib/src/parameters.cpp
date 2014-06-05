@@ -28,12 +28,12 @@
 
 int pieceValue[Piece::nPieceTypes];
 
-DEFINE_PARAM_2REF(pV, pieceValue[Piece::WPAWN]  , pieceValue[Piece::BPAWN]);
-DEFINE_PARAM_2REF(nV, pieceValue[Piece::WKNIGHT], pieceValue[Piece::BKNIGHT]);
-DEFINE_PARAM_2REF(bV, pieceValue[Piece::WBISHOP], pieceValue[Piece::BBISHOP]);
-DEFINE_PARAM_2REF(rV, pieceValue[Piece::WROOK]  , pieceValue[Piece::BROOK]);
-DEFINE_PARAM_2REF(qV, pieceValue[Piece::WQUEEN] , pieceValue[Piece::BQUEEN]);
-DEFINE_PARAM_2REF(kV, pieceValue[Piece::WKING]  , pieceValue[Piece::BKING]);
+DEFINE_PARAM(pV);
+DEFINE_PARAM(nV);
+DEFINE_PARAM(bV);
+DEFINE_PARAM(rV);
+DEFINE_PARAM(qV);
+DEFINE_PARAM(kV);
 
 DEFINE_PARAM(pawnIslandPenalty);
 DEFINE_PARAM(pawnBackwardPenalty);
@@ -432,7 +432,7 @@ ParamTable<14> bishMobScore = { -50, 50, useUciParam,
     {-15,-10, -1,  5, 13, 18, 22, 26, 28, 31, 30, 31, 37, 29 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14 }
 };
-ParamTableEv<28> knightMobScore { -200, 200, useUciParam,
+ParamTable<28> knightMobScore { -200, 200, useUciParam,
     {-32,-30, 17,-34,-10,  2,  8,-51,-19, -5, 10, 16,-23,-23,-16, -8,  1,  6, 10,-31,-31,-20,-12, -5,  1,  6,  9,  4 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 23, 24, 25, 26 }
 };
@@ -516,7 +516,7 @@ ParamTable<7> RvsBPDrawFactor { 0, 255, useUciParam,
     {128,127,111,125,129,174,175 },
     {  0,  1,  2,  3,  4,  5,  6 }
 };
-ParamTableEv<4> castleFactor { 0, 128, useUciParam,
+ParamTable<4> castleFactor { 0, 128, useUciParam,
     { 64, 42, 30, 26 },
     {  1,  2,  3,  4 }
 };
@@ -760,9 +760,11 @@ ParamTableBase::registerParamsN(const std::string& name, Parameters& pars,
     params.resize(maxParIdx+1);
     for (const auto& p : parNoToVal) {
         std::string pName = name + num2Str(p.first);
-        params[p.first] = std::make_shared<TableSpinParam>(pName, *this, p.second);
+        params[p.first] = std::make_shared<Parameters::SpinParam>(pName, minValue, maxValue, p.second);
         pars.addPar(params[p.first]);
+        params[p.first]->addListener([=]() { modifiedN(table, parNo, N); }, false);
     }
+    modifiedN(table, parNo, N);
 }
 
 void
@@ -772,6 +774,5 @@ ParamTableBase::modifiedN(int* table, int* parNo, int N) {
             table[i] = params[parNo[i]]->getIntPar();
         else if (parNo[i] < 0)
             table[i] = -params[-parNo[i]]->getIntPar();
-    for (auto d : dependent)
-        d->modified();
+    notify();
 }

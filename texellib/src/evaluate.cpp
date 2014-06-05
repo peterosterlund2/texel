@@ -96,12 +96,6 @@ Evaluate::staticInitialize() {
     }
 }
 
-namespace EvaluateNS {
-    void updateEvalParams() {
-        Evaluate::updateEvalParams();
-    }
-}
-
 void
 Evaluate::updateEvalParams() {
     // Castle bonus

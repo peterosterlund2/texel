@@ -89,6 +89,11 @@ TBTest::gtbTest() {
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(mate0 - ply - 22, score);
 
+    TBProbe::initialize("");
+    res = gtbProbe(pos, ply, score);
+    ASSERT_EQUAL(false, res);
+    TBProbe::initialize("/home/petero/chess/gtb");
+
     // Test en passant
     pos = TextIO::readFEN("8/8/4k3/8/3pP3/8/3P4/4K3 b - e3 0 1");
     res = gtbProbe(pos, ply, score);

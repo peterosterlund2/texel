@@ -92,8 +92,8 @@ EngineControl::EngineControl(std::ostream& o)
       pd(tt),
       randomSeed(0)
 {
+    ComputerPlayer::initEngine();
     setupTT();
-    Evaluate::updateEvalParams();
     et = Evaluate::getEvalHashTables();
 }
 
@@ -403,7 +403,7 @@ EngineControl::printOptions(std::ostream& os) {
             break;
         }
         case Parameters::SPIN: {
-            const Parameters::SpinParamBase& sp = dynamic_cast<const Parameters::SpinParamBase&>(*p.get());
+            const Parameters::SpinParam& sp = dynamic_cast<const Parameters::SpinParam&>(*p.get());
             os << "option name " << sp.name << " type spin default "
                << sp.getDefaultValue() << " min " << sp.getMinValue()
                << " max " << sp.getMaxValue() << std::endl;

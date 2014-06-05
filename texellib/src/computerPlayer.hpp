@@ -67,6 +67,9 @@ public:
     /** Initialize static data. */
     static void staticInitialize();
 
+    /** Performs initialization that must happen after static initialization. */
+    static void initEngine();
+
 private:
     ComputerPlayer(const ComputerPlayer& other) = delete;
     ComputerPlayer& operator=(const ComputerPlayer& other) = delete;

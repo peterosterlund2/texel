@@ -1041,17 +1041,19 @@ testKnightOutPost() {
 
 
 DECLARE_PARAM(testUciPar1, 60, 10, 80, true);
-DECLARE_PARAM_2REF(testUciPar2, 120, 100, 300, true);
+DECLARE_PARAM(testUciPar2, 120, 100, 300, true);
 
 int uciParVec[3];
 
 DEFINE_PARAM(testUciPar1);
-DEFINE_PARAM_2REF(testUciPar2, uciParVec[0], uciParVec[2]);
+DEFINE_PARAM(testUciPar2);
 
 static void
 testUciParam() {
     testUciPar1.registerParam("uciPar1", Parameters::instance());
     testUciPar2.registerParam("uciPar2", Parameters::instance());
+
+    testUciPar2.addListener([](){ uciParVec[0] = uciParVec[2] = testUciPar2; });
 
     ASSERT_EQUAL(60, static_cast<int>(testUciPar1));
     ASSERT_EQUAL(120, static_cast<int>(testUciPar2));

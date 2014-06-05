@@ -39,7 +39,7 @@
 #include "utilTest.hpp"
 #include "tbTest.hpp"
 
-#include "evaluate.hpp"
+#include "computerPlayer.hpp"
 #include "tbprobe.hpp"
 
 void
@@ -49,7 +49,7 @@ runSuite(const SuiteBase& suite) {
 }
 
 int main() {
-    Evaluate::updateEvalParams();
+    ComputerPlayer::initEngine();
     TBProbe::initialize("/home/petero/chess/gtb");
     runSuite(BitBoardTest());
     runSuite(BookTest());
