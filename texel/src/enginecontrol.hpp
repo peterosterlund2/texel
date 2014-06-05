@@ -47,6 +47,7 @@ class SearchParams;
 class EngineControl {
 public:
     EngineControl(std::ostream& o);
+    ~EngineControl();
 
     void startSearch(const Position& pos, const std::vector<Move>& moves, const SearchParams& sPar);
 
@@ -106,6 +107,9 @@ private:
 
 
     std::ostream& os;
+
+    int hashParListenerId;
+    bool pendingTTChange = true;
 
     std::shared_ptr<std::thread> engineThread;
     std::mutex threadMutex;

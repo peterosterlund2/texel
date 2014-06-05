@@ -28,7 +28,7 @@
 #include "enginecontrol.hpp"
 #include "util/random.hpp"
 #include "searchparams.hpp"
-#include "computerPlayer.hpp"
+#include "book.hpp"
 #include "textio.hpp"
 #include "parameters.hpp"
 #include "moveGen.hpp"
@@ -87,14 +87,20 @@ EngineControl::SearchListener::notifyStats(U64 nodes, int nps, int time) {
 
 EngineControl::EngineControl(std::ostream& o)
     : os(o),
+      pendingTTChange(false),
       shouldDetach(true),
       tt(8),
       pd(tt),
       randomSeed(0)
 {
-    ComputerPlayer::initEngine();
-    setupTT();
+    hashParListenerId = Parameters::instance().getParam("Hash")->addListener([this]() {
+        setupTT();
+    });
     et = Evaluate::getEvalHashTables();
+}
+
+EngineControl::~EngineControl() {
+    Parameters::instance().getParam("Hash")->removeListener(hashParListenerId);
 }
 
 void
@@ -199,6 +205,8 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
+    if (pendingTTChange)
+        setupTT();
     Parameters& par = Parameters::instance();
     Search::SearchTables st(tt, kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
@@ -293,6 +301,15 @@ EngineControl::stopThread() {
 
 void
 EngineControl::setupTT() {
+    {
+        std::lock_guard<std::mutex> L(threadMutex);
+        if (engineThread) {
+            pendingTTChange = true;
+            return;
+        }
+    }
+    pendingTTChange = false;
+
     int hashSizeMB = Parameters::instance().getIntPar("Hash");
     U64 nEntries = hashSizeMB > 0 ? ((U64)hashSizeMB) * (1 << 20) / sizeof(TranspositionTable::TTEntry)
 	                          : (U64)1024;
@@ -433,6 +450,4 @@ EngineControl::printOptions(std::ostream& os) {
 void
 EngineControl::setOption(const std::string& optionName, const std::string& optionValue) {
     Parameters::instance().set(optionName, optionValue);
-    if (optionName == "hash")
-        setupTT();
 }

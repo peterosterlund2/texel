@@ -1702,6 +1702,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
         score -= krpkbBonus;
         krpkbAdjustment += krpkbBonus;
     }
+
     // Penalty for KRPKB when pawn is on a/h file
     if ((pos.wMtrl() - pos.wMtrlPawns() == rV) && (pos.wMtrlPawns() <= pV) && pos.pieceTypeBB(Piece::BBISHOP)) {
         if (!doEval) return 1;
