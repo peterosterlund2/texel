@@ -26,6 +26,12 @@
 #include "parameters.hpp"
 #include "computerPlayer.hpp"
 
+namespace UciParams {
+    std::shared_ptr<Parameters::StringParam> gtbPath(std::make_shared<Parameters::StringParam>("GaviotaTbPath", ""));
+    std::shared_ptr<Parameters::SpinParam> gtbCache(std::make_shared<Parameters::SpinParam>("GaviotaTbCache", 1, 2047, 1));
+    std::shared_ptr<Parameters::SpinParam> minProbeDepth(std::make_shared<Parameters::SpinParam>("MinProbeDepth", 0, 100, 3));
+}
+
 int pieceValue[Piece::nPieceTypes];
 
 DEFINE_PARAM(pV);
@@ -576,6 +582,10 @@ Parameters::Parameters() {
     addPar(std::make_shared<SpinParam>("Threads", 1, 64, 1));
 #endif
     addPar(std::make_shared<SpinParam>("MultiPV", 1, 256, 1));
+
+    addPar(UciParams::gtbPath);
+    addPar(UciParams::gtbCache);
+    addPar(UciParams::minProbeDepth);
 
     // Evaluation parameters
     REGISTER_PARAM(pV, "PawnValue");

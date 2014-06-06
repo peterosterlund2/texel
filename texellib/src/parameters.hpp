@@ -241,7 +241,7 @@ public:
 private:
     Parameters();
 
-    std::map<std::string, std::shared_ptr<ParamBase> > params;
+    std::map<std::string, std::shared_ptr<ParamBase>> params;
 };
 
 // ----------------------------------------------------------------------------
@@ -358,11 +358,20 @@ ParamTable<N>::ParamTable(int minVal0, int maxVal0, bool uci0,
 }
 
 // ----------------------------------------------------------------------------
+// UCI parameters
+
+namespace UciParams {
+    extern std::shared_ptr<Parameters::StringParam> gtbPath;
+    extern std::shared_ptr<Parameters::SpinParam> gtbCache;
+    extern std::shared_ptr<Parameters::SpinParam> minProbeDepth;
+}
+
+// ----------------------------------------------------------------------------
+// Tuning parameters
 
 const bool useUciParam = false;
 
 extern int pieceValue[Piece::nPieceTypes];
-
 
 // Evaluation parameters
 

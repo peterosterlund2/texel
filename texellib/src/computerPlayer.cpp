@@ -47,9 +47,16 @@ ComputerPlayer::staticInitialize() {
 void
 ComputerPlayer::initEngine() {
     Parameters::instance();
-    knightMobScore.addListener([]() { Evaluate::updateEvalParams(); });
-    castleFactor.addListener([]() { Evaluate::updateEvalParams(); }, false);
 
+    auto tbInit = []() {
+        TBProbe::initialize(UciParams::gtbPath->getStringPar(),
+                            UciParams::gtbCache->getIntPar());
+    };
+    UciParams::gtbPath->addListener(tbInit);
+    UciParams::gtbCache->addListener(tbInit, false);
+
+    knightMobScore.addListener(Evaluate::updateEvalParams);
+    castleFactor.addListener(Evaluate::updateEvalParams, false);
     pV.addListener([]() { pieceValue[Piece::WPAWN]   = pieceValue[Piece::BPAWN]   = pV; });
     nV.addListener([]() { pieceValue[Piece::WKNIGHT] = pieceValue[Piece::BKNIGHT] = nV; });
     bV.addListener([]() { pieceValue[Piece::WBISHOP] = pieceValue[Piece::BBISHOP] = bV; });
@@ -118,7 +125,7 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
         bestM.setScore(0);
     } else {
         sc.timeLimit(minTimeMillis, maxTimeMillis);
-        bestM = sc.iterativeDeepening(moves, maxDepth, maxNodes, verbose);
+        bestM = sc.iterativeDeepening(moves, maxDepth, maxNodes, verbose, 1, false, 100);
     }
     currentSearch = NULL;
     //        tt.printStats();

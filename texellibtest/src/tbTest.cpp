@@ -68,6 +68,7 @@ void
 TBTest::gtbTest() {
     const int mate0 = SearchConst::MATE0;
     int ply = 17;
+    const int cacheMB = 16;
 
     Position pos = TextIO::readFEN("4k3/R7/4K3/8/8/8/8/8 w - - 0 1");
     int score;
@@ -75,10 +76,10 @@ TBTest::gtbTest() {
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(mate0 - ply - 2, score);
 
-    TBProbe::initialize("/home/petero/chess/gtb/no_such_dir");
+    TBProbe::initialize("/home/petero/chess/gtb/no_such_dir", cacheMB);
     res = gtbProbe(pos, ply, score);
     ASSERT_EQUAL(false, res);
-    TBProbe::initialize("/home/petero/chess/gtb");
+    TBProbe::initialize("/home/petero/chess/gtb", cacheMB);
 
     // Test castling
     pos = TextIO::readFEN("4k3/8/8/8/8/8/8/4K2R w K - 0 1");
@@ -89,10 +90,10 @@ TBTest::gtbTest() {
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(mate0 - ply - 22, score);
 
-    TBProbe::initialize("");
+    TBProbe::initialize("", cacheMB);
     res = gtbProbe(pos, ply, score);
     ASSERT_EQUAL(false, res);
-    TBProbe::initialize("/home/petero/chess/gtb");
+    TBProbe::initialize("/home/petero/chess/gtb", cacheMB);
 
     // Test en passant
     pos = TextIO::readFEN("8/8/4k3/8/3pP3/8/3P4/4K3 b - e3 0 1");

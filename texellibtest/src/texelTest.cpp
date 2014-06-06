@@ -41,6 +41,7 @@
 
 #include "computerPlayer.hpp"
 #include "tbprobe.hpp"
+#include "parameters.hpp"
 
 void
 runSuite(const SuiteBase& suite) {
@@ -49,8 +50,8 @@ runSuite(const SuiteBase& suite) {
 }
 
 int main() {
+    UciParams::gtbPath->set("/home/petero/chess/gtb");
     ComputerPlayer::initEngine();
-    TBProbe::initialize("/home/petero/chess/gtb");
     runSuite(BitBoardTest());
     runSuite(BookTest());
     runSuite(ComputerPlayerTest());

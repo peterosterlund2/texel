@@ -37,7 +37,7 @@ class Position;
 class TBProbe {
 public:
     /** Initialize external libraries. */
-    static void initialize(const std::string& path);
+    static void initialize(const std::string& path, int cacheMB);
 
     /** Probe gaviota tablebases.
      * @param pos  The position to probe.

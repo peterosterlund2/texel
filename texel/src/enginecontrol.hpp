@@ -82,9 +82,9 @@ private:
 
         void notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
                       bool upperBound, bool lowerBound, const std::vector<Move>& pv,
-                      int multiPVIndex);
+                      int multiPVIndex, U64 tbHits);
 
-        void notifyStats(U64 nodes, int nps, int time);
+        void notifyStats(U64 nodes, int nps, U64 tbHits, int time);
 
     private:
         std::ostream& os;

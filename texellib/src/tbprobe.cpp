@@ -36,7 +36,7 @@ static const char** paths = NULL;
 static int gtbMaxPieces = 0;
 
 void
-TBProbe::initialize(const std::string& path) {
+TBProbe::initialize(const std::string& path, int cacheMB) {
     static_assert((int)tb_A1 == (int)A1, "Incompatible square numbering");
     static_assert((int)tb_A8 == (int)A8, "Incompatible square numbering");
     static_assert((int)tb_H1 == (int)H1, "Incompatible square numbering");
@@ -60,7 +60,7 @@ TBProbe::initialize(const std::string& path) {
 
     TB_compression_scheme scheme = tb_CP4;
     int verbose = 0;
-    int cacheSize = 4*1024*1024;
+    int cacheSize = 1024 * 1024 * cacheMB;
     int wdlFraction = 0;
     if (isInitialized) {
         tb_restart(verbose, scheme, paths);

@@ -24,6 +24,7 @@
  */
 
 #include "search.hpp"
+#include "tbprobe.hpp"
 #include "treeLogger.hpp"
 #include "textio.hpp"
 #include "util/logger.hpp"
@@ -60,12 +61,14 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     maxTimeMillis = -1;
     searchNeedMoreTime = false;
     maxNodes = -1;
+    minProbeDepth = 0;
     nodesBetweenTimeCheck = 10000;
     strength = 1000;
     weak = false;
     randomSeed = 0;
     tLastStats = currentTimeMillis();
     totalNodes = 0;
+    tbHits = 0;
     nodesToGo = 0;
     verbose = false;
 }
@@ -92,9 +95,11 @@ Search::setStrength(int strength, U64 randomSeed) {
 Move
 Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                            int maxDepth, U64 initialMaxNodes,
-                           bool verbose, int maxPV, bool onlyExact) {
+                           bool verbose, int maxPV, bool onlyExact,
+                           int minProbeDepth) {
     tStart = currentTimeMillis();
     totalNodes = 0;
+    tbHits = 0;
     if (scMovesIn.size <= 0)
         return Move(); // No moves to search
 
@@ -128,6 +133,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
 //    pd.wq.resetStat();
     const bool smp = pd.numHelperThreads() > 0;
     maxNodes = initialMaxNodes;
+    this->minProbeDepth = minProbeDepth * plyScale;
     nodesToGo = 0;
     Position origPos(pos);
     bool firstIteration = true;
@@ -390,9 +396,10 @@ Search::notifyPV(const MoveInfo& info, int multiPVIndex) {
     U64 tNow = currentTimeMillis();
     int time = (int) (tNow - tStart);
     S64 totNodes = getTotalNodes();
+    S64 tbHits = getTbHits();
     int nps = (time > 0) ? (int)(totNodes / (time / 1000.0)) : 0;
     listener->notifyPV(info.depth/plyScale, score, time, totNodes, nps, isMate,
-                       uBound, lBound, info.pv, multiPVIndex);
+                       uBound, lBound, info.pv, multiPVIndex, tbHits);
 }
 
 void
@@ -402,7 +409,8 @@ Search::notifyStats() {
         int time = (int) (tNow - tStart);
         S64 totNodes = getTotalNodes();
         int nps = (time > 0) ? (int)(totNodes / (time / 1000.0)) : 0;
-        listener->notifyStats(totNodes, nps, time);
+        S64 tbHits = getTbHits();
+        listener->notifyStats(totNodes, nps, tbHits, time);
     }
     tLastStats = tNow;
 }
@@ -498,6 +506,19 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 logFile.logNodeEnd(sti.nodeIdx, score, ent.getType(), evalScore, hKey);
                 return score;
             }
+        }
+    }
+
+    // Probe endgame tablebases
+    if (depth >= minProbeDepth) {
+        int score;
+        if (TBProbe::gtbProbe(pos, ply, score)) {
+            tbHits++;
+            nodesToGo -= 5000;
+            emptyMove.setScore(score);
+            if (useTT) tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
+            logFile.logNodeEnd(sti.nodeIdx, score, TType::T_EXACT, evalScore, hKey);
+            return score;
         }
     }
 

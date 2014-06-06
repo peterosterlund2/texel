@@ -89,6 +89,7 @@ private:
     int counter;             // Counts number of calls to shouldStop
     int nextProbCheck;       // Next time test for SplitPoint switch should be performed
     S64 lastReportedNodes;
+    S64 lastReportedTbHits;
     int initialAlpha;
     const S64 totalNodes;
     const int myPrio;
@@ -99,7 +100,8 @@ ThreadStopHandler::ThreadStopHandler(WorkerThread& wt0, ParallelData& pd0,
                                      int moveNo0, const Search& sc0, int initialAlpha0,
                                      S64 totalNodes0, int myPrio0)
     : wt(wt0), pd(pd0), sp(sp0), spMove(spm0), moveNo(moveNo0),
-      sc(sc0), counter(0), nextProbCheck(1), lastReportedNodes(0),
+      sc(sc0), counter(0), nextProbCheck(1),
+      lastReportedNodes(0), lastReportedTbHits(0),
       initialAlpha(initialAlpha0), totalNodes(totalNodes0), myPrio(myPrio0) {
 }
 
@@ -135,6 +137,10 @@ ThreadStopHandler::reportNodes(bool force) {
     if (force || (nodes * 1024 > totalNodes)) {
         lastReportedNodes = totNodes;
         pd.addSearchedNodes(nodes);
+        S64 totTbHits = sc.getTbHitsThisThread();
+        S64 tbHits = totTbHits - lastReportedTbHits;
+        lastReportedTbHits = totTbHits;
+        pd.addTbHits(tbHits);
     }
 }
 
@@ -524,6 +530,7 @@ ParallelData::addRemoveWorkers(int numWorkers) {
 void
 ParallelData::startAll() {
     totalHelperNodes = 0;
+    helperTbHits = 0;
     wq.setStopped(false);
     for (auto& thread : threads)
         thread->start();

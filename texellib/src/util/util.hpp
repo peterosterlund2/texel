@@ -54,7 +54,7 @@ template <typename T, size_t N> char (&ArraySizeHelper(T(&array)[N]))[N];
 template <typename T> class AlignedAllocator;
 /** std::vector with cache line aware allocator. */
 template <typename T>
-class vector_aligned : public std::vector<T, AlignedAllocator<T> > { };
+class vector_aligned : public std::vector<T, AlignedAllocator<T>> { };
 
 
 /** Helper class to perform static initialization of a class T. */

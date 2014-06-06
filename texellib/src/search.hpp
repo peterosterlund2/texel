@@ -74,8 +74,9 @@ public:
         virtual void notifyCurrMove(const Move& m, int moveNr) = 0;
         virtual void notifyPV(int depth, int score, int time, U64 nodes, int nps,
                               bool isMate, bool upperBound, bool lowerBound,
-                              const std::vector<Move>& pv, int multiPVIndex) = 0;
-        virtual void notifyStats(U64 nodes, int nps, int time) = 0;
+                              const std::vector<Move>& pv, int multiPVIndex,
+                              U64 tbHits) = 0;
+        virtual void notifyStats(U64 nodes, int nps, U64 tbHits, int time) = 0;
     };
 
     void setListener(const std::shared_ptr<Listener>& listener) {
@@ -106,7 +107,8 @@ public:
 
     Move iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                             int maxDepth, U64 initialMaxNodes, bool verbose,
-                            int maxPV = 1, bool onlyExact = false);
+                            int maxPV = 1, bool onlyExact = false,
+                            int minProbeDepth = 0);
 
     /**
      * Main recursive search algorithm.
@@ -139,6 +141,9 @@ public:
 
     /** Get total number of nodes searched by this thread. */
     S64 getTotalNodesThisThread() const;
+
+    /** Get number of TB hits for this thread. */
+    S64 getTbHitsThisThread() const;
 
 private:
     Search(const Search& other) = delete;
@@ -183,6 +188,9 @@ private:
 
     /** Get total number of nodes searched by all threads. */
     S64 getTotalNodes() const;
+
+    /** Get total number of TB hits for all threads. */
+    S64 getTbHits() const;
 
     /** Return true if move should be skipped in order to make engine play weaker. */
     bool weakPlaySkipMove(const Position& pos, const Move& m, int ply) const;
@@ -255,6 +263,7 @@ private:
     RelaxedShared<S64> maxTimeMillis; // Maximum allowed thinking time
     bool searchNeedMoreTime;   // True if negaScout should use up to maxTimeMillis time.
     S64 maxNodes;              // Maximum number of nodes to search (approximately)
+    int minProbeDepth;         // Minimum depth to probe endgame tablebases.
     int nodesToGo;             // Number of nodes until next time check
     RelaxedShared<int> nodesBetweenTimeCheck; // How often to check remaining time
 
@@ -269,6 +278,7 @@ private:
     Histogram<0,20> nodesByPly;
     Histogram<0,20> nodesByDepth;
     S64 totalNodes;
+    S64 tbHits;
     S64 tLastStats;        // Time when notifyStats was last called
     bool verbose;
 
@@ -394,6 +404,16 @@ Search::getTotalNodes() const {
 inline S64
 Search::getTotalNodesThisThread() const {
     return totalNodes;
+}
+
+inline S64
+Search::getTbHits() const {
+    return tbHits + pd.getTbHits();
+}
+
+inline S64
+Search::getTbHitsThisThread() const {
+    return tbHits;
 }
 
 inline void

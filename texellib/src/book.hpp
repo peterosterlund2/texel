@@ -75,7 +75,7 @@ private:
         BookEntry(const Move& m) : move(m), count(1) { }
     };
 
-    typedef std::map<U64, std::vector<BookEntry> > BookMap;
+    typedef std::map<U64, std::vector<BookEntry>> BookMap;
     static BookMap bookMap;
     static Random rndGen;
     static int numBookMoves;
