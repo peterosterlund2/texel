@@ -301,8 +301,6 @@ static int GTB_scheme = 4;
 static int GTB_MAXOPEN = 4;
 
 static bool_t 			Uncompressed = TRUE;
-static unsigned char 	Buffer_zipped [EGTB_MAXBLOCKSIZE];
-static unsigned char 	Buffer_packed [EGTB_MAXBLOCKSIZE];
 static unsigned int		zipinfo_init (void);
 static void 			zipinfo_done (void);
 
@@ -2164,6 +2162,7 @@ bestx (unsigned stm, dtm_t a, dtm_t b)
  |								PACKING ZONE
  *--------------------------------------------------------------------------*/
 
+inline
 mySHARED dtm_t
 dtm_unpack (unsigned stm, unsigned char packed)
 {
@@ -3209,10 +3208,16 @@ static bool_t
 egtb_block_unpack (unsigned side, index_t n, const unsigned char *bp, dtm_t *out)
 /* bp:buffer packed to out:distance to mate buffer */
 {
-	index_t i;
-	for (i = 0; i < n; i++) {
-		*out++ = dtm_unpack (side, bp[i]);
-	}
+    index_t i;
+    if (WH == side) {
+        for (i = 0; i < n; i++) {
+            *out++ = dtm_unpack (WH, bp[i]);
+        }
+    } else {
+        for (i = 0; i < n; i++) {
+            *out++ = dtm_unpack (BL, bp[i]);
+        }
+    }
 	return TRUE;
 }
 
@@ -3223,6 +3228,8 @@ preload_cache (tbkey_t key, unsigned side, index_t idx)
 	dtm_block_t 	*pblock;
 	dtm_t 			*p;
 	bool_t 			ok;
+    unsigned char    Buffer_zipped [EGTB_MAXBLOCKSIZE];
+    unsigned char    Buffer_packed [EGTB_MAXBLOCKSIZE];
 
 	FOLLOW_label("preload_cache starts")
 
@@ -3279,9 +3286,15 @@ preload_cache (tbkey_t key, unsigned side, index_t idx)
 				&& egtb_block_read   (key, z, Buffer_zipped);
 		FOLLOW_LULU("preload_cache", __LINE__, ok)
 
+        mythread_mutex_unlock (&Egtb_lock);
+
 		ok =	   ok
 				&& egtb_block_decode (key, z, Buffer_zipped, n, Buffer_packed);
 		FOLLOW_LULU("preload_cache", __LINE__, ok)
+
+        mythread_mutex_lock (&Egtb_lock);
+	    pblock = point_block_to_replace();
+	    p = pblock->p_arr;
 
 		ok =	   ok
 				&& egtb_block_unpack (side, n, Buffer_packed, p);
