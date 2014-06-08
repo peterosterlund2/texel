@@ -1489,7 +1489,7 @@ tb_probe_	(unsigned stm,
 {
 	int i = 0, j = 0;
 	tbkey_t id = -1;
-	dtm_t dtm;
+	dtm_t dtm = 0;
 
 	SQUARE 		storage_ws [MAX_LISTSIZE], storage_bs [MAX_LISTSIZE];
 	SQ_CONTENT  storage_wp [MAX_LISTSIZE], storage_bp [MAX_LISTSIZE];
@@ -2388,6 +2388,11 @@ struct cache_table {
 	size_t			n;
 	dtm_block_t *	entry;
 
+	/* fast lookup in top->bot list */
+	dtm_block_t**	hash_table;
+	size_t			ht_size;
+	size_t			ht_used;
+
 	/* counters */
 	uint64_t		hard;
 	uint64_t		soft;
@@ -2523,6 +2528,24 @@ dtm_cache_init (size_t cache_mem)
 		p->next 	= NULL;
 	}
 
+	dtm_cache.ht_size = 1;
+	while (dtm_cache.ht_size < max_blocks * 4)
+		dtm_cache.ht_size *= 2;
+	dtm_cache.ht_used = 0;
+	dtm_cache.hash_table = (dtm_block_t**) malloc (dtm_cache.ht_size * sizeof(dtm_block_t*));;
+	if (dtm_cache.hash_table == NULL) {
+		dtm_cache.cached = FALSE;
+		free (dtm_cache.entry);
+		dtm_cache.entry = NULL;
+		free (dtm_cache.buffer);
+		dtm_cache.buffer = NULL;
+		return 0;
+	}
+
+	for (i = 0; i < dtm_cache.ht_size; i++) {
+		dtm_cache.hash_table[i] = NULL;
+	}
+
 	DTM_CACHE_INITIALIZED = TRUE;
 
 	return cache_mem;
@@ -2555,6 +2578,10 @@ dtm_cache_done (void)
 	if (dtm_cache.entry != NULL)
 		free (dtm_cache.entry);
 	dtm_cache.entry = NULL;
+
+	if (dtm_cache.hash_table != NULL)
+		free (dtm_cache.hash_table);
+	dtm_cache.hash_table = NULL;
 
 	DTM_CACHE_INITIALIZED = FALSE;
 
@@ -2740,6 +2767,54 @@ tbstats_reset (void)
 	return;
 }
 
+static size_t
+dtm_hash_func_1 (tbkey_t key, unsigned side, index_t offset) {
+	size_t h = offset | (key << 1) | side;
+	h = ((h >> 16) ^ h) * 0x45d9f3b;
+	h = ((h >> 16) ^ h) * 0x45d9f3b;
+	h = ((h >> 16) ^ h);
+	return h;
+}
+
+static size_t
+dtm_hash_func_2 (tbkey_t key, unsigned side, index_t offset) {
+	size_t h = offset | (key << 1) | side;
+	h = ((h >> 16) ^ h) * 0x3335b369;
+	h = ((h >> 16) ^ h) * 0x3335b369;
+	h = ((h >> 16) ^ h);
+	return h * 2 + 1;
+}
+
+static void dtm_hash_insert (dtm_block_t * e);
+
+static void
+dtm_hash_rebuild() {
+	dtm_block_t	* p;
+	size_t i;
+
+	for (i = 0; i < dtm_cache.ht_size; i++)
+		dtm_cache.hash_table[i] = NULL;
+	dtm_cache.ht_used = 0;
+
+	for (p = dtm_cache.top; p != NULL; p = p->prev)
+		dtm_hash_insert (p);
+}
+
+static void
+dtm_hash_insert (dtm_block_t * e) {
+	size_t h1, h2;
+
+	if (dtm_cache.ht_used > dtm_cache.ht_size * 3 / 4)
+		dtm_hash_rebuild();
+
+    h1 = dtm_hash_func_1 (e->key, e->side, e->offset) & (dtm_cache.ht_size - 1);
+    h2 = dtm_hash_func_2 (e->key, e->side, e->offset);
+    while (dtm_cache.hash_table[h1])
+        h1 = (h1 + h2) & (dtm_cache.ht_size - 1);
+    dtm_cache.hash_table[h1] = e;
+    dtm_cache.ht_used++;
+}
+
 static dtm_block_t	*
 dtm_cache_pointblock (tbkey_t key, unsigned side, index_t idx)
 {
@@ -2747,6 +2822,7 @@ dtm_cache_pointblock (tbkey_t key, unsigned side, index_t idx)
 	index_t			remainder;
 	dtm_block_t	*	p;
 	dtm_block_t	*	ret;
+	size_t			h1, h2;
 
 	if (!dtm_cache_is_on())
 		return NULL;
@@ -2755,7 +2831,12 @@ dtm_cache_pointblock (tbkey_t key, unsigned side, index_t idx)
 
 	ret   = NULL;
 
-	for (p = dtm_cache.top; p != NULL; p = p->prev) {
+	h1 = dtm_hash_func_1 (key, side, offset) & (dtm_cache.ht_size - 1);
+	h2 = dtm_hash_func_2 (key, side, offset);
+	while (1) {
+		p = dtm_cache.hash_table[h1];
+		if (!p)
+			break;
 
 		dtm_cache.comparisons++;
 
@@ -2763,6 +2844,8 @@ dtm_cache_pointblock (tbkey_t key, unsigned side, index_t idx)
 			ret = p;
 			break;
 		}
+
+		h1 = (h1 + h2) & (dtm_cache.ht_size - 1);
 	}
 
 	FOLLOW_LU("point_to_dtm_block ok?",(ret!=NULL))
@@ -3216,6 +3299,7 @@ preload_cache (tbkey_t key, unsigned side, index_t idx)
 		pblock->key    = key;
 		pblock->side   = side;
 		pblock->offset = offset;
+		dtm_hash_insert (pblock);
 	} else {
 		/* make it unusable */
 		pblock->key    = -1;
