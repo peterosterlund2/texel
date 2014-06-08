@@ -2788,7 +2788,7 @@ dtm_hash_func_2 (tbkey_t key, unsigned side, index_t offset) {
 static void dtm_hash_insert (dtm_block_t * e);
 
 static void
-dtm_hash_rebuild() {
+dtm_hash_rebuild (void) {
 	dtm_block_t	* p;
 	size_t i;
 
