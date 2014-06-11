@@ -103,9 +103,9 @@ public:
         /** Get the score from the hash entry and convert from "mate in x" to "mate at ply". */
         int getScore(int ply) const {
             int sc = (S16)getBits(16, 16);
-            if (sc > SearchConst::MATE0 - 1000) {
+            if (sc > SearchConst::MATE0 / 2) {
                 sc -= ply;
-            } else if (sc < -(SearchConst::MATE0 - 1000)) {
+            } else if (sc < -(SearchConst::MATE0 / 2)) {
                 sc += ply;
             }
             return sc;

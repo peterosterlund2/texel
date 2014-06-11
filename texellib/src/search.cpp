@@ -511,13 +511,15 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     // Probe endgame tablebases
     if (depth >= minProbeDepth) {
-        int score;
-        if (TBProbe::gtbProbe(pos, ply, score)) {
+        TranspositionTable::TTEntry tbEnt;
+        ent.clear();
+        if (TBProbe::tbProbe(pos, ply, alpha, beta, tbEnt)) {
+            int score = tbEnt.getScore(ply);
             tbHits++;
-            nodesToGo -= 5000;
+            nodesToGo -= 1000;
             emptyMove.setScore(score);
-            if (useTT) tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
-            logFile.logNodeEnd(sti.nodeIdx, score, TType::T_EXACT, evalScore, hKey);
+            if (useTT) tt.insert(hKey, emptyMove, ent.getType(), ply, depth, evalScore);
+            logFile.logNodeEnd(sti.nodeIdx, score, ent.getType(), evalScore, hKey);
             return score;
         }
     }

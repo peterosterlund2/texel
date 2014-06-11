@@ -2306,6 +2306,23 @@ fpark_entry_packed  (FILE *finp, unsigned side, index_t max, index_t idx)
 |
 \*/
 
+static size_t
+hash_func_1 (tbkey_t key, unsigned side, index_t offset) {
+	size_t h = offset | (key << 1) | side;
+	h = ((h >> 16) ^ h) * 0x45d9f3b;
+	h = ((h >> 16) ^ h) * 0x45d9f3b;
+	h = ((h >> 16) ^ h);
+	return h;
+}
+
+static size_t
+hash_func_2 (tbkey_t key, unsigned side, index_t offset) {
+	size_t h = offset | (key << 1) | side;
+	h = ((h >> 16) ^ h) * 0x3335b369;
+	h = ((h >> 16) ^ h) * 0x3335b369;
+	h = ((h >> 16) ^ h);
+	return h * 2 + 1;
+}
 
 /*---------------------------------------------------------------------*\
 |			WDL CACHE Implementation  ZONE
@@ -2342,6 +2359,11 @@ struct WDL_CACHE {
 	wdl_block_t *	bot;
 	size_t			n;
 	wdl_block_t *	blocks; /* was entry */
+
+	/* fast lookup in LRU list */
+	wdl_block_t**	hash_table;
+	size_t			ht_size;
+	size_t			ht_used;
 
 	/* counters */
 	uint64_t		hard;
@@ -2387,7 +2409,7 @@ struct cache_table {
 	size_t			n;
 	dtm_block_t *	entry;
 
-	/* fast lookup in top->bot list */
+	/* fast lookup in LRU list */
 	dtm_block_t**	hash_table;
 	size_t			ht_size;
 	size_t			ht_used;
@@ -2766,24 +2788,6 @@ tbstats_reset (void)
 	return;
 }
 
-static size_t
-dtm_hash_func_1 (tbkey_t key, unsigned side, index_t offset) {
-	size_t h = offset | (key << 1) | side;
-	h = ((h >> 16) ^ h) * 0x45d9f3b;
-	h = ((h >> 16) ^ h) * 0x45d9f3b;
-	h = ((h >> 16) ^ h);
-	return h;
-}
-
-static size_t
-dtm_hash_func_2 (tbkey_t key, unsigned side, index_t offset) {
-	size_t h = offset | (key << 1) | side;
-	h = ((h >> 16) ^ h) * 0x3335b369;
-	h = ((h >> 16) ^ h) * 0x3335b369;
-	h = ((h >> 16) ^ h);
-	return h * 2 + 1;
-}
-
 static void dtm_hash_insert (dtm_block_t * e);
 
 static void
@@ -2806,8 +2810,8 @@ dtm_hash_insert (dtm_block_t * e) {
 	if (dtm_cache.ht_used > dtm_cache.ht_size * 3 / 4)
 		dtm_hash_rebuild();
 
-    h1 = dtm_hash_func_1 (e->key, e->side, e->offset) & (dtm_cache.ht_size - 1);
-    h2 = dtm_hash_func_2 (e->key, e->side, e->offset);
+    h1 = hash_func_1 (e->key, e->side, e->offset) & (dtm_cache.ht_size - 1);
+    h2 = hash_func_2 (e->key, e->side, e->offset);
     while (dtm_cache.hash_table[h1])
         h1 = (h1 + h2) & (dtm_cache.ht_size - 1);
     dtm_cache.hash_table[h1] = e;
@@ -2830,8 +2834,8 @@ dtm_cache_pointblock (tbkey_t key, unsigned side, index_t idx)
 
 	ret   = NULL;
 
-	h1 = dtm_hash_func_1 (key, side, offset) & (dtm_cache.ht_size - 1);
-	h2 = dtm_hash_func_2 (key, side, offset);
+	h1 = hash_func_1 (key, side, offset) & (dtm_cache.ht_size - 1);
+	h2 = hash_func_2 (key, side, offset);
 	while (1) {
 		p = dtm_cache.hash_table[h1];
 		if (!p)
@@ -7531,6 +7535,24 @@ wdl_cache_init (size_t cache_mem)
 		p->next 	= NULL;
 	}
 
+	wdl_cache.ht_size = 1;
+	while (wdl_cache.ht_size < max_blocks * 4)
+		wdl_cache.ht_size *= 2;
+	wdl_cache.ht_used = 0;
+	wdl_cache.hash_table = (wdl_block_t**) malloc (wdl_cache.ht_size * sizeof(wdl_block_t*));;
+	if (wdl_cache.hash_table == NULL) {
+		wdl_cache.cached = FALSE;
+		free (wdl_cache.blocks);
+		wdl_cache.blocks = NULL;
+		free (wdl_cache.buffer);
+		wdl_cache.buffer = NULL;
+		return 0;
+	}
+
+	for (i = 0; i < wdl_cache.ht_size; i++) {
+		wdl_cache.hash_table[i] = NULL;
+	}
+
 	WDL_CACHE_INITIALIZED = TRUE;
 
 	return cache_mem;
@@ -7563,6 +7585,10 @@ wdl_cache_done (void)
 	if (wdl_cache.blocks != NULL)
 		free (wdl_cache.blocks);
 	wdl_cache.blocks = NULL;
+
+	if (wdl_cache.hash_table != NULL)
+		free (wdl_cache.hash_table);
+	wdl_cache.hash_table = NULL;
 
 	WDL_CACHE_INITIALIZED = FALSE;
 	return;
@@ -7727,6 +7753,36 @@ get_WDL (tbkey_t key, unsigned side, index_t idx, unsigned int *info_out, bool_t
 	return found;
 }
 
+static void wdl_hash_insert (wdl_block_t * e);
+
+static void
+wdl_hash_rebuild (void) {
+	wdl_block_t	* p;
+	size_t i;
+
+	for (i = 0; i < wdl_cache.ht_size; i++)
+		wdl_cache.hash_table[i] = NULL;
+	wdl_cache.ht_used = 0;
+
+	for (p = wdl_cache.top; p != NULL; p = p->prev)
+		wdl_hash_insert (p);
+}
+
+static void
+wdl_hash_insert (wdl_block_t * e) {
+	size_t h1, h2;
+
+	if (wdl_cache.ht_used > wdl_cache.ht_size * 3 / 4)
+		wdl_hash_rebuild();
+
+    h1 = hash_func_1 (e->key, e->side, e->offset) & (wdl_cache.ht_size - 1);
+    h2 = hash_func_2 (e->key, e->side, e->offset);
+    while (wdl_cache.hash_table[h1])
+        h1 = (h1 + h2) & (wdl_cache.ht_size - 1);
+    wdl_cache.hash_table[h1] = e;
+    wdl_cache.ht_used++;
+}
+
 static bool_t
 get_WDL_from_cache (tbkey_t key, unsigned side, index_t idx, unsigned int *out)
 {
@@ -7734,6 +7790,7 @@ get_WDL_from_cache (tbkey_t key, unsigned side, index_t idx, unsigned int *out)
 	index_t		remainder;
 	wdl_block_t	*p;
 	wdl_block_t	*ret;
+	size_t		h1, h2;
 
 	if (!wdl_cache_is_on())
 		return FALSE;
@@ -7741,7 +7798,13 @@ get_WDL_from_cache (tbkey_t key, unsigned side, index_t idx, unsigned int *out)
 	split_index (wdl_cache.entries_per_block, idx, &offset, &remainder);
 
 	ret = NULL;
-	for (p = wdl_cache.top; p != NULL; p = p->prev) {
+
+	h1 = hash_func_1 (key, side, offset) & (wdl_cache.ht_size - 1);
+	h2 = hash_func_2 (key, side, offset);
+	while (1) {
+		p = wdl_cache.hash_table[h1];
+		if (!p)
+			break;
 
 		wdl_cache.comparisons++;
 
@@ -7749,6 +7812,8 @@ get_WDL_from_cache (tbkey_t key, unsigned side, index_t idx, unsigned int *out)
 			ret = p;
 			break;
 		}
+
+		h1 = (h1 + h2) & (wdl_cache.ht_size - 1);
 	}
 
 	if (ret != NULL) {
@@ -7848,6 +7913,7 @@ wdl_preload_cache (tbkey_t key, unsigned side, index_t idx)
 		to_modify->key    = key;
 		to_modify->side   = side;
 		to_modify->offset = offset;
+		wdl_hash_insert (to_modify);
 	} else {
 		/* make it unusable */
 		to_modify->key    = -1;

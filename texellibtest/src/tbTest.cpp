@@ -34,15 +34,38 @@
 
 #include "cute.h"
 
+/** Probe both DTM and WDL, check consistency and return DTM value. */
+static int gtbProbeCompare(const Position& pos, int ply, int& score) {
+    int dtm, wdl;
+    int resDTM = TBProbe::gtbProbeDTM(pos, ply, dtm);
+    int resWDL = TBProbe::gtbProbeWDL(pos, ply, wdl);
+
+    ASSERT_EQUAL(resDTM, resWDL);
+    if (!resDTM)
+        return false;
+
+    if (dtm > 0) {
+        ASSERT(wdl > 0);
+        ASSERT(wdl <= dtm);
+    } else if (dtm < 0) {
+        ASSERT(wdl < 0);
+        ASSERT(wdl >= dtm);
+    } else {
+        ASSERT_EQUAL(0, wdl);
+    }
+
+    score = dtm;
+    return true;
+}
 
 /** Probe a position and its mirror positions and verify they have the same score. */
 int
-gtbProbe(const Position& pos, int ply, int& score) {
+gtbProbeDTM(const Position& pos, int ply, int& score) {
     std::string fen = TextIO::toFEN(pos);
-    int ret = TBProbe::gtbProbe(pos, ply, score);
+    int ret = gtbProbeCompare(pos, ply, score);
     Position symPos = swapColors(pos);
     int score2;
-    int ret2 = TBProbe::gtbProbe(symPos, ply, score2);
+    int ret2 = gtbProbeCompare(symPos, ply, score2);
     std::string fen2 = TextIO::toFEN(symPos);
     ASSERT_EQUALM((fen + " == " + fen2).c_str(), ret, ret2);
     ASSERT_EQUALM((fen + " == " + fen2).c_str(), score, score2);
@@ -50,13 +73,13 @@ gtbProbe(const Position& pos, int ply, int& score) {
     if (pos.getCastleMask() == 0) {
         symPos = mirrorX(pos);
         fen2 = TextIO::toFEN(symPos);
-        ret2 = TBProbe::gtbProbe(symPos, ply, score2);
+        ret2 = gtbProbeCompare(symPos, ply, score2);
         ASSERT_EQUALM((fen + " == " + fen2).c_str(), ret, ret2);
         ASSERT_EQUALM((fen + " == " + fen2).c_str(), score, score2);
 
         symPos = swapColors(mirrorX(pos));
         fen2 = TextIO::toFEN(symPos);
-        ret2 = TBProbe::gtbProbe(symPos, ply, score2);
+        ret2 = gtbProbeCompare(symPos, ply, score2);
         ASSERT_EQUALM((fen + " == " + fen2).c_str(), ret, ret2);
         ASSERT_EQUALM((fen + " == " + fen2).c_str(), score, score2);
     }
@@ -72,36 +95,36 @@ TBTest::gtbTest() {
 
     Position pos = TextIO::readFEN("4k3/R7/4K3/8/8/8/8/8 w - - 0 1");
     int score;
-    bool res = gtbProbe(pos, ply, score);
+    bool res = gtbProbeDTM(pos, ply, score);
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(mate0 - ply - 2, score);
 
     TBProbe::initialize("/home/petero/chess/gtb/no_such_dir", cacheMB);
-    res = gtbProbe(pos, ply, score);
+    res = gtbProbeDTM(pos, ply, score);
     ASSERT_EQUAL(false, res);
     TBProbe::initialize("/home/petero/chess/gtb", cacheMB);
 
     // Test castling
     pos = TextIO::readFEN("4k3/8/8/8/8/8/8/4K2R w K - 0 1");
-    res = gtbProbe(pos, ply, score);
+    res = gtbProbeDTM(pos, ply, score);
     ASSERT_EQUAL(false, res);
     pos = TextIO::readFEN("4k3/8/8/8/8/8/8/4K2R w - - 0 1");
-    res = gtbProbe(pos, ply, score);
+    res = gtbProbeDTM(pos, ply, score);
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(mate0 - ply - 22, score);
 
     TBProbe::initialize("", cacheMB);
-    res = gtbProbe(pos, ply, score);
+    res = gtbProbeDTM(pos, ply, score);
     ASSERT_EQUAL(false, res);
     TBProbe::initialize("/home/petero/chess/gtb", cacheMB);
 
     // Test en passant
     pos = TextIO::readFEN("8/8/4k3/8/3pP3/8/3P4/4K3 b - e3 0 1");
-    res = gtbProbe(pos, ply, score);
+    res = gtbProbeDTM(pos, ply, score);
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(0, score);
     pos = TextIO::readFEN("8/8/4k3/8/3pP3/8/3P4/4K3 b - - 0 1");
-    res = gtbProbe(pos, ply, score);
+    res = gtbProbeDTM(pos, ply, score);
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(-(mate0 - ply - 48 - 1), score);
 }
@@ -127,7 +150,7 @@ TBTest::kpkTest() {
                     if (MoveGen::canTakeKing(pos))
                         continue;
                     int score;
-                    int res = gtbProbe(pos, ply, score);
+                    int res = gtbProbeDTM(pos, ply, score);
                     ASSERT_EQUAL(true, res);
                     if (pos.getWhiteMove()) {
                         ASSERT(score >= 0);

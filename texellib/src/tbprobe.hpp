@@ -26,6 +26,8 @@
 #ifndef TBPROBE_HPP_
 #define TBPROBE_HPP_
 
+#include "transpositionTable.hpp"
+
 #include <string>
 
 
@@ -39,13 +41,45 @@ public:
     /** Initialize external libraries. */
     static void initialize(const std::string& path, int cacheMB);
 
-    /** Probe gaviota tablebases.
+    /** Probe one or more tablebases to get an exact score or a usable bound. */
+    static bool tbProbe(const Position& pos, int ply, int alpha, int beta,
+                        TranspositionTable::TTEntry& ent);
+
+    /** Probe gaviota DTM tablebases.
      * @param pos  The position to probe.
      * @param ply  The ply value used to adjust mate scores.
      * @param score The table base score. Only modified for tablebase hits.
      * @return True if pos was found in the tablebases.
      */
-    static bool gtbProbe(const Position& pos, int ply, int& score);
+    static bool gtbProbeDTM(const Position& pos, int ply, int& score);
+
+    /**
+     * Probe gaviota WDL tablebases.
+     * @param pos  The position to probe.
+     * @param ply  The ply value used to adjust mate scores.
+     * @param score The table base score. Only modified for tablebase hits.
+     */
+    static bool gtbProbeWDL(const Position& pos, int ply, int& score);
+
+private:
+    /** Initialize */
+    static void gtbInitialize(const std::string& path, int cacheMB);
+
+    struct GtbProbeData {
+        unsigned int stm, epsq, castles;
+        static const int MAXLEN = 17;
+        unsigned int  wSq[MAXLEN];
+        unsigned int  bSq[MAXLEN];
+        unsigned char wP[MAXLEN];
+        unsigned char bP[MAXLEN];
+    };
+
+    /** Convert position to GTB probe format. */
+    static void getGTBProbeData(const Position& pos, GtbProbeData& gtbData);
+
+    static bool gtbProbeDTM(const GtbProbeData& gtbData, int ply, int& score);
+
+    static bool gtbProbeWDL(const GtbProbeData& gtbData, int ply, int& score);
 };
 
 
