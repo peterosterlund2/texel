@@ -827,6 +827,48 @@ mySHARED struct endgamekey egkey[] = {
 
 };
 
+#define EGKEY_HASH_SIZE 512
+static tbkey_t egkey_hash[EGKEY_HASH_SIZE];
+
+static size_t
+str_hash_func_1 (const char * str)
+{
+	size_t h = 5381;
+	int c;
+	while ((c = *str++))
+		h = h * 31 + c;
+	return h;
+}
+
+static size_t
+str_hash_func_2 (const char * str)
+{
+	size_t h = 0;
+	int c;
+	while ((c = *str++))
+		h = h * 65599 + c;
+	return 2 * h + 1;
+}
+
+static void
+init_egkey_hash (void)
+{
+	size_t h1, h2;
+	int i;
+
+	for (i = 0; i < EGKEY_HASH_SIZE; i++)
+		egkey_hash[i] = -1;
+
+	for (i = 0; i < MAX_EGKEYS; i++) {
+		h1 = str_hash_func_1 (egkey[i].str) & (EGKEY_HASH_SIZE - 1);
+		h2 = str_hash_func_2 (egkey[i].str);
+		while (egkey_hash[h1] >= 0)
+			h1 = (h1 + h2) & (EGKEY_HASH_SIZE - 1);
+		egkey_hash[h1] = egkey[i].id;
+	}
+}
+
+
 static int eg_was_open[MAX_EGKEYS];
 
 static uint64_t Bytes_read = 0;
@@ -1055,6 +1097,8 @@ tb_init (int verbosity, int decoding_sch, const char **paths)
 	char localstr[256];
 
 	assert(!TB_INITIALIZED);
+
+	init_egkey_hash ();
 
 	if (verbosity) {
 		ini_str[0] = '\0';
@@ -2032,6 +2076,7 @@ egtb_get_id (SQ_CONTENT *w, SQ_CONTENT *b, tbkey_t *id)
 	bool_t found;
 	tbkey_t i;
 	static tbkey_t cache_i = 0;
+	size_t h1, h2;
 
 	assert (PAWN == 1 && KNIGHT == 2 && BISHOP == 3 && ROOK == 4 && QUEEN == 5 && KING == 6);
 
@@ -2052,11 +2097,19 @@ egtb_get_id (SQ_CONTENT *w, SQ_CONTENT *b, tbkey_t *id)
 		return found;
 	}
 
-	for (i = 0, found = FALSE; !found && egkey[i].str != NULL; i++) {
+	h1 = str_hash_func_1 (pcstr) & (EGKEY_HASH_SIZE - 1);
+	h2 = str_hash_func_2 (pcstr);
+	while (1) {
+		i = egkey_hash[h1];
+		if (i < 0)
+			break;
 		found = (0 == strcmp(pcstr, egkey[i].str));
+		if (found)
+			break;
+		h1 = (h1 + h2) & (EGKEY_HASH_SIZE - 1);
 	}
 	if (found) {
-		cache_i = *id = i - 1;
+		cache_i = *id = i;
 	}
 
 	return found;
@@ -2307,7 +2360,8 @@ fpark_entry_packed  (FILE *finp, unsigned side, index_t max, index_t idx)
 \*/
 
 static size_t
-hash_func_1 (tbkey_t key, unsigned side, index_t offset) {
+hash_func_1 (tbkey_t key, unsigned side, index_t offset)
+{
 	size_t h = offset | (key << 1) | side;
 	h = ((h >> 16) ^ h) * 0x45d9f3b;
 	h = ((h >> 16) ^ h) * 0x45d9f3b;
@@ -2316,7 +2370,8 @@ hash_func_1 (tbkey_t key, unsigned side, index_t offset) {
 }
 
 static size_t
-hash_func_2 (tbkey_t key, unsigned side, index_t offset) {
+hash_func_2 (tbkey_t key, unsigned side, index_t offset)
+{
 	size_t h = offset | (key << 1) | side;
 	h = ((h >> 16) ^ h) * 0x3335b369;
 	h = ((h >> 16) ^ h) * 0x3335b369;
@@ -2791,7 +2846,8 @@ tbstats_reset (void)
 static void dtm_hash_insert (dtm_block_t * e);
 
 static void
-dtm_hash_rebuild (void) {
+dtm_hash_rebuild (void)
+{
 	dtm_block_t	* p;
 	size_t i;
 
@@ -2804,7 +2860,8 @@ dtm_hash_rebuild (void) {
 }
 
 static void
-dtm_hash_insert (dtm_block_t * e) {
+dtm_hash_insert (dtm_block_t * e)
+{
 	size_t h1, h2;
 
 	if (dtm_cache.ht_used > dtm_cache.ht_size * 3 / 4)
@@ -7756,7 +7813,8 @@ get_WDL (tbkey_t key, unsigned side, index_t idx, unsigned int *info_out, bool_t
 static void wdl_hash_insert (wdl_block_t * e);
 
 static void
-wdl_hash_rebuild (void) {
+wdl_hash_rebuild (void)
+{
 	wdl_block_t	* p;
 	size_t i;
 
@@ -7769,7 +7827,8 @@ wdl_hash_rebuild (void) {
 }
 
 static void
-wdl_hash_insert (wdl_block_t * e) {
+wdl_hash_insert (wdl_block_t * e)
+{
 	size_t h1, h2;
 
 	if (wdl_cache.ht_used > wdl_cache.ht_size * 3 / 4)
