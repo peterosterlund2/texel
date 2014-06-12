@@ -230,7 +230,7 @@ SearchTest::testLMP() {
     Position pos(TextIO::readFEN("2r2rk1/6p1/p3pq1p/1p1b1p2/3P1n2/PP3N2/3N1PPP/1Q2RR1K b"));  // WAC 174
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     Move bestM = idSearch(sc, 2);
-    ASSERT(bestM.score() < SearchConst::MATE0 / 2);
+    ASSERT(!SearchConst::isWinScore(bestM.score()));
 }
 
 void

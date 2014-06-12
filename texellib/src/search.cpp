@@ -156,7 +156,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         bool needMoreTime = false;
         for (int mi = 0; mi < (int)scMoves.size(); mi++) {
             if (mi < maxPV)
-                aspirationDelta = (std::abs(scMoves[mi].score()) <= MATE0 / 2) ? aspirationWindow : 1000;
+                aspirationDelta = isWinScore(std::abs(scMoves[mi].score())) ? 1000 : aspirationWindow;
             if (firstIteration)
                 alpha = -MATE0;
             else if (mi < maxPV)
@@ -212,7 +212,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                 posHashList[posHashListSize++] = pos.zobristHash();
                 bool fh = score >= beta;
                 if (fh) {
-                    if (score > MATE0 / 2)
+                    if (isWinScore(score))
                         betaRetryDelta = MATE0; // Don't use aspiration window when searching for faster mate
                     beta = std::min(score + betaRetryDelta, MATE0);
                     betaRetryDelta = betaRetryDelta * 3 / 2;
@@ -220,7 +220,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                         needMoreTime = true;
                     bestMove = m;
                 } else { // score <= alpha
-                    if (score < -MATE0 / 2)
+                    if (isLoseScore(score))
                         alphaRetryDelta = MATE0; // Don't use aspiration window when searching for faster mate
                     alpha = std::max(score - alphaRetryDelta, -MATE0);
                     alphaRetryDelta = alphaRetryDelta * 3 / 2;
@@ -386,10 +386,10 @@ Search::notifyPV(const MoveInfo& info, int multiPVIndex) {
     if (!listener)
         return;
     bool isMate = false;
-    if (score > MATE0 / 2) {
+    if (isWinScore(score)) {
         isMate = true;
         score = (MATE0 - score) / 2;
-    } else if (score < -MATE0 / 2) {
+    } else if (isLoseScore(score)) {
         isMate = true;
         score = -((MATE0 + score - 1) / 2);
     }
@@ -544,7 +544,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Razoring
-    const bool normalBound = (alpha >= -MATE0 / 2) && (beta <= MATE0 / 2);
+    const bool normalBound = !isLoseScore(alpha) && !isWinScore(beta);
     if (normalBound && (depth < 4*plyScale) && (beta == alpha + 1)) {
         if (evalScore == UNKNOWN_SCORE) {
             evalScore = eval.evalPos(pos);
@@ -589,7 +589,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     // Try null-move pruning
     if (    (depth >= 3*plyScale) && !inCheck && sti.allowNullMove &&
-            (std::abs(beta) <= MATE0 / 2)) {
+            !isWinScore(std::abs(beta))) {
         bool nullOk;
         if (pos.getWhiteMove()) {
             nullOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
@@ -655,7 +655,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             if (smp && (depth - R >= MIN_SMP_DEPTH * plyScale))
                 pd.fhInfo.addData(-1, searchTreeInfo[ply+1].currentMoveNo, score < beta, false);
             if (score >= beta) {
-                if (score > MATE0 / 2)
+                if (isWinScore(score))
                     score = beta;
                 emptyMove.setScore(score);
                 if (storeInHash)
@@ -777,7 +777,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             bool givesCheck = MoveGen::givesCheck(pos, m);
             bool doFutility = false;
             if (mayReduce && haveLegalMoves && !givesCheck && !passedPawnPush(pos, m)) {
-                if (normalBound && (bestScore >= -MATE0 / 2)) {
+                if (normalBound && !isLoseScore(bestScore)) {
                     if (lmpOk && (mi >= moveCountLimit))
                         continue; // Late move pruning
                 }

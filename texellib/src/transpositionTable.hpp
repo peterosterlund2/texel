@@ -103,19 +103,18 @@ public:
         /** Get the score from the hash entry and convert from "mate in x" to "mate at ply". */
         int getScore(int ply) const {
             int sc = (S16)getBits(16, 16);
-            if (sc > SearchConst::MATE0 / 2) {
+            if (SearchConst::isWinScore(sc))
                 sc -= ply;
-            } else if (sc < -(SearchConst::MATE0 / 2)) {
+            else if (SearchConst::isLoseScore(sc))
                 sc += ply;
-            }
             return sc;
         }
 
         /** Convert score from "mate at ply" to "mate in x" and store in hash entry. */
         void setScore(int score, int ply) {
-            if (score > SearchConst::MATE0 - 1000)
+            if (SearchConst::isWinScore(score))
                 score += ply;
-            else if (score < -(SearchConst::MATE0 - 1000))
+            else if (SearchConst::isLoseScore(score))
                 score -= ply;
             setBits(16, 16, score);
         }
