@@ -105,6 +105,9 @@ public:
 
     void setStrength(int strength, U64 randomSeed);
 
+    /** Set minimum depth for TB probes. */
+    void setMinProbeDepth(int depth);
+
     Move iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                             int maxDepth, U64 initialMaxNodes, bool verbose,
                             int maxPV = 1, bool onlyExact = false,
@@ -421,6 +424,11 @@ Search::setThreadNo(int value) {
     threadNo = value;
     if (threadNo > 0)
         nodesBetweenTimeCheck = 1000;
+}
+
+inline void
+Search::setMinProbeDepth(int depth) {
+    minProbeDepth = depth * SearchConst::plyScale;
 }
 
 #endif /* SEARCH_HPP_ */

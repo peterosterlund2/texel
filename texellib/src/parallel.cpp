@@ -162,6 +162,7 @@ WorkerThread::mainLoop() {
     std::unique_lock<std::mutex> lock(m);
     Position pos;
     std::shared_ptr<SplitPoint> sp;
+    const int minProbeDepth = UciParams::minProbeDepth->getIntPar();
     for (int iter = 0; ; iter++) {
         const bool doTiming = (iter & 15) == 0;
         int moveNo = -1;
@@ -193,6 +194,7 @@ WorkerThread::mainLoop() {
         const U64 rootNodeIdx = logFile.logPosition(pos, sp->owningThread(),
                                                     sp->getSearchTreeInfo().nodeIdx, moveNo);
         sc.setThreadNo(threadNo);
+        sc.setMinProbeDepth(minProbeDepth);
         const int alpha = sp->getAlpha();
         const int beta = sp->getBeta();
         const S64 nodes0 = pd.getNumSearchedNodes();

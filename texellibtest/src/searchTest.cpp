@@ -121,7 +121,7 @@ SearchTest::testDraw50() {
     Position pos = TextIO::readFEN("8/1R2k3/R7/8/8/8/8/1K6 b - - 0 1");
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc.maxTimeMillis = -1;
-    sc.minProbeDepth = 100;
+    sc.setMinProbeDepth(100);
     const int plyScale = SearchConst::plyScale;
     int score = sc.negaScout(-mate0, mate0, 0, 2*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT_EQUAL(matedInOne, score);
@@ -129,49 +129,49 @@ SearchTest::testDraw50() {
     pos = TextIO::readFEN("8/1R2k3/R7/8/8/8/8/1K6 b - - 99 80");
     sc.init(pos, nullHist, 0);
     sc.maxTimeMillis = -1;
-    sc.minProbeDepth = 100;
+    sc.setMinProbeDepth(100);
     score = sc.negaScout(-mate0, mate0, 0, 2*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT_EQUAL(0, score);     // Draw by 50-move rule
 
     pos = TextIO::readFEN("8/1R2k3/R7/8/8/8/8/1K6 b - - 98 80");
     sc.init(pos, nullHist, 0);
     sc.maxTimeMillis = -1;
-    sc.minProbeDepth = 100;
+    sc.setMinProbeDepth(100);
     score = sc.negaScout(-mate0, mate0, 0, 2*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT_EQUAL(matedInOne, score);     // No draw
 
     pos = TextIO::readFEN("8/1R2k3/R7/8/8/8/8/1K6 b - - 99 80");
     sc.init(pos, nullHist, 0);
     sc.maxTimeMillis = -1;
-    sc.minProbeDepth = 100;
+    sc.setMinProbeDepth(100);
     score = idSearch(sc, 3).score();
     ASSERT_EQUAL(0, score);
 
     pos = TextIO::readFEN("3k4/1R6/R7/8/8/8/8/1K6 w - - 100 80");
     sc.init(pos, nullHist, 0);
     sc.maxTimeMillis = -1;
-    sc.minProbeDepth = 100;
+    sc.setMinProbeDepth(100);
     score = idSearch(sc, 2).score();
     ASSERT_EQUAL(mateInOne, score); // Black forgot to claim draw. Now it's too late.
 
     pos = TextIO::readFEN("8/7k/1R6/R7/8/7P/8/1K6 w - - 0 1");
     sc.init(pos, nullHist, 0);
     sc.maxTimeMillis = -1;
-    sc.minProbeDepth = 100;
+    sc.setMinProbeDepth(100);
     score = idSearch(sc, 3).score();
     ASSERT_EQUAL(mateInTwo, score);
 
     pos = TextIO::readFEN("8/7k/1R6/R7/8/7P/8/1K6 w - - 98 1");
     sc.init(pos, nullHist, 0);
     sc.maxTimeMillis = -1;
-    sc.minProbeDepth = 100;
+    sc.setMinProbeDepth(100);
     score = idSearch(sc, 6).score();
     ASSERT_EQUAL(mateInThree, score);   // Need an extra pawn move to avoid 50-move rule
 
     pos = TextIO::readFEN("8/7k/1R6/R7/8/7P/8/1K6 w - - 125 1");
     sc.init(pos, nullHist, 0);
     sc.maxTimeMillis = -1;
-    sc.minProbeDepth = 100;
+    sc.setMinProbeDepth(100);
     score = idSearch(sc, 6).score();
     ASSERT_EQUAL(mateInThree, score);   // Need an extra pawn move to avoid 50-move rule
 }
