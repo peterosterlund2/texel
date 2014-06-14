@@ -73,6 +73,8 @@ usage() {
     std::cerr << "                         xType is mtrlsum, mtrldiff, pawnsum, pawndiff or eval\n";
     std::cerr << "                         inclNo is 0/1 to exclude/include position/game numbers\n";
     std::cerr << " genfen qvsn : Generate all positions of a given type\n";
+    std::cerr << " tblist nPieces : Print all tablebase types\n";
+    std::cerr << " tbstat type1 [type2 ...] : Generate tablebase statistics\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -256,6 +258,18 @@ main(int argc, char* argv[]) {
         } else if (cmd == "genfen") {
             if ((argc < 3) || !PosGenerator::generate(argv[2]))
                 usage();
+        } else if (cmd == "tblist") {
+            int nPieces;
+            if ((argc != 3) || !str2Num(argv[2], nPieces) || nPieces < 2)
+                usage();
+            PosGenerator::tbList(nPieces);
+        } else if (cmd == "tbstat") {
+            if (argc < 3)
+                usage();
+            std::vector<std::string> tbTypes;
+            for (int i = 2; i < argc; i++)
+                tbTypes.push_back(argv[i]);
+            PosGenerator::tbStat(tbTypes);
         } else {
             ScoreToProb sp(300.0);
             for (int i = -100; i <= 100; i++)

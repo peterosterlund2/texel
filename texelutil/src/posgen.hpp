@@ -9,11 +9,18 @@
 #define POSGEN_HPP_
 
 #include <string>
+#include <vector>
 
 class PosGenerator {
 public:
     /** Generate a FEN containing all (or a sample of) positions of a certain type. */
     static bool generate(const std::string& type);
+
+    /** Print all tablebase types containing a given number of pieces. */
+    static void tbList(int nPieces);
+
+    /** Generate tablebase statistics. */
+    static void tbStat(const std::vector<std::string>& tbTypes);
 
 private:
     static void genQvsN();
