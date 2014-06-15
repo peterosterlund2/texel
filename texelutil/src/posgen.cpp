@@ -153,10 +153,11 @@ PosGenerator::tbList(int nPieces) {
 // --------------------------------------------------------------------------------
 
 static void
-getPieces(const std::string& tbType, std::vector<int>& pieces, bool& anyPawns) {
+getPieces(const std::string& tbType, std::vector<int>& pieces,
+          bool& whitePawns, bool& blackPawns) {
     if (tbType.length() < 1 || tbType[0] != 'k')
         throw ChessParseError("Invalid tbType: " + tbType);
-    anyPawns = false;
+    whitePawns = blackPawns = false;
     bool white = true;
     for (size_t i = 1; i < tbType.length(); i++) {
         switch (tbType[i]) {
@@ -179,7 +180,10 @@ getPieces(const std::string& tbType, std::vector<int>& pieces, bool& anyPawns) {
                 break;
             case 'p':
                 pieces.push_back(white ? Piece::WPAWN: Piece::BPAWN);
-                anyPawns = true;
+                if (white)
+                    whitePawns = true;
+                else
+                    blackPawns = true;
                 break;
             default:
                 throw ChessParseError("Invalid tbType: " + tbType);
@@ -199,6 +203,23 @@ squareValid(int square, int piece) {
     }
 }
 
+/** Return bitboard containing possible en passant squares. */
+static U64
+getEPSquares(const Position& pos) {
+    U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
+    U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
+    U64 occupied = pos.occupiedBB();
+    if (pos.getWhiteMove()) {
+        U64 wPawnAttacks = ((wPawns & BitBoard::maskBToHFiles) << 7) |
+                           ((wPawns & BitBoard::maskAToGFiles) << 9);
+        return ((bPawns & BitBoard::maskRow5) << 8) & ~occupied & wPawnAttacks;
+    } else {
+        U64 bPawnAttacks = ((bPawns & BitBoard::maskBToHFiles) >> 9) |
+                           ((bPawns & BitBoard::maskAToGFiles) >> 7);
+        return ((wPawns & BitBoard::maskRow4) >> 8) & ~occupied & bPawnAttacks;
+    }
+}
+
 void
 PosGenerator::tbStat(const std::vector<std::string>& tbTypes) {
     UciParams::gtbPath->set("/home/petero/chess/gtb");
@@ -206,9 +227,11 @@ PosGenerator::tbStat(const std::vector<std::string>& tbTypes) {
     ComputerPlayer::initEngine();
     for (std::string tbType : tbTypes) {
         std::vector<int> pieces;
-        bool anyPawns;
-        getPieces(tbType, pieces, anyPawns);
+        bool whitePawns, blackPawns;
+        getPieces(tbType, pieces, whitePawns, blackPawns);
         const int nPieces = pieces.size();
+        const bool anyPawns = whitePawns || blackPawns;
+        const bool epPossible = whitePawns && blackPawns;
 
         int negScore = std::numeric_limits<int>::min(); // Largest negative score
         int posScore = std::numeric_limits<int>::max(); // Smallest positive score
@@ -266,19 +289,37 @@ PosGenerator::tbStat(const std::vector<std::string>& tbTypes) {
                                 continue;
                         }
                         pos.setWhiteMove(white);
-                        int score;
-                        if (!TBProbe::gtbProbeDTM(pos, 0, score))
-                            throw ChessParseError("TB probe failed, pos:" + TextIO::toFEN(pos));
-                        if (score > 0) {
-                            if (score < posScore) {
-                                posScore = score;
-                                posPos = pos;
+
+                        U64 epSquares = epPossible ? getEPSquares(pos) : 0;
+                        while (true) {
+                            if (epSquares) {
+                                int epSq = BitBoard::numberOfTrailingZeros(epSquares);
+                                pos.setEpSquare(epSq);
+                                TextIO::fixupEPSquare(pos);
+                                if (pos.getEpSquare() == -1) {
+                                    epSquares &= epSquares - 1;
+                                    continue;
+                                }
+                            } else {
+                                pos.setEpSquare(-1);
                             }
-                        } else if (score < 0) {
-                            if (score > negScore) {
-                                negScore = score;
-                                negPos = pos;
+                            int score;
+                            if (!TBProbe::gtbProbeDTM(pos, 0, score))
+                                throw ChessParseError("TB probe failed, pos:" + TextIO::toFEN(pos));
+                            if (score > 0) {
+                                if (score < posScore) {
+                                    posScore = score;
+                                    posPos = pos;
+                                }
+                            } else if (score < 0) {
+                                if (score > negScore) {
+                                    negScore = score;
+                                    negPos = pos;
+                                }
                             }
+                            if (epSquares == 0)
+                                break;
+                            epSquares &= epSquares - 1;
                         }
                     }
 
