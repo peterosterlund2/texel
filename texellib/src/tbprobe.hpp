@@ -65,6 +65,8 @@ private:
     /** Initialize */
     static void gtbInitialize(const std::string& path, int cacheMB);
 
+    static void initWDLBounds();
+
     struct GtbProbeData {
         unsigned int stm, epsq, castles;
         static const int MAXLEN = 17;
@@ -72,6 +74,7 @@ private:
         unsigned int  bSq[MAXLEN];
         unsigned char wP[MAXLEN];
         unsigned char bP[MAXLEN];
+        int materialId;
     };
 
     /** Convert position to GTB probe format. */

@@ -28,16 +28,19 @@
 #include "bitBoard.hpp"
 #include "position.hpp"
 #include "constants.hpp"
+#include <unordered_map>
 #include <cassert>
 
 
 static bool isInitialized = false;
 static const char** paths = NULL;
 static int gtbMaxPieces = 0;
+static std::unordered_map<int,int> longestMate;
 
 void
 TBProbe::initialize(const std::string& path, int cacheMB) {
     gtbInitialize(path, cacheMB);
+    initWDLBounds();
 }
 
 bool
@@ -190,6 +193,7 @@ TBProbe::getGTBProbeData(const Position& pos, GtbProbeData& gtbData) {
     }
     gtbData.bSq[cnt] = tb_NOSQUARE;
     gtbData.bP[cnt] = tb_NOPIECE;
+    gtbData.materialId = pos.materialId();
 }
 
 bool
@@ -222,6 +226,156 @@ TBProbe::gtbProbeDTM(const GtbProbeData& gtbData, int ply, int& score) {
     return true;
 }
 
+void
+TBProbe::initWDLBounds() {
+    typedef MatId MI;
+    longestMate[MI::WQ+0] = longestMate[MI::BQ+0] = 31979;
+    longestMate[MI::WR+0] = longestMate[MI::BR+0] = 31967;
+    longestMate[MI::WP+0] = longestMate[MI::BP+0] = 31943;
+
+    longestMate[MI::WQ*2] = longestMate[MI::BQ*2] = 31979;
+    longestMate[MI::WQ+MI::WR] = longestMate[MI::BQ+MI::BR] = 31967;
+    longestMate[MI::WQ+MI::WB] = longestMate[MI::BQ+MI::BB] = 31979;
+    longestMate[MI::WQ+MI::WN] = longestMate[MI::BQ+MI::BN] = 31979;
+    longestMate[MI::WQ+MI::WP] = longestMate[MI::BQ+MI::BP] = 31943;
+    longestMate[MI::WR*2] = longestMate[MI::BR*2] = 31967;
+    longestMate[MI::WR+MI::WB] = longestMate[MI::BR+MI::BB] = 31967;
+    longestMate[MI::WR+MI::WN] = longestMate[MI::BR+MI::BN] = 31967;
+    longestMate[MI::WR+MI::WP] = longestMate[MI::BR+MI::BP] = 31943;
+    longestMate[MI::WB*2] = longestMate[MI::BB*2] = 31961;
+    longestMate[MI::WB+MI::WN] = longestMate[MI::BB+MI::BN] = 31933;
+    longestMate[MI::WB+MI::WP] = longestMate[MI::BB+MI::BP] = 31937;
+    longestMate[MI::WN*2] = longestMate[MI::BN*2] = 31998;
+    longestMate[MI::WN+MI::WP] = longestMate[MI::BN+MI::BP] = 31943;
+    longestMate[MI::WP*2] = longestMate[MI::BP*2] = 31935;
+    longestMate[MI::WQ+MI::BQ] = 31974;
+    longestMate[MI::WR+MI::BQ] = longestMate[MI::WQ+MI::BR] = 31929;
+    longestMate[MI::WR+MI::BR] = 31961;
+    longestMate[MI::WB+MI::BQ] = longestMate[MI::WQ+MI::BB] = 31965;
+    longestMate[MI::WB+MI::BR] = longestMate[MI::WR+MI::BB] = 31941;
+    longestMate[MI::WB+MI::BB] = 31998;
+    longestMate[MI::WN+MI::BQ] = longestMate[MI::WQ+MI::BN] = 31957;
+    longestMate[MI::WN+MI::BR] = longestMate[MI::WR+MI::BN] = 31919;
+    longestMate[MI::WN+MI::BB] = longestMate[MI::WB+MI::BN] = 31998;
+    longestMate[MI::WN+MI::BN] = 31998;
+    longestMate[MI::WP+MI::BQ] = longestMate[MI::WQ+MI::BP] = 31942;
+    longestMate[MI::WP+MI::BR] = longestMate[MI::WR+MI::BP] = 31914;
+    longestMate[MI::WP+MI::BB] = longestMate[MI::WB+MI::BP] = 31942;
+    longestMate[MI::WP+MI::BN] = longestMate[MI::WN+MI::BP] = 31942;
+    longestMate[MI::WP+MI::BP] = 31933;
+
+    longestMate[MI::WQ*3] = longestMate[MI::BQ*3] = 31991;
+    longestMate[MI::WQ*2+MI::WR] = longestMate[MI::BQ*2+MI::BR] = 31987;
+    longestMate[MI::WQ*2+MI::WB] = longestMate[MI::BQ*2+MI::BB] = 31983;
+    longestMate[MI::WQ*2+MI::WN] = longestMate[MI::BQ*2+MI::BN] = 31981;
+    longestMate[MI::WQ*2+MI::WP] = longestMate[MI::BQ*2+MI::BP] = 31979;
+    longestMate[MI::WQ+MI::WR*2] = longestMate[MI::BQ+MI::BR*2] = 31985;
+    longestMate[MI::WQ+MI::WR+MI::WB] = longestMate[MI::BQ+MI::BR+MI::BB] = 31967;
+    longestMate[MI::WQ+MI::WR+MI::WN] = longestMate[MI::BQ+MI::BR+MI::BN] = 31967;
+    longestMate[MI::WQ+MI::WR+MI::WP] = longestMate[MI::BQ+MI::BR+MI::BP] = 31967;
+    longestMate[MI::WQ+MI::WB*2] = longestMate[MI::BQ+MI::BB*2] = 31961;
+    longestMate[MI::WQ+MI::WB+MI::WN] = longestMate[MI::BQ+MI::BB+MI::BN] = 31933;
+    longestMate[MI::WQ+MI::WB+MI::WP] = longestMate[MI::BQ+MI::BB+MI::BP] = 31937;
+    longestMate[MI::WQ+MI::WN*2] = longestMate[MI::BQ+MI::BN*2] = 31981;
+    longestMate[MI::WQ+MI::WN+MI::WP] = longestMate[MI::BQ+MI::BN+MI::BP] = 31945;
+    longestMate[MI::WQ+MI::WP*2] = longestMate[MI::BQ+MI::BP*2] = 31935;
+    longestMate[MI::WR*3] = longestMate[MI::BR*3] = 31985;
+    longestMate[MI::WR*2+MI::WB] = longestMate[MI::BR*2+MI::BB] = 31967;
+    longestMate[MI::WR*2+MI::WN] = longestMate[MI::BR*2+MI::BN] = 31967;
+    longestMate[MI::WR*2+MI::WP] = longestMate[MI::BR*2+MI::BP] = 31967;
+    longestMate[MI::WR+MI::WB*2] = longestMate[MI::BR+MI::BB*2] = 31961;
+    longestMate[MI::WR+MI::WB+MI::WN] = longestMate[MI::BR+MI::BB+MI::BN] = 31933;
+    longestMate[MI::WR+MI::WB+MI::WP] = longestMate[MI::BR+MI::BB+MI::BP] = 31937;
+    longestMate[MI::WR+MI::WN*2] = longestMate[MI::BR+MI::BN*2] = 31967;
+    longestMate[MI::WR+MI::WN+MI::WP] = longestMate[MI::BR+MI::BN+MI::BP] = 31945;
+    longestMate[MI::WR+MI::WP*2] = longestMate[MI::BR+MI::BP*2] = 31935;
+    longestMate[MI::WB*3] = longestMate[MI::BB*3] = 31961;
+    longestMate[MI::WB*2+MI::WN] = longestMate[MI::BB*2+MI::BN] = 31933;
+    longestMate[MI::WB*2+MI::WP] = longestMate[MI::BB*2+MI::BP] = 31937;
+    longestMate[MI::WB+MI::WN*2] = longestMate[MI::BB+MI::BN*2] = 31931;
+    longestMate[MI::WB+MI::WN+MI::WP] = longestMate[MI::BB+MI::BN+MI::BP] = 31933;
+    longestMate[MI::WB+MI::WP*2] = longestMate[MI::BB+MI::BP*2] = 31935;
+    longestMate[MI::WN*3] = longestMate[MI::BN*3] = 31957;
+    longestMate[MI::WN*2+MI::WP] = longestMate[MI::BN*2+MI::BP] = 31943;
+    longestMate[MI::WN+MI::WP*2] = longestMate[MI::BN+MI::BP*2] = 31935;
+    longestMate[MI::WP*3] = longestMate[MI::BP*3] = 31933;
+    longestMate[MI::WQ*2+MI::BQ] = longestMate[MI::WQ+MI::BQ*2] = 31939;
+    longestMate[MI::WQ*2+MI::BR] = longestMate[MI::WR+MI::BQ*2] = 31929;
+    longestMate[MI::WQ*2+MI::BB] = longestMate[MI::WB+MI::BQ*2] = 31965;
+    longestMate[MI::WQ*2+MI::BN] = longestMate[MI::WN+MI::BQ*2] = 31957;
+    longestMate[MI::WQ*2+MI::BP] = longestMate[MI::WP+MI::BQ*2] = 31939;
+    longestMate[MI::WQ+MI::WR+MI::BQ] = longestMate[MI::WQ+MI::BQ+MI::BR] = 31865;
+    longestMate[MI::WQ+MI::WR+MI::BR] = longestMate[MI::WR+MI::BQ+MI::BR] = 31929;
+    longestMate[MI::WQ+MI::WR+MI::BB] = longestMate[MI::WB+MI::BQ+MI::BR] = 31941;
+    longestMate[MI::WQ+MI::WR+MI::BN] = longestMate[MI::WN+MI::BQ+MI::BR] = 31919;
+    longestMate[MI::WQ+MI::WR+MI::BP] = longestMate[MI::WP+MI::BQ+MI::BR] = 31865;
+    longestMate[MI::WQ+MI::WB+MI::BQ] = longestMate[MI::WQ+MI::BQ+MI::BB] = 31933;
+    longestMate[MI::WQ+MI::WB+MI::BR] = longestMate[MI::WR+MI::BQ+MI::BB] = 31919;
+    longestMate[MI::WQ+MI::WB+MI::BB] = longestMate[MI::WB+MI::BQ+MI::BB] = 31965;
+    longestMate[MI::WQ+MI::WB+MI::BN] = longestMate[MI::WN+MI::BQ+MI::BB] = 31957;
+    longestMate[MI::WQ+MI::WB+MI::BP] = longestMate[MI::WP+MI::BQ+MI::BB] = 31933;
+    longestMate[MI::WQ+MI::WN+MI::BQ] = longestMate[MI::WQ+MI::BQ+MI::BN] = 31917;
+    longestMate[MI::WQ+MI::WN+MI::BR] = longestMate[MI::WR+MI::BQ+MI::BN] = 31918;
+    longestMate[MI::WQ+MI::WN+MI::BB] = longestMate[MI::WB+MI::BQ+MI::BN] = 31965;
+    longestMate[MI::WQ+MI::WN+MI::BN] = longestMate[MI::WN+MI::BQ+MI::BN] = 31957;
+    longestMate[MI::WQ+MI::WN+MI::BP] = longestMate[MI::WP+MI::BQ+MI::BN] = 31917;
+    longestMate[MI::WQ+MI::WP+MI::BQ] = longestMate[MI::WQ+MI::BQ+MI::BP] = 31752;
+    longestMate[MI::WQ+MI::WP+MI::BR] = longestMate[MI::WR+MI::BQ+MI::BP] = 31913;
+    longestMate[MI::WQ+MI::WP+MI::BB] = longestMate[MI::WB+MI::BQ+MI::BP] = 31941;
+    longestMate[MI::WQ+MI::WP+MI::BN] = longestMate[MI::WN+MI::BQ+MI::BP] = 31939;
+    longestMate[MI::WQ+MI::WP+MI::BP] = longestMate[MI::WP+MI::BQ+MI::BP] = 31755;
+    longestMate[MI::WR*2+MI::BQ] = longestMate[MI::WQ+MI::BR*2] = 31901;
+    longestMate[MI::WR*2+MI::BR] = longestMate[MI::WR+MI::BR*2] = 31937;
+    longestMate[MI::WR*2+MI::BB] = longestMate[MI::WB+MI::BR*2] = 31941;
+    longestMate[MI::WR*2+MI::BN] = longestMate[MI::WN+MI::BR*2] = 31919;
+    longestMate[MI::WR*2+MI::BP] = longestMate[MI::WP+MI::BR*2] = 31900;
+    longestMate[MI::WR+MI::WB+MI::BQ] = longestMate[MI::WQ+MI::BR+MI::BB] = 31859;
+    longestMate[MI::WR+MI::WB+MI::BR] = longestMate[MI::WR+MI::BR+MI::BB] = 31870;
+    longestMate[MI::WR+MI::WB+MI::BB] = longestMate[MI::WB+MI::BR+MI::BB] = 31939;
+    longestMate[MI::WR+MI::WB+MI::BN] = longestMate[MI::WN+MI::BR+MI::BB] = 31919;
+    longestMate[MI::WR+MI::WB+MI::BP] = longestMate[MI::WP+MI::BR+MI::BB] = 31860;
+    longestMate[MI::WR+MI::WN+MI::BQ] = longestMate[MI::WQ+MI::BR+MI::BN] = 31861;
+    longestMate[MI::WR+MI::WN+MI::BR] = longestMate[MI::WR+MI::BR+MI::BN] = 31918;
+    longestMate[MI::WR+MI::WN+MI::BB] = longestMate[MI::WB+MI::BR+MI::BN] = 31937;
+    longestMate[MI::WR+MI::WN+MI::BN] = longestMate[MI::WN+MI::BR+MI::BN] = 31919;
+    longestMate[MI::WR+MI::WN+MI::BP] = longestMate[MI::WP+MI::BR+MI::BN] = 31864;
+    longestMate[MI::WR+MI::WP+MI::BQ] = longestMate[MI::WQ+MI::BR+MI::BP] = 31792;
+    longestMate[MI::WR+MI::WP+MI::BR] = longestMate[MI::WR+MI::BR+MI::BP] = 31851;
+    longestMate[MI::WR+MI::WP+MI::BB] = longestMate[MI::WB+MI::BR+MI::BP] = 31853;
+    longestMate[MI::WR+MI::WP+MI::BN] = longestMate[MI::WN+MI::BR+MI::BP] = 31891;
+    longestMate[MI::WR+MI::WP+MI::BP] = longestMate[MI::WP+MI::BR+MI::BP] = 31794;
+    longestMate[MI::WB*2+MI::BQ] = longestMate[MI::WQ+MI::BB*2] = 31837;
+    longestMate[MI::WB*2+MI::BR] = longestMate[MI::WR+MI::BB*2] = 31938;
+    longestMate[MI::WB*2+MI::BB] = longestMate[MI::WB+MI::BB*2] = 31955;
+    longestMate[MI::WB*2+MI::BN] = longestMate[MI::WN+MI::BB*2] = 31843;
+    longestMate[MI::WB*2+MI::BP] = longestMate[MI::WP+MI::BB*2] = 31834;
+    longestMate[MI::WB+MI::WN+MI::BQ] = longestMate[MI::WQ+MI::BB+MI::BN] = 31893;
+    longestMate[MI::WB+MI::WN+MI::BR] = longestMate[MI::WR+MI::BB+MI::BN] = 31918;
+    longestMate[MI::WB+MI::WN+MI::BB] = longestMate[MI::WB+MI::BB+MI::BN] = 31921;
+    longestMate[MI::WB+MI::WN+MI::BN] = longestMate[MI::WN+MI::BB+MI::BN] = 31786;
+    longestMate[MI::WB+MI::WN+MI::BP] = longestMate[MI::WP+MI::BB+MI::BN] = 31791;
+    longestMate[MI::WB+MI::WP+MI::BQ] = longestMate[MI::WQ+MI::BB+MI::BP] = 31899;
+    longestMate[MI::WB+MI::WP+MI::BR] = longestMate[MI::WR+MI::BB+MI::BP] = 31910;
+    longestMate[MI::WB+MI::WP+MI::BB] = longestMate[MI::WB+MI::BB+MI::BP] = 31898;
+    longestMate[MI::WB+MI::WP+MI::BN] = longestMate[MI::WN+MI::BB+MI::BP] = 31800;
+    longestMate[MI::WB+MI::WP+MI::BP] = longestMate[MI::WP+MI::BB+MI::BP] = 31865;
+    longestMate[MI::WN*2+MI::BQ] = longestMate[MI::WQ+MI::BN*2] = 31855;
+    longestMate[MI::WN*2+MI::BR] = longestMate[MI::WR+MI::BN*2] = 31918;
+    longestMate[MI::WN*2+MI::BB] = longestMate[MI::WB+MI::BN*2] = 31992;
+    longestMate[MI::WN*2+MI::BN] = longestMate[MI::WN+MI::BN*2] = 31986;
+    longestMate[MI::WN*2+MI::BP] = longestMate[MI::WP+MI::BN*2] = 31770;
+    longestMate[MI::WN+MI::WP+MI::BQ] = longestMate[MI::WQ+MI::BN+MI::BP] = 31875;
+    longestMate[MI::WN+MI::WP+MI::BR] = longestMate[MI::WR+MI::BN+MI::BP] = 31866;
+    longestMate[MI::WN+MI::WP+MI::BB] = longestMate[MI::WB+MI::BN+MI::BP] = 31914;
+    longestMate[MI::WN+MI::WP+MI::BN] = longestMate[MI::WN+MI::BN+MI::BP] = 31805;
+    longestMate[MI::WN+MI::WP+MI::BP] = longestMate[MI::WP+MI::BN+MI::BP] = 31884;
+    longestMate[MI::WP*2+MI::BQ] = longestMate[MI::WQ+MI::BP*2] = 31752;
+    longestMate[MI::WP*2+MI::BR] = longestMate[MI::WR+MI::BP*2] = 31892;
+    longestMate[MI::WP*2+MI::BB] = longestMate[MI::WB+MI::BP*2] = 31913;
+    longestMate[MI::WP*2+MI::BN] = longestMate[MI::WN+MI::BP*2] = 31899;
+    longestMate[MI::WP*2+MI::BP] = longestMate[MI::WP+MI::BP*2] = 31745;
+}
+
 bool
 TBProbe::gtbProbeWDL(const GtbProbeData& gtbData, int ply, int& score) {
     unsigned int tbInfo;
@@ -231,16 +385,15 @@ TBProbe::gtbProbeWDL(const GtbProbeData& gtbData, int ply, int& score) {
                            &tbInfo))
         return false;
 
-    const int longestWin = 256;
     switch (tbInfo) {
     case tb_DRAW:
         score = 0;
         break;
     case tb_WMATE:
-        score = SearchConst::MATE0 - ply - longestWin - 1;
+        score = longestMate[gtbData.materialId] - ply;
         break;
     case tb_BMATE:
-        score = -(SearchConst::MATE0 - ply - longestWin - 1);
+        score = -(longestMate[gtbData.materialId] - ply);
         break;
     default:
         return false;
