@@ -22,7 +22,7 @@
 #elif defined(USELINCLOCK)
 
 	#include <sys/time.h>
-	extern myclock_t myclock(void) 
+	extern myclock_t myclock(void)
 	{
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
@@ -48,16 +48,18 @@
 
 /**** Maximum Files Open *****************************************************************/
 
-#if defined(GCCLINUX)
+#if defined(__MINGW32__) || defined(__MINGW64__)
+    extern int mysys_fopen_max (void) { return FOPEN_MAX;}
+#elif defined(GCCLINUX)
 	#include <sys/resource.h>
-	#if 0	
+	#if 0
 	struct rlimit {
 		rlim_t rlim_cur;  /* Soft limit */
 		rlim_t rlim_max;  /* Hard limit (ceiling for rlim_cur) */
 	};
 	#endif
-	extern int mysys_fopen_max (void) 
-	{ 
+	extern int mysys_fopen_max (void)
+	{
 		int ok;
 		struct rlimit rl;
 		ok = 0 == getrlimit(RLIMIT_NOFILE, &rl);
@@ -103,7 +105,7 @@ mythread_join (mythread_t thread)
 	return 0 == ret;
 }
 
-extern void 		
+extern void
 mythread_exit (void)
 {
 	pthread_exit (NULL);
@@ -117,7 +119,7 @@ mythread_create_error (int err)
 	switch (err) {
 		case 0     : s = "Success"; break;
 		case EAGAIN: s = "EAGAIN" ; break;
-		case EINVAL: s = "EINVAL" ; break; 
+		case EINVAL: s = "EINVAL" ; break;
 		case EPERM : s = "EPERM"  ; break;
 		default    : s = "Unknown error"; break;
 	}
@@ -142,19 +144,19 @@ extern void mythread_spinx_unlock   (mythread_spinx_t *m) { pthread_mutex_unlock
 #endif
 
 /* semaphores */
-extern int /* boolean */ 
+extern int /* boolean */
 mysem_init	(mysem_t *sem, unsigned int value)
 	{ return -1 != sem_init (sem, 0 /*not shared with processes*/, value);}
 
-extern int /* boolean */ 
+extern int /* boolean */
 mysem_wait	(mysem_t *sem)
 	{ return  0 == sem_wait (sem);}
 
-extern int /* boolean */ 
+extern int /* boolean */
 mysem_post	(mysem_t *sem)
 	{ return  0 == sem_post (sem);}
- 
-extern int /* boolean */ 
+
+extern int /* boolean */
 mysem_destroy	(mysem_t *sem)
 	{ return  0 == sem_destroy (sem);}
 
@@ -192,7 +194,7 @@ mythread_join (mythread_t thread)
 	return ret != WAIT_FAILED;
 }
 
-extern void 		
+extern void
 mythread_exit (void)
 {
 	return;
@@ -205,7 +207,7 @@ mythread_create_error (int err)
 	switch (err) {
 		case 0     : s = "Success"; break;
 		case EAGAIN: s = "EAGAIN" ; break;
-		case EINVAL: s = "EINVAL" ; break; 
+		case EINVAL: s = "EINVAL" ; break;
 		case EPERM : s = "EPERM"  ; break;
 		default    : s = "Unknown error"; break;
 	}
@@ -223,7 +225,7 @@ extern void mythread_spinx_lock     (mythread_spinx_t *m) { EnterCriticalSection
 extern void mythread_spinx_unlock   (mythread_spinx_t *m) { LeaveCriticalSection (m)  ;} /**/
 
 /* semaphores */
-extern int /* boolean */ 
+extern int /* boolean */
 mysem_init	(mysem_t *sem, unsigned int value)
 {
 	mysem_t h =
@@ -239,23 +241,23 @@ mysem_init	(mysem_t *sem, unsigned int value)
 	return h != NULL;
 }
 
-extern int /* boolean */ 
+extern int /* boolean */
 mysem_wait	(mysem_t *sem)
-{ 
+{
 	HANDLE h = *sem;
-	return WAIT_FAILED != WaitForSingleObject (h, INFINITE); 
+	return WAIT_FAILED != WaitForSingleObject (h, INFINITE);
 }
 
-extern int /* boolean */ 
+extern int /* boolean */
 mysem_post	(mysem_t *sem)
-{ 
+{
 	HANDLE h = *sem;
-	return 0 != ReleaseSemaphore(h, 1, NULL);	
+	return 0 != ReleaseSemaphore(h, 1, NULL);
 }
 
-extern int /* boolean */ 
+extern int /* boolean */
 mysem_destroy	(mysem_t *sem)
-{ 
+{
 	return 0 != CloseHandle( *sem);
 }
 
