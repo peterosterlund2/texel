@@ -173,9 +173,9 @@ private:
 
     static vector_aligned<U64> tableData;
 
-    static const byte dirTable[];
-    static const byte kingDistTable[];
-    static const byte taxiDistTable[];
+    static const S8 dirTable[];
+    static const S8 kingDistTable[];
+    static const S8 taxiDistTable[];
     static const int trailingZ[64];
 };
 

@@ -59,10 +59,10 @@ private:
 
     int getWeight(int count);
 
-    static void createBinBook(std::vector<byte>& binBook);
+    static void createBinBook(std::vector<S8>& binBook);
 
     /** Add a sequence of moves, starting from the initial position, to the binary opening book. */
-    static bool addBookLine(const std::string& line, std::vector<byte>& binBook);
+    static bool addBookLine(const std::string& line, std::vector<S8>& binBook);
 
     static int pieceToProm(int p);
 

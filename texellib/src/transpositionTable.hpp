@@ -189,7 +189,7 @@ private:
 
 
     vector_aligned<TTEntryStorage> table;
-    ubyte generation;
+    U8 generation;
 };
 
 inline size_t

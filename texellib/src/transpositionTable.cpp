@@ -80,7 +80,7 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
         ent->setKey(key2);
         ent->setScore(sm.score(), ply);
         ent->setDepth(depth);
-        ent->setGeneration((byte)generation);
+        ent->setGeneration((S8)generation);
         ent->setType(type);
         ent->setEvalScore(evalScore);
         ent->store(table[idx]);

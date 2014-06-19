@@ -45,8 +45,6 @@ typedef uint16_t U16;
 typedef int16_t  S16;
 typedef int8_t   S8;
 typedef uint8_t  U8;
-typedef signed char byte;
-typedef unsigned char ubyte;
 
 template <typename T, size_t N> char (&ArraySizeHelper(T(&array)[N]))[N];
 #define COUNT_OF(array) (sizeof(ArraySizeHelper(array)))

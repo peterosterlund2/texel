@@ -1952,7 +1952,7 @@ Evaluate::krkpEval(int wKing, int bKing, int bPawn, bool whiteMove, int score) {
     index = index * 32 + Position::getY(bKing)*4+Position::getX(bKing);
     index = index * 48 + bPawn - 8;
     index = index * 8 + Position::getY(wKing);
-    byte mask = krkpTable[index];
+    U8 mask = krkpTable[index];
     bool canWin = (mask & (1 << Position::getX(wKing))) != 0;
 
     score = score + Position::getY(bPawn) * pV / 4;

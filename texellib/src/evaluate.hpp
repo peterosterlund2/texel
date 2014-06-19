@@ -191,8 +191,8 @@ private:
 
     vector_aligned<KingSafetyHashData>& kingSafetyHash;
 
-    static const ubyte kpkTable[2*32*64*48/8];
-    static const ubyte krkpTable[2*32*48*8];
+    static const U8 kpkTable[2*32*64*48/8];
+    static const U8 krkpTable[2*32*48*8];
     static const U64 krpkrTable[2*24*64];
 
     // King safety variables
