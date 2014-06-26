@@ -174,6 +174,20 @@ SearchTest::testDraw50() {
     sc.setMinProbeDepth(100);
     score = idSearch(sc, 6).score();
     ASSERT_EQUAL(mateInThree, score);   // Need an extra pawn move to avoid 50-move rule
+
+    pos = TextIO::readFEN("3k4/8/2R1K3/8/8/8/8/8 w - - 97 1");
+    sc.init(pos, nullHist, 0);
+    sc.maxTimeMillis = -1;
+    sc.setMinProbeDepth(100);
+    score = idSearch(sc, 3).score();
+    ASSERT_EQUAL(mateInTwo, score);   // White can claim draw or deliver mate at second move
+
+    pos = TextIO::readFEN("3k4/8/2R1K3/8/8/8/8/8 w - - 98 1");
+    sc.init(pos, nullHist, 0);
+    sc.maxTimeMillis = -1;
+    sc.setMinProbeDepth(100);
+    score = idSearch(sc, 3).score();
+    ASSERT_EQUAL(0, score);   // Black can claim draw at first move
 }
 
 /**
