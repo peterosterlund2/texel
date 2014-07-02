@@ -337,13 +337,17 @@ iteratePositions(const std::string& tbType, Func func) {
     }
 }
 
-void
-PosGenerator::tbStat(const std::vector<std::string>& tbTypes) {
+static void setupTB() {
     UciParams::gtbPath->set("/home/petero/chess/gtb");
     UciParams::gtbCache->set("2047");
     UciParams::rtbPath->set("/home/petero/chess/rtb/5:"
                             "/home/petero/chess/rtb/6wdl:"
                             "/home/petero/chess/rtb/6dtz");
+}
+
+void
+PosGenerator::tbStat(const std::vector<std::string>& tbTypes) {
+    setupTB();
     ComputerPlayer::initEngine();
     for (std::string tbType : tbTypes) {
         int negScore = std::numeric_limits<int>::min(); // Largest negative score
@@ -375,11 +379,7 @@ PosGenerator::tbStat(const std::vector<std::string>& tbTypes) {
 
 void
 PosGenerator::rtbTest(const std::vector<std::string>& tbTypes) {
-    UciParams::gtbPath->set("/home/petero/chess/gtb");
-    UciParams::gtbCache->set("2047");
-    UciParams::rtbPath->set("/home/petero/chess/rtb/5:"
-                            "/home/petero/chess/rtb/6wdl:"
-                            "/home/petero/chess/rtb/6dtz");
+    setupTB();
     ComputerPlayer::initEngine();
     for (std::string tbType : tbTypes) {
         double t0 = currentTime();
