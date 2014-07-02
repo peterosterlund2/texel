@@ -363,7 +363,7 @@ PosGenerator::tbStat(const std::vector<std::string>& tbTypes) {
         int posScore = std::numeric_limits<int>::max(); // Smallest positive score
         Position negPos, posPos;
         U64 nPos = 0;
-        iteratePositions(tbType, [&](const Position& pos) {
+        iteratePositions(tbType, [&](Position& pos) {
             nPos++;
             int score;
             if (!TBProbe::gtbProbeDTM(pos, 0, score))

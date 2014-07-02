@@ -42,31 +42,36 @@ public:
     static void initialize(const std::string& gtbPath, int cacheMB,
                            const std::string& rtbPath);
 
-    /** Probe one or more tablebases to get an exact score or a usable bound. */
-    static bool tbProbe(const Position& pos, int ply, int alpha, int beta,
+    /** Probe one or more tablebases to get an exact score or a usable bound.
+     * @param pos  The position to probe. The position can be temporarily modified
+     *             but is restored to original state before function returns.
+     */
+    static bool tbProbe(Position& pos, int ply, int alpha, int beta,
                         TranspositionTable::TTEntry& ent);
 
     /** Probe gaviota DTM tablebases.
-     * @param pos  The position to probe.
+     * @param pos  The position to probe. The position can be temporarily modified
+     *             but is restored to original state before function returns.
      * @param ply  The ply value used to adjust mate scores.
      * @param score The tablebase score. Only modified for tablebase hits.
      * @return True if pos was found in the tablebases.
      */
-    static bool gtbProbeDTM(const Position& pos, int ply, int& score);
+    static bool gtbProbeDTM(Position& pos, int ply, int& score);
 
     /**
      * Probe gaviota WDL tablebases.
-     * @param pos  The position to probe.
+     * @param pos  The position to probe. The position can be temporarily modified
+     *             but is restored to original state before function returns.
      * @param ply  The ply value used to adjust mate scores.
      * @param score The tablebase score. Only modified for tablebase hits.
      *              The returned score is either 0 or a mate bound.
      */
-    static bool gtbProbeWDL(const Position& pos, int ply, int& score);
+    static bool gtbProbeWDL(Position& pos, int ply, int& score);
 
     /**
      * Probe syzygy WDL tablebases.
-     * @param pos  The position to probe. Object is temporarily modified but
-     *             restored to original state before function returns.
+     * @param pos  The position to probe. The position can be temporarily modified
+     *             but is restored to original state before function returns.
      * @param ply  The ply value used to adjust mate scores.
      * @param score The tablebase score. Only modified for tablebase hits.
      *              The returned score is either 0 or a mate bound.

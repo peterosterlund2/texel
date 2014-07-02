@@ -39,11 +39,13 @@
 /** Probe both DTM and WDL, check consistency and return DTM value. */
 static int probeCompare(const Position& pos, int ply, int& score) {
     int dtm, wdl, wdl2;
-    int resDTM = TBProbe::gtbProbeDTM(pos, ply, dtm);
-    int resWDL = TBProbe::gtbProbeWDL(pos, ply, wdl);
-    Position rtbPos(pos);
-    int resWDL2 = TBProbe::rtbProbeWDL(rtbPos, ply, wdl2);
-    ASSERT(pos.equals(rtbPos));
+    Position pos2(pos);
+    int resDTM = TBProbe::gtbProbeDTM(pos2, ply, dtm);
+    ASSERT(pos.equals(pos2));
+    int resWDL = TBProbe::gtbProbeWDL(pos2, ply, wdl);
+    ASSERT(pos.equals(pos2));
+    int resWDL2 = TBProbe::rtbProbeWDL(pos2, ply, wdl2);
+    ASSERT(pos.equals(pos2));
 
     ASSERT_EQUAL(resDTM, resWDL);
     ASSERT_EQUAL(resWDL, resWDL2);
@@ -139,6 +141,20 @@ TBTest::dtmTest() {
     res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(-(mate0 - ply - 48 - 1), score);
+
+    // Test where en passant is only legal move
+    pos = TextIO::readFEN("8/8/8/8/Pp6/1K6/3N4/k7 b - a3 0 1");
+    res = probeDTM(pos, ply, score);
+    ASSERT_EQUAL(true, res);
+    ASSERT_EQUAL(-(mate0 - ply - 13), score);
+    pos = TextIO::readFEN("k1K5/8/8/8/4pP2/4Q3/8/8 b - - 0 1");
+    res = probeDTM(pos, ply, score);
+    ASSERT_EQUAL(true, res);
+    ASSERT_EQUAL(0, score);
+    pos = TextIO::readFEN("k1K5/8/8/8/4pP2/4Q3/8/8 b - f3 0 1");
+    res = probeDTM(pos, ply, score);
+    ASSERT_EQUAL(true, res);
+    ASSERT_EQUAL(-(mate0 - ply - 3), score);
 }
 
 void

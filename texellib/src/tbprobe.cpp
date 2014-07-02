@@ -28,6 +28,7 @@
 #include "syzygy/rtb-probe.hpp"
 #include "bitBoard.hpp"
 #include "position.hpp"
+#include "moveGen.hpp"
 #include "constants.hpp"
 #include <unordered_map>
 #include <cassert>
@@ -47,24 +48,21 @@ TBProbe::initialize(const std::string& gtbPath, int cacheMB,
 }
 
 bool
-TBProbe::tbProbe(const Position& pos, int ply, int alpha, int beta,
+TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                  TranspositionTable::TTEntry& ent) {
     if (BitBoard::bitCount(pos.occupiedBB()) > gtbMaxPieces)
         return false;
 
-    GtbProbeData gtbData;
-    getGTBProbeData(pos, gtbData);
-
     int score;
     if (SearchConst::isLoseScore(alpha) || SearchConst::isWinScore(beta)) {
-        if (!gtbProbeDTM(gtbData, ply, score))
+        if (!gtbProbeDTM(pos, ply, score))
             return false;
         ent.setScore(score, ply);
         ent.setType(TType::T_EXACT);
         return true;
     }
 
-    if (!gtbProbeWDL(gtbData, ply, score))
+    if (!gtbProbeWDL(pos, ply, score))
         return false;
 
     ent.setScore(score, ply);
@@ -78,24 +76,64 @@ TBProbe::tbProbe(const Position& pos, int ply, int alpha, int beta,
     return true;
 }
 
-bool
-TBProbe::gtbProbeDTM(const Position& pos, int ply, int& score) {
-    if (BitBoard::bitCount(pos.occupiedBB()) > gtbMaxPieces)
-        return false;
-
-    GtbProbeData gtbData;
-    getGTBProbeData(pos, gtbData);
-    return gtbProbeDTM(gtbData, ply, score);
+template <typename ProbeFunc>
+static void handleEP(Position& pos, int ply, int& score, bool& ret, ProbeFunc probeFunc) {
+    const bool inCheck = MoveGen::inCheck(pos);
+    MoveGen::MoveList moveList;
+    if (inCheck) MoveGen::checkEvasions(pos, moveList);
+    else         MoveGen::pseudoLegalMoves(pos, moveList);
+    const int pawn = pos.getWhiteMove() ? Piece::WPAWN : Piece::BPAWN;
+    int bestEP = std::numeric_limits<int>::min();
+    UndoInfo ui;
+    for (int m = 0; m < moveList.size; m++) {
+        const Move& move = moveList[m];
+        if ((move.to() == pos.getEpSquare()) && (pos.getPiece(move.from()) == pawn)) {
+            if (MoveGen::isLegal(pos, move, inCheck)) {
+                pos.makeMove(move, ui);
+                int score2;
+                bool ret2 = probeFunc(pos, ply+1, score2);
+                pos.unMakeMove(move, ui);
+                if (!ret2) {
+                    ret = false;
+                    return;
+                }
+                bestEP = std::max(bestEP, -score2);
+            }
+        } else if (MoveGen::isLegal(pos, move, inCheck))
+            return;
+    }
+    if (bestEP != std::numeric_limits<int>::min())
+        score = bestEP;
 }
 
 bool
-TBProbe::gtbProbeWDL(const Position& pos, int ply, int& score) {
+TBProbe::gtbProbeDTM(Position& pos, int ply, int& score) {
     if (BitBoard::bitCount(pos.occupiedBB()) > gtbMaxPieces)
         return false;
 
     GtbProbeData gtbData;
     getGTBProbeData(pos, gtbData);
-    return gtbProbeWDL(gtbData, ply, score);
+    bool ret = gtbProbeDTM(gtbData, ply, score);
+    if (ret && score == 0 && pos.getEpSquare() != -1)
+        handleEP(pos, ply, score, ret, [](Position& pos, int ply, int& score) -> bool {
+            return TBProbe::gtbProbeDTM(pos, ply, score);
+        });
+    return ret;
+}
+
+bool
+TBProbe::gtbProbeWDL(Position& pos, int ply, int& score) {
+    if (BitBoard::bitCount(pos.occupiedBB()) > gtbMaxPieces)
+        return false;
+
+    GtbProbeData gtbData;
+    getGTBProbeData(pos, gtbData);
+    bool ret = gtbProbeWDL(gtbData, ply, score);
+    if (ret && score == 0 && pos.getEpSquare() != -1)
+        handleEP(pos, ply, score, ret, [](Position& pos, int ply, int& score) -> bool {
+            return TBProbe::gtbProbeWDL(pos, ply, score);
+        });
+    return ret;
 }
 
 bool
