@@ -63,32 +63,28 @@ static void free_dtz_entry(struct TBEntry *entry);
 
 static FD open_tb(const char *str, const char *suffix)
 {
-  int i;
-  FD fd;
-  char file[256];
-
-  for (i = 0; i < num_paths; i++) {
-    strcpy(file, paths[i]); // FIXME!! Can overflow, use std::string
-    strcat(file, "/");
-    strcat(file, str);
-    strcat(file, suffix);
+    for (int  i = 0; i < num_paths; i++) {
+        std::string file(paths[i]);
+        file += '/';
+        file += str;
+        file += suffix;
 #ifndef __WIN32__
-    fd = open(file, O_RDONLY);
+        FD fd = open(file.c_str(), O_RDONLY);
 #else
-    fd = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, NULL,
-			  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        FD fd = CreateFile(file.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
+                           OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 #endif
-    if (fd != FD_ERR) return fd;
-  }
-  return FD_ERR;
+        if (fd != FD_ERR) return fd;
+    }
+    return FD_ERR;
 }
 
 static void close_tb(FD fd)
 {
 #ifndef __WIN32__
-  close(fd);
+    close(fd);
 #else
-  CloseHandle(fd);
+    CloseHandle(fd);
 #endif
 }
 
