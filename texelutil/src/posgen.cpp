@@ -253,54 +253,63 @@ iteratePositions(const std::string& tbType, Func func) {
             int nPlaced = 0;
 
             while (true) {
-                // Place remaining pieces on first empty square
+                // Place remaining pieces on first empty square. Multiple equal
+                // pieces are placed starting with the lowest square.
                 while (nPlaced < nPieces) {
-                    int p = pieces[nPlaced];
-                    for (int sq = 0; sq < 64; sq++) {
+                    const int p = pieces[nPlaced];
+                    int first = 0;
+                    if (nPlaced > 0 && pieces[nPlaced-1] == p)
+                        first = squares[nPlaced-1] + 1;
+                    bool ok = false;
+                    for (int sq = first; sq < 64; sq++) {
                         if (!squareValid(sq, p))
                             continue;
                         if (pos.getPiece(sq) == Piece::EMPTY) {
                             pos.setPiece(sq, p);
                             squares[nPlaced] = sq;
                             nPlaced++;
+                            ok = true;
                             break;
                         }
                     }
+                    if (!ok)
+                        break;
                 }
 
-                // Update min/max score if position is valid
-                pos.setWhiteMove(true);
-                bool wKingAttacked = MoveGen::sqAttacked(pos, wk);
-                pos.setWhiteMove(false);
-                bool bKingAttacked = MoveGen::sqAttacked(pos, bk);
-                for (int side = 0; side < 2; side++) {
-                    bool white = side == 0;
-                    if (white) {
-                        if (bKingAttacked)
-                            continue;
-                    } else {
-                        if (wKingAttacked)
-                            continue;
-                    }
-                    pos.setWhiteMove(white);
-
-                    U64 epSquares = epPossible ? getEPSquares(pos) : 0;
-                    while (true) {
-                        if (epSquares) {
-                            int epSq = BitBoard::numberOfTrailingZeros(epSquares);
-                            pos.setEpSquare(epSq);
-                            TextIO::fixupEPSquare(pos);
-                            if (pos.getEpSquare() == -1) {
-                                epSquares &= epSquares - 1;
+                if (nPlaced == nPieces) {
+                    pos.setWhiteMove(true);
+                    bool wKingAttacked = MoveGen::sqAttacked(pos, wk);
+                    pos.setWhiteMove(false);
+                    bool bKingAttacked = MoveGen::sqAttacked(pos, bk);
+                    for (int side = 0; side < 2; side++) {
+                        bool white = side == 0;
+                        if (white) {
+                            if (bKingAttacked)
                                 continue;
-                            }
                         } else {
-                            pos.setEpSquare(-1);
+                            if (wKingAttacked)
+                                continue;
                         }
-                        func(pos);
-                        if (epSquares == 0)
-                            break;
-                        epSquares &= epSquares - 1;
+                        pos.setWhiteMove(white);
+
+                        U64 epSquares = epPossible ? getEPSquares(pos) : 0;
+                        while (true) {
+                            if (epSquares) {
+                                int epSq = BitBoard::numberOfTrailingZeros(epSquares);
+                                pos.setEpSquare(epSq);
+                                TextIO::fixupEPSquare(pos);
+                                if (pos.getEpSquare() == -1) {
+                                    epSquares &= epSquares - 1;
+                                    continue;
+                                }
+                            } else {
+                                pos.setEpSquare(-1);
+                            }
+                            func(pos);
+                            if (epSquares == 0)
+                                break;
+                            epSquares &= epSquares - 1;
+                        }
                     }
                 }
 
