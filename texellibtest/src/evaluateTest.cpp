@@ -146,6 +146,8 @@ evalWhite(Evaluate& eval, const Position& pos) {
     ASSERT_EQUALM((fen + " == " + symFen).c_str(), ret, symScore);
     ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     ASSERT_EQUAL(symPos.materialId(), PositionTest::computeMaterialId(symPos));
+    ASSERT_EQUAL(MatId::mirror(pos.materialId()), symPos.materialId());
+    ASSERT_EQUAL(pos.materialId(), MatId::mirror(symPos.materialId()));
     if (!pos.getWhiteMove())
         ret = -ret;
     return ret;

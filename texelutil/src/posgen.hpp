@@ -22,6 +22,9 @@ public:
     /** Generate tablebase statistics. */
     static void tbStat(const std::vector<std::string>& tbTypes);
 
+    /** Compare RTB probe results to GTB probe results, report any differences. */
+    static void rtbTest(const std::vector<std::string>& tbTypes);
+
 private:
     static void genQvsN();
 };

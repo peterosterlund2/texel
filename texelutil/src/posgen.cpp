@@ -220,142 +220,202 @@ getEPSquares(const Position& pos) {
     }
 }
 
+/** Call func(pos) for all positions in a given tablebase.
+ * func() must not modify pos. */
+template <typename Func>
+static void
+iteratePositions(const std::string& tbType, Func func) {
+    std::vector<int> pieces;
+    bool whitePawns, blackPawns;
+    getPieces(tbType, pieces, whitePawns, blackPawns);
+    const int nPieces = pieces.size();
+    const bool anyPawns = whitePawns || blackPawns;
+    const bool epPossible = whitePawns && blackPawns;
+
+    for (int wk = 0; wk < 64; wk++) {
+        int x = Position::getX(wk);
+        int y = Position::getY(wk);
+        if (x >= 4)
+            continue;
+        if (!anyPawns)
+            if (y >= 4 || y < x)
+                continue;
+        for (int bk = 0; bk < 64; bk++) {
+            int x2 = Position::getX(bk);
+            int y2 = Position::getY(bk);
+            if (std::abs(x2-x) < 2 && std::abs(y2-y) < 2)
+                continue;
+
+            Position pos;
+            pos.setPiece(wk, Piece::WKING);
+            pos.setPiece(bk, Piece::BKING);
+            std::vector<int> squares(nPieces, 0);
+            int nPlaced = 0;
+
+            while (true) {
+                // Place remaining pieces on first empty square
+                while (nPlaced < nPieces) {
+                    int p = pieces[nPlaced];
+                    for (int sq = 0; sq < 64; sq++) {
+                        if (!squareValid(sq, p))
+                            continue;
+                        if (pos.getPiece(sq) == Piece::EMPTY) {
+                            pos.setPiece(sq, p);
+                            squares[nPlaced] = sq;
+                            nPlaced++;
+                            break;
+                        }
+                    }
+                }
+
+                // Update min/max score if position is valid
+                pos.setWhiteMove(true);
+                bool wKingAttacked = MoveGen::sqAttacked(pos, wk);
+                pos.setWhiteMove(false);
+                bool bKingAttacked = MoveGen::sqAttacked(pos, bk);
+                for (int side = 0; side < 2; side++) {
+                    bool white = side == 0;
+                    if (white) {
+                        if (bKingAttacked)
+                            continue;
+                    } else {
+                        if (wKingAttacked)
+                            continue;
+                    }
+                    pos.setWhiteMove(white);
+
+                    U64 epSquares = epPossible ? getEPSquares(pos) : 0;
+                    while (true) {
+                        if (epSquares) {
+                            int epSq = BitBoard::numberOfTrailingZeros(epSquares);
+                            pos.setEpSquare(epSq);
+                            TextIO::fixupEPSquare(pos);
+                            if (pos.getEpSquare() == -1) {
+                                epSquares &= epSquares - 1;
+                                continue;
+                            }
+                        } else {
+                            pos.setEpSquare(-1);
+                        }
+                        func(pos);
+                        if (epSquares == 0)
+                            break;
+                        epSquares &= epSquares - 1;
+                    }
+                }
+
+                // Set up next position
+                bool done = false;
+                while (true) {
+                    nPlaced--;
+                    if (nPlaced < 0) {
+                        done = true;
+                        break;
+                    }
+                    int sq0 = squares[nPlaced];
+                    int p = pos.getPiece(sq0);
+                    pos.setPiece(sq0, Piece::EMPTY);
+                    bool foundEmpty = false;
+                    for (int sq = sq0 + 1; sq < 64; sq++) {
+                        if (!squareValid(sq, p))
+                            continue;
+                        if (pos.getPiece(sq) == Piece::EMPTY) {
+                            pos.setPiece(sq, p);
+                            squares[nPlaced] = sq;
+                            nPlaced++;
+                            foundEmpty = true;
+                            break;
+                        }
+                    }
+                    if (foundEmpty)
+                        break;
+                }
+                if (done)
+                    break;
+            }
+        }
+    }
+}
+
 void
 PosGenerator::tbStat(const std::vector<std::string>& tbTypes) {
     UciParams::gtbPath->set("/home/petero/chess/gtb");
     UciParams::gtbCache->set("2047");
+    UciParams::rtbPath->set("/home/petero/chess/rtb/5:"
+                            "/home/petero/chess/rtb/6wdl:"
+                            "/home/petero/chess/rtb/6dtz");
     ComputerPlayer::initEngine();
     for (std::string tbType : tbTypes) {
-        std::vector<int> pieces;
-        bool whitePawns, blackPawns;
-        getPieces(tbType, pieces, whitePawns, blackPawns);
-        const int nPieces = pieces.size();
-        const bool anyPawns = whitePawns || blackPawns;
-        const bool epPossible = whitePawns && blackPawns;
-
         int negScore = std::numeric_limits<int>::min(); // Largest negative score
         int posScore = std::numeric_limits<int>::max(); // Smallest positive score
         Position negPos, posPos;
         U64 nPos = 0;
-        for (int wk = 0; wk < 64; wk++) {
-            int x = Position::getX(wk);
-            int y = Position::getY(wk);
-            if (x >= 4)
-                continue;
-            if (!anyPawns)
-                if (y >= 4 || y < x)
-                    continue;
-            for (int bk = 0; bk < 64; bk++) {
-                int x2 = Position::getX(bk);
-                int y2 = Position::getY(bk);
-                if (std::abs(x2-x) < 2 && std::abs(y2-y) < 2)
-                    continue;
-
-                Position pos;
-                pos.setPiece(wk, Piece::WKING);
-                pos.setPiece(bk, Piece::BKING);
-                std::vector<int> squares(nPieces, 0);
-                int nPlaced = 0;
-
-                while (true) {
-                    // Place remaining pieces on first empty square
-                    while (nPlaced < nPieces) {
-                        int p = pieces[nPlaced];
-                        for (int sq = 0; sq < 64; sq++) {
-                            if (!squareValid(sq, p))
-                                continue;
-                            if (pos.getPiece(sq) == Piece::EMPTY) {
-                                pos.setPiece(sq, p);
-                                squares[nPlaced] = sq;
-                                nPlaced++;
-                                break;
-                            }
-                        }
-                    }
-                    nPos++;
-
-                    // Update min/max score if position is valid
-                    pos.setWhiteMove(true);
-                    bool wKingAttacked = MoveGen::sqAttacked(pos, wk);
-                    pos.setWhiteMove(false);
-                    bool bKingAttacked = MoveGen::sqAttacked(pos, bk);
-                    for (int side = 0; side < 2; side++) {
-                        bool white = side == 0;
-                        if (white) {
-                            if (bKingAttacked)
-                                continue;
-                        } else {
-                            if (wKingAttacked)
-                                continue;
-                        }
-                        pos.setWhiteMove(white);
-
-                        U64 epSquares = epPossible ? getEPSquares(pos) : 0;
-                        while (true) {
-                            if (epSquares) {
-                                int epSq = BitBoard::numberOfTrailingZeros(epSquares);
-                                pos.setEpSquare(epSq);
-                                TextIO::fixupEPSquare(pos);
-                                if (pos.getEpSquare() == -1) {
-                                    epSquares &= epSquares - 1;
-                                    continue;
-                                }
-                            } else {
-                                pos.setEpSquare(-1);
-                            }
-                            int score;
-                            if (!TBProbe::gtbProbeDTM(pos, 0, score))
-                                throw ChessParseError("TB probe failed, pos:" + TextIO::toFEN(pos));
-                            if (score > 0) {
-                                if (score < posScore) {
-                                    posScore = score;
-                                    posPos = pos;
-                                }
-                            } else if (score < 0) {
-                                if (score > negScore) {
-                                    negScore = score;
-                                    negPos = pos;
-                                }
-                            }
-                            if (epSquares == 0)
-                                break;
-                            epSquares &= epSquares - 1;
-                        }
-                    }
-
-                    // Set up next position
-                    bool done = false;
-                    while (true) {
-                        nPlaced--;
-                        if (nPlaced < 0) {
-                            done = true;
-                            break;
-                        }
-                        int sq0 = squares[nPlaced];
-                        int p = pos.getPiece(sq0);
-                        pos.setPiece(sq0, Piece::EMPTY);
-                        bool foundEmpty = false;
-                        for (int sq = sq0 + 1; sq < 64; sq++) {
-                            if (!squareValid(sq, p))
-                                continue;
-                            if (pos.getPiece(sq) == Piece::EMPTY) {
-                                pos.setPiece(sq, p);
-                                squares[nPlaced] = sq;
-                                nPlaced++;
-                                foundEmpty = true;
-                                break;
-                            }
-                        }
-                        if (foundEmpty)
-                            break;
-                    }
-                    if (done)
-                        break;
+        iteratePositions(tbType, [&](const Position& pos) {
+            nPos++;
+            int score;
+            if (!TBProbe::gtbProbeDTM(pos, 0, score))
+                throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
+            if (score > 0) {
+                if (score < posScore) {
+                    posScore = score;
+                    posPos = pos;
+                }
+            } else if (score < 0) {
+                if (score > negScore) {
+                    negScore = score;
+                    negPos = pos;
                 }
             }
-        }
+        });
         std::cout << tbType << " neg: " << negScore << " pos:" << posScore << " nPos:" << nPos << std::endl;
         std::cout << tbType << " negPos: " << TextIO::toFEN(negPos) << std::endl;
         std::cout << tbType << " posPos: " << TextIO::toFEN(posPos) << std::endl;
+    }
+}
+
+void
+PosGenerator::rtbTest(const std::vector<std::string>& tbTypes) {
+    UciParams::gtbPath->set("/home/petero/chess/gtb");
+    UciParams::gtbCache->set("2047");
+    UciParams::rtbPath->set("/home/petero/chess/rtb/5:"
+                            "/home/petero/chess/rtb/6wdl:"
+                            "/home/petero/chess/rtb/6dtz");
+    ComputerPlayer::initEngine();
+    for (std::string tbType : tbTypes) {
+        double t0 = currentTime();
+        U64 nPos = 0, nDiff = 0, nDiff50 = 0;
+        iteratePositions(tbType, [&](Position& pos) {
+            nPos++;
+            int rtbScore, gtbScore;
+            if (!TBProbe::rtbProbeWDL(pos, 0, rtbScore))
+                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+            if (!TBProbe::gtbProbeWDL(pos, 0, gtbScore))
+                throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
+            bool diff;
+            if (rtbScore > 0) {
+                diff = gtbScore <= 0;
+            } else if (rtbScore < 0) {
+                diff = gtbScore >= 0;
+            } else {
+                diff = gtbScore != 0;
+                if (diff) {
+                    int scoreDTM;
+                    if (!TBProbe::gtbProbeDTM(pos, 0, scoreDTM))
+                        throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
+                    if (std::abs(scoreDTM) < SearchConst::MATE0 - 100) {
+                        diff = false;
+                        nDiff50++;
+                    }
+                }
+            }
+            if (diff) {
+                nDiff++;
+                std::cout << tbType << " rtb:" << rtbScore << " gtb:" << gtbScore
+                          << " pos:" << TextIO::toFEN(pos) << std::endl;
+            }
+        });
+        double t1 = currentTime();
+        std::cout << tbType << " nPos:" << nPos << " nDiff:" << nDiff << " nDiff50:" << nDiff50
+                  << " t:" << (t1-t0) << std::endl;
     }
 }

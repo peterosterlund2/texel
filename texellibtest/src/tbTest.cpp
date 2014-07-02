@@ -32,26 +32,37 @@
 #include "tbprobe.hpp"
 #include "constants.hpp"
 
+#include "syzygy/rtb-probe.hpp"
+
 #include "cute.h"
 
 /** Probe both DTM and WDL, check consistency and return DTM value. */
-static int gtbProbeCompare(const Position& pos, int ply, int& score) {
-    int dtm, wdl;
+static int probeCompare(const Position& pos, int ply, int& score) {
+    int dtm, wdl, wdl2;
     int resDTM = TBProbe::gtbProbeDTM(pos, ply, dtm);
     int resWDL = TBProbe::gtbProbeWDL(pos, ply, wdl);
+    Position rtbPos(pos);
+    int resWDL2 = TBProbe::rtbProbeWDL(rtbPos, ply, wdl2);
+    ASSERT(pos.equals(rtbPos));
 
     ASSERT_EQUAL(resDTM, resWDL);
+    ASSERT_EQUAL(resWDL, resWDL2);
     if (!resDTM)
         return false;
 
     if (dtm > 0) {
         ASSERT(wdl > 0);
         ASSERT(wdl <= dtm);
+        ASSERT(wdl2 > 0);
+        ASSERT(wdl2 <= dtm);
     } else if (dtm < 0) {
         ASSERT(wdl < 0);
         ASSERT(wdl >= dtm);
+        ASSERT(wdl2 < 0);
+        ASSERT(wdl2 >= dtm);
     } else {
         ASSERT_EQUAL(0, wdl);
+        ASSERT_EQUAL(0, wdl2);
     }
 
     score = dtm;
@@ -59,27 +70,28 @@ static int gtbProbeCompare(const Position& pos, int ply, int& score) {
 }
 
 /** Probe a position and its mirror positions and verify they have the same score. */
-int
-gtbProbeDTM(const Position& pos, int ply, int& score) {
+static int
+probeDTM(const Position& pos, int ply, int& score) {
     std::string fen = TextIO::toFEN(pos);
-    int ret = gtbProbeCompare(pos, ply, score);
+    int ret = probeCompare(pos, ply, score);
     Position symPos = swapColors(pos);
     int score2;
-    int ret2 = gtbProbeCompare(symPos, ply, score2);
+    int ret2 = probeCompare(symPos, ply, score2);
     std::string fen2 = TextIO::toFEN(symPos);
     ASSERT_EQUALM((fen + " == " + fen2).c_str(), ret, ret2);
-    ASSERT_EQUALM((fen + " == " + fen2).c_str(), score, score2);
+    if (ret)
+        ASSERT_EQUALM((fen + " == " + fen2).c_str(), score, score2);
 
     if (pos.getCastleMask() == 0) {
         symPos = mirrorX(pos);
         fen2 = TextIO::toFEN(symPos);
-        ret2 = gtbProbeCompare(symPos, ply, score2);
+        ret2 = probeCompare(symPos, ply, score2);
         ASSERT_EQUALM((fen + " == " + fen2).c_str(), ret, ret2);
         ASSERT_EQUALM((fen + " == " + fen2).c_str(), score, score2);
 
         symPos = swapColors(mirrorX(pos));
         fen2 = TextIO::toFEN(symPos);
-        ret2 = gtbProbeCompare(symPos, ply, score2);
+        ret2 = probeCompare(symPos, ply, score2);
         ASSERT_EQUALM((fen + " == " + fen2).c_str(), ret, ret2);
         ASSERT_EQUALM((fen + " == " + fen2).c_str(), score, score2);
     }
@@ -88,43 +100,43 @@ gtbProbeDTM(const Position& pos, int ply, int& score) {
 }
 
 void
-TBTest::gtbTest() {
+TBTest::dtmTest() {
     const int mate0 = SearchConst::MATE0;
     int ply = 17;
     const int cacheMB = 16;
 
     Position pos = TextIO::readFEN("4k3/R7/4K3/8/8/8/8/8 w - - 0 1");
     int score;
-    bool res = gtbProbeDTM(pos, ply, score);
+    bool res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(mate0 - ply - 2, score);
 
-    TBProbe::initialize("/home/petero/chess/gtb/no_such_dir", cacheMB);
-    res = gtbProbeDTM(pos, ply, score);
+    TBProbe::initialize("/home/petero/chess/gtb/no_such_dir", cacheMB, "");
+    res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(false, res);
-    TBProbe::initialize("/home/petero/chess/gtb", cacheMB);
+    TBProbe::initialize(gtbDefaultPath, cacheMB, rtbDefaultPath);
 
     // Test castling
     pos = TextIO::readFEN("4k3/8/8/8/8/8/8/4K2R w K - 0 1");
-    res = gtbProbeDTM(pos, ply, score);
+    res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(false, res);
     pos = TextIO::readFEN("4k3/8/8/8/8/8/8/4K2R w - - 0 1");
-    res = gtbProbeDTM(pos, ply, score);
+    res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(mate0 - ply - 22, score);
 
-    TBProbe::initialize("", cacheMB);
-    res = gtbProbeDTM(pos, ply, score);
+    TBProbe::initialize("", cacheMB, "");
+    res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(false, res);
-    TBProbe::initialize("/home/petero/chess/gtb", cacheMB);
+    TBProbe::initialize(gtbDefaultPath, cacheMB, rtbDefaultPath);
 
     // Test en passant
     pos = TextIO::readFEN("8/8/4k3/8/3pP3/8/3P4/4K3 b - e3 0 1");
-    res = gtbProbeDTM(pos, ply, score);
+    res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(0, score);
     pos = TextIO::readFEN("8/8/4k3/8/3pP3/8/3P4/4K3 b - - 0 1");
-    res = gtbProbeDTM(pos, ply, score);
+    res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(-(mate0 - ply - 48 - 1), score);
 }
@@ -150,20 +162,20 @@ TBTest::kpkTest() {
                     if (MoveGen::canTakeKing(pos))
                         continue;
                     int score;
-                    int res = gtbProbeDTM(pos, ply, score);
+                    int res = probeDTM(pos, ply, score);
                     ASSERT_EQUAL(true, res);
                     if (pos.getWhiteMove()) {
                         ASSERT(score >= 0);
                     } else {
                         ASSERT(score <= 0);
                     }
-                    int eval = evaluate.evalPos(pos);
+                    int evalWhite = evaluate.evalPos(pos);
                     if (!pos.getWhiteMove())
-                        eval = -eval;
+                        evalWhite = -evalWhite;
                     if (score == 0) {
-                        ASSERT(eval == 0);
+                        ASSERT(evalWhite == 0);
                     } else {
-                        ASSERT(eval > 0);
+                        ASSERT(evalWhite > 0);
                     }
                 }
             }
@@ -171,10 +183,46 @@ TBTest::kpkTest() {
     }
 }
 
+void
+TBTest::rtbTest() {
+    int ply = 17;
+    int wdl;
+
+    Position pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3NB3 w - - 0 1");
+    bool resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ASSERT_EQUAL(true, resWDL);
+    ASSERT(SearchConst::isWinScore(wdl));
+
+    pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3NB3 b - - 0 1");
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ASSERT_EQUAL(true, resWDL);
+    ASSERT(SearchConst::isLoseScore(wdl));
+
+    pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3BB3 b - - 0 1");
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ASSERT_EQUAL(true, resWDL);
+    ASSERT(SearchConst::isLoseScore(wdl));
+
+    pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3NN3 b - - 0 1");
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ASSERT_EQUAL(true, resWDL);
+    ASSERT_EQUAL(0, wdl);
+
+    TBProbe::initialize(gtbDefaultPath, 16, "");
+    TBProbe::initialize(gtbDefaultPath, 16, "");
+    TBProbe::initialize(gtbDefaultPath, 16, rtbDefaultPath);
+
+    pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3NN3 b - - 0 1");
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ASSERT_EQUAL(true, resWDL);
+    ASSERT_EQUAL(0, wdl);
+}
+
 cute::suite
 TBTest::getSuite() const {
     cute::suite s;
-    s.push_back(CUTE(gtbTest));
+    s.push_back(CUTE(dtmTest));
     s.push_back(CUTE(kpkTest));
+    s.push_back(CUTE(rtbTest));
     return s;
 }

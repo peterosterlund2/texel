@@ -534,11 +534,11 @@ testMaterialId() {
             for (int i = 0; i < w.q; i++) id.addPiece(Piece::WQUEEN);
             for (const Mtrl& b : configs) {
                 MatId id2(id);
-                for (int i = 0; i < b.p; i++) id2.addPiece(Piece::BPAWN);
-                for (int i = 0; i < b.r; i++) id2.addPiece(Piece::BROOK);
-                for (int i = 0; i < b.n; i++) id2.addPiece(Piece::BKNIGHT);
-                for (int i = 0; i < b.b; i++) id2.addPiece(Piece::BBISHOP);
-                for (int i = 0; i < b.q; i++) id2.addPiece(Piece::BQUEEN);
+                id2.addPieceCnt(Piece::BPAWN, b.p);
+                id2.addPieceCnt(Piece::BROOK, b.r);
+                id2.addPieceCnt(Piece::BKNIGHT, b.n);
+                id2.addPieceCnt(Piece::BBISHOP, b.b);
+                id2.addPieceCnt(Piece::BQUEEN, b.q);
                 bool u = ids.uniq(id2());
                 if (!u) {
                     std::cout << "w:" << w.p << ' ' << w.r << ' ' << w.n << ' ' << w.b << ' ' << w.q << std::endl;

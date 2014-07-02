@@ -25,6 +25,7 @@
 
 #include "tbprobe.hpp"
 #include "gtb/gtb-probe.h"
+#include "syzygy/rtb-probe.hpp"
 #include "bitBoard.hpp"
 #include "position.hpp"
 #include "constants.hpp"
@@ -38,8 +39,10 @@ static int gtbMaxPieces = 0;
 static std::unordered_map<int,int> longestMate;
 
 void
-TBProbe::initialize(const std::string& path, int cacheMB) {
-    gtbInitialize(path, cacheMB);
+TBProbe::initialize(const std::string& gtbPath, int cacheMB,
+                    const std::string& rtbPath) {
+    gtbInitialize(gtbPath, cacheMB);
+    Syzygy::init(rtbPath);
     initWDLBounds();
 }
 
@@ -95,6 +98,34 @@ TBProbe::gtbProbeWDL(const Position& pos, int ply, int& score) {
     return gtbProbeWDL(gtbData, ply, score);
 }
 
+bool
+TBProbe::rtbProbeWDL(Position& pos, int ply, int& score) {
+    if (BitBoard::bitCount(pos.occupiedBB()) > Syzygy::TBLargest)
+        return false;
+    if (pos.getCastleMask())
+        return false;
+
+    int success;
+    int wdl = Syzygy::probe_wdl(pos, &success);
+    if (!success)
+        return false;
+    int longestMate = SearchConst::MATE0 - 262 * 2;
+    switch (wdl) {
+    case 0: case 1: case -1:
+        score = 0;
+        break;
+    case 2:
+        score = longestMate - ply;
+        break;
+    case -2:
+        score = -(longestMate - ply);
+        break;
+    default:
+        return false;
+    }
+
+    return true;
+}
 
 void
 TBProbe::gtbInitialize(const std::string& path, int cacheMB) {

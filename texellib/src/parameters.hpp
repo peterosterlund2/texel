@@ -363,6 +363,7 @@ ParamTable<N>::ParamTable(int minVal0, int maxVal0, bool uci0,
 namespace UciParams {
     extern std::shared_ptr<Parameters::StringParam> gtbPath;
     extern std::shared_ptr<Parameters::SpinParam> gtbCache;
+    extern std::shared_ptr<Parameters::StringParam> rtbPath;
     extern std::shared_ptr<Parameters::SpinParam> minProbeDepth;
 }
 

@@ -36,7 +36,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.05tb1";
+    std::string name = "Texel 1.05tb2";
     if (sizeof(char*) == 4)
         name += " 32-bit";
     if (sizeof(char*) == 8)
@@ -50,10 +50,12 @@ ComputerPlayer::initEngine() {
 
     auto tbInit = []() {
         TBProbe::initialize(UciParams::gtbPath->getStringPar(),
-                            UciParams::gtbCache->getIntPar());
+                            UciParams::gtbCache->getIntPar(),
+                            UciParams::rtbPath->getStringPar());
     };
     UciParams::gtbPath->addListener(tbInit);
     UciParams::gtbCache->addListener(tbInit, false);
+    UciParams::rtbPath->addListener(tbInit, false);
 
     knightMobScore.addListener(Evaluate::updateEvalParams);
     castleFactor.addListener(Evaluate::updateEvalParams, false);

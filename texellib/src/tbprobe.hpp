@@ -39,7 +39,8 @@ class Position;
 class TBProbe {
 public:
     /** Initialize external libraries. */
-    static void initialize(const std::string& path, int cacheMB);
+    static void initialize(const std::string& gtbPath, int cacheMB,
+                           const std::string& rtbPath);
 
     /** Probe one or more tablebases to get an exact score or a usable bound. */
     static bool tbProbe(const Position& pos, int ply, int alpha, int beta,
@@ -48,7 +49,7 @@ public:
     /** Probe gaviota DTM tablebases.
      * @param pos  The position to probe.
      * @param ply  The ply value used to adjust mate scores.
-     * @param score The table base score. Only modified for tablebase hits.
+     * @param score The tablebase score. Only modified for tablebase hits.
      * @return True if pos was found in the tablebases.
      */
     static bool gtbProbeDTM(const Position& pos, int ply, int& score);
@@ -57,9 +58,20 @@ public:
      * Probe gaviota WDL tablebases.
      * @param pos  The position to probe.
      * @param ply  The ply value used to adjust mate scores.
-     * @param score The table base score. Only modified for tablebase hits.
+     * @param score The tablebase score. Only modified for tablebase hits.
+     *              The returned score is either 0 or a mate bound.
      */
     static bool gtbProbeWDL(const Position& pos, int ply, int& score);
+
+    /**
+     * Probe syzygy WDL tablebases.
+     * @param pos  The position to probe. Object is temporarily modified but
+     *             restored to original state before function returns.
+     * @param ply  The ply value used to adjust mate scores.
+     * @param score The tablebase score. Only modified for tablebase hits.
+     *              The returned score is either 0 or a mate bound.
+     */
+    static bool rtbProbeWDL(Position& pos, int ply, int& score);
 
 private:
     /** Initialize */

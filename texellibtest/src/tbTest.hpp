@@ -28,6 +28,11 @@
 
 #include "suiteBase.hpp"
 
+const std::string gtbDefaultPath("/home/petero/chess/gtb");
+const std::string rtbDefaultPath("/home/petero/chess/rtb/5:"
+                                 "/home/petero/chess/rtb/6wdl:"
+                                 "/home/petero/chess/rtb/6dtz");
+
 class TBTest : public SuiteBase {
 public:
     std::string getName() const { return "tbTest"; }
@@ -35,8 +40,9 @@ public:
     cute::suite getSuite() const;
 
 private:
-    static void gtbTest();
+    static void dtmTest();
     static void kpkTest();
+    static void rtbTest();
 };
 
 #endif /* TBTEST_HPP_ */

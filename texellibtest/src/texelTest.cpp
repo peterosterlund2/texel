@@ -50,7 +50,8 @@ runSuite(const SuiteBase& suite) {
 }
 
 int main() {
-    UciParams::gtbPath->set("/home/petero/chess/gtb");
+    UciParams::gtbPath->set(gtbDefaultPath);
+    UciParams::rtbPath->set(rtbDefaultPath);
     ComputerPlayer::initEngine();
     runSuite(BitBoardTest());
     runSuite(BookTest());
