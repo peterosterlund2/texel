@@ -7,8 +7,6 @@
   this code to other chess engines.
 */
 
-// The probing code currently expects a little-endian architecture (e.g. x86). // FIXME! Add runtime check
-
 #include "../piece.hpp"
 #include "../position.hpp"
 #include "../moveGen.hpp"

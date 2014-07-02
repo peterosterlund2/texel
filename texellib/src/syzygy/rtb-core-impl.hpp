@@ -252,6 +252,14 @@ void Syzygy::init(const std::string& path)
     char str[16];
     int i, j, k, l;
 
+    { // The probing code currently expects a little-endian architecture
+        static_assert(sizeof(uint32_t) == 4, "Unsupported architecture");
+        uint32_t test = 0x01020304;
+        unsigned char* p = (unsigned char*)&test;
+        if (p[0] != 4 || p[1] != 3 || p[2] != 2 || p[3] != 1)
+            return;
+    }
+
     if (initialized) {
         free(path_string); path_string = NULL;
         free(paths); paths = NULL;
@@ -277,7 +285,7 @@ void Syzygy::init(const std::string& path)
     }
 
     const char *p = path.c_str();
-    if (strlen(p) == 0 || !strcmp(p, "<empty>"))
+    if (strlen(p) == 0)
         return;
     path_string = (char *)malloc(strlen(p) + 1);
     strcpy(path_string, p);
