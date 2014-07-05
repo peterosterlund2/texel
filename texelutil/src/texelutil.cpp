@@ -74,8 +74,11 @@ usage() {
     std::cerr << "                         inclNo is 0/1 to exclude/include position/game numbers\n";
     std::cerr << " genfen qvsn : Generate all positions of a given type\n";
     std::cerr << " tblist nPieces : Print all tablebase types\n";
-    std::cerr << " tbstat type1 [type2 ...] : Generate tablebase statistics\n";
-    std::cerr << " rtbtest type1 [type2 ...] : Compare RTB and GTB tables\n";
+    std::cerr << " dtmstat type1 [type2 ...] : Generate tablebase DTM statistics\n";
+    std::cerr << " dtzstat type1 [type2 ...] : Generate tablebase DTZ statistics\n";
+    std::cerr << " wdltest type1 [type2 ...] : Compare RTB and GTB WDL tables\n";
+    std::cerr << " dtztest type1 [type2 ...] : Compare RTB DTZ and GTB DTM tables\n";
+    std::cerr << " dtz fen                   : Retrieve DTZ value for a position\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -264,20 +267,39 @@ main(int argc, char* argv[]) {
             if ((argc != 3) || !str2Num(argv[2], nPieces) || nPieces < 2)
                 usage();
             PosGenerator::tbList(nPieces);
-        } else if (cmd == "tbstat") {
+        } else if (cmd == "dtmstat") {
             if (argc < 3)
                 usage();
             std::vector<std::string> tbTypes;
             for (int i = 2; i < argc; i++)
                 tbTypes.push_back(argv[i]);
-            PosGenerator::tbStat(tbTypes);
-        } else if (cmd == "rtbtest") {
+            PosGenerator::dtmStat(tbTypes);
+        } else if (cmd == "dtzstat") {
             if (argc < 3)
                 usage();
             std::vector<std::string> tbTypes;
             for (int i = 2; i < argc; i++)
                 tbTypes.push_back(argv[i]);
-            PosGenerator::rtbTest(tbTypes);
+            PosGenerator::dtzStat(tbTypes);
+        } else if (cmd == "wdltest") {
+            if (argc < 3)
+                usage();
+            std::vector<std::string> tbTypes;
+            for (int i = 2; i < argc; i++)
+                tbTypes.push_back(argv[i]);
+            PosGenerator::wdlTest(tbTypes);
+        } else if (cmd == "dtztest") {
+            if (argc < 3)
+                usage();
+            std::vector<std::string> tbTypes;
+            for (int i = 2; i < argc; i++)
+                tbTypes.push_back(argv[i]);
+            PosGenerator::dtzTest(tbTypes);
+        } else if (cmd == "dtz") {
+            if (argc < 3)
+                usage();
+            std::string fen = argv[2];
+            ChessTool::probeDTZ(fen);
         } else {
             ScoreToProb sp(300.0);
             for (int i = -100; i <= 100; i++)

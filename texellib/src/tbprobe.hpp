@@ -38,9 +38,11 @@ class Position;
  */
 class TBProbe {
 public:
-    /** Initialize external libraries. */
-    static void initialize(const std::string& gtbPath, int cacheMB,
-                           const std::string& rtbPath);
+    /** Initialize gaviota tablebases. */
+    static void initializeGTB(const std::string& gtbPath, int cacheMB);
+
+    /** Initialize syzygy tablebases. */
+    static void initializeRTB(const std::string& rtbPath);
 
     /** Probe one or more tablebases to get an exact score or a usable bound.
      * @param pos  The position to probe. The position can be temporarily modified
@@ -67,6 +69,18 @@ public:
      *              The returned score is either 0 or a mate bound.
      */
     static bool gtbProbeWDL(Position& pos, int ply, int& score);
+
+    /**
+     * Probe syzygy DTZ tablebases.
+     * @param pos  The position to probe. The position can be temporarily modified
+     *             but is restored to original state before function returns.
+     * @param ply  The ply value used to adjust mate scores.
+     * @param score The tablebase score. Only modified for tablebase hits.
+     *              The returned score is either 0 or a mate bound. The bound
+     *              is computed by considering the DTZ value and the maximum number
+     *              of zeroing moves before mate.
+     */
+    static bool rtbProbeDTZ(Position& pos, int ply, int& score);
 
     /**
      * Probe syzygy WDL tablebases.

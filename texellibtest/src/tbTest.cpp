@@ -36,9 +36,15 @@
 
 #include "cute.h"
 
+static void initTB(const std::string& gtbPath, int cacheMB,
+                   const std::string& rtbPath) {
+    TBProbe::initializeGTB(gtbPath, cacheMB);
+    TBProbe::initializeRTB(rtbPath);
+}
+
 /** Probe both DTM and WDL, check consistency and return DTM value. */
 static int probeCompare(const Position& pos, int ply, int& score) {
-    int dtm, wdl, wdl2;
+    int dtm, wdl, wdl2, dtz;
     Position pos2(pos);
     int resDTM = TBProbe::gtbProbeDTM(pos2, ply, dtm);
     ASSERT(pos.equals(pos2));
@@ -46,9 +52,13 @@ static int probeCompare(const Position& pos, int ply, int& score) {
     ASSERT(pos.equals(pos2));
     int resWDL2 = TBProbe::rtbProbeWDL(pos2, ply, wdl2);
     ASSERT(pos.equals(pos2));
+    int resDTZ = TBProbe::rtbProbeDTZ(pos2, ply, dtz);
+    ASSERT(pos.equals(pos2));
 
     ASSERT_EQUAL(resDTM, resWDL);
     ASSERT_EQUAL(resWDL, resWDL2);
+    ASSERT_EQUAL(resWDL2, resDTZ);
+
     if (!resDTM)
         return false;
 
@@ -57,14 +67,21 @@ static int probeCompare(const Position& pos, int ply, int& score) {
         ASSERT(wdl <= dtm);
         ASSERT(wdl2 > 0);
         ASSERT(wdl2 <= dtm);
+        ASSERT(dtz > 0);
+        ASSERT(dtz <= dtm);
+        ASSERT(dtz >= wdl2);
     } else if (dtm < 0) {
         ASSERT(wdl < 0);
         ASSERT(wdl >= dtm);
         ASSERT(wdl2 < 0);
         ASSERT(wdl2 >= dtm);
+        ASSERT(dtz < 0);
+        ASSERT(dtz >= dtm);
+        ASSERT(dtz <= wdl2);
     } else {
         ASSERT_EQUAL(0, wdl);
         ASSERT_EQUAL(0, wdl2);
+        ASSERT_EQUAL(0, dtz);
     }
 
     score = dtm;
@@ -113,10 +130,10 @@ TBTest::dtmTest() {
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(mate0 - ply - 2, score);
 
-    TBProbe::initialize("/home/petero/chess/gtb/no_such_dir", cacheMB, "");
+    initTB("/home/petero/chess/gtb/no_such_dir", cacheMB, "");
     res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(false, res);
-    TBProbe::initialize(gtbDefaultPath, cacheMB, rtbDefaultPath);
+    initTB(gtbDefaultPath, cacheMB, rtbDefaultPath);
 
     // Test castling
     pos = TextIO::readFEN("4k3/8/8/8/8/8/8/4K2R w K - 0 1");
@@ -127,10 +144,10 @@ TBTest::dtmTest() {
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(mate0 - ply - 22, score);
 
-    TBProbe::initialize("", cacheMB, "");
+    initTB("", cacheMB, "");
     res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(false, res);
-    TBProbe::initialize(gtbDefaultPath, cacheMB, rtbDefaultPath);
+    initTB(gtbDefaultPath, cacheMB, rtbDefaultPath);
 
     // Test en passant
     pos = TextIO::readFEN("8/8/4k3/8/3pP3/8/3P4/4K3 b - e3 0 1");
@@ -202,7 +219,7 @@ TBTest::kpkTest() {
 void
 TBTest::rtbTest() {
     int ply = 17;
-    int wdl;
+    int wdl, dtm, dtz;
 
     Position pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3NB3 w - - 0 1");
     bool resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
@@ -224,14 +241,67 @@ TBTest::rtbTest() {
     ASSERT_EQUAL(true, resWDL);
     ASSERT_EQUAL(0, wdl);
 
-    TBProbe::initialize(gtbDefaultPath, 16, "");
-    TBProbe::initialize(gtbDefaultPath, 16, "");
-    TBProbe::initialize(gtbDefaultPath, 16, rtbDefaultPath);
+    initTB(gtbDefaultPath, 16, "");
+    initTB(gtbDefaultPath, 16, "");
+    initTB(gtbDefaultPath, 16, rtbDefaultPath);
 
     pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3NN3 b - - 0 1");
     resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
     ASSERT_EQUAL(true, resWDL);
     ASSERT_EQUAL(0, wdl);
+
+    // Check that DTZ probes do not give too good (incorrect) bounds
+    pos = TextIO::readFEN("8/8/8/8/7B/8/3k4/K2B4 w - - 0 1");
+    bool resDTM = TBProbe::gtbProbeDTM(pos, ply, dtm);
+    ASSERT(resDTM);
+    bool resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
+    ASSERT(resDTZ);
+    ASSERT(SearchConst::isWinScore(dtz));
+    ASSERT(dtz <= dtm);
+
+    pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 0 1");
+    probeDTM(pos, ply, dtm);
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ASSERT(resWDL);
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
+    ASSERT(resDTZ);
+    ASSERT(SearchConst::isLoseScore(wdl));
+    ASSERT(SearchConst::isLoseScore(dtz));
+    ASSERT(dtz <= wdl);
+
+    // Tests where DTZ is close to 100
+    pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 0 1");
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ASSERT(resWDL);
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
+    ASSERT(resDTZ);
+    ASSERT(SearchConst::isLoseScore(wdl));
+    ASSERT(SearchConst::isLoseScore(dtz));
+    ASSERT(dtz <= wdl);
+
+    pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 1 1");
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ASSERT(resWDL);
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
+    ASSERT(resDTZ);
+    ASSERT(SearchConst::isLoseScore(wdl)); // WDL probes assume half-move clock is 0
+    ASSERT_EQUAL(0, dtz);
+
+    pos = TextIO::readFEN("1R5Q/8/6k1/8/8/8/8/K1q5 w - - 0 1"); // DTZ == 101
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ASSERT(resWDL);
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
+    ASSERT(resDTZ);
+    ASSERT_EQUAL(0, wdl);
+    ASSERT_EQUAL(0, dtz);
+
+    pos = TextIO::readFEN("1R5Q/8/6k1/8/8/8/2q5/K7 b - - 0 1"); // DTZ == -102
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ASSERT(resWDL);
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
+    ASSERT(resDTZ);
+    ASSERT_EQUAL(0, wdl);
+    ASSERT_EQUAL(0, dtz);
 }
 
 cute::suite

@@ -309,8 +309,11 @@ void Syzygy::init(const std::string& path)
             TB_hash[i][j].ptr = NULL;
         }
 
-    for (i = 0; i < DTZ_ENTRIES; i++)
+    for (i = 0; i < DTZ_ENTRIES; i++) {
+        DTZ_table[i].key1 = 0xffffffffffffffffULL;
+        DTZ_table[i].key2 = 0xffffffffffffffffULL;
         DTZ_table[i].entry = NULL;
+    }
 
     for (i = 1; i < 6; i++) {
         sprintf(str, "K%cvK", pchr[i]);

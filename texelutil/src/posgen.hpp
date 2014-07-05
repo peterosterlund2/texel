@@ -19,11 +19,17 @@ public:
     /** Print all tablebase types containing a given number of pieces. */
     static void tbList(int nPieces);
 
-    /** Generate tablebase statistics. */
-    static void tbStat(const std::vector<std::string>& tbTypes);
+    /** Generate tablebase DTM statistics. */
+    static void dtmStat(const std::vector<std::string>& tbTypes);
+
+    /** Generate tablebase DTZ statistics. */
+    static void dtzStat(const std::vector<std::string>& tbTypes);
 
     /** Compare RTB probe results to GTB probe results, report any differences. */
-    static void rtbTest(const std::vector<std::string>& tbTypes);
+    static void wdlTest(const std::vector<std::string>& tbTypes);
+
+    /** Compare RTB DTZ probe results to GTB DTM probe results, report any unexpected differences. */
+    static void dtzTest(const std::vector<std::string>& tbTypes);
 
 private:
     static void genQvsN();

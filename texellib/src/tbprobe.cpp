@@ -40,9 +40,13 @@ static int gtbMaxPieces = 0;
 static std::unordered_map<int,int> longestMate;
 
 void
-TBProbe::initialize(const std::string& gtbPath, int cacheMB,
-                    const std::string& rtbPath) {
+TBProbe::initializeGTB(const std::string& gtbPath, int cacheMB) {
     gtbInitialize(gtbPath, cacheMB);
+    initWDLBounds();
+}
+
+void
+TBProbe::initializeRTB(const std::string& rtbPath) {
     Syzygy::init(rtbPath);
     initWDLBounds();
 }
@@ -136,6 +140,53 @@ TBProbe::gtbProbeWDL(Position& pos, int ply, int& score) {
     return ret;
 }
 
+static int
+maxZeroing(const Position& pos, int nPieces) {
+    bool singleMatePiece = pos.pieceTypeBB(Piece::WQUEEN, Piece::WROOK, Piece::WPAWN,
+                                           Piece::BQUEEN, Piece::BROOK, Piece::BPAWN);
+    int maxCapt = singleMatePiece ? nPieces - 3 : nPieces - 4;
+    int maxPawnMoves = 0;
+    U64 m = pos.pieceTypeBB(Piece::WPAWN);
+    while (m != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(m);
+        maxPawnMoves += 7 - Position::getY(sq);
+        m &= m-1;
+    }
+    m = pos.pieceTypeBB(Piece::BPAWN);
+    while (m != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(m);
+        maxPawnMoves += Position::getY(sq);
+        m &= m-1;
+    }
+    return maxCapt + maxPawnMoves;
+}
+
+bool
+TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score) {
+    const int nPieces = BitBoard::bitCount(pos.occupiedBB());
+    if (nPieces > Syzygy::TBLargest)
+        return false;
+    if (pos.getCastleMask())
+        return false;
+
+    int success;
+    const int dtz = Syzygy::probe_dtz(pos, &success);
+    if (!success)
+        return false;
+    if (dtz == 0 || std::abs(dtz) + pos.getHalfMoveClock() > 100) {
+        score = 0;
+        return true;
+    }
+    int maxZero = maxZeroing(pos, nPieces);
+    int plyToMate = maxZero * 100 + std::abs(dtz);
+    if (dtz > 0) {
+        score = SearchConst::MATE0 - ply - plyToMate - 2;
+    } else {
+        score = -(SearchConst::MATE0 - ply - plyToMate - 2);
+    }
+    return true;
+}
+
 bool
 TBProbe::rtbProbeWDL(Position& pos, int ply, int& score) {
     if (BitBoard::bitCount(pos.occupiedBB()) > Syzygy::TBLargest)
@@ -147,16 +198,22 @@ TBProbe::rtbProbeWDL(Position& pos, int ply, int& score) {
     int wdl = Syzygy::probe_wdl(pos, &success);
     if (!success)
         return false;
-    int longestMate = SearchConst::MATE0 - 262 * 2;
+    int nPieces, maxZero, plyToMate;
     switch (wdl) {
     case 0: case 1: case -1:
         score = 0;
         break;
     case 2:
-        score = longestMate - ply;
+        nPieces = BitBoard::bitCount(pos.occupiedBB());
+        maxZero = maxZeroing(pos, nPieces);
+        plyToMate = (maxZero + 1) * 100;
+        score = SearchConst::MATE0 - ply - plyToMate - 2;
         break;
     case -2:
-        score = -(longestMate - ply);
+        nPieces = BitBoard::bitCount(pos.occupiedBB());
+        maxZero = maxZeroing(pos, nPieces);
+        plyToMate = (maxZero + 1) * 100;
+        score = -(SearchConst::MATE0 - ply - plyToMate - 2);
         break;
     default:
         return false;

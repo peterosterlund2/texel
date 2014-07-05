@@ -48,14 +48,16 @@ void
 ComputerPlayer::initEngine() {
     Parameters::instance();
 
-    auto tbInit = []() {
-        TBProbe::initialize(UciParams::gtbPath->getStringPar(),
-                            UciParams::gtbCache->getIntPar(),
-                            UciParams::rtbPath->getStringPar());
+    auto gtbInit = []() {
+        TBProbe::initializeGTB(UciParams::gtbPath->getStringPar(),
+                               UciParams::gtbCache->getIntPar());
     };
-    UciParams::gtbPath->addListener(tbInit);
-    UciParams::gtbCache->addListener(tbInit, false);
-    UciParams::rtbPath->addListener(tbInit, false);
+    UciParams::gtbPath->addListener(gtbInit);
+    UciParams::gtbCache->addListener(gtbInit, false);
+    auto rtbInit = []() {
+        TBProbe::initializeRTB(UciParams::rtbPath->getStringPar());
+    };
+    UciParams::rtbPath->addListener(rtbInit);
 
     knightMobScore.addListener(Evaluate::updateEvalParams);
     castleFactor.addListener(Evaluate::updateEvalParams, false);

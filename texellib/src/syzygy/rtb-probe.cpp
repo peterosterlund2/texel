@@ -469,7 +469,10 @@ static int probe_dtz_no_ep(Position& pos, int *success)
         }
     }
 
+    LOCK(TB_mutex);
     int dtz = 1 + probe_dtz_table(pos, wdl, success);
+    UNLOCK(TB_mutex);
+
     if (*success >= 0) {
         if (wdl & 1) dtz += 100;
         return wdl >= 0 ? dtz : -dtz;

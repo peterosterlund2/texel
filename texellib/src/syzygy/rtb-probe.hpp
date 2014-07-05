@@ -47,7 +47,7 @@ int probe_wdl(Position& pos, int *success);
 // In short, if a move is available resulting in dtz + 50-move-counter <= 99,
 // then do not accept moves leading to dtz + 50-move-counter == 100.
 //
-int probe_dtz(Position& pos, int *success); // FIXME! Not thread-safe
+int probe_dtz(Position& pos, int *success);
 
 }
 

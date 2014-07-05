@@ -9,8 +9,10 @@
 #include "textio.hpp"
 #include "moveGen.hpp"
 #include "tbprobe.hpp"
+#include "syzygy/rtb-probe.hpp"
 #include "parameters.hpp"
-#include "computerPlayer.hpp"
+#include "util/timeUtil.hpp"
+#include "chesstool.hpp"
 
 bool
 PosGenerator::generate(const std::string& type) {
@@ -346,19 +348,11 @@ iteratePositions(const std::string& tbType, Func func) {
     }
 }
 
-static void setupTB() {
-    UciParams::gtbPath->set("/home/petero/chess/gtb");
-    UciParams::gtbCache->set("2047");
-    UciParams::rtbPath->set("/home/petero/chess/rtb/5:"
-                            "/home/petero/chess/rtb/6wdl:"
-                            "/home/petero/chess/rtb/6dtz");
-}
-
 void
-PosGenerator::tbStat(const std::vector<std::string>& tbTypes) {
-    setupTB();
-    ComputerPlayer::initEngine();
+PosGenerator::dtmStat(const std::vector<std::string>& tbTypes) {
+    ChessTool::setupTB();
     for (std::string tbType : tbTypes) {
+        double t0 = currentTime();
         int negScore = std::numeric_limits<int>::min(); // Largest negative score
         int posScore = std::numeric_limits<int>::max(); // Smallest positive score
         Position negPos, posPos;
@@ -380,16 +374,62 @@ PosGenerator::tbStat(const std::vector<std::string>& tbTypes) {
                 }
             }
         });
-        std::cout << tbType << " neg: " << negScore << " pos:" << posScore << " nPos:" << nPos << std::endl;
+        double t1 = currentTime();
+        std::cout << tbType << " neg: " << negScore << " pos:" << posScore << " nPos:" << nPos
+                  << " t:" << (t1-t0) << std::endl;
         std::cout << tbType << " negPos: " << TextIO::toFEN(negPos) << std::endl;
         std::cout << tbType << " posPos: " << TextIO::toFEN(posPos) << std::endl;
     }
 }
 
 void
-PosGenerator::rtbTest(const std::vector<std::string>& tbTypes) {
-    setupTB();
-    ComputerPlayer::initEngine();
+PosGenerator::dtzStat(const std::vector<std::string>& tbTypes) {
+    ChessTool::setupTB();
+    for (std::string tbType : tbTypes) {
+        double t0 = currentTime();
+        int negScore = std::numeric_limits<int>::max(); // Smallest negative score
+        int posScore = std::numeric_limits<int>::min(); // Largest positive score
+        Position negPos, posPos;
+        U64 nPos = 0;
+        int negReported = -1000;
+        int posReported = 1000;
+        iteratePositions(tbType, [&](Position& pos) {
+            nPos++;
+            int success;
+            int dtz = Syzygy::probe_dtz(pos, &success);
+            if (!success)
+                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+            if (dtz > 0) {
+                if (dtz > posScore) {
+                    posScore = dtz;
+                    posPos = pos;
+                }
+                if (dtz > 100 && dtz < posReported) {
+                    posReported = dtz;
+                    std::cout << "fen: " << TextIO::toFEN(pos) << " dtz:" << dtz << std::endl;
+                }
+            } else if (dtz < 0) {
+                if (dtz < negScore) {
+                    negScore = dtz;
+                    negPos = pos;
+                }
+                if (dtz < -100 && dtz > negReported) {
+                    negReported = dtz;
+                    std::cout << "fen: " << TextIO::toFEN(pos) << " dtz:" << dtz << std::endl;
+                }
+            }
+        });
+        double t1 = currentTime();
+        std::cout << tbType << " neg: " << negScore << " pos:" << posScore << " nPos:" << nPos
+                  << " t:" << (t1-t0) << std::endl;
+        std::cout << tbType << " negPos: " << TextIO::toFEN(negPos) << std::endl;
+        std::cout << tbType << " posPos: " << TextIO::toFEN(posPos) << std::endl;
+    }
+}
+
+void
+PosGenerator::wdlTest(const std::vector<std::string>& tbTypes) {
+    ChessTool::setupTB();
     for (std::string tbType : tbTypes) {
         double t0 = currentTime();
         U64 nPos = 0, nDiff = 0, nDiff50 = 0;
@@ -426,5 +466,62 @@ PosGenerator::rtbTest(const std::vector<std::string>& tbTypes) {
         double t1 = currentTime();
         std::cout << tbType << " nPos:" << nPos << " nDiff:" << nDiff << " nDiff50:" << nDiff50
                   << " t:" << (t1-t0) << std::endl;
+    }
+}
+
+void
+PosGenerator::dtzTest(const std::vector<std::string>& tbTypes) {
+    ChessTool::setupTB();
+    for (std::string tbType : tbTypes) {
+        double t0 = currentTime();
+        U64 nPos = 0, nDiff = 0, nDiff50 = 0;
+        int minSlack = std::numeric_limits<int>::max();
+        int maxSlack = std::numeric_limits<int>::min();
+        int minSlack2 = std::numeric_limits<int>::max();
+        int maxSlack2 = std::numeric_limits<int>::min();
+        iteratePositions(tbType, [&](Position& pos) {
+            nPos++;
+            int dtz, dtm, wdl;
+            if (!TBProbe::rtbProbeDTZ(pos, 0, dtz))
+                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+            if (!TBProbe::gtbProbeDTM(pos, 0, dtm))
+                throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
+            if (!TBProbe::rtbProbeWDL(pos, 0, wdl))
+                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+            bool diff;
+            int slack = 0;
+            int slack2 = 0;
+            if (dtz > 0) {
+                slack = dtm - dtz;
+                slack2 = dtz - wdl;
+                diff = dtm <= 0 || slack < 0 || slack2 < 0;
+            } else if (dtz < 0) {
+                slack = -(dtm - dtz);
+                slack2 = -(dtz - wdl);
+                diff = dtm >= 0 || slack < 0 || slack2 < 0;
+            } else {
+                diff = dtm != 0;
+                if (diff) {
+                    if (std::abs(dtm) < SearchConst::MATE0 - 100) {
+                        diff = false;
+                        nDiff50++;
+                    }
+                }
+            }
+            minSlack = std::min(minSlack, slack);
+            maxSlack = std::max(maxSlack, slack);
+            minSlack2 = std::min(minSlack2, slack2);
+            maxSlack2 = std::max(maxSlack2, slack2);
+            if (diff) {
+                nDiff++;
+                std::cout << tbType << " dtz:" << dtz << " dtm:" << dtm
+                          << " pos:" << TextIO::toFEN(pos) << std::endl;
+            }
+        });
+        double t1 = currentTime();
+        std::cout << tbType << " nPos:" << nPos << " nDiff:" << nDiff << " nDiff50:" << nDiff50
+                  << " t:" << (t1-t0) << std::endl;
+        std::cout << tbType << " minSlack:" << minSlack << " maxSlack:" << maxSlack
+                  << " minSlack2:" << minSlack2 << " maxSlack2:" << maxSlack2 << std::endl;
     }
 }
