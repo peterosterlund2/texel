@@ -133,7 +133,8 @@ TBTest::dtmTest() {
     initTB("/home/petero/chess/gtb/no_such_dir", cacheMB, "");
     res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(false, res);
-    initTB(gtbDefaultPath, cacheMB, rtbDefaultPath);
+    initTB("/no/such/path:" + gtbDefaultPath + ":/test/:", cacheMB,
+           "//dfasf/:" + rtbDefaultPath + ":a:b:");
 
     // Test castling
     pos = TextIO::readFEN("4k3/8/8/8/8/8/8/4K2R w K - 0 1");

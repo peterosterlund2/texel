@@ -241,7 +241,23 @@ TBProbe::gtbInitialize(const std::string& path, int cacheMB) {
     if (path.empty())
         return;
 
-    paths = tbpaths_add(paths, path.c_str());
+#ifdef __WIN32__
+    const char separator = ';';
+#else
+    const char separator = ':';
+#endif
+    std::string tmp(path);
+    while (true) {
+        auto idx = tmp.find(separator);
+        if (idx == std::string::npos)
+            break;
+        std::string p(tmp, 0, idx);
+        paths = tbpaths_add(paths, p.c_str());
+        if (paths == NULL)
+            return;
+        tmp = tmp.substr(idx+1);
+    }
+    paths = tbpaths_add(paths, tmp.c_str());
     if (paths == NULL)
         return;
 
