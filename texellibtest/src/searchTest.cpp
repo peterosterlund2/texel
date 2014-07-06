@@ -49,13 +49,13 @@ static Search::SearchTables st(tt, kt, ht, *et);
 static TreeLogger treeLog;
 
 Move
-SearchTest::idSearch(Search& sc, int maxDepth) {
+SearchTest::idSearch(Search& sc, int maxDepth, int minProbeDepth) {
     MoveGen::MoveList moves;
     MoveGen::pseudoLegalMoves(sc.pos, moves);
     MoveGen::removeIllegal(sc.pos, moves);
     sc.scoreMoveList(moves, 0);
     sc.timeLimit(-1, -1);
-    Move bestM = sc.iterativeDeepening(moves, maxDepth, -1, false, 1, false, 100);
+    Move bestM = sc.iterativeDeepening(moves, maxDepth, -1, false, 1, false, minProbeDepth);
     ASSERT_EQUAL(sc.pos.materialId(), PositionTest::computeMaterialId(sc.pos));
     return bestM;
 }
@@ -510,6 +510,26 @@ SearchTest::testScoreMoveList() {
     ASSERT_EQUAL(m, moves[0]);
 }
 
+void
+SearchTest::testTBSearch() {
+    const int mate0 = SearchConst::MATE0;
+    Position pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 0 1"); // DTM path wins
+    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+    int score = idSearch(sc, 4, 3).score();
+    ASSERT_EQUAL(-(mate0 - 23), score);
+
+    pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 92 1"); // DTZ path needed
+    sc.init(pos, nullHist, 0);
+    score = idSearch(sc, 4, 3).score();
+    ASSERT(SearchConst::isLoseScore(score));
+    ASSERT(score > -(mate0 - 23));
+
+    pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 93 1"); // No way to avoid draw
+    sc.init(pos, nullHist, 0);
+    score = idSearch(sc, 4, 3).score();
+    ASSERT_EQUAL(0, score);
+}
+
 cute::suite
 SearchTest::getSuite() const {
     cute::suite s;
@@ -523,5 +543,6 @@ SearchTest::getSuite() const {
     s.push_back(CUTE(testKQKRNullMove));
     s.push_back(CUTE(testSEE));
     s.push_back(CUTE(testScoreMoveList));
+    s.push_back(CUTE(testTBSearch));
     return s;
 }

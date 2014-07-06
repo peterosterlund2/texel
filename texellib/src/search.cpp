@@ -510,17 +510,27 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Probe endgame tablebases
+    const int illegalScore = -(MATE0-(ply+1));
+    int tbScore = illegalScore;
     if (depth >= minProbeDepth) {
         TranspositionTable::TTEntry tbEnt;
-        ent.clear();
+        tbEnt.clear();
         if (TBProbe::tbProbe(pos, ply, alpha, beta, tbEnt)) {
-            int score = tbEnt.getScore(ply);
             tbHits++;
             nodesToGo -= 1000;
-            emptyMove.setScore(score);
-            if (useTT) tt.insert(hKey, emptyMove, ent.getType(), ply, depth, evalScore);
-            logFile.logNodeEnd(sti.nodeIdx, score, ent.getType(), evalScore, hKey);
-            return score;
+            int type = tbEnt.getType();
+            int score = tbEnt.getScore(ply);
+            if (     (type == TType::T_EXACT) ||
+                    ((type == TType::T_GE) && (score >= beta)) ||
+                    ((type == TType::T_LE) && (score <= alpha))) {
+                emptyMove.setScore(score);
+                if (useTT) tt.insert(hKey, emptyMove, tbEnt.getType(), ply, depth, evalScore);
+                logFile.logNodeEnd(sti.nodeIdx, score, tbEnt.getType(), evalScore, hKey);
+                return score;
+            } if ((type == TType::T_GE) && (score > alpha)) {
+                tbScore = score;
+                alpha = score - 1;
+            }
         }
     }
 
@@ -587,7 +597,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
     }
 
-    // Try null-move pruning
+    // Null-move pruning
     if (    (depth >= 3*plyScale) && !inCheck && sti.allowNullMove &&
             !isWinScore(std::abs(beta))) {
         bool nullOk;
@@ -685,7 +695,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         bool isPv = beta > alpha + 1;
         if (isPv || (depth > 8 * plyScale)) {
             // No hash move. Try internal iterative deepening.
-
             SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
             Move savedMove = sti2.currentMove;
             int savedMoveNo = sti2.currentMoveNo;
@@ -753,11 +762,15 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     UndoInfo ui;
     for (int pass = (smp?0:1); pass < 2; pass++) {
         bool haveLegalMoves = false;
-        const int illegalScore = -(MATE0-(ply+1));
         int b = beta;
         int bestScore = illegalScore;
         int bestMove = -1;
         int lmrCount = 0;
+        if (pass == 1 && tbScore != illegalScore) {
+            bestScore = tbScore - 1;
+            bestMove = -2;
+            sti.bestMove.setMove(0, 0, 0, 0);
+        }
         for (int mi = 0; mi < moves.size; mi++) {
             if (!smp) {
                 if ((mi == 1) && !seeDone) {
@@ -916,7 +929,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 logFile.logNodeEnd(sti.nodeIdx, 0, TType::T_EXACT, evalScore, hKey);
                 return 0;       // Stale-mate
             }
-            if (bestMove >= 0) {
+            if (bestMove == -2) { // TB win, unknown move
+                bestScore = tbScore;
+                emptyMove.setScore(bestScore);
+                if (useTT) tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
+                logFile.logNodeEnd(sti.nodeIdx, bestScore, TType::T_EXACT, evalScore, hKey);
+            } else if (bestMove >= 0) {
                 if (useTT) tt.insert(hKey, moves[bestMove], TType::T_EXACT, ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, bestScore, TType::T_EXACT, evalScore, hKey);
             } else {

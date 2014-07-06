@@ -38,7 +38,7 @@ public:
     cute::suite getSuite() const;
 
 private:
-    static Move idSearch(Search& sc, int maxDepth);
+    static Move idSearch(Search& sc, int maxDepth, int minProbeDepth = 100);
     static void testNegaScout();
     static void testDraw50();
     static void testDrawRep();
@@ -50,6 +50,7 @@ private:
     static int getSEE(Search& sc, const Move& m);
     static void testSEE();
     static void testScoreMoveList();
+    static void testTBSearch();
 };
 
 #endif /* SEARCHTEST_HPP_ */

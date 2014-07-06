@@ -122,7 +122,7 @@ void
 TBTest::dtmTest() {
     const int mate0 = SearchConst::MATE0;
     int ply = 17;
-    const int cacheMB = 16;
+    const int cacheMB = gtbDefaultCacheMB;
 
     Position pos = TextIO::readFEN("4k3/R7/4K3/8/8/8/8/8 w - - 0 1");
     int score;
@@ -305,11 +305,83 @@ TBTest::rtbTest() {
     ASSERT_EQUAL(0, dtz);
 }
 
+/** Test TBProbe::tbProbe() function. */
+void
+TBTest::tbTest() {
+    int ply = 29;
+    const int mate0 = SearchConst::MATE0;
+
+    // DTM > 100 when ignoring 50-move rule, RTB probes must be used when available
+    Position pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 0 1");
+    TranspositionTable::TTEntry ent;
+    bool res = TBProbe::tbProbe(pos, ply, -10, 10, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_LE, ent.getType());
+    ASSERT(ent.getScore(ply) < 0);
+
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_LE, ent.getType());
+    ASSERT(ent.getScore(ply) < 0);
+
+    initTB(gtbDefaultPath, gtbDefaultCacheMB, ""); // Disable syzygy tables
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_EXACT, ent.getType());
+    ASSERT(ent.getScore(ply) < 0);
+    ASSERT(ent.getScore(ply) >= -(mate0 - ply - 100));
+
+    initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
+
+    // Half-move clock small, DTM mate wins
+    pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 0 1");
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_EXACT, ent.getType());
+    ASSERT_EQUAL(-(mate0 - ply - 23), ent.getScore(ply));
+    res = TBProbe::tbProbe(pos, ply, -10, 10, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_LE, ent.getType());
+    ASSERT(SearchConst::isLoseScore(ent.getScore(ply)));
+
+    // Half-move clock large, must follow DTZ path to win
+    pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 90 1");
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_LE, ent.getType());
+    ASSERT(SearchConst::isLoseScore(ent.getScore(ply)));
+    ASSERT(ent.getScore(ply) > -(mate0 - ply - 23));
+    res = TBProbe::tbProbe(pos, ply, -10, 10, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_LE, ent.getType());
+    ASSERT(SearchConst::isLoseScore(ent.getScore(ply)));
+
+    // Mate in one, half-move clock small
+    pos = TextIO::readFEN("8/8/4B3/8/kBK5/8/8/8 w - - 0 1");
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_EXACT, ent.getType());
+    ASSERT_EQUAL(mate0 - 2 - ply, ent.getScore(ply));
+
+    // Mate in one, half-move clock large
+    pos = TextIO::readFEN("8/8/4B3/8/kBK5/8/8/8 w - - 99 1");
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_EXACT, ent.getType());
+    ASSERT_EQUAL(mate0 - 2 - ply, ent.getScore(ply));
+    // Same position, no GTB tables available
+    initTB("/no/such/dir", gtbDefaultCacheMB, rtbDefaultPath);
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    ASSERT(!res || ent.getScore(ply) != 0);
+    initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
+}
+
 cute::suite
 TBTest::getSuite() const {
     cute::suite s;
     s.push_back(CUTE(dtmTest));
     s.push_back(CUTE(kpkTest));
     s.push_back(CUTE(rtbTest));
+    s.push_back(CUTE(tbTest));
     return s;
 }

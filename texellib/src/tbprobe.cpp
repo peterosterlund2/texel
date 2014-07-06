@@ -54,30 +54,51 @@ TBProbe::initializeRTB(const std::string& rtbPath) {
 bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                  TranspositionTable::TTEntry& ent) {
-    if (BitBoard::bitCount(pos.occupiedBB()) > gtbMaxPieces)
+    const int nPieces = BitBoard::bitCount(pos.occupiedBB());
+    bool mateSearch = SearchConst::isLoseScore(alpha) || SearchConst::isWinScore(beta);
+    if (!mateSearch && pos.getHalfMoveClock() == 0) { // WDL probe is enough
+        int wdlScore;
+        if ((nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore)) ||
+            (nPieces <= gtbMaxPieces && gtbProbeWDL(pos, ply, wdlScore))) {
+            ent.setScore(wdlScore, ply);
+            if (wdlScore > 0)
+                ent.setType(TType::T_GE);
+            else if (wdlScore < 0)
+                ent.setType(TType::T_LE);
+            else
+                ent.setType(TType::T_EXACT);
+            return true;
+        }
         return false;
-
-    int score;
-    if (SearchConst::isLoseScore(alpha) || SearchConst::isWinScore(beta)) {
-        if (!gtbProbeDTM(pos, ply, score))
-            return false;
-        ent.setScore(score, ply);
-        ent.setType(TType::T_EXACT);
-        return true;
+    } else { // Need DTM or DTZ probe
+        int dtmScore;
+        bool hasDtm = false;
+        if (nPieces <= gtbMaxPieces && gtbProbeDTM(pos, ply, dtmScore)) {
+            if (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - pos.getHalfMoveClock()) {
+                ent.setScore(dtmScore, ply);
+                ent.setType(TType::T_EXACT);
+                return true;
+            }
+            hasDtm = true;
+        }
+        int dtzScore;
+        if (nPieces <= Syzygy::TBLargest && rtbProbeDTZ(pos, ply, dtzScore)) {
+            ent.setScore(dtzScore, ply);
+            if (dtzScore > 0)
+                ent.setType(TType::T_GE);
+            else if (dtzScore < 0)
+                ent.setType(TType::T_LE);
+            else
+                ent.setType(TType::T_EXACT);
+            return true;
+        }
+        if (hasDtm) {
+            ent.setScore(dtmScore, ply);
+            ent.setType(TType::T_EXACT);
+            return true;
+        }
+        return false;
     }
-
-    if (!gtbProbeWDL(pos, ply, score))
-        return false;
-
-    ent.setScore(score, ply);
-    if (score > 0)
-        ent.setType(TType::T_GE);
-    else if (score < 0)
-        ent.setType(TType::T_LE);
-    else
-        ent.setType(TType::T_EXACT);
-
-    return true;
 }
 
 template <typename ProbeFunc>
@@ -173,9 +194,23 @@ TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score) {
     const int dtz = Syzygy::probe_dtz(pos, &success);
     if (!success)
         return false;
-    if (dtz == 0 || std::abs(dtz) + pos.getHalfMoveClock() > 100) {
+    if (dtz == 0) {
         score = 0;
         return true;
+    }
+    const int maxHalfMoveClock = std::abs(dtz) + pos.getHalfMoveClock();
+    if (abs(dtz) <= 2) {
+        if (maxHalfMoveClock > 101) {
+            score = 0;
+            return true;
+        } else if (maxHalfMoveClock == 101)
+            return false; // DTZ can be wrong when mate-in-1
+    } else {
+        if (maxHalfMoveClock > 100) {
+            score = 0;
+            return true;
+        }
+        // FIXME!! Are there positions where maxHalfMoveclock==101 needs special handling?
     }
     int maxZero = maxZeroing(pos, nPieces);
     int plyToMate = maxZero * 100 + std::abs(dtz);

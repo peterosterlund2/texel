@@ -29,6 +29,7 @@
 #include "suiteBase.hpp"
 
 const std::string gtbDefaultPath("/home/petero/chess/gtb");
+const int gtbDefaultCacheMB = 16;
 const std::string rtbDefaultPath("/home/petero/chess/rtb/5:"
                                  "/home/petero/chess/rtb/6wdl:"
                                  "/home/petero/chess/rtb/6dtz");
@@ -43,6 +44,7 @@ private:
     static void dtmTest();
     static void kpkTest();
     static void rtbTest();
+    static void tbTest();
 };
 
 #endif /* TBTEST_HPP_ */
