@@ -1404,7 +1404,7 @@ ChessTool::probeDTZ(const std::string& fen) {
     Position pos = TextIO::readFEN(fen);
     int success;
     int dtz = Syzygy::probe_dtz(pos, &success);
-    std::cout << fen << " dtzRaw:";
+    std::cout << fen << " raw:";
     if (success)
         std::cout << dtz;
     else
@@ -1420,6 +1420,13 @@ ChessTool::probeDTZ(const std::string& fen) {
 
     ok = TBProbe::rtbProbeWDL(pos, 0, score);
     std::cout << " wdl:";
+    if (ok)
+        std::cout << score;
+    else
+        std::cout << "---";
+
+    ok = TBProbe::gtbProbeDTM(pos, 0, score);
+    std::cout << " dtm:";
     if (ok)
         std::cout << score;
     else
