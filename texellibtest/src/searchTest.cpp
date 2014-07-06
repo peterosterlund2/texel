@@ -70,6 +70,7 @@ SearchTest::testNegaScout() {
 
     Position pos = TextIO::readFEN("3k4/8/3K2R1/8/8/8/8/8 w - - 0 1");
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+    sc.setMinProbeDepth(100);
     const int plyScale = SearchConst::plyScale;
     int score = sc.negaScout(-mate0, mate0, ply, 2*plyScale, -1, MoveGen::inCheck(pos)) + ply;
     ASSERT_EQUAL(mate0 - 2, score);     // depth 2 is enough to find mate in 1
@@ -78,6 +79,7 @@ SearchTest::testNegaScout() {
 
     pos = TextIO::readFEN("8/1P6/k7/2K5/8/8/8/8 w - - 0 1");
     sc.init(pos, nullHist, 0);
+    sc.setMinProbeDepth(100);
     score = sc.negaScout(-mate0, mate0, ply, 4*plyScale, -1, MoveGen::inCheck(pos)) + ply;
     ASSERT_EQUAL(mate0 - 4, score);     // depth 4 is enough to find mate in 2
     score2 = idSearch(sc, 4).score();
@@ -85,6 +87,7 @@ SearchTest::testNegaScout() {
 
     pos = TextIO::readFEN("8/5P1k/5K2/8/8/8/8/8 w - - 0 1");
     sc.init(pos, nullHist, 0);
+    sc.setMinProbeDepth(100);
     score = sc.negaScout(-mate0, mate0, ply, 5*plyScale, -1, MoveGen::inCheck(pos)) + ply;
     ASSERT_EQUAL(mate0 - 4, score);     // must avoid stale-mate after f8Q
     score2 = idSearch(sc, 5).score();
@@ -92,11 +95,13 @@ SearchTest::testNegaScout() {
 
     pos = TextIO::readFEN("4k3/8/3K1Q2/8/8/8/8/8 b - - 0 1");
     sc.init(pos, nullHist, 0);
+    sc.setMinProbeDepth(100);
     score = sc.negaScout(-mate0, mate0, ply, 2*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT_EQUAL(0, score);             // Position is stale-mate
 
     pos = TextIO::readFEN("3kB3/8/1N1K4/8/8/8/8/8 w - - 0 1");
     sc.init(pos, nullHist, 0);
+    sc.setMinProbeDepth(100);
     score = sc.negaScout(-mate0, mate0, ply, 3*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT(std::abs(score) < 50);   // Stale-mate trap
     score2 = idSearch(sc, 5).score();
@@ -104,6 +109,7 @@ SearchTest::testNegaScout() {
 
     pos = TextIO::readFEN("8/8/2K5/3QP3/P6P/1q6/8/k7 w - - 31 51");
     sc.init(pos, nullHist, 0);
+    sc.setMinProbeDepth(100);
     Move bestM = idSearch(sc, 2);
     ASSERT(TextIO::moveToString(pos, bestM, false) != "Qxb3");
 }
@@ -202,6 +208,7 @@ SearchTest::testDrawRep() {
     Position pos = TextIO::readFEN("7k/5RR1/8/8/8/8/q3q3/2K5 w - - 0 1");
     std::shared_ptr<Search> sc = std::make_shared<Search>(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc->maxTimeMillis = -1;
+    sc->setMinProbeDepth(100);
     const int plyScale = SearchConst::plyScale;
     int score = sc->negaScout(-mate0, mate0, ply, 3*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT_EQUAL(0, score);
@@ -209,24 +216,28 @@ SearchTest::testDrawRep() {
     pos = TextIO::readFEN("7k/5RR1/8/8/8/8/q3q3/2K5 w - - 0 1");
     sc = std::make_shared<Search>(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc->maxTimeMillis = -1;
+    sc->setMinProbeDepth(100);
     score = idSearch(*sc.get(), 3).score();
     ASSERT_EQUAL(0, score);
 
     pos = TextIO::readFEN("7k/5RR1/8/8/8/8/1q3q2/3K4 w - - 0 1");
     sc = std::make_shared<Search>(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc->maxTimeMillis = -1;
+    sc->setMinProbeDepth(100);
     score = idSearch(*sc.get(), 4).score();
     ASSERT(score < 0);
 
     pos = TextIO::readFEN("7k/5RR1/8/8/8/8/1q3q2/3K4 w - - 0 1");
     sc = std::make_shared<Search>(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc->maxTimeMillis = -1;
+    sc->setMinProbeDepth(100);
     score = sc->negaScout(-mate0, mate0, ply, 3*plyScale, -1, MoveGen::inCheck(pos));
     ASSERT(score < 0);
 
     pos = TextIO::readFEN("qn6/qn4k1/pp3R2/5R2/8/8/8/K7 w - - 0 1");
     sc = std::make_shared<Search>(pos, nullHist, 0, st, pd, nullptr, treeLog);
     sc->maxTimeMillis = -1;
+    sc->setMinProbeDepth(100);
     score = idSearch(*sc.get(), 9).score();
     ASSERT_EQUAL(0, score); // Draw, black can not escape from perpetual checks
 }
@@ -238,6 +249,7 @@ void
 SearchTest::testHashing() {
     Position pos = TextIO::readFEN("/k/3p/p2P1p/P2P1P///K w - -");  // Fine #70
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+    sc.setMinProbeDepth(100);
     Move bestM = idSearch(sc, 28);
     ASSERT_EQUAL(TextIO::stringToMove(pos, "Kb1"), bestM);
 }
@@ -246,6 +258,7 @@ void
 SearchTest::testLMP() {
     Position pos(TextIO::readFEN("2r2rk1/6p1/p3pq1p/1p1b1p2/3P1n2/PP3N2/3N1PPP/1Q2RR1K b"));  // WAC 174
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+    sc.setMinProbeDepth(100);
     Move bestM = idSearch(sc, 2);
     ASSERT(!SearchConst::isWinScore(bestM.score()));
 }
@@ -259,6 +272,7 @@ SearchTest::testCheckEvasion() {
 
     pos = TextIO::readFEN("r1bq2rk/pp3pbp/2p1p1pQ/7P/3P4/2PB1N2/PP3PPR/2KR4 w - -"); // WAC 004
     sc.init(pos, nullHist, 0);
+    sc.setMinProbeDepth(100);
     bestM = idSearch(sc, 1);
     ASSERT_EQUAL(SearchConst::MATE0 - 4, bestM.score());
     ASSERT_EQUAL(TextIO::stringToMove(pos, "Qxh7+"), bestM);
@@ -268,6 +282,7 @@ void
 SearchTest::testStalemateTrap() {
     Position pos = TextIO::readFEN("7k/1P3R1P/6r1/5K2/8/8/6R1/8 b - - 98 194");
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+    sc.setMinProbeDepth(100);
     Move bestM = idSearch(sc, 3);
     ASSERT_EQUAL(0, bestM.score());
 }
@@ -276,6 +291,7 @@ void
 SearchTest::testKQKRNullMove() {
     Position pos = TextIO::readFEN("7K/6R1/5k2/3q4/8/8/8/8 b - - 0 1");
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+    sc.setMinProbeDepth(100);
     Move bestM = idSearch(sc, 12);
     ASSERT_EQUAL(SearchConst::MATE0-18, bestM.score());
 }
