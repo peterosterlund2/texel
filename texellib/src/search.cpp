@@ -520,9 +520,30 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             nodesToGo -= 1000;
             int type = tbEnt.getType();
             int score = tbEnt.getScore(ply);
-            if (     (type == TType::T_EXACT) ||
+            bool cutOff = false;
+            if (score == 0 && type == TType::T_EXACT) {
+                const int maxSwindle = 50;
+                if (depth < 16 * plyScale) {
+                    if (evalScore == UNKNOWN_SCORE)
+                        evalScore = eval.evalPos(pos);
+                    score = Evaluate::swindleScore(evalScore);
+                    cutOff = true;
+                } else if (alpha >= maxSwindle) {
+                    tbEnt.setType(TType::T_LE);
+                    tbEnt.setScore(maxSwindle, ply);
+                    cutOff = true;
+                } else if (beta <= -maxSwindle) {
+                    tbEnt.setType(TType::T_GE);
+                    tbEnt.setScore(-maxSwindle, ply);
+                    cutOff = true;
+                }
+            } else {
+                if ( (type == TType::T_EXACT) ||
                     ((type == TType::T_GE) && (score >= beta)) ||
-                    ((type == TType::T_LE) && (score <= alpha))) {
+                    ((type == TType::T_LE) && (score <= alpha)))
+                    cutOff = true;
+            }
+            if (cutOff) {
                 emptyMove.setScore(score);
                 if (useTT) tt.insert(hKey, emptyMove, tbEnt.getType(), ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, score, tbEnt.getType(), evalScore, hKey);

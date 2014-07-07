@@ -98,6 +98,10 @@ public:
     int evalPos(const Position& pos);
     int evalPosPrint(const Position& pos);
 
+    /** Compute "swindle" score corresponding to an evaluation score when
+     * the position is a known TB draw. */
+    static int swindleScore(int evalScore);
+
     /**
      * Interpolate between (x1,y1) and (x2,y2).
      * If x < x1, return y1, if x > x2 return y2. Otherwise, use linear interpolation.

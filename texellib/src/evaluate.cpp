@@ -2121,3 +2121,12 @@ std::shared_ptr<Evaluate::EvalHashTables>
 Evaluate::getEvalHashTables() {
     return std::make_shared<EvalHashTables>();
 }
+
+int
+Evaluate::swindleScore(int evalScore) {
+    int sgn = evalScore >= 0 ? 1 : -1;
+    int score = std::abs(evalScore) + 4;
+    int lg = floorLog2(score);
+    score = (lg - 3) * 4 + (score >> (lg - 2));
+    return sgn * score;
+}

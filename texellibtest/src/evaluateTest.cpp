@@ -1147,6 +1147,19 @@ testUciParamTable() {
     }
 }
 
+static void
+testSwindleScore() {
+    for (int e = 0; e < 3000; e++) {
+        int s1 = Evaluate::swindleScore(e);
+        ASSERT(s1 >= (e?1:0));
+        ASSERT(s1 < 50);
+        ASSERT(s1 <= e);
+        ASSERT(s1 <= Evaluate::swindleScore(e+1));
+        int s2 = Evaluate::swindleScore(-e);
+        ASSERT_EQUAL(-s1, s2);
+    }
+}
+
 cute::suite
 EvaluateTest::getSuite() const {
     cute::suite s;
@@ -1177,5 +1190,6 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testKNPK));
     s.push_back(CUTE(testUciParam));
     s.push_back(CUTE(testUciParamTable));
+    s.push_back(CUTE(testSwindleScore));
     return s;
 }
