@@ -3,7 +3,7 @@
 /*
 This Software is distributed with the following X11 License,
 sometimes also known as MIT license.
- 
+
 Copyright (c) 2010 Miguel A. Ballicora
 
  Permission is hereby granted, free of charge, to any person
@@ -29,12 +29,6 @@ Copyright (c) 2010 Miguel A. Ballicora
 */
 
 #include "wrap.h"
-
-#define LZMA86 
-#define ZLIB
-#define HUFFMAN
-#define LIBLZF
-/*#define LIBBZIP2*/
 
 #if defined(LZMA86)
 #include "Lzma86Enc.h"
@@ -70,6 +64,7 @@ size_t TB_DUMMY_unused;
 
 /***********************************************************************************************************/
 
+#if defined(ZLIB)
 extern int
 zlib_encode
 (const unsigned char *in_start, size_t in_len, unsigned char *out_start, size_t *pout_len, size_t out_max)
@@ -92,9 +87,11 @@ zlib_decode
 	*pout_len = (size_t)nn;
 	return outcome == Z_OK;
 }
+#endif
 
 /***********************************************************************************************************/
 
+#if defined(LIBLZF)
 extern int
 lzf_encode
 (const unsigned char *in_start, size_t in_len, unsigned char *out_start, size_t *pout_len, size_t out_max)
@@ -113,9 +110,11 @@ lzf_decode
 	*pout_len = (size_t)lzf_decompress (in_start, (unsigned)in_len, out_start, (unsigned)out_max);
 	return *pout_len != 0;
 }
+#endif
 
 /***********************************************************************************************************/
 
+#if defined(LZMA86)
 extern int
 lzma_encode
 (const unsigned char *in_start, size_t in_len, unsigned char *out_start, size_t *pout_len, size_t out_max)
@@ -138,6 +137,7 @@ lzma_decode
 		*pout_len = nn;
 		return x == SZ_OK;
 }
+#endif
 
 /***********************************************************************************************************/
 
@@ -152,7 +152,7 @@ bzip2_encode
 	int workFactor    = 30;
 	size_t destlen    = out_max;
 
-	int x = BZ2_bzBuffToBuffCompress( (char*)out_start, &destlen, (char*)in_start, in_len, 
+	int x = BZ2_bzBuffToBuffCompress( (char*)out_start, &destlen, (char*)in_start, in_len,
 								blockSize100k, verbosity, workFactor);
 	*pout_len = destlen;
 	return x == BZ_OK;
@@ -188,7 +188,7 @@ justcopy_encode
 		return 0;
 
 	for (i = 0; i < in_len; i++) {
-		*out++ = *in++; 
+		*out++ = *in++;
 	}
 	*pout_len = in_len;
 	return 1;
@@ -206,7 +206,7 @@ justcopy_decode
 		return 0;
 
 	for (i = 0; i < in_len; i++) {
-		*out++ = *in++; 
+		*out++ = *in++;
 	}
 	*pout_len = in_len;
 	return 1;
@@ -224,7 +224,7 @@ extern int
 rle_encode
 (const unsigned char *in_start, size_t in_len, unsigned char *out_start, size_t *pout_len, size_t out_max)
 {
-	const unsigned char *p;	
+	const unsigned char *p;
 	const unsigned char *in      = in_start;
 	const unsigned char *in_end  = in  + in_len;
 	unsigned char       *out     = out_start;
@@ -238,12 +238,12 @@ rle_encode
 
 			*out++ = RLE_ESC;
 			*out++ = RLE_ESC;
-			in++;	 
+			in++;
 
 		} else {
 
 			ch = *in;
-	
+
 			if ( (in_end-in) >= 3 /* enough space for a run */
 				&& ch == in[1] && ch == in[2] && ch == in[3] /* enough length */) {
 
@@ -258,8 +258,8 @@ rle_encode
 				*out++ = (unsigned char)ch;
 				in = p;
 
-			} else {	
-				*out++ = *in++;	
+			} else {
+				*out++ = *in++;
 			}
 		}
 	}
@@ -267,7 +267,7 @@ rle_encode
 	if (ok) {
 		/*	*out++ = RLE_ESC; *out++ = RLE_TER; */
 		out_len = out - out_start;
-		*pout_len = (size_t)out_len;	
+		*pout_len = (size_t)out_len;
 		ok = (size_t)out_len <= out_max;
 	}
 
@@ -301,13 +301,13 @@ rle_decode
 
 				/* rle */
 				n  = *in++; 		if (in >= in_end) { ok = FALSE;	break;}
-				ch = *in++;			
+				ch = *in++;
 				while (n-->0) {		if (out >= out_end) { ok = FALSE; break;}
-					*out++ = (unsigned char)ch;	
+					*out++ = (unsigned char)ch;
 				}
 			}
 		} else {
-			*out++ = *in++;	
+			*out++ = *in++;
 		}
 	}
 

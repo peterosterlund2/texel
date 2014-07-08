@@ -1,7 +1,7 @@
 /*
 This Software is distributed with the following X11 License,
 sometimes also known as MIT license.
- 
+
 Copyright (c) 2010 Miguel A. Ballicora
 
  Permission is hereby granted, free of charge, to any person
@@ -35,7 +35,9 @@ Copyright (c) 2010 Miguel A. Ballicora
 
 #include <stdlib.h>
 #include "gtb-dec.h"
+#ifdef HUFFMAN
 #include "hzip.h"
+#endif
 #include "wrap.h"
 
 typedef int bool_t;
@@ -66,7 +68,7 @@ extern int decoding_scheme(void)
 	return DECODE_SCHEME;
 }
 
-extern int 
+extern int
 decode (size_t z, unsigned char *bz, size_t n, unsigned char *bp)
 {
 	return f_decode (z, bz, n, bp);
@@ -74,37 +76,45 @@ decode (size_t z, unsigned char *bz, size_t n, unsigned char *bp)
 
 /*======================== WRAPPERS ========================*/
 
-static int 
+static int
 f_decode (size_t z, unsigned char *bz, size_t n, unsigned char *bp)
 {
-/* 	bp buffer provided 
+/* 	bp buffer provided
 |	bz buffer "zipped", compressed
 |	n  len of buffer provided
-|	z  len of buffer zipped	
+|	z  len of buffer zipped
 \*---------------------------------------------------------------*/
 
 /*
 	unsigned char *ib = intermediate_block;
-	unsigned int m;		
+	unsigned int m;
 	return	huff_decode (bz, z, ib, &m, MAXBLOCK) && rle_decode (ib, m, bp, &n, MAXBLOCK);
 */
-
+#if defined(HUFFMAN)
 	if        (CP_SCHEME == CP1) {
 
 		/* HUFFMAN */
 		return huff_decode (bz, z, bp, &n, MAXBLOCK);
 
-	} else if (CP_SCHEME == CP2) {
+	} else
+#endif
+#if defined(LIBLZF)
+	if (CP_SCHEME == CP2) {
 
 		/* LZF */
 		return lzf_decode  (bz, z, bp, &n, MAXBLOCK);
 
-	} else if (CP_SCHEME == CP3) {
+	} else
+#endif
+#if defined (ZLIB)
+    if (CP_SCHEME == CP3) {
 
 		/* ZLIB */
 		return zlib_decode (bz, z, bp, &n, MAXBLOCK);
 
-	} else if (CP_SCHEME == CP4) {
+	} else
+#endif
+    if (CP_SCHEME == CP4) {
 
 		/* LZMA86 */
 		return lzma_decode (bz, z, bp, &n, n); /* maximum needs to be the exact number that it will produce */

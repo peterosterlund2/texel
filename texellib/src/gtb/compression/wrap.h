@@ -13,9 +13,9 @@
  copies of the Software, and to permit persons to whom the
  Software is furnished to do so, subject to the following
  conditions:
-  
+
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.  
+ included in all copies or substantial portions of the Software.
 
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
@@ -30,17 +30,29 @@
 #if !defined(H_WRAP)
 #define H_WRAP
 
+#define LZMA86
+/*#define ZLIB*/
+/*#define HUFFMAN*/
+/*#define LIBLZF*/
+/*#define LIBBZIP2*/
+
 /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 #include <stdlib.h>
 
+#if defined(ZLIB)
 extern int zlib_encode (const unsigned char *in_start, size_t in_len, unsigned char *out_start, size_t *pout_len, size_t out_max);
 extern int zlib_decode (const unsigned char *in_start, size_t in_len, unsigned char *out_start, size_t *pout_len, size_t out_max);
+#endif
 
+#if defined(LLIBLZF)
 extern int lzf_encode  (const unsigned char *in_start, size_t in_len, unsigned char *out_start, size_t *pout_len, size_t out_max);
 extern int lzf_decode  (const unsigned char *in_start, size_t in_len, unsigned char *out_start, size_t *pout_len, size_t out_max);
+#endif
 
+#if defined(LZMA86)
 extern int lzma_encode (const unsigned char *in_start, size_t in_len, unsigned char *out_start, size_t *pout_len, size_t out_max);
 extern int lzma_decode (const unsigned char *in_start, size_t in_len, unsigned char *out_start, size_t *pout_len, size_t out_max);
+#endif
 
 #if defined (LIBBZIP2)
 extern int bzip2_encode(const unsigned char *in_start, size_t in_len, unsigned char *out_start, size_t *pout_len, size_t out_max);
