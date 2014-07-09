@@ -264,18 +264,12 @@ TBProbe::gtbInitialize(const std::string& path, int cacheMB) {
     static_assert((int)tb_H1 == (int)H1, "Incompatible square numbering");
     static_assert((int)tb_H8 == (int)H8, "Incompatible square numbering");
 
-    if (isInitialized && paths)
-        tbpaths_done(paths);
+    tbpaths_done(paths);
 
     isInitialized = false;
     gtbMaxPieces = 0;
     paths = tbpaths_init();
-    if (paths == NULL)
-        return;
-
     paths = tbpaths_add(paths, path.c_str());
-    if (paths == NULL)
-        return;
 
     TB_compression_scheme scheme = tb_CP4;
     int verbose = 0;
