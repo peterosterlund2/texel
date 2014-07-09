@@ -33,21 +33,36 @@
 #include <unordered_map>
 #include <cassert>
 
+#include "util/timeUtil.hpp"
 
-static bool isInitialized = false;
+static std::string currentGtbPath;
+static int currentGtbCacheMB;
+static int currentGtbWdlFraction;
+static std::string currentRtbPath;
+
 static const char** paths = NULL;
 static int gtbMaxPieces = 0;
 static std::unordered_map<int,int> longestMate;
 
-void
-TBProbe::initializeGTB(const std::string& gtbPath, int cacheMB) {
-    gtbInitialize(gtbPath, cacheMB);
-    initWDLBounds();
-}
 
 void
-TBProbe::initializeRTB(const std::string& rtbPath) {
-    Syzygy::init(rtbPath);
+TBProbe::initialize(const std::string& gtbPath, int cacheMB,
+                    const std::string& rtbPath) {
+    if (rtbPath != currentRtbPath) {
+        Syzygy::init(rtbPath);
+        currentRtbPath = rtbPath;
+    }
+
+    int wdlFraction = (Syzygy::TBLargest >= 5) ? 8 : 96;
+    if ((gtbPath != currentGtbPath) ||
+        (cacheMB != currentGtbCacheMB) ||
+        (wdlFraction != currentGtbWdlFraction)) {
+        gtbInitialize(gtbPath, cacheMB, wdlFraction);
+        currentGtbPath = gtbPath;
+        currentGtbCacheMB = cacheMB;
+        currentGtbWdlFraction = wdlFraction;
+    }
+
     initWDLBounds();
 }
 
@@ -299,7 +314,7 @@ TBProbe::rtbProbeWDL(Position& pos, int ply, int& score) {
 }
 
 void
-TBProbe::gtbInitialize(const std::string& path, int cacheMB) {
+TBProbe::gtbInitialize(const std::string& path, int cacheMB, int wdlFraction) {
     static_assert((int)tb_A1 == (int)A1, "Incompatible square numbering");
     static_assert((int)tb_A8 == (int)A8, "Incompatible square numbering");
     static_assert((int)tb_H1 == (int)H1, "Incompatible square numbering");
@@ -314,7 +329,7 @@ TBProbe::gtbInitialize(const std::string& path, int cacheMB) {
     TB_compression_scheme scheme = tb_CP4;
     int verbose = 0;
     int cacheSize = 1024 * 1024 * cacheMB;
-    int wdlFraction = 96;
+    static bool isInitialized = false;
     if (isInitialized) {
         tb_restart(verbose, scheme, paths);
         tbcache_restart(cacheSize, wdlFraction);

@@ -39,8 +39,7 @@
 
 static void initTB(const std::string& gtbPath, int cacheMB,
                    const std::string& rtbPath) {
-    TBProbe::initializeGTB(gtbPath, cacheMB);
-    TBProbe::initializeRTB(rtbPath);
+    TBProbe::initialize(gtbPath, cacheMB, rtbPath);
 }
 
 static void setupTBFiles(const std::vector<std::string>& tbFiles) {
@@ -58,6 +57,7 @@ static void setupTBFiles(const std::vector<std::string>& tbFiles) {
             system("ln -s /home/petero/chess/rtb/5/" + file + " " + tmpDir + "/" + file);
         }
     }
+    initTB("", 0, "");
     initTB(tmpDir, gtbDefaultCacheMB, tmpDir);
 }
 

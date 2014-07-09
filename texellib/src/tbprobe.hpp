@@ -39,11 +39,9 @@ class Position;
  */
 class TBProbe {
 public:
-    /** Initialize gaviota tablebases. */
-    static void initializeGTB(const std::string& gtbPath, int cacheMB);
-
-    /** Initialize syzygy tablebases. */
-    static void initializeRTB(const std::string& rtbPath);
+    /** Initialize tablebases. */
+    static void initialize(const std::string& gtbPath, int cacheMB,
+                           const std::string& rtbPath);
 
     /** Probe one or more tablebases to get an exact score or a usable bound.
      * @param pos  The position to probe. The position can be temporarily modified
@@ -107,7 +105,7 @@ public:
 
 private:
     /** Initialize */
-    static void gtbInitialize(const std::string& path, int cacheMB);
+    static void gtbInitialize(const std::string& path, int cacheMB, int wdlFraction);
 
     static void initWDLBounds();
 
