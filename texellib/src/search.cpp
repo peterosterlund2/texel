@@ -511,11 +511,11 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     cutOff = true;
                 } else if (alpha >= maxSwindle) {
                     tbEnt.setType(TType::T_LE);
-                    tbEnt.setScore(maxSwindle, ply);
+                    score = maxSwindle;
                     cutOff = true;
                 } else if (beta <= -maxSwindle) {
                     tbEnt.setType(TType::T_GE);
-                    tbEnt.setScore(-maxSwindle, ply);
+                    score = -maxSwindle;
                     cutOff = true;
                 }
             } else {
