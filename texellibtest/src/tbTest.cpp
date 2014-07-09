@@ -106,13 +106,15 @@ probeDTM(const Position& pos, int ply, int& score) {
         fen2 = TextIO::toFEN(symPos);
         ret2 = probeCompare(symPos, ply, score2);
         ASSERT_EQUALM((fen + " == " + fen2).c_str(), ret, ret2);
-        ASSERT_EQUALM((fen + " == " + fen2).c_str(), score, score2);
+        if (ret)
+            ASSERT_EQUALM((fen + " == " + fen2).c_str(), score, score2);
 
         symPos = swapColors(mirrorX(pos));
         fen2 = TextIO::toFEN(symPos);
         ret2 = probeCompare(symPos, ply, score2);
         ASSERT_EQUALM((fen + " == " + fen2).c_str(), ret, ret2);
-        ASSERT_EQUALM((fen + " == " + fen2).c_str(), score, score2);
+        if (ret)
+            ASSERT_EQUALM((fen + " == " + fen2).c_str(), score, score2);
     }
 
     return ret;

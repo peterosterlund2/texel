@@ -287,7 +287,7 @@ void Syzygy::init(const std::string& path)
     strcpy(path_string, p);
     num_paths = 0;
     for (i = 0;; i++) {
-        if (path_string[i] != SEP_CHAR)
+        if (path_string[i] && path_string[i] != SEP_CHAR)
             num_paths++;
         while (path_string[i] && path_string[i] != SEP_CHAR)
             i++;

@@ -608,6 +608,7 @@ template<> struct SplitPointTraits<false> {
 inline
 WorkQueue::WorkQueue(const FailHighInfo& fhInfo0, const DepthNpsInfo& npsInfo0)
     : stopped(false), fhInfo(fhInfo0), npsInfo(npsInfo0) {
+    resetSplitDepth();
 }
 
 inline bool
