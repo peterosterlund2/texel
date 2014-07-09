@@ -100,30 +100,9 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     tStart = currentTimeMillis();
     totalNodes = 0;
     tbHits = 0;
+    nodesToGo = 0;
     if (scMovesIn.size <= 0)
         return Move(); // No moves to search
-
-    std::vector<MoveInfo> scMoves;
-    {
-        // If strength is < 10%, only include a subset of the root moves.
-        // At least one move is always included though.
-        std::vector<bool> includedMoves(scMovesIn.size);
-        U64 rndL = pos.zobristHash() ^ randomSeed;
-        includedMoves[(int)(rndL % scMovesIn.size)] = true;
-        double pIncl = (strength < 100) ? strength * strength * 1e-4 : 1.0;
-        for (int mi = 0; mi < scMovesIn.size; mi++) {
-            rndL = 6364136223846793005ULL * rndL + 1442695040888963407ULL;
-            double rnd = ((rndL & 0x7fffffffffffffffULL) % 1000000000) / 1e9;
-            if (!includedMoves[mi] && (rnd < pIncl))
-                includedMoves[mi] = true;
-        }
-        for (int mi = 0; mi < scMovesIn.size; mi++) {
-            if (includedMoves[mi]) {
-                const Move& m = scMovesIn[mi];
-                scMoves.push_back(MoveInfo(m, 0));
-            }
-        }
-    }
 
     logFile.open("/home/petero/treelog.dmp", pd, threadNo);
     const U64 rootNodeIdx = logFile.logPosition(pos, 0, 0, 0);
@@ -134,15 +113,17 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     const bool smp = pd.numHelperThreads() > 0;
     maxNodes = initialMaxNodes;
     this->minProbeDepth = minProbeDepth * plyScale;
-    nodesToGo = 0;
+    std::vector<MoveInfo> rootMoves;
+    getRootMoves(scMovesIn, rootMoves);
+
     Position origPos(pos);
     bool firstIteration = true;
-    Move bestMove = scMoves[0].move; // bestMove is != scMoves[0].move when there is an unresolved fail high
-    Move bestExactMove = scMoves[0].move; // Only updated when new best move has exact score
+    Move bestMove = rootMoves[0].move; // bestMove is != scMoves[0].move when there is an unresolved fail high
+    Move bestExactMove = rootMoves[0].move; // Only updated when new best move has exact score
     this->verbose = verbose;
     if ((maxDepth < 0) || (maxDepth > MAX_SEARCH_DEPTH))
         maxDepth = MAX_SEARCH_DEPTH;
-    maxPV = std::min(maxPV, (int)scMoves.size());
+    maxPV = std::min(maxPV, (int)rootMoves.size());
     for (size_t i = 0; i < COUNT_OF(searchTreeInfo); i++)
         searchTreeInfo[i].allowNullMove = true;
     ht.reScale();
@@ -154,18 +135,18 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         int alpha = 0;
         UndoInfo ui;
         bool needMoreTime = false;
-        for (int mi = 0; mi < (int)scMoves.size(); mi++) {
+        for (int mi = 0; mi < (int)rootMoves.size(); mi++) {
             if (mi < maxPV)
-                aspirationDelta = isWinScore(std::abs(scMoves[mi].score())) ? 1000 : aspirationWindow;
+                aspirationDelta = isWinScore(std::abs(rootMoves[mi].score())) ? 1000 : aspirationWindow;
             if (firstIteration)
                 alpha = -MATE0;
             else if (mi < maxPV)
-                alpha = std::max(scMoves[mi].score() - aspirationDelta, -MATE0);
+                alpha = std::max(rootMoves[mi].score() - aspirationDelta, -MATE0);
             else
-                alpha = scMoves[maxPV-1].score();
+                alpha = rootMoves[maxPV-1].score();
 
             searchNeedMoreTime = (mi > 0);
-            Move& m = scMoves[mi].move;
+            Move& m = rootMoves[mi].move;
             pd.topMove = m;
             if (currentTimeMillis() - tStart >= 1000)
                 if (listener) listener->notifyCurrMove(m, mi + 1);
@@ -176,7 +157,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             if (firstIteration)
                 beta = MATE0;
             else if (mi < maxPV)
-                beta = std::min(scMoves[mi].score() + aspirationDelta, MATE0);
+                beta = std::min(rootMoves[mi].score() + aspirationDelta, MATE0);
             else
                 beta = alpha + 1;
 
@@ -202,9 +183,9 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             U64 nodesThisMove = nodes + qNodes;
             posHashListSize--;
             pos.unMakeMove(m, ui);
-            storeSearchResult(scMoves, mi, depthS, alpha, beta, score);
-            if ((verbose && firstIteration) || (mi < maxPV) || (score > scMoves[maxPV-1].score()))
-                notifyPV(scMoves, mi, maxPV);
+            storeSearchResult(rootMoves, mi, depthS, alpha, beta, score);
+            if ((verbose && firstIteration) || (mi < maxPV) || (score > rootMoves[maxPV-1].score()))
+                notifyPV(rootMoves, mi, maxPV);
             int betaRetryDelta = (mi == 0) ? aspirationDelta * 2 : aspirationDelta;
             int alphaRetryDelta = aspirationDelta * 2;
             while ((score >= beta) || ((mi < maxPV) && (score <= alpha))) {
@@ -232,20 +213,20 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                 nodesThisMove += nodes + qNodes;
                 posHashListSize--;
                 pos.unMakeMove(m, ui);
-                storeSearchResult(scMoves, mi, depthS, alpha, beta, score);
-                notifyPV(scMoves, mi, maxPV);
+                storeSearchResult(rootMoves, mi, depthS, alpha, beta, score);
+                notifyPV(rootMoves, mi, maxPV);
             }
-            scMoves[mi].nodes += nodesThisMove;
-            if ((mi < maxPV) || (score > scMoves[maxPV-1].move.score())) {
-                MoveInfo tmp = scMoves[mi];
+            rootMoves[mi].nodes += nodesThisMove;
+            if ((mi < maxPV) || (score > rootMoves[maxPV-1].move.score())) {
+                MoveInfo tmp = rootMoves[mi];
                 int i = mi;
-                while ((i > 0) && (scMoves[i-1].score() < tmp.score())) {
-                    scMoves[i] = scMoves[i-1];
+                while ((i > 0) && (rootMoves[i-1].score() < tmp.score())) {
+                    rootMoves[i] = rootMoves[i-1];
                     i--;
                 }
-                scMoves[i] = tmp;
+                rootMoves[i] = tmp;
             }
-            bestMove = scMoves[0].move;
+            bestMove = rootMoves[0].move;
             bestExactMove = bestMove;
             if (!firstIteration) {
                 S64 timeLimit = needMoreTime ? maxTimeMillis : minTimeMillis;
@@ -283,7 +264,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                 break;
         bool enoughDepth = true;
         for (int i = 0; i < maxPV; i++) {
-            int plyToMate = MATE0 - std::abs(scMoves[i].score());
+            int plyToMate = MATE0 - std::abs(rootMoves[i].score());
             if (depthS < plyToMate * plyScale)
                 enoughDepth = false;
         }
@@ -292,10 +273,10 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         if (tNow > tStart)
             pd.npsInfo.setBaseNps(getTotalNodesThisThread() * 1000.0 / (tNow - tStart));
         if (firstIteration) {
-            std::stable_sort(scMoves.begin()+maxPV, scMoves.end(), MoveInfo::SortByScore());
+            std::stable_sort(rootMoves.begin()+maxPV, rootMoves.end(), MoveInfo::SortByScore());
         } else {
             // Moves that were hard to search should be searched early in the next iteration
-            std::stable_sort(scMoves.begin()+maxPV, scMoves.end(), MoveInfo::SortByNodes());
+            std::stable_sort(rootMoves.begin()+maxPV, rootMoves.end(), MoveInfo::SortByNodes());
         }
 //        std::cout << "fhInfo depth:" << depthS / plyScale << std::endl;
 //        pd.fhInfo.print(std::cout);
@@ -968,6 +949,29 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
     assert(false);
     return 0;
+}
+
+void
+Search::getRootMoves(const MoveGen::MoveList& rootMovesIn,
+                     std::vector<MoveInfo>& rootMovesOut) {
+    // If strength is < 10%, only include a subset of the root moves.
+    // At least one move is always included though.
+    std::vector<bool> includedMoves(rootMovesIn.size);
+    U64 rndL = pos.zobristHash() ^ randomSeed;
+    includedMoves[(int)(rndL % rootMovesIn.size)] = true;
+    double pIncl = (strength < 100) ? strength * strength * 1e-4 : 1.0;
+    for (int mi = 0; mi < rootMovesIn.size; mi++) {
+        rndL = 6364136223846793005ULL * rndL + 1442695040888963407ULL;
+        double rnd = ((rndL & 0x7fffffffffffffffULL) % 1000000000) / 1e9;
+        if (!includedMoves[mi] && (rnd < pIncl))
+            includedMoves[mi] = true;
+    }
+    for (int mi = 0; mi < rootMovesIn.size; mi++) {
+        if (includedMoves[mi]) {
+            const Move& m = rootMovesIn[mi];
+            rootMovesOut.push_back(MoveInfo(m, 0));
+        }
+    }
 }
 
 bool
