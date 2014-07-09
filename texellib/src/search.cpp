@@ -118,7 +118,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
 
     Position origPos(pos);
     bool firstIteration = true;
-    Move bestMove = rootMoves[0].move; // bestMove is != scMoves[0].move when there is an unresolved fail high
+    Move bestMove = rootMoves[0].move; // bestMove is != rootMoves[0].move when there is an unresolved fail high
     Move bestExactMove = rootMoves[0].move; // Only updated when new best move has exact score
     this->verbose = verbose;
     if ((maxDepth < 0) || (maxDepth > MAX_SEARCH_DEPTH))
