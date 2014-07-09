@@ -1568,6 +1568,7 @@ void load_dtz_table(const char* str, uint64_t key1, uint64_t key2)
 static void free_wdl_entry(struct TBEntry *entry)
 {
     unmap_file(entry->data, entry->mapping);
+    entry->data = NULL;
     if (!entry->has_pawns) {
         struct TBEntry_piece *ptr = (struct TBEntry_piece *)entry;
         free(ptr->precomp[0]); ptr->precomp[0] = NULL;
@@ -1585,6 +1586,7 @@ static void free_wdl_entry(struct TBEntry *entry)
 static void free_dtz_entry(struct TBEntry *entry)
 {
     unmap_file(entry->data, entry->mapping);
+    entry->data = NULL;
     if (!entry->has_pawns) {
         struct DTZEntry_piece *ptr = (struct DTZEntry_piece *)entry;
         free(ptr->precomp); ptr->precomp = NULL;

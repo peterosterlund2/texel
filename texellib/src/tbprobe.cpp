@@ -266,7 +266,6 @@ TBProbe::gtbInitialize(const std::string& path, int cacheMB) {
 
     tbpaths_done(paths);
 
-    isInitialized = false;
     gtbMaxPieces = 0;
     paths = tbpaths_init();
     paths = tbpaths_add(paths, path.c_str());
