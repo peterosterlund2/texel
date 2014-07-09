@@ -273,9 +273,6 @@ TBProbe::gtbInitialize(const std::string& path, int cacheMB) {
     if (paths == NULL)
         return;
 
-    if (path.empty())
-        return;
-
     paths = tbpaths_add(paths, path.c_str());
     if (paths == NULL)
         return;
