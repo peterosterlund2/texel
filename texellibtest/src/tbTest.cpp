@@ -135,7 +135,7 @@ TBTest::dtmTest() {
     initTB("/home/petero/chess/gtb/no_such_dir", cacheMB, "");
     res = probeDTM(pos, ply, score);
     ASSERT_EQUAL(false, res);
-    initTB("/no/such/path:" + gtbDefaultPath + ":/test/:", cacheMB,
+    initTB("/no/such/path;" + gtbDefaultPath + ";/test/;", cacheMB,
            "//dfasf/:" + rtbDefaultPath + ":a:b:");
 
     // Test castling
