@@ -114,7 +114,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
     maxNodes = initialMaxNodes;
     this->minProbeDepth = minProbeDepth * plyScale;
     std::vector<MoveInfo> rootMoves;
-    getRootMoves(scMovesIn, rootMoves);
+    getRootMoves(scMovesIn, rootMoves, maxDepth);
 
     Position origPos(pos);
     bool firstIteration = true;
@@ -953,22 +953,36 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
 void
 Search::getRootMoves(const MoveGen::MoveList& rootMovesIn,
-                     std::vector<MoveInfo>& rootMovesOut) {
+                     std::vector<MoveInfo>& rootMovesOut,
+                     int maxDepth) {
+    MoveGen::MoveList rootMoves(rootMovesIn);
+    if ((maxTimeMillis >= 0) || (maxNodes >= 0) || (maxDepth >= 0)) {
+        MoveGen::MoveList legalMoves;
+        MoveGen::pseudoLegalMoves(pos, legalMoves);
+        MoveGen::removeIllegal(pos, legalMoves);
+        if (rootMoves.size == legalMoves.size) {
+            // Game mode, handle missing TBs
+            std::vector<Move> movesToSearch;
+            if (TBProbe::getSearchMoves(pos, legalMoves, movesToSearch))
+                rootMoves.filter(movesToSearch);
+        }
+    }
+
     // If strength is < 10%, only include a subset of the root moves.
     // At least one move is always included though.
-    std::vector<bool> includedMoves(rootMovesIn.size);
+    std::vector<bool> includedMoves(rootMoves.size);
     U64 rndL = pos.zobristHash() ^ randomSeed;
-    includedMoves[(int)(rndL % rootMovesIn.size)] = true;
+    includedMoves[(int)(rndL % rootMoves.size)] = true;
     double pIncl = (strength < 100) ? strength * strength * 1e-4 : 1.0;
-    for (int mi = 0; mi < rootMovesIn.size; mi++) {
+    for (int mi = 0; mi < rootMoves.size; mi++) {
         rndL = 6364136223846793005ULL * rndL + 1442695040888963407ULL;
         double rnd = ((rndL & 0x7fffffffffffffffULL) % 1000000000) / 1e9;
         if (!includedMoves[mi] && (rnd < pIncl))
             includedMoves[mi] = true;
     }
-    for (int mi = 0; mi < rootMovesIn.size; mi++) {
+    for (int mi = 0; mi < rootMoves.size; mi++) {
         if (includedMoves[mi]) {
-            const Move& m = rootMovesIn[mi];
+            const Move& m = rootMoves[mi];
             rootMovesOut.push_back(MoveInfo(m, 0));
         }
     }

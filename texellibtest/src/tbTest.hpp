@@ -45,6 +45,7 @@ private:
     static void kpkTest();
     static void rtbTest();
     static void tbTest();
+    static void testMissingTables();
 };
 
 #endif /* TBTEST_HPP_ */

@@ -195,9 +195,11 @@ private:
     /** Get total number of TB hits for all threads. */
     S64 getTbHits() const;
 
-    /** Determine which root moves to search, taking low strength into account. */
+    /** Determine which root moves to search, taking low strength and
+     *  missing TB files into account. */
     void getRootMoves(const MoveGen::MoveList& rootMovesIn,
-                      std::vector<MoveInfo>& rootMovesOut);
+                      std::vector<MoveInfo>& rootMovesOut,
+                      int maxDepth);
 
     /** Return true if move should be skipped in order to make engine play weaker. */
     bool weakPlaySkipMove(const Position& pos, const Move& m, int ply) const;

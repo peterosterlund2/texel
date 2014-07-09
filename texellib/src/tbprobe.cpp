@@ -56,21 +56,9 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                  TranspositionTable::TTEntry& ent) {
     const int nPieces = BitBoard::bitCount(pos.occupiedBB());
     bool mateSearch = SearchConst::isLoseScore(alpha) || SearchConst::isWinScore(beta);
-    if (!mateSearch && pos.getHalfMoveClock() == 0) { // WDL probe is enough
-        int wdlScore;
-        if ((nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore)) ||
-            (nPieces <= gtbMaxPieces && gtbProbeWDL(pos, ply, wdlScore))) {
-            ent.setScore(wdlScore, ply);
-            if (wdlScore > 0)
-                ent.setType(TType::T_GE);
-            else if (wdlScore < 0)
-                ent.setType(TType::T_LE);
-            else
-                ent.setType(TType::T_EXACT);
-            return true;
-        }
-        return false;
-    } else { // Need DTM or DTZ probe
+
+    if (mateSearch || pos.getHalfMoveClock() > 0) {
+        // Need DTM or DTZ probe
         int dtmScore;
         bool hasDtm = false;
         if (nPieces <= gtbMaxPieces && gtbProbeDTM(pos, ply, dtmScore)) {
@@ -97,8 +85,61 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
             ent.setType(TType::T_EXACT);
             return true;
         }
-        return false;
     }
+
+    // Try WDL probe if DTM/DTZ not needed or not available
+    int wdlScore;
+    if ((nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore)) ||
+            (nPieces <= gtbMaxPieces && gtbProbeWDL(pos, ply, wdlScore))) {
+        ent.setScore(wdlScore, ply);
+        if (wdlScore > 0)
+            ent.setType(TType::T_GE);
+        else if (wdlScore < 0)
+            ent.setType(TType::T_LE);
+        else
+            ent.setType(TType::T_EXACT);
+        return true;
+    }
+    return false;
+}
+
+bool
+TBProbe::getSearchMoves(Position& pos, const MoveGen::MoveList& legalMoves,
+                        std::vector<Move>& movesToSearch) {
+    const int mate0 = SearchConst::MATE0;
+    const int ply = 0;
+    TranspositionTable::TTEntry rootEnt;
+    if (!tbProbe(pos, ply, -mate0, mate0, rootEnt) || rootEnt.getType() == TType::T_LE)
+        return false;
+    const int rootScore = rootEnt.getScore(ply);
+    if (!SearchConst::isWinScore(rootScore))
+        return false;
+
+    // Root position is TB win
+    bool hasProgress = false;
+    UndoInfo ui;
+    for (int mi = 0; mi < legalMoves.size; mi++) {
+        const Move& m = legalMoves[mi];
+        pos.makeMove(m, ui);
+        TranspositionTable::TTEntry ent;
+        bool progressMove = false;
+        bool badMove = false;
+        if (tbProbe(pos, ply+1, -mate0, mate0, ent)) {
+            const int type = ent.getType();
+            const int score = -ent.getScore(ply+1);
+            if (score >= rootScore && (type == TType::T_EXACT || type == TType::T_LE))
+                progressMove = true;
+            if ((score < rootScore)) //  && (type == TType::T_EXACT || type == TType::T_GE))
+                badMove = true;
+        }
+        if (progressMove)
+            hasProgress = true;
+        if (!badMove)
+            movesToSearch.push_back(m);
+        pos.unMakeMove(m, ui);
+    }
+
+    return !hasProgress && !movesToSearch.empty();
 }
 
 template <typename ProbeFunc>

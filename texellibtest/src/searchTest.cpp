@@ -27,10 +27,8 @@
 #include "evaluateTest.hpp"
 #include "positionTest.hpp"
 #include "constants.hpp"
-#include "search.hpp"
 #include "position.hpp"
 #include "moveGen.hpp"
-#include "transpositionTable.hpp"
 #include "move.hpp"
 #include "textio.hpp"
 
@@ -39,14 +37,14 @@
 
 #include "cute.h"
 
-static std::vector<U64> nullHist(200);
-static TranspositionTable tt(19);
-static ParallelData pd(tt);
+std::vector<U64> SearchTest::nullHist(200);
+TranspositionTable SearchTest::tt(19);
+ParallelData SearchTest::pd(SearchTest::tt);
 static KillerTable kt;
 static History ht;
 static auto et = Evaluate::getEvalHashTables();
-static Search::SearchTables st(tt, kt, ht, *et);
-static TreeLogger treeLog;
+Search::SearchTables SearchTest::st(tt, kt, ht, *et);
+TreeLogger SearchTest::treeLog;
 
 Move
 SearchTest::idSearch(Search& sc, int maxDepth, int minProbeDepth) {

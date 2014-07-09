@@ -27,6 +27,7 @@
 #define TBPROBE_HPP_
 
 #include "transpositionTable.hpp"
+#include "moveGen.hpp"
 
 #include <string>
 
@@ -50,6 +51,18 @@ public:
      */
     static bool tbProbe(Position& pos, int ply, int alpha, int beta,
                         TranspositionTable::TTEntry& ent);
+
+    /** If some TB files are missing, it may be necessary to only search a subset
+     * of the root moves in order to make progress. This might happen for example
+     * in KPK if the KQK table is missing and search is not able to see the mate
+     * after promoting the pawn.
+     * @param pos           The root position.
+     * @param legalMoves    The set of legal root moves.
+     * @param movesToSearch The moves to search.
+     * @return True if a subset should be searched, false to search all moves.
+     */
+    static bool getSearchMoves(Position& pos, const MoveGen::MoveList& legalMoves,
+                               std::vector<Move>& movesToSearch);
 
     /** Probe gaviota DTM tablebases.
      * @param pos  The position to probe. The position can be temporarily modified

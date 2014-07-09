@@ -26,10 +26,12 @@
 #ifndef SEARCHTEST_HPP_
 #define SEARCHTEST_HPP_
 
+#include "transpositionTable.hpp"
+#include "search.hpp"
+
 #include "suiteBase.hpp"
 
 class Move;
-class Search;
 
 class SearchTest : public SuiteBase {
 public:
@@ -37,8 +39,15 @@ public:
 
     cute::suite getSuite() const;
 
-private:
     static Move idSearch(Search& sc, int maxDepth, int minProbeDepth = 100);
+
+    static std::vector<U64> nullHist;
+    static TranspositionTable tt;
+    static ParallelData pd;
+    static Search::SearchTables st;
+    static TreeLogger treeLog;
+
+private:
     static void testNegaScout();
     static void testDraw50();
     static void testDrawRep();

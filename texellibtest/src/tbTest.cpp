@@ -25,6 +25,7 @@
 
 #include "tbTest.hpp"
 #include "evaluateTest.hpp"
+#include "searchTest.hpp"
 #include "position.hpp"
 #include "moveGen.hpp"
 #include "evaluate.hpp"
@@ -40,6 +41,24 @@ static void initTB(const std::string& gtbPath, int cacheMB,
                    const std::string& rtbPath) {
     TBProbe::initializeGTB(gtbPath, cacheMB);
     TBProbe::initializeRTB(rtbPath);
+}
+
+static void setupTBFiles(const std::vector<std::string>& tbFiles) {
+    auto system = [](const std::string& cmd) {
+        ::system(cmd.c_str());
+    };
+    std::string tmpDir = "/tmp/tbtest";
+    system("mkdir -p " + tmpDir);
+    system("rm " + tmpDir + "/*");
+    for (const std::string& file : tbFiles) {
+        const int len = file.length();
+        if (len > 8 && file.substr(len-8) == ".gtb.cp4") {
+            system("ln -s /home/petero/chess/gtb/" + file + " " + tmpDir + "/" + file);
+        } else {
+            system("ln -s /home/petero/chess/rtb/5/" + file + " " + tmpDir + "/" + file);
+        }
+    }
+    initTB(tmpDir, gtbDefaultCacheMB, tmpDir);
 }
 
 /** Probe both DTM and WDL, check consistency and return DTM value. */
@@ -378,6 +397,84 @@ TBTest::tbTest() {
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
 }
 
+
+static void getLegalMoves(Position& pos, MoveGen::MoveList& legalMoves) {
+    legalMoves.clear();
+    MoveGen::pseudoLegalMoves(pos, legalMoves);
+    MoveGen::removeIllegal(pos, legalMoves);
+}
+
+static void compareMoves(const std::vector<std::string>& strMoves,
+                         const std::vector<Move>& moves) {
+    ASSERT_EQUAL(strMoves.size(), moves.size());
+    for (const Move& m : moves)
+        ASSERT(contains(strMoves, TextIO::moveToUCIString(m)));
+}
+
+void
+TBTest::testMissingTables() {
+    for (int loop = 0; loop < 2; loop++) {
+        bool gtb = loop == 1;
+        // No progress move in TBs, must search all zeroing moves
+        if (gtb)
+            setupTBFiles(std::vector<std::string>{"kpk.gtb.cp4"});
+        else
+            setupTBFiles(std::vector<std::string>{"KPvK.rtbw", "KPvK.rtbz"});
+        Position pos = TextIO::readFEN("8/4P3/8/8/2k1K3/8/8/8 w - - 0 1");
+        MoveGen::MoveList legalMoves;
+        getLegalMoves(pos, legalMoves);
+        std::vector<Move> movesToSearch;
+        bool res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch);
+        ASSERT_EQUAL(true, res);
+        compareMoves(std::vector<std::string>{"e7e8q", "e7e8r", "e7e8b", "e7e8n"}, movesToSearch);
+        {
+            Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::pd,
+                      nullptr, SearchTest::treeLog);
+            Move m = SearchTest::idSearch(sc, 4, 3);
+            ASSERT_EQUAL("e7e8q", TextIO::moveToUCIString(m));
+        }
+
+        // Progress (queen promotion) in TB, no need to limit moves to search
+        if (gtb)
+            setupTBFiles(std::vector<std::string>{"kpk.gtb.cp4", "kqk.gtb.cp4"});
+        else
+            setupTBFiles(std::vector<std::string>{"KPvK.rtbw", "KPvK.rtbz", "KQvK.rtbw", "KQvK.rtbz"});
+        pos = TextIO::readFEN("8/4P3/8/8/2k1K3/8/8/8 w - - 0 1");
+        getLegalMoves(pos, legalMoves);
+        movesToSearch.clear();
+        res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch);
+        ASSERT_EQUAL(false, res);
+
+        // No progress move in TBs, must search all unknown zeroing moves
+        if (gtb)
+            setupTBFiles(std::vector<std::string>{"kpk.gtb.cp4", "krk.gtb.cp4"});
+        else
+            setupTBFiles(std::vector<std::string>{"KPvK.rtbw", "KPvK.rtbz", "KRvK.rtbw", "KRvK.rtbz"});
+        pos = TextIO::readFEN("8/4P3/8/8/2k1K3/8/8/8 w - - 0 1");
+        getLegalMoves(pos, legalMoves);
+        movesToSearch.clear();
+        res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch);
+        if (gtb) {
+            ASSERT_EQUAL(true, res);
+            compareMoves(std::vector<std::string>{"e7e8q", "e7e8b", "e7e8n"}, movesToSearch);
+        } else {
+            ASSERT_EQUAL(false, res); // Rook promotion is an improvement when using only DTZ TBs
+        }
+
+        // Non-zeroing move makes progress, search all legal moves
+        if (gtb) {
+            setupTBFiles(std::vector<std::string>{"kpk.gtb.cp4"});
+            pos = TextIO::readFEN("8/4P3/8/8/1k2K3/8/8/8 w - - 0 1");
+            getLegalMoves(pos, legalMoves);
+            movesToSearch.clear();
+            res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch);
+            ASSERT_EQUAL(false, res);
+        }
+    }
+
+    initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
+}
+
 cute::suite
 TBTest::getSuite() const {
     cute::suite s;
@@ -385,5 +482,6 @@ TBTest::getSuite() const {
     s.push_back(CUTE(kpkTest));
     s.push_back(CUTE(rtbTest));
     s.push_back(CUTE(tbTest));
+    s.push_back(CUTE(testMissingTables));
     return s;
 }
