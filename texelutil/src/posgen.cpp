@@ -399,23 +399,30 @@ PosGenerator::dtzStat(const std::vector<std::string>& tbTypes) {
             int dtz = Syzygy::probe_dtz(pos, &success);
             if (!success)
                 throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+            int wdl = Syzygy::probe_wdl(pos, &success);
+            if (!success)
+                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
             if (dtz > 0) {
-                if (dtz > posScore) {
-                    posScore = dtz;
-                    posPos = pos;
-                }
-                if (dtz > 100 && dtz < posReported) {
-                    posReported = dtz;
-                    std::cout << "fen: " << TextIO::toFEN(pos) << " dtz:" << dtz << std::endl;
+                if (wdl == 2) {
+                    if (dtz > posScore) {
+                        posScore = dtz;
+                        posPos = pos;
+                    }
+                    if (dtz > 100 && dtz < posReported) {
+                        posReported = dtz;
+                        std::cout << "fen: " << TextIO::toFEN(pos) << " dtz:" << dtz << std::endl;
+                    }
                 }
             } else if (dtz < 0) {
-                if (dtz < negScore) {
-                    negScore = dtz;
-                    negPos = pos;
-                }
-                if (dtz < -100 && dtz > negReported) {
-                    negReported = dtz;
-                    std::cout << "fen: " << TextIO::toFEN(pos) << " dtz:" << dtz << std::endl;
+                if (wdl == -2) {
+                    if (dtz < negScore) {
+                        negScore = dtz;
+                        negPos = pos;
+                    }
+                    if (dtz < -100 && dtz > negReported) {
+                        negReported = dtz;
+                        std::cout << "fen: " << TextIO::toFEN(pos) << " dtz:" << dtz << std::endl;
+                    }
                 }
             }
         });
