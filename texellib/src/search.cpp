@@ -304,6 +304,8 @@ Search::storeSearchResult(std::vector<MoveInfo>& scMoves, int mi, int depth,
     scMoves[mi].move.setScore(score);
     scMoves[mi].pv.clear();
     tt.extractPVMoves(pos, scMoves[mi].move, scMoves[mi].pv);
+    if ((maxTimeMillis < 0) && SearchConst::isWinScore(std::abs(score)))
+        TBProbe::extendPV(pos, scMoves[mi].pv);
 }
 
 void

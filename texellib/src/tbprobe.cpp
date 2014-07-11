@@ -170,6 +170,54 @@ TBProbe::getSearchMoves(Position& pos, const MoveGen::MoveList& legalMoves,
     return !hasProgress && !movesToSearch.empty();
 }
 
+void
+TBProbe::extendPV(const Position& rootPos, std::vector<Move>& pv) {
+    Position pos(rootPos);
+    UndoInfo ui;
+    int ply = 0;
+    int score;
+    for (int i = 0; i < (int)pv.size(); i++) {
+        const Move& m = pv[i];
+        pos.makeMove(m, ui);
+        if (TBProbe::gtbProbeDTM(pos, ply, score) && SearchConst::isWinScore(std::abs(score)) &&
+            (SearchConst::MATE0 - 1 - abs(score) - ply <= 100 - pos.getHalfMoveClock())) {
+            // TB win, replace rest of PV since it may be inaccurate
+            pv.erase(pv.begin()+i+1, pv.end());
+            break;
+        }
+    }
+    if (!TBProbe::gtbProbeDTM(pos, ply, score) || !SearchConst::isWinScore(std::abs(score)))
+        return; // No TB win
+    if (SearchConst::MATE0 - 1 - abs(score) - ply > 100 - pos.getHalfMoveClock())
+        return; // Mate too far away, perhaps 50-move draw
+    if (!pos.getWhiteMove())
+        score = -score;
+    while (true) {
+        MoveGen::MoveList moveList;
+        MoveGen::pseudoLegalMoves(pos, moveList);
+        MoveGen::removeIllegal(pos, moveList);
+        bool extended = false;
+        for (int mi = 0; mi < moveList.size; mi++) {
+            const Move& m = moveList[mi];
+            pos.makeMove(m, ui);
+            int newScore;
+            if (TBProbe::gtbProbeDTM(pos, ply+1, newScore)) {
+                if (!pos.getWhiteMove())
+                    newScore = -newScore;
+                if (newScore == score) {
+                    pv.push_back(m);
+                    ply++;
+                    extended = true;
+                    break;
+                }
+            }
+            pos.unMakeMove(m, ui);
+        }
+        if (!extended)
+            break;
+    }
+}
+
 template <typename ProbeFunc>
 static void handleEP(Position& pos, int ply, int& score, bool& ret, ProbeFunc probeFunc) {
     const bool inCheck = MoveGen::inCheck(pos);

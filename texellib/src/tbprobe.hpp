@@ -63,6 +63,9 @@ public:
     static bool getSearchMoves(Position& pos, const MoveGen::MoveList& legalMoves,
                                std::vector<Move>& movesToSearch);
 
+    /** Enhance PV with DTM information from gaviota tablebases. */
+    static void extendPV(const Position& rootPos, std::vector<Move>& pv);
+
     /** Probe gaviota DTM tablebases.
      * @param pos  The position to probe. The position can be temporarily modified
      *             but is restored to original state before function returns.
