@@ -40,9 +40,18 @@ static int currentGtbCacheMB;
 static int currentGtbWdlFraction;
 static std::string currentRtbPath;
 
-static const char** paths = NULL;
+static const char** gtbPaths = NULL;
 static int gtbMaxPieces = 0;
-static std::unordered_map<int,int> longestMate;
+
+static std::unordered_map<int,int> maxDTM; // MatId -> Max DTM value in GTB TB
+static std::unordered_map<int,int> maxDTZ; // MatId -> Max DTZ value in RTB TB
+struct IIPairHash {
+    size_t operator()(const std::pair<int,int>& p) const {
+        return p.first * 0x714d3559 + p.second;
+    }
+};
+// (MatId,maxPawnMoves) -> Max DTM in sub TBs
+static std::unordered_map<std::pair<int,int>,int,IIPairHash> maxSubDTM;
 
 
 void
@@ -63,7 +72,11 @@ TBProbe::initialize(const std::string& gtbPath, int cacheMB,
         currentGtbWdlFraction = wdlFraction;
     }
 
-    initWDLBounds();
+    static bool initialized = false;
+    if (!initialized) {
+        initWDLBounds();
+        initialized = true;
+    }
 }
 
 bool
@@ -217,27 +230,6 @@ TBProbe::gtbProbeWDL(Position& pos, int ply, int& score) {
     return ret;
 }
 
-static int
-maxZeroing(const Position& pos, int nPieces) {
-    bool singleMatePiece = pos.pieceTypeBB(Piece::WQUEEN, Piece::WROOK, Piece::WPAWN,
-                                           Piece::BQUEEN, Piece::BROOK, Piece::BPAWN);
-    int maxCapt = singleMatePiece ? nPieces - 3 : nPieces - 4;
-    int maxPawnMoves = 0;
-    U64 m = pos.pieceTypeBB(Piece::WPAWN);
-    while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
-        maxPawnMoves += 7 - Position::getY(sq);
-        m &= m-1;
-    }
-    m = pos.pieceTypeBB(Piece::BPAWN);
-    while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
-        maxPawnMoves += Position::getY(sq);
-        m &= m-1;
-    }
-    return maxCapt + maxPawnMoves;
-}
-
 bool
 TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score) {
     const int nPieces = BitBoard::bitCount(pos.occupiedBB());
@@ -268,8 +260,7 @@ TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score) {
         }
         // FIXME!! Are there positions where maxHalfMoveclock==101 needs special handling?
     }
-    int maxZero = maxZeroing(pos, nPieces);
-    int plyToMate = maxZero * 100 + std::abs(dtz);
+    int plyToMate = getMaxSubMate(pos) + std::abs(dtz);
     if (dtz > 0) {
         score = SearchConst::MATE0 - ply - plyToMate - 2;
     } else {
@@ -289,21 +280,17 @@ TBProbe::rtbProbeWDL(Position& pos, int ply, int& score) {
     int wdl = Syzygy::probe_wdl(pos, &success);
     if (!success)
         return false;
-    int nPieces, maxZero, plyToMate;
+    int plyToMate;
     switch (wdl) {
     case 0: case 1: case -1:
         score = 0;
         break;
     case 2:
-        nPieces = BitBoard::bitCount(pos.occupiedBB());
-        maxZero = maxZeroing(pos, nPieces);
-        plyToMate = (maxZero + 1) * 100;
+        plyToMate = getMaxSubMate(pos) + getMaxDTZ(pos.materialId());
         score = SearchConst::MATE0 - ply - plyToMate - 2;
         break;
     case -2:
-        nPieces = BitBoard::bitCount(pos.occupiedBB());
-        maxZero = maxZeroing(pos, nPieces);
-        plyToMate = (maxZero + 1) * 100;
+        plyToMate = getMaxSubMate(pos) + getMaxDTZ(pos.materialId());
         score = -(SearchConst::MATE0 - ply - plyToMate - 2);
         break;
     default:
@@ -320,21 +307,21 @@ TBProbe::gtbInitialize(const std::string& path, int cacheMB, int wdlFraction) {
     static_assert((int)tb_H1 == (int)H1, "Incompatible square numbering");
     static_assert((int)tb_H8 == (int)H8, "Incompatible square numbering");
 
-    tbpaths_done(paths);
+    tbpaths_done(gtbPaths);
 
     gtbMaxPieces = 0;
-    paths = tbpaths_init();
-    paths = tbpaths_add(paths, path.c_str());
+    gtbPaths = tbpaths_init();
+    gtbPaths = tbpaths_add(gtbPaths, path.c_str());
 
     TB_compression_scheme scheme = tb_CP4;
     int verbose = 0;
     int cacheSize = 1024 * 1024 * cacheMB;
     static bool isInitialized = false;
     if (isInitialized) {
-        tb_restart(verbose, scheme, paths);
+        tb_restart(verbose, scheme, gtbPaths);
         tbcache_restart(cacheSize, wdlFraction);
     } else {
-        tb_init(verbose, scheme, paths);
+        tb_init(verbose, scheme, gtbPaths);
         tbcache_init(cacheSize, wdlFraction);
     }
     isInitialized = true;
@@ -433,156 +420,6 @@ TBProbe::gtbProbeDTM(const GtbProbeData& gtbData, int ply, int& score) {
     return true;
 }
 
-void
-TBProbe::initWDLBounds() {
-    typedef MatId MI;
-    longestMate[MI::WQ+0] = longestMate[MI::BQ+0] = 31979;
-    longestMate[MI::WR+0] = longestMate[MI::BR+0] = 31967;
-    longestMate[MI::WP+0] = longestMate[MI::BP+0] = 31943;
-
-    longestMate[MI::WQ*2] = longestMate[MI::BQ*2] = 31979;
-    longestMate[MI::WQ+MI::WR] = longestMate[MI::BQ+MI::BR] = 31967;
-    longestMate[MI::WQ+MI::WB] = longestMate[MI::BQ+MI::BB] = 31979;
-    longestMate[MI::WQ+MI::WN] = longestMate[MI::BQ+MI::BN] = 31979;
-    longestMate[MI::WQ+MI::WP] = longestMate[MI::BQ+MI::BP] = 31943;
-    longestMate[MI::WR*2] = longestMate[MI::BR*2] = 31967;
-    longestMate[MI::WR+MI::WB] = longestMate[MI::BR+MI::BB] = 31967;
-    longestMate[MI::WR+MI::WN] = longestMate[MI::BR+MI::BN] = 31967;
-    longestMate[MI::WR+MI::WP] = longestMate[MI::BR+MI::BP] = 31943;
-    longestMate[MI::WB*2] = longestMate[MI::BB*2] = 31961;
-    longestMate[MI::WB+MI::WN] = longestMate[MI::BB+MI::BN] = 31933;
-    longestMate[MI::WB+MI::WP] = longestMate[MI::BB+MI::BP] = 31937;
-    longestMate[MI::WN*2] = longestMate[MI::BN*2] = 31998;
-    longestMate[MI::WN+MI::WP] = longestMate[MI::BN+MI::BP] = 31943;
-    longestMate[MI::WP*2] = longestMate[MI::BP*2] = 31935;
-    longestMate[MI::WQ+MI::BQ] = 31974;
-    longestMate[MI::WR+MI::BQ] = longestMate[MI::WQ+MI::BR] = 31929;
-    longestMate[MI::WR+MI::BR] = 31961;
-    longestMate[MI::WB+MI::BQ] = longestMate[MI::WQ+MI::BB] = 31965;
-    longestMate[MI::WB+MI::BR] = longestMate[MI::WR+MI::BB] = 31941;
-    longestMate[MI::WB+MI::BB] = 31998;
-    longestMate[MI::WN+MI::BQ] = longestMate[MI::WQ+MI::BN] = 31957;
-    longestMate[MI::WN+MI::BR] = longestMate[MI::WR+MI::BN] = 31919;
-    longestMate[MI::WN+MI::BB] = longestMate[MI::WB+MI::BN] = 31998;
-    longestMate[MI::WN+MI::BN] = 31998;
-    longestMate[MI::WP+MI::BQ] = longestMate[MI::WQ+MI::BP] = 31942;
-    longestMate[MI::WP+MI::BR] = longestMate[MI::WR+MI::BP] = 31914;
-    longestMate[MI::WP+MI::BB] = longestMate[MI::WB+MI::BP] = 31942;
-    longestMate[MI::WP+MI::BN] = longestMate[MI::WN+MI::BP] = 31942;
-    longestMate[MI::WP+MI::BP] = 31933;
-
-    longestMate[MI::WQ*3] = longestMate[MI::BQ*3] = 31991;
-    longestMate[MI::WQ*2+MI::WR] = longestMate[MI::BQ*2+MI::BR] = 31987;
-    longestMate[MI::WQ*2+MI::WB] = longestMate[MI::BQ*2+MI::BB] = 31983;
-    longestMate[MI::WQ*2+MI::WN] = longestMate[MI::BQ*2+MI::BN] = 31981;
-    longestMate[MI::WQ*2+MI::WP] = longestMate[MI::BQ*2+MI::BP] = 31979;
-    longestMate[MI::WQ+MI::WR*2] = longestMate[MI::BQ+MI::BR*2] = 31985;
-    longestMate[MI::WQ+MI::WR+MI::WB] = longestMate[MI::BQ+MI::BR+MI::BB] = 31967;
-    longestMate[MI::WQ+MI::WR+MI::WN] = longestMate[MI::BQ+MI::BR+MI::BN] = 31967;
-    longestMate[MI::WQ+MI::WR+MI::WP] = longestMate[MI::BQ+MI::BR+MI::BP] = 31967;
-    longestMate[MI::WQ+MI::WB*2] = longestMate[MI::BQ+MI::BB*2] = 31961;
-    longestMate[MI::WQ+MI::WB+MI::WN] = longestMate[MI::BQ+MI::BB+MI::BN] = 31933;
-    longestMate[MI::WQ+MI::WB+MI::WP] = longestMate[MI::BQ+MI::BB+MI::BP] = 31937;
-    longestMate[MI::WQ+MI::WN*2] = longestMate[MI::BQ+MI::BN*2] = 31981;
-    longestMate[MI::WQ+MI::WN+MI::WP] = longestMate[MI::BQ+MI::BN+MI::BP] = 31945;
-    longestMate[MI::WQ+MI::WP*2] = longestMate[MI::BQ+MI::BP*2] = 31935;
-    longestMate[MI::WR*3] = longestMate[MI::BR*3] = 31985;
-    longestMate[MI::WR*2+MI::WB] = longestMate[MI::BR*2+MI::BB] = 31967;
-    longestMate[MI::WR*2+MI::WN] = longestMate[MI::BR*2+MI::BN] = 31967;
-    longestMate[MI::WR*2+MI::WP] = longestMate[MI::BR*2+MI::BP] = 31967;
-    longestMate[MI::WR+MI::WB*2] = longestMate[MI::BR+MI::BB*2] = 31961;
-    longestMate[MI::WR+MI::WB+MI::WN] = longestMate[MI::BR+MI::BB+MI::BN] = 31933;
-    longestMate[MI::WR+MI::WB+MI::WP] = longestMate[MI::BR+MI::BB+MI::BP] = 31937;
-    longestMate[MI::WR+MI::WN*2] = longestMate[MI::BR+MI::BN*2] = 31967;
-    longestMate[MI::WR+MI::WN+MI::WP] = longestMate[MI::BR+MI::BN+MI::BP] = 31945;
-    longestMate[MI::WR+MI::WP*2] = longestMate[MI::BR+MI::BP*2] = 31935;
-    longestMate[MI::WB*3] = longestMate[MI::BB*3] = 31961;
-    longestMate[MI::WB*2+MI::WN] = longestMate[MI::BB*2+MI::BN] = 31933;
-    longestMate[MI::WB*2+MI::WP] = longestMate[MI::BB*2+MI::BP] = 31937;
-    longestMate[MI::WB+MI::WN*2] = longestMate[MI::BB+MI::BN*2] = 31931;
-    longestMate[MI::WB+MI::WN+MI::WP] = longestMate[MI::BB+MI::BN+MI::BP] = 31933;
-    longestMate[MI::WB+MI::WP*2] = longestMate[MI::BB+MI::BP*2] = 31935;
-    longestMate[MI::WN*3] = longestMate[MI::BN*3] = 31957;
-    longestMate[MI::WN*2+MI::WP] = longestMate[MI::BN*2+MI::BP] = 31943;
-    longestMate[MI::WN+MI::WP*2] = longestMate[MI::BN+MI::BP*2] = 31935;
-    longestMate[MI::WP*3] = longestMate[MI::BP*3] = 31933;
-    longestMate[MI::WQ*2+MI::BQ] = longestMate[MI::WQ+MI::BQ*2] = 31939;
-    longestMate[MI::WQ*2+MI::BR] = longestMate[MI::WR+MI::BQ*2] = 31929;
-    longestMate[MI::WQ*2+MI::BB] = longestMate[MI::WB+MI::BQ*2] = 31965;
-    longestMate[MI::WQ*2+MI::BN] = longestMate[MI::WN+MI::BQ*2] = 31957;
-    longestMate[MI::WQ*2+MI::BP] = longestMate[MI::WP+MI::BQ*2] = 31939;
-    longestMate[MI::WQ+MI::WR+MI::BQ] = longestMate[MI::WQ+MI::BQ+MI::BR] = 31865;
-    longestMate[MI::WQ+MI::WR+MI::BR] = longestMate[MI::WR+MI::BQ+MI::BR] = 31929;
-    longestMate[MI::WQ+MI::WR+MI::BB] = longestMate[MI::WB+MI::BQ+MI::BR] = 31941;
-    longestMate[MI::WQ+MI::WR+MI::BN] = longestMate[MI::WN+MI::BQ+MI::BR] = 31919;
-    longestMate[MI::WQ+MI::WR+MI::BP] = longestMate[MI::WP+MI::BQ+MI::BR] = 31865;
-    longestMate[MI::WQ+MI::WB+MI::BQ] = longestMate[MI::WQ+MI::BQ+MI::BB] = 31933;
-    longestMate[MI::WQ+MI::WB+MI::BR] = longestMate[MI::WR+MI::BQ+MI::BB] = 31919;
-    longestMate[MI::WQ+MI::WB+MI::BB] = longestMate[MI::WB+MI::BQ+MI::BB] = 31965;
-    longestMate[MI::WQ+MI::WB+MI::BN] = longestMate[MI::WN+MI::BQ+MI::BB] = 31957;
-    longestMate[MI::WQ+MI::WB+MI::BP] = longestMate[MI::WP+MI::BQ+MI::BB] = 31933;
-    longestMate[MI::WQ+MI::WN+MI::BQ] = longestMate[MI::WQ+MI::BQ+MI::BN] = 31917;
-    longestMate[MI::WQ+MI::WN+MI::BR] = longestMate[MI::WR+MI::BQ+MI::BN] = 31918;
-    longestMate[MI::WQ+MI::WN+MI::BB] = longestMate[MI::WB+MI::BQ+MI::BN] = 31965;
-    longestMate[MI::WQ+MI::WN+MI::BN] = longestMate[MI::WN+MI::BQ+MI::BN] = 31957;
-    longestMate[MI::WQ+MI::WN+MI::BP] = longestMate[MI::WP+MI::BQ+MI::BN] = 31917;
-    longestMate[MI::WQ+MI::WP+MI::BQ] = longestMate[MI::WQ+MI::BQ+MI::BP] = 31752;
-    longestMate[MI::WQ+MI::WP+MI::BR] = longestMate[MI::WR+MI::BQ+MI::BP] = 31913;
-    longestMate[MI::WQ+MI::WP+MI::BB] = longestMate[MI::WB+MI::BQ+MI::BP] = 31941;
-    longestMate[MI::WQ+MI::WP+MI::BN] = longestMate[MI::WN+MI::BQ+MI::BP] = 31939;
-    longestMate[MI::WQ+MI::WP+MI::BP] = longestMate[MI::WP+MI::BQ+MI::BP] = 31755;
-    longestMate[MI::WR*2+MI::BQ] = longestMate[MI::WQ+MI::BR*2] = 31901;
-    longestMate[MI::WR*2+MI::BR] = longestMate[MI::WR+MI::BR*2] = 31937;
-    longestMate[MI::WR*2+MI::BB] = longestMate[MI::WB+MI::BR*2] = 31941;
-    longestMate[MI::WR*2+MI::BN] = longestMate[MI::WN+MI::BR*2] = 31919;
-    longestMate[MI::WR*2+MI::BP] = longestMate[MI::WP+MI::BR*2] = 31900;
-    longestMate[MI::WR+MI::WB+MI::BQ] = longestMate[MI::WQ+MI::BR+MI::BB] = 31859;
-    longestMate[MI::WR+MI::WB+MI::BR] = longestMate[MI::WR+MI::BR+MI::BB] = 31870;
-    longestMate[MI::WR+MI::WB+MI::BB] = longestMate[MI::WB+MI::BR+MI::BB] = 31939;
-    longestMate[MI::WR+MI::WB+MI::BN] = longestMate[MI::WN+MI::BR+MI::BB] = 31919;
-    longestMate[MI::WR+MI::WB+MI::BP] = longestMate[MI::WP+MI::BR+MI::BB] = 31860;
-    longestMate[MI::WR+MI::WN+MI::BQ] = longestMate[MI::WQ+MI::BR+MI::BN] = 31861;
-    longestMate[MI::WR+MI::WN+MI::BR] = longestMate[MI::WR+MI::BR+MI::BN] = 31918;
-    longestMate[MI::WR+MI::WN+MI::BB] = longestMate[MI::WB+MI::BR+MI::BN] = 31937;
-    longestMate[MI::WR+MI::WN+MI::BN] = longestMate[MI::WN+MI::BR+MI::BN] = 31919;
-    longestMate[MI::WR+MI::WN+MI::BP] = longestMate[MI::WP+MI::BR+MI::BN] = 31864;
-    longestMate[MI::WR+MI::WP+MI::BQ] = longestMate[MI::WQ+MI::BR+MI::BP] = 31792;
-    longestMate[MI::WR+MI::WP+MI::BR] = longestMate[MI::WR+MI::BR+MI::BP] = 31851;
-    longestMate[MI::WR+MI::WP+MI::BB] = longestMate[MI::WB+MI::BR+MI::BP] = 31853;
-    longestMate[MI::WR+MI::WP+MI::BN] = longestMate[MI::WN+MI::BR+MI::BP] = 31891;
-    longestMate[MI::WR+MI::WP+MI::BP] = longestMate[MI::WP+MI::BR+MI::BP] = 31794;
-    longestMate[MI::WB*2+MI::BQ] = longestMate[MI::WQ+MI::BB*2] = 31837;
-    longestMate[MI::WB*2+MI::BR] = longestMate[MI::WR+MI::BB*2] = 31938;
-    longestMate[MI::WB*2+MI::BB] = longestMate[MI::WB+MI::BB*2] = 31955;
-    longestMate[MI::WB*2+MI::BN] = longestMate[MI::WN+MI::BB*2] = 31843;
-    longestMate[MI::WB*2+MI::BP] = longestMate[MI::WP+MI::BB*2] = 31834;
-    longestMate[MI::WB+MI::WN+MI::BQ] = longestMate[MI::WQ+MI::BB+MI::BN] = 31893;
-    longestMate[MI::WB+MI::WN+MI::BR] = longestMate[MI::WR+MI::BB+MI::BN] = 31918;
-    longestMate[MI::WB+MI::WN+MI::BB] = longestMate[MI::WB+MI::BB+MI::BN] = 31921;
-    longestMate[MI::WB+MI::WN+MI::BN] = longestMate[MI::WN+MI::BB+MI::BN] = 31786;
-    longestMate[MI::WB+MI::WN+MI::BP] = longestMate[MI::WP+MI::BB+MI::BN] = 31791;
-    longestMate[MI::WB+MI::WP+MI::BQ] = longestMate[MI::WQ+MI::BB+MI::BP] = 31899;
-    longestMate[MI::WB+MI::WP+MI::BR] = longestMate[MI::WR+MI::BB+MI::BP] = 31910;
-    longestMate[MI::WB+MI::WP+MI::BB] = longestMate[MI::WB+MI::BB+MI::BP] = 31898;
-    longestMate[MI::WB+MI::WP+MI::BN] = longestMate[MI::WN+MI::BB+MI::BP] = 31800;
-    longestMate[MI::WB+MI::WP+MI::BP] = longestMate[MI::WP+MI::BB+MI::BP] = 31865;
-    longestMate[MI::WN*2+MI::BQ] = longestMate[MI::WQ+MI::BN*2] = 31855;
-    longestMate[MI::WN*2+MI::BR] = longestMate[MI::WR+MI::BN*2] = 31918;
-    longestMate[MI::WN*2+MI::BB] = longestMate[MI::WB+MI::BN*2] = 31992;
-    longestMate[MI::WN*2+MI::BN] = longestMate[MI::WN+MI::BN*2] = 31986;
-    longestMate[MI::WN*2+MI::BP] = longestMate[MI::WP+MI::BN*2] = 31770;
-    longestMate[MI::WN+MI::WP+MI::BQ] = longestMate[MI::WQ+MI::BN+MI::BP] = 31875;
-    longestMate[MI::WN+MI::WP+MI::BR] = longestMate[MI::WR+MI::BN+MI::BP] = 31866;
-    longestMate[MI::WN+MI::WP+MI::BB] = longestMate[MI::WB+MI::BN+MI::BP] = 31914;
-    longestMate[MI::WN+MI::WP+MI::BN] = longestMate[MI::WN+MI::BN+MI::BP] = 31805;
-    longestMate[MI::WN+MI::WP+MI::BP] = longestMate[MI::WP+MI::BN+MI::BP] = 31884;
-    longestMate[MI::WP*2+MI::BQ] = longestMate[MI::WQ+MI::BP*2] = 31752;
-    longestMate[MI::WP*2+MI::BR] = longestMate[MI::WR+MI::BP*2] = 31892;
-    longestMate[MI::WP*2+MI::BB] = longestMate[MI::WB+MI::BP*2] = 31913;
-    longestMate[MI::WP*2+MI::BN] = longestMate[MI::WN+MI::BP*2] = 31899;
-    longestMate[MI::WP*2+MI::BP] = longestMate[MI::WP+MI::BP*2] = 31745;
-}
-
 bool
 TBProbe::gtbProbeWDL(const GtbProbeData& gtbData, int ply, int& score) {
     unsigned int tbInfo;
@@ -597,10 +434,10 @@ TBProbe::gtbProbeWDL(const GtbProbeData& gtbData, int ply, int& score) {
         score = 0;
         break;
     case tb_WMATE:
-        score = longestMate[gtbData.materialId] - ply;
+        score = maxDTM[gtbData.materialId] - ply;
         break;
     case tb_BMATE:
-        score = -(longestMate[gtbData.materialId] - ply);
+        score = -(maxDTM[gtbData.materialId] - ply);
         break;
     default:
         return false;
@@ -609,4 +446,479 @@ TBProbe::gtbProbeWDL(const GtbProbeData& gtbData, int ply, int& score) {
     if (gtbData.stm == tb_BLACK_TO_MOVE)
         score = -score;
     return true;
+}
+
+void
+TBProbe::initWDLBounds() {
+    initMaxDTM();
+    initMaxDTZ();
+
+    // Pre-calculate all interesting maxSubDTM values
+    for (int wp = 0; wp <= 4; wp++) {
+        std::vector<int> pieces(Piece::nPieceTypes);
+        pieces[Piece::WPAWN] = wp;
+        pieces[Piece::BPAWN] = 4 - wp;
+        getMaxSubMate(pieces, 4*5);
+    }
+}
+
+/** Maximum DTZ value for a given material configuration. */
+int
+TBProbe::getMaxDTZ(int matId) {
+    auto it = maxDTZ.find(matId);
+    if (it == maxDTZ.end())
+        return 100;
+    int val = it->second;
+    if (val < 0)
+        return 0;
+    else
+        return std::min(val+2, 100); // RTB DTZ values are not exact
+}
+
+static int
+getMaxPawnMoves(const Position& pos) {
+    int maxPawnMoves = 0;
+    U64 m = pos.pieceTypeBB(Piece::WPAWN);
+    while (m != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(m);
+        maxPawnMoves += 6 - Position::getY(sq);
+        m &= m-1;
+    }
+    m = pos.pieceTypeBB(Piece::BPAWN);
+    while (m != 0) {
+        int sq = BitBoard::numberOfTrailingZeros(m);
+        maxPawnMoves += Position::getY(sq) - 1;
+        m &= m-1;
+    }
+    return maxPawnMoves;
+}
+
+/** Get upper bound on longest mate in all possible material configurations
+ * after the next zeroing move. */
+int
+TBProbe::getMaxSubMate(const Position& pos) {
+    int maxPawnMoves = getMaxPawnMoves(pos);
+    int matId = pos.materialId();
+    matId = std::min(matId, MatId::mirror(matId));
+    auto it = maxSubDTM.find(std::make_pair(matId,maxPawnMoves));
+    if (it != maxSubDTM.end())
+        return it->second;
+
+    std::vector<int> pieces(Piece::nPieceTypes);
+    for (int p = 0; p < Piece::nPieceTypes; p++)
+        pieces[p] = BitBoard::bitCount(pos.pieceTypeBB((Piece::Type)p));
+    pieces[Piece::EMPTY] = pieces[Piece::WKING] = pieces[Piece::BKING] = 0;
+    return getMaxSubMate(pieces, maxPawnMoves);
+}
+
+int
+TBProbe::getMaxSubMate(std::vector<int>& pieces, int pawnMoves) {
+    assert(pawnMoves >= 0);
+    if (pawnMoves > (pieces[Piece::WPAWN] + pieces[Piece::BPAWN]) * 5)
+        return 0;
+
+    MatId matId;
+    for (int p = 0; p < Piece::nPieceTypes; p++)
+        matId.addPieceCnt(p, pieces[p]);
+
+    const int matIdMin = std::min(matId(), MatId::mirror(matId()));
+    auto it = maxSubDTM.find(std::make_pair(matIdMin, pawnMoves));
+    if (it != maxSubDTM.end())
+        return it->second;
+
+    int maxSubMate = 0;
+    if (pawnMoves > 0) { // Pawn move
+        maxSubMate = getMaxSubMate(pieces, pawnMoves-1) + getMaxDTZ(matId());
+    }
+    for (int p = 0; p < Piece::nPieceTypes; p++) { // Capture
+        if (pieces[p] > 0) {
+            pieces[p]--;
+            matId.removePiece(p);
+            int maxRemovedPawnMoves = 0;
+            if (p == Piece::WPAWN || p == Piece::BPAWN)
+                maxRemovedPawnMoves = 5;
+            for (int i = 0; i <= maxRemovedPawnMoves; i++) {
+                int newPawnMoves = pawnMoves - i;
+                if (newPawnMoves >= 0) {
+                    int tmp = getMaxSubMate(pieces, newPawnMoves) + getMaxDTZ(matId());
+                    maxSubMate = std::max(maxSubMate, tmp);
+                }
+            }
+            pieces[p]++;
+            matId.addPiece(p);
+        }
+    }
+    for (int c = 0; c < 2; c++) { // Promotion
+        const int pawn = (c == 0) ? Piece::WPAWN : Piece::BPAWN;
+        if (pieces[pawn] > 0) {
+            const int p0 = (c == 0) ? Piece::WQUEEN : Piece::BQUEEN;
+            const int p1 = (c == 0) ? Piece::WKNIGHT : Piece::BKNIGHT;
+            for (int p = p0; p <= p1; p++) {
+                pieces[pawn]--;
+                pieces[p]++;
+                matId.removePiece(pawn);
+                matId.addPiece(p);
+                int tmp = getMaxSubMate(pieces, pawnMoves) + getMaxDTZ(matId());
+                maxSubMate = std::max(maxSubMate, tmp);
+                pieces[pawn]++;
+                pieces[p]--;
+                matId.addPiece(pawn);
+                matId.removePiece(p);
+            }
+        }
+    }
+
+#if 0
+    std::cout << "wQ:" << pieces[Piece::WQUEEN]
+              << " wR:" << pieces[Piece::WROOK]
+              << " wB:" << pieces[Piece::WBISHOP]
+              << " wN:" << pieces[Piece::WKNIGHT]
+              << " wP:" << pieces[Piece::WPAWN]
+              << " bQ:" << pieces[Piece::BQUEEN]
+              << " bR:" << pieces[Piece::BROOK]
+              << " bB:" << pieces[Piece::BBISHOP]
+              << " bN:" << pieces[Piece::BKNIGHT]
+              << " bP:" << pieces[Piece::BPAWN]
+              << " pMoves:" << pawnMoves << " : " << maxSubMate << std::endl;
+#endif
+    maxSubDTM[std::make_pair(matIdMin, pawnMoves)] = maxSubMate;
+    return maxSubMate;
+}
+
+void
+TBProbe::initMaxDTM() {
+    typedef MatId MI;
+    auto add = [](int id, int value) {
+        maxDTM[id] = value;
+        maxDTM[MatId::mirror(id)] = value;
+    };
+
+    add(MI::WQ, 31979);
+    add(MI::WR, 31967);
+    add(MI::WP, 31943);
+
+    add(MI::WQ*2, 31979);
+    add(MI::WQ+MI::WR, 31967);
+    add(MI::WQ+MI::WB, 31979);
+    add(MI::WQ+MI::WN, 31979);
+    add(MI::WQ+MI::WP, 31943);
+    add(MI::WR*2, 31967);
+    add(MI::WR+MI::WB, 31967);
+    add(MI::WR+MI::WN, 31967);
+    add(MI::WR+MI::WP, 31943);
+    add(MI::WB*2, 31961);
+    add(MI::WB+MI::WN, 31933);
+    add(MI::WB+MI::WP, 31937);
+    add(MI::WN*2, 31998);
+    add(MI::WN+MI::WP, 31943);
+    add(MI::WP*2, 31935);
+    add(MI::WQ+MI::BQ, 31974);
+    add(MI::WR+MI::BQ, 31929);
+    add(MI::WR+MI::BR, 31961);
+    add(MI::WB+MI::BQ, 31965);
+    add(MI::WB+MI::BR, 31941);
+    add(MI::WB+MI::BB, 31998);
+    add(MI::WN+MI::BQ, 31957);
+    add(MI::WN+MI::BR, 31919);
+    add(MI::WN+MI::BB, 31998);
+    add(MI::WN+MI::BN, 31998);
+    add(MI::WP+MI::BQ, 31942);
+    add(MI::WP+MI::BR, 31914);
+    add(MI::WP+MI::BB, 31942);
+    add(MI::WP+MI::BN, 31942);
+    add(MI::WP+MI::BP, 31933);
+
+    add(MI::WQ*3, 31991);
+    add(MI::WQ*2+MI::WR, 31987);
+    add(MI::WQ*2+MI::WB, 31983);
+    add(MI::WQ*2+MI::WN, 31981);
+    add(MI::WQ*2+MI::WP, 31979);
+    add(MI::WQ+MI::WR*2, 31985);
+    add(MI::WQ+MI::WR+MI::WB, 31967);
+    add(MI::WQ+MI::WR+MI::WN, 31967);
+    add(MI::WQ+MI::WR+MI::WP, 31967);
+    add(MI::WQ+MI::WB*2, 31961);
+    add(MI::WQ+MI::WB+MI::WN, 31933);
+    add(MI::WQ+MI::WB+MI::WP, 31937);
+    add(MI::WQ+MI::WN*2, 31981);
+    add(MI::WQ+MI::WN+MI::WP, 31945);
+    add(MI::WQ+MI::WP*2, 31935);
+    add(MI::WR*3, 31985);
+    add(MI::WR*2+MI::WB, 31967);
+    add(MI::WR*2+MI::WN, 31967);
+    add(MI::WR*2+MI::WP, 31967);
+    add(MI::WR+MI::WB*2, 31961);
+    add(MI::WR+MI::WB+MI::WN, 31933);
+    add(MI::WR+MI::WB+MI::WP, 31937);
+    add(MI::WR+MI::WN*2, 31967);
+    add(MI::WR+MI::WN+MI::WP, 31945);
+    add(MI::WR+MI::WP*2, 31935);
+    add(MI::WB*3, 31961);
+    add(MI::WB*2+MI::WN, 31933);
+    add(MI::WB*2+MI::WP, 31937);
+    add(MI::WB+MI::WN*2, 31931);
+    add(MI::WB+MI::WN+MI::WP, 31933);
+    add(MI::WB+MI::WP*2, 31935);
+    add(MI::WN*3, 31957);
+    add(MI::WN*2+MI::WP, 31943);
+    add(MI::WN+MI::WP*2, 31935);
+    add(MI::WP*3, 31933);
+    add(MI::WQ*2+MI::BQ, 31939);
+    add(MI::WQ*2+MI::BR, 31929);
+    add(MI::WQ*2+MI::BB, 31965);
+    add(MI::WQ*2+MI::BN, 31957);
+    add(MI::WQ*2+MI::BP, 31939);
+    add(MI::WQ+MI::WR+MI::BQ, 31865);
+    add(MI::WQ+MI::WR+MI::BR, 31929);
+    add(MI::WQ+MI::WR+MI::BB, 31941);
+    add(MI::WQ+MI::WR+MI::BN, 31919);
+    add(MI::WQ+MI::WR+MI::BP, 31865);
+    add(MI::WQ+MI::WB+MI::BQ, 31933);
+    add(MI::WQ+MI::WB+MI::BR, 31919);
+    add(MI::WQ+MI::WB+MI::BB, 31965);
+    add(MI::WQ+MI::WB+MI::BN, 31957);
+    add(MI::WQ+MI::WB+MI::BP, 31933);
+    add(MI::WQ+MI::WN+MI::BQ, 31917);
+    add(MI::WQ+MI::WN+MI::BR, 31918);
+    add(MI::WQ+MI::WN+MI::BB, 31965);
+    add(MI::WQ+MI::WN+MI::BN, 31957);
+    add(MI::WQ+MI::WN+MI::BP, 31917);
+    add(MI::WQ+MI::WP+MI::BQ, 31752);
+    add(MI::WQ+MI::WP+MI::BR, 31913);
+    add(MI::WQ+MI::WP+MI::BB, 31941);
+    add(MI::WQ+MI::WP+MI::BN, 31939);
+    add(MI::WQ+MI::WP+MI::BP, 31755);
+    add(MI::WR*2+MI::BQ, 31901);
+    add(MI::WR*2+MI::BR, 31937);
+    add(MI::WR*2+MI::BB, 31941);
+    add(MI::WR*2+MI::BN, 31919);
+    add(MI::WR*2+MI::BP, 31900);
+    add(MI::WR+MI::WB+MI::BQ, 31859);
+    add(MI::WR+MI::WB+MI::BR, 31870);
+    add(MI::WR+MI::WB+MI::BB, 31939);
+    add(MI::WR+MI::WB+MI::BN, 31919);
+    add(MI::WR+MI::WB+MI::BP, 31860);
+    add(MI::WR+MI::WN+MI::BQ, 31861);
+    add(MI::WR+MI::WN+MI::BR, 31918);
+    add(MI::WR+MI::WN+MI::BB, 31937);
+    add(MI::WR+MI::WN+MI::BN, 31919);
+    add(MI::WR+MI::WN+MI::BP, 31864);
+    add(MI::WR+MI::WP+MI::BQ, 31792);
+    add(MI::WR+MI::WP+MI::BR, 31851);
+    add(MI::WR+MI::WP+MI::BB, 31853);
+    add(MI::WR+MI::WP+MI::BN, 31891);
+    add(MI::WR+MI::WP+MI::BP, 31794);
+    add(MI::WB*2+MI::BQ, 31837);
+    add(MI::WB*2+MI::BR, 31938);
+    add(MI::WB*2+MI::BB, 31955);
+    add(MI::WB*2+MI::BN, 31843);
+    add(MI::WB*2+MI::BP, 31834);
+    add(MI::WB+MI::WN+MI::BQ, 31893);
+    add(MI::WB+MI::WN+MI::BR, 31918);
+    add(MI::WB+MI::WN+MI::BB, 31921);
+    add(MI::WB+MI::WN+MI::BN, 31786);
+    add(MI::WB+MI::WN+MI::BP, 31791);
+    add(MI::WB+MI::WP+MI::BQ, 31899);
+    add(MI::WB+MI::WP+MI::BR, 31910);
+    add(MI::WB+MI::WP+MI::BB, 31898);
+    add(MI::WB+MI::WP+MI::BN, 31800);
+    add(MI::WB+MI::WP+MI::BP, 31865);
+    add(MI::WN*2+MI::BQ, 31855);
+    add(MI::WN*2+MI::BR, 31918);
+    add(MI::WN*2+MI::BB, 31992);
+    add(MI::WN*2+MI::BN, 31986);
+    add(MI::WN*2+MI::BP, 31770);
+    add(MI::WN+MI::WP+MI::BQ, 31875);
+    add(MI::WN+MI::WP+MI::BR, 31866);
+    add(MI::WN+MI::WP+MI::BB, 31914);
+    add(MI::WN+MI::WP+MI::BN, 31805);
+    add(MI::WN+MI::WP+MI::BP, 31884);
+    add(MI::WP*2+MI::BQ, 31752);
+    add(MI::WP*2+MI::BR, 31892);
+    add(MI::WP*2+MI::BB, 31913);
+    add(MI::WP*2+MI::BN, 31899);
+    add(MI::WP*2+MI::BP, 31745);
+}
+
+void
+TBProbe::initMaxDTZ() {
+    typedef MatId MI;
+    auto add = [](int id, int value) {
+        maxDTZ[id] = value;
+        maxDTZ[MatId::mirror(id)] = value;
+    };
+
+    // 2-men
+    add(0, -1);
+
+    // 3-men
+    add(MI::WQ, 20);
+    add(MI::WR, 32);
+    add(MI::WB, -1);
+    add(MI::WN, -1);
+    add(MI::WP, 20);
+
+    // 4-men
+    add(MI::WQ+MI::BQ, 19);
+    add(MI::WN*2, 1);
+    add(MI::WQ*2, 6);
+    add(MI::WP*2, 14);
+    add(MI::WR*2, 10);
+    add(MI::WR+MI::BR, 7);
+    add(MI::WQ+MI::WB, 12);
+    add(MI::WQ+MI::WR, 8);
+    add(MI::WQ+MI::WN, 14);
+    add(MI::WR+MI::BB, 35);
+    add(MI::WB+MI::BB, 1);
+    add(MI::WQ+MI::WP, 6);
+    add(MI::WB*2, 37);
+    add(MI::WB+MI::BN, 2);
+    add(MI::WR+MI::WP, 6);
+    add(MI::WN+MI::BN, 1);
+    add(MI::WR+MI::BN, 53);
+    add(MI::WP+MI::BP, 21);
+    add(MI::WB+MI::BP, 7);
+    add(MI::WR+MI::WB, 24);
+    add(MI::WQ+MI::BN, 38);
+    add(MI::WR+MI::WN, 24);
+    add(MI::WB+MI::WP, 26);
+    add(MI::WN+MI::BP, 16);
+    add(MI::WN+MI::WP, 26);
+    add(MI::WQ+MI::BR, 62);
+    add(MI::WQ+MI::BB, 24);
+    add(MI::WR+MI::BP, 25);
+    add(MI::WQ+MI::BP, 52);
+    add(MI::WB+MI::WN, 65);
+
+    // 5-men
+    add(MI::WQ*3, 6);
+    add(MI::WQ*2+MI::WR, 6);
+    add(MI::WR*3, 8);
+    add(MI::WQ*2+MI::WB, 6);
+    add(MI::WQ*2+MI::WN, 8);
+    add(MI::WQ*2+MI::WP, 6);
+    add(MI::WQ+MI::WR+MI::WN, 8);
+    add(MI::WQ+MI::WR*2, 8);
+    add(MI::WQ+MI::WR+MI::WB, 8);
+    add(MI::WQ+MI::WP*2, 6);
+    add(MI::WQ+MI::WB+MI::WN, 8);
+    add(MI::WR*2+MI::WP, 6);
+    add(MI::WQ+MI::WB*2, 12);
+    add(MI::WB*3, 20);
+    add(MI::WR*2+MI::WN, 10);
+    add(MI::WR*2+MI::WB, 10);
+    add(MI::WQ+MI::WR+MI::WP, 6);
+    add(MI::WQ+MI::WN*2, 14);
+    add(MI::WQ+MI::WB+MI::WP, 6);
+    add(MI::WQ+MI::WN+MI::WP, 6);
+    add(MI::WR+MI::WP*2, 6);
+    add(MI::WR+MI::WB*2, 20);
+    add(MI::WP*3, 14);
+    add(MI::WR+MI::WN*2, 20);
+    add(MI::WQ*2+MI::BQ, 50);
+    add(MI::WQ*2+MI::BN, 8);
+    add(MI::WQ*2+MI::BB, 8);
+    add(MI::WR+MI::WB+MI::WN, 14);
+    add(MI::WB+MI::WP*2, 18);
+    add(MI::WB*2+MI::WP, 24);
+    add(MI::WQ*2+MI::BR, 28);
+    add(MI::WB*2+MI::WN, 26);
+    add(MI::WN+MI::WP*2, 12);
+    add(MI::WQ+MI::WB+MI::BQ, 59);
+    add(MI::WB+MI::WN*2, 26);
+    add(MI::WN*2+MI::WP, 16);
+    add(MI::WQ*2+MI::BP, 6);
+    add(MI::WN*3, 41);
+    add(MI::WQ+MI::WN+MI::BQ, 69);
+    add(MI::WQ+MI::WR+MI::BQ, 100);
+    add(MI::WQ+MI::WR+MI::BN, 10);
+    add(MI::WQ+MI::WR+MI::BB, 10);
+    add(MI::WQ+MI::WR+MI::BR, 30);
+    add(MI::WR+MI::WB+MI::WP, 8);
+    add(MI::WQ+MI::WB+MI::BN, 14);
+    add(MI::WQ+MI::WB+MI::BR, 38);
+    add(MI::WQ+MI::WB+MI::BB, 16);
+    add(MI::WB+MI::WN+MI::WP, 10);
+    add(MI::WR+MI::WN+MI::WP, 8);
+    add(MI::WR*2+MI::BQ, 40);
+    add(MI::WQ+MI::WN+MI::BN, 18);
+    add(MI::WR+MI::WB+MI::BR, 100);
+    add(MI::WQ+MI::WN+MI::BB, 18);
+    add(MI::WQ+MI::WR+MI::BP, 6);
+    add(MI::WR+MI::WB+MI::BQ, 82);
+    add(MI::WQ+MI::WP+MI::BQ, 100);
+    add(MI::WQ+MI::WP+MI::BP, 10);
+    add(MI::WQ+MI::WB+MI::BP, 22);
+    add(MI::WR+MI::WN+MI::BR, 64);
+    add(MI::WR*2+MI::BN, 14);
+    add(MI::WR*2+MI::BP, 18);
+    add(MI::WQ+MI::WN+MI::BR, 44);
+    add(MI::WR+MI::WN+MI::BQ, 92);
+    add(MI::WR*2+MI::BB, 20);
+    add(MI::WQ+MI::WN+MI::BP, 34);
+    add(MI::WR*2+MI::BR, 50);
+    add(MI::WB*2+MI::BR, 16);
+    add(MI::WB*2+MI::BB, 11);
+    add(MI::WQ+MI::WP+MI::BN, 12);
+    add(MI::WR+MI::WB+MI::BN, 42);
+    add(MI::WQ+MI::WP+MI::BB, 10);
+    add(MI::WB+MI::WN+MI::BR, 24);
+    add(MI::WB+MI::WN+MI::BB, 24);
+    add(MI::WB*2+MI::BN, 100);
+    add(MI::WB+MI::WN+MI::BN, 100);
+    add(MI::WQ+MI::WP+MI::BR, 34);
+    add(MI::WR+MI::WP+MI::BP, 19);
+    add(MI::WR+MI::WP+MI::BR, 70);
+    add(MI::WR+MI::WB+MI::BB, 50);
+    add(MI::WB*2+MI::BP, 42);
+    add(MI::WB*2+MI::BQ, 100);
+    add(MI::WR+MI::WB+MI::BP, 22);
+    add(MI::WN*2+MI::BR, 20);
+    add(MI::WN*2+MI::BB, 6);
+    add(MI::WB+MI::WP+MI::BR, 36);
+    add(MI::WN*2+MI::BN, 12);
+    add(MI::WB+MI::WP+MI::BB, 50);
+    add(MI::WR+MI::WN+MI::BN, 48);
+    add(MI::WN+MI::WP+MI::BR, 78);
+    add(MI::WN*2+MI::BQ, 100);
+    add(MI::WR+MI::WN+MI::BB, 50);
+    add(MI::WR+MI::WN+MI::BP, 29);
+    add(MI::WB+MI::WP+MI::BN, 60);
+    add(MI::WB+MI::WN+MI::BQ, 84);
+    add(MI::WB+MI::WP+MI::BP, 74);
+    add(MI::WN*2+MI::BP, 100);
+    add(MI::WN+MI::WP+MI::BB, 48);
+    add(MI::WP*2+MI::BB, 24);
+    add(MI::WP*2+MI::BQ, 58);
+    add(MI::WP*2+MI::BP, 42);
+    add(MI::WP*2+MI::BN, 27);
+    add(MI::WP*2+MI::BR, 30);
+    add(MI::WN+MI::WP+MI::BN, 59);
+    add(MI::WN+MI::WP+MI::BP, 46);
+    add(MI::WR+MI::WP+MI::BN, 62);
+    add(MI::WR+MI::WP+MI::BB, 100);
+    add(MI::WN+MI::WP+MI::BQ, 86);
+    add(MI::WB+MI::WN+MI::BP, 40);
+    add(MI::WR+MI::WP+MI::BQ, 100);
+    add(MI::WB+MI::WP+MI::BQ, 84);
+
+    // 6-men (incomplete)
+    add(MI::WQ*4, 6);
+    add(MI::WQ*3+MI::WR, 6);
+    add(MI::WQ*3+MI::WB, 6);
+    add(MI::WQ*3+MI::WN, 6);
+    add(MI::WQ*2+MI::WR*2, 6);
+    add(MI::WQ+MI::WR*3, 8);
+    add(MI::WQ*2+MI::WB*2, 6);
+    add(MI::WQ*3+MI::WP, 6);
+    add(MI::WQ*2+MI::WN*2, 8);
+    add(MI::WQ*2+MI::WR+MI::WB, 6);
+    add(MI::WQ*2+MI::WR+MI::WN, 8);
+    add(MI::WQ+MI::WR*2+MI::WB, 8);
+    add(MI::WQ*2+MI::WB+MI::WN, 8);
+    add(MI::WQ+MI::WR*2+MI::WN, 8);
+    add(MI::WQ*2+MI::WP*2, 6);
+    add(MI::WP*4, 14);
+    add(MI::WP*3+MI::BP, 40);
+    add(MI::WP*2+MI::BP*2, 31);
 }

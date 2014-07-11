@@ -46,6 +46,7 @@ private:
     static void rtbTest();
     static void tbTest();
     static void testMissingTables();
+    static void testMaxSubMate();
 };
 
 #endif /* TBTEST_HPP_ */

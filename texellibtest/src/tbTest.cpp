@@ -475,6 +475,15 @@ TBTest::testMissingTables() {
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
 }
 
+void
+TBTest::testMaxSubMate() {
+    typedef MatId MI;
+    initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
+    Position pos = TextIO::readFEN("3qk3/8/8/8/8/8/8/3QK3 w - - 0 1");
+    int maxSub = TBProbe::getMaxSubMate(pos);
+    ASSERT_EQUAL(TBProbe::getMaxDTZ(MI::WQ), maxSub);
+}
+
 cute::suite
 TBTest::getSuite() const {
     cute::suite s;
@@ -483,5 +492,6 @@ TBTest::getSuite() const {
     s.push_back(CUTE(rtbTest));
     s.push_back(CUTE(tbTest));
     s.push_back(CUTE(testMissingTables));
+    s.push_back(CUTE(testMaxSubMate));
     return s;
 }

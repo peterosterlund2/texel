@@ -38,6 +38,7 @@ class Position;
  * Handle tablebase probing.
  */
 class TBProbe {
+    friend class TBTest;
 public:
     /** Initialize tablebases. */
     static void initialize(const std::string& gtbPath, int cacheMB,
@@ -108,6 +109,11 @@ private:
     static void gtbInitialize(const std::string& path, int cacheMB, int wdlFraction);
 
     static void initWDLBounds();
+    static int getMaxDTZ(int matId);
+    static int getMaxSubMate(const Position& pos);
+    static int getMaxSubMate(std::vector<int>& pieces, int pawnMoves);
+    static void initMaxDTM();
+    static void initMaxDTZ();
 
     struct GtbProbeData {
         unsigned int stm, epsq, castles;
