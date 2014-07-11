@@ -357,6 +357,14 @@ ParamTable<N>::ParamTable(int minVal0, int maxVal0, bool uci0,
 // UCI parameters
 
 namespace UciParams {
+    extern std::shared_ptr<Parameters::SpinParam> hash;
+    extern std::shared_ptr<Parameters::CheckParam> ownBook;
+    extern std::shared_ptr<Parameters::CheckParam> ponder;
+    extern std::shared_ptr<Parameters::CheckParam> analyseMode;
+    extern std::shared_ptr<Parameters::SpinParam> strength;
+    extern std::shared_ptr<Parameters::SpinParam> threads;
+    extern std::shared_ptr<Parameters::SpinParam> multiPV;
+
     extern std::shared_ptr<Parameters::StringParam> gtbPath;
     extern std::shared_ptr<Parameters::SpinParam> gtbCache;
     extern std::shared_ptr<Parameters::StringParam> rtbPath;

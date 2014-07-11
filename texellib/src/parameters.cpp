@@ -27,6 +27,18 @@
 #include "computerPlayer.hpp"
 
 namespace UciParams {
+    std::shared_ptr<Parameters::SpinParam> hash(std::make_shared<Parameters::SpinParam>("Hash", 1, 524288, 16));
+    std::shared_ptr<Parameters::CheckParam> ownBook(std::make_shared<Parameters::CheckParam>("OwnBook", false));
+    std::shared_ptr<Parameters::CheckParam> ponder(std::make_shared<Parameters::CheckParam>("Ponder", true));
+    std::shared_ptr<Parameters::CheckParam> analyseMode(std::make_shared<Parameters::CheckParam>("UCI_AnalyseMode", false));
+    std::shared_ptr<Parameters::SpinParam> strength(std::make_shared<Parameters::SpinParam>("Strength", 0, 1000, 1000));
+#ifdef __arm__
+    std::shared_ptr<Parameters::SpinParam> threads(std::make_shared<Parameters::SpinParam>("Threads", 1, 1, 1));
+#else
+    std::shared_ptr<Parameters::SpinParam> threads(std::make_shared<Parameters::SpinParam>("Threads", 1, 64, 1));
+#endif
+    std::shared_ptr<Parameters::SpinParam> multiPV(std::make_shared<Parameters::SpinParam>("MultiPV", 1, 256, 1));
+
     std::shared_ptr<Parameters::StringParam> gtbPath(std::make_shared<Parameters::StringParam>("GaviotaTbPath", ""));
     std::shared_ptr<Parameters::SpinParam> gtbCache(std::make_shared<Parameters::SpinParam>("GaviotaTbCache", 1, 2047, 1));
     std::shared_ptr<Parameters::StringParam> rtbPath(std::make_shared<Parameters::StringParam>("SyzygyPath", ""));
@@ -569,20 +581,17 @@ ParamTable<10> halfMoveFactor { 0, 192, useUciParam,
 };
 
 Parameters::Parameters() {
-    addPar(std::make_shared<SpinParam>("Hash", 1, 524288, 16));
-    addPar(std::make_shared<CheckParam>("OwnBook", false));
-    addPar(std::make_shared<CheckParam>("Ponder", true));
-    addPar(std::make_shared<CheckParam>("UCI_AnalyseMode", false));
     std::string about = ComputerPlayer::engineName +
                         " by Peter Osterlund, see http://web.comhem.se/petero2home/javachess/index.html#texel";
     addPar(std::make_shared<StringParam>("UCI_EngineAbout", about));
-    addPar(std::make_shared<SpinParam>("Strength", 0, 1000, 1000));
-#ifdef __arm__
-    addPar(std::make_shared<SpinParam>("Threads", 1, 1, 1));
-#else
-    addPar(std::make_shared<SpinParam>("Threads", 1, 64, 1));
-#endif
-    addPar(std::make_shared<SpinParam>("MultiPV", 1, 256, 1));
+
+    addPar(UciParams::hash);
+    addPar(UciParams::ownBook);
+    addPar(UciParams::ponder);
+    addPar(UciParams::analyseMode);
+    addPar(UciParams::strength);
+    addPar(UciParams::threads);
+    addPar(UciParams::multiPV);
 
     addPar(UciParams::gtbPath);
     addPar(UciParams::gtbCache);

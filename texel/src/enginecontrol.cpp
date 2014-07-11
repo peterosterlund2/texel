@@ -98,14 +98,14 @@ EngineControl::EngineControl(std::ostream& o)
       pd(tt),
       randomSeed(0)
 {
-    hashParListenerId = Parameters::instance().getParam("Hash")->addListener([this]() {
+    hashParListenerId = UciParams::hash->addListener([this]() {
         setupTT();
     });
     et = Evaluate::getEvalHashTables();
 }
 
 EngineControl::~EngineControl() {
-    Parameters::instance().getParam("Hash")->removeListener(hashParListenerId);
+    UciParams::hash->removeListener(hashParListenerId);
 }
 
 void
@@ -195,7 +195,7 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
             const int margin = std::min(static_cast<int>(bufferTime), time * 9 / 10);
             int timeLimit = (time + inc * (moves - 1) - margin) / moves;
             minTimeLimit = (int)(timeLimit * minTimeUsage * 0.01);
-            if (Parameters::instance().getBoolPar("Ponder")) {
+            if (UciParams::ponder->getBoolPar()) {
                 const double ponderHitRate = timePonderHitRate * 0.01;
                 minTimeLimit = (int)ceil(minTimeLimit / (1 - ponderHitRate));
             }
@@ -212,11 +212,10 @@ void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
     if (pendingTTChange)
         setupTT();
-    Parameters& par = Parameters::instance();
     Search::SearchTables st(tt, kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
     sc->setListener(std::make_shared<SearchListener>(os));
-    sc->setStrength(par.getIntPar("Strength"), randomSeed);
+    sc->setStrength(UciParams::strength->getIntPar(), randomSeed);
     std::shared_ptr<MoveGen::MoveList> moves(std::make_shared<MoveGen::MoveList>());
     MoveGen::pseudoLegalMoves(pos, *moves);
     MoveGen::removeIllegal(pos, *moves);
@@ -235,14 +234,14 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
             }
         }
     }
-    pd.addRemoveWorkers(par.getIntPar("Threads") - 1);
+    pd.addRemoveWorkers(UciParams::threads->getIntPar() - 1);
     pd.wq.resetSplitDepth();
     pd.startAll();
     sc->timeLimit(minTimeLimit, maxTimeLimit);
     tt.nextGeneration();
-    bool ownBook = par.getBoolPar("OwnBook");
-    bool analyseMode = par.getBoolPar("UCI_AnalyseMode");
-    int maxPV = (infinite || analyseMode) ? par.getIntPar("MultiPV") : 1;
+    bool ownBook = UciParams::ownBook->getBoolPar();
+    bool analyseMode = UciParams::analyseMode->getBoolPar();
+    int maxPV = (infinite || analyseMode) ? UciParams::multiPV->getIntPar() : 1;
     int minProbeDepth = UciParams::minProbeDepth->getIntPar();
     if (analyseMode) {
         Evaluate eval(*et);
@@ -316,7 +315,7 @@ EngineControl::setupTT() {
     }
     pendingTTChange = false;
 
-    int hashSizeMB = Parameters::instance().getIntPar("Hash");
+    int hashSizeMB = UciParams::hash->getIntPar();
     U64 nEntries = hashSizeMB > 0 ? ((U64)hashSizeMB) * (1 << 20) / sizeof(TranspositionTable::TTEntry)
 	                          : (U64)1024;
     int logSize = 0;
