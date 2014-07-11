@@ -47,7 +47,7 @@ int swapSquareY(int square) {
 Position
 swapColors(const Position& pos) {
     Position sym;
-    sym.setWhiteMove(!pos.getWhiteMove());
+    sym.setWhiteMove(!pos.isWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             int sq = Position::getSquare(x, y);
@@ -76,7 +76,7 @@ swapColors(const Position& pos) {
 /** Mirror position in X direction, remove castling rights. */
 Position mirrorX(const Position& pos) {
     Position mir;
-    mir.setWhiteMove(pos.getWhiteMove());
+    mir.setWhiteMove(pos.isWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             int sq = Position::getSquare(x, y);
@@ -148,7 +148,7 @@ evalWhite(Evaluate& eval, const Position& pos) {
     ASSERT_EQUAL(symPos.materialId(), PositionTest::computeMaterialId(symPos));
     ASSERT_EQUAL(MatId::mirror(pos.materialId()), symPos.materialId());
     ASSERT_EQUAL(pos.materialId(), MatId::mirror(symPos.materialId()));
-    if (!pos.getWhiteMove())
+    if (!pos.isWhiteMove())
         ret = -ret;
     return ret;
 }
@@ -828,7 +828,7 @@ testKRKP() {
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
-    pos.setWhiteMove(!pos.getWhiteMove());
+    pos.setWhiteMove(!pos.isWhiteMove());
     ASSERT(evalWhite(pos) < drawish);
 }
 
@@ -852,7 +852,7 @@ testKPK() {
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("8/8/8/3k4/8/8/3PK3/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
-    pos.setWhiteMove(!pos.getWhiteMove());
+    pos.setWhiteMove(!pos.isWhiteMove());
     ASSERT(evalWhite(pos) < drawish);
 }
 

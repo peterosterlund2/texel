@@ -219,13 +219,13 @@ TBTest::kpkTest() {
                     int score;
                     int res = probeDTM(pos, ply, score);
                     ASSERT_EQUAL(true, res);
-                    if (pos.getWhiteMove()) {
+                    if (pos.isWhiteMove()) {
                         ASSERT(score >= 0);
                     } else {
                         ASSERT(score <= 0);
                     }
                     int evalWhite = evaluate.evalPos(pos);
-                    if (!pos.getWhiteMove())
+                    if (!pos.isWhiteMove())
                         evalWhite = -evalWhite;
                     if (score == 0) {
                         ASSERT(evalWhite == 0);

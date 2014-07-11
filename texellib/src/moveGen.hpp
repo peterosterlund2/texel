@@ -98,7 +98,7 @@ public:
      * Return true if the side to move is in check.
      */
     static bool inCheck(const Position& pos) {
-        int kingSq = pos.getKingSq(pos.getWhiteMove());
+        int kingSq = pos.getKingSq(pos.isWhiteMove());
         return sqAttacked(pos, kingSq);
     }
 
@@ -111,9 +111,9 @@ public:
      * Return true if the side to move can take the opponents king.
      */
     static bool canTakeKing(Position& pos) {
-        pos.setWhiteMove(!pos.getWhiteMove());
+        pos.setWhiteMove(!pos.isWhiteMove());
         bool ret = inCheck(pos);
-        pos.setWhiteMove(!pos.getWhiteMove());
+        pos.setWhiteMove(!pos.isWhiteMove());
         return ret;
     }
 
@@ -125,7 +125,7 @@ public:
         return sqAttacked(pos, sq, occupied);
     }
     static bool sqAttacked(const Position& pos, int sq, U64 occupied) {
-        return pos.getWhiteMove() ? sqAttacked<true>(pos, sq, occupied)
+        return pos.isWhiteMove() ? sqAttacked<true>(pos, sq, occupied)
                              : sqAttacked<false>(pos, sq, occupied);
     }
     template <bool wtm>
@@ -252,7 +252,7 @@ private:
 
 inline void
 MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
-    if (pos.getWhiteMove())
+    if (pos.isWhiteMove())
         pseudoLegalMoves<true>(pos, moveList);
     else
         pseudoLegalMoves<false>(pos, moveList);
@@ -260,7 +260,7 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
 
 inline void
 MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
-    if (pos.getWhiteMove())
+    if (pos.isWhiteMove())
         checkEvasions<true>(pos, moveList);
     else
         checkEvasions<false>(pos, moveList);
@@ -268,7 +268,7 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
 
 inline void
 MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
-    if (pos.getWhiteMove())
+    if (pos.isWhiteMove())
         pseudoLegalCapturesAndChecks<true>(pos, moveList);
     else
         pseudoLegalCapturesAndChecks<false>(pos, moveList);
@@ -276,7 +276,7 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
 
 inline void
 MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
-    if (pos.getWhiteMove())
+    if (pos.isWhiteMove())
         pseudoLegalCaptures<true>(pos, moveList);
     else
         pseudoLegalCaptures<false>(pos, moveList);

@@ -153,14 +153,14 @@ static int probe_wdl_table(Position& pos, int *success)
         if (key != ptr->key) {
             cmirror = 8;
             mirror = 0x38;
-            bside = pos.getWhiteMove();
+            bside = pos.isWhiteMove();
         } else {
             cmirror = mirror = 0;
-            bside = !pos.getWhiteMove();
+            bside = !pos.isWhiteMove();
         }
     } else {
-        cmirror = pos.getWhiteMove() ? 0 : 8;
-        mirror = pos.getWhiteMove() ? 0 : 0x38;
+        cmirror = pos.isWhiteMove() ? 0 : 8;
+        mirror = pos.isWhiteMove() ? 0 : 0x38;
         bside = 0;
     }
 
@@ -250,14 +250,14 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
         if (key != ptr->key) {
             cmirror = 8;
             mirror = 0x38;
-            bside = pos.getWhiteMove();
+            bside = pos.isWhiteMove();
         } else {
             cmirror = mirror = 0;
-            bside = !pos.getWhiteMove();
+            bside = !pos.isWhiteMove();
         }
     } else {
-        cmirror = pos.getWhiteMove() ? 0 : 8;
-        mirror = pos.getWhiteMove() ? 0 : 0x38;
+        cmirror = pos.isWhiteMove() ? 0 : 8;
+        mirror = pos.isWhiteMove() ? 0 : 0x38;
         bside = 0;
     }
 
@@ -319,7 +319,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
 static void add_underprom_caps(Position& pos, MoveGen::MoveList& moveList)
 {
     const int nMoves = moveList.size;
-    const bool wtm = pos.getWhiteMove();
+    const bool wtm = pos.isWhiteMove();
     const int queen = wtm ? Piece::WQUEEN : Piece::BQUEEN;
     for (int i = 0; i < nMoves; i++) {
         const Move& m = moveList[i];
@@ -396,7 +396,7 @@ int Syzygy::probe_wdl(Position& pos, int *success)
         MoveGen::pseudoLegalMoves(pos, moveList);
     }
 
-    const int pawn = pos.getWhiteMove() ? Piece::WPAWN : Piece::BPAWN;
+    const int pawn = pos.isWhiteMove() ? Piece::WPAWN : Piece::BPAWN;
     UndoInfo ui;
     for (int m = 0; m < moveList.size; m++) {
         const Move& capture = moveList[m];
@@ -442,7 +442,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
 
     MoveGen::MoveList moveList;
     const bool inCheck = MoveGen::inCheck(pos);
-    const int pawn = pos.getWhiteMove() ? Piece::WPAWN : Piece::BPAWN;
+    const int pawn = pos.isWhiteMove() ? Piece::WPAWN : Piece::BPAWN;
     UndoInfo ui;
 
     if (wdl > 0) {
@@ -543,7 +543,7 @@ int Syzygy::probe_dtz(Position& pos, int *success)
 
     MoveGen::MoveList moveList;
     const bool inCheck = MoveGen::inCheck(pos);
-    const int pawn = pos.getWhiteMove() ? Piece::WPAWN : Piece::BPAWN;
+    const int pawn = pos.isWhiteMove() ? Piece::WPAWN : Piece::BPAWN;
     UndoInfo ui;
 
     if (!inCheck) {

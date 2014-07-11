@@ -312,7 +312,7 @@ Search::canClaimDrawRep(const Position& pos, const std::vector<U64>& posHashList
 inline bool
 Search::passedPawnPush(const Position& pos, const Move& m) {
     int p = pos.getPiece(m.from());
-    if (pos.getWhiteMove()) {
+    if (pos.isWhiteMove()) {
         if (p != Piece::WPAWN)
             return false;
         if ((BitBoard::wPawnBlockerMask[m.to()] & pos.pieceTypeBB(Piece::BPAWN)) != 0)

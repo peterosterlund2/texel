@@ -103,7 +103,7 @@ testMakeMove() {
     Move move(Position::getSquare(4,1), Position::getSquare(4,3), Piece::EMPTY);
     UndoInfo ui;
     pos.makeMove(move, ui);
-    ASSERT_EQUAL(pos.getWhiteMove(), false);
+    ASSERT_EQUAL(pos.isWhiteMove(), false);
     ASSERT_EQUAL(-1, pos.getEpSquare());
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(4,1)));
     ASSERT_EQUAL(Piece::WPAWN, pos.getPiece(Position::getSquare(4,3)));
@@ -114,7 +114,7 @@ testMakeMove() {
                      (1 << Position::H8_CASTLE);
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     pos.unMakeMove(move, ui);
-    ASSERT_EQUAL(pos.getWhiteMove(), true);
+    ASSERT_EQUAL(pos.isWhiteMove(), true);
     ASSERT_EQUAL(Piece::WPAWN, pos.getPiece(Position::getSquare(4,1)));
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(4,3)));
     ASSERT(pos.equals(origPos));
@@ -363,12 +363,12 @@ testHashCode() {
     pos.unMakeMove(move, ui);
     ASSERT(h1 == pos.zobristHash());
 
-    pos.setWhiteMove(!pos.getWhiteMove());
+    pos.setWhiteMove(!pos.isWhiteMove());
     U64 h4 = pos.zobristHash();
     ASSERT_EQUAL(h4, pos.computeZobristHash());
     ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     ASSERT(h1 != pos.zobristHash());
-    pos.setWhiteMove(!pos.getWhiteMove());
+    pos.setWhiteMove(!pos.isWhiteMove());
     ASSERT(h1 == pos.zobristHash());
 
     pos.setCastleMask(0);

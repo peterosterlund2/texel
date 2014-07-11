@@ -408,7 +408,7 @@ std::ostream&
 operator<<(std::ostream& os, const Position& pos) {
     std::stringstream ss;
     ss << std::hex << pos.zobristHash();
-    os << TextIO::asciiBoard(pos) << (pos.getWhiteMove() ? "white\n" : "black\n") << ss.str();
+    os << TextIO::asciiBoard(pos) << (pos.isWhiteMove() ? "white\n" : "black\n") << ss.str();
     return os;
 }
 

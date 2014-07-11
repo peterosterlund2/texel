@@ -124,7 +124,7 @@ GameTest::testHaveDrawOffer() {
     game.processString("undo");
     game.processString("redo");
     game.processString("e5");
-    ASSERT_EQUAL(true, game.pos.getWhiteMove());
+    ASSERT_EQUAL(true, game.pos.isWhiteMove());
     ASSERT_EQUAL(false, game.haveDrawOffer());
 }
 
@@ -168,7 +168,7 @@ GameTest::testDraw50() {
     game.processString(cmd);
     game.processString("draw 50 Ke3");
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());    // Ke3 is invalid
-    ASSERT_EQUAL(true, game.pos.getWhiteMove());
+    ASSERT_EQUAL(true, game.pos.isWhiteMove());
     game.processString("a6");
     ASSERT_EQUAL(true, game.haveDrawOffer());   // Previous invalid claim converted to offer
     game.processString("draw 50");

@@ -124,7 +124,7 @@ Book::initBook() {
             bool bad = ((move >> 15) & 1) != 0;
             int prom = (move >> 12) & 7;
             Move m(move & 63, (move >> 6) & 63,
-                   promToPiece(prom, pos.getWhiteMove()));
+                   promToPiece(prom, pos.isWhiteMove()));
             if (!bad)
                 addToBook(pos, m);
             pos.makeMove(m, ui);

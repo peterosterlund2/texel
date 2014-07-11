@@ -579,7 +579,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     // Reverse futility pruning
     if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) && normalBound) {
         bool mtrlOk;
-        if (pos.getWhiteMove()) {
+        if (pos.isWhiteMove()) {
             mtrlOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
         } else {
             mtrlOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
@@ -605,7 +605,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     if (    (depth >= 3*plyScale) && !inCheck && sti.allowNullMove &&
             !isWinScore(std::abs(beta))) {
         bool nullOk;
-        if (pos.getWhiteMove()) {
+        if (pos.isWhiteMove()) {
             nullOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
         } else {
             nullOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
@@ -635,7 +635,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     sph.addToQueue();
                     sph.setOwnerCurrMove(0, alpha);
                 }
-                pos.setWhiteMove(!pos.getWhiteMove());
+                pos.setWhiteMove(!pos.isWhiteMove());
                 int epSquare = pos.getEpSquare();
                 pos.setEpSquare(-1);
                 searchTreeInfo[ply+1].allowNullMove = false;
@@ -643,7 +643,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 score = -negaScout(smp, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
                 searchTreeInfo[ply+1].allowNullMove = true;
                 pos.setEpSquare(epSquare);
-                pos.setWhiteMove(!pos.getWhiteMove());
+                pos.setWhiteMove(!pos.isWhiteMove());
             }
             bool storeInHash = true;
             if ((score >= beta) && (depth >= 10 * plyScale)) {
@@ -752,7 +752,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
     }
     bool lmpOk;
-    if (pos.getWhiteMove())
+    if (pos.isWhiteMove())
         lmpOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
     else
         lmpOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
@@ -819,7 +819,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     if ((moveExtend < plyScale) && isCapture && (pos.wMtrlPawns() + pos.bMtrlPawns() > pV)) {
                         // Extend if going into pawn endgame
                         int capVal = ::pieceValue[pos.getPiece(m.to())];
-                        if (pos.getWhiteMove()) {
+                        if (pos.isWhiteMove()) {
                             if ((pos.wMtrl() == pos.wMtrlPawns()) && (pos.bMtrl() - pos.bMtrlPawns() == capVal))
                                 moveExtend = plyScale;
                         } else {
@@ -1144,7 +1144,7 @@ Search::SEE(const Move& m) {
 
     UndoInfo ui;
     pos.makeSEEMove(m, ui);
-    bool white = pos.getWhiteMove();
+    bool white = pos.isWhiteMove();
     int valOnSquare = ::pieceValue[pos.getPiece(square)];
     U64 occupied = pos.occupiedBB();
     while (true) {

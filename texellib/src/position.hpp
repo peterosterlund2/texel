@@ -77,7 +77,7 @@ public:
      */
     bool drawRuleEquals(Position other) const;
 
-    int getWhiteMove() const;
+    bool isWhiteMove() const;
 
     void setWhiteMove(bool whiteMove);
 
@@ -319,7 +319,8 @@ Position::drawRuleEquals(Position other) const {
     return true;
 }
 
-inline int Position::getWhiteMove() const {
+inline bool
+Position::isWhiteMove() const {
     return whiteMove;
 }
 

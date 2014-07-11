@@ -211,7 +211,7 @@ getEPSquares(const Position& pos) {
     U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
     U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
     U64 occupied = pos.occupiedBB();
-    if (pos.getWhiteMove()) {
+    if (pos.isWhiteMove()) {
         U64 wPawnAttacks = ((wPawns & BitBoard::maskBToHFiles) << 7) |
                            ((wPawns & BitBoard::maskAToGFiles) << 9);
         return ((bPawns & BitBoard::maskRow5) << 8) & ~occupied & wPawnAttacks;

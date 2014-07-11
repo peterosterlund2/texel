@@ -190,7 +190,7 @@ TBProbe::extendPV(const Position& rootPos, std::vector<Move>& pv) {
         return; // No TB win
     if (SearchConst::MATE0 - 1 - abs(score) - ply > 100 - pos.getHalfMoveClock())
         return; // Mate too far away, perhaps 50-move draw
-    if (!pos.getWhiteMove())
+    if (!pos.isWhiteMove())
         score = -score;
     while (true) {
         MoveGen::MoveList moveList;
@@ -202,7 +202,7 @@ TBProbe::extendPV(const Position& rootPos, std::vector<Move>& pv) {
             pos.makeMove(m, ui);
             int newScore;
             if (TBProbe::gtbProbeDTM(pos, ply+1, newScore)) {
-                if (!pos.getWhiteMove())
+                if (!pos.isWhiteMove())
                     newScore = -newScore;
                 if (newScore == score) {
                     pv.push_back(m);
@@ -224,7 +224,7 @@ static void handleEP(Position& pos, int ply, int& score, bool& ret, ProbeFunc pr
     MoveGen::MoveList moveList;
     if (inCheck) MoveGen::checkEvasions(pos, moveList);
     else         MoveGen::pseudoLegalMoves(pos, moveList);
-    const int pawn = pos.getWhiteMove() ? Piece::WPAWN : Piece::BPAWN;
+    const int pawn = pos.isWhiteMove() ? Piece::WPAWN : Piece::BPAWN;
     int bestEP = std::numeric_limits<int>::min();
     UndoInfo ui;
     for (int m = 0; m < moveList.size; m++) {
@@ -385,7 +385,7 @@ TBProbe::gtbInitialize(const std::string& path, int cacheMB, int wdlFraction) {
 
 void
 TBProbe::getGTBProbeData(const Position& pos, GtbProbeData& gtbData) {
-    gtbData.stm = pos.getWhiteMove() ? tb_WHITE_TO_MOVE : tb_BLACK_TO_MOVE;
+    gtbData.stm = pos.isWhiteMove() ? tb_WHITE_TO_MOVE : tb_BLACK_TO_MOVE;
     gtbData.epsq = pos.getEpSquare() >= 0 ? pos.getEpSquare() : tb_NOSQUARE;
 
     gtbData.castles = 0;

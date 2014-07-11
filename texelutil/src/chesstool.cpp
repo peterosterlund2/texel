@@ -140,7 +140,7 @@ ChessTool::pgnToFen(std::istream& is) {
             sc.init(pos, nullHist, 0);
             sc.q0Eval = UNKNOWN_SCORE;
             int score = sc.quiesce(-mate0, mate0, 0, 0*plyScale, MoveGen::inCheck(pos));
-            if (!pos.getWhiteMove()) {
+            if (!pos.isWhiteMove()) {
                 score = -score;
                 commentScore = -commentScore;
             }
@@ -205,7 +205,7 @@ swapSquareY(int square) {
 static Position
 swapColors(const Position& pos) {
     Position sym;
-    sym.setWhiteMove(!pos.getWhiteMove());
+    sym.setWhiteMove(!pos.isWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             int sq = Position::getSquare(x, y);
@@ -1359,7 +1359,7 @@ ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int 
             sc.init(pos, nullHist, 0);
             sc.q0Eval = UNKNOWN_SCORE;
             int score = sc.quiesce(-mate0, mate0, 0, 0*plyScale, MoveGen::inCheck(pos));
-            if (!pos.getWhiteMove())
+            if (!pos.isWhiteMove())
                 score = -score;
             pi.qScore = score;
         }

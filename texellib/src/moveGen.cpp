@@ -466,7 +466,7 @@ MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
 
 bool
 MoveGen::givesCheck(const Position& pos, const Move& m) {
-    bool wtm = pos.getWhiteMove();
+    bool wtm = pos.isWhiteMove();
     int oKingSq = pos.getKingSq(!wtm);
     int oKing = wtm ? Piece::BKING : Piece::WKING;
     int p = Piece::makeWhite(m.promoteTo() == Piece::EMPTY ? pos.getPiece(m.from()) : m.promoteTo());
@@ -581,11 +581,11 @@ MoveGen::removeIllegal(Position& pos, MoveList& moveList) {
 
     bool isInCheck = inCheck(pos);
     const U64 occupied = pos.occupiedBB();
-    int kSq = pos.getKingSq(pos.getWhiteMove());
+    int kSq = pos.getKingSq(pos.isWhiteMove());
     U64 kingAtks = BitBoard::rookAttacks(kSq, occupied) | BitBoard::bishopAttacks(kSq, occupied);
     int epSquare = pos.getEpSquare();
     if (isInCheck) {
-        kingAtks |= pos.pieceTypeBB(pos.getWhiteMove() ? Piece::BKNIGHT : Piece::WKNIGHT);
+        kingAtks |= pos.pieceTypeBB(pos.isWhiteMove() ? Piece::BKNIGHT : Piece::WKNIGHT);
         for (int mi = 0; mi < moveList.size; mi++) {
             const Move& m = moveList[mi];
             bool legal;
@@ -593,9 +593,9 @@ MoveGen::removeIllegal(Position& pos, MoveList& moveList) {
                 legal = false;
             } else {
                 pos.makeMove(m, ui);
-                pos.setWhiteMove(!pos.getWhiteMove());
+                pos.setWhiteMove(!pos.isWhiteMove());
                 legal = !inCheck(pos);
-                pos.setWhiteMove(!pos.getWhiteMove());
+                pos.setWhiteMove(!pos.isWhiteMove());
                 pos.unMakeMove(m, ui);
             }
             if (legal)
@@ -609,9 +609,9 @@ MoveGen::removeIllegal(Position& pos, MoveList& moveList) {
                 legal = true;
             } else {
                 pos.makeMove(m, ui);
-                pos.setWhiteMove(!pos.getWhiteMove());
+                pos.setWhiteMove(!pos.isWhiteMove());
                 legal = !inCheck(pos);
-                pos.setWhiteMove(!pos.getWhiteMove());
+                pos.setWhiteMove(!pos.isWhiteMove());
                 pos.unMakeMove(m, ui);
             }
             if (legal)
@@ -624,13 +624,13 @@ MoveGen::removeIllegal(Position& pos, MoveList& moveList) {
 bool
 MoveGen::isLegal(Position& pos, const Move& m, bool isInCheck) {
     UndoInfo ui;
-    int kSq = pos.getKingSq(pos.getWhiteMove());
+    int kSq = pos.getKingSq(pos.isWhiteMove());
     const int epSquare = pos.getEpSquare();
     if (isInCheck) {
         if ((m.from() != kSq) && (m.to() != epSquare)) {
             U64 occupied = pos.occupiedBB();
             U64 toMask = 1ULL << m.to();
-            Piece::Type knight = pos.getWhiteMove() ? Piece::BKNIGHT : Piece::WKNIGHT;
+            Piece::Type knight = pos.isWhiteMove() ? Piece::BKNIGHT : Piece::WKNIGHT;
             if (((BitBoard::rookAttacks(kSq, occupied) & toMask) == 0) &&
                 ((BitBoard::bishopAttacks(kSq, occupied) & toMask) == 0) &&
                 ((BitBoard::knightAttacks[kSq] & pos.pieceTypeBB(knight) & toMask) == 0))

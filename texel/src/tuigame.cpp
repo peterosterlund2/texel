@@ -180,7 +180,7 @@ TUIGame::play() {
             if (haveDrawOffer())
                 moveStr += " (offer draw)";
             std::cout << "Last move: " << prevPos.getFullMoveCounter()
-                    << (prevPos.getWhiteMove() ? "." : "...")
+                    << (prevPos.isWhiteMove() ? "." : "...")
                     << ' ' << moveStr << std::endl;
         }
         /*
@@ -193,7 +193,7 @@ TUIGame::play() {
         {
             auto et = Evaluate::getEvalHashTables();
             Evaluate eval(*et);
-            int evScore = eval.evalPos(getPos()) * (getPos().getWhiteMove() ? 1 : -1);
+            int evScore = eval.evalPos(getPos()) * (getPos().isWhiteMove() ? 1 : -1);
             std::stringstream ss;
             ss.precision(2);
             ss << std::fixed << "Eval: " << (evScore / 100.0);
@@ -209,7 +209,7 @@ TUIGame::play() {
             activateHumanPlayer();
 
         // Get command from current player and act on it
-        std::shared_ptr<Player> pl = getPos().getWhiteMove() ? whitePlayer : blackPlayer;
+        std::shared_ptr<Player> pl = getPos().isWhiteMove() ? whitePlayer : blackPlayer;
         std::vector<Position> posList;
         getHistory(posList);
         std::string moveStr = pl->getCommand(getPos(), haveDrawOffer(), posList);

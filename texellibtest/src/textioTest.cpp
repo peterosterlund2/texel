@@ -53,7 +53,7 @@ testReadFEN() {
     ASSERT_EQUAL(Piece::WQUEEN, pos.getPiece(Position::getSquare(0, 3)));
     ASSERT_EQUAL(Piece::BKING, pos.getPiece(Position::getSquare(4, 7)));
     ASSERT_EQUAL(Piece::WKING, pos.getPiece(Position::getSquare(4, 1)));
-    ASSERT_EQUAL(false, pos.getWhiteMove());
+    ASSERT_EQUAL(false, pos.isWhiteMove());
     ASSERT_EQUAL(false, pos.a1Castle());
     ASSERT_EQUAL(false, pos.h1Castle());
     ASSERT_EQUAL(true, pos.a8Castle());

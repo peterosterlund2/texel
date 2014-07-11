@@ -31,7 +31,7 @@
 
 std::string
 HumanPlayer::getCommand(const Position& pos, bool drawOffer, const std::vector<Position>& history) {
-    const char* color = pos.getWhiteMove() ? "white" : "black";
+    const char* color = pos.isWhiteMove() ? "white" : "black";
     std::cout << "Enter move (" << color << "):" << std::flush;
     std::string moveStr;
     getline(std::cin, moveStr);

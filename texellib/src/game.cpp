@@ -122,9 +122,9 @@ Game::getGameState() {
     MoveGen::removeIllegal(pos, moves);
     if (moves.size == 0) {
         if (MoveGen::inCheck(pos))
-            return pos.getWhiteMove() ? BLACK_MATE : WHITE_MATE;
+            return pos.isWhiteMove() ? BLACK_MATE : WHITE_MATE;
         else
-            return pos.getWhiteMove() ? WHITE_STALEMATE : BLACK_STALEMATE;
+            return pos.isWhiteMove() ? WHITE_STALEMATE : BLACK_STALEMATE;
     }
     if (insufficientMaterial())
         return DRAW_NO_MATE;
@@ -208,7 +208,7 @@ Game::handleCommand(const std::string& moveStr) {
         }
     } else if (moveStr == "resign") {
         if (getGameState()== ALIVE) {
-            resignState = pos.getWhiteMove() ? RESIGN_WHITE : RESIGN_BLACK;
+            resignState = pos.isWhiteMove() ? RESIGN_WHITE : RESIGN_BLACK;
             return true;
         } else {
             return true;
@@ -250,7 +250,7 @@ Game::handleCommand(const std::string& moveStr) {
 
 void
 Game::activateHumanPlayer() {
-    if (!(pos.getWhiteMove() ? whitePlayer : blackPlayer)->isHumanPlayer())
+    if (!(pos.isWhiteMove() ? whitePlayer : blackPlayer)->isHumanPlayer())
         std::swap(whitePlayer, blackPlayer);
 }
 
@@ -294,7 +294,7 @@ Game::getMoveListString(bool compressed) {
         std::string strMove = TextIO::moveToString(pos, move, false);
         if (drawOfferList[i])
             strMove += " (d)";
-        if (pos.getWhiteMove()) {
+        if (pos.isWhiteMove()) {
             whiteMove = strMove;
         } else {
             blackMove = strMove;

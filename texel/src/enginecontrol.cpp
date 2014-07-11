@@ -189,7 +189,7 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
             if (moves == 0)
                 moves = 999;
             moves = std::min(moves, static_cast<int>(timeMaxRemainingMoves)); // Assume at most N more moves until end of game
-            bool white = pos.getWhiteMove();
+            bool white = pos.isWhiteMove();
             int time = white ? sPar.wTime : sPar.bTime;
             int inc  = white ? sPar.wInc : sPar.bInc;
             const int margin = std::min(static_cast<int>(bufferTime), time * 9 / 10);
@@ -246,7 +246,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     int minProbeDepth = UciParams::minProbeDepth->getIntPar();
     if (analyseMode) {
         Evaluate eval(*et);
-        int evScore = eval.evalPosPrint(pos) * (pos.getWhiteMove() ? 1 : -1);
+        int evScore = eval.evalPosPrint(pos) * (pos.isWhiteMove() ? 1 : -1);
         std::stringstream ss;
         ss.precision(2);
         ss << std::fixed << (evScore / 100.0);
