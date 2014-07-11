@@ -202,11 +202,8 @@ public:
     /** Get singleton instance. */
     static Parameters& instance();
 
-    void getParamNames(std::vector<std::string>& parNames) {
-        parNames.clear();
-        for (const auto& p : params)
-            parNames.push_back(p.first);
-    }
+    /** Retrieve list of all parameters. */
+    void getParamNames(std::vector<std::string>& parNames);
 
     std::shared_ptr<ParamBase> getParam(const std::string& name) const {
         auto it = params.find(toLowerCase(name));
@@ -233,15 +230,14 @@ public:
         it->second->set(value);
     }
 
-    void addPar(const std::shared_ptr<ParamBase>& p) {
-        assert(params.find(toLowerCase(p->name)) == params.end());
-        params[toLowerCase(p->name)] = p;
-    }
+    /** Register a parameter. */
+    void addPar(const std::shared_ptr<ParamBase>& p);
 
 private:
     Parameters();
 
     std::map<std::string, std::shared_ptr<ParamBase>> params;
+    std::vector<std::string> paramNames;
 };
 
 // ----------------------------------------------------------------------------

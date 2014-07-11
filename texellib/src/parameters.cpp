@@ -750,6 +750,19 @@ Parameters::instance() {
 }
 
 void
+Parameters::getParamNames(std::vector<std::string>& parNames) {
+    parNames = paramNames;
+}
+
+void
+Parameters::addPar(const std::shared_ptr<ParamBase>& p) {
+    std::string name = toLowerCase(p->name);
+    assert(params.find(name) == params.end());
+    params[name] = p;
+    paramNames.push_back(name);
+}
+
+void
 ParamTableBase::registerParamsN(const std::string& name, Parameters& pars,
                                 int* table, int* parNo, int N) {
     // Check that each parameter has a single value
