@@ -357,6 +357,7 @@ Book::bookLines[] = {
     "d4 d5 c4 c6 cxd5 cxd5 Nc3 Nf6 Bf4 Qb6 Qd2 Nc6 e3 Bf5",
     "d4 d5 c4 c6 Nc3 Nf6 e3 e6 Nf3",
     "Nf3 d5 d4 e6 c4 Nf6 g3 Be7 Bg2 O-O O-O dxc4 Qc2 a6 a4 Bd7 Qxc4 Bc6",
+    "d4 Nf6 c4 e6 Nf3 d5 g3? dxc4 Bg2 Nc6 Qa4 Bb4+ Bd2 Nd5 Bxb4 Nxb4 O-O Rb8 Nc3 a6 Ne5 O-O",
 
     // Tarrasch defense
     "d4 d5 c4 e6 Nc3 c5? cxd5 exd5 Nf3 Nc6 g3 Nf6 Bg2 Be7 O-O O-O Bg5 cxd4 Nxd4 h6",
@@ -522,6 +523,7 @@ Book::bookLines[] = {
     "Nf3 Nf6 g3? d5 d4 c5 Bg2 Nc6 O-O",
     "Nf3 Nf6 g3? d5 Bg2 c6 d4 Bf5 O-O g6",
     "Nf3 Nf6 d4",
+    "Nf3 Nf6 c4 e6 d4 d5 Nc3 c6 e3 Nbd7 Bd3 dxc4 Bxc4 b5 Bd3 a6 e4 c5 d5 c4 Bc2 e5 O-O Bd6 Ne2 O-O",
     "Nf3 d5 d4 Nf6 c4 e6 g3 dxc4 Bg2 Nc6 Qa4 Bb4 Bd2 Nd5 Bxb4 Nxb4 O-O Rb8",
     "Nf3 c5 c4 Nf6 Nc3 e6 g3 Be7? Bg2 O-O O-O a6? d4 cxd4 Nxd4 Qc7",
     "Nf3 c5 c4 Nf6 Nc3 e6 g3 b6 Bg2 Bb7 O-O Be7 d4 cxd4 Qxd4 d6",
