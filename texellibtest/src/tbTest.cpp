@@ -42,6 +42,7 @@ static void initTB(const std::string& gtbPath, int cacheMB,
     TBProbe::initialize(gtbPath, cacheMB, rtbPath);
 }
 
+/** Copy selected TB files to a temporary directory. */
 static void setupTBFiles(const std::vector<std::string>& tbFiles) {
     auto system = [](const std::string& cmd) {
         ::system(cmd.c_str());
@@ -50,11 +51,14 @@ static void setupTBFiles(const std::vector<std::string>& tbFiles) {
     system("mkdir -p " + tmpDir);
     system("rm " + tmpDir + "/*");
     for (const std::string& file : tbFiles) {
-        const int len = file.length();
-        if (len > 8 && file.substr(len-8) == ".gtb.cp4") {
+        if (endsWith(file, ".gtb.cp4")) {
             system("ln -s /home/petero/chess/gtb/" + file + " " + tmpDir + "/" + file);
+        } else if (endsWith(file, ".rtbw")) {
+            system("ln -s /home/petero/chess/rtb/wdl/" + file + " " + tmpDir + "/" + file);
+        } else if (endsWith(file, ".rtbz")) {
+            system("ln -s /home/petero/chess/rtb/dtz/" + file + " " + tmpDir + "/" + file);
         } else {
-            system("ln -s /home/petero/chess/rtb/5/" + file + " " + tmpDir + "/" + file);
+            throw "Unsupported file type";
         }
     }
     initTB("", 0, "");

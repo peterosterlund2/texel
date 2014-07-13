@@ -163,6 +163,18 @@ startsWith(const std::string& str, const std::string& startsWith) {
     return true;
 }
 
+inline bool
+endsWith(const std::string& str, const std::string& endsWith) {
+    size_t N = endsWith.length();
+    size_t sN = str.length();
+    if (sN < N)
+        return false;
+    for (size_t i = 0; i < N; i++)
+        if (str[sN - N + i] != endsWith[i])
+            return false;
+    return true;
+}
+
 /** Return true if vector v contains element e. */
 template <typename T>
 inline bool

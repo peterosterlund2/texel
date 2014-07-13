@@ -30,7 +30,8 @@
 
 const std::string gtbDefaultPath("/home/petero/chess/gtb");
 const int gtbDefaultCacheMB = 16;
-const std::string rtbDefaultPath("/home/petero/chess/rtb/5:"
+const std::string rtbDefaultPath("/home/petero/chess/rtb/wdl:"
+                                 "/home/petero/chess/rtb/dtz:"
                                  "/home/petero/chess/rtb/6wdl:"
                                  "/home/petero/chess/rtb/6dtz");
 

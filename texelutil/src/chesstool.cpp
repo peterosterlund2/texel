@@ -68,7 +68,8 @@ void
 ChessTool::setupTB() {
     UciParams::gtbPath->set("/home/petero/chess/gtb");
     UciParams::gtbCache->set("2047");
-    UciParams::rtbPath->set("/home/petero/chess/rtb/5:"
+    UciParams::rtbPath->set("/home/petero/chess/rtb/wdl:"
+                            "/home/petero/chess/rtb/dtz:"
                             "/home/petero/chess/rtb/6wdl:"
                             "/home/petero/chess/rtb/6dtz");
 }

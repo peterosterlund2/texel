@@ -58,6 +58,15 @@ UtilTest::testUtil() {
     ASSERT(!startsWith("Peter", "PeterO"));
     ASSERT(!startsWith("Peter", "Pex"));
     ASSERT(!startsWith("Peter", "eter"));
+    ASSERT(startsWith("", ""));
+    ASSERT(!startsWith("", "x"));
+
+    ASSERT(endsWith("test.txt", "txt"));
+    ASSERT(endsWith("test.txt", ".txt"));
+    ASSERT(!endsWith("test.txt", "ttxt"));
+    ASSERT(!endsWith("a", "ab"));
+    ASSERT(!endsWith("", "ab"));
+    ASSERT(endsWith("", ""));
 
     ASSERT(contains((std::vector<int>{1,2,3,4}), 3));
     ASSERT(!contains((std::vector<int>{1,2,3,4}), 5));
