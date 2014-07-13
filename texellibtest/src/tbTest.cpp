@@ -430,7 +430,8 @@ TBTest::testMissingTables() {
         std::vector<Move> movesToSearch;
         bool res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch);
         ASSERT_EQUAL(true, res);
-        compareMoves(std::vector<std::string>{"e7e8q", "e7e8r", "e7e8b", "e7e8n"}, movesToSearch);
+        if (gtb)
+            compareMoves(std::vector<std::string>{"e7e8q", "e7e8r", "e7e8b", "e7e8n"}, movesToSearch);
         {
             Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::pd,
                       nullptr, SearchTest::treeLog);

@@ -115,18 +115,20 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
         }
     }
 
-    // Try WDL probe if DTM/DTZ not needed or not available
-    int wdlScore;
-    if ((nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore)) ||
-            (nPieces <= gtbMaxPieces && gtbProbeWDL(pos, ply, wdlScore))) {
-        ent.setScore(wdlScore, ply);
-        if (wdlScore > 0)
-            ent.setType(TType::T_GE);
-        else if (wdlScore < 0)
-            ent.setType(TType::T_LE);
-        else
-            ent.setType(TType::T_EXACT);
-        return true;
+    if (pos.getHalfMoveClock() == 0) {
+        // Try WDL probe if DTM/DTZ not needed or not available
+        int wdlScore;
+        if ((nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore)) ||
+                (nPieces <= gtbMaxPieces && gtbProbeWDL(pos, ply, wdlScore))) {
+            ent.setScore(wdlScore, ply);
+            if (wdlScore > 0)
+                ent.setType(TType::T_GE);
+            else if (wdlScore < 0)
+                ent.setType(TType::T_LE);
+            else
+                ent.setType(TType::T_EXACT);
+            return true;
+        }
     }
     return false;
 }
