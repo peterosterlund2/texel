@@ -52,7 +52,7 @@ static struct TBEntry_pawn TB_pawn[TBMAX_PAWN];
 
 static struct TBHashEntry TB_hash[1 << TBHASHBITS][HSHMAX];
 
-#define DTZ_ENTRIES 64 // FIXME!! Can this be made larger?
+#define DTZ_ENTRIES 512
 
 static struct DTZTableEntry DTZ_table[DTZ_ENTRIES];
 
