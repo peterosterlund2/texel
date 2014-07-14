@@ -121,7 +121,7 @@ static int probe_wdl_table(Position& pos, int *success)
     // Test for KvK.
     if (!key) return 0;
 
-    ptr2 = TB_hash[key >> (64 - TBHASHBITS)];
+    ptr2 = WDL_hash[key >> (64 - TBHASHBITS)];
     for (i = 0; i < HSHMAX; i++)
         if (ptr2[i].key == key) break;
     if (i == HSHMAX) {
@@ -130,22 +130,22 @@ static int probe_wdl_table(Position& pos, int *success)
     }
 
     ptr = ptr2[i].ptr;
-    if (!ptr->ready) {
-        LOCK(TB_mutex);
-        if (!ptr->ready) {
+    ubyte ready = ptr->ready.load(std::memory_order_relaxed);
+    std::atomic_thread_fence(std::memory_order_acquire);
+    if (!ready) {
+        std::lock_guard<std::mutex> L(TB_mutex);
+        ready = ptr->ready.load(std::memory_order_relaxed);
+        if (!ready) {
             char str[16];
             prt_str(pos, str, ptr->key != key);
             if (!init_table_wdl(ptr, str)) {
                 ptr2[i].key = 0ULL;
                 *success = 0;
-                UNLOCK(TB_mutex);
                 return 0;
             }
-            // Memory barrier to ensure ptr->ready = 1 is not reordered.
-            __asm__ __volatile__ ("" ::: "memory");
-            ptr->ready = 1;
+            std::atomic_thread_fence(std::memory_order_release);
+            ptr->ready.store(1, std::memory_order_relaxed);
         }
-        UNLOCK(TB_mutex);
     }
 
     int bside, mirror, cmirror;
@@ -203,7 +203,6 @@ static int probe_wdl_table(Position& pos, int *success)
 
 static int probe_dtz_table(Position& pos, int wdl, int *success)
 {
-    struct TBEntry *ptr;
     uint64_t idx;
     int i, res;
     int p[TBPIECES];
@@ -211,35 +210,46 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
     // Obtain the position's material signature key.
     uint64_t key = calc_key(pos, false);
 
-    if (DTZ_table[0].key1 != key && DTZ_table[0].key2 != key) {
-        for (i = 1; i < DTZ_ENTRIES; i++)
-            if (DTZ_table[i].key1 == key || DTZ_table[i].key2 == key) break;
-        if (i < DTZ_ENTRIES) {
-            struct DTZTableEntry table_entry = DTZ_table[i];
-            for (; i > 0; i--)
-                DTZ_table[i] = DTZ_table[i - 1];
-            DTZ_table[0] = table_entry;
-        } else {
-            struct TBHashEntry *ptr2 = TB_hash[key >> (64 - TBHASHBITS)];
+    DTZTableEntry* dtzTabEnt;
+    {
+        dtzTabEnt = DTZ_hash[key >> (64 - TBHASHBITS)];
+        for (i = 0; i < HSHMAX; i++)
+            if (dtzTabEnt[i].key1 == key) break;
+        if (i == HSHMAX) {
+            uint64_t key2 = calc_key(pos, true);
+            dtzTabEnt = DTZ_hash[key2 >> (64 - TBHASHBITS)];
+            for (i = 0; i < HSHMAX; i++)
+                if (dtzTabEnt[i].key2 == key) break;
+        }
+        if (i == HSHMAX) {
+            *success = 0;
+            return 0;
+        }
+        dtzTabEnt += i;
+    }
+
+    TBEntry* ptr = dtzTabEnt->entry.load(std::memory_order_relaxed);
+    std::atomic_thread_fence(std::memory_order_acquire);
+    if (!ptr) {
+        std::lock_guard<std::mutex> L(TB_mutex);
+        ptr = dtzTabEnt->entry.load(std::memory_order_relaxed);
+        if (!ptr) {
+            struct TBHashEntry *ptr2 = WDL_hash[key >> (64 - TBHASHBITS)];
             for (i = 0; i < HSHMAX; i++)
                 if (ptr2[i].key == key) break;
             if (i == HSHMAX) {
                 *success = 0;
                 return 0;
             }
-            ptr = ptr2[i].ptr;
             char str[16];
-            bool mirror = (ptr->key != key);
+            bool mirror = (ptr2[i].ptr->key != key);
             prt_str(pos, str, mirror);
-            if (DTZ_table[DTZ_ENTRIES - 1].entry)
-                free_dtz_entry(DTZ_table[DTZ_ENTRIES-1].entry);
-            for (i = DTZ_ENTRIES - 1; i > 0; i--)
-                DTZ_table[i] = DTZ_table[i - 1];
-            load_dtz_table(str, calc_key(pos, mirror), calc_key(pos, !mirror));
+            ptr = load_dtz_table(str, calc_key(pos, mirror), calc_key(pos, !mirror));
+            std::atomic_thread_fence(std::memory_order_release);
+            dtzTabEnt->entry.store(ptr, std::memory_order_relaxed);
         }
     }
 
-    ptr = DTZ_table[0].entry;
     if (!ptr) {
         *success = 0;
         return 0;
@@ -469,9 +479,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
         }
     }
 
-    LOCK(TB_mutex);
     int dtz = 1 + probe_dtz_table(pos, wdl, success);
-    UNLOCK(TB_mutex);
 
     if (*success >= 0) {
         if (wdl & 1) dtz += 100;

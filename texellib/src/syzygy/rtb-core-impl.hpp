@@ -14,6 +14,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <mutex>
+#include <atomic>
 #ifndef __WIN32__
 #include <sys/mman.h>
 #endif
@@ -39,7 +41,7 @@
 #define TB_WPAWN TB_PAWN
 #define TB_BPAWN (TB_PAWN | 8)
 
-static LOCK_T TB_mutex;
+static std::mutex TB_mutex;
 
 static bool initialized = false;
 static int num_paths = 0;
@@ -50,11 +52,8 @@ static int TBnum_piece, TBnum_pawn;
 static struct TBEntry_piece TB_piece[TBMAX_PIECE];
 static struct TBEntry_pawn TB_pawn[TBMAX_PAWN];
 
-static struct TBHashEntry TB_hash[1 << TBHASHBITS][HSHMAX];
-
-#define DTZ_ENTRIES 512
-
-static struct DTZTableEntry DTZ_table[DTZ_ENTRIES];
+static struct TBHashEntry WDL_hash[1 << TBHASHBITS][HSHMAX];
+static struct DTZTableEntry DTZ_hash[1 << TBHASHBITS][HSHMAX];
 
 static void init_indices(void);
 static uint64_t calc_key_from_pcs(const int *pcs, bool mirror);
@@ -145,11 +144,25 @@ static void add_to_hash(struct TBEntry *ptr, uint64_t key)
 
     hshidx = key >> (64 - TBHASHBITS);
     i = 0;
-    while (i < HSHMAX && TB_hash[hshidx][i].ptr)
+    while (i < HSHMAX && WDL_hash[hshidx][i].ptr)
         i++;
     assert(i < HSHMAX);
-    TB_hash[hshidx][i].key = key;
-    TB_hash[hshidx][i].ptr = ptr;
+    WDL_hash[hshidx][i].key = key;
+    WDL_hash[hshidx][i].ptr = ptr;
+}
+
+static void add_to_dtz_hash(uint64_t key1, uint64_t key2)
+{
+    int i, hshidx;
+
+    hshidx = key1 >> (64 - TBHASHBITS);
+    i = 0;
+    while (i < HSHMAX && DTZ_hash[hshidx][i].key1)
+        i++;
+    assert(i < HSHMAX);
+    DTZ_hash[hshidx][i].key1 = key1;
+    DTZ_hash[hshidx][i].key2 = key2;
+    DTZ_hash[hshidx][i].entry = NULL;
 }
 
 static char pchr[] = {'K', 'Q', 'R', 'B', 'N', 'P'};
@@ -241,6 +254,7 @@ static void init_tb(char *str)
     }
     add_to_hash(entry, key);
     if (key2 != key) add_to_hash(entry, key2);
+    add_to_dtz_hash(key, key2);
 }
 
 void Syzygy::init(const std::string& path)
@@ -268,10 +282,12 @@ void Syzygy::init(const std::string& path)
             entry = (struct TBEntry *)&TB_pawn[i];
             free_wdl_entry(entry);
         }
-        for (i = 0; i < DTZ_ENTRIES; i++)
-            if (DTZ_table[i].entry) {
-                free_dtz_entry(DTZ_table[i].entry);
-                DTZ_table[i].entry = NULL;
+        for (i = 0; i < (1 << TBHASHBITS); i++)
+            for (j = 0; j < HSHMAX; j++) {
+                if (DTZ_hash[i][j].entry) {
+                    free_dtz_entry(DTZ_hash[i][j].entry);
+                    DTZ_hash[i][j].entry = NULL;
+                }
             }
         TBnum_piece = TBnum_pawn = 0;
         TBLargest = 0;
@@ -301,19 +317,18 @@ void Syzygy::init(const std::string& path)
         while (path_string[j]) j++;
     }
 
-    LOCK_INIT(TB_mutex);
+    for (i = 0; i < (1 << TBHASHBITS); i++)
+        for (j = 0; j < HSHMAX; j++) {
+            WDL_hash[i][j].key = 0ULL;
+            WDL_hash[i][j].ptr = NULL;
+        }
 
     for (i = 0; i < (1 << TBHASHBITS); i++)
         for (j = 0; j < HSHMAX; j++) {
-            TB_hash[i][j].key = 0ULL;
-            TB_hash[i][j].ptr = NULL;
+            DTZ_hash[i][j].key1 = 0ULL;
+            DTZ_hash[i][j].key2 = 0ULL;
+            DTZ_hash[i][j].entry = NULL;
         }
-
-    for (i = 0; i < DTZ_ENTRIES; i++) {
-        DTZ_table[i].key1 = 0xffffffffffffffffULL;
-        DTZ_table[i].key2 = 0xffffffffffffffffULL;
-        DTZ_table[i].entry = NULL;
-    }
 
     for (i = 1; i < 6; i++) {
         sprintf(str, "K%cvK", pchr[i]);
@@ -1525,21 +1540,17 @@ static ubyte decompress_pairs(struct PairsData *d, uint64_t idx)
     return *(sympat + 3 * sym);
 }
 
-void load_dtz_table(const char* str, uint64_t key1, uint64_t key2)
+TBEntry* load_dtz_table(const char* str, uint64_t key1, uint64_t key2)
 {
     int i;
     struct TBEntry *ptr, *ptr3;
     struct TBHashEntry *ptr2;
 
-    DTZ_table[0].key1 = key1;
-    DTZ_table[0].key2 = key2;
-    DTZ_table[0].entry = NULL;
-
     // find corresponding WDL entry
-    ptr2 = TB_hash[key1 >> (64 - TBHASHBITS)];
+    ptr2 = WDL_hash[key1 >> (64 - TBHASHBITS)];
     for (i = 0; i < HSHMAX; i++)
         if (ptr2[i].key == key1) break;
-    if (i == HSHMAX) return;
+    if (i == HSHMAX) return NULL;
     ptr = ptr2[i].ptr;
 
     ptr3 = (struct TBEntry *)malloc(ptr->has_pawns
@@ -1559,10 +1570,11 @@ void load_dtz_table(const char* str, uint64_t key1, uint64_t key2)
         struct DTZEntry_piece *entry = (struct DTZEntry_piece *)ptr3;
         entry->enc_type = ((struct TBEntry_piece *)ptr)->enc_type;
     }
-    if (!init_table_dtz(ptr3))
+    if (!init_table_dtz(ptr3)) {
         free(ptr3);
-    else
-        DTZ_table[0].entry = ptr3;
+        return NULL;
+    }
+    return ptr3;
 }
 
 static void free_wdl_entry(struct TBEntry *entry)

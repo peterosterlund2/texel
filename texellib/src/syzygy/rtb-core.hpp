@@ -6,7 +6,6 @@
 #define RTB_CORE_HPP_
 
 #ifndef __WIN32__
-#include <pthread.h>
 #define SEP_CHAR ':'
 #define FD int
 #define FD_ERR -1
@@ -18,18 +17,6 @@
 #endif
 
 #include <stdint.h>
-
-#ifndef __WIN32__
-#define LOCK_T pthread_mutex_t
-#define LOCK_INIT(x) pthread_mutex_init(&(x), NULL)
-#define LOCK(x) pthread_mutex_lock(&(x))
-#define UNLOCK(x) pthread_mutex_unlock(&(x))
-#else
-#define LOCK_T HANDLE
-#define LOCK_INIT(x) do { x = CreateMutex(NULL, FALSE, NULL); } while (0)
-#define LOCK(x) WaitForSingleObject(x, INFINITE)
-#define UNLOCK(x) ReleaseMutex(x)
-#endif
 
 #define WDLSUFFIX ".rtbw"
 #define DTZSUFFIX ".rtbz"
@@ -64,7 +51,7 @@ struct TBEntry {
     char *data;
     uint64_t key;
     uint64_t mapping;
-    ubyte ready;
+    std::atomic<ubyte> ready;
     ubyte num;
     ubyte symmetric;
     ubyte has_pawns;
@@ -74,7 +61,7 @@ struct TBEntry_piece {
     char *data;
     uint64_t key;
     uint64_t mapping;
-    ubyte ready;
+    std::atomic<ubyte> ready;
     ubyte num;
     ubyte symmetric;
     ubyte has_pawns;
@@ -89,7 +76,7 @@ struct TBEntry_pawn {
     char *data;
     uint64_t key;
     uint64_t mapping;
-    ubyte ready;
+    std::atomic<ubyte> ready;
     ubyte num;
     ubyte symmetric;
     ubyte has_pawns;
@@ -106,7 +93,7 @@ struct DTZEntry_piece {
     char *data;
     uint64_t key;
     uint64_t mapping;
-    ubyte ready;
+    std::atomic<ubyte> ready;
     ubyte num;
     ubyte symmetric;
     ubyte has_pawns;
@@ -124,7 +111,7 @@ struct DTZEntry_pawn {
     char *data;
     uint64_t key;
     uint64_t mapping;
-    ubyte ready;
+    std::atomic<ubyte> ready;
     ubyte num;
     ubyte symmetric;
     ubyte has_pawns;
@@ -148,7 +135,7 @@ struct TBHashEntry {
 struct DTZTableEntry {
     uint64_t key1;
     uint64_t key2;
-    struct TBEntry *entry;
+    std::atomic<TBEntry*> entry;
 };
 
 #endif
