@@ -454,5 +454,10 @@ EngineControl::printOptions(std::ostream& os) {
 
 void
 EngineControl::setOption(const std::string& optionName, const std::string& optionValue) {
-    Parameters::instance().set(optionName, optionValue);
+    Parameters& params = Parameters::instance();
+    std::shared_ptr<Parameters::ParamBase> par = params.getParam(optionName);
+    if (par && par->type == Parameters::STRING && optionValue == "<empty>")
+        params.set(optionName, "");
+    else
+        params.set(optionName, optionValue);
 }
