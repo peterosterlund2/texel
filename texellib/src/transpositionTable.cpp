@@ -38,10 +38,6 @@ void
 TranspositionTable::reSize(int log2Size) {
     const size_t numEntries = ((size_t)1) << log2Size;
     table.resize(numEntries);
-    TTEntry ent;
-    ent.clear();
-    for (size_t i = 0; i < numEntries; i++)
-        ent.store(table[i]);
     generation = 0;
 }
 
