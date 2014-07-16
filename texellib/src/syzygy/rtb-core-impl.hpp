@@ -100,7 +100,8 @@ static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
                               MAP_SHARED, fd, 0);
     if (data == (char *)(-1)) {
         std::cout << "Could not mmap() " << name << std::endl;
-        exit(1);
+        close_tb(fd);
+        return NULL;
     }
 #else
     DWORD size_low, size_high;
@@ -110,13 +111,15 @@ static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
                                    NULL);
     if (map == NULL) {
         std::cout << "CreateFileMapping() failed" << std::endl;
-        exit(1);
+        close_tb(fd);
+        return NULL;
     }
     *mapping = (uint64_t)map;
     char *data = (char *)MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
     if (data == NULL) {
         std::cout << "MapViewOfFile() failed, name = " << name << suffix << ", error = " << GetLastError() << std::endl;
-        exit(1);
+        close_tb(fd);
+        return NULL;
     }
 #endif
     close_tb(fd);
