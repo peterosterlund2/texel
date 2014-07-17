@@ -92,7 +92,6 @@ EngineControl::SearchListener::notifyStats(U64 nodes, int nps, U64 tbHits, int t
 
 EngineControl::EngineControl(std::ostream& o)
     : os(o),
-      pendingTTChange(false),
       shouldDetach(true),
       tt(8),
       pd(tt),
@@ -210,8 +209,6 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
-    if (pendingTTChange)
-        setupTT();
     Search::SearchTables st(tt, kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
     sc->setListener(std::make_shared<SearchListener>(os));
@@ -277,6 +274,9 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
         }
         engineThread.reset();
         sc.reset();
+        for (auto& p : pendingOptions)
+            setOption(p.first, p.second, false);
+        pendingOptions.clear();
     };
     shouldDetach = true;
     {
@@ -306,15 +306,6 @@ EngineControl::stopThread() {
 
 void
 EngineControl::setupTT() {
-    {
-        std::lock_guard<std::mutex> L(threadMutex);
-        if (engineThread) {
-            pendingTTChange = true;
-            return;
-        }
-    }
-    pendingTTChange = false;
-
     int hashSizeMB = UciParams::hash->getIntPar();
     U64 nEntries = hashSizeMB > 0 ? ((U64)hashSizeMB) * (1 << 20) / sizeof(TranspositionTable::TTEntry)
 	                          : (U64)1024;
@@ -453,8 +444,17 @@ EngineControl::printOptions(std::ostream& os) {
 }
 
 void
-EngineControl::setOption(const std::string& optionName, const std::string& optionValue) {
+EngineControl::setOption(const std::string& optionName, const std::string& optionValue,
+                         bool deferIfBusy) {
     Parameters& params = Parameters::instance();
+    if (deferIfBusy) {
+        std::lock_guard<std::mutex> L(threadMutex);
+        if (engineThread) {
+            if (params.getParam(optionName))
+                pendingOptions[optionName] = optionValue;
+            return;
+        }
+    }
     std::shared_ptr<Parameters::ParamBase> par = params.getParam(optionName);
     if (par && par->type == Parameters::STRING && optionValue == "<empty>")
         params.set(optionName, "");

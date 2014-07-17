@@ -66,7 +66,8 @@ public:
 
     static void printOptions(std::ostream& os);
 
-    void setOption(const std::string& optionName, const std::string& optionValue);
+    void setOption(const std::string& optionName, const std::string& optionValue,
+                   bool deferIfBusy);
 
 private:
     /**
@@ -109,7 +110,7 @@ private:
     std::ostream& os;
 
     int hashParListenerId;
-    bool pendingTTChange = true;
+    std::map<std::string, std::string> pendingOptions;
 
     std::shared_ptr<std::thread> engineThread;
     std::mutex threadMutex;

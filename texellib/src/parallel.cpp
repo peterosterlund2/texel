@@ -50,7 +50,8 @@ WorkerThread::~WorkerThread() {
 void
 WorkerThread::start() {
     assert(!thread);
-    thread = std::make_shared<std::thread>([this](){ mainLoop(); });
+    const int minProbeDepth = UciParams::minProbeDepth->getIntPar();
+    thread = std::make_shared<std::thread>([this,minProbeDepth](){ mainLoop(minProbeDepth); });
 }
 
 void
@@ -145,7 +146,7 @@ ThreadStopHandler::reportNodes(bool force) {
 }
 
 void
-WorkerThread::mainLoop() {
+WorkerThread::mainLoop(int minProbeDepth) {
 //    log([&](std::ostream& os){os << "mainLoop, th:" << threadNo;});
     if (!et)
         et = Evaluate::getEvalHashTables();
@@ -162,7 +163,6 @@ WorkerThread::mainLoop() {
     std::unique_lock<std::mutex> lock(m);
     Position pos;
     std::shared_ptr<SplitPoint> sp;
-    const int minProbeDepth = UciParams::minProbeDepth->getIntPar();
     for (int iter = 0; ; iter++) {
         const bool doTiming = (iter & 15) == 0;
         int moveNo = -1;

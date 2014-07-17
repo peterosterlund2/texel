@@ -81,7 +81,7 @@ private:
     WorkerThread& operator=(const WorkerThread&) = delete;
 
     /** Thread main loop. */
-    void mainLoop();
+    void mainLoop(int minProbeDepth);
 
     int threadNo;
     ParallelData& pd;
