@@ -86,7 +86,7 @@ UCIProtocol::handleCommand(const std::string& cmdLine, std::ostream& os) {
                 return;
             if (tokens[1] == "name") {
                 int idx = 2;
-                while ((idx+1 < nTok) && (tokens[idx] != "value")) {
+                while ((idx < nTok) && (tokens[idx] != "value")) {
                     optionName += toLowerCase(tokens[idx++]);
                     optionName += ' ';
                 }

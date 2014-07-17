@@ -110,6 +110,7 @@ private:
     std::ostream& os;
 
     int hashParListenerId;
+    int clearHashParListenerId;
     std::map<std::string, std::string> pendingOptions;
 
     std::shared_ptr<std::thread> engineThread;

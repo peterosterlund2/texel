@@ -1076,6 +1076,50 @@ testUciParam() {
     ASSERT_EQUAL(180, uciParVec[0]);
     ASSERT_EQUAL(0, uciParVec[1]);
     ASSERT_EQUAL(180, uciParVec[2]);
+
+    // Test button parameters
+    int cnt1 = 0;
+    int id1 = UciParams::clearHash->addListener([&cnt1]() {
+        cnt1++;
+    }, false);
+    ASSERT_EQUAL(0, cnt1);
+    Parameters::instance().set("Clear Hash", "");
+    ASSERT_EQUAL(1, cnt1);
+    Parameters::instance().set("Clear hash", "");
+    ASSERT_EQUAL(2, cnt1);
+    Parameters::instance().set("clear hash", "");
+    ASSERT_EQUAL(3, cnt1);
+
+    int cnt2 = 0;
+    std::shared_ptr<Parameters::ButtonParam> testButton2(std::make_shared<Parameters::ButtonParam>("testButton2"));
+    Parameters::instance().addPar(testButton2);
+    int id2 = testButton2->addListener([&cnt2]() {
+        cnt2++;
+    }, false);
+    ASSERT_EQUAL(3, cnt1);
+    ASSERT_EQUAL(0, cnt2);
+    Parameters::instance().set("testButton2", "");
+    ASSERT_EQUAL(3, cnt1);
+    ASSERT_EQUAL(1, cnt2);
+    Parameters::instance().set("Clear Hash", "");
+    ASSERT_EQUAL(4, cnt1);
+    ASSERT_EQUAL(1, cnt2);
+
+    UciParams::clearHash->removeListener(id1);
+    Parameters::instance().set("Clear Hash", "");
+    ASSERT_EQUAL(4, cnt1);
+    ASSERT_EQUAL(1, cnt2);
+    Parameters::instance().set("testButton2", "");
+    ASSERT_EQUAL(4, cnt1);
+    ASSERT_EQUAL(2, cnt2);
+
+    testButton2->removeListener(id2);
+    Parameters::instance().set("Clear Hash", "");
+    ASSERT_EQUAL(4, cnt1);
+    ASSERT_EQUAL(2, cnt2);
+    Parameters::instance().set("testButton2", "");
+    ASSERT_EQUAL(4, cnt1);
+    ASSERT_EQUAL(2, cnt2);
 }
 
 ParamTable<10> uciParTable { 0, 100, true,

@@ -100,11 +100,16 @@ EngineControl::EngineControl(std::ostream& o)
     hashParListenerId = UciParams::hash->addListener([this]() {
         setupTT();
     });
+    clearHashParListenerId = UciParams::clearHash->addListener([this]() {
+        tt.clear();
+        ht.init();
+    }, false);
     et = Evaluate::getEvalHashTables();
 }
 
 EngineControl::~EngineControl() {
     UciParams::hash->removeListener(hashParListenerId);
+    UciParams::hash->removeListener(clearHashParListenerId);
 }
 
 void
