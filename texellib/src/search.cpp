@@ -112,7 +112,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
 //    pd.wq.resetStat();
     const bool smp = pd.numHelperThreads() > 0;
     maxNodes = initialMaxNodes;
-    this->minProbeDepth = minProbeDepth * plyScale;
+    this->minProbeDepth = (TBProbe::tbEnabled() ? minProbeDepth : MAX_SEARCH_DEPTH) * plyScale;
     std::vector<MoveInfo> rootMoves;
     getRootMoves(scMovesIn, rootMoves, maxDepth);
 
@@ -175,10 +175,10 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             sti.currentMoveNo = mi;
             sti.lmr = lmrS;
             sti.nodeIdx = rootNodeIdx;
-            int score = -negaScout(smp, -beta, -alpha, 1, depthS - lmrS - plyScale, -1, givesCheck);
+            int score = -negaScout(smp, true, -beta, -alpha, 1, depthS - lmrS - plyScale, -1, givesCheck);
             if ((lmrS > 0) && (score > alpha)) {
                 sti.lmr = 0;
-                score = -negaScout(smp, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
+                score = -negaScout(smp, true, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
             }
             U64 nodesThisMove = nodes + qNodes;
             posHashListSize--;
@@ -209,7 +209,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                 }
                 pos.makeMove(m, ui);
                 totalNodes++;
-                score = -negaScout(smp, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
+                score = -negaScout(smp, true, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
                 nodesThisMove += nodes + qNodes;
                 posHashListSize--;
                 pos.unMakeMove(m, ui);
@@ -410,7 +410,7 @@ Search::shouldStop() {
     return false;
 }
 
-template <bool smp>
+template <bool smp, bool tb>
 int
 Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
@@ -640,7 +640,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 pos.setEpSquare(-1);
                 searchTreeInfo[ply+1].allowNullMove = false;
                 searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
-                score = -negaScout(smp, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
+                score = -negaScout(smp, tb, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
                 searchTreeInfo[ply+1].allowNullMove = true;
                 pos.setEpSquare(epSquare);
                 pos.setWhiteMove(!pos.isWhiteMove());
@@ -657,7 +657,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 sti2.nodeIdx = sti.nodeIdx;
                 const S64 savedNodeIdx = sti.nodeIdx;
                 sti.allowNullMove = false;
-                score = negaScout(smp, beta - 1, beta, ply, depth - R, recaptureSquare, inCheck);
+                score = negaScout(smp, tb, beta - 1, beta, ply, depth - R, recaptureSquare, inCheck);
                 sti.allowNullMove = true;
                 sti.nodeIdx = savedNodeIdx;
                 sti2.currentMove = savedMove;
@@ -709,7 +709,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
             S64 savedNodeIdx = sti.nodeIdx;
             int newDepth = isPv ? depth  - 2 * plyScale : depth * 3 / 8;
-            negaScout(smp, alpha, beta, ply, newDepth, -1, inCheck);
+            negaScout(smp, tb, alpha, beta, ply, newDepth, -1, inCheck);
             sti.nodeIdx = savedNodeIdx;
 
             sti2.currentMove = savedMove;
@@ -770,7 +770,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         int bestScore = illegalScore;
         int bestMove = -1;
         int lmrCount = 0;
-        if (pass == 1 && tbScore != illegalScore) {
+        if (tb && pass == 1 && tbScore != illegalScore) {
             bestScore = tbScore - 1;
             bestMove = -2;
             sti.bestMove.setMove(0, 0, 0, 0);
@@ -870,12 +870,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 //                    S64 n1 = totalNodes; int nomDepth = newDepth;
                     if (smp)
                         sph.setOwnerCurrMove(mi, alpha);
-                    score = -negaScout(smp, -b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+                    score = -negaScout(smp, tb, -b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                     if (((lmr > 0) && (score > alpha)) ||
                         ((score > alpha) && (score < beta) && (b != beta))) {
                         sti.lmr = 0;
                         newDepth += lmr;
-                        score = -negaScout(smp, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+                        score = -negaScout(smp, tb, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                     }
                     if (smp) {
 //                        if (sph.hasHelperThread())
@@ -933,7 +933,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 logFile.logNodeEnd(sti.nodeIdx, 0, TType::T_EXACT, evalScore, hKey);
                 return 0;       // Stale-mate
             }
-            if (bestMove == -2) { // TB win, unknown move
+            if (tb && bestMove == -2) { // TB win, unknown move
                 bestScore = tbScore;
                 emptyMove.setScore(bestScore);
                 if (useTT) tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);

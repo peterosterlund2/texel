@@ -80,6 +80,11 @@ TBProbe::initialize(const std::string& gtbPath, int cacheMB,
 }
 
 bool
+TBProbe::tbEnabled() {
+    return Syzygy::TBLargest > 0 || gtbMaxPieces > 0;
+}
+
+bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                  TranspositionTable::TTEntry& ent) {
     const int nPieces = BitBoard::bitCount(pos.occupiedBB());

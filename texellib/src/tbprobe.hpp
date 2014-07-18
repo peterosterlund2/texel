@@ -44,6 +44,9 @@ public:
     static void initialize(const std::string& gtbPath, int cacheMB,
                            const std::string& rtbPath);
 
+    /** Return true if GTB or RTB probing is enabled. */
+    static bool tbEnabled();
+
     /** Probe one or more tablebases to get an exact score or a usable bound.
      * @param pos  The position to probe. The position can be temporarily modified
      *             but is restored to original state before function returns.

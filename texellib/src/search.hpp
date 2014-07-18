@@ -117,10 +117,10 @@ public:
      * Main recursive search algorithm.
      * @return Score for the side to make a move, in position given by "pos".
      */
-    template <bool smp>
+    template <bool smp, bool tb>
     int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
-    int negaScout(bool smp,
+    int negaScout(bool smp, bool tb,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
     int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
@@ -380,7 +380,7 @@ Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti, const Move& currMo
 }
 
 inline int
-Search::negaScout(bool smp,
+Search::negaScout(bool smp, bool tb,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
     using namespace SearchConst;
@@ -388,16 +388,25 @@ Search::negaScout(bool smp,
     if (threadNo == 0)
         minDepth = (minDepth + MIN_SMP_DEPTH * plyScale) / 2;
     if (smp && (depth >= minDepth) &&
-               ((int)spVec.size() < MAX_SP_PER_THREAD))
-        return negaScout<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
-    else
-        return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+               ((int)spVec.size() < MAX_SP_PER_THREAD)) {
+        bool tb2 = tb && depth >= minProbeDepth;
+        if (tb2)
+            return negaScout<true,true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+        else
+            return negaScout<true,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+    } else {
+        bool tb2 = tb && depth >= minProbeDepth;
+        if (tb2)
+            return negaScout<false,true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+        else
+            return negaScout<false,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+    }
 }
 
 inline int
 Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
-    return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+    return negaScout<false,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
 }
 
 inline bool

@@ -25,6 +25,7 @@
 
 #include "parallel.hpp"
 #include "search.hpp"
+#include "tbprobe.hpp"
 #include "textio.hpp"
 #include "util/logger.hpp"
 
@@ -50,7 +51,7 @@ WorkerThread::~WorkerThread() {
 void
 WorkerThread::start() {
     assert(!thread);
-    const int minProbeDepth = UciParams::minProbeDepth->getIntPar();
+    const int minProbeDepth = TBProbe::tbEnabled() ? UciParams::minProbeDepth->getIntPar() : 100;
     thread = std::make_shared<std::thread>([this,minProbeDepth](){ mainLoop(minProbeDepth); });
 }
 
@@ -215,12 +216,12 @@ WorkerThread::mainLoop(int minProbeDepth) {
 //                                         << " p:" << sp->getPMoveUseful(pd.fhInfo, moveNo) << " start";});
 //            uTimer.setPUseful(pUseful);
             const bool smp = pd.numHelperThreads() > 1;
-            int score = -sc.negaScout(smp, -(alpha+1), -alpha, ply+1,
+            int score = -sc.negaScout(smp, true, -(alpha+1), -alpha, ply+1,
                                       depth, captSquare, inCheck);
             if (((lmr > 0) && (score > alpha)) ||
                     ((score > alpha) && (score < beta))) {
                 sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo, 0, rootNodeIdx);
-                score = -sc.negaScout(smp, -beta, -alpha, ply+1,
+                score = -sc.negaScout(smp, true, -beta, -alpha, ply+1,
                                       depth + lmr, captSquare, inCheck);
             }
 //            uTimer.setPUseful(0);
