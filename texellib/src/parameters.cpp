@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,14 +26,35 @@
 #include "parameters.hpp"
 #include "computerPlayer.hpp"
 
+namespace UciParams {
+    std::shared_ptr<Parameters::SpinParam> hash(std::make_shared<Parameters::SpinParam>("Hash", 1, 524288, 16));
+    std::shared_ptr<Parameters::CheckParam> ownBook(std::make_shared<Parameters::CheckParam>("OwnBook", false));
+    std::shared_ptr<Parameters::CheckParam> ponder(std::make_shared<Parameters::CheckParam>("Ponder", true));
+    std::shared_ptr<Parameters::CheckParam> analyseMode(std::make_shared<Parameters::CheckParam>("UCI_AnalyseMode", false));
+    std::shared_ptr<Parameters::SpinParam> strength(std::make_shared<Parameters::SpinParam>("Strength", 0, 1000, 1000));
+#ifdef __arm__
+    std::shared_ptr<Parameters::SpinParam> threads(std::make_shared<Parameters::SpinParam>("Threads", 1, 1, 1));
+#else
+    std::shared_ptr<Parameters::SpinParam> threads(std::make_shared<Parameters::SpinParam>("Threads", 1, 64, 1));
+#endif
+    std::shared_ptr<Parameters::SpinParam> multiPV(std::make_shared<Parameters::SpinParam>("MultiPV", 1, 256, 1));
+
+    std::shared_ptr<Parameters::StringParam> gtbPath(std::make_shared<Parameters::StringParam>("GaviotaTbPath", ""));
+    std::shared_ptr<Parameters::SpinParam> gtbCache(std::make_shared<Parameters::SpinParam>("GaviotaTbCache", 1, 2047, 1));
+    std::shared_ptr<Parameters::StringParam> rtbPath(std::make_shared<Parameters::StringParam>("SyzygyPath", ""));
+    std::shared_ptr<Parameters::SpinParam> minProbeDepth(std::make_shared<Parameters::SpinParam>("MinProbeDepth", 0, 100, 3));
+
+    std::shared_ptr<Parameters::ButtonParam> clearHash(std::make_shared<Parameters::ButtonParam>("Clear Hash"));
+}
+
 int pieceValue[Piece::nPieceTypes];
 
-DEFINE_PARAM_2REF(pV, pieceValue[Piece::WPAWN]  , pieceValue[Piece::BPAWN]);
-DEFINE_PARAM_2REF(nV, pieceValue[Piece::WKNIGHT], pieceValue[Piece::BKNIGHT]);
-DEFINE_PARAM_2REF(bV, pieceValue[Piece::WBISHOP], pieceValue[Piece::BBISHOP]);
-DEFINE_PARAM_2REF(rV, pieceValue[Piece::WROOK]  , pieceValue[Piece::BROOK]);
-DEFINE_PARAM_2REF(qV, pieceValue[Piece::WQUEEN] , pieceValue[Piece::BQUEEN]);
-DEFINE_PARAM_2REF(kV, pieceValue[Piece::WKING]  , pieceValue[Piece::BKING]);
+DEFINE_PARAM(pV);
+DEFINE_PARAM(nV);
+DEFINE_PARAM(bV);
+DEFINE_PARAM(rV);
+DEFINE_PARAM(qV);
+DEFINE_PARAM(kV);
 
 DEFINE_PARAM(pawnIslandPenalty);
 DEFINE_PARAM(pawnBackwardPenalty);
@@ -432,7 +453,7 @@ ParamTable<14> bishMobScore = { -50, 50, useUciParam,
     {-15,-10, -1,  5, 13, 18, 22, 26, 28, 31, 30, 31, 37, 29 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14 }
 };
-ParamTableEv<28> knightMobScore { -200, 200, useUciParam,
+ParamTable<28> knightMobScore { -200, 200, useUciParam,
     {-32,-30, 17,-34,-10,  2,  8,-51,-19, -5, 10, 16,-23,-23,-16, -8,  1,  6, 10,-31,-31,-20,-12, -5,  1,  6,  9,  4 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 23, 24, 25, 26 }
 };
@@ -516,7 +537,7 @@ ParamTable<7> RvsBPDrawFactor { 0, 255, useUciParam,
     {128,127,111,125,129,174,175 },
     {  0,  1,  2,  3,  4,  5,  6 }
 };
-ParamTableEv<4> castleFactor { 0, 128, useUciParam,
+ParamTable<4> castleFactor { 0, 128, useUciParam,
     { 64, 42, 30, 26 },
     {  1,  2,  3,  4 }
 };
@@ -562,20 +583,23 @@ ParamTable<10> halfMoveFactor { 0, 192, useUciParam,
 };
 
 Parameters::Parameters() {
-    addPar(std::make_shared<SpinParam>("Hash", 1, 524288, 16));
-    addPar(std::make_shared<CheckParam>("OwnBook", false));
-    addPar(std::make_shared<CheckParam>("Ponder", true));
-    addPar(std::make_shared<CheckParam>("UCI_AnalyseMode", false));
     std::string about = ComputerPlayer::engineName +
                         " by Peter Osterlund, see http://web.comhem.se/petero2home/javachess/index.html#texel";
     addPar(std::make_shared<StringParam>("UCI_EngineAbout", about));
-    addPar(std::make_shared<SpinParam>("Strength", 0, 1000, 1000));
-#ifdef __arm__
-    addPar(std::make_shared<SpinParam>("Threads", 1, 1, 1));
-#else
-    addPar(std::make_shared<SpinParam>("Threads", 1, 64, 1));
-#endif
-    addPar(std::make_shared<SpinParam>("MultiPV", 1, 256, 1));
+
+    addPar(UciParams::hash);
+    addPar(UciParams::ownBook);
+    addPar(UciParams::ponder);
+    addPar(UciParams::analyseMode);
+    addPar(UciParams::strength);
+    addPar(UciParams::threads);
+    addPar(UciParams::multiPV);
+
+    addPar(UciParams::gtbPath);
+    addPar(UciParams::gtbCache);
+    addPar(UciParams::rtbPath);
+    addPar(UciParams::minProbeDepth);
+    addPar(UciParams::clearHash);
 
     // Evaluation parameters
     REGISTER_PARAM(pV, "PawnValue");
@@ -738,6 +762,19 @@ Parameters::instance() {
 }
 
 void
+Parameters::getParamNames(std::vector<std::string>& parNames) {
+    parNames = paramNames;
+}
+
+void
+Parameters::addPar(const std::shared_ptr<ParamBase>& p) {
+    std::string name = toLowerCase(p->name);
+    assert(params.find(name) == params.end());
+    params[name] = p;
+    paramNames.push_back(name);
+}
+
+void
 ParamTableBase::registerParamsN(const std::string& name, Parameters& pars,
                                 int* table, int* parNo, int N) {
     // Check that each parameter has a single value
@@ -760,9 +797,11 @@ ParamTableBase::registerParamsN(const std::string& name, Parameters& pars,
     params.resize(maxParIdx+1);
     for (const auto& p : parNoToVal) {
         std::string pName = name + num2Str(p.first);
-        params[p.first] = std::make_shared<TableSpinParam>(pName, *this, p.second);
+        params[p.first] = std::make_shared<Parameters::SpinParam>(pName, minValue, maxValue, p.second);
         pars.addPar(params[p.first]);
+        params[p.first]->addListener([=]() { modifiedN(table, parNo, N); }, false);
     }
+    modifiedN(table, parNo, N);
 }
 
 void
@@ -772,6 +811,5 @@ ParamTableBase::modifiedN(int* table, int* parNo, int N) {
             table[i] = params[parNo[i]]->getIntPar();
         else if (parNo[i] < 0)
             table[i] = -params[-parNo[i]]->getIntPar();
-    for (auto d : dependent)
-        d->modified();
+    notify();
 }

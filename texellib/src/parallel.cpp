@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2013-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 
 #include "parallel.hpp"
 #include "search.hpp"
+#include "tbprobe.hpp"
 #include "textio.hpp"
 #include "util/logger.hpp"
 
@@ -50,7 +51,8 @@ WorkerThread::~WorkerThread() {
 void
 WorkerThread::start() {
     assert(!thread);
-    thread = std::make_shared<std::thread>([this](){ mainLoop(); });
+    const int minProbeDepth = TBProbe::tbEnabled() ? UciParams::minProbeDepth->getIntPar() : 100;
+    thread = std::make_shared<std::thread>([this,minProbeDepth](){ mainLoop(minProbeDepth); });
 }
 
 void
@@ -89,6 +91,7 @@ private:
     int counter;             // Counts number of calls to shouldStop
     int nextProbCheck;       // Next time test for SplitPoint switch should be performed
     S64 lastReportedNodes;
+    S64 lastReportedTbHits;
     int initialAlpha;
     const S64 totalNodes;
     const int myPrio;
@@ -99,7 +102,8 @@ ThreadStopHandler::ThreadStopHandler(WorkerThread& wt0, ParallelData& pd0,
                                      int moveNo0, const Search& sc0, int initialAlpha0,
                                      S64 totalNodes0, int myPrio0)
     : wt(wt0), pd(pd0), sp(sp0), spMove(spm0), moveNo(moveNo0),
-      sc(sc0), counter(0), nextProbCheck(1), lastReportedNodes(0),
+      sc(sc0), counter(0), nextProbCheck(1),
+      lastReportedNodes(0), lastReportedTbHits(0),
       initialAlpha(initialAlpha0), totalNodes(totalNodes0), myPrio(myPrio0) {
 }
 
@@ -135,11 +139,15 @@ ThreadStopHandler::reportNodes(bool force) {
     if (force || (nodes * 1024 > totalNodes)) {
         lastReportedNodes = totNodes;
         pd.addSearchedNodes(nodes);
+        S64 totTbHits = sc.getTbHitsThisThread();
+        S64 tbHits = totTbHits - lastReportedTbHits;
+        lastReportedTbHits = totTbHits;
+        pd.addTbHits(tbHits);
     }
 }
 
 void
-WorkerThread::mainLoop() {
+WorkerThread::mainLoop(int minProbeDepth) {
 //    log([&](std::ostream& os){os << "mainLoop, th:" << threadNo;});
     if (!et)
         et = Evaluate::getEvalHashTables();
@@ -187,6 +195,7 @@ WorkerThread::mainLoop() {
         const U64 rootNodeIdx = logFile.logPosition(pos, sp->owningThread(),
                                                     sp->getSearchTreeInfo().nodeIdx, moveNo);
         sc.setThreadNo(threadNo);
+        sc.setMinProbeDepth(minProbeDepth);
         const int alpha = sp->getAlpha();
         const int beta = sp->getBeta();
         const S64 nodes0 = pd.getNumSearchedNodes();
@@ -207,12 +216,12 @@ WorkerThread::mainLoop() {
 //                                         << " p:" << sp->getPMoveUseful(pd.fhInfo, moveNo) << " start";});
 //            uTimer.setPUseful(pUseful);
             const bool smp = pd.numHelperThreads() > 1;
-            int score = -sc.negaScout(smp, -(alpha+1), -alpha, ply+1,
+            int score = -sc.negaScout(smp, true, -(alpha+1), -alpha, ply+1,
                                       depth, captSquare, inCheck);
             if (((lmr > 0) && (score > alpha)) ||
                     ((score > alpha) && (score < beta))) {
                 sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo, 0, rootNodeIdx);
-                score = -sc.negaScout(smp, -beta, -alpha, ply+1,
+                score = -sc.negaScout(smp, true, -beta, -alpha, ply+1,
                                       depth + lmr, captSquare, inCheck);
             }
 //            uTimer.setPUseful(0);
@@ -524,6 +533,7 @@ ParallelData::addRemoveWorkers(int numWorkers) {
 void
 ParallelData::startAll() {
     totalHelperNodes = 0;
+    helperTbHits = 0;
     wq.setStopped(false);
     for (auto& thread : threads)
         thread->start();

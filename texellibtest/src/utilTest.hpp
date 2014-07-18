@@ -41,6 +41,7 @@ private:
     static void testRangeSumArray();
     static void testHeap();
     static void testHistogram();
+    static void testFloorLog2();
 };
 
 

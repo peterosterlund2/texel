@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 #include "enginecontrol.hpp"
 #include "util/random.hpp"
 #include "searchparams.hpp"
-#include "computerPlayer.hpp"
+#include "book.hpp"
 #include "textio.hpp"
 #include "parameters.hpp"
 #include "moveGen.hpp"
@@ -59,7 +59,7 @@ EngineControl::SearchListener::notifyCurrMove(const Move& m, int moveNr) {
 void
 EngineControl::SearchListener::notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
                                         bool upperBound, bool lowerBound, const std::vector<Move>& pv,
-                                        int multiPVIndex) {
+                                        int multiPVIndex, U64 tbHits) {
 //    std::lock_guard<std::mutex> L(Logger::getLogMutex());
     std::string pvBuf;
     for (size_t i = 0; i < pv.size(); i++) {
@@ -75,14 +75,19 @@ EngineControl::SearchListener::notifyPV(int depth, int score, int time, U64 node
     os << "info depth " << depth << " score " << (isMate ? "mate " : "cp ")
        << score << bound << " time " << time << " nodes " << nodes
        << " nps " << nps;
+    if (tbHits > 0)
+        os << " tbhits " << tbHits;
     if (multiPVIndex >= 0)
         os << " multipv " << (multiPVIndex + 1);
     os << " pv" << pvBuf << std::endl;
 }
 
 void
-EngineControl::SearchListener::notifyStats(U64 nodes, int nps, int time) {
-    os << "info nodes " << nodes << " nps " << nps << " time " << time << std::endl;
+EngineControl::SearchListener::notifyStats(U64 nodes, int nps, U64 tbHits, int time) {
+    os << "info nodes " << nodes << " nps " << nps;
+    if (tbHits > 0)
+        os << " tbhits " << tbHits;
+    os << " time " << time << std::endl;
 }
 
 EngineControl::EngineControl(std::ostream& o)
@@ -92,9 +97,19 @@ EngineControl::EngineControl(std::ostream& o)
       pd(tt),
       randomSeed(0)
 {
-    setupTT();
-    Evaluate::updateEvalParams();
+    hashParListenerId = UciParams::hash->addListener([this]() {
+        setupTT();
+    });
+    clearHashParListenerId = UciParams::clearHash->addListener([this]() {
+        tt.clear();
+        ht.init();
+    }, false);
     et = Evaluate::getEvalHashTables();
+}
+
+EngineControl::~EngineControl() {
+    UciParams::hash->removeListener(hashParListenerId);
+    UciParams::hash->removeListener(clearHashParListenerId);
 }
 
 void
@@ -178,13 +193,13 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
             if (moves == 0)
                 moves = 999;
             moves = std::min(moves, static_cast<int>(timeMaxRemainingMoves)); // Assume at most N more moves until end of game
-            bool white = pos.getWhiteMove();
+            bool white = pos.isWhiteMove();
             int time = white ? sPar.wTime : sPar.bTime;
             int inc  = white ? sPar.wInc : sPar.bInc;
             const int margin = std::min(static_cast<int>(bufferTime), time * 9 / 10);
             int timeLimit = (time + inc * (moves - 1) - margin) / moves;
             minTimeLimit = (int)(timeLimit * minTimeUsage * 0.01);
-            if (Parameters::instance().getBoolPar("Ponder")) {
+            if (UciParams::ponder->getBoolPar()) {
                 const double ponderHitRate = timePonderHitRate * 0.01;
                 minTimeLimit = (int)ceil(minTimeLimit / (1 - ponderHitRate));
             }
@@ -199,11 +214,10 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
-    Parameters& par = Parameters::instance();
     Search::SearchTables st(tt, kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
     sc->setListener(std::make_shared<SearchListener>(os));
-    sc->setStrength(par.getIntPar("Strength"), randomSeed);
+    sc->setStrength(UciParams::strength->getIntPar(), randomSeed);
     std::shared_ptr<MoveGen::MoveList> moves(std::make_shared<MoveGen::MoveList>());
     MoveGen::pseudoLegalMoves(pos, *moves);
     MoveGen::removeIllegal(pos, *moves);
@@ -222,30 +236,31 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
             }
         }
     }
-    pd.addRemoveWorkers(par.getIntPar("Threads") - 1);
+    pd.addRemoveWorkers(UciParams::threads->getIntPar() - 1);
     pd.wq.resetSplitDepth();
     pd.startAll();
     sc->timeLimit(minTimeLimit, maxTimeLimit);
     tt.nextGeneration();
-    bool ownBook = par.getBoolPar("OwnBook");
-    bool analyseMode = par.getBoolPar("UCI_AnalyseMode");
-    int maxPV = (infinite || analyseMode) ? par.getIntPar("MultiPV") : 1;
+    bool ownBook = UciParams::ownBook->getBoolPar();
+    bool analyseMode = UciParams::analyseMode->getBoolPar();
+    int maxPV = (infinite || analyseMode) ? UciParams::multiPV->getIntPar() : 1;
+    int minProbeDepth = UciParams::minProbeDepth->getIntPar();
     if (analyseMode) {
         Evaluate eval(*et);
-        int evScore = eval.evalPosPrint(pos) * (pos.getWhiteMove() ? 1 : -1);
+        int evScore = eval.evalPosPrint(pos) * (pos.isWhiteMove() ? 1 : -1);
         std::stringstream ss;
         ss.precision(2);
         ss << std::fixed << (evScore / 100.0);
         os << "info string Eval: " << ss.str() << std::endl;
     }
-    auto f = [this,ownBook,analyseMode,moves,maxDepth,maxNodes,maxPV]() {
+    auto f = [this,ownBook,analyseMode,moves,maxDepth,maxNodes,maxPV,minProbeDepth]() {
         Move m;
         if (ownBook && !analyseMode) {
             Book book(false);
             book.getBookMove(pos, m);
         }
         if (m.isEmpty())
-            m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, false, maxPV);
+            m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, false, maxPV, false, minProbeDepth);
         while (ponder || infinite) {
             // We should not respond until told to do so. Just wait until
             // we are allowed to respond.
@@ -264,6 +279,9 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
         }
         engineThread.reset();
         sc.reset();
+        for (auto& p : pendingOptions)
+            setOption(p.first, p.second, false);
+        pendingOptions.clear();
     };
     shouldDetach = true;
     {
@@ -293,7 +311,7 @@ EngineControl::stopThread() {
 
 void
 EngineControl::setupTT() {
-    int hashSizeMB = Parameters::instance().getIntPar("Hash");
+    int hashSizeMB = UciParams::hash->getIntPar();
     U64 nEntries = hashSizeMB > 0 ? ((U64)hashSizeMB) * (1 << 20) / sizeof(TranspositionTable::TTEntry)
 	                          : (U64)1024;
     int logSize = 0;
@@ -403,7 +421,7 @@ EngineControl::printOptions(std::ostream& os) {
             break;
         }
         case Parameters::SPIN: {
-            const Parameters::SpinParamBase& sp = dynamic_cast<const Parameters::SpinParamBase&>(*p.get());
+            const Parameters::SpinParam& sp = dynamic_cast<const Parameters::SpinParam&>(*p.get());
             os << "option name " << sp.name << " type spin default "
                << sp.getDefaultValue() << " min " << sp.getMinValue()
                << " max " << sp.getMaxValue() << std::endl;
@@ -431,8 +449,20 @@ EngineControl::printOptions(std::ostream& os) {
 }
 
 void
-EngineControl::setOption(const std::string& optionName, const std::string& optionValue) {
-    Parameters::instance().set(optionName, optionValue);
-    if (optionName == "hash")
-        setupTT();
+EngineControl::setOption(const std::string& optionName, const std::string& optionValue,
+                         bool deferIfBusy) {
+    Parameters& params = Parameters::instance();
+    if (deferIfBusy) {
+        std::lock_guard<std::mutex> L(threadMutex);
+        if (engineThread) {
+            if (params.getParam(optionName))
+                pendingOptions[optionName] = optionValue;
+            return;
+        }
+    }
+    std::shared_ptr<Parameters::ParamBase> par = params.getParam(optionName);
+    if (par && par->type == Parameters::STRING && optionValue == "<empty>")
+        params.set(optionName, "");
+    else
+        params.set(optionName, optionValue);
 }

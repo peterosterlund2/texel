@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -74,8 +74,9 @@ public:
         virtual void notifyCurrMove(const Move& m, int moveNr) = 0;
         virtual void notifyPV(int depth, int score, int time, U64 nodes, int nps,
                               bool isMate, bool upperBound, bool lowerBound,
-                              const std::vector<Move>& pv, int multiPVIndex) = 0;
-        virtual void notifyStats(U64 nodes, int nps, int time) = 0;
+                              const std::vector<Move>& pv, int multiPVIndex,
+                              U64 tbHits) = 0;
+        virtual void notifyStats(U64 nodes, int nps, U64 tbHits, int time) = 0;
     };
 
     void setListener(const std::shared_ptr<Listener>& listener) {
@@ -104,18 +105,22 @@ public:
 
     void setStrength(int strength, U64 randomSeed);
 
+    /** Set minimum depth for TB probes. */
+    void setMinProbeDepth(int depth);
+
     Move iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                             int maxDepth, U64 initialMaxNodes, bool verbose,
-                            int maxPV = 1, bool onlyExact = false);
+                            int maxPV = 1, bool onlyExact = false,
+                            int minProbeDepth = 0);
 
     /**
      * Main recursive search algorithm.
      * @return Score for the side to make a move, in position given by "pos".
      */
-    template <bool smp>
+    template <bool smp, bool tb>
     int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
-    int negaScout(bool smp,
+    int negaScout(bool smp, bool tb,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
     int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
@@ -139,6 +144,9 @@ public:
 
     /** Get total number of nodes searched by this thread. */
     S64 getTotalNodesThisThread() const;
+
+    /** Get number of TB hits for this thread. */
+    S64 getTbHitsThisThread() const;
 
 private:
     Search(const Search& other) = delete;
@@ -183,6 +191,15 @@ private:
 
     /** Get total number of nodes searched by all threads. */
     S64 getTotalNodes() const;
+
+    /** Get total number of TB hits for all threads. */
+    S64 getTbHits() const;
+
+    /** Determine which root moves to search, taking low strength and
+     *  missing TB files into account. */
+    void getRootMoves(const MoveGen::MoveList& rootMovesIn,
+                      std::vector<MoveInfo>& rootMovesOut,
+                      int maxDepth);
 
     /** Return true if move should be skipped in order to make engine play weaker. */
     bool weakPlaySkipMove(const Position& pos, const Move& m, int ply) const;
@@ -255,6 +272,7 @@ private:
     RelaxedShared<S64> maxTimeMillis; // Maximum allowed thinking time
     bool searchNeedMoreTime;   // True if negaScout should use up to maxTimeMillis time.
     S64 maxNodes;              // Maximum number of nodes to search (approximately)
+    int minProbeDepth;         // Minimum depth to probe endgame tablebases.
     int nodesToGo;             // Number of nodes until next time check
     RelaxedShared<int> nodesBetweenTimeCheck; // How often to check remaining time
 
@@ -269,6 +287,7 @@ private:
     Histogram<0,20> nodesByPly;
     Histogram<0,20> nodesByDepth;
     S64 totalNodes;
+    S64 tbHits;
     S64 tLastStats;        // Time when notifyStats was last called
     bool verbose;
 
@@ -293,7 +312,7 @@ Search::canClaimDrawRep(const Position& pos, const std::vector<U64>& posHashList
 inline bool
 Search::passedPawnPush(const Position& pos, const Move& m) {
     int p = pos.getPiece(m.from());
-    if (pos.getWhiteMove()) {
+    if (pos.isWhiteMove()) {
         if (p != Piece::WPAWN)
             return false;
         if ((BitBoard::wPawnBlockerMask[m.to()] & pos.pieceTypeBB(Piece::BPAWN)) != 0)
@@ -361,7 +380,7 @@ Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti, const Move& currMo
 }
 
 inline int
-Search::negaScout(bool smp,
+Search::negaScout(bool smp, bool tb,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
     using namespace SearchConst;
@@ -369,16 +388,25 @@ Search::negaScout(bool smp,
     if (threadNo == 0)
         minDepth = (minDepth + MIN_SMP_DEPTH * plyScale) / 2;
     if (smp && (depth >= minDepth) &&
-               ((int)spVec.size() < MAX_SP_PER_THREAD))
-        return negaScout<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
-    else
-        return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+               ((int)spVec.size() < MAX_SP_PER_THREAD)) {
+        bool tb2 = tb && depth >= minProbeDepth;
+        if (tb2)
+            return negaScout<true,true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+        else
+            return negaScout<true,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+    } else {
+        bool tb2 = tb && depth >= minProbeDepth;
+        if (tb2)
+            return negaScout<false,true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+        else
+            return negaScout<false,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+    }
 }
 
 inline int
 Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
-    return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+    return negaScout<false,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
 }
 
 inline bool
@@ -396,11 +424,26 @@ Search::getTotalNodesThisThread() const {
     return totalNodes;
 }
 
+inline S64
+Search::getTbHits() const {
+    return tbHits + pd.getTbHits();
+}
+
+inline S64
+Search::getTbHitsThisThread() const {
+    return tbHits;
+}
+
 inline void
 Search::setThreadNo(int value) {
     threadNo = value;
     if (threadNo > 0)
         nodesBetweenTimeCheck = 1000;
+}
+
+inline void
+Search::setMinProbeDepth(int depth) {
+    minProbeDepth = depth * SearchConst::plyScale;
 }
 
 #endif /* SEARCH_HPP_ */

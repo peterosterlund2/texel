@@ -58,6 +58,15 @@ UtilTest::testUtil() {
     ASSERT(!startsWith("Peter", "PeterO"));
     ASSERT(!startsWith("Peter", "Pex"));
     ASSERT(!startsWith("Peter", "eter"));
+    ASSERT(startsWith("", ""));
+    ASSERT(!startsWith("", "x"));
+
+    ASSERT(endsWith("test.txt", "txt"));
+    ASSERT(endsWith("test.txt", ".txt"));
+    ASSERT(!endsWith("test.txt", "ttxt"));
+    ASSERT(!endsWith("a", "ab"));
+    ASSERT(!endsWith("", "ab"));
+    ASSERT(endsWith("", ""));
 
     ASSERT(contains((std::vector<int>{1,2,3,4}), 3));
     ASSERT(!contains((std::vector<int>{1,2,3,4}), 5));
@@ -277,6 +286,16 @@ UtilTest::testHistogram() {
         ASSERT_EQUAL(i==0?0:1, hist.get(i));
 }
 
+void
+UtilTest::testFloorLog2() {
+    ASSERT_EQUAL(0, floorLog2(0));
+    for (int i = 0; i < 32; i++) {
+        U32 v = 1 << i;
+        int lg = floorLog2(v);
+        ASSERT_EQUAL(i, lg);
+    }
+}
+
 cute::suite
 UtilTest::getSuite() const {
     cute::suite s;
@@ -286,5 +305,6 @@ UtilTest::getSuite() const {
     s.push_back(CUTE(testRangeSumArray));
     s.push_back(CUTE(testHeap));
     s.push_back(CUTE(testHistogram));
+    s.push_back(CUTE(testFloorLog2));
     return s;
 }

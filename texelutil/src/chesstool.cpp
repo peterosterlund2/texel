@@ -9,6 +9,9 @@
 #include "search.hpp"
 #include "textio.hpp"
 #include "gametree.hpp"
+#include "computerPlayer.hpp"
+#include "syzygy/rtb-probe.hpp"
+#include "tbprobe.hpp"
 #include "stloutput.hpp"
 
 #include <queue>
@@ -60,6 +63,16 @@ ScoreToProb::getLogProb(int score) {
 }
 
 // --------------------------------------------------------------------------------
+
+void
+ChessTool::setupTB() {
+    UciParams::gtbPath->set("/home/petero/chess/gtb");
+    UciParams::gtbCache->set("2047");
+    UciParams::rtbPath->set("/home/petero/chess/rtb/wdl:"
+                            "/home/petero/chess/rtb/dtz:"
+                            "/home/petero/chess/rtb/6wdl:"
+                            "/home/petero/chess/rtb/6dtz");
+}
 
 std::vector<std::string>
 ChessTool::readFile(const std::string& fname) {
@@ -128,7 +141,7 @@ ChessTool::pgnToFen(std::istream& is) {
             sc.init(pos, nullHist, 0);
             sc.q0Eval = UNKNOWN_SCORE;
             int score = sc.quiesce(-mate0, mate0, 0, 0*plyScale, MoveGen::inCheck(pos));
-            if (!pos.getWhiteMove()) {
+            if (!pos.isWhiteMove()) {
                 score = -score;
                 commentScore = -commentScore;
             }
@@ -193,7 +206,7 @@ swapSquareY(int square) {
 static Position
 swapColors(const Position& pos) {
     Position sym;
-    sym.setWhiteMove(!pos.getWhiteMove());
+    sym.setWhiteMove(!pos.isWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             int sq = Position::getSquare(x, y);
@@ -1347,7 +1360,7 @@ ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int 
             sc.init(pos, nullHist, 0);
             sc.q0Eval = UNKNOWN_SCORE;
             int score = sc.quiesce(-mate0, mate0, 0, 0*plyScale, MoveGen::inCheck(pos));
-            if (!pos.getWhiteMove())
+            if (!pos.isWhiteMove())
                 score = -score;
             pi.qScore = score;
         }
@@ -1384,4 +1397,40 @@ ChessTool::computeAvgError(const std::vector<PositionInfo>& positions, ScoreToPr
         }
         return sqrt(errSum / positions.size());
     }
+}
+
+void
+ChessTool::probeDTZ(const std::string& fen) {
+    setupTB();
+    Position pos = TextIO::readFEN(fen);
+    int success;
+    int dtz = Syzygy::probe_dtz(pos, &success);
+    std::cout << fen << " raw:";
+    if (success)
+        std::cout << dtz;
+    else
+        std::cout << "---";
+
+    int score = 0;
+    bool ok = TBProbe::rtbProbeDTZ(pos, 0, score);
+    std::cout << " dtz:";
+    if (ok)
+        std::cout << score;
+    else
+        std::cout << "---";
+
+    ok = TBProbe::rtbProbeWDL(pos, 0, score);
+    std::cout << " wdl:";
+    if (ok)
+        std::cout << score;
+    else
+        std::cout << "---";
+
+    ok = TBProbe::gtbProbeDTM(pos, 0, score);
+    std::cout << " dtm:";
+    if (ok)
+        std::cout << score;
+    else
+        std::cout << "---";
+    std::cout << std::endl;
 }

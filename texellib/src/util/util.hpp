@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -45,8 +45,6 @@ typedef uint16_t U16;
 typedef int16_t  S16;
 typedef int8_t   S8;
 typedef uint8_t  U8;
-typedef signed char byte;
-typedef unsigned char ubyte;
 
 template <typename T, size_t N> char (&ArraySizeHelper(T(&array)[N]))[N];
 #define COUNT_OF(array) (sizeof(ArraySizeHelper(array)))
@@ -54,7 +52,7 @@ template <typename T, size_t N> char (&ArraySizeHelper(T(&array)[N]))[N];
 template <typename T> class AlignedAllocator;
 /** std::vector with cache line aware allocator. */
 template <typename T>
-class vector_aligned : public std::vector<T, AlignedAllocator<T> > { };
+class vector_aligned : public std::vector<T, AlignedAllocator<T>> { };
 
 
 /** Helper class to perform static initialization of a class T. */
@@ -75,6 +73,9 @@ T clamp(T val, T min, T max) {
     else
         return val;
 }
+
+/** Return integer 2-logarithm of a positive number. */
+int floorLog2(U32 x);
 
 // ----------------------------------------------------------------------------
 
@@ -158,6 +159,18 @@ startsWith(const std::string& str, const std::string& startsWith) {
         return false;
     for (size_t i = 0; i < N; i++)
         if (str[i] != startsWith[i])
+            return false;
+    return true;
+}
+
+inline bool
+endsWith(const std::string& str, const std::string& endsWith) {
+    size_t N = endsWith.length();
+    size_t sN = str.length();
+    if (sN < N)
+        return false;
+    for (size_t i = 0; i < N; i++)
+        if (str[sN - N + i] != endsWith[i])
             return false;
     return true;
 }

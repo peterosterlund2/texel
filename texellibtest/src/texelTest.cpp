@@ -37,8 +37,11 @@
 #include "parallelTest.hpp"
 #include "treeLoggerTest.hpp"
 #include "utilTest.hpp"
+#include "tbTest.hpp"
 
-#include "evaluate.hpp"
+#include "computerPlayer.hpp"
+#include "tbprobe.hpp"
+#include "parameters.hpp"
 
 void
 runSuite(const SuiteBase& suite) {
@@ -47,7 +50,9 @@ runSuite(const SuiteBase& suite) {
 }
 
 int main() {
-    Evaluate::updateEvalParams();
+    UciParams::gtbPath->set(gtbDefaultPath);
+    UciParams::rtbPath->set(rtbDefaultPath);
+    ComputerPlayer::initEngine();
     runSuite(BitBoardTest());
     runSuite(BookTest());
     runSuite(ComputerPlayerTest());
@@ -65,5 +70,6 @@ int main() {
     runSuite(ParallelTest());
     runSuite(TreeLoggerTest());
     runSuite(UtilTest());
+    runSuite(TBTest());
     return 0;
 }

@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2013-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -81,7 +81,7 @@ private:
     WorkerThread& operator=(const WorkerThread&) = delete;
 
     /** Thread main loop. */
-    void mainLoop();
+    void mainLoop(int minProbeDepth);
 
     int threadNo;
     ParallelData& pd;
@@ -319,8 +319,14 @@ public:
     /** Get number of nodes searched by all helper threads. */
     S64 getNumSearchedNodes() const;
 
+    /** Get number of TB hits for all helper threads. */
+    S64 getTbHits() const;
+
     /** Add nNodes to total number of searched nodes. */
     void addSearchedNodes(S64 nNodes);
+
+    /** Add nTbHits to number of TB hits. */
+    void addTbHits(S64 nTbHits);
 
 
     /** For debugging. */
@@ -344,6 +350,7 @@ private:
     TranspositionTable& tt;
 
     std::atomic<S64> totalHelperNodes; // Number of nodes searched by all helper threads
+    std::atomic<S64> helperTbHits;     // Number of TB hits for all helper threads
 };
 
 
@@ -601,6 +608,7 @@ template<> struct SplitPointTraits<false> {
 inline
 WorkQueue::WorkQueue(const FailHighInfo& fhInfo0, const DepthNpsInfo& npsInfo0)
     : stopped(false), fhInfo(fhInfo0), npsInfo(npsInfo0) {
+    resetSplitDepth();
 }
 
 inline bool
@@ -737,8 +745,8 @@ WorkQueue::Lock::wait(std::condition_variable& cv) {
 
 
 inline ParallelData::ParallelData(TranspositionTable& tt0)
-    : wq(fhInfo, npsInfo), t0Index(0), tt(tt0) {
-    totalHelperNodes = 0;
+    : wq(fhInfo, npsInfo), t0Index(0), tt(tt0),
+      totalHelperNodes(0), helperTbHits(0) {
 }
 
 inline int
@@ -751,9 +759,19 @@ ParallelData::getNumSearchedNodes() const {
     return totalHelperNodes;
 }
 
+inline S64
+ParallelData::getTbHits() const {
+    return helperTbHits;
+}
+
 inline void
 ParallelData::addSearchedNodes(S64 nNodes) {
     totalHelperNodes += nNodes;
+}
+
+inline void
+ParallelData::addTbHits(S64 nTbHits) {
+    helperTbHits += nTbHits;
 }
 
 inline bool

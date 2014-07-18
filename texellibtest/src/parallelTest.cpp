@@ -509,6 +509,9 @@ probeTT(Position& pos, const Move& m, TranspositionTable& tt, TranspositionTable
 
 void
 ParallelTest::testWorkerThread() {
+    const int minProbeDepth = UciParams::minProbeDepth->getIntPar();
+    UciParams::minProbeDepth->set("100");
+
     TranspositionTable tt(18);
     ParallelData pd(tt);
     FailHighInfo& fhi = pd.fhInfo;
@@ -565,6 +568,8 @@ ParallelTest::testWorkerThread() {
         ASSERT(ent.getType() != TType::T_EMPTY);
         ASSERT(ent.getDepth() >= 5 * plyScale);
     }
+
+    UciParams::minProbeDepth->set(num2Str(minProbeDepth));
 }
 
 cute::suite

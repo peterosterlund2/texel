@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -98,6 +98,10 @@ public:
     int evalPos(const Position& pos);
     int evalPosPrint(const Position& pos);
 
+    /** Compute "swindle" score corresponding to an evaluation score when
+     * the position is a known TB draw. */
+    static int swindleScore(int evalScore);
+
     /**
      * Interpolate between (x1,y1) and (x2,y2).
      * If x < x1, return y1, if x > x2 return y2. Otherwise, use linear interpolation.
@@ -191,8 +195,8 @@ private:
 
     vector_aligned<KingSafetyHashData>& kingSafetyHash;
 
-    static const ubyte kpkTable[2*32*64*48/8];
-    static const ubyte krkpTable[2*32*48*8];
+    static const U8 kpkTable[2*32*64*48/8];
+    static const U8 krkpTable[2*32*48*8];
     static const U64 krpkrTable[2*24*64];
 
     // King safety variables

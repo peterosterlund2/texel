@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -149,7 +149,7 @@ TextIO::readFEN(const std::string& fen) {
 
     // Make sure king can not be captured
     Position pos2(pos);
-    pos2.setWhiteMove(!pos.getWhiteMove());
+    pos2.setWhiteMove(!pos.isWhiteMove());
     if (MoveGen::inCheck(pos2))
         throw ChessParseError("King capture possible");
 
@@ -169,7 +169,7 @@ TextIO::fixupEPSquare(Position& pos) {
         for (int mi = 0; mi < moves.size; mi++) {
             const Move& m = moves[mi];
             if (m.to() == epSquare) {
-                if (pos.getPiece(m.from()) == (pos.getWhiteMove() ? Piece::WPAWN : Piece::BPAWN)) {
+                if (pos.getPiece(m.from()) == (pos.isWhiteMove() ? Piece::WPAWN : Piece::BPAWN)) {
                     epValid = true;
                     break;
                 }
@@ -218,7 +218,7 @@ TextIO::toFEN(const Position& pos) {
         if (r > 0)
             ret += '/';
     }
-    ret += (pos.getWhiteMove() ? " w " : " b ");
+    ret += (pos.isWhiteMove() ? " w " : " b ");
 
     // Castling rights
     bool anyCastle = false;
@@ -341,7 +341,7 @@ isCapture(const Position& pos, const Move& move) {
     if (pos.getPiece(move.to()) != Piece::EMPTY)
         return true;
     int p = pos.getPiece(move.from());
-    return (p == (pos.getWhiteMove() ? Piece::WPAWN : Piece::BPAWN)) &&
+    return (p == (pos.isWhiteMove() ? Piece::WPAWN : Piece::BPAWN)) &&
            (move.to() == pos.getEpSquare());
 }
 
@@ -387,7 +387,7 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveGen::Move
             ret += (char)(y1 + '1');
             ret += isCapture(pos, move) ? 'x' : '-';
         } else {
-            if (p == (pos.getWhiteMove() ? Piece::WPAWN : Piece::BPAWN)) {
+            if (p == (pos.isWhiteMove() ? Piece::WPAWN : Piece::BPAWN)) {
                 if (isCapture(pos, move))
                     ret += (char)(x1 + 'a');
             } else {
@@ -478,7 +478,7 @@ TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
     if (strMove == "--")
         return move;
 
-    const bool wtm = pos.getWhiteMove();
+    const bool wtm = pos.isWhiteMove();
 
     MoveInfo info;
     bool capture = false;

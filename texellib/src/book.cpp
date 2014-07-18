@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -108,7 +108,7 @@ Book::initBook() {
     bookMap.clear();
     rndGen.setSeed(currentTimeMillis());
     numBookMoves = 0;
-    std::vector<byte> buf;
+    std::vector<S8> buf;
     createBinBook(buf);
 
     Position startPos(TextIO::readFEN(TextIO::startPosFEN));
@@ -124,7 +124,7 @@ Book::initBook() {
             bool bad = ((move >> 15) & 1) != 0;
             int prom = (move >> 12) & 7;
             Move m(move & 63, (move >> 6) & 63,
-                   promToPiece(prom, pos.getWhiteMove()));
+                   promToPiece(prom, pos.isWhiteMove()));
             if (!bad)
                 addToBook(pos, m);
             pos.makeMove(m, ui);
@@ -167,7 +167,7 @@ Book::getWeight(int count) {
 }
 
 void
-Book::createBinBook(std::vector<byte>& binBook) {
+Book::createBinBook(std::vector<S8>& binBook) {
     for (size_t i = 0; bookLines[i]; i++) {
         const char* line = bookLines[i];
         if (!addBookLine(line, binBook)) {
@@ -180,7 +180,7 @@ Book::createBinBook(std::vector<byte>& binBook) {
 
 /** Add a sequence of moves, starting from the initial position, to the binary opening book. */
 bool
-Book::addBookLine(const std::string& line, std::vector<byte>& binBook) {
+Book::addBookLine(const std::string& line, std::vector<S8>& binBook) {
     Position pos(TextIO::readFEN(TextIO::startPosFEN));
     UndoInfo ui;
     std::vector<std::string> strMoves;
@@ -198,12 +198,12 @@ Book::addBookLine(const std::string& line, std::vector<byte>& binBook) {
             return false;
         int prom = pieceToProm(m.promoteTo());
         int val = m.from() + (m.to() << 6) + (prom << 12) + (bad << 15);
-        binBook.push_back((byte)(val >> 8));
-        binBook.push_back((byte)(val & 255));
+        binBook.push_back((S8)(val >> 8));
+        binBook.push_back((S8)(val & 255));
         pos.makeMove(m, ui);
     }
-    binBook.push_back((byte)0);
-    binBook.push_back((byte)0);
+    binBook.push_back((S8)0);
+    binBook.push_back((S8)0);
     return true;
 }
 
@@ -357,6 +357,7 @@ Book::bookLines[] = {
     "d4 d5 c4 c6 cxd5 cxd5 Nc3 Nf6 Bf4 Qb6 Qd2 Nc6 e3 Bf5",
     "d4 d5 c4 c6 Nc3 Nf6 e3 e6 Nf3",
     "Nf3 d5 d4 e6 c4 Nf6 g3 Be7 Bg2 O-O O-O dxc4 Qc2 a6 a4 Bd7 Qxc4 Bc6",
+    "d4 Nf6 c4 e6 Nf3 d5 g3? dxc4 Bg2 Nc6 Qa4 Bb4+ Bd2 Nd5 Bxb4 Nxb4 O-O Rb8 Nc3 a6 Ne5 O-O",
 
     // Tarrasch defense
     "d4 d5 c4 e6 Nc3 c5? cxd5 exd5 Nf3 Nc6 g3 Nf6 Bg2 Be7 O-O O-O Bg5 cxd4 Nxd4 h6",
@@ -386,8 +387,9 @@ Book::bookLines[] = {
     "e4 c5 Nf3 e6 d4 cxd4 Nxd4 Nc6 Nc3 Qc7 f4 a6 Be2 b5",
     "e4 c5 Nf3 e6 Nc3 Nc6 d4 cxd4 Nxd4 Qc7 Be3 a6 Qd2 Nf6 O-O-O Be7",
     "e4 c5 Nc3 Nc6 Nge2? g6 d4 cxd4 Nxd4 Bg7 Be3 Nf6 Bc4 O-O Bb3 d6",
-    "e4 c5 Nc3 Nc6 f4 d6 Nf3 g6 Bb5 Bd7 O-O Bg7 d3 a6 Bc4 Na5 e5 Nxc4 dxc4 Be6",
-    "e4 c5 Nc3 Nc6 f4 d6 Nf3 g6 Bb5 Bd7 O-O Bg7 d3 a6 Bc4 e6 f5 b5 Bb3 Nf6 fxe6 Bxe6",
+    "e4 c5 Nc3 Nc6 f4? d6 Nf3 g6 Bb5 Bd7 O-O Bg7 d3 a6 Bc4 Na5 e5 Nxc4 dxc4 Be6",
+    "e4 c5 Nc3 Nc6 f4? d6 Nf3 g6 Bb5 Bd7 O-O Bg7 d3 a6 Bc4 e6 f5 b5 Bb3 Nf6 fxe6 Bxe6",
+    "e4 c5 Nc3 Nc6 f4? g6 Nf3 Bg7 Bb5 Nd4",
     "e4 c5 Nc3 Nc6 g3? g6 Bg2 Bg7 d3 d6 f4? e6 Nf3 Nge7 O-O O-O",
     "e4 c5 Nc3 Nc6 Nf3 e6 Bb5? Nge7 O-O a6 Bxc6 Nxc6 d4 cxd4 Nxd4 Qc7",
     "e4 c5 Nc3 Nc6 Nf3 g6 d4 cxd4 Nxd4",
@@ -521,6 +523,7 @@ Book::bookLines[] = {
     "Nf3 Nf6 g3? d5 d4 c5 Bg2 Nc6 O-O",
     "Nf3 Nf6 g3? d5 Bg2 c6 d4 Bf5 O-O g6",
     "Nf3 Nf6 d4",
+    "Nf3 Nf6 c4 e6 d4 d5 Nc3 c6 e3 Nbd7 Bd3 dxc4 Bxc4 b5 Bd3 a6 e4 c5 d5 c4 Bc2 e5 O-O Bd6 Ne2 O-O",
     "Nf3 d5 d4 Nf6 c4 e6 g3 dxc4 Bg2 Nc6 Qa4 Bb4 Bd2 Nd5 Bxb4 Nxb4 O-O Rb8",
     "Nf3 c5 c4 Nf6 Nc3 e6 g3 Be7? Bg2 O-O O-O a6? d4 cxd4 Nxd4 Qc7",
     "Nf3 c5 c4 Nf6 Nc3 e6 g3 b6 Bg2 Bb7 O-O Be7 d4 cxd4 Qxd4 d6",

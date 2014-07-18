@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -173,9 +173,9 @@ private:
 
     static vector_aligned<U64> tableData;
 
-    static const byte dirTable[];
-    static const byte kingDistTable[];
-    static const byte taxiDistTable[];
+    static const S8 dirTable[];
+    static const S8 kingDistTable[];
+    static const S8 taxiDistTable[];
     static const int trailingZ[64];
 };
 

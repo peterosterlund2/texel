@@ -47,7 +47,7 @@ int swapSquareY(int square) {
 Position
 swapColors(const Position& pos) {
     Position sym;
-    sym.setWhiteMove(!pos.getWhiteMove());
+    sym.setWhiteMove(!pos.isWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             int sq = Position::getSquare(x, y);
@@ -76,7 +76,7 @@ swapColors(const Position& pos) {
 /** Mirror position in X direction, remove castling rights. */
 Position mirrorX(const Position& pos) {
     Position mir;
-    mir.setWhiteMove(pos.getWhiteMove());
+    mir.setWhiteMove(pos.isWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             int sq = Position::getSquare(x, y);
@@ -146,7 +146,9 @@ evalWhite(Evaluate& eval, const Position& pos) {
     ASSERT_EQUALM((fen + " == " + symFen).c_str(), ret, symScore);
     ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     ASSERT_EQUAL(symPos.materialId(), PositionTest::computeMaterialId(symPos));
-    if (!pos.getWhiteMove())
+    ASSERT_EQUAL(MatId::mirror(pos.materialId()), symPos.materialId());
+    ASSERT_EQUAL(pos.materialId(), MatId::mirror(symPos.materialId()));
+    if (!pos.isWhiteMove())
         ret = -ret;
     return ret;
 }
@@ -826,7 +828,7 @@ testKRKP() {
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
-    pos.setWhiteMove(!pos.getWhiteMove());
+    pos.setWhiteMove(!pos.isWhiteMove());
     ASSERT(evalWhite(pos) < drawish);
 }
 
@@ -850,7 +852,7 @@ testKPK() {
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("8/8/8/3k4/8/8/3PK3/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
-    pos.setWhiteMove(!pos.getWhiteMove());
+    pos.setWhiteMove(!pos.isWhiteMove());
     ASSERT(evalWhite(pos) < drawish);
 }
 
@@ -1041,17 +1043,19 @@ testKnightOutPost() {
 
 
 DECLARE_PARAM(testUciPar1, 60, 10, 80, true);
-DECLARE_PARAM_2REF(testUciPar2, 120, 100, 300, true);
+DECLARE_PARAM(testUciPar2, 120, 100, 300, true);
 
 int uciParVec[3];
 
 DEFINE_PARAM(testUciPar1);
-DEFINE_PARAM_2REF(testUciPar2, uciParVec[0], uciParVec[2]);
+DEFINE_PARAM(testUciPar2);
 
 static void
 testUciParam() {
     testUciPar1.registerParam("uciPar1", Parameters::instance());
     testUciPar2.registerParam("uciPar2", Parameters::instance());
+
+    testUciPar2.addListener([](){ uciParVec[0] = uciParVec[2] = testUciPar2; });
 
     ASSERT_EQUAL(60, static_cast<int>(testUciPar1));
     ASSERT_EQUAL(120, static_cast<int>(testUciPar2));
@@ -1072,6 +1076,50 @@ testUciParam() {
     ASSERT_EQUAL(180, uciParVec[0]);
     ASSERT_EQUAL(0, uciParVec[1]);
     ASSERT_EQUAL(180, uciParVec[2]);
+
+    // Test button parameters
+    int cnt1 = 0;
+    int id1 = UciParams::clearHash->addListener([&cnt1]() {
+        cnt1++;
+    }, false);
+    ASSERT_EQUAL(0, cnt1);
+    Parameters::instance().set("Clear Hash", "");
+    ASSERT_EQUAL(1, cnt1);
+    Parameters::instance().set("Clear hash", "");
+    ASSERT_EQUAL(2, cnt1);
+    Parameters::instance().set("clear hash", "");
+    ASSERT_EQUAL(3, cnt1);
+
+    int cnt2 = 0;
+    std::shared_ptr<Parameters::ButtonParam> testButton2(std::make_shared<Parameters::ButtonParam>("testButton2"));
+    Parameters::instance().addPar(testButton2);
+    int id2 = testButton2->addListener([&cnt2]() {
+        cnt2++;
+    }, false);
+    ASSERT_EQUAL(3, cnt1);
+    ASSERT_EQUAL(0, cnt2);
+    Parameters::instance().set("testButton2", "");
+    ASSERT_EQUAL(3, cnt1);
+    ASSERT_EQUAL(1, cnt2);
+    Parameters::instance().set("Clear Hash", "");
+    ASSERT_EQUAL(4, cnt1);
+    ASSERT_EQUAL(1, cnt2);
+
+    UciParams::clearHash->removeListener(id1);
+    Parameters::instance().set("Clear Hash", "");
+    ASSERT_EQUAL(4, cnt1);
+    ASSERT_EQUAL(1, cnt2);
+    Parameters::instance().set("testButton2", "");
+    ASSERT_EQUAL(4, cnt1);
+    ASSERT_EQUAL(2, cnt2);
+
+    testButton2->removeListener(id2);
+    Parameters::instance().set("Clear Hash", "");
+    ASSERT_EQUAL(4, cnt1);
+    ASSERT_EQUAL(2, cnt2);
+    Parameters::instance().set("testButton2", "");
+    ASSERT_EQUAL(4, cnt1);
+    ASSERT_EQUAL(2, cnt2);
 }
 
 ParamTable<10> uciParTable { 0, 100, true,
@@ -1143,6 +1191,19 @@ testUciParamTable() {
     }
 }
 
+static void
+testSwindleScore() {
+    for (int e = 0; e < 3000; e++) {
+        int s1 = Evaluate::swindleScore(e);
+        ASSERT(s1 >= (e?1:0));
+        ASSERT(s1 < 50);
+        ASSERT(s1 <= e);
+        ASSERT(s1 <= Evaluate::swindleScore(e+1));
+        int s2 = Evaluate::swindleScore(-e);
+        ASSERT_EQUAL(-s1, s2);
+    }
+}
+
 cute::suite
 EvaluateTest::getSuite() const {
     cute::suite s;
@@ -1173,5 +1234,6 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testKNPK));
     s.push_back(CUTE(testUciParam));
     s.push_back(CUTE(testUciParamTable));
+    s.push_back(CUTE(testSwindleScore));
     return s;
 }

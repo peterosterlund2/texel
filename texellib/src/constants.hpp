@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -31,13 +31,16 @@ namespace SearchConst {
     const int plyScale = 8; // Fractional ply resolution
     const int MIN_SMP_DEPTH = 10; // Minimum depth for SMP work sharing
     const int MAX_SP_PER_THREAD = 32; // Maximum number of SplitPoints per thread
+
+    inline bool isWinScore(int score) { return score > MATE0 / 2; }
+    inline bool isLoseScore(int score) { return score < -(MATE0 / 2); }
 }
 
 namespace TType {
-    const int T_EXACT = 0;   // Exact score
-    const int T_GE = 1;      // True score >= this->score
-    const int T_LE = 2;      // True score <= this->score
-    const int T_EMPTY = 3;   // Empty hash slot
+    const int T_EMPTY = 0;   // Empty hash slot
+    const int T_EXACT = 1;   // Exact score
+    const int T_GE = 2;      // True score >= this->score
+    const int T_LE = 3;      // True score <= this->score
 }
 
 #endif /* CONSTANTS_HPP_ */

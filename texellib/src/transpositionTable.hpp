@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -103,19 +103,18 @@ public:
         /** Get the score from the hash entry and convert from "mate in x" to "mate at ply". */
         int getScore(int ply) const {
             int sc = (S16)getBits(16, 16);
-            if (sc > SearchConst::MATE0 - 1000) {
+            if (SearchConst::isWinScore(sc))
                 sc -= ply;
-            } else if (sc < -(SearchConst::MATE0 - 1000)) {
+            else if (SearchConst::isLoseScore(sc))
                 sc += ply;
-            }
             return sc;
         }
 
         /** Convert score from "mate at ply" to "mate in x" and store in hash entry. */
         void setScore(int score, int ply) {
-            if (score > SearchConst::MATE0 - 1000)
+            if (SearchConst::isWinScore(score))
                 score += ply;
-            else if (score < -(SearchConst::MATE0 - 1000))
+            else if (SearchConst::isLoseScore(score))
                 score -= ply;
             setBits(16, 16, score);
         }
@@ -190,7 +189,7 @@ private:
 
 
     vector_aligned<TTEntryStorage> table;
-    ubyte generation;
+    U8 generation;
 };
 
 inline size_t

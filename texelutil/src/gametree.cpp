@@ -251,7 +251,7 @@ void Node::parsePgn(PgnScanner& scanner, Position pos, std::shared_ptr<Node> nod
                 }
                 nodeToAdd->move = TextIO::stringToMove(pos, tok.token);
                 if (nodeToAdd->move.isEmpty()) {
-                    std::cerr << TextIO::asciiBoard(pos) << " wtm:" << (pos.getWhiteMove()?1:0) << " move:" << tok.token << std::endl;
+                    std::cerr << TextIO::asciiBoard(pos) << " wtm:" << (pos.isWhiteMove()?1:0) << " move:" << tok.token << std::endl;
                     throw ChessParseError("Invalid move");
                 }
                 moveAdded = true;

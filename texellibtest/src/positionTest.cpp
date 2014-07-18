@@ -103,7 +103,7 @@ testMakeMove() {
     Move move(Position::getSquare(4,1), Position::getSquare(4,3), Piece::EMPTY);
     UndoInfo ui;
     pos.makeMove(move, ui);
-    ASSERT_EQUAL(pos.getWhiteMove(), false);
+    ASSERT_EQUAL(pos.isWhiteMove(), false);
     ASSERT_EQUAL(-1, pos.getEpSquare());
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(4,1)));
     ASSERT_EQUAL(Piece::WPAWN, pos.getPiece(Position::getSquare(4,3)));
@@ -114,7 +114,7 @@ testMakeMove() {
                      (1 << Position::H8_CASTLE);
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     pos.unMakeMove(move, ui);
-    ASSERT_EQUAL(pos.getWhiteMove(), true);
+    ASSERT_EQUAL(pos.isWhiteMove(), true);
     ASSERT_EQUAL(Piece::WPAWN, pos.getPiece(Position::getSquare(4,1)));
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(4,3)));
     ASSERT(pos.equals(origPos));
@@ -363,12 +363,12 @@ testHashCode() {
     pos.unMakeMove(move, ui);
     ASSERT(h1 == pos.zobristHash());
 
-    pos.setWhiteMove(!pos.getWhiteMove());
+    pos.setWhiteMove(!pos.isWhiteMove());
     U64 h4 = pos.zobristHash();
     ASSERT_EQUAL(h4, pos.computeZobristHash());
     ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     ASSERT(h1 != pos.zobristHash());
-    pos.setWhiteMove(!pos.getWhiteMove());
+    pos.setWhiteMove(!pos.isWhiteMove());
     ASSERT(h1 == pos.zobristHash());
 
     pos.setCastleMask(0);
@@ -534,11 +534,11 @@ testMaterialId() {
             for (int i = 0; i < w.q; i++) id.addPiece(Piece::WQUEEN);
             for (const Mtrl& b : configs) {
                 MatId id2(id);
-                for (int i = 0; i < b.p; i++) id2.addPiece(Piece::BPAWN);
-                for (int i = 0; i < b.r; i++) id2.addPiece(Piece::BROOK);
-                for (int i = 0; i < b.n; i++) id2.addPiece(Piece::BKNIGHT);
-                for (int i = 0; i < b.b; i++) id2.addPiece(Piece::BBISHOP);
-                for (int i = 0; i < b.q; i++) id2.addPiece(Piece::BQUEEN);
+                id2.addPieceCnt(Piece::BPAWN, b.p);
+                id2.addPieceCnt(Piece::BROOK, b.r);
+                id2.addPieceCnt(Piece::BKNIGHT, b.n);
+                id2.addPieceCnt(Piece::BBISHOP, b.b);
+                id2.addPieceCnt(Piece::BQUEEN, b.q);
                 bool u = ids.uniq(id2());
                 if (!u) {
                     std::cout << "w:" << w.p << ' ' << w.r << ' ' << w.n << ' ' << w.b << ' ' << w.q << std::endl;

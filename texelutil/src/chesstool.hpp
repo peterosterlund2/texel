@@ -57,6 +57,9 @@ public:
     /** Constructor. */
     ChessTool(bool useEntropyErrorFunction);
 
+    /** Setup tablebase directory paths. */
+    static void setupTB();
+
     /** Read a file into a string vector. */
     static std::vector<std::string> readFile(const std::string& fname);
 
@@ -118,6 +121,9 @@ public:
     /** Print total material and evaluation error for each position. */
     void printResiduals(std::istream& is, const std::string& xTypeStr,
                         bool includePosGameNr);
+
+    /** Retrieve and print DTZ value from syzygy tablebases for a position. */
+    static void probeDTZ(const std::string& fen);
 
 private:
     /** Read score from a PGN comment, assuming cutechess-cli comment format.

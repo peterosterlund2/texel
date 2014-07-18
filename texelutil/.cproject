@@ -32,7 +32,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/src}&quot;"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.other.other.426915276" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.other.other.426915276" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7 -fopenmp" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1471516522" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.71857192" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
@@ -53,7 +53,7 @@
 									<listOptionValue builtIn="false" value="rt"/>
 									<listOptionValue builtIn="false" value="armadillo"/>
 								</option>
-								<option id="gnu.cpp.link.option.flags.1629609318" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1629609318" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread -fopenmp" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1733914604" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

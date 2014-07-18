@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -59,10 +59,10 @@ private:
 
     int getWeight(int count);
 
-    static void createBinBook(std::vector<byte>& binBook);
+    static void createBinBook(std::vector<S8>& binBook);
 
     /** Add a sequence of moves, starting from the initial position, to the binary opening book. */
-    static bool addBookLine(const std::string& line, std::vector<byte>& binBook);
+    static bool addBookLine(const std::string& line, std::vector<S8>& binBook);
 
     static int pieceToProm(int p);
 
@@ -75,7 +75,7 @@ private:
         BookEntry(const Move& m) : move(m), count(1) { }
     };
 
-    typedef std::map<U64, std::vector<BookEntry> > BookMap;
+    typedef std::map<U64, std::vector<BookEntry>> BookMap;
     static BookMap bookMap;
     static Random rndGen;
     static int numBookMoves;

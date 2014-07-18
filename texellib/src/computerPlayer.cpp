@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012-2013  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 
 #include "computerPlayer.hpp"
 #include "textio.hpp"
+#include "tbprobe.hpp"
 
 #include <iostream>
 
@@ -35,7 +36,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.04";
+    std::string name = "Texel 1.05tb3";
     if (sizeof(char*) == 4)
         name += " 32-bit";
     if (sizeof(char*) == 8)
@@ -43,12 +44,34 @@ ComputerPlayer::staticInitialize() {
     engineName = name;
 }
 
+void
+ComputerPlayer::initEngine() {
+    Parameters::instance();
+
+    auto tbInit = []() {
+        TBProbe::initialize(UciParams::gtbPath->getStringPar(),
+                            UciParams::gtbCache->getIntPar(),
+                            UciParams::rtbPath->getStringPar());
+    };
+    UciParams::gtbPath->addListener(tbInit);
+    UciParams::gtbCache->addListener(tbInit, false);
+    UciParams::rtbPath->addListener(tbInit, false);
+
+    knightMobScore.addListener(Evaluate::updateEvalParams);
+    castleFactor.addListener(Evaluate::updateEvalParams, false);
+    pV.addListener([]() { pieceValue[Piece::WPAWN]   = pieceValue[Piece::BPAWN]   = pV; });
+    nV.addListener([]() { pieceValue[Piece::WKNIGHT] = pieceValue[Piece::BKNIGHT] = nV; });
+    bV.addListener([]() { pieceValue[Piece::WBISHOP] = pieceValue[Piece::BBISHOP] = bV; });
+    rV.addListener([]() { pieceValue[Piece::WROOK]   = pieceValue[Piece::BROOK]   = rV; });
+    qV.addListener([]() { pieceValue[Piece::WQUEEN]  = pieceValue[Piece::BQUEEN]  = qV; });
+    kV.addListener([]() { pieceValue[Piece::WKING]   = pieceValue[Piece::BKING]   = kV; });
+}
+
 ComputerPlayer::ComputerPlayer()
     : tt(15), pd(tt),
       book(false)
 {
-    Parameters::instance();
-    Evaluate::updateEvalParams();
+    initEngine();
     et = Evaluate::getEvalHashTables();
     minTimeMillis = 10000;
     maxTimeMillis = 10000;
@@ -104,7 +127,7 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
         bestM.setScore(0);
     } else {
         sc.timeLimit(minTimeMillis, maxTimeMillis);
-        bestM = sc.iterativeDeepening(moves, maxDepth, maxNodes, verbose);
+        bestM = sc.iterativeDeepening(moves, maxDepth, maxNodes, verbose, 1, false, 100);
     }
     currentSearch = NULL;
     //        tt.printStats();

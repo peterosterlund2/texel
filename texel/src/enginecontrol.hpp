@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012-2014  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ class SearchParams;
 class EngineControl {
 public:
     EngineControl(std::ostream& o);
+    ~EngineControl();
 
     void startSearch(const Position& pos, const std::vector<Move>& moves, const SearchParams& sPar);
 
@@ -65,7 +66,8 @@ public:
 
     static void printOptions(std::ostream& os);
 
-    void setOption(const std::string& optionName, const std::string& optionValue);
+    void setOption(const std::string& optionName, const std::string& optionValue,
+                   bool deferIfBusy);
 
 private:
     /**
@@ -81,9 +83,9 @@ private:
 
         void notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
                       bool upperBound, bool lowerBound, const std::vector<Move>& pv,
-                      int multiPVIndex);
+                      int multiPVIndex, U64 tbHits);
 
-        void notifyStats(U64 nodes, int nps, int time);
+        void notifyStats(U64 nodes, int nps, U64 tbHits, int time);
 
     private:
         std::ostream& os;
@@ -106,6 +108,10 @@ private:
 
 
     std::ostream& os;
+
+    int hashParListenerId;
+    int clearHashParListenerId;
+    std::map<std::string, std::string> pendingOptions;
 
     std::shared_ptr<std::thread> engineThread;
     std::mutex threadMutex;
