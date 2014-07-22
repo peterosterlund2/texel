@@ -408,6 +408,7 @@ Book::bookLines[] = {
     "e4 c5 c3 d5 exd5 Qxd5 d4 Nf6 Nf3 Bg4? Be2 e6 O-O Nc6 h3 Bh5 Be3",
     "e4 c5 c3? d5 exd5 Qxd5 d4 Nf6 Nf3 e6 Na3 Nc6 Be2 Qd8 Nc2 b6 O-O Bb7",
     "e4 c5 c3? Nf6 e5 Nd5 Nf3 Nc6 Bc4 Nb6 Bb3 c4 Bc2 Qc7 Qe2 g5",
+    "e4 c5 f4 d5 exd5 Nf6 Bb5+ Bd7 Bxd7+ Qxd7 c4 e6 Qe2 Bd6 f5 O-O fxe6 fxe6 dxe6",
 
     // French defense
     "d4 e6 e4 d5 exd5 exd5 Nf3 Nf6 Bd3 Bd6 O-O O-O Bg5 Bg4 Nbd2 Nbd7 c3 c6 Qc2 Qc7",
