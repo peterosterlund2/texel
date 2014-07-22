@@ -150,7 +150,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             pd.topMove = m;
             if (currentTimeMillis() - tStart >= 1000)
                 if (listener) listener->notifyCurrMove(m, mi + 1);
-            nodes = qNodes = 0;
+            S64 nodesThisMove = -totalNodes;
             posHashList[posHashListSize++] = pos.zobristHash();
             bool givesCheck = MoveGen::givesCheck(pos, m);
             int beta;
@@ -180,7 +180,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                 sti.lmr = 0;
                 score = -negaScout(smp, true, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
             }
-            U64 nodesThisMove = nodes + qNodes;
+            nodesThisMove += totalNodes;
             posHashListSize--;
             pos.unMakeMove(m, ui);
             storeSearchResult(rootMoves, mi, depthS, alpha, beta, score);
@@ -189,7 +189,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             int betaRetryDelta = (mi == 0) ? aspirationDelta * 2 : aspirationDelta;
             int alphaRetryDelta = aspirationDelta * 2;
             while ((score >= beta) || ((mi < maxPV) && (score <= alpha))) {
-                nodes = qNodes = 0;
+                nodesThisMove -= totalNodes;
                 posHashList[posHashListSize++] = pos.zobristHash();
                 bool fh = score >= beta;
                 if (fh) {
@@ -210,7 +210,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
                 pos.makeMove(m, ui);
                 totalNodes++;
                 score = -negaScout(smp, true, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
-                nodesThisMove += nodes + qNodes;
+                nodesThisMove += totalNodes;
                 posHashListSize--;
                 pos.unMakeMove(m, ui);
                 storeSearchResult(rootMoves, mi, depthS, alpha, beta, score);
@@ -350,8 +350,7 @@ Search::notifyPV(const MoveInfo& info, int multiPVIndex) {
         std::stringstream ss;
         ss << std::setw(6) << std::left << TextIO::moveToString(pos, info.move, false)
            << ' ' << std::setw(6) << std::right << score
-           << ' ' << std::setw(6) << nodes
-           << ' ' << std::setw(6) << qNodes;
+           << ' ' << std::setw(6) << totalNodes;
         if (uBound)
             ss << " <=";
         else if (lBound)
@@ -495,7 +494,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     // Probe endgame tablebases
     const int illegalScore = -(MATE0-(ply+1));
     int tbScore = illegalScore;
-    if (depth >= minProbeDepth) {
+    if (tb && depth >= minProbeDepth) {
         TranspositionTable::TTEntry tbEnt;
         tbEnt.clear();
         if (TBProbe::tbProbe(pos, ply, alpha, beta, tbEnt)) {
@@ -861,7 +860,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     posHashList[posHashListSize++] = pos.zobristHash();
                     pos.makeMove(m, ui);
                     tt.prefetch(pos.historyHash());
-                    nodes++;
                     totalNodes++;
                     nodesToGo--;
                     sti.currentMove = m;
@@ -1104,7 +1102,6 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
         const bool nextInCheck = (depth - 1) > -2 ? givesCheck : false;
 
         pos.makeMove(m, ui);
-        qNodes++;
         totalNodes++;
         nodesToGo--;
         score = -quiesce(-beta, -alpha, ply + 1, depth - 1, nextInCheck);
@@ -1279,7 +1276,6 @@ Search::selectHashMove(MoveGen::MoveList& moves, const Move& hashMove) {
 
 void
 Search::initNodeStats() {
-    nodes = qNodes = 0;
     nodesByPly.clear();
     nodesByDepth.clear();
 }

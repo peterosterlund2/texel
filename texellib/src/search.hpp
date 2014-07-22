@@ -282,8 +282,6 @@ private:
     U64 randomSeed;
 
     // Search statistics stuff
-    U64 nodes;
-    U64 qNodes;
     Histogram<0,20> nodesByPly;
     Histogram<0,20> nodesByDepth;
     S64 totalNodes;
