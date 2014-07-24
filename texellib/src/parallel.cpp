@@ -24,6 +24,7 @@
  */
 
 #include "parallel.hpp"
+#include "numa.hpp"
 #include "search.hpp"
 #include "tbprobe.hpp"
 #include "textio.hpp"
@@ -149,6 +150,7 @@ ThreadStopHandler::reportNodes(bool force) {
 void
 WorkerThread::mainLoop(int minProbeDepth) {
 //    log([&](std::ostream& os){os << "mainLoop, th:" << threadNo;});
+    Numa::instance().bindThread(threadNo);
     if (!et)
         et = Evaluate::getEvalHashTables();
     if (!kt)

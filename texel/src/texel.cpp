@@ -28,6 +28,7 @@
 #include "tuigame.hpp"
 #include "treeLogger.hpp"
 #include "uciprotocol.hpp"
+#include "numa.hpp"
 
 #include <memory>
 
@@ -45,6 +46,8 @@ int main(int argc, char* argv[]) {
     } else if ((argc == 3) && (std::string(argv[1]) == "tree")) {
         TreeLoggerReader::main(argv[2]);
     } else {
+        if ((argc == 2) && (std::string(argv[1]) == "-nonuma"))
+            Numa::instance().disable();
         UCIProtocol::main(false);
     }
 }

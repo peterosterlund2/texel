@@ -33,6 +33,7 @@
 #include "parameters.hpp"
 #include "moveGen.hpp"
 #include "util/logger.hpp"
+#include "numa.hpp"
 
 #include <iostream>
 #include <memory>
@@ -97,6 +98,7 @@ EngineControl::EngineControl(std::ostream& o)
       pd(tt),
       randomSeed(0)
 {
+    Numa::instance().bindThread(0);
     hashParListenerId = UciParams::hash->addListener([this]() {
         setupTT();
     });
@@ -254,6 +256,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
         os << "info string Eval: " << ss.str() << std::endl;
     }
     auto f = [this,ownBook,analyseMode,moves,maxDepth,maxNodes,maxPV,minProbeDepth]() {
+        Numa::instance().bindThread(0);
         Move m;
         if (ownBook && !analyseMode) {
             Book book(false);

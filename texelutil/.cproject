@@ -50,6 +50,7 @@
 								</option>
 								<option id="gnu.cpp.link.option.libs.1872582772" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="texellib"/>
+									<listOptionValue builtIn="false" value="numa"/>
 									<listOptionValue builtIn="false" value="rt"/>
 									<listOptionValue builtIn="false" value="armadillo"/>
 								</option>
@@ -129,6 +130,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.774837039" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
 								<option id="gnu.cpp.link.option.libs.1692993584" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="texellib"/>
+									<listOptionValue builtIn="false" value="numa"/>
 									<listOptionValue builtIn="false" value="rt"/>
 									<listOptionValue builtIn="false" value="armadillo"/>
 								</option>

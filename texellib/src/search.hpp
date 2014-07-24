@@ -99,7 +99,7 @@ public:
     }
 
     /** Set which thread is owning this Search object. */
-    void setThreadNo(int value);
+    void setThreadNo(int tNo);
 
     void timeLimit(int minTimeLimit, int maxTimeLimit);
 
@@ -257,6 +257,7 @@ private:
     std::vector<std::shared_ptr<SplitPoint>> spVec;
     std::vector<std::shared_ptr<SplitPoint>> pending;
     int threadNo;
+    bool mainNumaNode; // True if this thread runs on the NUMA node holding the transposition table
     TreeLogger& logFile;
 
     std::shared_ptr<Listener> listener;
@@ -430,13 +431,6 @@ Search::getTbHits() const {
 inline S64
 Search::getTbHitsThisThread() const {
     return tbHits;
-}
-
-inline void
-Search::setThreadNo(int value) {
-    threadNo = value;
-    if (threadNo > 0)
-        nodesBetweenTimeCheck = 1000;
 }
 
 inline void

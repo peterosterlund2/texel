@@ -60,6 +60,7 @@
 								</option>
 								<option id="gnu.cpp.link.option.libs.1312187623" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="texellib"/>
+									<listOptionValue builtIn="false" value="numa"/>
 									<listOptionValue builtIn="false" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.1411758677" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
@@ -152,6 +153,7 @@
 								</option>
 								<option id="gnu.cpp.link.option.libs.63904313" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="texellib"/>
+									<listOptionValue builtIn="false" value="numa"/>
 									<listOptionValue builtIn="false" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.1708615518" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
@@ -247,6 +249,7 @@
 								</option>
 								<option id="gnu.cpp.link.option.libs.1516441500" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="texellib"/>
+									<listOptionValue builtIn="false" value="numa"/>
 									<listOptionValue builtIn="false" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.debugging.gprof.1925864234" name="Generate gprof information (-pg)" superClass="gnu.cpp.link.option.debugging.gprof" value="true" valueType="boolean"/>
@@ -343,6 +346,7 @@
 								</option>
 								<option id="gnu.cpp.link.option.libs.882426531" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="texellib"/>
+									<listOptionValue builtIn="false" value="numa"/>
 									<listOptionValue builtIn="false" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.debugging.gprof.1753561694" name="Generate gprof information (-pg)" superClass="gnu.cpp.link.option.debugging.gprof" value="true" valueType="boolean"/>

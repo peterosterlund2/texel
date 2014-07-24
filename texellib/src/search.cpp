@@ -24,6 +24,7 @@
  */
 
 #include "search.hpp"
+#include "numa.hpp"
 #include "tbprobe.hpp"
 #include "treeLogger.hpp"
 #include "textio.hpp"
@@ -43,7 +44,8 @@ Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                int posHashListSize0, SearchTables& st, ParallelData& pd0,
                const std::shared_ptr<SplitPoint>& rootSp,
                TreeLogger& logFile0)
-    : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), pd(pd0), threadNo(0), logFile(logFile0) {
+    : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), pd(pd0), threadNo(0),
+      mainNumaNode(true), logFile(logFile0) {
     stopHandler = std::make_shared<DefaultStopHandler>(*this);
     spVec.push_back(rootSp);
     init(pos0, posHashList0, posHashListSize0);
@@ -466,7 +468,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     // Check transposition table
     TranspositionTable::TTEntry ent;
     ent.clear();
-    const bool useTT = (threadNo < 8) || (depth >= 1 * plyScale); // To reduce memory bandwidth
+    const bool useTT = mainNumaNode || (depth >= 1 * plyScale); // To reduce memory bandwidth
     if (useTT) tt.probe(hKey, ent);
     Move hashMove;
     if (ent.getType() != TType::T_EMPTY) {
@@ -1278,4 +1280,12 @@ void
 Search::initNodeStats() {
     nodesByPly.clear();
     nodesByDepth.clear();
+}
+
+void
+Search::setThreadNo(int tNo) {
+    threadNo = tNo;
+    if (threadNo > 0)
+        nodesBetweenTimeCheck = 1000;
+    mainNumaNode = Numa::instance().isMainNode(threadNo);
 }
