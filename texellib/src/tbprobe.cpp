@@ -40,7 +40,7 @@ static int currentGtbCacheMB;
 static int currentGtbWdlFraction;
 static std::string currentRtbPath;
 
-static const char** gtbPaths = NULL;
+static const char** gtbPaths = nullptr;
 static int gtbMaxPieces = 0;
 
 static std::unordered_map<int,int> maxDTM; // MatId -> Max DTM value in GTB TB

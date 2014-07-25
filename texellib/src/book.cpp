@@ -568,5 +568,5 @@ Book::bookLines[] = {
     "e4 e5 Bc4? Nf6 d3 c6 Nf3 d5 Bb3 Bb4+ Bd2 Bxd2+ Qxd2",
     "d4 e6 Nf3 Nf6 c4 d5 Bg5 Be7 Nc3 h6 Bh4 O-O",
 
-    NULL
+    nullptr
 };

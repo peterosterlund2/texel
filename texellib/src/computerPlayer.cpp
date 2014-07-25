@@ -79,7 +79,7 @@ ComputerPlayer::ComputerPlayer()
     maxNodes = -1;
     verbose = true;
     bookEnabled = true;
-    currentSearch = NULL;
+    currentSearch = nullptr;
 }
 
 std::string
@@ -129,7 +129,7 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
         sc.timeLimit(minTimeMillis, maxTimeMillis);
         bestM = sc.iterativeDeepening(moves, maxDepth, maxNodes, verbose, 1, false, 100);
     }
-    currentSearch = NULL;
+    currentSearch = nullptr;
     //        tt.printStats();
     std::string strMove = TextIO::moveToString(pos, bestM, false);
 
@@ -169,7 +169,7 @@ void
 ComputerPlayer::timeLimit(int minTimeLimit, int maxTimeLimit) {
     minTimeMillis = minTimeLimit;
     maxTimeMillis = maxTimeLimit;
-    if (currentSearch != NULL)
+    if (currentSearch != nullptr)
         currentSearch->timeLimit(minTimeLimit, maxTimeLimit);
 }
 

@@ -51,7 +51,7 @@ Numa::instance() {
 Numa::Numa() {
 #ifdef NUMA
 #ifdef __WIN32__
-    SYSTEM_LOGICAL_PROCESSOR_INFORMATION* buffer = NULL;
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION* buffer = nullptr;
     DWORD returnLength = 0;
     while (true) {
         if (GetLogicalProcessorInformation(buffer, &returnLength))
