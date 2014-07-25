@@ -806,6 +806,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             if (doFutility) {
                 score = futilityScore;
             } else {
+#ifdef HAS_PREFETCH
+                if (pass == 1)
+                    tt.prefetch(pos.hashAfterMove(m));
+#endif
                 if (!MoveGen::isLegal(pos, m, inCheck))
                     continue;
                 int moveExtend = 0;
@@ -861,7 +865,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 } else {
                     posHashList[posHashListSize++] = pos.zobristHash();
                     pos.makeMove(m, ui);
-                    tt.prefetch(pos.historyHash());
                     totalNodes++;
                     nodesToGo--;
                     sti.currentMove = m;

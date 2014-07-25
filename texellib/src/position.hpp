@@ -70,6 +70,10 @@ public:
     /** Hash including halfMoveClock, to avoid opening book cycles. */
     U64 bookHash() const;
 
+    /** Compute zobrist hash for position after "move" has been made.
+     * May be incorrect in some cases, intended for prefetch. */
+    U64 hashAfterMove(const Move& move) const;
+
     /** Return the material identifier. */
     int materialId() const;
 

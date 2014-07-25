@@ -142,6 +142,22 @@ Position::setPiece(int square, int piece) {
     psScore2_[piece]        += Evaluate::psTab2[piece][square];
 }
 
+U64
+Position::hashAfterMove(const Move& move) const {
+    int from = move.from();
+    int to = move.to();
+    int p = squares[from];
+    int capP = squares[to];
+
+    U64 ret = hashKey ^ whiteHashKey;
+    ret ^= psHashKeys[capP][to];
+    ret ^= psHashKeys[p][to];
+    ret ^= psHashKeys[p][from];
+    ret ^= psHashKeys[Piece::EMPTY][from];
+
+    return ret;
+}
+
 void
 Position::makeMove(const Move& move, UndoInfo& ui) {
     ui.capturedPiece = squares[move.to()];
