@@ -64,6 +64,8 @@ public:
     U64 pawnZobristHash() const;
     U64 kingZobristHash() const;
 
+    /** Zobrist hash including the halfMove clock.
+     *  Only large halfMove clock values affect the hash. */
     U64 historyHash() const;
     /** Hash including halfMoveClock, to avoid opening book cycles. */
     U64 bookHash() const;
@@ -139,6 +141,7 @@ public:
     int getHalfMoveClock() const;
     void setHalfMoveClock(int hm);
 
+    /** Return incrementally updated piece square table score for middle game and endgame. */
     int psScore1(int piece) const;
     int psScore2(int piece) const;
 
@@ -160,8 +163,10 @@ public:
     int wKingSq() const;
     int bKingSq() const;
 
+    /** Total white/black material value. */
     int wMtrl() const;
     int bMtrl() const;
+    /** White/black material value for all pawns. */
     int wMtrlPawns() const;
     int bMtrlPawns() const;
 
@@ -181,6 +186,7 @@ public:
     /** Compute the Zobrist hash value non-incrementally. Only useful for testing. */
     U64 computeZobristHash();
 
+    /** Initialize static data. */
     static void staticInitialize();
 
     /** Get hash key for a piece at a square. */
