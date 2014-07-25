@@ -212,6 +212,7 @@ Numa::bindThread(int threadNo) const {
         SetThreadAffinityMask(GetCurrentThread(), mask);
 #else
     numa_run_on_node(node);
+    numa_set_preferred(node);
 #endif
 #endif
 }
