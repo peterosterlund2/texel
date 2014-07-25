@@ -154,7 +154,7 @@ public:
     /** BitBoard for all squares occupied by white or black pieces. */
     U64 colorBB(int wtm) const;
 
-    /** BitBoard for all squares occupied by what and black pieces. */
+    /** BitBoard for all squares occupied by white and black pieces. */
     U64 occupiedBB() const;
 
     int wKingSq() const;
