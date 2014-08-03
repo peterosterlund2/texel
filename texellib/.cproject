@@ -33,6 +33,7 @@
 									<listOptionValue builtIn="false" value="HAS_CTZ"/>
 									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
+									<listOptionValue builtIn="false" value="HAS_RT"/>
 									<listOptionValue builtIn="false" value="NUMA"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.2059162012" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
@@ -97,6 +98,7 @@
 									<listOptionValue builtIn="false" value="HAS_CTZ"/>
 									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
+									<listOptionValue builtIn="false" value="HAS_RT"/>
 									<listOptionValue builtIn="false" value="NUMA"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.293849430" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
@@ -158,6 +160,7 @@
 									<listOptionValue builtIn="false" value="HAS_CTZ"/>
 									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
+									<listOptionValue builtIn="false" value="HAS_RT"/>
 									<listOptionValue builtIn="false" value="NUMA"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1576366635" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
@@ -229,6 +232,7 @@
 									<listOptionValue builtIn="false" value="HAS_CTZ"/>
 									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
+									<listOptionValue builtIn="false" value="HAS_RT"/>
 									<listOptionValue builtIn="false" value="NUMA"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1544754863" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
@@ -297,6 +301,7 @@
 									<listOptionValue builtIn="false" value="HAS_CTZ"/>
 									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
+									<listOptionValue builtIn="false" value="HAS_RT"/>
 									<listOptionValue builtIn="false" value="NUMA"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.998335523" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
@@ -370,6 +375,9 @@
 				</scannerInfoProvider>
 			</profile>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.debug.44444748.304638119;cdt.managedbuild.config.gnu.lib.debug.44444748.304638119.;cdt.managedbuild.tool.gnu.c.compiler.lib.debug.483379739;cdt.managedbuild.tool.gnu.c.compiler.input.1822124769">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="gcov;gcov.;cdt.managedbuild.tool.gnu.cpp.compiler.lib.debug.251844107;cdt.managedbuild.tool.gnu.cpp.compiler.input.1280315800">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 			<profile id="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP">
@@ -382,9 +390,6 @@
 					<parser enabled="true"/>
 				</scannerInfoProvider>
 			</profile>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.debug.44444748.304638119;cdt.managedbuild.config.gnu.lib.debug.44444748.304638119.;cdt.managedbuild.tool.gnu.c.compiler.lib.debug.483379739;cdt.managedbuild.tool.gnu.c.compiler.input.1822124769">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.release.1083459479;cdt.managedbuild.config.gnu.lib.release.1083459479.;cdt.managedbuild.tool.gnu.c.compiler.lib.release.651097142;cdt.managedbuild.tool.gnu.c.compiler.input.1790594162">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
@@ -402,7 +407,7 @@
 				</scannerInfoProvider>
 			</profile>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.release.1083459479.853261495;cdt.managedbuild.config.gnu.lib.release.1083459479.853261495.;cdt.managedbuild.tool.gnu.c.compiler.lib.release.1212767427;cdt.managedbuild.tool.gnu.c.compiler.input.856825276">
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.debug.44444748;cdt.managedbuild.config.gnu.lib.debug.44444748.;cdt.managedbuild.tool.gnu.c.compiler.lib.debug.1223993077;cdt.managedbuild.tool.gnu.c.compiler.input.72861913">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.release.1083459479.853261495;cdt.managedbuild.config.gnu.lib.release.1083459479.853261495.;cdt.managedbuild.tool.gnu.cpp.compiler.lib.release.2058699567;cdt.managedbuild.tool.gnu.cpp.compiler.input.747578032">
@@ -418,7 +423,7 @@
 				</scannerInfoProvider>
 			</profile>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.debug.44444748;cdt.managedbuild.config.gnu.lib.debug.44444748.;cdt.managedbuild.tool.gnu.c.compiler.lib.debug.1223993077;cdt.managedbuild.tool.gnu.c.compiler.input.72861913">
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.lib.release.1083459479.853261495;cdt.managedbuild.config.gnu.lib.release.1083459479.853261495.;cdt.managedbuild.tool.gnu.c.compiler.lib.release.1212767427;cdt.managedbuild.tool.gnu.c.compiler.input.856825276">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 	</storageModule>

@@ -241,8 +241,6 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         }
         S64 tNow = currentTimeMillis();
         if (verbose) {
-            static_assert(nodesByPly.minValue() == nodesByDepth.minValue(), "Incompatible histograms");
-            static_assert(nodesByPly.maxValue() == nodesByDepth.maxValue(), "Incompatible histograms");
             for (int i = nodesByPly.minValue(); i < nodesByPly.maxValue(); i++)
                 std::cout << std::setw(2) << i
                           << ' ' << std::setw(7) << nodesByPly.get(i)

@@ -101,7 +101,6 @@ TUIGame::handleTestSuite(const std::string& cmd) {
             return;
         }
 //        std::cout << "file:" << filename << " time:" << timeStr << " (" << timeLimit << ")" << std::endl;
-        fr.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         fr.open(filename.c_str());
         std::shared_ptr<Player> pl = whitePlayer->isHumanPlayer() ? blackPlayer : whitePlayer;
         if (pl->isHumanPlayer()) {
@@ -113,7 +112,7 @@ TUIGame::handleTestSuite(const std::string& cmd) {
         int numTotal = 0;
         std::string line;
         lineNo = 0;
-        while (getline(fr, line) >= 0) {
+        while (getline(fr, line).good()) {
             lineNo++;
             if (startsWith(line, "#") || (line.length() == 0))
                 continue;

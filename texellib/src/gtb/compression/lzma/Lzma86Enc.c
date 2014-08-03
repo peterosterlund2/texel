@@ -13,8 +13,8 @@ Public domain */
 
 #define SZE_OUT_OVERFLOW SZE_DATA_ERROR
 
-static void *SzAlloc(void *p, size_t size) { p = p; return MyAlloc(size); }
-static void SzFree(void *p, void *address) { p = p; MyFree(address); }
+static void *SzAlloc(void *p, size_t size) { return MyAlloc(size); }
+static void SzFree(void *p, void *address) { MyFree(address); }
 static ISzAlloc g_Alloc = { SzAlloc, SzFree };
 
 #define LZMA86_SIZE_OFFSET (1 + LZMA_PROPS_SIZE)
@@ -31,7 +31,7 @@ int Lzma86_Encode(Byte *dest, size_t *destLen, const Byte *src, size_t srcLen,
   LzmaEncProps_Init(&props);
   props.level = level;
   props.dictSize = dictSize;
-  
+
   *destLen = 0;
   if (outSize2 < LZMA86_HEADER_SIZE)
     return SZ_ERROR_OUTPUT_EOF;
@@ -83,12 +83,12 @@ int Lzma86_Encode(Byte *dest, size_t *destLen, const Byte *src, size_t srcLen,
         break;
       if (useFilter && i == 0)
         curModeIsFiltered = True;
-      
+
       curRes = LzmaEncode(dest + LZMA86_HEADER_SIZE, &outSizeProcessed,
           curModeIsFiltered ? filteredStream : src, srcLen,
           &props, dest + 1, &outPropsSize, 0,
           NULL, &g_Alloc, &g_Alloc);
-      
+
       if (curRes != SZ_ERROR_OUTPUT_EOF)
       {
         if (curRes != SZ_OK)

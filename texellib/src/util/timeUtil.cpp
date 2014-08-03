@@ -28,7 +28,7 @@
 #include <chrono>
 #include <iostream>
 
-#if defined(__GNUC__) || defined(__LINUX__)
+#ifdef HAS_RT
 #include <time.h>
 #include <sys/time.h>
 #endif
@@ -44,7 +44,7 @@ S64 currentTimeMillis() {
 }
 
 double currentTime() {
-#if defined(__GNUC__) || defined(__linux__)
+#ifdef HAS_RT
     clockid_t c = CLOCK_MONOTONIC;
     timespec sp;
     clock_gettime(c, &sp);

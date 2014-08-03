@@ -157,6 +157,7 @@ TBProbe::getSearchMoves(Position& pos, const MoveGen::MoveList& legalMoves,
         const Move& m = legalMoves[mi];
         pos.makeMove(m, ui);
         TranspositionTable::TTEntry ent;
+        ent.clear();
         bool progressMove = false;
         bool badMove = false;
         if (tbProbe(pos, ply+1, -mate0, mate0, ent)) {

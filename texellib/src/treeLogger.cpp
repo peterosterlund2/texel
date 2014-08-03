@@ -204,7 +204,7 @@ TreeLoggerReader::flushForwardPointerData(std::vector<std::pair<U64,U64>>& toWri
             assert(false);
         entry.serialize(entAddr);
     }
-    if (cacheStart != cacheStart) { // flush
+    if (cacheStart != emptyMark) { // flush
         int nWrite = std::min(cacheSize, numEntries - cacheStart);
         fs.seekp(cacheStart * eSize, std::ios_base::beg);
         fs.write((const char*)cacheBuf, nWrite * eSize);

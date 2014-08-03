@@ -29,7 +29,8 @@
 #include "move.hpp"
 
 
-struct SearchTreeInfo {
+class SearchTreeInfo {
+public:
     SearchTreeInfo();
 
     bool allowNullMove;    // Don't allow two null-moves in a row

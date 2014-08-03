@@ -50,7 +50,7 @@ UCIProtocol::mainLoop(std::istream& is, std::ostream& os, bool autoStart) {
     std::string line;
     while (true) {
         getline(is, line);
-        if (!is || is.eof()) {
+        if (!is.good()) {
             if (engine)
                 engine->stopSearch();
             break;

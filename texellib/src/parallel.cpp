@@ -68,7 +68,7 @@ class ThreadStopHandler : public Search::StopHandler {
 public:
     ThreadStopHandler(WorkerThread& wt, ParallelData& pd,
                       const SplitPoint& sp, const SplitPointMove& spm,
-                      int moveNo, const Search& sc, int initialAlpha,
+                      const Search& sc, int initialAlpha,
                       S64 totalNodes, int myPrio);
 
     /** Destructor. Report searched nodes to ParallelData object. */
@@ -87,7 +87,6 @@ private:
     ParallelData& pd;
     const SplitPoint& sp;
     const SplitPointMove& spMove;
-    const int moveNo;
     const Search& sc;
     int counter;             // Counts number of calls to shouldStop
     int nextProbCheck;       // Next time test for SplitPoint switch should be performed
@@ -100,9 +99,9 @@ private:
 
 ThreadStopHandler::ThreadStopHandler(WorkerThread& wt0, ParallelData& pd0,
                                      const SplitPoint& sp0, const SplitPointMove& spm0,
-                                     int moveNo0, const Search& sc0, int initialAlpha0,
+                                     const Search& sc0, int initialAlpha0,
                                      S64 totalNodes0, int myPrio0)
-    : wt(wt0), pd(pd0), sp(sp0), spMove(spm0), moveNo(moveNo0),
+    : wt(wt0), pd(pd0), sp(sp0), spMove(spm0),
       sc(sc0), counter(0), nextProbCheck(1),
       lastReportedNodes(0), lastReportedTbHits(0),
       initialAlpha(initialAlpha0), totalNodes(totalNodes0), myPrio(myPrio0) {
@@ -201,8 +200,7 @@ WorkerThread::mainLoop(int minProbeDepth) {
         const int alpha = sp->getAlpha();
         const int beta = sp->getBeta();
         const S64 nodes0 = pd.getNumSearchedNodes();
-        auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd, *sp,
-                                                             spMove, moveNo,
+        auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd, *sp, spMove,
                                                              sc, alpha, nodes0, prio));
         sc.setStopHandler(stopHandler);
         const int ply = sp->getPly();

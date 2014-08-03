@@ -283,8 +283,7 @@ private:
     U64 randomSeed;
 
     // Search statistics stuff
-    Histogram<0,20> nodesByPly;
-    Histogram<0,20> nodesByDepth;
+    Histogram<0,20> nodesByPly, nodesByDepth;
     S64 totalNodes;
     S64 tbHits;
     S64 tLastStats;        // Time when notifyStats was last called
