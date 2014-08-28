@@ -854,7 +854,8 @@ ChessTool::printParams() {
     os << "rookHalfOpenBonus     : " << rookHalfOpenBonus << std::endl;
     os << "rookOpenBonus         : " << rookOpenBonus << std::endl;
     os << "rookDouble7thRowBonus : " << rookDouble7thRowBonus << std::endl;
-    os << "trappedRookPenalty    : " << trappedRookPenalty << std::endl;
+    os << "trappedRookPenalty1   : " << trappedRookPenalty1 << std::endl;
+    os << "trappedRookPenalty2   : " << trappedRookPenalty2 << std::endl;
 
     os << "bishopPairPawnPenalty : " << bishopPairPawnPenalty << std::endl;
     os << "trappedBishopPenalty  : " << trappedBishopPenalty << std::endl;
@@ -1072,7 +1073,8 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(rookHalfOpenBonus, "rookHalfOpenBonus", hppFile);
     replaceValue(rookOpenBonus, "rookOpenBonus", hppFile);
     replaceValue(rookDouble7thRowBonus, "rookDouble7thRowBonus", hppFile);
-    replaceValue(trappedRookPenalty, "trappedRookPenalty", hppFile);
+    replaceValue(trappedRookPenalty1, "trappedRookPenalty1", hppFile);
+    replaceValue(trappedRookPenalty2, "trappedRookPenalty2", hppFile);
 
     replaceValue(bishopPairPawnPenalty, "bishopPairPawnPenalty", hppFile);
     replaceValue(trappedBishopPenalty, "trappedBishopPenalty", hppFile);

@@ -1165,29 +1165,29 @@ Evaluate::kingSafety(const Position& pos) {
     if (Position::getY(wKing) == 0) {
         if (((pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(F1,G1)) != 0) &&
             ((pos.pieceTypeBB(Piece::WROOK) & BitBoard::sqMask(G1,H1)) != 0) &&
-            ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[6]) != 0) &&
-            ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[7]) != 0)) {
-            score -= trappedRookPenalty;
+            ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[6]) != 0)) {
+            score -= ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[7]) != 0) ?
+                     trappedRookPenalty1 : trappedRookPenalty2;
         } else
         if (((pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(B1,C1)) != 0) &&
             ((pos.pieceTypeBB(Piece::WROOK) & BitBoard::sqMask(A1,B1)) != 0) &&
-            ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[0]) != 0) &&
             ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[1]) != 0)) {
-            score -= trappedRookPenalty;
+            score -= ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[0]) != 0) ?
+                     trappedRookPenalty1 : trappedRookPenalty2;
         }
     }
     if (Position::getY(bKing) == 7) {
         if (((pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(F8,G8)) != 0) &&
             ((pos.pieceTypeBB(Piece::BROOK) & BitBoard::sqMask(G8,H8)) != 0) &&
-            ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[6]) != 0) &&
-            ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[7]) != 0)) {
-            score += trappedRookPenalty;
+            ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[6]) != 0)) {
+            score += ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[7]) != 0) ?
+                     trappedRookPenalty1 : trappedRookPenalty2;
         } else
         if (((pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(B8,C8)) != 0) &&
             ((pos.pieceTypeBB(Piece::BROOK) & BitBoard::sqMask(A8,B8)) != 0) &&
-            ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[0]) != 0) &&
             ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[1]) != 0)) {
-            score += trappedRookPenalty;
+            score += ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[0]) != 0) ?
+                     trappedRookPenalty1 : trappedRookPenalty2;
         }
     }
 

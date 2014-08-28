@@ -88,7 +88,8 @@ DEFINE_PARAM(threatBonus2);
 DEFINE_PARAM(rookHalfOpenBonus);
 DEFINE_PARAM(rookOpenBonus);
 DEFINE_PARAM(rookDouble7thRowBonus);
-DEFINE_PARAM(trappedRookPenalty);
+DEFINE_PARAM(trappedRookPenalty1);
+DEFINE_PARAM(trappedRookPenalty2);
 
 DEFINE_PARAM(bishopPairPawnPenalty);
 DEFINE_PARAM(trappedBishopPenalty);
@@ -160,14 +161,14 @@ DEFINE_PARAM(timePonderHitRate);
 
 /** Piece/square table for king during middle game. */
 ParamTable<64> kt1b { -200, 200, useUciParam,
-    {  66, 127, 111, 107, 107, 111, 127,  66,
-      128,  -2,  29,  60,  60,  29,  -2, 128,
+    {  61, 127, 111, 107, 107, 111, 127,  61,
+      128,   0,  29,  60,  60,  29,   0, 128,
       -57,  -7,  19,  17,  17,  19,  -7, -57,
        -9,   7,  -1, -27, -27,  -1,   7,  -9,
       -35,   7, -16,  -1,  -1, -16,   7, -35,
       -29,   5,   8, -15, -15,   8,   5, -29,
        32,  29,   0,   9,   9,   0,  29,  32,
-        8,  32,   0,  15,  15,   0,  32,   8 },
+        8,  32,   2,  15,  15,   2,  32,   8 },
     {   1,   2,   3,   4,   4,   3,   2,   1,
         5,   6,   7,   8,   8,   7,   6,   5,
         9,  10,  11,  12,  12,  11,  10,   9,
@@ -181,7 +182,7 @@ ParamTableMirrored<64> kt1w(kt1b);
 
 /** Piece/square table for king during end game. */
 ParamTable<64> kt2b { -200, 200, useUciParam,
-    { -26,  51,  73,  54,  54,  73,  51, -26,
+    { -27,  51,  73,  54,  54,  73,  51, -27,
        47,  93, 100,  89,  89, 100,  93,  47,
        84, 103, 109, 106, 106, 109, 103,  84,
        66,  91,  98, 101, 101,  98,  91,  66,
@@ -328,12 +329,12 @@ ParamTableMirrored<64> bt2w(bt2b);
 
 /** Piece/square table for queens during middle game. */
 ParamTable<64> qt1b { -200, 200, useUciParam,
-    {  14,   8,  18, -29, -29,  18,   8,  14,
+    {  15,   8,  18, -29, -29,  18,   8,  15,
       -47,-106, -53, -94, -94, -53,-106, -47,
       -49, -42, -70, -65, -65, -70, -42, -49,
       -54, -50, -62, -68, -68, -62, -50, -54,
       -33, -15, -27, -35, -35, -27, -15, -33,
-      -31, -17, -16, -18, -18, -16, -17, -31,
+      -31, -17, -17, -18, -18, -17, -17, -31,
       -22, -12, -11,  -5,  -5, -11, -12, -22,
       -16, -21, -12,  -9,  -9, -12, -21, -16 },
     {   1,   2,   3,   4,   4,   3,   2,   1,
@@ -428,10 +429,10 @@ ParamTable<64> protectedPawnBonus { -50, 150, useUciParam,
 
 ParamTable<64> attackedPawnBonus { -150, 100, useUciParam,
     {   0,   0,   0,   0,   0,   0,   0,   0,
-      -15, -51,  14, -24, -24,  14, -51, -15,
+      -15, -51,  14, -23, -23,  14, -51, -15,
         7,  -9,  10,  22,  22,  10,  -9,   7,
        -7,  -8,  -5,  11,  11,  -5,  -8,  -7,
-      -36,  -2, -14,  19,  19, -14,  -2, -36,
+      -36,  -2, -13,  19,  19, -13,  -2, -36,
      -110, -26, -60, -51, -51, -60, -26,-110,
         0,   0,   0,   0,   0,   0,   0,   0,
         0,   0,   0,   0,   0,   0,   0,   0 },
@@ -458,15 +459,15 @@ ParamTable<28> knightMobScore { -200, 200, useUciParam,
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 23, 24, 25, 26 }
 };
 ParamTable<28> queenMobScore { -100, 100, useUciParam,
-    { -1, -4, -8, -4, -2,  0,  3,  3,  7, 10, 13, 16, 19, 21, 25, 29, 32, 32, 36, 38, 45, 43, 44, 44, 41, 41, 36, 45 },
+    { -2, -4, -8, -4, -2,  0,  3,  3,  7, 10, 13, 16, 19, 21, 25, 29, 32, 32, 36, 38, 45, 43, 44, 44, 41, 41, 36, 45 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28 }
 };
 
 ParamTable<36> connectedPPBonus { -200, 300, useUciParam,
-    {   4,  -5,   1,   6,   2,   5,
+    {   4,  -5,   1,   7,   2,   5,
        -5,  -2,  -1,  10,  13,   8,
         1,  -1,  20,   5,  21,  18,
-        6,  10,   5,  36,  -1,  38,
+        7,  10,   5,  36,  -1,  38,
         2,  13,  21,  -1,  87, -29,
         5,   8,  18,  38, -29, 287 },
     {   1,   2,   4,   7,  11,  16,
@@ -509,7 +510,7 @@ ParamTable<16> majorPieceRedundancy { -200, 200, useUciParam,
 };
 
 ParamTable<5> QvsRRBonus { -200, 200, useUciParam,
-    { -7,-16, 42, 76, 82 },
+    { -7,-14, 42, 77, 82 },
     {  1,  2,  3,  4,  5 }
 };
 
@@ -524,7 +525,7 @@ ParamTable<7> RvsMMBonus { -200, 200, useUciParam,
 };
 
 ParamTable<4> bishopPairValue { 0, 100, useUciParam,
-    { 76, 77, 62, 55 },
+    { 77, 77, 62, 55 },
     {  1,  2,  3,  4 }
 };
 
@@ -641,7 +642,8 @@ Parameters::Parameters() {
     REGISTER_PARAM(rookHalfOpenBonus, "RookHalfOpenBonus");
     REGISTER_PARAM(rookOpenBonus, "RookOpenBonus");
     REGISTER_PARAM(rookDouble7thRowBonus, "RookDouble7thRowBonus");
-    REGISTER_PARAM(trappedRookPenalty, "TrappedRookPenalty");
+    REGISTER_PARAM(trappedRookPenalty1, "TrappedRookPenalty1");
+    REGISTER_PARAM(trappedRookPenalty2, "TrappedRookPenalty2");
 
     REGISTER_PARAM(bishopPairPawnPenalty, "BishopPairPawnPenalty");
     REGISTER_PARAM(trappedBishopPenalty, "TrappedBishopPenalty");
