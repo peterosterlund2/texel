@@ -60,7 +60,6 @@ DEFINE_PARAM(pawnIslandPenalty);
 DEFINE_PARAM(pawnBackwardPenalty);
 DEFINE_PARAM(pawnSemiBackwardPenalty1);
 DEFINE_PARAM(pawnSemiBackwardPenalty2);
-DEFINE_PARAM(pawnGuardedPassedBonus);
 DEFINE_PARAM(pawnRaceBonus);
 DEFINE_PARAM(passedPawnEGFactor);
 DEFINE_PARAM(RBehindPP1);
@@ -614,7 +613,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(pawnBackwardPenalty, "PawnBackwardPenalty");
     REGISTER_PARAM(pawnSemiBackwardPenalty1, "PawnSemiBackwardPenalty1");
     REGISTER_PARAM(pawnSemiBackwardPenalty2, "PawnSemiBackwardPenalty2");
-    REGISTER_PARAM(pawnGuardedPassedBonus, "PawnGuardedPassedBonus");
     REGISTER_PARAM(pawnRaceBonus, "PawnRaceBonus");
     REGISTER_PARAM(passedPawnEGFactor, "PassedPawnEGFactor");
     REGISTER_PARAM(RBehindPP1, "RookBehindPassedPawn1");

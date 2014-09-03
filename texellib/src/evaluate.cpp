@@ -833,9 +833,6 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     U64 passedPawnsW = wPawns & ~BitBoard::southFill(bPawns | bPawnAttacks | (wPawns >> 8));
     int passedBonusW = 0;
     if (passedPawnsW != 0) {
-        U64 guardedPassedW = passedPawnsW & wPawnAttacks;
-        if (pos.wMtrl() - pos.wMtrlPawns() == pos.bMtrl() - pos.bMtrlPawns())
-            passedBonusW += pawnGuardedPassedBonus * BitBoard::bitCount(guardedPassedW);
         U64 m = passedPawnsW;
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);
@@ -851,9 +848,6 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     U64 passedPawnsB = bPawns & ~BitBoard::northFill(wPawns | wPawnAttacks | (bPawns << 8));
     int passedBonusB = 0;
     if (passedPawnsB != 0) {
-        U64 guardedPassedB = passedPawnsB & bPawnAttacks;
-        if (pos.wMtrl() - pos.wMtrlPawns() == pos.bMtrl() - pos.bMtrlPawns())
-            passedBonusB += pawnGuardedPassedBonus * BitBoard::bitCount(guardedPassedB);
         U64 m = passedPawnsB;
         while (m != 0) {
             int sq = BitBoard::numberOfTrailingZeros(m);

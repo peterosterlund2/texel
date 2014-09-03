@@ -393,7 +393,6 @@ DECLARE_PARAM(pawnIslandPenalty,        8, 0, 50, useUciParam);
 DECLARE_PARAM(pawnBackwardPenalty,      16, 0, 50, useUciParam);
 DECLARE_PARAM(pawnSemiBackwardPenalty1, 6, -50, 50, useUciParam);
 DECLARE_PARAM(pawnSemiBackwardPenalty2, 2, -50, 50, useUciParam);
-DECLARE_PARAM(pawnGuardedPassedBonus,   4, 0, 50, useUciParam);
 DECLARE_PARAM(pawnRaceBonus,            169, 0, 1000, useUciParam);
 DECLARE_PARAM(passedPawnEGFactor,       62, 1, 128, useUciParam);
 DECLARE_PARAM(RBehindPP1,               9, -100, 100, useUciParam);
