@@ -601,8 +601,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Null-move pruning
-    if (    (depth >= 3*plyScale) && !inCheck && sti.allowNullMove &&
-            !isWinScore(std::abs(beta))) {
+    if ((depth >= 3*plyScale) && !inCheck && sti.allowNullMove && !isWinScore(beta)) {
         bool nullOk;
         if (pos.isWhiteMove()) {
             nullOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
