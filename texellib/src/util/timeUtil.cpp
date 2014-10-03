@@ -34,6 +34,12 @@
 #endif
 
 S64 currentTimeMillis() {
+#ifdef HAS_RT
+    clockid_t c = CLOCK_MONOTONIC;
+    timespec sp;
+    clock_gettime(c, &sp);
+    return (S64)(sp.tv_sec * 1e3 + sp.tv_nsec * 1e-6);
+#else
     auto t = std::chrono::high_resolution_clock::now();
     auto t0 = t.time_since_epoch();
     auto x = t0.count();
@@ -41,6 +47,7 @@ S64 currentTimeMillis() {
     auto n = T0Type::period::num;
     auto d = T0Type::period::den;
     return (S64)(x * (1000.0 * n / d));
+#endif
 }
 
 double currentTime() {
