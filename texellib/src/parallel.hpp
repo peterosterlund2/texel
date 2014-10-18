@@ -31,6 +31,7 @@
 #include "transpositionTable.hpp"
 #include "evaluate.hpp"
 #include "searchUtil.hpp"
+#include "constants.hpp"
 #include "util/timeUtil.hpp"
 #include "util/heap.hpp"
 
@@ -125,14 +126,17 @@ public:
     /** A helper thread stopped working on a move before it was finished. */
     void returnMove(const std::shared_ptr<SplitPoint>& sp, int moveNo);
 
-    /** Set which move number the SplitPoint owner is currently searching. */
-    void setOwnerCurrMove(const std::shared_ptr<SplitPoint>& sp, int moveNo, int alpha);
+    /** Set which move number the SplitPoint owner is currently searching.
+     * @return Score from helper search thread. UNKNOWN_SCORE if no helper has
+     *         searched the move. */
+    int setOwnerCurrMove(const std::shared_ptr<SplitPoint>& sp, int moveNo, int alpha);
 
     /** Cancel this SplitPoint and all children. */
     void cancel(const std::shared_ptr<SplitPoint>& sp);
 
     /** Set move to canceled after helper thread finished searching it. */
-    void moveFinished(const std::shared_ptr<SplitPoint>& sp, int moveNo, bool cancelRemaining);
+    void moveFinished(const std::shared_ptr<SplitPoint>& sp, int moveNo,
+                      bool cancelRemaining, int score);
 
     /** Return probability that the best unstarted move needs to be searched.
      *  Also return the corresponding SplitPoint. */
@@ -412,8 +416,10 @@ public:
     /** A helper thread stopped working on a move before it was finished. */
     void returnMove(int moveNo);
 
-    /** Set which move number the SplitPoint owner is currently searching. */
-    void setOwnerCurrMove(int moveNo, int alpha);
+    /** Set which move number the SplitPoint owner is currently searching.
+     * @return Score from helper search thread. UNKNOWN_SCORE if no helper has
+     *         searched the move. */
+    int setOwnerCurrMove(int moveNo, int alpha);
 
     /** Cancel this SplitPoint and all children. */
     void cancel();
@@ -422,7 +428,7 @@ public:
     bool isCanceled() const;
 
     /** Set move to canceled after helper thread finished searching it. */
-    void moveFinished(int moveNo, bool cancelRemaining);
+    void moveFinished(int moveNo, bool cancelRemaining, int score);
 
     /** Return true if there are moves that have not been started to be searched. */
     bool hasUnStartedMove() const;
@@ -528,6 +534,9 @@ public:
     bool isSearching() const { return searching; }
     void setSearching(bool value) { searching = value; }
 
+    void setScore(int s) { score = s; }
+    int getScore() const { return score; }
+
 private:
     Move move;      // Position defined by sp->pos + move
     int lmr;        // Amount of LMR reduction
@@ -537,6 +546,7 @@ private:
 
     RelaxedShared<bool> canceled; // Result is no longer needed
     bool searching; // True if currently searched by a helper thread
+    int score;
 };
 
 
@@ -561,8 +571,10 @@ public:
      * objects from the pending vector and clear the pending vector. */
     void addToQueue();
 
-    /** Set which move number the SplitPoint owner is currently searching. */
-    void setOwnerCurrMove(int moveNo, int alpha);
+    /** Set which move number the SplitPoint owner is currently searching.
+     * @return Score from helper search thread. UNKNOWN_SCORE if no helper has
+     *         searched the move. */
+    int setOwnerCurrMove(int moveNo, int alpha);
 
     /** For debugging. */
     int getSeqNo() const { return sp->getSeqNo(); }
@@ -591,7 +603,7 @@ struct DummySplitPointHolder {
     void setSp(const std::shared_ptr<SplitPoint>& sp) {}
     void addMove(int moveNo, const SplitPointMove& spMove) {}
     void addToQueue() {}
-    void setOwnerCurrMove(int moveNo, int alpha) {}
+    int setOwnerCurrMove(int moveNo, int alpha) { return SearchConst::UNKNOWN_SCORE; }
     bool isAllNode() const { return false; }
 };
 
@@ -801,13 +813,15 @@ SplitPoint::returnMove(int moveNo) {
     spm.setSearching(false);
 }
 
-inline void
+inline int
 SplitPoint::setOwnerCurrMove(int moveNo, int newAlpha) {
     assert((moveNo >= 0) && (moveNo < (int)spMoves.size()));
+    int score = spMoves[moveNo].getScore();
     spMoves[moveNo].setCanceled(true);
     currMoveNo = moveNo;
     if (newAlpha > alpha)
         alpha = newAlpha;
+    return score;
 }
 
 inline void
@@ -838,7 +852,8 @@ inline
 SplitPointMove::SplitPointMove(const Move& move0, int lmr0, int depth0,
                               int captSquare0, bool inCheck0)
     : move(move0), lmr(lmr0), depth(depth0), captSquare(captSquare0),
-      inCheck(inCheck0), canceled(false), searching(false) {
+      inCheck(inCheck0), canceled(false), searching(false),
+      score(SearchConst::UNKNOWN_SCORE) {
 }
 
 
@@ -873,15 +888,15 @@ SplitPointHolder::addMove(int moveNo, const SplitPointMove& spMove) {
     sp->addMove(moveNo, spMove);
 }
 
-inline void
+inline int
 SplitPointHolder::setOwnerCurrMove(int moveNo, int alpha) {
 //    if (sp->hasHelperThread())
 //        log([&](std::ostream& os){os << "seqNo:" << sp->getSeqNo() << " currMove:" << moveNo
 //                                     << " a:" << alpha;});
     if (sp->wasInserted())
-        pd.wq.setOwnerCurrMove(sp, moveNo, alpha);
+        return pd.wq.setOwnerCurrMove(sp, moveNo, alpha);
     else
-        sp->setOwnerCurrMove(moveNo, alpha);
+        return sp->setOwnerCurrMove(moveNo, alpha);
 }
 
 inline bool

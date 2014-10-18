@@ -179,7 +179,7 @@ WorkerThread::mainLoop(int minProbeDepth) {
         const SplitPointMove& spMove = newSp->getSpMove(moveNo);
         const int depth = spMove.getDepth();
         if (depth < 0) { // Move skipped by forward pruning or legality check
-            pd.wq.moveFinished(newSp, moveNo, false);
+            pd.wq.moveFinished(newSp, moveNo, false, SearchConst::UNKNOWN_SCORE);
             continue;
         }
         if (sp != newSp) {
@@ -230,7 +230,7 @@ WorkerThread::mainLoop(int minProbeDepth) {
 //                                         << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
 //                                         << " a:" << alpha << " b:" << beta << " s:" << score
 //                                         << " d:" << depth/SearchConst::plyScale << " n:" << sc.getTotalNodesThisThread();});
-            pd.wq.moveFinished(sp, moveNo, cancelRemaining);
+            pd.wq.moveFinished(sp, moveNo, cancelRemaining, score);
         } catch (const Search::StopSearch&) {
 //            log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " m:" << moveNo
 //                                         << " aborted n:" << sc.getTotalNodesThisThread();});
@@ -336,11 +336,12 @@ WorkQueue::returnMove(const std::shared_ptr<SplitPoint>& sp, int moveNo) {
     updateProbabilities(sp);
 }
 
-void
+int
 WorkQueue::setOwnerCurrMove(const std::shared_ptr<SplitPoint>& sp, int moveNo, int alpha) {
     Lock L(this);
-    sp->setOwnerCurrMove(moveNo, alpha);
+    int score = sp->setOwnerCurrMove(moveNo, alpha);
     updateProbabilities(sp);
+    return score;
 }
 
 void
@@ -350,9 +351,10 @@ WorkQueue::cancel(const std::shared_ptr<SplitPoint>& sp) {
 }
 
 void
-WorkQueue::moveFinished(const std::shared_ptr<SplitPoint>& sp, int moveNo, bool cancelRemaining) {
+WorkQueue::moveFinished(const std::shared_ptr<SplitPoint>& sp, int moveNo,
+                        bool cancelRemaining, int score) {
     Lock L(this);
-    sp->moveFinished(moveNo, cancelRemaining);
+    sp->moveFinished(moveNo, cancelRemaining, score);
     updateProbabilities(sp);
 }
 
@@ -627,8 +629,9 @@ SplitPoint::getNextMove(const FailHighInfo& fhInfo) {
 }
 
 void
-SplitPoint::moveFinished(int moveNo, bool cancelRemaining) {
+SplitPoint::moveFinished(int moveNo, bool cancelRemaining, int score) {
     assert((moveNo >= 0) && (moveNo < (int)spMoves.size()));
+    spMoves[moveNo].setScore(score);
     spMoves[moveNo].setSearching(false);
     spMoves[moveNo].setCanceled(true);
     if (cancelRemaining)

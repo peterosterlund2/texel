@@ -38,6 +38,8 @@
 
 #include "cute.h"
 
+using namespace SearchConst;
+
 
 void
 ParallelTest::testFailHighInfo() {
@@ -177,10 +179,11 @@ ParallelTest::testWorkQueue() {
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(255 / 1023.0, wq.getBestProbability(), eps);
 
-    wq.setOwnerCurrMove(sp1, 1, 10);
+    int score = wq.setOwnerCurrMove(sp1, 1, 10);
     ASSERT_EQUAL(2, sp1->findNextMove(fhi));
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(255 / 511.0, wq.getBestProbability(), eps);
+    ASSERT_EQUAL(UNKNOWN_SCORE, score);
 
     sp = wq.getWork(moveNo, pd, 0);
     ASSERT_EQUAL(2, moveNo);
@@ -201,10 +204,13 @@ ParallelTest::testWorkQueue() {
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
 
-    wq.moveFinished(sp1, 2, false);
+    wq.moveFinished(sp1, 2, false, 17);
     ASSERT_EQUAL(-1, sp1->findNextMove(fhi));
     ASSERT_EQUAL(0, wq.queue.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
+
+    score = wq.setOwnerCurrMove(sp1, 2, 5);
+    ASSERT_EQUAL(17, score);
 
     // Split point contains no moves, should not be added to queue/waiting
     sp.reset();
@@ -246,12 +252,17 @@ ParallelTest::testWorkQueue() {
     ASSERT_EQUAL(1, moveNo);
     ASSERT_EQUAL(3, sp1->findNextMove(fhi));
     ASSERT_EQUAL_DELTA((127 + 1023) / (1023.0*2), wq.getBestProbability(), eps);
-    wq.moveFinished(sp1, 2, true);
+    wq.moveFinished(sp1, 2, true, -123);
     ASSERT_EQUAL(1, wq.queue.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
-    wq.moveFinished(sp1, 1, true);
+    wq.moveFinished(sp1, 1, true, 4321);
     ASSERT_EQUAL(0, wq.queue.size());
     ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
+
+    score = wq.setOwnerCurrMove(sp, 1, 5);
+    ASSERT_EQUAL(4321, score);
+    score = wq.setOwnerCurrMove(sp, 2, 5);
+    ASSERT_EQUAL(-123, score);
 }
 
 static std::vector<std::shared_ptr<SplitPoint>>
@@ -376,7 +387,7 @@ ParallelTest::testWorkQueueParentChild() {
     ASSERT(q[1] != q[2]);
     ASSERT_EQUAL(sp4, q[3]);
 
-    wq.setOwnerCurrMove(sp3, 1, 10);
+    int score = wq.setOwnerCurrMove(sp3, 1, 10);
     ASSERT_EQUAL(4, wq.queue.size());
 //    sp1->print(std::cout, 0, fhi);
 //    std::cout << std::endl;
@@ -388,6 +399,7 @@ ParallelTest::testWorkQueueParentChild() {
     ASSERT_EQUAL_DELTA((255+1023)/(511+1023.0), sp3->getPNextMoveUseful(), eps);
     ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2), sp4->getPSpUseful(), eps);
     ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2)*511/1023, sp4->getPNextMoveUseful(), eps);
+    ASSERT_EQUAL(UNKNOWN_SCORE, score);
 
     std::vector<std::shared_ptr<SplitPoint>> q2 = extractQueue(wq.queue);
     ASSERT_EQUAL(sp3, q2[0]);
@@ -409,10 +421,11 @@ ParallelTest::testWorkQueueParentChild() {
     ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2), sp4->getPSpUseful(), eps);
     ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2)*511/1023, sp4->getPNextMoveUseful(), eps);
 
-    wq.setOwnerCurrMove(sp1, 1, 10);
+    score = wq.setOwnerCurrMove(sp1, 1, 10);
 //    sp1->print(std::cout, 0, fhi);
 //    std::cout << std::endl;
     ASSERT_EQUAL(2, wq.queue.size());
+    ASSERT_EQUAL(UNKNOWN_SCORE, score);
 
     std::vector<std::shared_ptr<SplitPoint>> q4 = extractQueue(wq.queue);
     ASSERT_EQUAL(sp1, q4[0]);

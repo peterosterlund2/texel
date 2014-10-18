@@ -38,8 +38,6 @@
 using namespace SearchConst;
 using namespace Logger;
 
-const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
-
 Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                int posHashListSize0, SearchTables& st, ParallelData& pd0,
                const std::shared_ptr<SplitPoint>& rootSp,
@@ -868,14 +866,19 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     sti.currentMoveNo = mi;
                     sti.lmr = lmr;
 //                    S64 n1 = totalNodes; int nomDepth = newDepth;
-                    if (smp)
-                        sph.setOwnerCurrMove(mi, alpha);
-                    score = -negaScout(smp, tb, -b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
-                    if (((lmr > 0) && (score > alpha)) ||
-                        ((score > alpha) && (score < beta) && (b != beta))) {
-                        sti.lmr = 0;
-                        newDepth += lmr;
-                        score = -negaScout(smp, tb, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+                    if (smp) {
+                        int helperScore = sph.setOwnerCurrMove(mi, alpha);
+                        if (helperScore != UNKNOWN_SCORE)
+                            score = helperScore;
+                    }
+                    if (!smp || (score == illegalScore)) {
+                        score = -negaScout(smp, tb, -b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+                        if (((lmr > 0) && (score > alpha)) ||
+                            ((score > alpha) && (score < beta) && (b != beta))) {
+                            sti.lmr = 0;
+                            newDepth += lmr;
+                            score = -negaScout(smp, tb, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+                        }
                     }
                     if (smp) {
 //                        if (sph.hasHelperThread())
