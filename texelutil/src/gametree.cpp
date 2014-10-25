@@ -7,6 +7,7 @@
 
 #include "gametree.hpp"
 #include <stdexcept>
+#include <cassert>
 
 // --------------------------------------------------------------------------------
 
@@ -16,38 +17,58 @@ PgnToken::PgnToken(int type0, const std::string& token0)
 
 // --------------------------------------------------------------------------------
 
-PgnScanner::PgnScanner(std::istream& is) {
-    std::vector<char> pgn;
-    {
-        int c;
-        while ((c = is.get()) != EOF)
-            pgn.push_back(c);
-    }
-
-    // Skip "escape" lines, ie lines starting with a '%' character
-    int len = pgn.size();
-    bool col0 = true;
-    for (int i = 0; i < len; i++) {
-        char c = pgn[i];
-        if (c == '%' && col0) {
-            while (i + 1 < len) {
-                char nextChar = pgn[i + 1];
-                if ((nextChar == '\n') || (nextChar == '\r'))
-                    break;
-                i++;
-            }
-            col0 = true;
-        } else {
-            data += c;
-            col0 = ((c == '\n') || (c == '\r'));
-        }
-    }
-    data += '\n'; // Terminating whitespace simplifies the tokenizer
-    idx = 0;
+PgnScanner::PgnScanner(std::istream& is0)
+    : is(is0), col0(true), eofReached(false),
+      hasReturnedChar(false), returnedChar(0) {
 }
 
 void PgnScanner::putBack(const PgnToken& tok) {
     savedTokens.push_back(tok);
+}
+
+char
+PgnScanner::getNextChar() {
+    int c;
+    c = is.get();
+    if (eofReached || (c == EOF))
+        throw std::out_of_range("");
+    return c;
+}
+
+char
+PgnScanner::getTokenChar() {
+    if (hasReturnedChar) {
+        hasReturnedChar = false;
+        return returnedChar;
+    }
+    try {
+        while (true) {
+            char c = getNextChar();
+            if (c == '%' && col0) {
+                while (true) {
+                    char nextChar = getNextChar();
+                    if ((nextChar == '\n') || (nextChar == '\r'))
+                        break;
+                }
+                col0 = true;
+            } else {
+                col0 = ((c == '\n') || (c == '\r'));
+                return c;
+            }
+        }
+    } catch (const std::out_of_range& e) {
+        if (eofReached)
+            throw e;
+        eofReached = true;
+        return '\n'; // Terminating whitespace simplifies the tokenizer
+    }
+}
+
+void
+PgnScanner::returnTokenChar(char c) {
+    assert(!hasReturnedChar);
+    hasReturnedChar = true;
+    returnedChar = c;
 }
 
 PgnToken PgnScanner::nextToken() {
@@ -61,7 +82,7 @@ PgnToken PgnScanner::nextToken() {
     PgnToken ret(PgnToken::END, "");
     try {
         while (true) {
-            char c = data.at(idx++);
+            char c = getTokenChar();
             if (isspace(c)) {
                 // Skip
             } else if (c == '.') {
@@ -85,7 +106,7 @@ PgnToken PgnScanner::nextToken() {
             } else if (c == '{') {
                 ret.type = PgnToken::COMMENT;
                 std::string sb;
-                while ((c = data.at(idx++)) != '}')
+                while ((c = getTokenChar()) != '}')
                     sb += c;
                 ret.token = sb;
                 break;
@@ -93,7 +114,7 @@ PgnToken PgnScanner::nextToken() {
                 ret.type = PgnToken::COMMENT;
                 std::string sb;
                 while (true) {
-                    c = data.at(idx++);
+                    c = getTokenChar();
                     if ((c == '\n') || (c == '\r'))
                         break;
                     sb += c;
@@ -104,11 +125,11 @@ PgnToken PgnScanner::nextToken() {
                 ret.type = PgnToken::STRING;
                 std::string sb;
                 while (true) {
-                    c = data.at(idx++);
+                    c = getTokenChar();
                     if (c == '"') {
                         break;
                     } else if (c == '\\') {
-                        c = data.at(idx++);
+                        c = getTokenChar();
                     }
                     sb += c;
                 }
@@ -118,9 +139,9 @@ PgnToken PgnScanner::nextToken() {
                 ret.type = PgnToken::NAG;
                 std::string sb;
                 while (true) {
-                    c = data.at(idx++);
+                    c = getTokenChar();
                     if (!isdigit(c)) {
-                        idx--;
+                        returnTokenChar(c);
                         break;
                     }
                     sb += c;
@@ -134,9 +155,9 @@ PgnToken PgnScanner::nextToken() {
                 bool onlyDigits = isdigit(c);
                 const std::string term = ".*[](){;\"$";
                 while (true) {
-                    c = data.at(idx++);
+                    c = getTokenChar();
                     if (isspace(c) || (term.find_first_of(c) != std::string::npos)) {
-                        idx--;
+                        returnTokenChar(c);
                         break;
                     }
                     sb += c;

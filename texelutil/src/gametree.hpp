@@ -52,9 +52,16 @@ public:
 
     PgnToken nextTokenDropComments();
 
+    char getNextChar();
+    char getTokenChar();
+    void returnTokenChar(char c);
+
 private:
-    std::string data;
-    int idx;
+    std::istream& is;
+    bool col0;
+    bool eofReached;
+    bool hasReturnedChar;
+    char returnedChar;
     std::vector<PgnToken> savedTokens;
 };
 
