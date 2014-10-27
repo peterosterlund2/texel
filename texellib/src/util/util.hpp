@@ -32,6 +32,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <vector>
+#include <array>
 #include <algorithm>
 #include <atomic>
 #include <cctype>
