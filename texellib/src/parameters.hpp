@@ -522,7 +522,7 @@ DECLARE_PARAM(deltaPruningMargin, 152, 0, 1000, useUciParam);
 
 // Time management parameters
 
-DECLARE_PARAM(timeMaxRemainingMoves, 45, 2, 200, useUciParam);
+DECLARE_PARAM(timeMaxRemainingMoves, 35, 2, 200, useUciParam);
 DECLARE_PARAM(bufferTime, 1000, 1, 10000, useUciParam);
 DECLARE_PARAM(minTimeUsage, 85, 1, 100, useUciParam);
 DECLARE_PARAM(maxTimeUsage, 400, 100, 1000, useUciParam);

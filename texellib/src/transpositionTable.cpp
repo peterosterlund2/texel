@@ -183,7 +183,7 @@ TranspositionTable::printStats() const {
     double w = 100.0 / table.size();
     std::stringstream ss;
     ss.precision(2);
-    ss << std::fixed << "Hash stats: size:" << table.size()
+    ss << std::fixed << "hstat: size:" << table.size()
        << " unused:" << unused << " (" << (unused*w) << "%)"
        << " thisGen:" << thisGen << " (" << (thisGen*w) << "%)" << std::endl;
     cout << ss.str();
@@ -195,7 +195,7 @@ TranspositionTable::printStats() const {
             ss << std::setw(4) << i
                << ' ' << std::setw(8) << c
                << " " << std::setw(6) << std::fixed << (c*w);
-            std::cout << ss.str() << std::endl;
+            std::cout << "hstat:" << ss.str() << std::endl;
         }
     }
 }

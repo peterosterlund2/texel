@@ -60,7 +60,7 @@ public:
         void clear() {
             key = 0;
             data = 0;
-            setType(TType::T_EMPTY);
+            static_assert(TType::T_EMPTY == 0, "type not set to T_EMPTY");
         }
 
         /** Store in transposition table, encoded for thread safety. */
