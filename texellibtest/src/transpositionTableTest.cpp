@@ -92,6 +92,7 @@ testTTEntry() {
 
     // Test negative mate score
     TTEntry ent3;
+    ent3.clear();
     score = -mate0 + 5;
     ply = 3;
     ent3.setKey(3);

@@ -137,7 +137,7 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
         bool needMoreTime = false;
         for (int mi = 0; mi < (int)rootMoves.size(); mi++) {
             if (mi < maxPV)
-                aspirationDelta = isWinScore(std::abs(rootMoves[mi].score())) ? 1000 : aspirationWindow;
+                aspirationDelta = isWinScore(std::abs(rootMoves[mi].score())) ? 3000 : aspirationWindow;
             if (firstIteration)
                 alpha = -MATE0;
             else if (mi < maxPV)
@@ -186,8 +186,8 @@ Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
             storeSearchResult(rootMoves, mi, depthS, alpha, beta, score);
             if ((verbose && firstIteration) || (mi < maxPV) || (score > rootMoves[maxPV-1].score()))
                 notifyPV(rootMoves, mi, maxPV);
-            int betaRetryDelta = (mi == 0) ? aspirationDelta * 2 : aspirationDelta;
-            int alphaRetryDelta = aspirationDelta * 2;
+            int betaRetryDelta = aspirationDelta;
+            int alphaRetryDelta = aspirationDelta;
             while ((score >= beta) || ((mi < maxPV) && (score <= alpha))) {
                 nodesThisMove -= totalNodes;
                 posHashList[posHashListSize++] = pos.zobristHash();
