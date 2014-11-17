@@ -428,8 +428,6 @@ mateEval(int k1, int k2) {
 int
 Evaluate::pieceSquareEval(const Position& pos) {
     int score = 0;
-    const int wMtrlPawns = pos.wMtrlPawns();
-    const int bMtrlPawns = pos.bMtrlPawns();
 
     // Kings/pawns
     if (pos.wMtrlPawns() + pos.bMtrlPawns() > 0) {
@@ -495,13 +493,13 @@ Evaluate::pieceSquareEval(const Position& pos) {
     {
         int r1 = pos.psScore1(Piece::WROOK);
         if (r1 != 0) {
-            const int nP = bMtrlPawns / pV;
+            const int nP = BitBoard::bitCount(pos.pieceTypeBB(Piece::BPAWN));
             const int s = r1 * std::min(nP, 6) / 6;
             score += s;
         }
         r1 = pos.psScore1(Piece::BROOK);
         if (r1 != 0) {
-            const int nP = wMtrlPawns / pV;
+            const int nP = BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN));
             const int s = r1 * std::min(nP, 6) / 6;
             score -= s;
         }
@@ -1011,12 +1009,12 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
     // Bishop pair bonus
     if (numWhite == 2) {
         int numMinors = BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP, Piece::BKNIGHT));
-        const int numPawns = pos.wMtrlPawns() / pV;
+        const int numPawns = BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN));
         score += bishopPairValue[std::min(numMinors,3)] - numPawns * bishopPairPawnPenalty;
     }
     if (numBlack == 2) {
         int numMinors = BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP, Piece::WKNIGHT));
-        const int numPawns = pos.bMtrlPawns() / pV;
+        const int numPawns = BitBoard::bitCount(pos.pieceTypeBB(Piece::BPAWN));
         score -= bishopPairValue[std::min(numMinors,3)] - numPawns * bishopPairPawnPenalty;
     }
 
@@ -1601,11 +1599,11 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
     // Bonus for KQK[BN]
     const int bV = ::bV;
     const int nV = ::nV;
-    if (pos.pieceTypeBB(Piece::WQUEEN) && (pos.bMtrlPawns() == 0) && (pos.bMtrl() <= std::max(bV,nV))) {
+    if (pos.pieceTypeBB(Piece::WQUEEN) && (bMtrlPawns == 0) && (pos.bMtrl() <= std::max(bV,nV))) {
         if (!doEval) return 1;
         return 200 + pos.wMtrl() - pos.bMtrl() + mateEval(pos.getKingSq(true), pos.getKingSq(false));
     }
-    if (pos.pieceTypeBB(Piece::BQUEEN) && (pos.wMtrlPawns() == 0) && (pos.wMtrl() <= std::max(bV,nV))) {
+    if (pos.pieceTypeBB(Piece::BQUEEN) && (wMtrlPawns == 0) && (pos.wMtrl() <= std::max(bV,nV))) {
         if (!doEval) return 1;
         return -(200 + pos.bMtrl() - pos.wMtrl() + mateEval(pos.getKingSq(false), pos.getKingSq(true)));
     }
@@ -1672,12 +1670,12 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
 
     // Bonus for KRPKN
     if (pos.pieceTypeBB(Piece::WROOK) && pos.pieceTypeBB(Piece::WPAWN) &&
-        !pos.pieceTypeBB(Piece::BBISHOP) && (pos.bMtrl() == nV)  && (pos.bMtrlPawns() == 0)) {
+        !pos.pieceTypeBB(Piece::BBISHOP) && (pos.bMtrl() == nV)  && (bMtrlPawns == 0)) {
         if (!doEval) return 1;
         return score + krpknBonus;
     }
     if (pos.pieceTypeBB(Piece::BROOK) && pos.pieceTypeBB(Piece::BPAWN) &&
-        !pos.pieceTypeBB(Piece::WBISHOP) && (pos.wMtrl() == nV)  && (pos.wMtrlPawns() == 0)) {
+        !pos.pieceTypeBB(Piece::WBISHOP) && (pos.wMtrl() == nV)  && (wMtrlPawns == 0)) {
         if (!doEval) return 1;
         return score - krpknBonus;
     }
@@ -1685,20 +1683,20 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
     // Bonus for KRPKB
     int krpkbAdjustment = 0;
     if (pos.pieceTypeBB(Piece::WROOK) && pos.pieceTypeBB(Piece::WPAWN) &&
-        !pos.pieceTypeBB(Piece::BKNIGHT) && (pos.bMtrl() == bV)  && (pos.bMtrlPawns() == 0)) {
+        !pos.pieceTypeBB(Piece::BKNIGHT) && (pos.bMtrl() == bV)  && (bMtrlPawns == 0)) {
         if (!doEval) return 1;
         score += krpkbBonus;
         krpkbAdjustment += krpkbBonus;
     }
     if (pos.pieceTypeBB(Piece::BROOK) && pos.pieceTypeBB(Piece::BPAWN) &&
-        !pos.pieceTypeBB(Piece::WKNIGHT) && (pos.wMtrl() == bV)  && (pos.wMtrlPawns() == 0)) {
+        !pos.pieceTypeBB(Piece::WKNIGHT) && (pos.wMtrl() == bV)  && (wMtrlPawns == 0)) {
         if (!doEval) return 1;
         score -= krpkbBonus;
         krpkbAdjustment += krpkbBonus;
     }
 
     // Penalty for KRPKB when pawn is on a/h file
-    if ((pos.wMtrl() - pos.wMtrlPawns() == rV) && (pos.wMtrlPawns() <= pV) && pos.pieceTypeBB(Piece::BBISHOP)) {
+     if ((wMtrlNoPawns == rV) && (wMtrlPawns <= pV) && pos.pieceTypeBB(Piece::BBISHOP)) {
         if (!doEval) return 1;
         if (score - krpkbAdjustment > 0) {
             U64 pMask = pos.pieceTypeBB(Piece::WPAWN);
@@ -1710,7 +1708,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
             }
         }
     }
-    if ((pos.bMtrl() - pos.bMtrlPawns() == rV) && (pos.bMtrlPawns() <= pV) && pos.pieceTypeBB(Piece::WBISHOP)) {
+    if ((bMtrlNoPawns == rV) && (bMtrlPawns <= pV) && pos.pieceTypeBB(Piece::WBISHOP)) {
         if (!doEval) return 1;
         if (score + krpkbAdjustment < 0) {
             U64 pMask = pos.pieceTypeBB(Piece::BPAWN);
@@ -1748,7 +1746,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
         (BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP)) == 1) &&
         (pos.pieceTypeBB(Piece::WQUEEN, Piece::WBISHOP, Piece::WKNIGHT,
                          Piece::BQUEEN, Piece::BROOK, Piece::BKNIGHT) == 0) &&
-        (pos.wMtrlPawns() - pos.bMtrlPawns() == -pV)) {
+        (wMtrlPawns - bMtrlPawns == -pV)) {
         if (!doEval) return 1;
         int asymmetry = getPawnAsymmetry();
         score = score * RvsBPDrawFactor[std::min(asymmetry, 6)] / 128;
@@ -1759,7 +1757,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
         (BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP)) == 1) &&
         (pos.pieceTypeBB(Piece::BQUEEN, Piece::BBISHOP, Piece::BKNIGHT,
                          Piece::WQUEEN, Piece::WROOK, Piece::WKNIGHT) == 0) &&
-        (pos.wMtrlPawns() - pos.bMtrlPawns() == pV)) {
+        (wMtrlPawns - bMtrlPawns == pV)) {
         if (!doEval) return 1;
         int asymmetry = getPawnAsymmetry();
         score = score * RvsBPDrawFactor[std::min(asymmetry, 6)] / 128;
