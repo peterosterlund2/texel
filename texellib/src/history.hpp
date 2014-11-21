@@ -52,6 +52,10 @@ public:
     int getHistScore(const Position& pos, const Move& m) const;
 
 private:
+    static int depthWeight(int depth);
+
+    static int depthTable[6];
+
     struct Entry {
         RelaxedShared<int> countSuccess;
         RelaxedShared<int> countFail;
@@ -66,10 +70,15 @@ History::History() {
     init();
 }
 
+inline int
+History::depthWeight(int depth) {
+    return depthTable[clamp(depth, 0, (int)COUNT_OF(depthTable)-1)];
+}
+
 inline void
 History::addSuccess(const Position& pos, const Move& m, int depth) {
     int p = pos.getPiece(m.from());
-    int cnt = depth;
+    int cnt = depthWeight(depth);
     Entry& e = ht[p][m.to()];
     int val = e.countSuccess + cnt;
     if (val + e.countFail > 1300) {
@@ -83,7 +92,7 @@ History::addSuccess(const Position& pos, const Move& m, int depth) {
 inline void
 History::addFail(const Position& pos, const Move& m, int depth) {
     int p = pos.getPiece(m.from());
-    int cnt = depth;
+    int cnt = depthWeight(depth);
     Entry& e = ht[p][m.to()];
     int val = e.countFail + cnt;
     if (val + e.countSuccess > 1300) {

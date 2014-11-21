@@ -25,6 +25,10 @@
 
 #include "history.hpp"
 
+int History::depthTable[] = {
+    0, 1, 6, 19, 42, 56
+};
+
 void
 History::init() {
     for (int p = 0; p < Piece::nPieceTypes; p++) {
