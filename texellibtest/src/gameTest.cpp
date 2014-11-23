@@ -469,7 +469,12 @@ GameTest::perfT(Position& pos, int depth, Evaluate& eval) {
         bool givesCheck = MoveGen::givesCheck(pos, m);
         pos.makeMove(m, ui);
         bool inCheck = MoveGen::inCheck(pos);
-        ASSERT_EQUAL(givesCheck, inCheck);
+        if (givesCheck != inCheck) {
+            pos.unMakeMove(m, ui);
+            std::cout << "m:" << TextIO::moveToString(pos, m, false)
+                      << " pos:\n" << TextIO::asciiBoard(pos);
+            ASSERT_EQUAL(inCheck, givesCheck);
+        }
         nodes += perfT(pos, depth - 1, eval);
         pos.unMakeMove(m, ui);
         {
