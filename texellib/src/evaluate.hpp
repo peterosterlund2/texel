@@ -31,8 +31,11 @@
 #include "position.hpp"
 #include "util/alignedAlloc.hpp"
 
+class EvaluateTest;
+
 /** Position evaluation routines. */
 class Evaluate {
+    friend class EvaluateTest;
 private:
     struct PawnHashData {
         PawnHashData();

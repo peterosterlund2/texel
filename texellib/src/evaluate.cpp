@@ -926,7 +926,6 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     ph.passedPawnsB = passedPawnsB;
 }
 
-
 int
 Evaluate::rookBonus(const Position& pos) {
     int score = 0;

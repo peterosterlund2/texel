@@ -33,6 +33,36 @@ public:
     std::string getName() const { return "EvaluateTest"; }
 
     cute::suite getSuite() const;
+
+private:
+    static void testEvalPos();
+    static void testPieceSquareEval();
+    static void testTradeBonus();
+    static void testMaterial();
+    static void testKingSafety();
+    static void testEndGameEval();
+    static void testEndGameSymmetry();
+    static void testEndGameCorrections();
+    static void testPassedPawns();
+    static void testBishAndRookPawns();
+    static void testBishAndPawnFortress();
+    static void testTrappedBishop();
+    static void testKQKP();
+    static void testKRKP();
+    static void testKRPKR();
+    static void testKPK();
+    static void testKPKP();
+    static void testKBNK();
+    static void testKBPKB();
+    static void testKBPKN();
+    static void testKNPKB();
+    static void testKNPK();
+    static void testCantWin();
+    static void testPawnRace();
+    static void testKnightOutPost();
+    static void testUciParam();
+    static void testUciParamTable();
+    static void testSwindleScore();
 };
 
 class Position;

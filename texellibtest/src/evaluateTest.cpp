@@ -174,8 +174,8 @@ evalFEN(const std::string& fen) {
 /**
  * Test of evalPos method, of class Evaluate.
  */
-static
-void testEvalPos() {
+void
+EvaluateTest::testEvalPos() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     UndoInfo ui;
     pos.makeMove(TextIO::stringToMove(pos, "e4"), ui);
@@ -242,8 +242,8 @@ void testEvalPos() {
 /**
  * Test of pieceSquareEval method, of class Evaluate.
  */
-static void
-testPieceSquareEval() {
+void
+EvaluateTest::testPieceSquareEval() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     int score = evalWhite(pos);
     ASSERT_EQUAL(0, score);    // Should be zero, by symmetry
@@ -283,8 +283,8 @@ testPieceSquareEval() {
 /**
  * Test of tradeBonus method, of class Evaluate.
  */
-static void
-testTradeBonus() {
+void
+EvaluateTest::testTradeBonus() {
     std::string fen = "8/5k2/6r1/2p1p3/3p4/2P2N2/3PPP2/4K1R1 w - - 0 1";
     Position pos = TextIO::readFEN(fen);
     int score1 = evalWhite(pos);
@@ -315,8 +315,8 @@ static int material(const Position& pos) {
 /**
  * Test of material method, of class Evaluate.
  */
-static void
-testMaterial() {
+void
+EvaluateTest::testMaterial() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     ASSERT_EQUAL(0, material(pos));
 
@@ -369,8 +369,8 @@ static void movePiece(Position& pos, const std::string& from, const std::string&
 /**
  * Test of kingSafety method, of class Evaluate.
  */
-static void
-testKingSafety() {
+void
+EvaluateTest::testKingSafety() {
     Position pos = TextIO::readFEN("r3kb1r/p1p1pppp/b2q1n2/4N3/3P4/2N1PQ2/P2B1PPP/R3R1K1 w kq - 0 1");
     int s1 = evalWhite(pos);
     movePiece(pos, "g7", "b7");
@@ -420,8 +420,8 @@ testKingSafety() {
 /**
  * Test of endGameEval method, of class Evaluate.
  */
-static void
-testEndGameEval() {
+void
+EvaluateTest::testEndGameEval() {
     Position pos;
     pos.setPiece(Position::getSquare(4, 1), Piece::WKING);
     pos.setPiece(Position::getSquare(4, 6), Piece::BKING);
@@ -508,8 +508,8 @@ testEndGameEval() {
     }
 }
 
-static void
-testEndGameSymmetry() {
+void
+EvaluateTest::testEndGameSymmetry() {
     // Test symmetry for pawnless endings
     {
         int score1 = evalFEN("8/8/3rk3/8/8/8/8/3QK3 w - - 0 1");
@@ -573,8 +573,8 @@ evalEgFen(const std::string& fen, int fuzz = 0) {
     return evalFEN(fen);
 }
 
-static void
-testEndGameCorrections() {
+void
+EvaluateTest::testEndGameCorrections() {
     // Four bishops on same color can not win
     int score = evalEgFen("8/4k3/8/1B6/2B5/3B4/2K1B3/8 w - - 0 1");
     ASSERT_EQUAL(0, score);
@@ -667,8 +667,8 @@ testEndGameCorrections() {
 /**
  * Passed pawn tests.
  */
-static void
-testPassedPawns() {
+void
+EvaluateTest::testPassedPawns() {
     Position pos = TextIO::readFEN("8/8/8/P3k/8/8/p/K w");
     int score = evalWhite(pos);
     ASSERT(score >= 29); // Unstoppable passed pawn
@@ -716,8 +716,8 @@ testPassedPawns() {
 /**
  * Test of endGameEval method, of class Evaluate.
  */
-static void
-testBishAndRookPawns() {
+void
+EvaluateTest::testBishAndRookPawns() {
     const int bV = ::bV;
     const int winScore = bV;
     const int drawish = bV / 20;
@@ -755,8 +755,8 @@ testBishAndRookPawns() {
     ASSERT(evalWhite(pos) > winScore);
 }
 
-static void
-testBishAndPawnFortress() {
+void
+EvaluateTest::testBishAndPawnFortress() {
     ASSERT_EQUAL(0, evalFEN("1k5B/1p6/1P6/3K4/8/8/8/8 w - - 0 1"));
     ASSERT_EQUAL(0, evalFEN("k6B/1p6/1P6/3K4/8/8/8/8 w - - 0 1"));
     ASSERT(evalFEN("4k3/1p6/1P3B2/3K4/8/8/8/8 w - - 0 1") > 0);
@@ -781,8 +781,8 @@ testBishAndPawnFortress() {
     ASSERT(evalFEN("1K1k4/1p6/1P6/8/3B4/8/8/8 w - - 0 1") > 0);
 }
 
-static void
-testTrappedBishop() {
+void
+EvaluateTest::testTrappedBishop() {
     Position pos = TextIO::readFEN("r2q1rk1/ppp2ppp/3p1n2/8/3P4/1P1Q1NP1/b1P2PBP/2KR3R w - - 0 1");
     ASSERT(evalWhite(pos) > -15); // Black has trapped bishop
 
@@ -793,8 +793,8 @@ testTrappedBishop() {
 /**
  * Test of endGameEval method, of class Evaluate.
  */
-static void
-testKQKP() {
+void
+EvaluateTest::testKQKP() {
     const int pV = ::pV;
     const int qV = ::qV;
     const int winScore = 350;
@@ -820,8 +820,8 @@ testKQKP() {
     ASSERT_EQUAL(0, evalFEN("8/8/8/4K3/8/8/2Q5/k7 b - - 0 1"));
 }
 
-static void
-testKRKP() {
+void
+EvaluateTest::testKRKP() {
     const int pV = ::pV;
     const int rV = ::rV;
     const int winScore = 418;
@@ -832,8 +832,8 @@ testKRKP() {
     ASSERT(evalWhite(pos) < drawish);
 }
 
-static void
-testKRPKR() {
+void
+EvaluateTest::testKRPKR() {
     const int pV = ::pV;
     const int winScore = 2 * pV;
     const int drawish = pV * 2 / 3;
@@ -844,8 +844,8 @@ testKRPKR() {
     ASSERT(evalWhite(pos) < drawish);
 }
 
-static void
-testKPK() {
+void
+EvaluateTest::testKPK() {
     const int pV = ::pV;
     const int rV = ::rV;
     const int winScore = rV - pV;
@@ -856,15 +856,15 @@ testKPK() {
     ASSERT(evalWhite(pos) < drawish);
 }
 
-static void
-testKPKP() {
+void
+EvaluateTest::testKPKP() {
     ASSERT_EQUAL(0, evalFEN("1k6/1p6/1P6/3K4/8/8/8/8 w - - 0 1"));
     ASSERT_EQUAL(0, evalFEN("3k4/1p6/1P6/3K4/8/8/8/8 w - - 0 1"));
     ASSERT(evalFEN("2k5/Kp6/1P6/8/8/8/8/8 w - - 0 1") > 0);
 }
 
-static void
-testKBNK() {
+void
+EvaluateTest::testKBNK() {
     int s1 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/2k5/8/8 b - - 0 1"));
     ASSERT(s1 > 570);
     int s2 = evalWhite(TextIO::readFEN("1BN5/1K6/8/8/8/2k5/8/8 b - - 1 1"));
@@ -879,8 +879,8 @@ testKBNK() {
     ASSERT(s6 > s5);
 }
 
-static void
-testKBPKB() {
+void
+EvaluateTest::testKBPKB() {
     const int pV = ::pV;
     const int drawish = pV / 5;
     int score = evalWhite(TextIO::readFEN("8/3b4/3k4/8/3P4/3B4/3K4/8 w - - 0 1"));
@@ -909,8 +909,8 @@ testKBPKB() {
     ASSERT(score >= pV / 3);
 }
 
-static void
-testKBPKN() {
+void
+EvaluateTest::testKBPKN() {
     const int pV = ::pV;
     const int drawish = pV / 5;
     int score = evalWhite(TextIO::readFEN("8/3k4/8/3P3n/2KB4/8/8/8 w - - 0 1"));
@@ -936,8 +936,8 @@ testKBPKN() {
     ASSERT(score < pV);
 }
 
-static void
-testKNPKB() {
+void
+EvaluateTest::testKNPKB() {
     const int pV = ::pV;
     const int drawish = pV / 5;
     int score = evalWhite(TextIO::readFEN("8/8/3b4/3P4/3NK3/8/8/7k w - - 0 1"));
@@ -965,8 +965,8 @@ testKNPKB() {
     ASSERT(score > pV);
 }
 
-static void
-testKNPK() {
+void
+EvaluateTest::testKNPK() {
     const int pV = ::pV;
     const int nV = ::nV;
     int score = evalWhite(TextIO::readFEN("k7/P7/8/1N6/1K6/8/8/8 w - - 0 1"));
@@ -993,8 +993,8 @@ testKNPK() {
     ASSERT(score > pV + nV);
 }
 
-static void
-testCantWin() {
+void
+EvaluateTest::testCantWin() {
     Position pos = TextIO::readFEN("8/8/8/3k4/3p4/3K4/4N3/8 w - - 0 1");
     int score1 = evalWhite(pos);
     ASSERT(score1 < 0);
@@ -1005,8 +1005,8 @@ testCantWin() {
     ASSERT(score2 > score1);
 }
 
-static void
-testPawnRace() {
+void
+EvaluateTest::testPawnRace() {
     const int pV = ::pV;
     const int winScore = 162;
     const int drawish = 78;
@@ -1028,8 +1028,8 @@ testPawnRace() {
     ASSERT(evalWhite(pos) < -winScore + pV*3/2);
 }
 
-static void
-testKnightOutPost() {
+void
+EvaluateTest::testKnightOutPost() {
     Position pos = TextIO::readFEN("rnrq2nk/ppp1p1pp/8/4Np2/3P4/8/P3P3/R1RQ2NK w KQkq - 0 1");
     int s1 = evalWhite(pos);
     pos = TextIO::readFEN("rnrq2nk/ppp1p1pp/8/3PNp2/8/8/P3P3/R1RQ2NK w KQkq - 0 1");
@@ -1050,8 +1050,8 @@ int uciParVec[3];
 DEFINE_PARAM(testUciPar1);
 DEFINE_PARAM(testUciPar2);
 
-static void
-testUciParam() {
+void
+EvaluateTest::testUciParam() {
     testUciPar1.registerParam("uciPar1", Parameters::instance());
     testUciPar2.registerParam("uciPar2", Parameters::instance());
 
@@ -1129,8 +1129,8 @@ ParamTable<10> uciParTable { 0, 100, true,
 
 ParamTableMirrored<10> uciParTableM(uciParTable);
 
-static void
-testUciParamTable() {
+void
+EvaluateTest::testUciParamTable() {
     ASSERT_EQUAL(0, uciParTable[0]);
     ASSERT_EQUAL(2, uciParTable[1]);
     ASSERT_EQUAL(3, uciParTable[2]);
@@ -1191,8 +1191,8 @@ testUciParamTable() {
     }
 }
 
-static void
-testSwindleScore() {
+void
+EvaluateTest::testSwindleScore() {
     for (int e = 0; e < 3000; e++) {
         int s1 = Evaluate::swindleScore(e);
         ASSERT(s1 >= (e?1:0));
