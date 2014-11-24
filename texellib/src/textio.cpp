@@ -624,3 +624,15 @@ TextIO::asciiBoard(const Position& pos) {
     return ret;
 }
 
+std::string
+TextIO::asciiBoard(U64 mask) {
+    std::string ret;
+    for (int y = 7; y >= 0; y--) {
+        for (int x = 0; x < 8; x++) {
+            int sq = Position::getSquare(x, y);
+            ret += (mask & (1ULL << sq)) ? '1' : '0';
+        }
+        ret += '\n';
+    }
+    return ret;
+}

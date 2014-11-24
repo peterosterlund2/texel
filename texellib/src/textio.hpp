@@ -93,6 +93,9 @@ public:
      */
     static std::string asciiBoard(const Position& pos);
 
+    /** Create an ascii representation of a bitmask. */
+    static std::string asciiBoard(U64 mask);
+
 private:
     static void safeSetPiece(Position& pos, int col, int row, int p);
 
