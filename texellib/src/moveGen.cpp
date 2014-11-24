@@ -76,10 +76,10 @@ MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
         int sq = pos.getKingSq(wtm);
         U64 m = BitBoard::kingAttacks[sq] & ~pos.colorBB(wtm);
         addMovesByMask(moveList, sq, m);
-        const int k0 = wtm ? 4 : 60;
+        const int k0 = wtm ? E1 : E8;
         if (sq == k0) {
-            const U64 OO_SQ = wtm ? 0x60ULL : 0x6000000000000000ULL;
-            const U64 OOO_SQ = wtm ? 0xEULL : 0xE00000000000000ULL;
+            const U64 OO_SQ = wtm ? BitBoard::sqMask(F1,G1) : BitBoard::sqMask(F8,G8);
+            const U64 OOO_SQ = wtm ? BitBoard::sqMask(B1,C1,D1) : BitBoard::sqMask(B8,C8,D8);
             const int hCastle = wtm ? Position::H1_CASTLE : Position::H8_CASTLE;
             const int aCastle = wtm ? Position::A1_CASTLE : Position::A8_CASTLE;
             if (((pos.getCastleMask() & (1 << hCastle)) != 0) &&
@@ -310,10 +310,10 @@ MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
         U64 m = BitBoard::kingAttacks[sq];
         m &= ((discovered & (1ULL<<sq)) == 0) ? pos.colorBB(!wtm) : ~pos.colorBB(wtm);
         addMovesByMask(moveList, sq, m);
-        const int k0 = wtm ? 4 : 60;
+        const int k0 = wtm ? E1 : E8;
         if (sq == k0) {
-            const U64 OO_SQ = wtm ? 0x60ULL : 0x6000000000000000ULL;
-            const U64 OOO_SQ = wtm ? 0xEULL : 0xE00000000000000ULL;
+            const U64 OO_SQ = wtm ? BitBoard::sqMask(F1,G1) : BitBoard::sqMask(F8,G8);
+            const U64 OOO_SQ = wtm ? BitBoard::sqMask(B1,C1,D1) : BitBoard::sqMask(B8,C8,D8);
             const int hCastle = wtm ? Position::H1_CASTLE : Position::H8_CASTLE;
             const int aCastle = wtm ? Position::A1_CASTLE : Position::A8_CASTLE;
             if (((pos.getCastleMask() & (1 << hCastle)) != 0) &&
