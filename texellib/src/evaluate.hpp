@@ -40,7 +40,8 @@ private:
     struct PawnHashData {
         PawnHashData();
         U64 key;
-        int score;            // Positive score means good for white
+        short current;
+        short score;            // Positive score means good for white
         short passedBonusW;
         short passedBonusB;
         U64 passedPawnsW;     // The most advanced passed pawns for each file
@@ -137,6 +138,7 @@ private:
     /** Score castling ability. */
     int castleBonus(const Position& pos);
 
+    PawnHashData& getPawnHashEntry(std::vector<PawnHashData>& pawnHash, U64 key);
     int pawnBonus(const Position& pos);
 
     /** Compute pawn hash data for pos. */
@@ -213,7 +215,7 @@ private:
 inline
 Evaluate::PawnHashData::PawnHashData()
     : key((U64)-1), // Non-zero to avoid collision for positions with no pawns
-      score(0),
+      current(0), score(0),
       passedBonusW(0),
       passedBonusB(0),
       passedPawnsW(0),
@@ -245,6 +247,31 @@ Evaluate::materialScore(const Position& pos, bool print) {
         computeMaterialScore(pos, newMhd, print);
     mhd = &newMhd;
     return newMhd.score;
+}
+
+inline Evaluate::PawnHashData&
+Evaluate::getPawnHashEntry(std::vector<Evaluate::PawnHashData>& pawnHash, U64 key) {
+    int e0 = (int)key & (pawnHash.size() - 2);
+    int e1 = e0 + 1;
+    if (pawnHash[e0].key == key) {
+        pawnHash[e0].current = 1;
+        pawnHash[e1].current = 0;
+        return pawnHash[e0];
+    }
+    if (pawnHash[e1].key == key) {
+        pawnHash[e1].current = 1;
+        pawnHash[e0].current = 0;
+        return pawnHash[e1];
+    }
+    if (pawnHash[e0].current) {
+        pawnHash[e1].current = 1;
+        pawnHash[e0].current = 0;
+        return pawnHash[e1];
+    } else {
+        pawnHash[e0].current = 1;
+        pawnHash[e1].current = 0;
+        return pawnHash[e0];
+    }
 }
 
 #endif /* EVALUATE_HPP_ */

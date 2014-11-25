@@ -537,7 +537,7 @@ Evaluate::castleBonus(const Position& pos) {
 int
 Evaluate::pawnBonus(const Position& pos) {
     U64 key = pos.pawnZobristHash();
-    PawnHashData& phd = pawnHash[(int)key & (pawnHash.size() - 1)];
+    PawnHashData& phd = getPawnHashEntry(pawnHash, key);
     if (phd.key != key)
         computePawnHashData(pos, phd);
     this->phd = &phd;
