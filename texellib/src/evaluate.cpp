@@ -1223,7 +1223,7 @@ evalKingPawnShelter(const Position& pos) {
 int
 Evaluate::kingSafetyKPPart(const Position& pos) {
     const U64 key = pos.pawnZobristHash() ^ pos.kingZobristHash();
-    KingSafetyHashData& ksh = kingSafetyHash[(int)key & (kingSafetyHash.size() - 1)];
+    KingSafetyHashData& ksh = getKingSafetyHashEntry(kingSafetyHash, key);
     if (ksh.key != key) {
         int score = 0;
         const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);

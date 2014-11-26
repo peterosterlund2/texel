@@ -65,9 +65,10 @@ private:
     };
 
     struct KingSafetyHashData {
-        KingSafetyHashData() : key((U64)-1), score(0) { }
+        KingSafetyHashData() : key((U64)-1), score(0), current(0) { }
         U64 key;
         int score;
+        short current;
     };
 
 public:
@@ -158,6 +159,7 @@ private:
     /** Compute king safety for both kings. */
     int kingSafety(const Position& pos);
 
+    KingSafetyHashData& getKingSafetyHashEntry(vector_aligned<KingSafetyHashData>& ksHash, U64 key);
     int kingSafetyKPPart(const Position& pos);
 
     /** Implements special knowledge for some endgame situations.
@@ -271,6 +273,31 @@ Evaluate::getPawnHashEntry(std::vector<Evaluate::PawnHashData>& pawnHash, U64 ke
         pawnHash[e0].current = 1;
         pawnHash[e1].current = 0;
         return pawnHash[e0];
+    }
+}
+
+inline Evaluate::KingSafetyHashData&
+Evaluate::getKingSafetyHashEntry(vector_aligned<Evaluate::KingSafetyHashData>& ksHash, U64 key) {
+    int e0 = (int)key & (ksHash.size() - 2);
+    int e1 = e0 + 1;
+    if (ksHash[e0].key == key) {
+        ksHash[e0].current = 1;
+        ksHash[e1].current = 0;
+        return ksHash[e0];
+    }
+    if (ksHash[e1].key == key) {
+        ksHash[e1].current = 1;
+        ksHash[e0].current = 0;
+        return ksHash[e1];
+    }
+    if (ksHash[e0].current) {
+        ksHash[e1].current = 1;
+        ksHash[e0].current = 0;
+        return ksHash[e1];
+    } else {
+        ksHash[e0].current = 1;
+        ksHash[e1].current = 0;
+        return ksHash[e0];
     }
 }
 
