@@ -1818,11 +1818,13 @@ Evaluate::isBishopPawnDraw(const Position& pos) const {
     const int d8 = whiteBishop ? (darkBishop ? D8 : E8) : (lightBishop ? D1 : E1);
     const int d7 = whiteBishop ? (darkBishop ? D7 : E7) : (lightBishop ? D2 : E2);
     const U64 bFile = (whiteBishop == darkBishop) ? 0x0202020202020202ULL : 0x4040404040404040ULL;
+    const U64 acFile = (whiteBishop == darkBishop) ? 0x0505050505050505ULL : 0xA0A0A0A0A0A0A0A0ULL;
     const U64 corner = whiteBishop ? (darkBishop ? BitBoard::sqMask(A8,B8,A7) : BitBoard::sqMask(G8,H8,H7))
                                    : (lightBishop ? BitBoard::sqMask(A1,B1,A2) : BitBoard::sqMask(G1,H1,H2));
 
     if ((pos.getPiece(b7) == oPawn) && (pos.getPiece(b6) == pawn) &&
-        (pos.getPiece(a8) != oKnight) && ((pos.pieceTypeBB(king) & corner) == 0)) {
+        (pos.getPiece(a8) != oKnight) && ((pos.pieceTypeBB(king) & corner) == 0) &&
+        (BitBoard::bitCount(pos.pieceTypeBB(oPawn) & acFile) <= 1)) {
         if (pos.getPiece(c7) == pawn) {
             if (BitBoard::bitCount(pos.pieceTypeBB(pawn) & ~bFile) == 1) {
                 int oKingSq = pos.getKingSq(!whiteBishop);
@@ -1830,11 +1832,46 @@ Evaluate::isBishopPawnDraw(const Position& pos) const {
                     return true;
             }
         } else {
+            int oKingSq = pos.getKingSq(!whiteBishop);
             if ((pos.pieceTypeBB(pawn) & ~bFile) == 0) {
-                int oKingSq = pos.getKingSq(!whiteBishop);
                 if ((oKingSq == a8) || (oKingSq == b8) || (oKingSq == c8) ||
                     (oKingSq == d8) || (oKingSq == d7))
                     return true;
+            } else if (pos.isWhiteMove() != whiteBishop) { // Test if stale-mate
+                int oMtrl = whiteBishop ? pos.bMtrl() : pos.wMtrl();
+                const Piece::Type bishop = whiteBishop ? Piece::WBISHOP : Piece::BBISHOP;
+                U64 bShift = whiteBishop ? (pos.pieceTypeBB(bishop) << 8) : (pos.pieceTypeBB(bishop) >> 8);
+                U64 kShift = whiteBishop ? (pos.pieceTypeBB(king) << 8) : (pos.pieceTypeBB(king) >> 8);
+                const U64 md6_h2 = whiteBishop ?
+                        (darkBishop  ? BitBoard::sqMask(D6,E5,F4,G3,H2) : BitBoard::sqMask(E6,D5,C4,B3,A2)) :
+                        (lightBishop ? BitBoard::sqMask(D3,E4,F5,G6,H7) : BitBoard::sqMask(E3,D4,C5,B6,A7));
+                if ((oMtrl == pV) ||
+                    ((oMtrl == 2*pV) && ((bShift & pos.pieceTypeBB(oPawn)) ||
+                                         ((kShift & pos.pieceTypeBB(oPawn)) &&
+                                          ((pos.pieceTypeBB(oPawn) & md6_h2) == 0))))) {
+                    const U64 mc7c8 = whiteBishop ?
+                            (darkBishop  ? BitBoard::sqMask(C7,C8) : BitBoard::sqMask(F7,F8)) :
+                            (lightBishop ? BitBoard::sqMask(C2,C1) : BitBoard::sqMask(F2,F1));
+                    const U64 md6e6e7e8 = whiteBishop ?
+                            (darkBishop  ? BitBoard::sqMask(D6,E6,E7,E8) : BitBoard::sqMask(E6,D6,D7,D8)) :
+                            (lightBishop ? BitBoard::sqMask(D3,E3,E2,E1) : BitBoard::sqMask(E3,D3,D2,D1));
+                    const U64 me7e8 = whiteBishop ?
+                            (darkBishop  ? BitBoard::sqMask(E7,E8) : BitBoard::sqMask(D7,D8)) :
+                            (lightBishop ? BitBoard::sqMask(E2,E1) : BitBoard::sqMask(D2,D1));
+                    if (oKingSq == a8) {
+                        if ((pos.pieceTypeBB(king) & mc7c8) ||
+                                (pos.pieceTypeBB(bishop) & (md6_h2 | (1ULL << c7))))
+                            return true;
+                    } else if (oKingSq == c8) {
+                        if (pos.getPiece(c7) == bishop) {
+                            if (pos.pieceTypeBB(king) & md6e6e7e8)
+                                return true;
+                        } else {
+                            if ((pos.pieceTypeBB(bishop) & md6_h2) && (pos.pieceTypeBB(king) & me7e8))
+                                return true;
+                        }
+                    }
+                }
             }
         }
     }

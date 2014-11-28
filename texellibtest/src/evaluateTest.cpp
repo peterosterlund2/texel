@@ -779,6 +779,24 @@ EvaluateTest::testBishAndPawnFortress() {
     ASSERT_EQUAL(0, evalFEN("k7/1pK5/1P6/8/3B4/8/8/8 w - - 0 1"));
     ASSERT_EQUAL(0, evalFEN("3k4/1p6/1P6/5K2/3B4/8/8/8 w - - 0 1"));
     ASSERT(evalFEN("1K1k4/1p6/1P6/8/3B4/8/8/8 w - - 0 1") > 0);
+
+    ASSERT(evalFEN("8/8/6p1/2b5/2k2P1P/6p1/6P1/7K w - - 1 1") < 0);
+    ASSERT(evalFEN("8/8/6p1/2b5/2k4P/6pP/6P1/7K w - - 1 1") < 0);
+
+    ASSERT_EQUAL(0, evalFEN("8/8/8/8/7p/4k1p1/5bP1/5K2 w - - 1 1"));
+    ASSERT(evalFEN("8/8/8/8/7p/4k1p1/5bP1/5K2 b - - 1 1") < 0);
+    ASSERT(evalFEN("2k5/1pB5/1P3K2/P7/8/8/8/8 b - - 1 1") > 0);
+    ASSERT(evalFEN("2k5/1p6/1P1BK3/P7/8/8/8/8 b - - 1 1") > 0);
+    ASSERT_EQUAL(0, evalFEN("2k1K3/1p6/1P6/P7/8/6B1/8/8 b - - 1 1"));
+    ASSERT_EQUAL(0, evalFEN("k1K3/1p6/1P6/P7/8/8/5B2/8 b - - 1 1"));
+    ASSERT(evalFEN("k3K3/1p6/1P6/P7/8/8/5B2/8 b - - 1 1") > 0);
+    ASSERT_EQUAL(0, evalFEN("k3K3/1p6/1P6/P7/8/8/7B/8 b - - 1 1"));
+    ASSERT_EQUAL(0, evalFEN("k7/1pK5/1P6/P7/8/8/7B/8 b - - 1 1"));
+    ASSERT_EQUAL(0, evalFEN("k7/1pK5/1P6/P7/8/4B3/8/8 b - - 1 1"));
+    ASSERT_EQUAL(0, evalFEN("k1K5/1p6/1P6/P7/8/4B3/8/8 b - - 1 1"));
+    ASSERT(evalFEN("8/8/8/2b5/4k2p/4P1p1/6P1/7K w - - 1 1") < 0);
+    ASSERT_EQUAL(0, evalFEN("8/4b3/4P3/8/7p/6p1/5kP1/7K w - - 1 2"));
+    ASSERT_EQUAL(0, evalFEN("8/8/8/2b1k3/4P2p/6p1/6P1/7K w - - 1 1"));
 }
 
 void
