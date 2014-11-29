@@ -63,6 +63,7 @@ private:
     static void testUciParam();
     static void testUciParamTable();
     static void testSwindleScore();
+    static void testStalePawns();
 };
 
 class Position;

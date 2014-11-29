@@ -60,6 +60,7 @@ private:
     static void testSEE();
     static void testScoreMoveList();
     static void testTBSearch();
+    static void testFortress();
 };
 
 #endif /* SEARCHTEST_HPP_ */

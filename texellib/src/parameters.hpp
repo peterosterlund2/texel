@@ -488,6 +488,7 @@ extern ParamTable<8> kingPPSupportP;
 extern ParamTable<8> pawnDoubledPenalty;
 extern ParamTable<8> pawnIsolatedPenalty;
 extern ParamTable<10> halfMoveFactor;
+extern ParamTable<9> stalePawnFactor;
 
 
 // Search parameters

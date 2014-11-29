@@ -582,6 +582,11 @@ ParamTable<10> halfMoveFactor { 0, 192, useUciParam,
     {  0,  0,  0,  0,  1,  2,  3,  4,  5,  6 }
 };
 
+ParamTable<9> stalePawnFactor { 0, 192, useUciParam,
+    {122,127,131,136,137,130,117, 95,  6 },
+    {  1,  2,  3,  4,  5,  6,  7,  8,  9 }
+};
+
 Parameters::Parameters() {
     std::string about = ComputerPlayer::engineName +
                         " by Peter Osterlund, see http://web.comhem.se/petero2home/javachess/index.html#texel";
@@ -718,6 +723,7 @@ Parameters::Parameters() {
     pawnDoubledPenalty.registerParams("PawnDoubledPenalty", *this);
     pawnIsolatedPenalty.registerParams("PawnIsolatedPenalty", *this);
     halfMoveFactor.registerParams("HalfMoveFactor", *this);
+    stalePawnFactor.registerParams("StalePawnFactor", *this);
 
     // Search parameters
     REGISTER_PARAM(aspirationWindow, "AspirationWindow");

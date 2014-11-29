@@ -48,6 +48,7 @@ private:
         U64 passedPawnsB;
         U64 outPostsW;        // Possible outpost squares for white
         U64 outPostsB;
+        U64 stalePawns;       // Pawns that can not be used for "pawn breaks"
     };
 
     struct MaterialHashData {
@@ -141,6 +142,9 @@ private:
 
     PawnHashData& getPawnHashEntry(std::vector<PawnHashData>& pawnHash, U64 key);
     int pawnBonus(const Position& pos);
+
+    /** Compute set of pawns that can not participate in "pawn breaks". */
+    static U64 computeStalePawns(const Position& pos);
 
     /** Compute pawn hash data for pos. */
     void computePawnHashData(const Position& pos, PawnHashData& ph);

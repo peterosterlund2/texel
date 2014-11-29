@@ -237,6 +237,14 @@ Evaluate::evalPos(const Position& pos) {
         score = score * halfMoveFactor[hmc] / 128;
     }
     if (print) std::cout << "eval halfmove:" << score << std::endl;
+    if (score > 0) {
+        int nStale = BitBoard::bitCount(BitBoard::southFill(phd->stalePawns & pos.pieceTypeBB(Piece::WPAWN)) & 0xff);
+        score = score * stalePawnFactor[nStale] / 128;
+    } else if (score < 0) {
+        int nStale = BitBoard::bitCount(BitBoard::southFill(phd->stalePawns & pos.pieceTypeBB(Piece::BPAWN)) & 0xff);
+        score = score * stalePawnFactor[nStale] / 128;
+    }
+    if (print) std::cout << "eval staleP :" << score << std::endl;
 
     if (!pos.isWhiteMove())
         score = -score;
@@ -750,6 +758,77 @@ evalConnectedPP(int x, int y, U64 ppMask) {
     return connectedPPBonus[(y-1)*6 + (y2-1)];
 }
 
+/** Compute subset of squares given by mask that white is in control over, ie
+ *  squares that have at least as many white pawn guards as black has pawn
+ *  attacks on the square. */
+static inline U64
+wPawnCtrlSquares(U64 mask, U64 wPawns, U64 bPawns) {
+    U64 wLAtks = (wPawns & BitBoard::maskBToHFiles) << 7;
+    U64 wRAtks = (wPawns & BitBoard::maskAToGFiles) << 9;
+    U64 bLAtks = (bPawns & BitBoard::maskBToHFiles) >> 9;
+    U64 bRAtks = (bPawns & BitBoard::maskAToGFiles) >> 7;
+    return ((mask & ~bLAtks & ~bRAtks) |
+            (mask & (bLAtks ^ bRAtks) & (wLAtks | wRAtks)) |
+            (mask & wLAtks & wRAtks));
+}
+
+static inline U64
+bPawnCtrlSquares(U64 mask, U64 wPawns, U64 bPawns) {
+    U64 wLAtks = (wPawns & BitBoard::maskBToHFiles) << 7;
+    U64 wRAtks = (wPawns & BitBoard::maskAToGFiles) << 9;
+    U64 bLAtks = (bPawns & BitBoard::maskBToHFiles) >> 9;
+    U64 bRAtks = (bPawns & BitBoard::maskAToGFiles) >> 7;
+    return ((mask & ~wLAtks & ~wRAtks) |
+            (mask & (wLAtks ^ wRAtks) & (bLAtks | bRAtks)) |
+            (mask & bLAtks & bRAtks));
+}
+
+U64
+Evaluate::computeStalePawns(const Position& pos) {
+    const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
+    const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
+
+    // Compute stale white pawns
+    U64 wStale;
+    {
+        U64 wPawnCtrl = wPawnCtrlSquares(wPawns, wPawns, bPawns);
+        for (int i = 0; i < 4; i++)
+            wPawnCtrl |= wPawnCtrlSquares((wPawnCtrl << 8) & ~bPawns, wPawnCtrl, bPawns);
+        wPawnCtrl &= ~BitBoard::maskRow8;
+        U64 wPawnCtrlLAtk = (wPawnCtrl & BitBoard::maskBToHFiles) << 7;
+        U64 wPawnCtrlRAtk = (wPawnCtrl & BitBoard::maskAToGFiles) << 9;
+
+        U64 bLAtks = (bPawns & BitBoard::maskBToHFiles) >> 9;
+        U64 bRAtks = (bPawns & BitBoard::maskAToGFiles) >> 7;
+        U64 wActive = ((bLAtks ^ bRAtks) |
+                       (bLAtks & bRAtks & (wPawnCtrlLAtk | wPawnCtrlRAtk)));
+        for (int i = 0; i < 4; i++)
+            wActive |= (wActive & ~(wPawns | bPawns)) >> 8;
+        wStale = wPawns & ~wActive;
+    }
+
+    // Compute stale black pawns
+    U64 bStale;
+    {
+        U64 bPawnCtrl = bPawnCtrlSquares(bPawns, wPawns, bPawns);
+        for (int i = 0; i < 4; i++)
+            bPawnCtrl |= bPawnCtrlSquares((bPawnCtrl >> 8) & ~wPawns, wPawns, bPawnCtrl);
+        bPawnCtrl &= ~BitBoard::maskRow1;
+        U64 bPawnCtrlLAtk = (bPawnCtrl & BitBoard::maskBToHFiles) >> 9;
+        U64 bPawnCtrlRAtk = (bPawnCtrl & BitBoard::maskAToGFiles) >> 7;
+
+        U64 wLAtks = (wPawns & BitBoard::maskBToHFiles) << 7;
+        U64 wRAtks = (wPawns & BitBoard::maskAToGFiles) << 9;
+        U64 bActive = ((wLAtks ^ wRAtks) |
+                       (wLAtks & wRAtks & (bPawnCtrlLAtk | bPawnCtrlRAtk)));
+        for (int i = 0; i < 4; i++)
+            bActive |= (bActive & ~(wPawns | bPawns)) << 8;
+        bStale = bPawns & ~bActive;
+    }
+
+    return wStale | bStale;
+}
+
 void
 Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     int score = 0;
@@ -924,6 +1003,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     ph.passedBonusB = (short)passedBonusB;
     ph.passedPawnsW = passedPawnsW;
     ph.passedPawnsB = passedPawnsB;
+    ph.stalePawns = computeStalePawns(pos) & ~passedPawnsW & ~passedPawnsB;
 }
 
 int

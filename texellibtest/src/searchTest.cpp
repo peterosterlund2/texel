@@ -528,6 +528,15 @@ SearchTest::testTBSearch() {
     ASSERT(std::abs(score) < 50);
 }
 
+void
+SearchTest::testFortress() {
+    Position pos = TextIO::readFEN("3B4/1r2p3/r2p1p2/bkp1P1p1/1p1P1PPp/p1P4P/PPB1K3/8 w - - 0 1");
+    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+    Move bestM = idSearch(sc, 10);
+    ASSERT(TextIO::moveToUCIString(bestM) == "c2a4");
+    ASSERT(bestM.score() > -100);
+}
+
 cute::suite
 SearchTest::getSuite() const {
     cute::suite s;
@@ -542,5 +551,6 @@ SearchTest::getSuite() const {
     s.push_back(CUTE(testSEE));
     s.push_back(CUTE(testScoreMoveList));
     s.push_back(CUTE(testTBSearch));
+    s.push_back(CUTE(testFortress));
     return s;
 }
