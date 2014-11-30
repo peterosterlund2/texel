@@ -1275,6 +1275,10 @@ EvaluateTest::testStalePawns() {
     pos = TextIO::readFEN("rn1q2rk/ppp1b3/3p1n2/3Pp1pp/1PB1PpP1/2N5/P1PBQPP1/1R3RK1 w - - 0 19");
     sp = Evaluate::computeStalePawns(pos);
     ASSERT_EQUAL(BitBoard::sqMask(B7,D5,D6,E4,E5,F2,G5), sp);
+
+    pos = TextIO::readFEN("r2q1rk1/pb2bppp/1pn2n2/2p1pP2/2PpP3/3P4/PP2B1PP/RNBQNRK1 b - - 0 1");
+    sp = Evaluate::computeStalePawns(pos);
+    ASSERT_EQUAL(BitBoard::sqMask(C4,C5,D3,D4,E4,E5,F7), sp);
 }
 
 cute::suite

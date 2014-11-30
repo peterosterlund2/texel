@@ -50,10 +50,22 @@ public:
     // Squares preventing a pawn from being a passed pawn, if occupied by enemy pawn
     static U64 wPawnBlockerMask[64], bPawnBlockerMask[64];
 
+    static const U64 maskFileA = 0x0101010101010101ULL;
+    static const U64 maskFileB = 0x0202020202020202ULL;
+    static const U64 maskFileC = 0x0404040404040404ULL;
+    static const U64 maskFileD = 0x0808080808080808ULL;
+    static const U64 maskFileE = 0x1010101010101010ULL;
+    static const U64 maskFileF = 0x2020202020202020ULL;
+    static const U64 maskFileG = 0x4040404040404040ULL;
+    static const U64 maskFileH = 0x8080808080808080ULL;
+
     static const U64 maskAToGFiles = 0x7F7F7F7F7F7F7F7FULL;
     static const U64 maskBToHFiles = 0xFEFEFEFEFEFEFEFEULL;
     static const U64 maskAToFFiles = 0x3F3F3F3F3F3F3F3FULL;
     static const U64 maskCToHFiles = 0xFCFCFCFCFCFCFCFCULL;
+
+    static const U64 maskAToDFiles = 0x0F0F0F0F0F0F0F0FULL;
+    static const U64 maskEToHFiles = 0xF0F0F0F0F0F0F0F0ULL;
 
     static const U64 maskFile[8];
 

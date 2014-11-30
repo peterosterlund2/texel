@@ -194,6 +194,108 @@ testMaskAndMirror() {
     ASSERT_EQUAL(BitBoard::sqMask(A1,B1,A2), 0x0103ULL);
     ASSERT_EQUAL(BitBoard::sqMask(E1,F1,G1,H1,E2), 0x10F0ULL);
     ASSERT_EQUAL(BitBoard::sqMask(G1,H1,H2), 0x80C0ULL);
+
+    for (int sq = 0; sq < 64; sq++) {
+        U64 m = 1ULL << sq;
+        switch (Position::getX(sq)) {
+        case 0:
+            ASSERT((m & BitBoard::maskFileA) != 0);
+            ASSERT((m & BitBoard::maskFileB) == 0);
+            ASSERT((m & BitBoard::maskFileC) == 0);
+            ASSERT((m & BitBoard::maskFileD) == 0);
+            ASSERT((m & BitBoard::maskFileE) == 0);
+            ASSERT((m & BitBoard::maskFileF) == 0);
+            ASSERT((m & BitBoard::maskFileG) == 0);
+            ASSERT((m & BitBoard::maskFileH) == 0);
+            ASSERT((m & BitBoard::maskAToDFiles) != 0);
+            ASSERT((m & BitBoard::maskEToHFiles) == 0);
+            break;
+        case 1:
+            ASSERT((m & BitBoard::maskFileA) == 0);
+            ASSERT((m & BitBoard::maskFileB) != 0);
+            ASSERT((m & BitBoard::maskFileC) == 0);
+            ASSERT((m & BitBoard::maskFileD) == 0);
+            ASSERT((m & BitBoard::maskFileE) == 0);
+            ASSERT((m & BitBoard::maskFileF) == 0);
+            ASSERT((m & BitBoard::maskFileG) == 0);
+            ASSERT((m & BitBoard::maskFileH) == 0);
+            ASSERT((m & BitBoard::maskAToDFiles) != 0);
+            ASSERT((m & BitBoard::maskEToHFiles) == 0);
+            break;
+        case 2:
+            ASSERT((m & BitBoard::maskFileA) == 0);
+            ASSERT((m & BitBoard::maskFileB) == 0);
+            ASSERT((m & BitBoard::maskFileC) != 0);
+            ASSERT((m & BitBoard::maskFileD) == 0);
+            ASSERT((m & BitBoard::maskFileE) == 0);
+            ASSERT((m & BitBoard::maskFileF) == 0);
+            ASSERT((m & BitBoard::maskFileG) == 0);
+            ASSERT((m & BitBoard::maskFileH) == 0);
+            ASSERT((m & BitBoard::maskAToDFiles) != 0);
+            ASSERT((m & BitBoard::maskEToHFiles) == 0);
+            break;
+        case 3:
+            ASSERT((m & BitBoard::maskFileA) == 0);
+            ASSERT((m & BitBoard::maskFileB) == 0);
+            ASSERT((m & BitBoard::maskFileC) == 0);
+            ASSERT((m & BitBoard::maskFileD) != 0);
+            ASSERT((m & BitBoard::maskFileE) == 0);
+            ASSERT((m & BitBoard::maskFileF) == 0);
+            ASSERT((m & BitBoard::maskFileG) == 0);
+            ASSERT((m & BitBoard::maskFileH) == 0);
+            ASSERT((m & BitBoard::maskAToDFiles) != 0);
+            ASSERT((m & BitBoard::maskEToHFiles) == 0);
+            break;
+        case 4:
+            ASSERT((m & BitBoard::maskFileA) == 0);
+            ASSERT((m & BitBoard::maskFileB) == 0);
+            ASSERT((m & BitBoard::maskFileC) == 0);
+            ASSERT((m & BitBoard::maskFileD) == 0);
+            ASSERT((m & BitBoard::maskFileE) != 0);
+            ASSERT((m & BitBoard::maskFileF) == 0);
+            ASSERT((m & BitBoard::maskFileG) == 0);
+            ASSERT((m & BitBoard::maskFileH) == 0);
+            ASSERT((m & BitBoard::maskAToDFiles) == 0);
+            ASSERT((m & BitBoard::maskEToHFiles) != 0);
+            break;
+        case 5:
+            ASSERT((m & BitBoard::maskFileA) == 0);
+            ASSERT((m & BitBoard::maskFileB) == 0);
+            ASSERT((m & BitBoard::maskFileC) == 0);
+            ASSERT((m & BitBoard::maskFileD) == 0);
+            ASSERT((m & BitBoard::maskFileE) == 0);
+            ASSERT((m & BitBoard::maskFileF) != 0);
+            ASSERT((m & BitBoard::maskFileG) == 0);
+            ASSERT((m & BitBoard::maskFileH) == 0);
+            ASSERT((m & BitBoard::maskAToDFiles) == 0);
+            ASSERT((m & BitBoard::maskEToHFiles) != 0);
+            break;
+        case 6:
+            ASSERT((m & BitBoard::maskFileA) == 0);
+            ASSERT((m & BitBoard::maskFileB) == 0);
+            ASSERT((m & BitBoard::maskFileC) == 0);
+            ASSERT((m & BitBoard::maskFileD) == 0);
+            ASSERT((m & BitBoard::maskFileE) == 0);
+            ASSERT((m & BitBoard::maskFileF) == 0);
+            ASSERT((m & BitBoard::maskFileG) != 0);
+            ASSERT((m & BitBoard::maskFileH) == 0);
+            ASSERT((m & BitBoard::maskAToDFiles) == 0);
+            ASSERT((m & BitBoard::maskEToHFiles) != 0);
+            break;
+        case 7:
+            ASSERT((m & BitBoard::maskFileA) == 0);
+            ASSERT((m & BitBoard::maskFileB) == 0);
+            ASSERT((m & BitBoard::maskFileC) == 0);
+            ASSERT((m & BitBoard::maskFileD) == 0);
+            ASSERT((m & BitBoard::maskFileE) == 0);
+            ASSERT((m & BitBoard::maskFileF) == 0);
+            ASSERT((m & BitBoard::maskFileG) == 0);
+            ASSERT((m & BitBoard::maskFileH) != 0);
+            ASSERT((m & BitBoard::maskAToDFiles) == 0);
+            ASSERT((m & BitBoard::maskEToHFiles) != 0);
+            break;
+        }
+    }
 }
 
 cute::suite
