@@ -148,6 +148,13 @@ public:
         return trailingZ[(int)(((mask & -mask) * 0x07EDD5E59A4E28C2ULL) >> 58)];
     }
 
+    /** Get the lowest square from mask and remove the corresponding bit in mask. */
+    static int extractSquare(U64& mask) {
+        int ret = numberOfTrailingZeros(mask);
+        mask &= mask - 1;
+        return ret;
+    }
+
     /** Return number of 1 bits in mask. */
     static int bitCount(U64 mask) {
 #ifdef HAS_POPCNT

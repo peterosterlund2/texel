@@ -213,7 +213,7 @@ private:
         U64 promMask = mask & BitBoard::maskRow1Row8;
         mask &= ~promMask;
         while (promMask != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(promMask);
+            int sq = BitBoard::extractSquare(promMask);
             int sq0 = sq + delta;
             moveList.addMove(sq0, sq, MyColor::QUEEN);
             moveList.addMove(sq0, sq, MyColor::KNIGHT);
@@ -221,28 +221,24 @@ private:
                 moveList.addMove(sq0, sq, MyColor::ROOK);
                 moveList.addMove(sq0, sq, MyColor::BISHOP);
             }
-            promMask &= (promMask - 1);
         }
         while (mask != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(mask);
+            int sq = BitBoard::extractSquare(mask);
             moveList.addMove(sq + delta, sq, Piece::EMPTY);
-            mask &= (mask - 1);
         }
     }
 
     static void addPawnDoubleMovesByMask(MoveList& moveList, U64 mask, int delta) {
         while (mask != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(mask);
+            int sq = BitBoard::extractSquare(mask);
             moveList.addMove(sq + delta, sq, Piece::EMPTY);
-            mask &= (mask - 1);
         }
     }
 
     static void addMovesByMask(MoveList& moveList, int sq0, U64 mask) {
         while (mask != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(mask);
+            int sq = BitBoard::extractSquare(mask);
             moveList.addMove(sq0, sq, Piece::EMPTY);
-            mask &= (mask - 1);
         }
     }
 

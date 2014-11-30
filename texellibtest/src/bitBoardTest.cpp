@@ -33,8 +33,8 @@
 
 
 /** Test of kingAttacks, of class BitBoard. */
-static void
-testKingAttacks() {
+void
+BitBoardTest::testKingAttacks() {
     ASSERT_EQUAL(5, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("g1")]));
     ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("h1")]));
     ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("a1")]));
@@ -45,8 +45,8 @@ testKingAttacks() {
 }
 
 /** Test of knightAttacks, of class BitBoard. */
-static void
-testKnightAttacks() {
+void
+BitBoardTest::testKnightAttacks() {
     ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("g1")]));
     ASSERT_EQUAL(2, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("a1")]));
     ASSERT_EQUAL(2, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("h1")]));
@@ -60,8 +60,8 @@ testKnightAttacks() {
 }
 
 /** Test of squaresBetween[][], of class BitBoard. */
-static void
-testSquaresBetween() {
+void
+BitBoardTest::testSquaresBetween() {
     // Tests that the set of nonzero elements is correct
     for (int sq1 = 0; sq1 < 64; sq1++) {
         for (int sq2 = 0; sq2 < 64; sq2++) {
@@ -108,8 +108,8 @@ static int computeDirection(int from, int to) {
     return 0;
 }
 
-static void
-testGetDirection() {
+void
+BitBoardTest::testGetDirection() {
     for (int from = 0; from < 64; from++)
         for (int to = 0; to < 64; to++)
             ASSERT_EQUAL(computeDirection(from, to), BitBoard::getDirection(from, to));
@@ -124,8 +124,8 @@ static int computeDistance(int from, int to, bool taxi) {
         return std::max(std::abs(dx), std::abs(dy));
 }
 
-static void
-testGetDistance() {
+void
+BitBoardTest::testGetDistance() {
     for (int from = 0; from < 64; from++) {
         for (int to = 0; to < 64; to++) {
             ASSERT_EQUAL(computeDistance(from, to, false), BitBoard::getKingDistance(from, to));
@@ -134,16 +134,26 @@ testGetDistance() {
     }
 }
 
-static void
-testTrailingZeros() {
+void
+BitBoardTest::testTrailingZeros() {
     for (int i = 0; i < 64; i++) {
         U64 mask = 1ULL << i;
         ASSERT_EQUAL(i, BitBoard::numberOfTrailingZeros(mask));
+        U64 mask2 = mask;
+        ASSERT_EQUAL(i, BitBoard::extractSquare(mask2));
+        ASSERT_EQUAL(0, mask2);
     }
+    U64 mask = 0xffffffffffffffffULL;
+    int cnt = 0;
+    while (mask) {
+        ASSERT_EQUAL(cnt, BitBoard::extractSquare(mask));
+        cnt++;
+    }
+    ASSERT_EQUAL(64, cnt);
 }
 
-static void
-testMaskAndMirror() {
+void
+BitBoardTest::testMaskAndMirror() {
     ASSERT_EQUAL(BitBoard::sqMask(A1,H1,A8,H8), BitBoard::maskCorners);
     ASSERT_EQUAL(BitBoard::sqMask(A1,B1,C1,D1,E1,F1,G1,H1), BitBoard::maskRow1);
     ASSERT_EQUAL(BitBoard::sqMask(A2,B2,C2,D2,E2,F2,G2,H2), BitBoard::maskRow2);

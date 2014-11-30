@@ -476,24 +476,22 @@ Evaluate::pieceSquareEval(const Position& pos) {
         score += interpolate(q2, q1, mhd->queenIPF);
         U64 m = pos.pieceTypeBB(Piece::WQUEEN);
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             U64 atk = BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied);
             wAttacksBB |= atk;
             score += queenMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB() | bPawnAttacks))];
             bKingAttacks += BitBoard::bitCount(atk & bKingZone) * 2;
-            m &= m-1;
         }
         q1 = pos.psScore1(Piece::BQUEEN);
         q2 = pos.psScore2(Piece::BQUEEN);
         score -= interpolate(q2, q1, mhd->queenIPF);
         m = pos.pieceTypeBB(Piece::BQUEEN);
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             U64 atk = BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied);
             bAttacksBB |= atk;
             score -= queenMobScore[BitBoard::bitCount(atk & ~(pos.blackBB() | wPawnAttacks))];
             wKingAttacks += BitBoard::bitCount(atk & wKingZone) * 2;
-            m &= m-1;
         }
     }
 
@@ -646,7 +644,7 @@ Evaluate::pawnBonus(const Position& pos) {
         if (mtrlNoPawns < hiMtrl) {
             int kingPos = pos.getKingSq(false);
             while (m != 0) {
-                int sq = BitBoard::numberOfTrailingZeros(m);
+                int sq = BitBoard::extractSquare(m);
                 int x = Position::getX(sq);
                 int y = Position::getY(sq);
                 int pawnDist = std::min(5, 7 - y);
@@ -664,7 +662,6 @@ Evaluate::pawnBonus(const Position& pos) {
                         bestWPromSq = Position::getSquare(x, 7);
                     }
                 }
-                m &= m-1;
             }
         }
     }
@@ -676,7 +673,7 @@ Evaluate::pawnBonus(const Position& pos) {
         if (mtrlNoPawns < hiMtrl) {
             int kingPos = pos.getKingSq(true);
             while (m != 0) {
-                int sq = BitBoard::numberOfTrailingZeros(m);
+                int sq = BitBoard::extractSquare(m);
                 int x = Position::getX(sq);
                 int y = Position::getY(sq);
                 int pawnDist = std::min(5, y);
@@ -694,7 +691,6 @@ Evaluate::pawnBonus(const Position& pos) {
                         bestBPromSq = Position::getSquare(x, 0);
                     }
                 }
-                m &= m-1;
             }
         }
     }
@@ -847,16 +843,14 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     const U64 wDoubled = BitBoard::northFill(wPawns << 8) & wPawns;
     U64 m = wDoubled;
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         score -= pawnDoubledPenalty[Position::getX(sq)];
-        m &= m-1;
     }
     const U64 bDoubled = BitBoard::southFill(bPawns >> 8) & bPawns;
     m = bDoubled;
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         score += pawnDoubledPenalty[Position::getX(sq)];
-        m &= m-1;
     }
 
     // Evaluate isolated pawns
@@ -865,18 +859,16 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
             ((wPawns & BitBoard::maskBToHFiles) >> 1)));
     m = wIsolated;
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         score -= pawnIsolatedPenalty[Position::getX(sq)];
-        m &= m-1;
     }
     const U64 bIsolated = bPawns & ~BitBoard::northFill(BitBoard::southFill(
             ((bPawns & BitBoard::maskAToGFiles) << 1) |
             ((bPawns & BitBoard::maskBToHFiles) >> 1)));
     m = bIsolated;
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         score += pawnIsolatedPenalty[Position::getX(sq)];
-        m &= m-1;
     }
 
     // Evaluate backward pawns, defined as a pawn that guards a friendly pawn,
@@ -912,12 +904,11 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     if (passedPawnsW != 0) {
         U64 m = passedPawnsW;
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             int x = Position::getX(sq);
             int y = Position::getY(sq);
             passedBonusW += passedPawnBonusX[x] + passedPawnBonusY[y];
             passedBonusW += evalConnectedPP<true>(x, y, passedPawnsW);
-            m &= m-1;
         }
     }
 
@@ -927,12 +918,11 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     if (passedPawnsB != 0) {
         U64 m = passedPawnsB;
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             int x = Position::getX(sq);
             int y = Position::getY(sq);
             passedBonusB += passedPawnBonusX[x] + passedPawnBonusY[7-y];
             passedBonusB += evalConnectedPP<false>(x, y, passedPawnsB);
-            m &= m-1;
         }
     }
 
@@ -952,48 +942,42 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     {
         U64 m = wCandidates;
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             int y = Position::getY(sq);
             passedBonusW += candidatePassedBonus[y];
-            m &= m-1;
         }
     }
     {
         U64 m = bCandidates;
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             int y = Position::getY(sq);
             passedBonusB += candidatePassedBonus[7-y];
-            m &= m-1;
         }
     }
 
     { // Bonus for pawns protected by pawns
         U64 m = wPawnAttacks & wPawns;
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             score += protectedPawnBonus[63-sq];
-            m &= m-1;
         }
         m = bPawnAttacks & bPawns;
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             score -= protectedPawnBonus[sq];
-            m &= m-1;
         }
     }
     { // Bonus for pawns attacked by pawns
         U64 m = wPawnAttacks & bPawns;
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             score += attackedPawnBonus[63-sq];
-            m &= m-1;
         }
         m = bPawnAttacks & wPawns;
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             score -= attackedPawnBonus[sq];
-            m &= m-1;
         }
     }
 
@@ -1014,7 +998,7 @@ Evaluate::rookBonus(const Position& pos) {
     const U64 occupied = pos.occupiedBB();
     U64 m = pos.pieceTypeBB(Piece::WROOK);
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         const int x = Position::getX(sq);
         if ((wPawns & BitBoard::maskFile[x]) == 0) // At least half-open file
             score += (bPawns & BitBoard::maskFile[x]) == 0 ? rookOpenBonus : rookHalfOpenBonus;
@@ -1023,7 +1007,6 @@ Evaluate::rookBonus(const Position& pos) {
         score += rookMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB() | bPawnAttacks))];
         if ((atk & bKingZone) != 0)
             bKingAttacks += BitBoard::bitCount(atk & bKingZone);
-        m &= m-1;
     }
     U64 r7 = pos.pieceTypeBB(Piece::WROOK) & BitBoard::maskRow7;
     if (((r7 & (r7 - 1)) != 0) &&
@@ -1031,7 +1014,7 @@ Evaluate::rookBonus(const Position& pos) {
         score += rookDouble7thRowBonus; // Two rooks on 7:th row
     m = pos.pieceTypeBB(Piece::BROOK);
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         const int x = Position::getX(sq);
         if ((bPawns & BitBoard::maskFile[x]) == 0)
             score -= (wPawns & BitBoard::maskFile[x]) == 0 ? rookOpenBonus : rookHalfOpenBonus;
@@ -1040,7 +1023,6 @@ Evaluate::rookBonus(const Position& pos) {
         score -= rookMobScore[BitBoard::bitCount(atk & ~(pos.blackBB() | wPawnAttacks))];
         if ((atk & wKingZone) != 0)
             wKingAttacks += BitBoard::bitCount(atk & wKingZone);
-        m &= m-1;
     }
     r7 = pos.pieceTypeBB(Piece::BROOK) & BitBoard::maskRow2;
     if (((r7 & (r7 - 1)) != 0) &&
@@ -1059,23 +1041,21 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
         return 0;
     U64 m = wBishops;
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         U64 atk = BitBoard::bishopAttacks(sq, occupied);
         wAttacksBB |= atk;
         score += bishMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB() | bPawnAttacks))];
         if ((atk & bKingZone) != 0)
             bKingAttacks += BitBoard::bitCount(atk & bKingZone);
-        m &= m-1;
     }
     m = bBishops;
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         U64 atk = BitBoard::bishopAttacks(sq, occupied);
         bAttacksBB |= atk;
         score -= bishMobScore[BitBoard::bitCount(atk & ~(pos.blackBB() | wPawnAttacks))];
         if ((atk & wKingZone) != 0)
             wKingAttacks += BitBoard::bitCount(atk & wKingZone);
-        m &= m-1;
     }
 
     bool whiteDark  = (wBishops & BitBoard::maskDarkSq ) != 0;
@@ -1151,29 +1131,26 @@ Evaluate::knightEval(const Position& pos) {
     // Knight mobility
     U64 m = wKnights;
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         U64 atk = BitBoard::knightAttacks[sq];
         wAttacksBB |= atk;
         score += knightMobScoreA[sq][BitBoard::bitCount(atk & ~pos.whiteBB() & ~bPawnAttacks)];
-        m &= m-1;
     }
 
     m = bKnights;
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         U64 atk = BitBoard::knightAttacks[sq];
         bAttacksBB |= atk;
         score -= knightMobScoreA[sq][BitBoard::bitCount(atk & ~pos.blackBB() & ~wPawnAttacks)];
-        m &= m-1;
     }
 
     m = wKnights & phd->outPostsW;
     if (m != 0) {
         int outPost = 0;
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             outPost += knightOutpostBonus[63-sq];
-            m &= m-1;
         }
         score += interpolate(0, outPost, mhd->wKnightOutPostIPF);
     }
@@ -1182,9 +1159,8 @@ Evaluate::knightEval(const Position& pos) {
     if (m != 0) {
         int outPost = 0;
         while (m != 0) {
-            int sq = BitBoard::numberOfTrailingZeros(m);
+            int sq = BitBoard::extractSquare(m);
             outPost += knightOutpostBonus[sq];
-            m &= m-1;
         }
         score -= interpolate(0, outPost, mhd->bKnightOutPostIPF);
     }
@@ -1202,9 +1178,8 @@ Evaluate::threatBonus(const Position& pos) {
     U64 m = wAttacksBB & pos.blackBB() & ~pos.pieceTypeBB(Piece::BKING);
     int tmp = 0;
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         tmp += ::pieceValue[pos.getPiece(sq)];
-        m &= m-1;
     }
     score += tmp + tmp * tmp / threatBonus2;
 
@@ -1214,9 +1189,8 @@ Evaluate::threatBonus(const Position& pos) {
     m = bAttacksBB & pos.whiteBB() & ~pos.pieceTypeBB(Piece::WKING);
     tmp = 0;
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         tmp += ::pieceValue[pos.getPiece(sq)];
-        m &= m-1;
     }
     score -= tmp + tmp * tmp / threatBonus2;
     return score / threatBonus1;
@@ -1391,15 +1365,13 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
         if (kingDiff > 1) {
             U64 m = wPawns & pStormMask[bKingZone];
             while (m != 0) {
-                int sq = BitBoard::numberOfTrailingZeros(m);
+                int sq = BitBoard::extractSquare(m);
                 score += pawnStormBonus * (Position::getY(sq)-5);
-                m &= m - 1;
             }
             m = bPawns & pStormMask[wKingZone];
             while (m != 0) {
-                int sq = BitBoard::numberOfTrailingZeros(m);
+                int sq = BitBoard::extractSquare(m);
                 score += pawnStormBonus * (Position::getY(sq)-2);
-                m &= m - 1;
             }
         }
 

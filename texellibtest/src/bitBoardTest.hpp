@@ -33,6 +33,15 @@ public:
     std::string getName() const { return "BitBoardTest"; }
 
     cute::suite getSuite() const;
+
+private:
+    static void testKingAttacks();
+    static void testKnightAttacks();
+    static void testSquaresBetween();
+    static void testGetDirection();
+    static void testGetDistance();
+    static void testTrailingZeros();
+    static void testMaskAndMirror();
 };
 
 #endif /* BITBOARDTEST_HPP_ */

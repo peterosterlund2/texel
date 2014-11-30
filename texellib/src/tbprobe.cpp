@@ -405,7 +405,7 @@ TBProbe::getGTBProbeData(const Position& pos, GtbProbeData& gtbData) {
     int cnt = 0;
     U64 m = pos.whiteBB();
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         gtbData.wSq[cnt] = sq;
         switch (pos.getPiece(sq)) {
         case Piece::WKING:   gtbData.wP[cnt] = tb_KING;   break;
@@ -418,7 +418,6 @@ TBProbe::getGTBProbeData(const Position& pos, GtbProbeData& gtbData) {
             assert(false);
         }
         cnt++;
-        m &= m-1;
     }
     gtbData.wSq[cnt] = tb_NOSQUARE;
     gtbData.wP[cnt] = tb_NOPIECE;
@@ -426,7 +425,7 @@ TBProbe::getGTBProbeData(const Position& pos, GtbProbeData& gtbData) {
     cnt = 0;
     m = pos.blackBB();
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         gtbData.bSq[cnt] = sq;
         switch (pos.getPiece(sq)) {
         case Piece::BKING:   gtbData.bP[cnt] = tb_KING;   break;
@@ -439,7 +438,6 @@ TBProbe::getGTBProbeData(const Position& pos, GtbProbeData& gtbData) {
             assert(false);
         }
         cnt++;
-        m &= m-1;
     }
     gtbData.bSq[cnt] = tb_NOSQUARE;
     gtbData.bP[cnt] = tb_NOPIECE;
@@ -536,15 +534,13 @@ getMaxPawnMoves(const Position& pos) {
     int maxPawnMoves = 0;
     U64 m = pos.pieceTypeBB(Piece::WPAWN);
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         maxPawnMoves += 6 - Position::getY(sq);
-        m &= m-1;
     }
     m = pos.pieceTypeBB(Piece::BPAWN);
     while (m != 0) {
-        int sq = BitBoard::numberOfTrailingZeros(m);
+        int sq = BitBoard::extractSquare(m);
         maxPawnMoves += Position::getY(sq) - 1;
-        m &= m-1;
     }
     return maxPawnMoves;
 }

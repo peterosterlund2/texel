@@ -99,9 +99,7 @@ static uint64_t get_pieces(const Position& pos, int color, int piece) {
 }
 
 static inline int pop_lsb(uint64_t& bb) {
-    int ret = BitBoard::numberOfTrailingZeros(bb);
-    bb &= bb - 1;
-    return ret;
+    return BitBoard::extractSquare(bb);
 }
 
 // probe_wdl_table and probe_dtz_table require similar adaptations.
