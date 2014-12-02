@@ -1944,6 +1944,35 @@ Evaluate::isBishopPawnDraw(const Position& pos) const {
         }
     }
 
+    // Check for fortress when all pawns are on the B file and there is no bishop
+    if (whiteBishop) {
+        if (pos.pieceTypeBB(Piece::WBISHOP) == 0) {
+            if ((pos.pieceTypeBB(Piece::WPAWN,Piece::BPAWN) & ~BitBoard::maskFileB) == 0) {
+                if ((pos.getPiece(B7) == Piece::BPAWN) &&
+                    (pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(A7,A8,B8)))
+                    return true;
+            }
+            if ((pos.pieceTypeBB(Piece::WPAWN,Piece::BPAWN) & ~BitBoard::maskFileG) == 0) {
+                if ((pos.getPiece(G7) == Piece::BPAWN) &&
+                    (pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(H7,H8,G8)))
+                    return true;
+            }
+        }
+    } else {
+        if (pos.pieceTypeBB(Piece::BBISHOP) == 0) {
+            if ((pos.pieceTypeBB(Piece::WPAWN,Piece::BPAWN) & ~BitBoard::maskFileB) == 0) {
+                if ((pos.getPiece(B2) == Piece::WPAWN) &&
+                    (pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(A2,A1,B1)))
+                    return true;
+            }
+            if ((pos.pieceTypeBB(Piece::WPAWN,Piece::BPAWN) & ~BitBoard::maskFileG) == 0) {
+                if ((pos.getPiece(G2) == Piece::WPAWN) &&
+                    (pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(H2,H1,G1)))
+                    return true;
+            }
+        }
+    }
+
     return false;
 }
 

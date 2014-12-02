@@ -797,6 +797,10 @@ EvaluateTest::testBishAndPawnFortress() {
     ASSERT(evalFEN("8/8/8/2b5/4k2p/4P1p1/6P1/7K w - - 1 1") < 0);
     ASSERT_EQUAL(0, evalFEN("8/4b3/4P3/8/7p/6p1/5kP1/7K w - - 1 2"));
     ASSERT_EQUAL(0, evalFEN("8/8/8/2b1k3/4P2p/6p1/6P1/7K w - - 1 1"));
+
+    ASSERT_EQUAL(0, evalFEN("8/8/8/8/6p1/6p1/4k1P1/6K1 b - - 0 10"));
+    ASSERT_EQUAL(0, evalFEN("8/6p1/6p1/8/6p1/8/4k1P1/6K1 b - - 0 1"));
+    ASSERT(evalFEN("8/6p1/6p1/8/6p1/6P1/4k1K1/8 b - - 0 1") < 0);
 }
 
 void
