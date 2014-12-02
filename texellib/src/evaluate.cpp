@@ -227,6 +227,8 @@ Evaluate::evalPos(const Position& pos) {
     if (print) std::cout << "eval knight :" << score << std::endl;
     score += threatBonus(pos);
     if (print) std::cout << "eval threat :" << score << std::endl;
+    score += protectBonus(pos);
+    if (print) std::cout << "eval protect:" << score << std::endl;
     score += kingSafety(pos);
     if (print) std::cout << "eval king   :" << score << std::endl;
     if (mhd->endGame)
@@ -1194,6 +1196,20 @@ Evaluate::threatBonus(const Position& pos) {
     }
     score -= tmp + tmp * tmp / threatBonus2;
     return score / threatBonus1;
+}
+
+int
+Evaluate::protectBonus(const Position& pos) {
+    int score = 0;
+    score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT) & wPawnAttacks) * ::protectBonus[0];
+    score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP) & wPawnAttacks) * ::protectBonus[1];
+    score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK  ) & wPawnAttacks) * ::protectBonus[2];
+    score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN ) & wPawnAttacks) * ::protectBonus[3];
+    score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT) & bPawnAttacks) * ::protectBonus[0];
+    score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP) & bPawnAttacks) * ::protectBonus[1];
+    score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK  ) & bPawnAttacks) * ::protectBonus[2];
+    score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN ) & bPawnAttacks) * ::protectBonus[3];
+    return score;
 }
 
 /** Compute king safety for both kings. */

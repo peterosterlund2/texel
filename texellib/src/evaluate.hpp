@@ -158,7 +158,11 @@ private:
     /** Compute knight evaluation. */
     int knightEval(const Position& pos);
 
+    /** Bonus for threatening opponent pieces. */
     int threatBonus(const Position& pos);
+
+    /** Bonus for own pieces protected by pawns. */
+    int protectBonus(const Position& pos);
 
     /** Compute king safety for both kings. */
     int kingSafety(const Position& pos);

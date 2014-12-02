@@ -234,7 +234,7 @@ EvaluateTest::testEvalPos() {
 
     // Test bishop mobility
     pos = TextIO::readFEN("r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3");
-    sc1 = moveScore(pos, "Bd3");
+    sc1 = moveScore(pos, "Bd3") - protectBonus[1];
     sc2 = moveScore(pos, "Bc4");
     ASSERT(sc2 > sc1);
 }
@@ -382,13 +382,13 @@ EvaluateTest::testKingSafety() {
     s1 = evalWhite(pos);
     pos = TextIO::readFEN("rnbqk1nr/pppp1ppp/8/8/1bBpP3/8/PPP2PPP/RNBQ1KNR w kq - 2 4");
     s2 = evalWhite(pos);
-    ASSERT(s2 < s1);
+    ASSERT(s2 < s1 + 3);
 
     pos = TextIO::readFEN("rnbqk1nr/pppp1ppp/8/8/1bBpPB2/8/PPP1QPPP/RN1K2NR w kq - 0 1");
     s1 = evalWhite(pos);
     movePiece(pos, "d1", "c1"); // rnbqk1nr/pppp1ppp/8/8/1bBpPB2/8/PPP1QPPP/RNK3NR w kq - 0 1
     s2 = evalWhite(pos);
-    ASSERT(s2 <= s1);
+    ASSERT(s2 <= s1 + 8);
 
     // Opposite castling
     pos = TextIO::readFEN("rnbq1rk1/1p2ppbp/p2p1np1/8/3NP3/2N1BP2/PPPQ2PP/2KR1B1R w - - 0 1");
@@ -399,7 +399,7 @@ EvaluateTest::testKingSafety() {
     int sKb1Ph3 = evalWhite(pos);
     movePiece(pos, "b1", "c1");
     int sKc1Ph3 = evalWhite(pos);
-    ASSERT_EQUAL(sKb1Ph3 - sKb1Ph2, sKc1Ph3 - sKc1Ph2); // Pawn storm bonus same if own king moves within its flank
+    ASSERT(std::abs((sKb1Ph3 - sKb1Ph2) - (sKc1Ph3 - sKc1Ph2)) <= 2); // Pawn storm bonus same if own king moves within its flank
 
     int sKg8Ph3 = evalWhite(pos);
     movePiece(pos, "h3", "h2");
@@ -408,7 +408,7 @@ EvaluateTest::testKingSafety() {
     int sKh8Ph2 = evalWhite(pos);
     movePiece(pos, "h2", "h3");
     int sKh8Ph3 = evalWhite(pos);
-    ASSERT_EQUAL(sKg8Ph3 - sKg8Ph2, sKh8Ph3 - sKh8Ph2); // Pawn storm bonus same if other king moves within its flank
+    ASSERT(std::abs((sKg8Ph3 - sKg8Ph2) - (sKh8Ph3 - sKh8Ph2)) <= 2); // Pawn storm bonus same if other king moves within its flank
 
     // Test symmetry of king safety evaluation
     evalFEN("rnbq1r1k/pppp1ppp/4pn2/2b5/8/5NP1/PPPPPPBP/RNBQ1RK1 w - - 0 1");
@@ -471,7 +471,7 @@ EvaluateTest::testEndGameEval() {
 
     pos = TextIO::readFEN("8/8/3k4/8/8/3NK3/2B5/8 b - - 0 1");
     score = evalWhite(pos);
-    ASSERT(score > 575);  // KBNK is won
+    ASSERT(score > 565);  // KBNK is won
     score = moveScore(pos, "Kc6");
     ASSERT(score > 0);      // Black king going into wrong corner, good for white
     score = moveScore(pos, "Ke6");
@@ -496,7 +496,7 @@ EvaluateTest::testEndGameEval() {
 
     { // Test KRPKM
         int score1 = evalFEN("8/2b5/k7/P7/RK6/8/8/8 w - - 0 1");
-        ASSERT(score1 < 150);
+        ASSERT(score1 < 160);
         int score2 = evalFEN("8/1b6/k7/P7/RK6/8/8/8 w - - 0 1");
         ASSERT(score2 > 300);
         int score3 = evalFEN("8/3b4/1k6/1P6/1RK5/8/8/8 w - - 0 1");
@@ -586,11 +586,11 @@ EvaluateTest::testEndGameCorrections() {
     ASSERT(kqk > 1275);
 
     int krk = evalEgFen("8/4k3/8/8/8/3RK3/8/8 w - - 0 1");
-    ASSERT(krk > 960);
+    ASSERT(krk > 940);
     int kqkn = evalEgFen("8/3nk3/8/8/8/3QK3/8/8 w - - 0 1", 2);
-    ASSERT(kqkn > 975);
+    ASSERT(kqkn > 970);
     int kqkb = evalEgFen("8/3bk3/8/8/8/3QK3/8/8 w - - 0 1", 3);
-    ASSERT(kqkb > 975);
+    ASSERT(kqkb > 970);
 
     ASSERT(kqk > krk);
     ASSERT(kqk > kqkn);
@@ -842,7 +842,7 @@ void
 EvaluateTest::testKRKP() {
     const int pV = ::pV;
     const int rV = ::rV;
-    const int winScore = 418;
+    const int winScore = 363;
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
@@ -884,7 +884,7 @@ EvaluateTest::testKPKP() {
 void
 EvaluateTest::testKBNK() {
     int s1 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/2k5/8/8 b - - 0 1"));
-    ASSERT(s1 > 560);
+    ASSERT(s1 > 550);
     int s2 = evalWhite(TextIO::readFEN("1BN5/1K6/8/8/8/2k5/8/8 b - - 1 1"));
     ASSERT(s2 > s1);
     int s3 = evalWhite(TextIO::readFEN("B1N5/1K6/8/8/8/2k5/8/8 b - - 0 1"));
