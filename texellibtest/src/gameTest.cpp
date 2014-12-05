@@ -460,7 +460,7 @@ GameTest::perfT(Position& pos, int depth, Evaluate& eval) {
     if (depth == 0)
         return 1;
     U64 nodes = 0;
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     MoveGen::removeIllegal(pos, moves);
     UndoInfo ui;

@@ -26,7 +26,7 @@
 #include "moveGen.hpp"
 
 void
-MoveGen::MoveList::filter(const std::vector<Move>& searchMoves)
+MoveList::filter(const std::vector<Move>& searchMoves)
 {
     int used = 0;
     for (int i = 0;i < size; i++)

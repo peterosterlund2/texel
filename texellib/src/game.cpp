@@ -117,7 +117,7 @@ Game::getLastMove() {
 
 Game::GameState
 Game::getGameState() {
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     MoveGen::removeIllegal(pos, moves);
     if (moves.size == 0) {
@@ -502,7 +502,7 @@ Game::perfT(Position& pos, int depth) {
     if (depth == 0)
         return 1;
     U64 nodes = 0;
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     MoveGen::removeIllegal(pos, moves);
     if (depth == 1)

@@ -101,7 +101,7 @@ TranspositionTable::extractPVMoves(const Position& rootPos, const Move& mFirst, 
         if (ent.getType() == TType::T_EMPTY)
             break;
         ent.getMove(m);
-        MoveGen::MoveList moves;
+        MoveList moves;
         MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         bool contains = false;
@@ -130,7 +130,7 @@ TranspositionTable::extractPV(const Position& posIn) {
     while (ent.getType() != TType::T_EMPTY) {
         Move m;
         ent.getMove(m);
-        MoveGen::MoveList moves;
+        MoveList moves;
         MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         bool valid = false;

@@ -63,7 +63,7 @@ public:
      * @param movesToSearch The moves to search.
      * @return True if a subset should be searched, false to search all moves.
      */
-    static bool getSearchMoves(Position& pos, const MoveGen::MoveList& legalMoves,
+    static bool getSearchMoves(Position& pos, const MoveList& legalMoves,
                                std::vector<Move>& movesToSearch);
 
     /** Enhance PV with DTM information from gaviota tablebases. */

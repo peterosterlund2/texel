@@ -103,7 +103,7 @@ Book::initPositions(Position& pos) {
         return;
     auto node = it->second;
 
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     MoveGen::removeIllegal(pos, moves);
     UndoInfo ui;

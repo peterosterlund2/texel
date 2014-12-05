@@ -162,7 +162,7 @@ void
 TextIO::fixupEPSquare(Position& pos) {
     int epSquare = pos.getEpSquare();
     if (epSquare >= 0) {
-        MoveGen::MoveList moves;
+        MoveList moves;
         MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         bool epValid = false;
@@ -358,7 +358,7 @@ pieceToChar(int p) {
 }
 
 static std::string
-moveToString(Position& pos, const Move& move, bool longForm, const MoveGen::MoveList& moves) {
+moveToString(Position& pos, const Move& move, bool longForm, const MoveList& moves) {
     std::string ret;
     int wKingOrigPos = Position::getSquare(4, 0);
     int bKingOrigPos = Position::getSquare(4, 7);
@@ -428,7 +428,7 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveGen::Move
     UndoInfo ui;
     if (MoveGen::givesCheck(pos, move)) {
         pos.makeMove(move, ui);
-        MoveGen::MoveList nextMoves;
+        MoveList nextMoves;
         MoveGen::pseudoLegalMoves(pos, nextMoves);
         MoveGen::removeIllegal(pos, nextMoves);
         if (nextMoves.size == 0)
@@ -443,7 +443,7 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveGen::Move
 
 std::string
 TextIO::moveToString(const Position& pos, const Move& move, bool longForm) {
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     Position tmpPos(pos);
     MoveGen::removeIllegal(tmpPos, moves);
@@ -549,7 +549,7 @@ TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
             info.promPiece = Piece::EMPTY;
     }
 
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     MoveGen::removeIllegal(pos, moves);
 

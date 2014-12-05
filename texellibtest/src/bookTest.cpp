@@ -34,7 +34,7 @@
 static void
 checkValid(Position& pos, const Move& move) {
     ASSERT(!move.isEmpty());
-    MoveGen::MoveList moveList;
+    MoveList moveList;
     MoveGen::pseudoLegalMoves(pos, moveList);
     MoveGen::removeIllegal(pos, moveList);
     bool contains = false;

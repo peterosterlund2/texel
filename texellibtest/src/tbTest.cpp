@@ -402,7 +402,7 @@ TBTest::tbTest() {
 }
 
 
-static void getLegalMoves(Position& pos, MoveGen::MoveList& legalMoves) {
+static void getLegalMoves(Position& pos, MoveList& legalMoves) {
     legalMoves.clear();
     MoveGen::pseudoLegalMoves(pos, legalMoves);
     MoveGen::removeIllegal(pos, legalMoves);
@@ -425,7 +425,7 @@ TBTest::testMissingTables() {
         else
             setupTBFiles(std::vector<std::string>{"KPvK.rtbw", "KPvK.rtbz"});
         Position pos = TextIO::readFEN("8/4P3/8/8/2k1K3/8/8/8 w - - 0 1");
-        MoveGen::MoveList legalMoves;
+        MoveList legalMoves;
         getLegalMoves(pos, legalMoves);
         std::vector<Move> movesToSearch;
         bool res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch);

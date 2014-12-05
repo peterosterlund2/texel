@@ -220,7 +220,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
     sc->setListener(std::make_shared<SearchListener>(os));
     sc->setStrength(UciParams::strength->getIntPar(), randomSeed);
-    std::shared_ptr<MoveGen::MoveList> moves(std::make_shared<MoveGen::MoveList>());
+    std::shared_ptr<MoveList> moves(std::make_shared<MoveList>());
     MoveGen::pseudoLegalMoves(pos, *moves);
     MoveGen::removeIllegal(pos, *moves);
     if (searchMoves.size() > 0)
@@ -365,7 +365,7 @@ EngineControl::getPonderMove(Position pos, const Move& m) {
     tt.probe(pos.historyHash(), ent);
     if (ent.getType() != TType::T_EMPTY) {
         ent.getMove(ret);
-        MoveGen::MoveList moves;
+        MoveList moves;
         MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         bool contains = false;

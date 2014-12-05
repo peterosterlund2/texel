@@ -48,7 +48,7 @@ TreeLogger SearchTest::treeLog;
 
 Move
 SearchTest::idSearch(Search& sc, int maxDepth, int minProbeDepth) {
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::pseudoLegalMoves(sc.pos, moves);
     MoveGen::removeIllegal(sc.pos, moves);
     sc.scoreMoveList(moves, 0);
@@ -470,7 +470,7 @@ void
 SearchTest::testScoreMoveList() {
     Position pos = TextIO::readFEN("r2qk2r/ppp2ppp/1bnp1nb1/1N2p3/3PP3/1PP2N2/1P3PPP/R1BQRBK1 w kq - 0 1");
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     sc.scoreMoveList(moves, 0);
     for (int i = 0; i < moves.size; i++) {

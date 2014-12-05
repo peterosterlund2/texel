@@ -36,7 +36,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.05a20";
+    std::string name = "Texel 1.05a21";
     if (sizeof(char*) == 4)
         name += " 32-bit";
     if (sizeof(char*) == 8)
@@ -98,7 +98,7 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
     Search sc(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
 
     // Determine all legal moves
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     MoveGen::removeIllegal(pos, moves);
     sc.scoreMoveList(moves, 0);
@@ -185,7 +185,7 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     Search sc(pos, posHashList, 0, st, pd, nullptr, treeLog);
 
     // Determine all legal moves
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     MoveGen::removeIllegal(pos, moves);
     sc.scoreMoveList(moves, 0);

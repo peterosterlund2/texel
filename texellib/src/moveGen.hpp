@@ -39,35 +39,35 @@
 # include "textio.hpp"
 #endif
 
+/** A stack-allocated move list object. */
+class MoveList {
+private:
+    static const int MAX_MOVES = 256;
+    int buf[sizeof(Move[MAX_MOVES])/sizeof(int)];
+public:
+    int size;
+
+    MoveList() : size(0) { }
+
+    void clear() { size = 0; }
+
+    Move& operator[](int i)        { return ((Move*)&buf[0])[i]; }
+    const Move& operator[](int i) const  { return ((Move*)&buf[0])[i]; }
+
+    void addMove(int from, int to, int promoteTo) {
+        Move& m = (*this)[size++];
+        new (&m) Move(from, to, promoteTo, 0);
+    }
+
+    /** Remove all moves that are not included in searchMoves. */
+    void filter(const std::vector<Move>& searchMoves);
+};
+
 /**
  * Generates move lists (pseudo-legal, legal, check evasions, captures).
  */
 class MoveGen {
-private:
-    static const int MAX_MOVES = 256;
-
 public:
-
-    /** A stack-allocated move list object. */
-    class MoveList {
-    private:
-        int buf[sizeof(Move[MAX_MOVES])/sizeof(int)];
-    public:
-        int size;
-
-        MoveList() : size(0) { }
-        void filter(const std::vector<Move>& searchMoves);
-        void clear() { size = 0; }
-
-              Move& operator[](int i)        { return ((Move*)&buf[0])[i]; }
-        const Move& operator[](int i) const  { return ((Move*)&buf[0])[i]; }
-
-        void addMove(int from, int to, int promoteTo) {
-            Move& m = (*this)[size++];
-            new (&m) Move(from, to, promoteTo, 0);
-        }
-    };
-
     /**
      * Generate and return a list of pseudo-legal moves.
      * Pseudo-legal means that the moves don't necessarily defend from check threats.

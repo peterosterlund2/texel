@@ -108,7 +108,7 @@ public:
     /** Set minimum depth for TB probes. */
     void setMinProbeDepth(int depth);
 
-    Move iterativeDeepening(const MoveGen::MoveList& scMovesIn,
+    Move iterativeDeepening(const MoveList& scMovesIn,
                             int maxDepth, U64 initialMaxNodes, bool verbose,
                             int maxPV = 1, bool onlyExact = false,
                             int minProbeDepth = 0);
@@ -135,7 +135,7 @@ public:
      * Compute scores for each move in a move list, using SEE, killer and history information.
      * @param moves  List of moves to score.
      */
-    void scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx = 0);
+    void scoreMoveList(MoveList& moves, int ply, int startIdx = 0);
 
     /** Set search tree information for a given ply. */
     void setSearchTreeInfo(int ply, const SearchTreeInfo& sti,
@@ -197,7 +197,7 @@ private:
 
     /** Determine which root moves to search, taking low strength and
      *  missing TB files into account. */
-    void getRootMoves(const MoveGen::MoveList& rootMovesIn,
+    void getRootMoves(const MoveList& rootMovesIn,
                       std::vector<MoveInfo>& rootMovesOut,
                       int maxDepth);
 
@@ -222,13 +222,13 @@ private:
     bool negSEE(const Move& m);
 
     /** Score move list according to most valuable victim / least valuable attacker. */
-    void scoreMoveListMvvLva(MoveGen::MoveList& moves) const;
+    void scoreMoveListMvvLva(MoveList& moves) const;
 
     /** Find move with highest score and move it to the front of the list. */
-    static void selectBest(MoveGen::MoveList& moves, int startIdx);
+    static void selectBest(MoveList& moves, int startIdx);
 
     /** If hashMove exists in the move list, move the hash move to the front of the list. */
-    static bool selectHashMove(MoveGen::MoveList& moves, const Move& hashMove);
+    static bool selectHashMove(MoveList& moves, const Move& hashMove);
 
     void initNodeStats();
 
@@ -344,7 +344,7 @@ Search::negSEE(const Move& m) {
 }
 
 inline void
-Search::scoreMoveListMvvLva(MoveGen::MoveList& moves) const {
+Search::scoreMoveListMvvLva(MoveList& moves) const {
     for (int i = 0; i < moves.size; i++) {
         Move& m = moves[i];
         int v = pos.getPiece(m.to());
@@ -354,7 +354,7 @@ Search::scoreMoveListMvvLva(MoveGen::MoveList& moves) const {
 }
 
 inline void
-Search::selectBest(MoveGen::MoveList& moves, int startIdx) {
+Search::selectBest(MoveList& moves, int startIdx) {
     int bestIdx = startIdx;
     int bestScore = moves[bestIdx].score();
     for (int i = startIdx + 1; i < moves.size; i++) {

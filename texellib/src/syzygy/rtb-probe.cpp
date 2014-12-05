@@ -324,7 +324,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
 }
 
 // Add bishop and rook underpromotion captures to move list.
-static void add_underprom_caps(Position& pos, MoveGen::MoveList& moveList)
+static void add_underprom_caps(Position& pos, MoveList& moveList)
 {
     const int nMoves = moveList.size;
     const bool wtm = pos.isWhiteMove();
@@ -342,7 +342,7 @@ static int probe_ab(Position& pos, int alpha, int beta, int *success)
 {
     // Generate (at least) all legal non-ep captures including (under)promotions.
     // It is OK to generate more, as long as they are filtered out below.
-    MoveGen::MoveList moveList;
+    MoveList moveList;
     const bool inCheck = MoveGen::inCheck(pos);
     if (inCheck) {
         MoveGen::checkEvasions(pos, moveList);
@@ -395,7 +395,7 @@ int Syzygy::probe_wdl(Position& pos, int *success)
     // Now handle en passant.
     int v1 = -3;
     // Generate (at least) all legal en passant captures.
-    MoveGen::MoveList moveList;
+    MoveList moveList;
 
     const bool inCheck = MoveGen::inCheck(pos);
     if (inCheck) {
@@ -448,7 +448,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
     if (*success == 2)
         return wdl == 2 ? 1 : 101;
 
-    MoveGen::MoveList moveList;
+    MoveList moveList;
     const bool inCheck = MoveGen::inCheck(pos);
     const int pawn = pos.isWhiteMove() ? Piece::WPAWN : Piece::BPAWN;
     UndoInfo ui;
@@ -547,7 +547,7 @@ int Syzygy::probe_dtz(Position& pos, int *success)
     // Now handle en passant.
     int v1 = -3;
 
-    MoveGen::MoveList moveList;
+    MoveList moveList;
     const bool inCheck = MoveGen::inCheck(pos);
     const int pawn = pos.isWhiteMove() ? Piece::WPAWN : Piece::BPAWN;
     UndoInfo ui;

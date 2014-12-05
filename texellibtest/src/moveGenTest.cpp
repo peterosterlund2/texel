@@ -42,8 +42,8 @@ containsAll(const std::vector<T> v, const std::vector<T>& e) {
     return true;
 }
 
-static void removeIllegal(Position& pos, MoveGen::MoveList& moveList) {
-    MoveGen::MoveList ml2;
+static void removeIllegal(Position& pos, MoveList& moveList) {
+    MoveList ml2;
     for (int i = 0; i < moveList.size; i++) {
         const Move& m = moveList[i];
         if (MoveGen::isLegal(pos, moveList[i], MoveGen::inCheck(pos)))
@@ -55,7 +55,7 @@ static void removeIllegal(Position& pos, MoveGen::MoveList& moveList) {
 
 static std::vector<std::string>
 getCaptureList(Position& pos, bool includeChecks, bool onlyLegal) {
-    MoveGen::MoveList moves;
+    MoveList moves;
     if (includeChecks)
         MoveGen::pseudoLegalCapturesAndChecks(pos, moves);
     else
@@ -76,7 +76,7 @@ getCheckEvasions(Position& pos, bool onlyLegal) {
     std::vector<std::string> strMoves;
     if (!MoveGen::inCheck(pos))
         return strMoves;
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::checkEvasions(pos, moves);
     if (onlyLegal)
         removeIllegal(pos, moves);
@@ -90,7 +90,7 @@ getCheckEvasions(Position& pos, bool onlyLegal) {
 
 static std::vector<std::string>
 getMoveList0(Position& pos, bool onlyLegal) {
-    MoveGen::MoveList moves;
+    MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     if (onlyLegal)
         removeIllegal(pos, moves);

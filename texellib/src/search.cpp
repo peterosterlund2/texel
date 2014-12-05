@@ -93,7 +93,7 @@ Search::setStrength(int strength, U64 randomSeed) {
 }
 
 Move
-Search::iterativeDeepening(const MoveGen::MoveList& scMovesIn,
+Search::iterativeDeepening(const MoveList& scMovesIn,
                            int maxDepth, U64 initialMaxNodes,
                            bool verbose, int maxPV, bool onlyExact,
                            int minProbeDepth) {
@@ -442,7 +442,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     // Draw tests
     if (canClaimDraw50(pos)) {
         if (inCheck) {
-            MoveGen::MoveList moves;
+            MoveList moves;
             MoveGen::pseudoLegalMoves(pos, moves);
             MoveGen::removeIllegal(pos, moves);
             if (moves.size == 0) {            // Can't claim draw if already check mated.
@@ -719,7 +719,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Start searching move alternatives
-    MoveGen::MoveList moves;
+    MoveList moves;
     if (inCheck)
         MoveGen::checkEvasions(pos, moves);
     else
@@ -957,12 +957,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 }
 
 void
-Search::getRootMoves(const MoveGen::MoveList& rootMovesIn,
+Search::getRootMoves(const MoveList& rootMovesIn,
                      std::vector<MoveInfo>& rootMovesOut,
                      int maxDepth) {
-    MoveGen::MoveList rootMoves(rootMovesIn);
+    MoveList rootMoves(rootMovesIn);
     if ((maxTimeMillis >= 0) || (maxNodes >= 0) || (maxDepth >= 0)) {
-        MoveGen::MoveList legalMoves;
+        MoveList legalMoves;
         MoveGen::pseudoLegalMoves(pos, legalMoves);
         MoveGen::removeIllegal(pos, legalMoves);
         if (rootMoves.size == legalMoves.size) {
@@ -1034,7 +1034,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
         alpha = score;
     int bestScore = score;
     const bool tryChecks = (depth > -1);
-    MoveGen::MoveList moves;
+    MoveList moves;
     if (inCheck) {
         MoveGen::checkEvasions(pos, moves);
     } else if (tryChecks) {
@@ -1237,7 +1237,7 @@ Search::SEE(const Move& m) {
 }
 
 void
-Search::scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx) {
+Search::scoreMoveList(MoveList& moves, int ply, int startIdx) {
     for (int i = startIdx; i < moves.size; i++) {
         Move& m = moves[i];
         bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY) || (m.promoteTo() != Piece::EMPTY);
@@ -1267,7 +1267,7 @@ Search::scoreMoveList(MoveGen::MoveList& moves, int ply, int startIdx) {
 }
 
 bool
-Search::selectHashMove(MoveGen::MoveList& moves, const Move& hashMove) {
+Search::selectHashMove(MoveList& moves, const Move& hashMove) {
     for (int i = 0; i < moves.size; i++) {
         Move& m = moves[i];
         if (m.equals(hashMove)) {

@@ -139,7 +139,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
 }
 
 bool
-TBProbe::getSearchMoves(Position& pos, const MoveGen::MoveList& legalMoves,
+TBProbe::getSearchMoves(Position& pos, const MoveList& legalMoves,
                         std::vector<Move>& movesToSearch) {
     const int mate0 = SearchConst::MATE0;
     const int ply = 0;
@@ -201,7 +201,7 @@ TBProbe::extendPV(const Position& rootPos, std::vector<Move>& pv) {
     if (!pos.isWhiteMove())
         score = -score;
     while (true) {
-        MoveGen::MoveList moveList;
+        MoveList moveList;
         MoveGen::pseudoLegalMoves(pos, moveList);
         MoveGen::removeIllegal(pos, moveList);
         bool extended = false;
@@ -229,7 +229,7 @@ TBProbe::extendPV(const Position& rootPos, std::vector<Move>& pv) {
 template <typename ProbeFunc>
 static void handleEP(Position& pos, int ply, int& score, bool& ret, ProbeFunc probeFunc) {
     const bool inCheck = MoveGen::inCheck(pos);
-    MoveGen::MoveList moveList;
+    MoveList moveList;
     if (inCheck) MoveGen::checkEvasions(pos, moveList);
     else         MoveGen::pseudoLegalMoves(pos, moveList);
     const int pawn = pos.isWhiteMove() ? Piece::WPAWN : Piece::BPAWN;

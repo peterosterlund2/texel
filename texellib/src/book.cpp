@@ -47,7 +47,7 @@ Book::getBookMove(Position& pos, Move& out) {
         return;
     const std::vector<BookEntry>& bookMoves = it->second;
 
-    MoveGen::MoveList legalMoves;
+    MoveList legalMoves;
     MoveGen::pseudoLegalMoves(pos, legalMoves);
     MoveGen::removeIllegal(pos, legalMoves);
     int sum = 0;
