@@ -41,26 +41,24 @@
 
 /** A stack-allocated move list object. */
 class MoveList {
-private:
-    static const int MAX_MOVES = 256;
-    int buf[sizeof(Move[MAX_MOVES])/sizeof(int)];
 public:
-    int size;
+    MoveList();
 
-    MoveList() : size(0) { }
+    void clear();
 
-    void clear() { size = 0; }
+          Move& operator[](int i);
+    const Move& operator[](int i) const;
 
-    Move& operator[](int i)        { return ((Move*)&buf[0])[i]; }
-    const Move& operator[](int i) const  { return ((Move*)&buf[0])[i]; }
-
-    void addMove(int from, int to, int promoteTo) {
-        Move& m = (*this)[size++];
-        new (&m) Move(from, to, promoteTo, 0);
-    }
+    void addMove(int from, int to, int promoteTo);
 
     /** Remove all moves that are not included in searchMoves. */
     void filter(const std::vector<Move>& searchMoves);
+
+    int size;
+
+private:
+    static const int MAX_MOVES = 256;
+    int buf[sizeof(Move[MAX_MOVES])/sizeof(int)];
 };
 
 /**
@@ -94,61 +92,19 @@ public:
     static void pseudoLegalCaptures(const Position& pos, MoveList& moveList);
     static void pseudoLegalCaptures(const Position& pos, MoveList& moveList);
 
-    /**
-     * Return true if the side to move is in check.
-     */
-    static bool inCheck(const Position& pos) {
-        int kingSq = pos.getKingSq(pos.isWhiteMove());
-        return sqAttacked(pos, kingSq);
-    }
+    /** Return true if the side to move is in check. */
+    static bool inCheck(const Position& pos);
 
-    /**
-     * Return true if making a move delivers check to the opponent
-     */
+    /** Return true if making a move delivers check to the opponent */
     static bool givesCheck(const Position& pos, const Move& m);
 
-    /**
-     * Return true if the side to move can take the opponents king.
-     */
-    static bool canTakeKing(Position& pos) {
-        pos.setWhiteMove(!pos.isWhiteMove());
-        bool ret = inCheck(pos);
-        pos.setWhiteMove(!pos.isWhiteMove());
-        return ret;
-    }
+    /** Return true if the side to move can take the opponents king. */
+    static bool canTakeKing(Position& pos);
 
-    /**
-     * Return true if a square is attacked by the opposite side.
-     */
-    static bool sqAttacked(const Position& pos, int sq) {
-        const U64 occupied = pos.occupiedBB();
-        return sqAttacked(pos, sq, occupied);
-    }
-    static bool sqAttacked(const Position& pos, int sq, U64 occupied) {
-        return pos.isWhiteMove() ? sqAttacked<true>(pos, sq, occupied)
-                             : sqAttacked<false>(pos, sq, occupied);
-    }
-    template <bool wtm>
-    static bool sqAttacked(const Position& pos, int sq, U64 occupied) {
-        typedef ColorTraits<!wtm> OtherColor;
-        if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB(OtherColor::KNIGHT)) != 0)
-            return true;
-        if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB(OtherColor::KING)) != 0)
-            return true;
-        if (wtm) {
-            if ((BitBoard::wPawnAttacks[sq] & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
-                return true;
-        } else {
-            if ((BitBoard::bPawnAttacks[sq] & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
-                return true;
-        }
-        U64 bbQueen = pos.pieceTypeBB(OtherColor::QUEEN);
-        if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB(OtherColor::BISHOP) | bbQueen)) != 0)
-            return true;
-        if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB(OtherColor::ROOK) | bbQueen)) != 0)
-            return true;
-        return false;
-    }
+    /** Return true if a square is attacked by the opposite side. */
+    static bool sqAttacked(const Position& pos, int sq);
+    static bool sqAttacked(const Position& pos, int sq, U64 occupied);
+    template <bool wtm> static bool sqAttacked(const Position& pos, int sq, U64 occupied);
 
     /**
      * Remove all illegal moves from moveList.
@@ -162,89 +118,47 @@ public:
     static bool isLegal(Position& pos, const Move& move, bool isInCheck);
 
 private:
-    /**
-     * Return the next piece in a given direction, starting from sq.
-     */
-    static int nextPiece(const Position& pos, int sq, int delta) {
-        while (true) {
-            sq += delta;
-            int p = pos.getPiece(sq);
-            if (p != Piece::EMPTY)
-                return p;
-        }
-        assert(false);
-        return -1;
-    }
+    /** Return the next piece in a given direction, starting from sq. */
+    static int nextPiece(const Position& pos, int sq, int delta);
 
     /** Like nextPiece(), but handles board edges. */
-    static int nextPieceSafe(const Position& pos, int sq, int delta) {
-        int dx = 0, dy = 0;
-        switch (delta) {
-        case 1: dx=1; dy=0; break;
-        case 9: dx=1; dy=1; break;
-        case 8: dx=0; dy=1; break;
-        case 7: dx=-1; dy=1; break;
-        case -1: dx=-1; dy=0; break;
-        case -9: dx=-1; dy=-1; break;
-        case -8: dx=0; dy=-1; break;
-        case -7: dx=1; dy=-1; break;
-        }
-        int x = Position::getX(sq);
-        int y = Position::getY(sq);
-        while (true) {
-            x += dx;
-            y += dy;
-            if ((x < 0) || (x > 7) || (y < 0) || (y > 7)) {
-                return Piece::EMPTY;
-            }
-            int p = pos.getPiece(Position::getSquare(x, y));
-            if (p != Piece::EMPTY)
-                return p;
-        }
-        assert(false);
-        return -1;
-    }
+    static int nextPieceSafe(const Position& pos, int sq, int delta);
 
     template <bool wtm>
-    static void addPawnMovesByMask(MoveList& moveList, U64 mask, int delta, bool allPromotions) {
-        typedef ColorTraits<wtm> MyColor;
-        if (mask == 0)
-            return;
-        U64 promMask = mask & BitBoard::maskRow1Row8;
-        mask &= ~promMask;
-        while (promMask != 0) {
-            int sq = BitBoard::extractSquare(promMask);
-            int sq0 = sq + delta;
-            moveList.addMove(sq0, sq, MyColor::QUEEN);
-            moveList.addMove(sq0, sq, MyColor::KNIGHT);
-            if (allPromotions) {
-                moveList.addMove(sq0, sq, MyColor::ROOK);
-                moveList.addMove(sq0, sq, MyColor::BISHOP);
-            }
-        }
-        while (mask != 0) {
-            int sq = BitBoard::extractSquare(mask);
-            moveList.addMove(sq + delta, sq, Piece::EMPTY);
-        }
-    }
+    static void addPawnMovesByMask(MoveList& moveList, U64 mask, int delta, bool allPromotions);
 
-    static void addPawnDoubleMovesByMask(MoveList& moveList, U64 mask, int delta) {
-        while (mask != 0) {
-            int sq = BitBoard::extractSquare(mask);
-            moveList.addMove(sq + delta, sq, Piece::EMPTY);
-        }
-    }
+    static void addPawnDoubleMovesByMask(MoveList& moveList, U64 mask, int delta);
 
-    static void addMovesByMask(MoveList& moveList, int sq0, U64 mask) {
-        while (mask != 0) {
-            int sq = BitBoard::extractSquare(mask);
-            moveList.addMove(sq0, sq, Piece::EMPTY);
-        }
-    }
+    static void addMovesByMask(MoveList& moveList, int sq0, U64 mask);
 
     MoveGen() = delete;
 };
 
+
+inline
+MoveList::MoveList()
+    : size(0) {
+}
+
+inline void
+MoveList::clear() {
+    size = 0;
+}
+
+inline Move&
+MoveList::operator[](int i) {
+    return ((Move*)&buf[0])[i];
+}
+inline const Move&
+MoveList::operator[](int i) const {
+    return ((Move*)&buf[0])[i];
+}
+
+inline void
+MoveList::addMove(int from, int to, int promoteTo) {
+    Move& m = (*this)[size++];
+    new (&m) Move(from, to, promoteTo, 0);
+}
 
 inline void
 MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
@@ -276,6 +190,136 @@ MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
         pseudoLegalCaptures<true>(pos, moveList);
     else
         pseudoLegalCaptures<false>(pos, moveList);
+}
+
+inline bool
+MoveGen::inCheck(const Position& pos) {
+    int kingSq = pos.getKingSq(pos.isWhiteMove());
+    return sqAttacked(pos, kingSq);
+}
+
+inline bool
+MoveGen::canTakeKing(Position& pos) {
+    pos.setWhiteMove(!pos.isWhiteMove());
+    bool ret = inCheck(pos);
+    pos.setWhiteMove(!pos.isWhiteMove());
+    return ret;
+}
+
+inline bool
+MoveGen::sqAttacked(const Position& pos, int sq) {
+    const U64 occupied = pos.occupiedBB();
+    return sqAttacked(pos, sq, occupied);
+}
+
+inline bool
+MoveGen::sqAttacked(const Position& pos, int sq, U64 occupied) {
+    return pos.isWhiteMove() ? sqAttacked<true>(pos, sq, occupied)
+                             : sqAttacked<false>(pos, sq, occupied);
+}
+
+template <bool wtm>
+inline bool
+MoveGen::sqAttacked(const Position& pos, int sq, U64 occupied) {
+    typedef ColorTraits<!wtm> OtherColor;
+    if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB(OtherColor::KNIGHT)) != 0)
+        return true;
+    if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB(OtherColor::KING)) != 0)
+        return true;
+    if (wtm) {
+        if ((BitBoard::wPawnAttacks[sq] & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
+            return true;
+    } else {
+        if ((BitBoard::bPawnAttacks[sq] & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
+            return true;
+    }
+    U64 bbQueen = pos.pieceTypeBB(OtherColor::QUEEN);
+    if ((BitBoard::bishopAttacks(sq, occupied) & (pos.pieceTypeBB(OtherColor::BISHOP) | bbQueen)) != 0)
+        return true;
+    if ((BitBoard::rookAttacks(sq, occupied) & (pos.pieceTypeBB(OtherColor::ROOK) | bbQueen)) != 0)
+        return true;
+    return false;
+}
+
+inline int
+MoveGen::nextPiece(const Position& pos, int sq, int delta) {
+    while (true) {
+        sq += delta;
+        int p = pos.getPiece(sq);
+        if (p != Piece::EMPTY)
+            return p;
+    }
+    assert(false);
+    return -1;
+}
+
+inline int
+MoveGen::nextPieceSafe(const Position& pos, int sq, int delta) {
+    int dx = 0, dy = 0;
+    switch (delta) {
+    case 1: dx=1; dy=0; break;
+    case 9: dx=1; dy=1; break;
+    case 8: dx=0; dy=1; break;
+    case 7: dx=-1; dy=1; break;
+    case -1: dx=-1; dy=0; break;
+    case -9: dx=-1; dy=-1; break;
+    case -8: dx=0; dy=-1; break;
+    case -7: dx=1; dy=-1; break;
+    }
+    int x = Position::getX(sq);
+    int y = Position::getY(sq);
+    while (true) {
+        x += dx;
+        y += dy;
+        if ((x < 0) || (x > 7) || (y < 0) || (y > 7)) {
+            return Piece::EMPTY;
+        }
+        int p = pos.getPiece(Position::getSquare(x, y));
+        if (p != Piece::EMPTY)
+            return p;
+    }
+    assert(false);
+    return -1;
+}
+
+template <bool wtm>
+inline void
+MoveGen::addPawnMovesByMask(MoveList& moveList, U64 mask, int delta, bool allPromotions) {
+    typedef ColorTraits<wtm> MyColor;
+    if (mask == 0)
+        return;
+    U64 promMask = mask & BitBoard::maskRow1Row8;
+    mask &= ~promMask;
+    while (promMask != 0) {
+        int sq = BitBoard::extractSquare(promMask);
+        int sq0 = sq + delta;
+        moveList.addMove(sq0, sq, MyColor::QUEEN);
+        moveList.addMove(sq0, sq, MyColor::KNIGHT);
+        if (allPromotions) {
+            moveList.addMove(sq0, sq, MyColor::ROOK);
+            moveList.addMove(sq0, sq, MyColor::BISHOP);
+        }
+    }
+    while (mask != 0) {
+        int sq = BitBoard::extractSquare(mask);
+        moveList.addMove(sq + delta, sq, Piece::EMPTY);
+    }
+}
+
+inline void
+MoveGen::addPawnDoubleMovesByMask(MoveList& moveList, U64 mask, int delta) {
+    while (mask != 0) {
+        int sq = BitBoard::extractSquare(mask);
+        moveList.addMove(sq + delta, sq, Piece::EMPTY);
+    }
+}
+
+inline void
+MoveGen::addMovesByMask(MoveList& moveList, int sq0, U64 mask) {
+    while (mask != 0) {
+        int sq = BitBoard::extractSquare(mask);
+        moveList.addMove(sq0, sq, Piece::EMPTY);
+    }
 }
 
 #endif /* MOVEGEN_HPP_ */

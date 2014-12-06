@@ -40,8 +40,8 @@ namespace SearchConst {
 namespace TType {
     const int T_EMPTY = 0;   // Empty hash slot
     const int T_EXACT = 1;   // Exact score
-    const int T_GE = 2;      // True score >= this->score
-    const int T_LE = 3;      // True score <= this->score
+    const int T_GE = 2;      // True score >= this score
+    const int T_LE = 3;      // True score <= this score
 }
 
 #endif /* CONSTANTS_HPP_ */

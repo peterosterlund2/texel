@@ -778,12 +778,40 @@ Parameters::getParamNames(std::vector<std::string>& parNames) {
     parNames = paramNames;
 }
 
+std::shared_ptr<Parameters::ParamBase>
+Parameters::getParam(const std::string& name) const {
+    auto it = params.find(toLowerCase(name));
+    if (it == params.end())
+        return nullptr;
+    return it->second;
+}
+
 void
 Parameters::addPar(const std::shared_ptr<ParamBase>& p) {
     std::string name = toLowerCase(p->name);
     assert(params.find(name) == params.end());
     params[name] = p;
     paramNames.push_back(name);
+}
+
+int
+Parameters::Listener::addListener(Func f, bool callNow) {
+    int id = ++nextId;
+    listeners[id] = f;
+    if (callNow)
+        f();
+    return id;
+}
+
+void
+Parameters::Listener::removeListener(int id) {
+    listeners.erase(id);
+}
+
+void
+Parameters::Listener::notify() {
+    for (auto& e : listeners)
+        (e.second)();
 }
 
 void

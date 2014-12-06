@@ -46,7 +46,7 @@ public:
     static const int BB = 767 << 16;
     static const int BQ = 5903 << 16;
 
-    MatId() : hash(0) {}
+    MatId();
 
     /** Add a piece to the material configuration. */
     void addPiece(int pType);
@@ -67,6 +67,11 @@ private:
     int hash;
     static const int materialId[Piece::nPieceTypes];
 };
+
+inline
+MatId::MatId()
+    : hash(0) {
+}
 
 inline void
 MatId::addPiece(int pType) {

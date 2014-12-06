@@ -58,7 +58,7 @@ public:
 private:
     /** There is one KTEntry for each ply in the search tree. */
     struct KTEntry {
-        KTEntry() : move0(0), move1(0) { }
+        KTEntry();
         RelaxedShared<int> move0;
         RelaxedShared<int> move1;
     };
@@ -67,6 +67,11 @@ private:
 
 inline
 KillerTable::KillerTable() {
+}
+
+inline
+KillerTable::KTEntry::KTEntry()
+    : move0(0), move1(0) {
 }
 
 inline void

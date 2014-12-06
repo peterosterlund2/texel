@@ -53,8 +53,7 @@ public:
     /** Help tables used by the search. */
     struct SearchTables {
         SearchTables(TranspositionTable& tt0, KillerTable& kt0, History& ht0,
-                     Evaluate::EvalHashTables& et0)
-            : tt(tt0), kt(kt0), ht(ht0), et(et0) {}
+                     Evaluate::EvalHashTables& et0);
         TranspositionTable& tt;
         KillerTable& kt;
         History& ht;
@@ -79,14 +78,10 @@ public:
         virtual void notifyStats(U64 nodes, int nps, U64 tbHits, int time) = 0;
     };
 
-    void setListener(const std::shared_ptr<Listener>& listener) {
-        this->listener = listener;
-    }
+    void setListener(const std::shared_ptr<Listener>& listener);
 
     /** Exception thrown to stop the search. */
     class StopSearch : public std::exception {
-    public:
-        StopSearch() { }
     };
 
     class StopHandler {
@@ -94,9 +89,7 @@ public:
         virtual bool shouldStop() = 0;
     };
 
-    void setStopHandler(const std::shared_ptr<StopHandler>& stopHandler) {
-        this->stopHandler = stopHandler;
-    }
+    void setStopHandler(const std::shared_ptr<StopHandler>& stopHandler);
 
     /** Set which thread is owning this Search object. */
     void setThreadNo(int tNo);
@@ -291,6 +284,22 @@ private:
 
     int q0Eval; // Static eval score at first level of quiescence search
 };
+
+inline
+Search::SearchTables::SearchTables(TranspositionTable& tt0, KillerTable& kt0, History& ht0,
+                                   Evaluate::EvalHashTables& et0)
+    : tt(tt0), kt(kt0), ht(ht0), et(et0) {
+}
+
+inline void
+Search::setListener(const std::shared_ptr<Listener>& listener) {
+    this->listener = listener;
+}
+
+inline void
+Search::setStopHandler(const std::shared_ptr<StopHandler>& stopHandler) {
+    this->stopHandler = stopHandler;
+}
 
 inline bool
 Search::canClaimDrawRep(const Position& pos, const std::vector<U64>& posHashList,

@@ -52,7 +52,7 @@ private:
     };
 
     struct MaterialHashData {
-        MaterialHashData() : id(-1), score(0) { }
+        MaterialHashData();
         int id;
         int score;
         short wPawnIPF, bPawnIPF;
@@ -66,7 +66,7 @@ private:
     };
 
     struct KingSafetyHashData {
-        KingSafetyHashData() : key((U64)-1), score(0), current(0) { }
+        KingSafetyHashData();
         U64 key;
         int score;
         short current;
@@ -74,11 +74,7 @@ private:
 
 public:
     struct EvalHashTables {
-        EvalHashTables() {
-            pawnHash.resize(1<<16);
-            kingSafetyHash.resize(1 << 15);
-            materialHash.resize(1 << 14);
-        }
+        EvalHashTables();
         std::vector<PawnHashData> pawnHash;
         std::vector<MaterialHashData> materialHash;
         vector_aligned<KingSafetyHashData> kingSafetyHash;
@@ -230,6 +226,23 @@ Evaluate::PawnHashData::PawnHashData()
       passedBonusB(0),
       passedPawnsW(0),
       passedPawnsB(0) {
+}
+
+inline
+Evaluate::MaterialHashData::MaterialHashData()
+    : id(-1), score(0) {
+}
+
+inline
+Evaluate::KingSafetyHashData::KingSafetyHashData()
+    : key((U64)-1), score(0), current(0) {
+}
+
+inline
+Evaluate::EvalHashTables::EvalHashTables() {
+    pawnHash.resize(1<<16);
+    kingSafetyHash.resize(1 << 15);
+    materialHash.resize(1 << 14);
 }
 
 inline int

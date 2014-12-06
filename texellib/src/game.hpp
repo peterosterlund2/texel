@@ -46,7 +46,7 @@ public:
     Game(const std::shared_ptr<Player>& whitePlayer,
          const std::shared_ptr<Player>& blackPlayer);
 
-    virtual ~Game() { }
+    virtual ~Game();
 
     /**
      * Update the game state according to move/command string from a player.
@@ -141,6 +141,10 @@ private:
     GameState drawState;
 
 };
+
+inline
+Game::~Game() {
+}
 
 inline const Position& Game::getPos() const {
     return pos;

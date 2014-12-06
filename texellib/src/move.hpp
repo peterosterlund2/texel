@@ -33,7 +33,7 @@
 class Move {
 public:
     /** Create empty move object. */
-    Move() : from_(0), to_(0), promoteTo_(0), score_(0) { }
+    Move();
 
     /** Create a move object. */
     Move(int from, int to, int promoteTo, int score = 0);
@@ -57,7 +57,7 @@ public:
     int promoteTo() const;
     int score() const;
 
-    bool isEmpty() const { return (from_ == 0) && (to_ == 0); }
+    bool isEmpty() const;
 
     /** Note that score is not included in the comparison. */
     bool equals(const Move& other) const;
@@ -67,7 +67,7 @@ public:
     int hashCode() const;
 
     /** Not declared "nothrow". Avoids nullptr check in generated assembly code when using placement new. */
-    void* operator new (std::size_t size, void* ptr) { return ptr; }
+    void* operator new (std::size_t size, void* ptr);
 
     /** For debugging. */
     std::ostream& operator<<(std::ostream& os);
@@ -85,6 +85,11 @@ private:
     /** Score. */
     int score_;
 };
+
+inline
+Move::Move()
+    : from_(0), to_(0), promoteTo_(0), score_(0) {
+}
 
 inline
 Move::Move(int from, int to, int promoteTo, int score) {
@@ -147,6 +152,11 @@ Move::score() const {
 }
 
 inline bool
+Move::isEmpty() const {
+    return (from_ == 0) && (to_ == 0);
+}
+
+inline bool
 Move::equals(const Move& other) const {
     if (from_ != other.from_)
         return false;
@@ -165,6 +175,11 @@ Move::operator==(const Move& other) const {
 inline int
 Move::hashCode() const {
     return (from_ * 64 + to_) * 16 + promoteTo_;
+}
+
+inline void*
+Move::operator new (std::size_t size, void* ptr) {
+    return ptr;
 }
 
 #endif /* MOVE_HPP_ */

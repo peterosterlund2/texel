@@ -51,23 +51,12 @@ public:
     class Listener {
         typedef std::function<void()> Func;
     public:
-        int addListener(Func f, bool callNow = true) {
-            int id = ++nextId;
-            listeners[id] = f;
-            if (callNow)
-                f();
-            return id;
-        }
+        int addListener(Func f, bool callNow = true);
 
-        void removeListener(int id) {
-            listeners.erase(id);
-        }
+        void removeListener(int id);
 
     protected:
-        void notify() {
-            for (auto& e : listeners)
-                (e.second)();
-        }
+        void notify();
 
     private:
         int nextId = 0;
@@ -205,30 +194,13 @@ public:
     /** Retrieve list of all parameters. */
     void getParamNames(std::vector<std::string>& parNames);
 
-    std::shared_ptr<ParamBase> getParam(const std::string& name) const {
-        auto it = params.find(toLowerCase(name));
-        if (it == params.end())
-            return nullptr;
-        return it->second;
-    }
+    std::shared_ptr<ParamBase> getParam(const std::string& name) const;
 
-    bool getBoolPar(const std::string& name) const {
-        return params.find(toLowerCase(name))->second->getBoolPar();
-    }
+    bool getBoolPar(const std::string& name) const;
+    int getIntPar(const std::string& name) const;
+    std::string getStringPar(const std::string& name) const;
 
-    int getIntPar(const std::string& name) const {
-        return params.find(toLowerCase(name))->second->getIntPar();
-    }
-    std::string getStringPar(const std::string& name) const {
-        return params.find(toLowerCase(name))->second->getStringPar();
-    }
-
-    void set(const std::string& name, const std::string& value) {
-        auto it = params.find(toLowerCase(name));
-        if (it == params.end())
-            return;
-        it->second->set(value);
-    }
+    void set(const std::string& name, const std::string& value);
 
     /** Register a parameter. */
     void addPar(const std::shared_ptr<ParamBase>& p);
@@ -351,6 +323,29 @@ ParamTable<N>::ParamTable(int minVal0, int maxVal0, bool uci0,
         table[i] = table0.begin()[i];
         parNo[i] = parNo0.begin()[i];
     }
+}
+
+inline bool
+Parameters::getBoolPar(const std::string& name) const {
+    return getParam(name)->getBoolPar();
+}
+
+inline int
+Parameters::getIntPar(const std::string& name) const {
+    return getParam(name)->getIntPar();
+}
+
+inline std::string
+Parameters::getStringPar(const std::string& name) const {
+    return getParam(name)->getStringPar();
+}
+
+inline void
+Parameters::set(const std::string& name, const std::string& value) {
+    auto it = params.find(toLowerCase(name));
+    if (it == params.end())
+        return;
+    it->second->set(value);
 }
 
 // ----------------------------------------------------------------------------
