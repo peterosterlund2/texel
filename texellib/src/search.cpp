@@ -127,6 +127,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     for (size_t i = 0; i < COUNT_OF(searchTreeInfo); i++)
         searchTreeInfo[i].allowNullMove = true;
     ht.reScale();
+    int posHashFirstNew0 = posHashFirstNew;
     try {
     for (int depthS = plyScale; ; depthS += plyScale, firstIteration = false) {
         initNodeStats();
@@ -136,6 +137,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
         UndoInfo ui;
         bool needMoreTime = false;
         for (int mi = 0; mi < (int)rootMoves.size(); mi++) {
+            posHashFirstNew = posHashFirstNew0 + ((mi > 0 && maxPV > 1) ? 1 : 0);
             if (mi < maxPV)
                 aspirationDelta = isWinScore(std::abs(rootMoves[mi].score())) ? 3000 : aspirationWindow;
             if (firstIteration)
