@@ -77,6 +77,7 @@ testGetIndex() {
             int y2 = Position::getY(sq);
             ASSERT_EQUAL(x, x2);
             ASSERT_EQUAL(y, y2);
+            ASSERT_EQUAL(Position::mirrorY(sq), Position::getSquare(x, 7-y));
         }
     }
 }

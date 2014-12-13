@@ -184,6 +184,9 @@ public:
     /** Return y position (rank) corresponding to a square. */
     static int getY(int square);
 
+    /** Return getSquare(getX(square),7-getY(square)). */
+    static int mirrorY(int square);
+
     /** Return true if (x,y) is a dark square. */
     static bool darkSquare(int x, int y);
 
@@ -600,6 +603,11 @@ Position::getX(int square) {
 inline int
 Position::getY(int square) {
     return square >> 3;
+}
+
+inline int
+Position::mirrorY(int square) {
+    return square ^ 56;
 }
 
 /** Return true if (x,y) is a dark square. */
