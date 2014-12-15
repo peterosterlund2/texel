@@ -1258,7 +1258,7 @@ Evaluate::kingSafety(const Position& pos) {
     score -= BitBoard::bitCount(Evaluate::knightKingProtectPattern[bKing] & pos.pieceTypeBB(Piece::BKNIGHT)) * knightKingProtectBonus;
     score -= BitBoard::bitCount(Evaluate::bishopKingProtectPattern[bKing] & pos.pieceTypeBB(Piece::BBISHOP)) * bishopKingProtectBonus;
 
-    score += kingAttackWeight[std::min(bKingAttacks, 9)] - kingAttackWeight[std::min(wKingAttacks, 9)];
+    score += kingAttackWeight[std::min(bKingAttacks, 13)] - kingAttackWeight[std::min(wKingAttacks, 13)];
     const int kSafety = interpolate(0, score, mhd->kingSafetyIPF);
     return kSafety;
 }
