@@ -9,6 +9,7 @@
 #include "textio.hpp"
 #include "moveGen.hpp"
 #include "tbprobe.hpp"
+#include "search.hpp"
 #include "syzygy/rtb-probe.hpp"
 #include "parameters.hpp"
 #include "util/timeUtil.hpp"
@@ -227,6 +228,12 @@ getEPSquares(const Position& pos) {
 template <typename Func>
 static void
 iteratePositions(const std::string& tbType, Func func) {
+    iteratePositions(tbType, true, func);
+}
+
+template <typename Func>
+static void
+iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
     std::vector<int> pieces;
     bool whitePawns, blackPawns;
     getPieces(tbType, pieces, whitePawns, blackPawns);
@@ -237,11 +244,13 @@ iteratePositions(const std::string& tbType, Func func) {
     for (int wk = 0; wk < 64; wk++) {
         int x = Position::getX(wk);
         int y = Position::getY(wk);
-        if (x >= 4)
-            continue;
-        if (!anyPawns)
-            if (y >= 4 || y < x)
+        if (skipSymmetric) {
+            if (x >= 4)
                 continue;
+            if (!anyPawns)
+                if (y >= 4 || y < x)
+                    continue;
+        }
         for (int bk = 0; bk < 64; bk++) {
             int x2 = Position::getX(bk);
             int y2 = Position::getY(bk);
@@ -432,6 +441,137 @@ PosGenerator::dtzStat(const std::vector<std::string>& tbTypes) {
         std::cout << tbType << " negPos: " << TextIO::toFEN(negPos) << std::endl;
         std::cout << tbType << " posPos: " << TextIO::toFEN(posPos) << std::endl;
     }
+}
+
+/** Convert a 2-character string to a piece type. */
+static Piece::Type
+getPieceType(const std::string& s) {
+    if (s.length() != 2)
+        return Piece::EMPTY;
+    bool white;
+    if (s[0] == 'w')
+        white = true;
+    else if (s[0] == 'b')
+        white = false;
+    else
+        return Piece::EMPTY;
+    switch (s[1]) {
+    case 'k': return white ? Piece::WKING : Piece::BKING;
+    case 'q': return white ? Piece::WQUEEN : Piece::BQUEEN;
+    case 'r': return white ? Piece::WROOK : Piece::BROOK;
+    case 'b': return white ? Piece::WBISHOP : Piece::BBISHOP;
+    case 'n': return white ? Piece::WKNIGHT : Piece::BKNIGHT;
+    case 'p': return white ? Piece::WPAWN : Piece::BPAWN;
+    default:
+        return Piece::EMPTY;
+    }
+}
+
+void
+PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& pieceTypes) {
+    ChessTool::setupTB();
+    double t0 = currentTime();
+
+    std::vector<Piece::Type> ptVec;
+    for (const std::string& s : pieceTypes) {
+        Piece::Type p = getPieceType(s);
+        if (p == Piece::EMPTY)
+            throw ChessParseError("Invalid piece type:" + s);
+        ptVec.push_back(p);
+    }
+
+    TranspositionTable tt(19);
+    ParallelData pd(tt);
+    std::vector<U64> nullHist(200);
+    KillerTable kt;
+    History ht;
+    std::shared_ptr<Evaluate::EvalHashTables> et = Evaluate::getEvalHashTables();
+    Search::SearchTables st(tt, kt, ht, *et);
+    TreeLogger treeLog;
+    const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
+
+    struct ScoreStat { U64 whiteWin = 0, draw = 0, blackWin = 0; };
+    std::map<std::vector<int>, ScoreStat> stat; // sequence of squares -> wdl statistics
+    std::vector<int> key;
+    ScoreToProb s2p;
+    U64 total = 0, rejected = 0, nextReport = 0;
+    iteratePositions(tbType, false, [&](Position& pos) {
+        total++;
+        int evScore, qScore;
+        {
+            const int mate0 = SearchConst::MATE0;
+            Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+            sc.init(pos, nullHist, 0);
+            sc.q0Eval = UNKNOWN_SCORE;
+            qScore = sc.quiesce(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
+            Evaluate ev(*et);
+            evScore = ev.evalPos(pos);
+            if (std::abs(s2p.getProb(qScore) - s2p.getProb(evScore)) > 0.25) {
+                rejected++;
+                return;
+            }
+        }
+
+        key.clear();
+        for (auto pt : ptVec) {
+            U64 m = pos.pieceTypeBB(pt);
+            while (m) {
+                int sq = BitBoard::extractSquare(m);
+                key.push_back(sq);
+            }
+        }
+        ScoreStat& ss = stat[key];
+
+        int score;
+        if (!TBProbe::rtbProbeWDL(pos, 0, score))
+            throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+        if (!pos.isWhiteMove())
+            score = -score;
+        if (score > 0)
+            ss.whiteWin++;
+        else if (score < 0)
+            ss.blackWin++;
+        else
+            ss.draw++;
+
+        if (total >= nextReport) {
+            nextReport += 4*1024*1024;
+            std::cerr << "total:" << total << " rejected:" << rejected << std::endl;
+        }
+    });
+    double t1 = currentTime();
+
+    int nDigits = 1;
+    {
+        U64 maxVal = 0;
+        for (const auto& s : stat)
+            maxVal = std::max({maxVal, s.second.whiteWin, s.second.draw, s.second.blackWin});
+        while (maxVal >= 10) {
+            nDigits++;
+            maxVal /= 10;
+        }
+    }
+
+    for (const auto& p : stat) {
+        const std::vector<int>& key = p.first;
+        const ScoreStat& ss = p.second;
+        for (size_t i = 0; i < key.size(); i++) {
+            if (i > 0)
+                std::cout << ' ';
+            std::cout << std::setw(2) << key[i];
+        }
+        for (size_t i = 0; i < key.size(); i++)
+            std::cout << ' ' << TextIO::squareToString(key[i]);
+
+        std::cout << " :";
+        int N = ss.whiteWin + ss.draw + ss.blackWin;
+        double e = (N > 0) ? (ss.whiteWin + ss.draw * 0.5) / N : 0;
+        std::cout << std::setw(nDigits+1) << ss.whiteWin
+                  << std::setw(nDigits+1) << ss.draw
+                  << std::setw(nDigits+1) << ss.blackWin
+                  << ' ' << static_cast<int>(e * 1000 + 0.5) << '\n';
+    }
+    std::cout << " t:" << (t1-t0) << std::endl;
 }
 
 void

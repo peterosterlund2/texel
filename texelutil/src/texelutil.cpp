@@ -62,6 +62,7 @@ usage() {
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
     std::cerr << " evaleffect evalfile : Print eval improvement when parameters are changed\n";
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage\n";
+    std::cerr << " score2prob : Compute table of expected score as function of centipawns\n";
     std::cerr << " parrange p a b c    : Compare evaluation error for different parameter values\n";
     std::cerr << " gnopt p1 p2 ...     : Optimize parameters using Gauss-Newton method\n";
     std::cerr << " localopt p1 p2 ...  : Optimize parameters using local search\n";
@@ -76,6 +77,7 @@ usage() {
     std::cerr << " tblist nPieces : Print all tablebase types\n";
     std::cerr << " dtmstat type1 [type2 ...] : Generate tablebase DTM statistics\n";
     std::cerr << " dtzstat type1 [type2 ...] : Generate tablebase DTZ statistics\n";
+    std::cerr << " egstat type pieceType1 [pieceType2 ...] : Endgame WDL statistics\n";
     std::cerr << " wdltest type1 [type2 ...] : Compare RTB and GTB WDL tables\n";
     std::cerr << " dtztest type1 [type2 ...] : Compare RTB DTZ and GTB DTM tables\n";
     std::cerr << " dtz fen                   : Retrieve DTZ value for a position\n";
@@ -281,6 +283,14 @@ main(int argc, char* argv[]) {
             for (int i = 2; i < argc; i++)
                 tbTypes.push_back(argv[i]);
             PosGenerator::dtzStat(tbTypes);
+        } else if (cmd == "egstat") {
+            if (argc < 4)
+                usage();
+            std::string tbType = argv[2];
+            std::vector<std::string> pieceTypes;
+            for (int i = 3; i < argc; i++)
+                pieceTypes.push_back(argv[i]);
+            PosGenerator::egStat(tbType, pieceTypes);
         } else if (cmd == "wdltest") {
             if (argc < 3)
                 usage();
@@ -300,10 +310,12 @@ main(int argc, char* argv[]) {
                 usage();
             std::string fen = argv[2];
             ChessTool::probeDTZ(fen);
-        } else {
-            ScoreToProb sp(300.0);
+        } else if (cmd == "score2prob") {
+            ScoreToProb sp;
             for (int i = -100; i <= 100; i++)
                 std::cout << "i:" << i << " p:" << sp.getProb(i) << std::endl;
+        } else {
+            usage();
         }
     } catch (std::exception& ex) {
         std::cerr << "Error: " << ex.what() << std::endl;

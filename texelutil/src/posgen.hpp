@@ -25,6 +25,13 @@ public:
     /** Generate tablebase DTZ statistics. */
     static void dtzStat(const std::vector<std::string>& tbTypes);
 
+    /**
+     * Generate WDL statistics for an endgame type, indexed by the positions of the
+     * pieces specified in pieceTypes.
+     * A pieceType string has the format [wb][kqrbnp]
+     */
+    static void egStat(const std::string& tbType, const std::vector<std::string>& pieceTypes);
+
     /** Compare RTB probe results to GTB probe results, report any differences. */
     static void wdlTest(const std::vector<std::string>& tbTypes);
 
