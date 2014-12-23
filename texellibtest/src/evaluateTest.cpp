@@ -843,6 +843,15 @@ EvaluateTest::testKQKP() {
 }
 
 void
+EvaluateTest::testKQKRP() {
+    ASSERT(evalWhite(TextIO::readFEN("1k6/1p6/2r5/8/1K2Q3/8/8/8 w - - 0 1")) < 50);
+    ASSERT(evalWhite(TextIO::readFEN("8/2k5/2p5/3r4/4Q3/2K5/8/8 w - - 0 1")) > 200);
+    ASSERT(evalWhite(TextIO::readFEN("1k6/1p6/p1r5/8/1K6/4Q3/8/8 w - - 0 1")) < 50);
+    ASSERT(evalWhite(TextIO::readFEN("1k6/1p6/1pr5/8/1K6/4Q3/8/8 w - - 0 1")) < 50);
+    ASSERT(evalWhite(TextIO::readFEN("6k1/6p1/5rp1/8/6K1/3Q4/8/8 w - - 0 1")) < 50);
+}
+
+void
 EvaluateTest::testKRKP() {
     const int pV = ::pV;
     const int rV = ::rV;
@@ -1301,6 +1310,7 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testBishAndPawnFortress));
     s.push_back(CUTE(testTrappedBishop));
     s.push_back(CUTE(testKQKP));
+    s.push_back(CUTE(testKQKRP));
     s.push_back(CUTE(testKRKP));
     s.push_back(CUTE(testKRPKR));
     s.push_back(CUTE(testKBNK));

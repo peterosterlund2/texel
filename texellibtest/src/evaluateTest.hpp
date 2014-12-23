@@ -48,6 +48,7 @@ private:
     static void testBishAndPawnFortress();
     static void testTrappedBishop();
     static void testKQKP();
+    static void testKQKRP();
     static void testKRKP();
     static void testKRPKR();
     static void testKPK();

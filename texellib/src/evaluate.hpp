@@ -177,6 +177,7 @@ private:
     template <bool whiteBishop> bool isBishopPawnDraw(const Position& pos) const;
 
     static int kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove, int score);
+    static int kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, bool whiteMove, int score);
 
     static int kpkEval(int wKing, int bKing, int wPawn, bool whiteMove);
     static bool kpkpEval(int wKing, int bKing, int wPawn, int bPawn, int& score);

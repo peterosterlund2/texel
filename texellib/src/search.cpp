@@ -750,10 +750,14 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
     }
     bool lmpOk;
-    if (pos.isWhiteMove())
-        lmpOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
-    else
-        lmpOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
+    if (beta > alpha + 1) {
+        lmpOk = false;
+    } else {
+        if (pos.isWhiteMove())
+            lmpOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
+        else
+            lmpOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
+    }
     int moveCountLimit = 256;
     if (lmpOk) {
         if (depth <= plyScale)          moveCountLimit = lmpMoveCountLimit1;

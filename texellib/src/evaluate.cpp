@@ -1612,6 +1612,48 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
     }
     }
 
+    // QvsRP fortress detection
+    if (pos.pieceTypeBB(Piece::WQUEEN) && (pos.wMtrl() == qV) &&
+        pos.pieceTypeBB(Piece::BROOK) && pos.pieceTypeBB(Piece::BPAWN) &&
+        (pos.bMtrl() - pos.bMtrlPawns() < rV * 2)) {
+        if (!doEval) return 1;
+        if (score > 0) {
+            int wk = pos.getKingSq(true);
+            int wq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WQUEEN));
+            int bk = pos.getKingSq(false);
+            int br = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BROOK));
+            U64 m = pos.pieceTypeBB(Piece::BPAWN);
+            int newScore = score;
+            while (m) {
+                int bp = BitBoard::extractSquare(m);
+                int s2 = kqkrpEval(wk, wq, bk, br, bp, pos.isWhiteMove(), score);
+                newScore = std::min(newScore, s2);
+            }
+            if (newScore < score)
+                return newScore;
+        }
+    }
+    if (pos.pieceTypeBB(Piece::BQUEEN) && (pos.bMtrl() == qV) &&
+        pos.pieceTypeBB(Piece::WROOK) && pos.pieceTypeBB(Piece::WPAWN) &&
+        (pos.wMtrl() - pos.wMtrlPawns() < rV * 2)) {
+        if (!doEval) return 1;
+        if (score < 0) {
+            int bk = pos.getKingSq(false);
+            int bq = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::BQUEEN));
+            int wk = pos.getKingSq(true);
+            int wr = BitBoard::numberOfTrailingZeros(pos.pieceTypeBB(Piece::WROOK));
+            U64 m = pos.pieceTypeBB(Piece::WPAWN);
+            int newScore = score;
+            while (m) {
+                int wp = BitBoard::extractSquare(m);
+                int s2 = -kqkrpEval(63-bk, 63-bq, 63-wk, 63-wr, 63-wp, !pos.isWhiteMove(), -score);
+                newScore = std::max(newScore, s2);
+            }
+            if (newScore > score)
+                return newScore;
+        }
+    }
+
     const int nWN = BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT));
     const int nBN = BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT));
     const int nWB1 = BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP) & BitBoard::maskLightSq);
@@ -2012,6 +2054,96 @@ Evaluate::kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove, 
     if (!canWin)
         score /= 50;
     return score;
+}
+
+int
+Evaluate::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, bool whiteMove, int score) {
+    if (!(BitBoard::bPawnAttacks[bPawn] & (1ULL << bRook)))
+        return score; // Rook not protected by pawn, no fortress
+    if ((1ULL << bPawn) & (BitBoard::maskFileE | BitBoard::maskFileF |
+                           BitBoard::maskFileG | BitBoard::maskFileH)) { // Mirror X
+        wKing ^= 7;
+        wQueen ^= 7;
+        bKing ^= 7;
+        bRook ^= 7;
+        bPawn ^= 7;
+    }
+    bool drawish = false;
+    switch (bPawn) {
+    case A6:
+        drawish = ((1ULL << bKing) & BitBoard::sqMask(A8,B8,A7,B7)) &&
+                  (Position::getX(wKing) >= 2) &&
+                  (Position::getY(wKing) <= 3);
+        break;
+    case A2:
+        drawish = ((1ULL << bKing) & BitBoard::sqMask(A4,B4,A3,B3));
+        break;
+    case B7:
+        drawish = ((1ULL << bKing) & BitBoard::sqMask(A8,B8,C8,A7,C7)) &&
+                  (Position::getY(wKing) <= 4);
+        break;
+    case B6:
+        if (bRook == C5) {
+            drawish = ((1ULL << bKing) & BitBoard::sqMask(A7,B7)) ||
+                      (((1ULL << bKing) & BitBoard::sqMask(A8,B8)) &&
+                       ((Position::getX(wKing) >= 3) || (Position::getY(wKing) <= 3)) &&
+                       (((1ULL << wQueen) & BitBoard::maskRow7) || (!whiteMove && (wQueen != A6))));
+        }
+        break;
+    case B5:
+        drawish = ((1ULL << bKing) & BitBoard::sqMask(A6,B6,C6,A5)) &&
+                  (Position::getY(wKing) <= 2);
+        break;
+    case B4:
+        drawish = ((1ULL << bKing) & BitBoard::sqMask(A6,B6,C6,A5,B5,C5)) &&
+                  ((Position::getY(wKing) <= 2) || (Position::getX(wKing) >= 4));
+        break;
+    case B3:
+        drawish = (((1ULL << bKing) & BitBoard::sqMask(A4,B4,C4,A3)) &&
+                   ((1ULL << wKing) & BitBoard::maskRow1Row8)) ||
+                  (((1ULL << bKing) & BitBoard::sqMask(A5,B5)) &&
+                   ((1ULL << wQueen) & BitBoard::maskRow4) &&
+                   ((1ULL << wKing) & BitBoard::maskRow1));
+        break;
+    case B2:
+        drawish = ((1ULL << bKing) & BitBoard::sqMask(A4,B4,C4,A3,B3,C3,A2,C2)) &&
+                  ((1ULL << wKing) & BitBoard::sqMask(A4,B4,C4,A3,B3,C3,A2,C2)) == 0;
+        break;
+    case C7:
+        drawish = ((1ULL << bKing) & BitBoard::sqMask(B8,C8,D8,B7,D7)) &&
+                  (Position::getY(wKing) <= 4);
+        break;
+    case C3:
+        drawish = (((1ULL << bKing) & BitBoard::sqMask(B4,C4,D4)) &&
+                   ((1ULL << wKing) & BitBoard::maskRow1Row8)) ||
+                  (((1ULL << bKing) & BitBoard::sqMask(B5,C5)) &&
+                   ((1ULL << wQueen) & BitBoard::maskRow4) &&
+                   ((1ULL << wKing) & BitBoard::maskRow1));
+        break;
+    case C2:
+        drawish = ((1ULL << bKing) & BitBoard::sqMask(B3,C3,D3,B2,D2)) &&
+                  ((Position::getX(wKing) == 0) || (Position::getX(wKing) >= 4));
+        break;
+    case D7:
+        drawish = ((1ULL << bKing) & BitBoard::sqMask(C8,D8,E8,C7,E7)) &&
+                  (Position::getY(wKing) <= 4);
+        break;
+    case D3:
+        drawish = (((1ULL << bKing) & BitBoard::sqMask(C4,D4,E4)) &&
+                   ((1ULL << wKing) & BitBoard::maskRow1Row8)) ||
+                  (((1ULL << bKing) & BitBoard::sqMask(C5,D5,E5)) &&
+                   ((1ULL << wQueen) & BitBoard::maskRow4) &&
+                   ((1ULL << wKing) & BitBoard::maskRow1));
+        break;
+    case D2:
+        drawish = ((1ULL << bKing) & BitBoard::sqMask(C4,D4,E4,C3,D3,E3,C2,E2)) &&
+                  ((1ULL << wKing) & BitBoard::sqMask(C4,D4,E4,C3,D3,E3,C2,E2)) == 0;
+        break;
+    default:
+        drawish = false;
+        break;
+    }
+    return drawish ? score / 16 : score;
 }
 
 int
