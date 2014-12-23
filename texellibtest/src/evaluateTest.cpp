@@ -849,6 +849,12 @@ EvaluateTest::testKQKRP() {
     ASSERT(evalWhite(TextIO::readFEN("1k6/1p6/p1r5/8/1K6/4Q3/8/8 w - - 0 1")) < 50);
     ASSERT(evalWhite(TextIO::readFEN("1k6/1p6/1pr5/8/1K6/4Q3/8/8 w - - 0 1")) < 50);
     ASSERT(evalWhite(TextIO::readFEN("6k1/6p1/5rp1/8/6K1/3Q4/8/8 w - - 0 1")) < 50);
+    ASSERT(evalWhite(TextIO::readFEN("8/8/8/3k4/8/3p2Q1/4r3/5K2 b - - 0 1")) < 50);
+    ASSERT(evalWhite(TextIO::readFEN("8/8/8/8/2Q5/3pk3/4r3/5K2 w - - 0 1")) < 50);
+    ASSERT(evalWhite(TextIO::readFEN("8/8/8/4Q3/8/3pk3/4r3/5K2 b - - 0 1")) > 50);
+    ASSERT(evalWhite(TextIO::readFEN("8/8/8/2k5/8/2p2Q2/3r4/4K3 b - - 3 2")) < 25);
+    ASSERT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/4Q3/8 w - - 0 1")) > 100);
+    ASSERT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/5Q2/8 w - - 0 1")) < 50);
 }
 
 void

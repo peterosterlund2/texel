@@ -2087,7 +2087,9 @@ Evaluate::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, bool
             drawish = ((1ULL << bKing) & BitBoard::sqMask(A7,B7)) ||
                       (((1ULL << bKing) & BitBoard::sqMask(A8,B8)) &&
                        ((Position::getX(wKing) >= 3) || (Position::getY(wKing) <= 3)) &&
-                       (((1ULL << wQueen) & BitBoard::maskRow7) || (!whiteMove && (wQueen != A6))));
+                       (((1ULL << wQueen) & BitBoard::maskRow7) ||
+                        (!whiteMove && (wQueen != A6)) ||
+                        (whiteMove && !((1ULL << wQueen) & BitBoard::sqMask(A6,A5,A4,A3,A2,A1,B5,B4,B3,B2,B1,C4,D3,E2,F1)))));
         }
         break;
     case B5:
@@ -2117,8 +2119,11 @@ Evaluate::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, bool
         drawish = (((1ULL << bKing) & BitBoard::sqMask(B4,C4,D4)) &&
                    ((1ULL << wKing) & BitBoard::maskRow1Row8)) ||
                   (((1ULL << bKing) & BitBoard::sqMask(B5,C5)) &&
-                   ((1ULL << wQueen) & BitBoard::maskRow4) &&
+                   (((1ULL << wQueen) & BitBoard::maskRow4) || !whiteMove) &&
                    ((1ULL << wKing) & BitBoard::maskRow1));
+                  ((((bKing == B3) && (wQueen != B5)) || ((bKing == D3) && (wQueen != D5))) &&
+                   ((1ULL << wKing) & BitBoard::maskRow1));
+
         break;
     case C2:
         drawish = ((1ULL << bKing) & BitBoard::sqMask(B3,C3,D3,B2,D2)) &&
@@ -2132,7 +2137,9 @@ Evaluate::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, bool
         drawish = (((1ULL << bKing) & BitBoard::sqMask(C4,D4,E4)) &&
                    ((1ULL << wKing) & BitBoard::maskRow1Row8)) ||
                   (((1ULL << bKing) & BitBoard::sqMask(C5,D5,E5)) &&
-                   ((1ULL << wQueen) & BitBoard::maskRow4) &&
+                   (((1ULL << wQueen) & BitBoard::maskRow4) || !whiteMove) &&
+                   ((1ULL << wKing) & BitBoard::maskRow1)) ||
+                  ((((bKing == C3) && (wQueen != C5)) || ((bKing == E3) && (wQueen != E5))) &&
                    ((1ULL << wKing) & BitBoard::maskRow1));
         break;
     case D2:
