@@ -2120,7 +2120,7 @@ Evaluate::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, bool
                    ((1ULL << wKing) & BitBoard::maskRow1Row8)) ||
                   (((1ULL << bKing) & BitBoard::sqMask(B5,C5)) &&
                    (((1ULL << wQueen) & BitBoard::maskRow4) || !whiteMove) &&
-                   ((1ULL << wKing) & BitBoard::maskRow1));
+                   ((1ULL << wKing) & BitBoard::maskRow1)) ||
                   ((((bKing == B3) && (wQueen != B5)) || ((bKing == D3) && (wQueen != D5))) &&
                    ((1ULL << wKing) & BitBoard::maskRow1));
 
