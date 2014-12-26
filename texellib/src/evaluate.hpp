@@ -166,35 +166,7 @@ private:
     KingSafetyHashData& getKingSafetyHashEntry(vector_aligned<KingSafetyHashData>& ksHash, U64 key);
     int kingSafetyKPPart(const Position& pos);
 
-    /** Implements special knowledge for some endgame situations.
-     * If doEval is false the position is not evaluated. Instead 1 is returned if
-     * this function has special knowledge about the current material balance, and 0
-     * is returned otherwise. */
-    template <bool doEval> int endGameEval(const Position& pos, int oldScore) const;
-
-    /** Return true if the side with the bishop can not win because the opponent
-     * has a fortress draw. */
-    template <bool whiteBishop> bool isBishopPawnDraw(const Position& pos) const;
-
-    static int kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove, int score);
-    static int kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, bool whiteMove, int score);
-
-    static int kpkEval(int wKing, int bKing, int wPawn, bool whiteMove);
-    static bool kpkpEval(int wKing, int bKing, int wPawn, int bPawn, int& score);
-
-    static int krkpEval(int wKing, int bKing, int bPawn, bool whiteMove, int score);
-    static int krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bool whiteMove);
-    static int krpkrpEval(int wKing, int bKing, int wPawn, int wRook, int bRook, int bPawn, bool whiteMove, int score);
-
-    static int kbnkEval(int wKing, int bKing, bool darkBishop);
-
-    static int kbpkbEval(int wKing, int wBish, int wPawn, int bKing, int bBish, int score);
-    static int kbpknEval(int wKing, int wBish, int wPawn, int bKing, int bKnight, int score);
-    static int knpkbEval(int wKing, int wKnight, int wPawn, int bKing, int bBish, int score, bool wtm);
-    static int knpkEval(int wKing, int wKnight, int wPawn, int bKing, int score, bool wtm);
-
     static int castleMaskFactor[256];
-    static const int distToH1A8[8][8];
     static int knightMobScoreA[64][9];
     static U64 knightKingProtectPattern[64];
     static U64 bishopKingProtectPattern[64];
@@ -207,11 +179,7 @@ private:
 
     vector_aligned<KingSafetyHashData>& kingSafetyHash;
 
-    static const U8 kpkTable[2*32*64*48/8];
-    static const U8 krkpTable[2*32*48*8];
-    static const U64 krpkrTable[2*24*64];
-
-    // King safety variables
+     // King safety variables
     U64 wKingZone, bKingZone;       // Squares close to king that are worth attacking
     int wKingAttacks, bKingAttacks; // Number of attacks close to white/black king
     U64 wAttacksBB, bAttacksBB;
