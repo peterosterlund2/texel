@@ -44,7 +44,7 @@ public:
     void play();
 
 protected:
-    bool handleCommand(const std::string& moveStr);
+    bool handleCommand(const std::string& moveStr) override;
 
 private:
     void showHelp();

@@ -30,9 +30,9 @@
 
 class TranspositionTableTest : public SuiteBase {
 public:
-    std::string getName() const { return "TranspositionTableTest"; }
+    std::string getName() const override { return "TranspositionTableTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 };
 
 #endif /* TRANSPOSITIONTABLETEST_HPP_ */

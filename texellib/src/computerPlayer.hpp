@@ -46,20 +46,22 @@ public:
     bool verbose;
 
     ComputerPlayer();
+    ComputerPlayer(const ComputerPlayer& other) = delete;
+    ComputerPlayer& operator=(const ComputerPlayer& other) = delete;
 
     void setTTLogSize(int logSize);
 
     void setListener(const std::shared_ptr<Search::Listener>& listener);
 
-    std::string getCommand(const Position& posIn, bool drawOffer, const std::vector<Position>& history);
+    std::string getCommand(const Position& posIn, bool drawOffer, const std::vector<Position>& history) override;
 
-    bool isHumanPlayer();
+    bool isHumanPlayer() override;
 
-    void useBook(bool bookOn);
+    void useBook(bool bookOn) override;
 
-    void timeLimit(int minTimeLimit, int maxTimeLimit);
+    void timeLimit(int minTimeLimit, int maxTimeLimit) override;
 
-    void clearTT();
+    void clearTT() override;
 
     /** Search a position and return the best move and score. Used for test suite processing. */
     std::pair<Move, std::string> searchPosition(Position& pos, int maxTimeMillis);
@@ -71,9 +73,6 @@ public:
     static void initEngine();
 
 private:
-    ComputerPlayer(const ComputerPlayer& other) = delete;
-    ComputerPlayer& operator=(const ComputerPlayer& other) = delete;
-
     /** Check if a draw claim is allowed, possibly after playing "move".
      * @param move The move that may have to be made before claiming draw.
      * @return The draw string that claims the draw, or empty string if draw claim not valid.

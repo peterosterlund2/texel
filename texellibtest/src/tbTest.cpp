@@ -482,7 +482,7 @@ TBTest::testMissingTables() {
 
 void
 TBTest::testMaxSubMate() {
-    typedef MatId MI;
+    using MI = MatId;
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
     Position pos = TextIO::readFEN("3qk3/8/8/8/8/8/8/3QK3 w - - 0 1");
     int maxSub = TBProbe::getMaxSubMate(pos);

@@ -34,9 +34,9 @@ class Evaluate;
 
 class GameTest : public SuiteBase {
 public:
-    std::string getName() const { return "GameTest"; }
+    std::string getName() const override { return "GameTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 
 private:
     static void testHaveDrawOffer();

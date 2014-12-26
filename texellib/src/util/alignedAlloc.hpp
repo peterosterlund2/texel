@@ -34,18 +34,18 @@ template <typename T>
 class AlignedAllocator {
 private:
     enum { ALIGN = 64 };
-    typedef uint64_t U64;
+    using U64 = uint64_t;
 public:
-    typedef T* pointer;
-    typedef const T* const_pointer;
-    typedef void* void_pointer;
-    typedef const void* const_void_pointer;
-    typedef T& reference;
-    typedef const T& const_reference;
-    typedef size_t size_type;
-    typedef ptrdiff_t difference_type;
-    typedef T value_type;
-    template <typename U> struct rebind { typedef AlignedAllocator<U> other; };
+    using pointer = T*;
+    using const_pointer = const T*;
+    using void_pointer = void*;
+    using const_void_pointer = const void*;
+    using reference = T&;
+    using const_reference = const T&;
+    using size_type = size_t;
+    using difference_type = ptrdiff_t;
+    using value_type = T;
+    template <typename U> struct rebind { using other = AlignedAllocator<U>; };
 
     T* allocate(size_t n) {
         size_t needed_size = n*sizeof(T) + sizeof(U64) + ALIGN;

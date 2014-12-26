@@ -30,9 +30,9 @@
 
 class MoveTest : public SuiteBase {
 public:
-    std::string getName() const { return "MoveTest"; }
+    std::string getName() const override { return "MoveTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 };
 
 #endif /* MOVETEST_HPP_ */

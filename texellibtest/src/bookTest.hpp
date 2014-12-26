@@ -30,9 +30,9 @@
 
 class BookTest : public SuiteBase {
 public:
-    std::string getName() const { return "BookTest"; }
+    std::string getName() const override { return "BookTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 };
 
 #endif /* BOOKTEST_HPP_ */

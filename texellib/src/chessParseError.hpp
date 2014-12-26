@@ -35,16 +35,13 @@
 class ChessParseError : public std::exception {
 public:
     ChessParseError();
-    ~ChessParseError() throw();
     ChessParseError(const std::string& msg);
 
-    virtual const char* what() const throw();
+    virtual const char* what() const noexcept override;
 
 private:
     std::string msg_;
 };
-
-inline ChessParseError::~ChessParseError() throw() {}
 
 inline
 ChessParseError::ChessParseError(const std::string& msg)

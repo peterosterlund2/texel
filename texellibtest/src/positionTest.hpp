@@ -32,9 +32,9 @@ class Position;
 
 class PositionTest : public SuiteBase {
 public:
-    std::string getName() const { return "PositionTest"; }
+    std::string getName() const override { return "PositionTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 
     static int computeMaterialId(const Position& pos);
 };

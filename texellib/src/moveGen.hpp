@@ -66,6 +66,8 @@ private:
  */
 class MoveGen {
 public:
+    MoveGen() = delete;
+
     /**
      * Generate and return a list of pseudo-legal moves.
      * Pseudo-legal means that the moves don't necessarily defend from check threats.
@@ -130,8 +132,6 @@ private:
     static void addPawnDoubleMovesByMask(MoveList& moveList, U64 mask, int delta);
 
     static void addMovesByMask(MoveList& moveList, int sq0, U64 mask);
-
-    MoveGen() = delete;
 };
 
 
@@ -221,7 +221,7 @@ MoveGen::sqAttacked(const Position& pos, int sq, U64 occupied) {
 template <bool wtm>
 inline bool
 MoveGen::sqAttacked(const Position& pos, int sq, U64 occupied) {
-    typedef ColorTraits<!wtm> OtherColor;
+    using OtherColor = ColorTraits<!wtm>;
     if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB(OtherColor::KNIGHT)) != 0)
         return true;
     if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB(OtherColor::KING)) != 0)
@@ -285,7 +285,7 @@ MoveGen::nextPieceSafe(const Position& pos, int sq, int delta) {
 template <bool wtm>
 inline void
 MoveGen::addPawnMovesByMask(MoveList& moveList, U64 mask, int delta, bool allPromotions) {
-    typedef ColorTraits<wtm> MyColor;
+    using MyColor = ColorTraits<wtm>;
     if (mask == 0)
         return;
     U64 promMask = mask & BitBoard::maskRow1Row8;

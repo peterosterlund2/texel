@@ -64,7 +64,7 @@ TreeLoggerTest::testSerialize() {
 
 void
 TreeLoggerTest::testLoggerData() {
-    typedef TreeLoggerBase TB;
+    using TB = TreeLoggerBase;
     {
         TB::Entry e;
         e.type = TB::EntryType::POSITION_INCOMPLETE;

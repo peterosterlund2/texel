@@ -30,9 +30,9 @@
 
 class ParallelTest : public SuiteBase {
 public:
-    std::string getName() const { return "ParallelTest"; }
+    std::string getName() const override { return "ParallelTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 
 private:
     static void testFailHighInfo();

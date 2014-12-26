@@ -41,7 +41,7 @@ class TreeLoggerWriter;
 class TreeLoggerWriterDummy;
 
 /** Change to TreeLoggerWriter to enable tree logging. */
-typedef TreeLoggerWriterDummy TreeLogger;
+using TreeLogger = TreeLoggerWriterDummy;
 
 
 class Position;
@@ -216,11 +216,11 @@ protected:
         };
 
         static const int bufSize = 22;
-        typedef U8 Buffer[bufSize];
+        using Buffer = U8[bufSize];
 
         void serialize(U8 buffer[bufSize]) const {
             U8* ptr = buffer;
-            typedef typename std::underlying_type<EntryType>::type UType;
+            using UType = std::underlying_type<EntryType>::type;
             const int su = sizeof(UType);
             UType uType = static_cast<UType>(type);
             ptr = Serializer::serialize<bufSize>(ptr, uType);
@@ -236,7 +236,7 @@ protected:
 
         void deSerialize(U8 buffer[bufSize]) {
             const U8* ptr = buffer;
-            typedef typename std::underlying_type<EntryType>::type UType;
+            using UType = std::underlying_type<EntryType>::type;
             const int su = sizeof(UType);
             UType uType;
             ptr = Serializer::deSerialize<bufSize>(ptr, uType);

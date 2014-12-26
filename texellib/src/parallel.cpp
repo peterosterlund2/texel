@@ -74,12 +74,12 @@ public:
     /** Destructor. Report searched nodes to ParallelData object. */
     ~ThreadStopHandler();
 
-    bool shouldStop();
-
-private:
     ThreadStopHandler(const ThreadStopHandler&) = delete;
     ThreadStopHandler& operator=(const ThreadStopHandler&) = delete;
 
+    bool shouldStop();
+
+private:
     /** Report searched nodes since last call to ParallelData object. */
     void reportNodes(bool force);
 

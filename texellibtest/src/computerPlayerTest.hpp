@@ -30,9 +30,9 @@
 
 class ComputerPlayerTest : public SuiteBase {
 public:
-    std::string getName() const { return "ComputerPlayerTest"; }
+    std::string getName() const override { return "ComputerPlayerTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 
 private:
     static void testGetCommand();

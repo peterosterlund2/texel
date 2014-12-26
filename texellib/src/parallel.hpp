@@ -62,6 +62,9 @@ public:
     /** Destructor. Waits for thread to terminate. */
     ~WorkerThread();
 
+    WorkerThread(const WorkerThread&) = delete;
+    WorkerThread& operator=(const WorkerThread&) = delete;
+
     /** Start thread. */
     void start();
 
@@ -78,9 +81,6 @@ public:
     double getPUseful() const;
 
 private:
-    WorkerThread(const WorkerThread&) = delete;
-    WorkerThread& operator=(const WorkerThread&) = delete;
-
     /** Thread main loop. */
     void mainLoop(int minProbeDepth);
 
@@ -371,6 +371,9 @@ public:
                const KillerTable& kt, const History& ht,
                int alpha, int beta, int ply, int depth);
 
+    SplitPoint(const SplitPoint&) = delete;
+    SplitPoint& operator=(const SplitPoint&) = delete;
+
     /** Add a child SplitPoint */
     void addChild(const std::weak_ptr<SplitPoint>& child);
 
@@ -475,9 +478,6 @@ public:
     int findNextMove(const FailHighInfo& fhInfo) const;
 
 private:
-    SplitPoint(const SplitPoint&) = delete;
-    SplitPoint& operator=(const SplitPoint&) = delete;
-
     /** Return probability that moveNo needs to be searched, by calling corresponding
      * function in fhInfo. */
     double getMoveNeededProbability(const FailHighInfo& fhInfo, int moveNo) const;
@@ -561,6 +561,9 @@ public:
     /** Destructor. Cancel SplitPoint. */
     ~SplitPointHolder();
 
+    SplitPointHolder(const SplitPointHolder&) = delete;
+    SplitPointHolder& operator=(const SplitPointHolder&) = delete;
+
     /** Set the SplitPoint object. */
     void setSp(const std::shared_ptr<SplitPoint>& sp);
 
@@ -587,9 +590,6 @@ public:
     bool hasHelperThread() const;
 
 private:
-    SplitPointHolder(const SplitPointHolder&) = delete;
-    SplitPointHolder& operator=(const SplitPointHolder&) = delete;
-
     ParallelData& pd;
     std::vector<std::shared_ptr<SplitPoint>>& spVec;
     std::vector<std::shared_ptr<SplitPoint>>& pending;
@@ -611,10 +611,10 @@ struct DummySplitPointHolder {
 template <bool smp> struct SplitPointTraits {
 };
 template<> struct SplitPointTraits<true> {
-    typedef SplitPointHolder SpHolder;
+    using SpHolder = SplitPointHolder;
 };
 template<> struct SplitPointTraits<false> {
-    typedef DummySplitPointHolder SpHolder;
+    using SpHolder = DummySplitPointHolder;
 };
 
 

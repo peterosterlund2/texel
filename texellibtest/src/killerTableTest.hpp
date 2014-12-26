@@ -30,9 +30,9 @@
 
 class KillerTableTest : public SuiteBase {
 public:
-    std::string getName() const { return "KillerTableTest"; }
+    std::string getName() const override { return "KillerTableTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 };
 
 #endif /* KILLERTABLETEST_HPP_ */

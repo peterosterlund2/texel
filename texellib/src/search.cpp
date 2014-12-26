@@ -413,7 +413,7 @@ template <bool smp, bool tb>
 int
 Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
-    typedef typename SplitPointTraits<smp>::SpHolder SplitPointHolder;
+    using SplitPointHolder = typename SplitPointTraits<smp>::SpHolder;
 
     // Mate distance pruning
     beta = std::min(beta, MATE0-ply-1);

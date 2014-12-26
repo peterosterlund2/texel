@@ -1408,7 +1408,7 @@ Evaluate::endGameEval(const Position& pos, int oldScore) const {
     const int bMtrlNoPawns = pos.bMtrl() - bMtrlPawns;
 
     // Handle special endgames
-    typedef MatId MI;
+    using MI = MatId;
     switch (pos.materialId()) {
     case 0:
     case MI::WN: case MI::BN: case MI::WB: case MI::BB:

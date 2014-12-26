@@ -41,7 +41,7 @@ template void MoveGen::pseudoLegalMoves<false>(const Position& pos, MoveList& mo
 template <bool wtm>
 void
 MoveGen::pseudoLegalMoves(const Position& pos, MoveList& moveList) {
-    typedef ColorTraits<wtm> MyColor;
+    using MyColor = ColorTraits<wtm>;
     const U64 occupied = pos.occupiedBB();
 
     // Queen moves
@@ -139,8 +139,8 @@ template void MoveGen::checkEvasions<false>(const Position& pos, MoveList& moveL
 template <bool wtm>
 void
 MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
-    typedef ColorTraits<wtm> MyColor;
-    typedef ColorTraits<!wtm> OtherColor;
+    using MyColor = ColorTraits<wtm>;
+    using OtherColor = ColorTraits<!wtm>;
     const U64 occupied = pos.occupiedBB();
 
     const int kingSq = pos.getKingSq(wtm);
@@ -249,7 +249,7 @@ template void MoveGen::pseudoLegalCapturesAndChecks<false>(const Position& pos, 
 template <bool wtm>
 void
 MoveGen::pseudoLegalCapturesAndChecks(const Position& pos, MoveList& moveList) {
-    typedef ColorTraits<wtm> MyColor;
+    using MyColor = ColorTraits<wtm>;
     const U64 occupied = pos.occupiedBB();
 
     const int oKingSq = pos.getKingSq(!wtm);
@@ -383,7 +383,7 @@ template void MoveGen::pseudoLegalCaptures<false>(const Position& pos, MoveList&
 template <bool wtm>
 void
 MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
-    typedef ColorTraits<wtm> MyColor;
+    using MyColor = ColorTraits<wtm>;
     const U64 occupied = pos.occupiedBB();
 
     // Queen moves

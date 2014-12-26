@@ -141,7 +141,7 @@ private:
 public:
     TimeSampleStatistics& operator[](int i);
 
-    typedef decltype(vec.begin()) iterator;
+    using iterator = decltype(vec.begin());
     iterator begin();
     iterator end();
 };
@@ -152,10 +152,9 @@ class ScopedTimeSample {
 public:
     ScopedTimeSample(TimeSampleStatistics& tStat);
     ~ScopedTimeSample();
-private:
     ScopedTimeSample(ScopedTimeSample&) = delete;
     ScopedTimeSample& operator=(const ScopedTimeSample&) = delete;
-
+private:
     TimeSampleStatistics& timeStat;
 };
 

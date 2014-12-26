@@ -30,9 +30,9 @@
 
 class EvaluateTest : public SuiteBase {
 public:
-    std::string getName() const { return "EvaluateTest"; }
+    std::string getName() const override { return "EvaluateTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 
 private:
     static void testEvalPos();

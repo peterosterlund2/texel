@@ -27,12 +27,12 @@
 
 #define TBHASHBITS 11
 
-typedef unsigned char ubyte;
-typedef unsigned short ushort;
+using ubyte = unsigned char;
+using ushort = unsigned short;
 
 struct TBHashEntry;
 
-typedef uint64_t base_t;
+using base_t = uint64_t;
 
 struct PairsData {
     char *indextable;

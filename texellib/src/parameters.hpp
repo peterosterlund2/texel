@@ -50,7 +50,7 @@ public:
 
     /** Observer pattern. */
     class Listener {
-        typedef std::function<void()> Func;
+        using Func = std::function<void()>;
     public:
         int addListener(Func f, bool callNow = true);
 
@@ -70,14 +70,13 @@ public:
         Type type;
 
         ParamBase(const std::string& n, Type t) : name(n), type(t) { }
+        ParamBase(const ParamBase& other) = delete;
+        ParamBase& operator=(const ParamBase& other) = delete;
 
         virtual bool getBoolPar() const { assert(false); return false; }
         virtual int getIntPar() const { assert(false); return 0; }
         virtual std::string getStringPar() const { assert(false); return ""; }
         virtual void set(const std::string& value) { assert(false); }
-    private:
-        ParamBase(const ParamBase& other) = delete;
-        ParamBase& operator=(const ParamBase& other) = delete;
     };
 
     /** A boolean parameter. */
@@ -91,9 +90,9 @@ public:
             this->defaultValue = def;
         }
 
-        virtual bool getBoolPar() const { return value; }
+        bool getBoolPar() const override { return value; }
 
-        virtual void set(const std::string& value) {
+        void set(const std::string& value) override {
             if (toLowerCase(value) == "true")
                 this->value = true;
             else if (toLowerCase(value) == "false")
@@ -117,9 +116,9 @@ public:
             defaultValue = def;
         }
 
-        virtual int getIntPar() const { return value; }
+        int getIntPar() const override { return value; }
 
-        virtual void set(const std::string& value) {
+        void set(const std::string& value) override {
             int val;
             if (str2Num(value, val) && (val >= minValue) && (val <= maxValue)) {
                 this->value = val;
@@ -146,9 +145,9 @@ public:
             this->defaultValue = def;
         }
 
-        virtual std::string getStringPar() const { return value; }
+        std::string getStringPar() const override { return value; }
 
-        virtual void set(const std::string& value) {
+        void set(const std::string& value) override {
             for (size_t i = 0; i < allowedValues.size(); i++) {
                 const std::string& allowed = allowedValues[i];
                 if (toLowerCase(allowed) == toLowerCase(value)) {
@@ -165,7 +164,7 @@ public:
         ButtonParam(const std::string& name)
             : ParamBase(name, BUTTON) { }
 
-        virtual void set(const std::string& value) {
+        void set(const std::string& value) override {
             notify();
         }
     };
@@ -181,9 +180,9 @@ public:
             this->defaultValue = def;
         }
 
-        virtual std::string getStringPar() const { return value; }
+        std::string getStringPar() const override { return value; }
 
-        virtual void set(const std::string& value) {
+        void set(const std::string& value) override {
             this->value = value;
             notify();
         }
@@ -248,7 +247,7 @@ private:
 };
 
 #define DECLARE_PARAM(name, defV, minV, maxV, uci) \
-    typedef Param<defV,minV,maxV,uci> name##ParamType; \
+    using name##ParamType = Param<defV,minV,maxV,uci>; \
     extern name##ParamType name;
 
 #define DEFINE_PARAM(name) \

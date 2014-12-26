@@ -37,9 +37,9 @@ const std::string rtbDefaultPath("/home/petero/chess/rtb/wdl:"
 
 class TBTest : public SuiteBase {
 public:
-    std::string getName() const { return "tbTest"; }
+    std::string getName() const override { return "tbTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 
 private:
     static void dtmTest();

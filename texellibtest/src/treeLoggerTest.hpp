@@ -30,9 +30,9 @@
 
 class TreeLoggerTest : public SuiteBase {
 public:
-    std::string getName() const { return "TreeLoggerTest"; }
+    std::string getName() const override { return "TreeLoggerTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 
 private:
     static void testSerialize();

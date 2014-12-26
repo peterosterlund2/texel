@@ -31,7 +31,7 @@
 
 #include "cute.h"
 
-typedef TranspositionTable::TTEntry TTEntry;
+using TTEntry = TranspositionTable::TTEntry;
 
 /**
  * Test of TTEntry nested class, of class TranspositionTable.

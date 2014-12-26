@@ -30,9 +30,9 @@
 
 class HistoryTest : public SuiteBase {
 public:
-    std::string getName() const { return "HistoryTest"; }
+    std::string getName() const override { return "HistoryTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 };
 
 #endif /* HISTORYTEST_HPP_ */

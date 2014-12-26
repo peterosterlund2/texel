@@ -30,9 +30,9 @@
 
 class BitBoardTest : public SuiteBase {
 public:
-    std::string getName() const { return "BitBoardTest"; }
+    std::string getName() const override { return "BitBoardTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 
 private:
     static void testKingAttacks();

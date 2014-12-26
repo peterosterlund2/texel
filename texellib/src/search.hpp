@@ -68,6 +68,9 @@ public:
            ParallelData& pd, const std::shared_ptr<SplitPoint>& rootSp,
            TreeLogger& logFile);
 
+    Search(const Search& other) = delete;
+    Search& operator=(const Search& other) = delete;
+
     /** Interface for reporting search information during search. */
     class Listener {
     public:
@@ -144,9 +147,6 @@ public:
     S64 getTbHitsThisThread() const;
 
 private:
-    Search(const Search& other) = delete;
-    Search& operator=(const Search& other) = delete;
-
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
               int posHashListSize0);
 

@@ -30,9 +30,9 @@
 
 class TextIOTest : public SuiteBase {
 public:
-    std::string getName() const { return "TextIOTest"; }
+    std::string getName() const override { return "TextIOTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 };
 
 #endif /* TEXTIOTEST_HPP_ */

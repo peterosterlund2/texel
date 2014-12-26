@@ -639,7 +639,7 @@ TBProbe::getMaxSubMate(std::vector<int>& pieces, int pawnMoves) {
 
 void
 TBProbe::initMaxDTM() {
-    typedef MatId MI;
+    using MI = MatId;
     auto add = [](int id, int value) {
         maxDTM[id] = value;
         maxDTM[MatId::mirror(id)] = value;
@@ -794,7 +794,7 @@ TBProbe::initMaxDTM() {
 
 void
 TBProbe::initMaxDTZ() {
-    typedef MatId MI;
+    using MI = MatId;
     auto add = [](int id, int value) {
         maxDTZ[id] = value;
         maxDTZ[MatId::mirror(id)] = value;

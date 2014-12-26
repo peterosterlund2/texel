@@ -45,8 +45,9 @@ class Game {
 public:
     Game(const std::shared_ptr<Player>& whitePlayer,
          const std::shared_ptr<Player>& blackPlayer);
-
     virtual ~Game();
+    Game(const Game& other) = delete;
+    Game& operator=(const Game& other) = delete;
 
     /**
      * Update the game state according to move/command string from a player.
@@ -118,9 +119,6 @@ protected:
     int currentMove;
 
 private:
-    Game(const Game& other) = delete;
-    Game& operator=(const Game& other) = delete;
-
     /** Print a list of all moves. */
     void listMoves();
 

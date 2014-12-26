@@ -35,9 +35,9 @@ class Move;
 
 class SearchTest : public SuiteBase {
 public:
-    std::string getName() const { return "SearchTest"; }
+    std::string getName() const override { return "SearchTest"; }
 
-    cute::suite getSuite() const;
+    cute::suite getSuite() const override;
 
     static Move idSearch(Search& sc, int maxDepth, int minProbeDepth = 100);
 

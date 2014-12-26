@@ -45,6 +45,8 @@ public:
     public:
         HeapObject();
         ~HeapObject();
+        HeapObject(const HeapObject&) = delete;
+        HeapObject& operator=(const HeapObject&) = delete;
 
         /** Get priority of element in heap. */
         int getPrio() const;
@@ -53,9 +55,6 @@ public:
         void newPrio(int prio);
     private:
         friend class Heap;
-
-        HeapObject(const HeapObject&) = delete;
-        HeapObject& operator=(const HeapObject&) = delete;
 
         Heap<T>* owner;
         int prio;
@@ -67,6 +66,9 @@ public:
 
     /** Destructor. Removes all elements from heap. */
     ~Heap();
+
+    Heap(const Heap& other) = delete;
+    Heap& operator=(const Heap& other) = delete;
 
     /** Insert an element in the heap. */
     void insert(const std::shared_ptr<T>& e, int prio);
@@ -93,9 +95,6 @@ public:
     void print(std::ostream& os) const;
 
 private:
-    Heap(const Heap& other) = delete;
-    Heap& operator=(const Heap& other) = delete;
-
     /** Swap two elements in the heap vector and update heapIdx. */
     void swapElems(int idx1, int idx2);
 

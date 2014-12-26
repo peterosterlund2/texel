@@ -75,14 +75,13 @@ private:
         BookEntry(const Move& m) : move(m), count(1) { }
     };
 
-    typedef std::map<U64, std::vector<BookEntry>> BookMap;
+    using BookMap = std::map<U64, std::vector<BookEntry>>;
     static BookMap bookMap;
     static Random rndGen;
     static int numBookMoves;
     bool verbose;
 
     static const char* bookLines[];
-
 };
 
 inline

@@ -77,15 +77,15 @@ private:
     public:
         SearchListener(std::ostream& os0);
 
-        void notifyDepth(int depth);
+        void notifyDepth(int depth) override;
 
-        void notifyCurrMove(const Move& m, int moveNr);
+        void notifyCurrMove(const Move& m, int moveNr) override;
 
         void notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
                       bool upperBound, bool lowerBound, const std::vector<Move>& pv,
-                      int multiPVIndex, U64 tbHits);
+                      int multiPVIndex, U64 tbHits) override;
 
-        void notifyStats(U64 nodes, int nps, U64 tbHits, int time);
+        void notifyStats(U64 nodes, int nps, U64 tbHits, int time) override;
 
     private:
         std::ostream& os;

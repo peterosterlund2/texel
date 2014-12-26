@@ -38,14 +38,14 @@
 #include <cctype>
 #include <iomanip>
 
-typedef uint64_t U64;
-typedef int64_t  S64;
-typedef uint32_t U32;
-typedef int32_t  S32;
-typedef uint16_t U16;
-typedef int16_t  S16;
-typedef int8_t   S8;
-typedef uint8_t  U8;
+using U64 = uint64_t;
+using S64 = int64_t;
+using U32 = uint32_t;
+using S32 = int32_t;
+using U16 = uint16_t;
+using S16 = int16_t;
+using S8  = int8_t;
+using U8  = uint8_t;
 
 template <typename T, size_t N> char (&ArraySizeHelper(T(&array)[N]))[N];
 #define COUNT_OF(array) (sizeof(ArraySizeHelper(array)))
