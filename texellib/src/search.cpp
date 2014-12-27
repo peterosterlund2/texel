@@ -530,7 +530,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 if (useTT) tt.insert(hKey, emptyMove, tbEnt.getType(), ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, score, tbEnt.getType(), evalScore, hKey);
                 return score;
-            } if ((type == TType::T_GE) && (score > alpha)) {
+            }
+            if ((type == TType::T_GE) && (score > alpha)) {
                 tbScore = score;
                 alpha = score - 1;
             }
