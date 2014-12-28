@@ -750,21 +750,19 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 selectBest(moves, mi);
         }
     }
-    bool lmpOk;
-    if (beta > alpha + 1) {
-        lmpOk = false;
-    } else {
+    int lmpMoveCountLimit = 256;
+    if (beta == alpha + 1) {
+        bool lmpOk;
         if (pos.isWhiteMove())
             lmpOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
         else
             lmpOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
-    }
-    int moveCountLimit = 256;
-    if (lmpOk) {
-        if (depth <= plyScale)          moveCountLimit = lmpMoveCountLimit1;
-        else if (depth <= 2 * plyScale) moveCountLimit = lmpMoveCountLimit2;
-        else if (depth <= 3 * plyScale) moveCountLimit = lmpMoveCountLimit3;
-        else if (depth <= 4 * plyScale) moveCountLimit = lmpMoveCountLimit4;
+        if (lmpOk) {
+            if (depth <= plyScale)          lmpMoveCountLimit = lmpMoveCountLimit1;
+            else if (depth <= 2 * plyScale) lmpMoveCountLimit = lmpMoveCountLimit2;
+            else if (depth <= 3 * plyScale) lmpMoveCountLimit = lmpMoveCountLimit3;
+            else if (depth <= 4 * plyScale) lmpMoveCountLimit = lmpMoveCountLimit4;
+        }
     }
     UndoInfo ui;
     for (int pass = (smp?0:1); pass < 2; pass++) {
@@ -784,7 +782,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     scoreMoveList(moves, ply, 1);
                     seeDone = true;
                 }
-                if ((mi < moveCountLimit) || (lmrCount <= lmrMoveCountLimit1))
+                if ((mi < lmpMoveCountLimit) || (lmrCount <= lmrMoveCountLimit1))
                     if ((mi > 0) || !hashMoveSelected)
                         selectBest(moves, mi);
             }
@@ -798,10 +796,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             bool negSEECheck = (depth > 4*plyScale) && givesCheck && negSEE(m);
             bool doFutility = false;
             if (mayReduce && haveLegalMoves && !givesCheck && !passedPawnPush(pos, m)) {
-                if (normalBound && !isLoseScore(bestScore)) {
-                    if (lmpOk && (mi >= moveCountLimit))
-                        continue; // Late move pruning
-                }
+                if (normalBound && !isLoseScore(bestScore) && (mi >= lmpMoveCountLimit))
+                    continue; // Late move pruning
                 if (futilityPrune)
                     doFutility = true;
             }
