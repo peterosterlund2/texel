@@ -795,6 +795,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             int sVal = std::numeric_limits<int>::min();
             bool mayReduce = (m.score() < 53) && (!isCapture || m.score() < 0) && !isPromotion;
             bool givesCheck = MoveGen::givesCheck(pos, m);
+            bool negSEECheck = (depth > 4*plyScale) && givesCheck && negSEE(m);
             bool doFutility = false;
             if (mayReduce && haveLegalMoves && !givesCheck && !passedPawnPush(pos, m)) {
                 if (normalBound && !isLoseScore(bestScore)) {
@@ -849,7 +850,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         }
                     }
                 }
-                int newDepth = depth - plyScale + extend - lmr;
+                int newDepth = depth - plyScale + extend - lmr - (negSEECheck ? plyScale : 0);
                 if (isCapture && (givesCheck || (depth + extend) > plyScale)) {
                     // Compute recapture target square, but only if we are not going
                     // into q-search at the next ply.
