@@ -40,28 +40,28 @@ private:
     struct PawnHashData {
         PawnHashData();
         U64 key;
-        short current;
-        short score;            // Positive score means good for white
-        short passedBonusW;
-        short passedBonusB;
-        U64 passedPawnsW;     // The most advanced passed pawns for each file
-        U64 passedPawnsB;
-        U64 outPostsW;        // Possible outpost squares for white
+        S16 current;        // For hash replacement policy
+        S16 score;          // Positive score means good for white
+        S16 passedBonusW;
+        S16 passedBonusB;
+        U64 passedPawns;    // The most advanced passed pawns for each file
+                            // Contains both white and black pawns
+        U64 outPostsW;      // Possible outpost squares for white
         U64 outPostsB;
-        U64 stalePawns;       // Pawns that can not be used for "pawn breaks"
+        U64 stalePawns;     // Pawns that can not be used for "pawn breaks"
     };
 
     struct MaterialHashData {
         MaterialHashData();
         int id;
         int score;
-        short wPawnIPF, bPawnIPF;
-        short wKnightIPF, bKnightIPF;
-        short castleIPF, queenIPF;
-        short wPassedPawnIPF, bPassedPawnIPF;
-        short kingSafetyIPF;
-        short diffColorBishopIPF;
-        short wKnightOutPostIPF, bKnightOutPostIPF;
+        S16 wPawnIPF, bPawnIPF;
+        S16 wKnightIPF, bKnightIPF;
+        S16 castleIPF, queenIPF;
+        S16 wPassedPawnIPF, bPassedPawnIPF;
+        S16 kingSafetyIPF;
+        S16 diffColorBishopIPF;
+        S16 wKnightOutPostIPF, bKnightOutPostIPF;
         U8 endGame;
     };
 
@@ -69,7 +69,7 @@ private:
         KingSafetyHashData();
         U64 key;
         int score;
-        short current;
+        S16 current;        // For hash replacement policy
     };
 
 public:
@@ -193,8 +193,7 @@ Evaluate::PawnHashData::PawnHashData()
       current(0), score(0),
       passedBonusW(0),
       passedBonusB(0),
-      passedPawnsW(0),
-      passedPawnsB(0) {
+      passedPawns(0) {
 }
 
 inline

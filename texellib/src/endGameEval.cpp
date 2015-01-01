@@ -49,13 +49,13 @@ const int EndGameEval::winKingTable[64] = {
 };
 
 
-template int EndGameEval::endGameEval<false>(const Position&, U64, U64, int);
-template int EndGameEval::endGameEval<true>(const Position&, U64, U64, int);
+template int EndGameEval::endGameEval<false>(const Position&, U64, int);
+template int EndGameEval::endGameEval<true>(const Position&, U64, int);
 
 /** Implements special knowledge for some endgame situations. */
 template <bool doEval>
 int
-EndGameEval::endGameEval(const Position& pos, U64 passedPawnsW, U64 passedPawnsB, int oldScore) {
+EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
     int score = oldScore;
     const int wMtrlPawns = pos.wMtrlPawns();
     const int bMtrlPawns = pos.bMtrlPawns();
@@ -485,10 +485,12 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawnsW, U64 passedPawnsB
         }
     }
 
-    auto getPawnAsymmetry = [passedPawnsW, passedPawnsB, &pos]() {
+    auto getPawnAsymmetry = [passedPawns, &pos]() {
         int f1 = BitBoard::southFill(pos.pieceTypeBB(Piece::WPAWN)) & 0xff;
         int f2 = BitBoard::southFill(pos.pieceTypeBB(Piece::BPAWN)) & 0xff;
         int asymmetry = BitBoard::bitCount((f1 & ~f2) | (f2 & ~f1));
+        U64 passedPawnsW = passedPawns & pos.pieceTypeBB(Piece::WPAWN);
+        U64 passedPawnsB = passedPawns & pos.pieceTypeBB(Piece::BPAWN);
         asymmetry += BitBoard::bitCount(passedPawnsW) + BitBoard::bitCount(passedPawnsB);
         return asymmetry;
     };

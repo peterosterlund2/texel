@@ -213,7 +213,7 @@ Evaluate::evalPos(const Position& pos) {
     score += kingSafety(pos);
     if (print) std::cout << "eval king   :" << score << std::endl;
     if (mhd->endGame)
-        score = EndGameEval::endGameEval<true>(pos, phd->passedPawnsW, phd->passedPawnsB, score);
+        score = EndGameEval::endGameEval<true>(pos, phd->passedPawns, score);
     if (print) std::cout << "eval endgame:" << score << std::endl;
     if (pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) {
         int hmc = clamp(pos.getHalfMoveClock() / 10, 0, 9);
@@ -327,7 +327,7 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     if (print) std::cout << "eval imbala :" << score << std::endl;
     mhd.id = pos.materialId();
     mhd.score = score;
-    mhd.endGame = EndGameEval::endGameEval<false>(pos, 0, 0, 0);
+    mhd.endGame = EndGameEval::endGameEval<false>(pos, 0, 0);
 
     // Compute interpolation factors
     { // Pawn
@@ -520,7 +520,8 @@ Evaluate::pawnBonus(const Position& pos) {
 
     // Bonus for own king supporting passed pawns
     int passedScore = phd.passedBonusW;
-    U64 m = phd.passedPawnsW;
+    const U64 passedPawnsW = phd.passedPawns & pos.pieceTypeBB(Piece::WPAWN);
+    U64 m = passedPawnsW;
     if (m != 0) {
         U64 kMask = pos.pieceTypeBB(Piece::WKING);
         int ky = Position::getY(pos.getKingSq(true));
@@ -537,7 +538,7 @@ Evaluate::pawnBonus(const Position& pos) {
             passedScore += kingPPSupportK[4] * kingPPSupportP[ky-2] / 32;
 
         // Penalty for opponent pieces blocking passed pawns
-        U64 ppBlockSquares = phd.passedPawnsW << 8;
+        U64 ppBlockSquares = passedPawnsW << 8;
         if (ppBlockSquares & pos.blackBB()) {
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BKNIGHT)) * ppBlockerBonus[0];
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BBISHOP)) * ppBlockerBonus[1];
@@ -545,7 +546,7 @@ Evaluate::pawnBonus(const Position& pos) {
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BQUEEN))  * ppBlockerBonus[3];
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BKING))   * ppBlockerBonus[4];
         }
-        ppBlockSquares = BitBoard::northFill(phd.passedPawnsW << 16);
+        ppBlockSquares = BitBoard::northFill(passedPawnsW << 16);
         if (ppBlockSquares & pos.blackBB()) {
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BKNIGHT)) * ppBlockerBonus[5];
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::BBISHOP)) * ppBlockerBonus[6];
@@ -555,14 +556,15 @@ Evaluate::pawnBonus(const Position& pos) {
         }
 
         // Bonus for rook behind passed pawn
-        m = BitBoard::southFill(phd.passedPawnsW);
+        m = BitBoard::southFill(passedPawnsW);
         passedScore += RBehindPP1 * BitBoard::bitCount(m & pos.pieceTypeBB(Piece::WROOK));
         passedScore -= RBehindPP2 * BitBoard::bitCount(m & pos.pieceTypeBB(Piece::BROOK));
     }
     score += interpolate(passedScore * passedPawnEGFactor / 32, passedScore, mhd->wPassedPawnIPF);
 
     passedScore = phd.passedBonusB;
-    m = phd.passedPawnsB;
+    const U64 passedPawnsB = phd.passedPawns & pos.pieceTypeBB(Piece::BPAWN);
+    m = passedPawnsB;
     if (m != 0) {
         U64 kMask = pos.pieceTypeBB(Piece::BKING);
         int ky = Position::getY(pos.getKingSq(false));
@@ -579,7 +581,7 @@ Evaluate::pawnBonus(const Position& pos) {
             passedScore += kingPPSupportK[4] * kingPPSupportP[5-ky] / 32;
 
         // Penalty for opponent pieces blocking passed pawns
-        U64 ppBlockSquares = phd.passedPawnsB >> 8;
+        U64 ppBlockSquares = passedPawnsB >> 8;
         if (ppBlockSquares & pos.whiteBB()) {
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WKNIGHT)) * ppBlockerBonus[0];
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WBISHOP)) * ppBlockerBonus[1];
@@ -587,7 +589,7 @@ Evaluate::pawnBonus(const Position& pos) {
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WQUEEN))  * ppBlockerBonus[3];
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WKING))   * ppBlockerBonus[4];
         }
-        ppBlockSquares = BitBoard::southFill(phd.passedPawnsB >> 16);
+        ppBlockSquares = BitBoard::southFill(passedPawnsB >> 16);
         if (ppBlockSquares && pos.whiteBB()) {
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WKNIGHT)) * ppBlockerBonus[5];
             passedScore -= BitBoard::bitCount(ppBlockSquares & pos.pieceTypeBB(Piece::WBISHOP)) * ppBlockerBonus[6];
@@ -597,7 +599,7 @@ Evaluate::pawnBonus(const Position& pos) {
         }
 
         // Bonus for rook behind passed pawn
-        m = BitBoard::northFill(phd.passedPawnsB);
+        m = BitBoard::northFill(passedPawnsB);
         passedScore += RBehindPP1 * BitBoard::bitCount(m & pos.pieceTypeBB(Piece::BROOK));
         passedScore -= RBehindPP2 * BitBoard::bitCount(m & pos.pieceTypeBB(Piece::WROOK));
     }
@@ -605,7 +607,7 @@ Evaluate::pawnBonus(const Position& pos) {
 
     // Passed pawns are more dangerous if enemy king is far away
     const int hiMtrl = passedPawnHiMtrl;
-    m = phd.passedPawnsW;
+    m = passedPawnsW;
     int bestWPawnDist = 8;
     int bestWPromSq = -1;
     if (m != 0) {
@@ -636,7 +638,7 @@ Evaluate::pawnBonus(const Position& pos) {
     }
     int bestBPawnDist = 8;
     int bestBPromSq = -1;
-    m = phd.passedPawnsB;
+    m = passedPawnsB;
     if (m != 0) {
         int mtrlNoPawns = pos.wMtrl() - pos.wMtrlPawns();
         if (mtrlNoPawns < hiMtrl) {
@@ -952,10 +954,9 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
 
     ph.key = pos.pawnZobristHash();
     ph.score = score;
-    ph.passedBonusW = (short)passedBonusW;
-    ph.passedBonusB = (short)passedBonusB;
-    ph.passedPawnsW = passedPawnsW;
-    ph.passedPawnsB = passedPawnsB;
+    ph.passedBonusW = (S16)passedBonusW;
+    ph.passedBonusB = (S16)passedBonusB;
+    ph.passedPawns = passedPawnsW | passedPawnsB;
     ph.stalePawns = computeStalePawns(pos) & ~passedPawnsW & ~passedPawnsB;
 }
 
