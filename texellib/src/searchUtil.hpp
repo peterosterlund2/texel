@@ -39,12 +39,15 @@ public:
     int currentMoveNo;     // Index of currentMove in move list
     int lmr;               // LMR reduction amount
     U64 nodeIdx;           // For tree logging
+    Move singularMove;     // Non-empty when searching for second best
+                           // move to determine if best move is singular
 };
 
 
 inline
 SearchTreeInfo::SearchTreeInfo()
-    : allowNullMove(true), lmr(0), nodeIdx(0) {
+    : allowNullMove(true), currentMoveNo(0),
+      lmr(0), nodeIdx(0) {
 }
 
 

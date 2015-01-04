@@ -516,7 +516,8 @@ probeTT(Position& pos, const Move& m, TranspositionTable& tt, TranspositionTable
     UndoInfo ui;
     pos.makeMove(m, ui);
     ent.clear();
-    tt.probe(pos.historyHash(), ent);
+    const int mate0 = SearchConst::MATE0;
+    tt.probe(pos.historyHash(), -mate0, mate0, 0, 0, ent);
     pos.unMakeMove(m, ui);
 }
 

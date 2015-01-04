@@ -124,6 +124,9 @@ public:
     int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
 
+    /** Compute extension depth for a move. */
+    int getMoveExtend(const Move& m, int recaptureSquare);
+
     static bool canClaimDraw50(const Position& pos);
 
     static bool canClaimDrawRep(const Position& pos, const std::vector<U64>& posHashList,
