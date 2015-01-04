@@ -471,7 +471,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     const bool singularSearch = !sti.singularMove.isEmpty();
     const bool useTT = (mainNumaNode || (depth >= 1 * plyScale)) && // To reduce memory bandwidth
                        !singularSearch;
-    if (useTT) tt.probe(hKey, alpha, beta, ply, depth, ent);
+    if (useTT) tt.probe(hKey, ent);
     Move hashMove;
     if (ent.getType() != TType::T_EMPTY) {
         int score = ent.getScore(ply);
@@ -715,7 +715,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             sti2.currentMoveNo = savedMoveNo;
             sti2.nodeIdx = savedNodeIdx2;
 
-            tt.probe(hKey, alpha, beta, ply, depth, ent);
+            tt.probe(hKey, ent);
             if (ent.getType() != TType::T_EMPTY)
                 ent.getMove(hashMove);
         }

@@ -44,106 +44,43 @@ TranspositionTable::reSize(int log2Size) {
 void
 TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore) {
     if (depth < 0) depth = 0;
-    const size_t idx0 = getIndex(key);
-    TTEntry ent0, ent1, newEnt;
-    ent0.load(table[idx0]);
-    TTEntry* ent = nullptr;
-    size_t idx;
-    newEnt.setDepth(depth);
-    newEnt.setType(type);
-    newEnt.setScore(sm.score(), ply);
-    const U64 key2 = getStoredKey(key);
-    if (ent0.getKey() == key2) {
-        if (newEnt.valueGE(ent0)) {
-            ent = &ent0;
-            idx = idx0;
-        } else if (ent0.valueGE(newEnt))
-            return;
-    }
-    const size_t idx1 = idx0 ^ 1;
-    if (ent == nullptr) {
-        ent1.load(table[idx1]);
-        if (ent1.getKey() == key2) {
-            if (newEnt.valueGE(ent1)) {
-                ent = &ent1;
-                idx = idx1;
-            } else if (ent1.valueGE(newEnt))
-                return;
-        }
-    }
-    if (ent == nullptr) {
-        if (ent0.replaceBetterThan(ent1, generation)) {
-            ent = &ent1;
-            idx = idx1;
-        } else {
-            ent = &ent0;
-            idx = idx0;
-        }
-    }
-
-    if ((ent->getKey() != key2) || (sm.from() != sm.to()))
-        ent->setMove(sm);
-    ent->setKey(key2);
-    ent->setScore(sm.score(), ply);
-    ent->setDepth(depth);
-    ent->setGeneration((S8)generation);
-    ent->setType(type);
-    ent->setEvalScore(evalScore);
-    ent->store(table[idx]);
-}
-
-void
-TranspositionTable::probe(U64 key, int alpha, int beta, int ply, int depth,
-                          TTEntry& result) {
-    const size_t idx0 = getIndex(key);
-    const U64 key2 = getStoredKey(key);
+    size_t idx0 = getIndex(key);
+    U64 key2 = getStoredKey(key);
     TTEntry ent0, ent1;
-    TTEntry* ent = nullptr;
-    size_t idx;
     ent0.load(table[idx0]);
-    const size_t idx1 = idx0 ^ 1;
-    if (ent0.getKey() == key2) {
+    size_t idx = idx0;
+    TTEntry* ent = &ent0;
+    if (ent0.getKey() != key2) {
+        size_t idx1 = idx0 ^ 1;
         ent1.load(table[idx1]);
-        if (ent1.getKey() == key2) {
-            bool cutOff0 = ent0.isCutOff(alpha, beta, ply, depth);
-            bool cutOff1 = ent1.isCutOff(alpha, beta, ply, depth);
-            if (cutOff0 && !cutOff1) {
-                ent = &ent0;
+        idx = idx1;
+        ent = &ent1;
+        if (ent1.getKey() != key2)
+            if (ent1.betterThan(ent0, generation)) {
                 idx = idx0;
-            } else if (cutOff1 && !cutOff0) {
-                ent = &ent1;
-                idx = idx1;
-            } else {
-                if (ent0.getDepth() >= ent1.getDepth()) {
-                    ent = &ent0;
-                    idx = idx0;
-                } else {
-                    ent = &ent1;
-                    idx = idx1;
-                }
+                ent = &ent0;
             }
-        } else {
-            ent = &ent0;
-            idx = idx0;
-        }
-    } else {
-        ent1.load(table[idx1]);
-        if (ent1.getKey() == key2) {
-            ent = &ent1;
-            idx = idx1;
-        }
     }
-
-    if (!ent) {
-        result.setType(TType::T_EMPTY);
-        return;
+    bool doStore = true;
+    if ((ent->getKey() == key2) && (ent->getDepth() > depth) && (ent->getType() == type)) {
+        if (type == TType::T_EXACT)
+            doStore = false;
+        else if ((type == TType::T_GE) && (sm.score() <= ent->getScore(ply)))
+            doStore = false;
+        else if ((type == TType::T_LE) && (sm.score() >= ent->getScore(ply)))
+            doStore = false;
     }
-
-    if (ent->getGeneration() != generation) {
-        ent->setGeneration(generation);
+    if (doStore) {
+        if ((ent->getKey() != key2) || (sm.from() != sm.to()))
+            ent->setMove(sm);
+        ent->setKey(key2);
+        ent->setScore(sm.score(), ply);
+        ent->setDepth(depth);
+        ent->setGeneration((S8)generation);
+        ent->setType(type);
+        ent->setEvalScore(evalScore);
         ent->store(table[idx]);
     }
-    result = *ent;
 }
 
 void
@@ -160,8 +97,7 @@ TranspositionTable::extractPVMoves(const Position& rootPos, const Move& mFirst, 
         hashHistory.push_back(pos.zobristHash());
         TTEntry ent;
         ent.clear();
-        const int mate0 = SearchConst::MATE0;
-        probe(pos.historyHash(), -mate0, mate0, 0, 0, ent);
+        probe(pos.historyHash(), ent);
         if (ent.getType() == TType::T_EMPTY)
             break;
         ent.getMove(m);
@@ -187,8 +123,7 @@ TranspositionTable::extractPV(const Position& posIn) {
     bool first = true;
     TTEntry ent;
     ent.clear();
-    const int mate0 = SearchConst::MATE0;
-    probe(pos.historyHash(), -mate0, mate0, 0, 0, ent);
+    probe(pos.historyHash(), ent);
     UndoInfo ui;
     std::vector<U64> hashHistory;
     bool repetition = false;
@@ -220,7 +155,7 @@ TranspositionTable::extractPV(const Position& posIn) {
         if (contains(hashHistory, pos.zobristHash()))
             repetition = true;
         hashHistory.push_back(pos.zobristHash());
-        probe(pos.historyHash(), -mate0, mate0, 0, 0, ent);
+        probe(pos.historyHash(), ent);
         first = false;
     }
     return ret;

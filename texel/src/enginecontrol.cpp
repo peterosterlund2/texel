@@ -362,8 +362,7 @@ EngineControl::getPonderMove(Position pos, const Move& m) {
     pos.makeMove(m, ui);
     TranspositionTable::TTEntry ent;
     ent.clear();
-    const int mate0 = SearchConst::MATE0;
-    tt.probe(pos.historyHash(), -mate0, mate0, 0, 0, ent);
+    tt.probe(pos.historyHash(), ent);
     if (ent.getType() != TType::T_EMPTY) {
         ent.getMove(ret);
         MoveList moves;

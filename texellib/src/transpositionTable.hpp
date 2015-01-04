@@ -62,18 +62,8 @@ public:
         /** Load from transposition table, decode the thread safety encoding. */
         void load(const TTEntryStorage& ent);
 
-        /** Return true if this object is more valuable to keep
-         *  in the TT than the other, false otherwise. */
-        bool replaceBetterThan(const TTEntry& other, int currGen) const;
-
-        /** Return true if this object has a better or equal "value" than the other,
-         * where "value" is both search depth and score.
-         * Return false if this object does not have a better or equal value,
-         * either because this object has a worse value, or because the two objects are
-         * not comparable. Non comparable objects are objects where one has a better
-         * depth but the other has a sharper score bound.
-         * @pre Both *this and "other" must have type != T_EMPTY. */
-        bool valueGE(const TTEntry& other) const;
+        /** Return true if this object is more valuable than the other, false otherwise. */
+        bool betterThan(const TTEntry& other, int currGen) const;
 
         U64 getKey() const;
         void setKey(U64 k);
@@ -122,7 +112,7 @@ public:
     void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore);
 
     /** Retrieve an entry from the hash table corresponding to position with zobrist key "key". */
-    void probe(U64 key, int alpha, int beta, int ply, int depth, TTEntry& result);
+    void probe(U64 key, TTEntry& result);
 
     /** Prefetch cache line. */
     void prefetch(U64 key);
@@ -192,33 +182,14 @@ TranspositionTable::TTEntry::load(const TTEntryStorage& ent) {
 }
 
 inline bool
-TranspositionTable::TTEntry::replaceBetterThan(const TTEntry& other, int currGen) const {
+TranspositionTable::TTEntry::betterThan(const TTEntry& other, int currGen) const {
     if ((getGeneration() == currGen) != (other.getGeneration() == currGen))
-        return getGeneration() == currGen;    // Old entries are less valuable
+        return getGeneration() == currGen;   // Old entries are less valuable
     if ((getType() == TType::T_EXACT) != (other.getType() == TType::T_EXACT))
-        return getType() == TType::T_EXACT;   // Exact score more valuable than lower/upper bound
+        return getType() == TType::T_EXACT;         // Exact score more valuable than lower/upper bound
     if (getDepth() != other.getDepth())
-        return getDepth() > other.getDepth(); // Larger depth is more valuable
-    return false;                             // Otherwise, pretty much equally valuable
-}
-
-inline bool
-TranspositionTable::TTEntry::valueGE(const TTEntry& other) const {
-    if (getDepth() < other.getDepth())
-        return false;
-
-    bool e1 = getType() == TType::T_EXACT;
-    bool e2 = other.getType() == TType::T_EXACT;
-    if (e1 || e2)
-        return e1;
-
-    if (getType() != other.getType())
-        return false; // GE vs LE, not comparable
-
-    if (getType() == TType::T_GE)
-        return getScore(0) >= other.getScore(0);
-    else // TType::T_LE
-        return getScore(0) <= other.getScore(0);
+        return getDepth() > other.getDepth();     // Larger depth is more valuable
+    return false;   // Otherwise, pretty much equally valuable
 }
 
 inline U64
@@ -343,6 +314,33 @@ TranspositionTable::getStoredKey(U64 key) {
 
 inline TranspositionTable::TranspositionTable(int log2Size) {
     reSize(log2Size);
+}
+
+inline void
+TranspositionTable::probe(U64 key, TTEntry& result) {
+    size_t idx0 = getIndex(key);
+    U64 key2 = getStoredKey(key);
+    TTEntry ent;
+    ent.load(table[idx0]);
+    if (ent.getKey() == key2) {
+        if (ent.getGeneration() != generation) {
+            ent.setGeneration(generation);
+            ent.store(table[idx0]);
+        }
+        result = ent;
+        return;
+    }
+    size_t idx1 = idx0 ^ 1;
+    ent.load(table[idx1]);
+    if (ent.getKey() == key2) {
+        if (ent.getGeneration() != generation) {
+            ent.setGeneration(generation);
+            ent.store(table[idx1]);
+        }
+        result = ent;
+        return;
+    }
+    result.setType(TType::T_EMPTY);
 }
 
 inline void
