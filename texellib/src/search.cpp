@@ -737,7 +737,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     // Handle singular extension
     bool singularExtend = false;
-    if ((depth > 7 * plyScale) && (posExtend == 0) &&
+    if ((depth > 6 * plyScale) && (posExtend == 0) &&
             hashMoveSelected && sti.singularMove.isEmpty() &&
             (ent.getType() != TType::T_LE) &&
             (ent.getDepth() >= depth - 3 * plyScale) &&
