@@ -854,7 +854,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 if (singularExtend && (mi == 0))
                     extend = 1*plyScale;
                 int lmr = 0;
-                if ((depth >= 3*plyScale) && mayReduce && (extend == 0)) {
+                if ((depth >= 2*plyScale) && mayReduce && (extend == 0)) {
                     if (!givesCheck && !passedPawnPush(pos, m)) {
                         lmrCount++;
                         if ((lmrCount > lmrMoveCountLimit2) && (depth > 5*plyScale) && !isCapture) {
