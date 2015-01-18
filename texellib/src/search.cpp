@@ -464,8 +464,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                              // discovered the first time the position came up.
     }
 
-    int evalScore = UNKNOWN_SCORE;
     // Check transposition table
+    int evalScore = UNKNOWN_SCORE;
     TranspositionTable::TTEntry ent;
     ent.clear();
     const bool singularSearch = !sti.singularMove.isEmpty();
@@ -694,10 +694,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             futilityPrune = true;
     }
 
+    // Internal iterative deepening
     if ((depth > 4*plyScale) && hashMove.isEmpty()) {
         bool isPv = beta > alpha + 1;
         if (isPv || (depth > 8 * plyScale)) {
-            // No hash move. Try internal iterative deepening.
             SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
             Move savedMove = sti2.currentMove;
             int savedMoveNo = sti2.currentMoveNo;
