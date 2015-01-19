@@ -742,6 +742,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             (ent.getType() != TType::T_LE) &&
             (ent.getDepth() >= depth - 3 * plyScale) &&
             (getMoveExtend(hashMove, recaptureSquare) <= 0) &&
+            (ply + depth / plyScale < MAX_SEARCH_DEPTH) &&
             MoveGen::isLegal(pos, hashMove, inCheck)) {
         SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
         Move savedMove = sti2.currentMove;
@@ -955,11 +956,13 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             sph.addToQueue();
         } else {
             if (!haveLegalMoves && !inCheck) {
+                if (singularSearch) {
+                    logFile.logNodeEnd(sti.nodeIdx, alpha, TType::T_LE, evalScore, hKey);
+                    return alpha; // Only one legal move, fail low to trigger singular extension
+                }
                 emptyMove.setScore(0);
                 if (useTT) tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, 0, TType::T_EXACT, evalScore, hKey);
-                if (singularSearch)
-                    return alpha; // Only one legal move, fail low to trigger singular extension
                 return 0;       // Stale-mate
             }
             if (tb && bestMove == -2) { // TB win, unknown move
