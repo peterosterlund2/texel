@@ -141,7 +141,7 @@ private:
 public:
     TimeSampleStatistics& operator[](int i);
 
-    using iterator = decltype(vec.begin());
+    using iterator = typename std::array<TimeSampleStatistics, N>::iterator;
     iterator begin();
     iterator end();
 };

@@ -435,7 +435,7 @@ inline U64
 TreeLoggerWriter::logPosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo) {
     U64 ret = nextIndex;
     if (threadNo == 0)
-        pd->t0Index = ret;
+        pd->t0Index = (U32)ret;
     writePosition(pos, owningThread, parentIndex, moveNo);
     return ret;
 }
@@ -445,10 +445,10 @@ TreeLoggerWriter::logNodeStart(U64 parentIndex, const Move& m, int alpha, int be
     if (!opened)
         return 0;
     if (threadNo == 0)
-        pd->t0Index = nextIndex;
+        pd->t0Index = (U32)nextIndex;
     entry.type = EntryType::NODE_START;
     entry.se.endIndex = -1;
-    entry.se.parentIndex = parentIndex;
+    entry.se.parentIndex = (U32)parentIndex;
     entry.se.move = m.from() + (m.to() << 6) + (m.promoteTo() << 12);
     entry.se.alpha = alpha;
     entry.se.beta = beta;
@@ -464,9 +464,9 @@ TreeLoggerWriter::logNodeEnd(U64 startIndex, int score, int scoreType, int evalS
     if (!opened)
         return 0;
     if (threadNo == 0)
-        pd->t0Index = nextIndex;
+        pd->t0Index = (U32)nextIndex;
     entry.type = EntryType::NODE_END;
-    entry.ee.startIndex = startIndex;
+    entry.ee.startIndex = (U32)startIndex;
     entry.ee.score = score;
     entry.ee.scoreType = scoreType;
     entry.ee.evalScore = evalScore;

@@ -35,7 +35,7 @@
 #include <iostream>
 
 #ifdef NUMA
-#ifdef __WIN32__
+#ifdef _WIN32
 #include <windows.h>
 #else
 #include <numa.h>
@@ -50,7 +50,7 @@ Numa::instance() {
 
 Numa::Numa() {
 #ifdef NUMA
-#ifdef __WIN32__
+#ifdef _WIN32
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION* buffer = nullptr;
     DWORD returnLength = 0;
     while (true) {
@@ -206,7 +206,7 @@ Numa::bindThread(int threadNo) const {
     if (node < 0)
         return;
 //    Logger::log([&](std::ostream& os){os << "threadNo:" << threadNo << " node:" << node;});
-#ifdef __WIN32__
+#ifdef _WIN32
     ULONGLONG mask;
     if (GetNumaNodeProcessorMask(node, &mask))
         SetThreadAffinityMask(GetCurrentThread(), mask);

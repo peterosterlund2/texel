@@ -116,7 +116,7 @@ template <typename T> inline Heap<T>::Heap() {
 }
 
 template <typename T> inline Heap<T>::~Heap() {
-    for (int i = heap.size() - 1; i >= 0; i--)
+    for (int i = (int)heap.size() - 1; i >= 0; i--)
         remove(heap[i]);
 }
 
@@ -124,7 +124,7 @@ template <typename T> inline void Heap<T>::insert(const std::shared_ptr<T>& e, i
     assert(!e->owner);
     e->owner = this;
     e->prio = prio;
-    int idx = heap.size();
+    int idx = (int)heap.size();
     e->heapIdx = idx;
     heap.push_back(e);
     upHeap(idx);
@@ -138,7 +138,7 @@ template <typename T> inline void Heap<T>::remove(T* e) {
     if (!e->owner)
         return;
     int idx = e->heapIdx;
-    int last = heap.size() - 1;
+    int last = (int)heap.size() - 1;
     if (idx < last)
         swapElems(e->heapIdx, last);
     e->owner = nullptr;
@@ -168,7 +168,7 @@ template <typename T> bool Heap<T>::empty() const {
 }
 
 template <typename T> int Heap<T>::size() const {
-    return heap.size();
+    return (int)heap.size();
 }
 
 template <typename T> inline void Heap<T>::swapElems(int idx1, int idx2) {
@@ -197,7 +197,7 @@ template <typename T> inline void Heap<T>::upHeap(int idx) {
 }
 
 template <typename T> inline void Heap<T>::downHeap(int idx) {
-    int hSize = heap.size();
+    int hSize = (int)heap.size();
     while (true) {
         int child = idx * 2 + 1;
         if (child >= hSize)

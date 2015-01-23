@@ -621,7 +621,6 @@ EndGameEval::isBishopPawnDraw(const Position& pos) {
                     return true;
             } else if (pos.isWhiteMove() != whiteBishop) { // Test if stale-mate
                 int oMtrl = whiteBishop ? pos.bMtrl() : pos.wMtrl();
-                const Piece::Type bishop = whiteBishop ? Piece::WBISHOP : Piece::BBISHOP;
                 U64 bShift = whiteBishop ? (pos.pieceTypeBB(bishop) << 8) : (pos.pieceTypeBB(bishop) >> 8);
                 U64 kShift = whiteBishop ? (pos.pieceTypeBB(king) << 8) : (pos.pieceTypeBB(king) >> 8);
                 const U64 md6_h2 = whiteBishop ?

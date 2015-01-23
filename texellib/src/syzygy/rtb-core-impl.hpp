@@ -8,7 +8,6 @@
 */
 
 #include <stdio.h>
-#include <unistd.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +15,8 @@
 #include <fcntl.h>
 #include <mutex>
 #include <atomic>
-#ifndef __WIN32__
+#ifndef _WIN32
+#include <unistd.h>
 #include <sys/mman.h>
 #endif
 #include "rtb-core.hpp"
@@ -64,7 +64,7 @@ static FD open_tb(const char *str, const char *suffix)
         file += '/';
         file += str;
         file += suffix;
-#ifndef __WIN32__
+#ifndef _WIN32
         FD fd = open(file.c_str(), O_RDONLY);
 #else
         FD fd = CreateFile(file.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
@@ -77,7 +77,7 @@ static FD open_tb(const char *str, const char *suffix)
 
 static void close_tb(FD fd)
 {
-#ifndef __WIN32__
+#ifndef _WIN32
     close(fd);
 #else
     CloseHandle(fd);
@@ -89,7 +89,7 @@ static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
     FD fd = open_tb(name, suffix);
     if (fd == FD_ERR)
         return NULL;
-#ifndef __WIN32__
+#ifndef _WIN32
     struct stat statbuf;
     fstat(fd, &statbuf);
     *mapping = statbuf.st_size;
@@ -123,7 +123,7 @@ static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
     return data;
 }
 
-#ifndef __WIN32__
+#ifndef _WIN32
 static void unmap_file(char *data, uint64_t size)
 {
     if (!data) return;
@@ -1233,6 +1233,22 @@ static int init_table_dtz(struct TBEntry *entry)
     return 1;
 }
 
+static inline uint64_t bswap64(uint64_t val) {
+#ifndef _MSC_VER
+    return __builtin_bswap64(val);
+#else
+    return _byteswap_uint64(val);
+#endif
+}
+
+static inline uint32_t bswap32(uint32_t val) {
+#ifndef _MSC_VER
+    return __builtin_bswap32(val);
+#else
+    return _byteswap_ulong(val);
+#endif
+}
+
 static ubyte decompress_pairs(struct PairsData *d, uint64_t idx)
 {
     if (!d->idxbits)
@@ -1259,7 +1275,7 @@ static ubyte decompress_pairs(struct PairsData *d, uint64_t idx)
     ubyte *symlen = d->symlen;
     int sym, bitcnt;
 
-    uint64_t code = __builtin_bswap64(*((uint64_t *)ptr));
+    uint64_t code = bswap64(*((uint64_t *)ptr));
     ptr += 2;
     bitcnt = 0; // number of "empty bits" in code
     for (;;) {
@@ -1272,7 +1288,7 @@ static ubyte decompress_pairs(struct PairsData *d, uint64_t idx)
         bitcnt += l;
         if (bitcnt >= 32) {
             bitcnt -= 32;
-            code |= ((uint64_t)(__builtin_bswap32(*ptr++))) << bitcnt;
+            code |= ((uint64_t)(bswap32(*ptr++))) << bitcnt;
         }
     }
 

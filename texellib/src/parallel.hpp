@@ -581,7 +581,7 @@ public:
     int setOwnerCurrMove(int moveNo, int alpha);
 
     /** For debugging. */
-    int getSeqNo() const;
+    U64 getSeqNo() const;
 
     /** Return true if the held SplitPoint is an estimated ALL node. */
     bool isAllNode() const;
@@ -784,7 +784,7 @@ inline ParallelData::ParallelData(TranspositionTable& tt0)
 
 inline int
 ParallelData::numHelperThreads() const {
-    return threads.size();
+    return (int)threads.size();
 }
 
 inline S64
@@ -1062,7 +1062,7 @@ SplitPointHolder::setOwnerCurrMove(int moveNo, int alpha) {
         return sp->setOwnerCurrMove(moveNo, alpha);
 }
 
-inline int
+inline U64
 SplitPointHolder::getSeqNo() const {
     return sp->getSeqNo();
 }

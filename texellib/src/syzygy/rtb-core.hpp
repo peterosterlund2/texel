@@ -5,7 +5,7 @@
 #ifndef RTB_CORE_HPP_
 #define RTB_CORE_HPP_
 
-#ifndef __WIN32__
+#ifndef _WIN32
 #define SEP_CHAR ':'
 #define FD int
 #define FD_ERR -1

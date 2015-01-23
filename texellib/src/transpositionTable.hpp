@@ -298,7 +298,7 @@ TranspositionTable::TTEntry::setBits(int first, int size, unsigned int value) {
 inline unsigned int
 TranspositionTable::TTEntry::getBits(int first, int size) const {
     U64 sizeMask = ((1ULL << size) - 1);
-    return (data >> first) & sizeMask;
+    return (unsigned int)((data >> first) & sizeMask);
 }
 
 
