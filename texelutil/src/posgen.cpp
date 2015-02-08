@@ -306,7 +306,7 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
                         U64 epSquares = epPossible ? getEPSquares(pos) : 0;
                         while (true) {
                             if (epSquares) {
-                                int epSq = BitBoard::numberOfTrailingZeros(epSquares);
+                                int epSq = BitBoard::firstSquare(epSquares);
                                 pos.setEpSquare(epSq);
                                 TextIO::fixupEPSquare(pos);
                                 if (pos.getEpSquare() == -1) {

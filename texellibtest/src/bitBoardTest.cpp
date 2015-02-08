@@ -138,7 +138,7 @@ void
 BitBoardTest::testTrailingZeros() {
     for (int i = 0; i < 64; i++) {
         U64 mask = 1ULL << i;
-        ASSERT_EQUAL(i, BitBoard::numberOfTrailingZeros(mask));
+        ASSERT_EQUAL(i, BitBoard::firstSquare(mask));
         U64 mask2 = mask;
         ASSERT_EQUAL(i, BitBoard::extractSquare(mask2));
         ASSERT_EQUAL(0, mask2);

@@ -99,82 +99,32 @@ public:
     static U64 mirrorY(U64 mask);
 
 
-    static U64 bishopAttacks(int sq, U64 occupied) {
-        return bTables[sq][(int)(((occupied & bMasks[sq]) * bMagics[sq]) >> (64 - bBits[sq]))];
-    }
-
-    static U64 rookAttacks(int sq, U64 occupied) {
-        return rTables[sq][(int)(((occupied & rMasks[sq]) * rMagics[sq]) >> (64 - rBits[sq]))];
-    }
+    static U64 bishopAttacks(int sq, U64 occupied);
+    static U64 rookAttacks(int sq, U64 occupied);
 
     static U64 squaresBetween[64][64];
 
-    static int getDirection(int from, int to) {
-        int offs = to + (to|7) - from - (from|7) + 0x77;
-        return dirTable[offs];
-    }
+    /** Get direction between two squares, 8*sign(dy) + sign(dx) */
+    static int getDirection(int from, int to);
 
-    static int getKingDistance(int from, int to) {
-        int offs = to + (to|7) - from - (from|7) + 0x77;
-        return kingDistTable[offs];
-    }
+    /** Get the max norm distance between two squares. */
+    static int getKingDistance(int from, int to);
 
-    static int getTaxiDistance(int from, int to) {
-        int offs = to + (to|7) - from - (from|7) + 0x77;
-        return taxiDistTable[offs];
-    }
+    /** Get the L1 norm distance between two squares. */
+    static int getTaxiDistance(int from, int to);
 
-    static U64 southFill(U64 mask) {
-        mask |= (mask >> 8);
-        mask |= (mask >> 16);
-        mask |= (mask >> 32);
-        return mask;
-    }
+    static U64 southFill(U64 mask);
 
-    static U64 northFill(U64 mask) {
-        mask |= (mask << 8);
-        mask |= (mask << 16);
-        mask |= (mask << 32);
-        return mask;
-    }
+    static U64 northFill(U64 mask);
 
-    static int numberOfTrailingZeros(U64 mask) {
-#ifdef HAS_CTZ
-        if (sizeof(U64) == sizeof(long))
-            return __builtin_ctzl(mask);
-        else if (sizeof(U64) == sizeof(long long))
-            return __builtin_ctzll(mask);
-#endif
-        return trailingZ[(int)(((mask & -mask) * 0x07EDD5E59A4E28C2ULL) >> 58)];
-    }
+    /** Get the lowest square from mask. */
+    static int firstSquare(U64 mask);
 
     /** Get the lowest square from mask and remove the corresponding bit in mask. */
-    static int extractSquare(U64& mask) {
-        int ret = numberOfTrailingZeros(mask);
-        mask &= mask - 1;
-        return ret;
-    }
+    static int extractSquare(U64& mask);
 
     /** Return number of 1 bits in mask. */
-    static int bitCount(U64 mask) {
-#ifdef HAS_POPCNT
-        if (sizeof(U64) == sizeof(long))
-            return __builtin_popcountl(mask);
-        else if (sizeof(U64) == sizeof(long long))
-            return __builtin_popcountl(mask >> 32) +
-                   __builtin_popcountl(mask & 0xffffffffULL);
-#endif
-        const U64 k1 = 0x5555555555555555ULL;
-        const U64 k2 = 0x3333333333333333ULL;
-        const U64 k4 = 0x0f0f0f0f0f0f0f0fULL;
-        const U64 kf = 0x0101010101010101ULL;
-        U64 t = mask;
-        t -= (t >> 1) & k1;
-        t = (t & k2) + ((t >> 2) & k2);
-        t = (t + (t >> 4)) & k4;
-        t = (t * kf) >> 56;
-        return (int)t;
-    }
+    static int bitCount(U64 mask);
 
     /** Initialize static data. */
     static void staticInitialize();
@@ -198,5 +148,87 @@ private:
     static const int trailingZ[64];
 };
 
+inline U64
+BitBoard::bishopAttacks(int sq, U64 occupied) {
+    return bTables[sq][(int)(((occupied & bMasks[sq]) * bMagics[sq]) >> (64 - bBits[sq]))];
+}
+
+inline U64
+BitBoard::rookAttacks(int sq, U64 occupied) {
+    return rTables[sq][(int)(((occupied & rMasks[sq]) * rMagics[sq]) >> (64 - rBits[sq]))];
+}
+
+inline int
+BitBoard::getDirection(int from, int to) {
+    int offs = to + (to|7) - from - (from|7) + 0x77;
+    return dirTable[offs];
+}
+
+inline int
+BitBoard::getKingDistance(int from, int to) {
+    int offs = to + (to|7) - from - (from|7) + 0x77;
+    return kingDistTable[offs];
+}
+
+inline int
+BitBoard::getTaxiDistance(int from, int to) {
+    int offs = to + (to|7) - from - (from|7) + 0x77;
+    return taxiDistTable[offs];
+}
+
+inline U64
+BitBoard::southFill(U64 mask) {
+    mask |= (mask >> 8);
+    mask |= (mask >> 16);
+    mask |= (mask >> 32);
+    return mask;
+}
+
+inline U64
+BitBoard::northFill(U64 mask) {
+    mask |= (mask << 8);
+    mask |= (mask << 16);
+    mask |= (mask << 32);
+    return mask;
+}
+
+inline int
+BitBoard::firstSquare(U64 mask) {
+#ifdef HAS_CTZ
+    if (sizeof(U64) == sizeof(long))
+        return __builtin_ctzl(mask);
+    else if (sizeof(U64) == sizeof(long long))
+        return __builtin_ctzll(mask);
+#endif
+    return trailingZ[(int)(((mask & -mask) * 0x07EDD5E59A4E28C2ULL) >> 58)];
+}
+
+inline int
+BitBoard::extractSquare(U64& mask) {
+    int ret = firstSquare(mask);
+    mask &= mask - 1;
+    return ret;
+}
+
+inline int
+BitBoard::bitCount(U64 mask) {
+#ifdef HAS_POPCNT
+    if (sizeof(U64) == sizeof(long))
+        return __builtin_popcountl(mask);
+    else if (sizeof(U64) == sizeof(long long))
+        return __builtin_popcountl(mask >> 32) +
+               __builtin_popcountl(mask & 0xffffffffULL);
+#endif
+    const U64 k1 = 0x5555555555555555ULL;
+    const U64 k2 = 0x3333333333333333ULL;
+    const U64 k4 = 0x0f0f0f0f0f0f0f0fULL;
+    const U64 kf = 0x0101010101010101ULL;
+    U64 t = mask;
+    t -= (t >> 1) & k1;
+    t = (t & k2) + ((t >> 2) & k2);
+    t = (t + (t >> 4)) & k4;
+    t = (t * kf) >> 56;
+    return (int)t;
+}
 
 #endif /* BITBOARD_HPP_ */
