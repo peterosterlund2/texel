@@ -384,6 +384,7 @@ Search::notifyPV(const MoveInfo& info, int multiPVIndex) {
     int nps = (time > 0) ? (int)(totNodes / (time / 1000.0)) : 0;
     listener->notifyPV(info.depth/plyScale, score, time, totNodes, nps, isMate,
                        uBound, lBound, info.pv, multiPVIndex, tbHits);
+    tLastStats = tNow;
 }
 
 void
