@@ -7,6 +7,7 @@
 
 #include "chesstool.hpp"
 #include "posgen.hpp"
+#include "spsa.hpp"
 #include "parameters.hpp"
 #include "chessParseError.hpp"
 #include "computerPlayer.hpp"
@@ -81,6 +82,10 @@ usage() {
     std::cerr << " wdltest type1 [type2 ...] : Compare RTB and GTB WDL tables\n";
     std::cerr << " dtztest type1 [type2 ...] : Compare RTB DTZ and GTB DTM tables\n";
     std::cerr << " dtz fen                   : Retrieve DTZ value for a position\n";
+    std::cerr << " gamesim meanResult drawProb nGames nSimul : Simulate game results\n";
+    std::cerr << " enginesim nGames p1 p2 ... : Simulate engine with parameters p1, p2, ...\n";
+    std::cerr << " tourneysim nSimul nRounds elo1 elo2 ... : Simulate tournament\n";
+    std::cerr << " spsasim nSimul nIter gamesPerIter a c param1 ... : Simulate SPSA optimization\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -314,6 +319,66 @@ main(int argc, char* argv[]) {
             ScoreToProb sp;
             for (int i = -100; i <= 100; i++)
                 std::cout << "i:" << i << " p:" << sp.getProb(i) << std::endl;
+        } else if (cmd == "gamesim") {
+            if (argc != 6)
+                usage();
+            double meanResult, drawProb;
+            int nGames, nSimul;
+            if (!str2Num(argv[2], meanResult) ||
+                !str2Num(argv[3], drawProb) ||
+                !str2Num(argv[4], nGames) ||
+                !str2Num(argv[5], nSimul))
+                usage();
+            Spsa::gameSimulation(meanResult, drawProb, nGames, nSimul);
+        } else if (cmd == "enginesim") {
+            if (argc != 7)
+                usage();
+            int nGames;
+            if (!str2Num(argv[2], nGames))
+                usage();
+            std::vector<double> params;
+            for (int i = 3; i < argc; i++) {
+                double tmp;
+                if (!str2Num(argv[i], tmp))
+                    usage();
+                params.push_back(tmp);
+            }
+            Spsa::engineSimulation(nGames, params);
+        } else if (cmd == "tourneysim") {
+            if (argc < 6)
+                usage();
+            int nSimul, nRounds;
+            if (!str2Num(argv[2], nSimul) || nSimul < 1 ||
+                !str2Num(argv[3], nRounds) || nRounds < 1)
+                usage();
+            std::vector<double> elo;
+            for (int i = 4; i < argc; i++) {
+                double tmp;
+                if (!str2Num(argv[i], tmp))
+                    usage();
+                elo.push_back(tmp);
+            }
+            Spsa::tourneySimulation(nSimul, nRounds, elo);
+        } else if (cmd == "spsasim") {
+            if (argc < 8)
+                usage();
+            int nSimul, nIter, gamesPerIter;
+            double a, c;
+            if (!str2Num(argv[2], nSimul) ||
+                !str2Num(argv[3], nIter) ||
+                !str2Num(argv[4], gamesPerIter) ||
+                !str2Num(argv[5], a) ||
+                !str2Num(argv[6], c))
+                usage();
+
+            std::vector<double> startParams;
+            for (int i = 7; i < argc; i++) {
+                double tmp;
+                if (!str2Num(argv[i], tmp))
+                    usage();
+                startParams.push_back(tmp);
+            }
+            Spsa::spsaSimulation(nSimul, nIter, gamesPerIter, a, c, startParams);
         } else {
             usage();
         }

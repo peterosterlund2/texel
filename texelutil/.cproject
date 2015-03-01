@@ -53,6 +53,7 @@
 									<listOptionValue builtIn="false" value="numa"/>
 									<listOptionValue builtIn="false" value="rt"/>
 									<listOptionValue builtIn="false" value="armadillo"/>
+									<listOptionValue builtIn="false" value="gsl"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.1629609318" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread -fopenmp" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1733914604" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
@@ -127,12 +128,13 @@
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1032455347" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1289989341" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.774837039" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
+							<tool command="g++" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.774837039" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
 								<option id="gnu.cpp.link.option.libs.1692993584" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="texellib"/>
 									<listOptionValue builtIn="false" value="numa"/>
 									<listOptionValue builtIn="false" value="rt"/>
 									<listOptionValue builtIn="false" value="armadillo"/>
+									<listOptionValue builtIn="false" value="gsl"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1566849725" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/Release}&quot;"/>
