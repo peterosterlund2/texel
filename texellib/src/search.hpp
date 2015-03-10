@@ -233,7 +233,7 @@ private:
     class DefaultStopHandler : public StopHandler {
     public:
         DefaultStopHandler(Search& sc0) : sc(sc0) { }
-        bool shouldStop() { return sc.shouldStop(); }
+        bool shouldStop() override { return sc.shouldStop(); }
     private:
         Search& sc;
     };
@@ -241,6 +241,8 @@ private:
     /** Return true if the search should be stopped immediately. */
     bool shouldStop();
 
+    /** Throw a FailHighException if a helper thread has failed high. */
+    void checkHelperFailHigh() const;
 
 
     Position pos;

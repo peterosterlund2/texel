@@ -412,6 +412,44 @@ Search::shouldStop() {
     return false;
 }
 
+class FailHighException {
+public:
+    FailHighException(int ply0, int moveNo0, int score0, int posHashListSize0)
+        : ply(ply0), moveNo(moveNo0), score(score0), posHashListSize(posHashListSize0) {}
+    int getPly() const { return ply; }
+    int getMoveNo() const { return moveNo; }
+    int getScore() const { return score; }
+    int getPosHashListSize() const { return posHashListSize; }
+private:
+    const int ply;
+    const int moveNo;
+    const int score;
+    const int posHashListSize;
+};
+
+void
+Search::checkHelperFailHigh() const {
+    if (pd.getHelperFailHigh(threadNo)) {
+        pd.setHelperFailHigh(threadNo, false);
+        bool first = true;
+        for (const auto& sp : spVec) {
+            if (first) { // "rootSp" not owned by this thread
+                first = false;
+                continue;
+            }
+            int nMoves = sp->getNumSpMoves();
+            int beta = sp->getBeta();
+            for (int i = 0; i < nMoves; i++) {
+                const SplitPointMove& spm = sp->getSpMove(i);
+                int score = spm.getScore();
+                static_assert(UNKNOWN_SCORE < -MATE0, "UNKNOWN_SCORE too large");
+                if (score >= beta)
+                    throw FailHighException(sp->getPly(), i, score, sp->getPosHashListSize());
+            }
+        }
+    }
+}
+
 template <bool smp, bool tb>
 int
 Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
@@ -433,6 +471,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         if (stopHandler->shouldStop())
             throw StopSearch();
     }
+    checkHelperFailHigh();
 
     // Collect statistics
     if (verbose) {
@@ -640,8 +679,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 pos.setEpSquare(-1);
                 searchTreeInfo[ply+1].allowNullMove = false;
                 searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
+                auto guard = finally([this,ply]() {
+                    searchTreeInfo[ply+1].allowNullMove = true;
+                });
                 score = -negaScout(smp, tb, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
-                searchTreeInfo[ply+1].allowNullMove = true;
                 pos.setEpSquare(epSquare);
                 pos.setWhiteMove(!pos.isWhiteMove());
             }
@@ -657,13 +698,15 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 sti2.nodeIdx = sti.nodeIdx;
                 const S64 savedNodeIdx = sti.nodeIdx;
                 sti.allowNullMove = false;
+                auto guard = finally([&]() {
+                    sti.allowNullMove = true;
+                    sti.nodeIdx = savedNodeIdx;
+                    sti2.currentMove = savedMove;
+                    sti2.currentMoveNo = savedMoveNo;
+                    sti2.nodeIdx = savedNodeIdx2;
+                    searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
+                });
                 score = negaScout(smp, tb, beta - 1, beta, ply, depth - R, recaptureSquare, inCheck);
-                sti.allowNullMove = true;
-                sti.nodeIdx = savedNodeIdx;
-                sti2.currentMove = savedMove;
-                sti2.currentMoveNo = savedMoveNo;
-                sti2.nodeIdx = savedNodeIdx2;
-                searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
                 storeInHash = false;
             }
             if (smp && (depth - R >= MIN_SMP_DEPTH * plyScale))
@@ -700,22 +743,21 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         bool isPv = beta > alpha + 1;
         if (isPv || (depth > 8 * plyScale)) {
             SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
-            Move savedMove = sti2.currentMove;
-            int savedMoveNo = sti2.currentMoveNo;
-            S64 savedNodeIdx2 = sti2.nodeIdx;
+            const Move savedMove = sti2.currentMove;
+            const int savedMoveNo = sti2.currentMoveNo;
+            const S64 savedNodeIdx2 = sti2.nodeIdx;
             sti2.currentMove = Move(1,1,0); // Represents "no move"
             sti2.currentMoveNo = -1;
             sti2.nodeIdx = sti.nodeIdx;
-
-            S64 savedNodeIdx = sti.nodeIdx;
+            const S64 savedNodeIdx = sti.nodeIdx;
+            auto guard = finally([&]() {
+                sti.nodeIdx = savedNodeIdx;
+                sti2.currentMove = savedMove;
+                sti2.currentMoveNo = savedMoveNo;
+                sti2.nodeIdx = savedNodeIdx2;
+            });
             int newDepth = isPv ? depth  - 2 * plyScale : depth * 3 / 8;
             negaScout(smp, tb, alpha, beta, ply, newDepth, -1, inCheck);
-            sti.nodeIdx = savedNodeIdx;
-
-            sti2.currentMove = savedMove;
-            sti2.currentMoveNo = savedMoveNo;
-            sti2.nodeIdx = savedNodeIdx2;
-
             tt.probe(hKey, ent);
             if (ent.getType() != TType::T_EMPTY)
                 ent.getMove(hashMove);
@@ -746,27 +788,27 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             (ply + depth / plyScale < MAX_SEARCH_DEPTH) &&
             MoveGen::isLegal(pos, hashMove, inCheck)) {
         SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
-        Move savedMove = sti2.currentMove;
-        int savedMoveNo = sti2.currentMoveNo;
-        S64 savedNodeIdx2 = sti2.nodeIdx;
+        const Move savedMove = sti2.currentMove;
+        const int savedMoveNo = sti2.currentMoveNo;
+        const S64 savedNodeIdx2 = sti2.nodeIdx;
         sti2.currentMove = Move(1,1,0); // Represents "no move"
         sti2.currentMoveNo = -1;
         sti2.nodeIdx = sti.nodeIdx;
-        S64 savedNodeIdx = sti.nodeIdx;
-
+        const S64 savedNodeIdx = sti.nodeIdx;
+        sti.singularMove = hashMove;
+        auto guard = finally([&](){
+            sti.singularMove.setMove(0,0,0,0);
+            sti.nodeIdx = savedNodeIdx;
+            sti2.currentMove = savedMove;
+            sti2.currentMoveNo = savedMoveNo;
+            sti2.nodeIdx = savedNodeIdx2;
+        });
         int newDepth = depth / 2;
         int newBeta = ent.getScore(ply) - 25;
-        sti.singularMove = hashMove;
         int singScore = negaScout(smp, tb, newBeta-1, newBeta, ply, newDepth,
                                   recaptureSquare, inCheck);
-        sti.singularMove.setMove(0,0,0,0);
         if (singScore <= newBeta-1)
             singularExtend = true;
-
-        sti.nodeIdx = savedNodeIdx;
-        sti2.currentMove = savedMove;
-        sti2.currentMoveNo = savedMoveNo;
-        sti2.nodeIdx = savedNodeIdx2;
     }
 
     SplitPointHolder sph(pd, spVec, pending);
@@ -801,6 +843,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
     }
 
+    try {
     // Start searching move alternatives
     UndoInfo ui;
     for (int pass = (smp?0:1); pass < 2; pass++) {
@@ -981,6 +1024,22 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             }
             return bestScore;
         }
+    }
+    } catch (const FailHighException& ex) { // Another thread found a move that failed high
+        if (smp) {
+            if (ply != ex.getPly())
+                throw;
+            sph.getPos(pos);
+            posHashListSize = ex.getPosHashListSize();
+            int mi = ex.getMoveNo();
+            int score = ex.getScore();
+            Move& m = moves[mi];
+            m.setScore(score);
+            if (useTT) tt.insert(hKey, m, TType::T_GE, ply, depth, evalScore);
+            logFile.logNodeEnd(sti.nodeIdx, score, TType::T_GE, evalScore, hKey);
+            return score;
+        } else
+            throw;
     }
     assert(false);
     return 0;

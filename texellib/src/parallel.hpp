@@ -333,6 +333,11 @@ public:
     /** Add nTbHits to number of TB hits. */
     void addTbHits(S64 nTbHits);
 
+    /** Return true if a helper thread has signaled a fail-high. */
+    bool getHelperFailHigh(int threadNo) const;
+
+    /** Set/clear helper thread fail-high signal. */
+    void setHelperFailHigh(int threadNo, bool val);
 
     /** For debugging. */
     const WorkerThread& getHelperThread(int i) const;
@@ -351,6 +356,9 @@ public:
 private:
     /** Vector of helper threads. Master thread not included. */
     std::vector<std::shared_ptr<WorkerThread>> threads;
+
+    /** Vector of fail-high signals. Master thread included. */
+    std::vector<std::shared_ptr<RelaxedShared<bool>>> helperFailHigh;
 
     TranspositionTable& tt;
 
@@ -398,14 +406,16 @@ public:
     double getPNextMoveUseful() const;
     const History& getHistory() const;
     const KillerTable& getKillerTable() const;
+    int getNumSpMoves() const;
     const SplitPointMove& getSpMove(int moveNo) const;
 
     /** Return probability that moveNo needs to be searched. */
     double getPMoveUseful(const FailHighInfo& fhInfo, int moveNo) const;
 
-    void getPos(Position& pos, const Move& move) const;
+    void getPos(Position& pos) const;
     void getPosHashList(const Position& pos, std::vector<U64>& posHashList,
                         int& posHashListSize) const;
+    int getPosHashListSize() const;
     const SearchTreeInfo& getSearchTreeInfo() const;
     int getAlpha() const;
     int getBeta() const;
@@ -547,7 +557,7 @@ private:
 
     RelaxedShared<bool> canceled; // Result is no longer needed
     bool searching; // True if currently searched by a helper thread
-    int score;
+    RelaxedShared<int> score;
 };
 
 
@@ -589,6 +599,9 @@ public:
     /** Return true if some other thread is helping the help SplitPoint. */
     bool hasHelperThread() const;
 
+    /** Copy SplitPoint position to pos. */
+    void getPos(Position& pos) const;
+
 private:
     ParallelData& pd;
     std::vector<std::shared_ptr<SplitPoint>>& spVec;
@@ -606,6 +619,7 @@ struct DummySplitPointHolder {
     void addToQueue() {}
     int setOwnerCurrMove(int moveNo, int alpha) { return SearchConst::UNKNOWN_SCORE; }
     bool isAllNode() const { return false; }
+    void getPos(Position& pos) const {}
 };
 
 template <bool smp> struct SplitPointTraits {
@@ -780,6 +794,7 @@ WorkQueue::Lock::wait(std::condition_variable& cv) {
 inline ParallelData::ParallelData(TranspositionTable& tt0)
     : wq(fhInfo, npsInfo), t0Index(0), tt(tt0),
       totalHelperNodes(0), helperTbHits(0) {
+    addRemoveWorkers(0);
 }
 
 inline int
@@ -805,6 +820,16 @@ ParallelData::addSearchedNodes(S64 nNodes) {
 inline void
 ParallelData::addTbHits(S64 nTbHits) {
     helperTbHits += nTbHits;
+}
+
+inline bool
+ParallelData::getHelperFailHigh(int threadNo) const {
+    return *helperFailHigh[threadNo];
+}
+
+inline void
+ParallelData::setHelperFailHigh(int threadNo, bool val) {
+    *helperFailHigh[threadNo] = val;
 }
 
 inline const WorkerThread&
@@ -858,9 +883,19 @@ SplitPoint::getKillerTable() const {
     return kt;
 }
 
+inline int
+SplitPoint::getNumSpMoves() const {
+    return spMoves.size();
+}
+
 inline const SplitPointMove&
 SplitPoint::getSpMove(int moveNo) const {
     return spMoves[moveNo];
+}
+
+inline int
+SplitPoint::getPosHashListSize() const {
+    return posHashListSize;
 }
 
 inline const SearchTreeInfo&
@@ -1075,6 +1110,11 @@ SplitPointHolder::isAllNode() const {
 inline bool
 SplitPointHolder::hasHelperThread() const {
     return sp->hasHelperThread();
+}
+
+inline void
+SplitPointHolder::getPos(Position& pos) const {
+    sp->getPos(pos);
 }
 
 #endif /* PARALLEL_HPP_ */

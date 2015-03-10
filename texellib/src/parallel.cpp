@@ -77,7 +77,7 @@ public:
     ThreadStopHandler(const ThreadStopHandler&) = delete;
     ThreadStopHandler& operator=(const ThreadStopHandler&) = delete;
 
-    bool shouldStop();
+    bool shouldStop() override;
 
 private:
     /** Report searched nodes since last call to ParallelData object. */
@@ -188,13 +188,15 @@ WorkerThread::mainLoop(int minProbeDepth) {
             *kt = sp->getKillerTable();
         }
         Search::SearchTables st(tt, *kt, *ht, *et);
-        sp->getPos(pos, spMove.getMove());
+        sp->getPos(pos);
+        const U64 rootNodeIdx = logFile.logPosition(pos, sp->owningThread(),
+                                                    sp->getSearchTreeInfo().nodeIdx, moveNo);
+        UndoInfo ui;
+        pos.makeMove(spMove.getMove(), ui);
         std::vector<U64> posHashList;
         int posHashListSize;
         sp->getPosHashList(pos, posHashList, posHashListSize);
         Search sc(pos, posHashList, posHashListSize, st, pd, sp, logFile);
-        const U64 rootNodeIdx = logFile.logPosition(pos, sp->owningThread(),
-                                                    sp->getSearchTreeInfo().nodeIdx, moveNo);
         sc.setThreadNo(threadNo);
         sc.setMinProbeDepth(minProbeDepth);
         const int alpha = sp->getAlpha();
@@ -231,6 +233,8 @@ WorkerThread::mainLoop(int minProbeDepth) {
 //                                         << " a:" << alpha << " b:" << beta << " s:" << score
 //                                         << " d:" << depth/SearchConst::plyScale << " n:" << sc.getTotalNodesThisThread();});
             pd.wq.moveFinished(sp, moveNo, cancelRemaining, score);
+            if (cancelRemaining)
+                pd.setHelperFailHigh(sp->owningThread(), true);
         } catch (const Search::StopSearch&) {
 //            log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " m:" << moveNo
 //                                         << " aborted n:" << sc.getTotalNodesThisThread();});
@@ -530,6 +534,9 @@ ParallelData::addRemoveWorkers(int numWorkers) {
     }
     for (int i = threads.size(); i < numWorkers; i++)
         threads.push_back(std::make_shared<WorkerThread>(i+1, *this, tt));
+    helperFailHigh.resize(numWorkers + 1);
+    for (int i = 0; i < numWorkers + 1; i++)
+        helperFailHigh[i] = std::make_shared<RelaxedShared<bool>>(false);
 }
 
 void
@@ -605,10 +612,8 @@ SplitPoint::getPMoveUseful(const FailHighInfo& fhInfo, int moveNo) const {
 }
 
 void
-SplitPoint::getPos(Position& pos, const Move& move) const {
+SplitPoint::getPos(Position& pos) const {
     pos = this->pos;
-    UndoInfo ui;
-    pos.makeMove(move, ui);
 }
 
 void

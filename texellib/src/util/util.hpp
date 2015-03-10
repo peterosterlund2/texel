@@ -65,6 +65,22 @@ public:
     }
 };
 
+/** Helper class to run code when a variable goes out of scope. */
+template <typename Func>
+class Finally {
+public:
+    Finally(Func func) : f(func) {}
+    ~Finally() { f(); }
+private:
+    Func f;
+};
+
+/** Run code when a variable goes out of scope. */
+template <typename Func>
+Finally<Func> finally(Func f) {
+    return Finally<Func>(f);
+}
+
 template <typename T>
 T clamp(T val, T min, T max) {
     if (val < min)
