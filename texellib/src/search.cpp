@@ -690,6 +690,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             if ((score >= beta) && (depth >= 10 * plyScale)) {
                 // Null-move verification search
                 SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
+                SearchTreeInfo& sti3 = searchTreeInfo[ply+1];
                 const Move savedMove = sti2.currentMove;
                 const int savedMoveNo = sti2.currentMoveNo;
                 const S64 savedNodeIdx2 = sti2.nodeIdx;
@@ -704,7 +705,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     sti2.currentMove = savedMove;
                     sti2.currentMoveNo = savedMoveNo;
                     sti2.nodeIdx = savedNodeIdx2;
-                    searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
+                    sti3.bestMove.setMove(0,0,0,0);
                 });
                 score = negaScout(smp, tb, beta - 1, beta, ply, depth - R, recaptureSquare, inCheck);
                 storeInHash = false;
