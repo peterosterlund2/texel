@@ -195,7 +195,11 @@ Spsa::spsaSimulation(int nSimul, int nIter, int gamesPerIter, double a, double c
         for (int k = 0; k < nIter; k++) {
             double ak = a / pow(A + k + 1, alpha);
             double ck = c / pow(k + 1, gamma);
-#if 1
+            if (s == 0 && k == 0) {
+                double C = ak * 0.5 * (1 - 0.43)/sqrt(gamesPerIter)/(2*ck*ck);
+                std::cout << "C: " << C << std::endl;
+            }
+#if 0
             for (int i = 0; i < N; i++) {
                 signVec[i] = (rnd.nextU64() & 1) ? 1 : -1;
                 paramsNeg[i] = params[i] - ck * signVec[i];
@@ -223,7 +227,7 @@ Spsa::spsaSimulation(int nSimul, int nIter, int gamesPerIter, double a, double c
                 params[i] = params[i] - ak * accum[i] / gamesPerIter;
 #endif
             if (nSimul == 1) {
-                if ((k == nIter - 1) || ((k % (std::max(nIter,20) / 20)) == 0))
+                if ((k == nIter - 1) || ((k % (std::max(nIter,500) / 500)) == 0))
                     std::cout << "k:" << k << " params: " << params
                               << " elo:" << enginePair.getElo(params) << std::endl;
             }
@@ -251,6 +255,8 @@ Spsa::spsaSimulation(int nSimul, int nIter, int gamesPerIter, double a, double c
         std::cout << "eloAvg:" << mean << " eloStd:" << s << std::endl;
     }
 }
+
+// --------------------------------------------------------------------------------
 
 ResultSimulation::ResultSimulation(double meanResult, double drawProb)
     : rng(gsl_rng_alloc(gsl_rng_mt19937),
@@ -308,6 +314,7 @@ ResultSimulation::simulateOneGame() {
         return 1;
 }
 
+// --------------------------------------------------------------------------------
 
 SimulatedEnginePair::SimulatedEnginePair()
     : rs(0.5, 0.4) {
