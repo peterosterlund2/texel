@@ -363,7 +363,7 @@ ParamTable<64> qt2b { -200, 200, useUciParam,
 };
 ParamTableMirrored<64> qt2w(qt2b);
 
-/** Piece/square table for rooks during end game. */
+/** Piece/square table for rooks during middle game. */
 ParamTable<64> rt1b { -200, 200, useUciParam,
     {  39,  45,  36,  36,  39,  58,  54,  63,
        34,  36,  47,  53,  47,  53,  57,  47,
