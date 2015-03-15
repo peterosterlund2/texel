@@ -7,6 +7,13 @@
 
 #include "spsa.hpp"
 #include "util/timeUtil.hpp"
+#include "parameters.hpp"
+#include "chesstool.hpp"
+#include "chessParseError.hpp"
+#include <deque>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
 #include <iostream>
 #include <limits>
 
@@ -253,6 +260,416 @@ Spsa::spsaSimulation(int nSimul, int nIter, int gamesPerIter, double a, double c
         double var = (sum2 - sum * sum / nElem) / (nElem - 1);
         double s = sqrt(var);
         std::cout << "eloAvg:" << mean << " eloStd:" << s << std::endl;
+    }
+}
+
+// --------------------------------------------------------------------------------
+
+class ParamDblValue {
+public:
+    ParamDblValue() : value(-1) {}
+    std::string name;
+    double value;
+};
+
+/** Calls an external script to run games. */
+class GameRunner {
+public:
+    /** Constructor. */
+    GameRunner(const std::string& script, const std::string& computer, int instanceNo);
+
+    /** Run games and return the average score for engine 1. */
+    double runGame(const std::vector<ParamDblValue>& engine1Params,
+                   const std::vector<ParamDblValue>& engine2Params);
+
+    std::string compName() const { return computer; }
+    int instNo() const { return instanceNo; }
+
+private:
+    /** Round "value" up or down to an integer. The expected value of
+     * the return value is equal to the original value. */
+    int stochasticRound(double value);
+
+    /** Run a script and return the script standard output as a string. */
+    std::string runScript(const std::string& cmdLine);
+
+    std::string script;
+    std::string computer;
+    int instanceNo;
+    Random rnd;
+};
+
+GameRunner::GameRunner(const std::string& script0, const std::string& computer0,
+                       int instanceNo0)
+    : script(script0), computer(computer0), instanceNo(instanceNo0) {
+    rnd.setSeed(seeder.nextU64());
+}
+
+double
+GameRunner::runGame(const std::vector<ParamDblValue>& engine1Params,
+                    const std::vector<ParamDblValue>& engine2Params) {
+    std::string cmdLine = "\"" + script + "\" " + computer + " " + num2Str(instanceNo);
+    for (const auto& p : engine1Params)
+        cmdLine += " " + p.name + " " + num2Str(stochasticRound(p.value));
+    cmdLine += " :";
+    for (const auto& p : engine2Params)
+        cmdLine += " " + p.name + " " + num2Str(stochasticRound(p.value));
+    std::string result = runScript(cmdLine);
+    std::vector<std::string> words;
+    splitString(result, words);
+    int win, loss, draw;
+    if (words.size() != 3 || !str2Num(words[0], win) ||
+            !str2Num(words[1], loss) || !str2Num(words[2], draw) ||
+            win + loss + draw <= 0)
+        throw ChessParseError("script return value error: '" + result + "'");
+    return (win + draw * 0.5) / (win + loss + draw);
+}
+
+std::string
+GameRunner::runScript(const std::string& cmdLine) {
+    std::shared_ptr<FILE> f(popen(cmdLine.c_str(), "r"),
+                            [](FILE* f) { pclose(f); });
+    char buf[256];
+    buf[0] = 0;
+    fgets(buf, sizeof(buf), f.get());
+    return std::string(buf);
+}
+
+int
+GameRunner::stochasticRound(double value) {
+    int ip = (int)floor(value);
+    double fp = value - ip;
+    double r = rnd.nextU64() / (double)std::numeric_limits<U64>::max();
+    return (r < fp) ? ip + 1 : ip;
+}
+
+/** Handle scheduling of WorkUnits to GameRunners. */
+class GameScheduler {
+public:
+    /** Constructor. */
+    GameScheduler();
+
+    /** Destructor. Waits for all threads to terminate. */
+    ~GameScheduler();
+
+    /** Add a GameRunner. */
+    void addWorker(const GameRunner& gr);
+
+    /** Start the worker threads. Create one thread for each GameRunner object. */
+    void startWorkers();
+
+    /** Wait for currently running WorkUnits to finish and then stop all threads. */
+    void stopWorkers();
+
+    struct WorkUnit {
+        int id;
+        std::vector<ParamDblValue> engine1Params;
+        std::vector<ParamDblValue> engine2Params;
+        std::vector<double> signVec;
+
+        double result;         // Average score for engine 1
+        std::string compName;  // Name of computer that run this WorkUnit
+        int instNo;            // Instance number that run this WorkUnit
+    };
+
+    /** Add a WorkUnit to the queue. */
+    void addWorkUnit(const WorkUnit& wu);
+
+    /** Wait until a result is ready and retrieve the corresponding WorkUnit. */
+    void getResult(WorkUnit& wu);
+
+private:
+    /** Worker thread main loop. */
+    void workerLoop(GameRunner& gr);
+
+    bool stopped;
+    std::mutex mutex;
+
+    std::vector<GameRunner> workers;
+    std::vector<std::shared_ptr<std::thread>> threads;
+
+    std::deque<WorkUnit> pending;
+    std::condition_variable pendingCv;
+
+    std::deque<WorkUnit> complete;
+    std::condition_variable completeCv;
+};
+
+GameScheduler::GameScheduler()
+    : stopped(false) {
+}
+
+GameScheduler::~GameScheduler() {
+    stopWorkers();
+}
+
+void
+GameScheduler::addWorker(const GameRunner& gr) {
+    workers.push_back(gr);
+}
+
+void
+GameScheduler::startWorkers() {
+    for (GameRunner& gr : workers) {
+        auto thread = std::make_shared<std::thread>([this,&gr]() {
+            workerLoop(gr);
+        });
+        threads.push_back(thread);
+    }
+}
+
+void
+GameScheduler::stopWorkers() {
+    {
+        std::lock_guard<std::mutex> L(mutex);
+        stopped = true;
+        pendingCv.notify_all();
+    }
+    for (auto& t : threads) {
+        t->join();
+        t.reset();
+    }
+}
+
+void
+GameScheduler::addWorkUnit(const WorkUnit& wu) {
+    std::lock_guard<std::mutex> L(mutex);
+    bool empty = pending.empty();
+    pending.push_back(wu);
+    if (empty)
+        pendingCv.notify_all();
+}
+
+void
+GameScheduler::getResult(WorkUnit& wu) {
+    std::unique_lock<std::mutex> L(mutex);
+    while (complete.empty())
+        completeCv.wait(L);
+    wu = complete.front();
+    complete.pop_front();
+}
+
+void
+GameScheduler::workerLoop(GameRunner& gr) {
+    while (true) {
+        WorkUnit wu;
+        {
+            std::unique_lock<std::mutex> L(mutex);
+            while (!stopped && pending.empty())
+                pendingCv.wait(L);
+            if (stopped)
+                return;
+            wu = pending.front();
+            pending.pop_front();
+        }
+        wu.result = gr.runGame(wu.engine1Params, wu.engine2Params);
+        wu.compName = gr.compName();
+        wu.instNo = gr.instNo();
+        {
+            std::unique_lock<std::mutex> L(mutex);
+            bool empty = complete.empty();
+            complete.push_back(wu);
+            if (empty)
+                completeCv.notify_all();
+        }
+    }
+}
+
+/** Configuration parameters for SPSA optimization. */
+class SpsaConfig {
+public:
+    /** Constructor. Read configuration from a file. */
+    SpsaConfig(const std::string& filename);
+
+    struct ParamData {
+        std::string parName;
+        double c0;
+        double value;
+        double minValue;
+        double maxValue;
+    };
+
+    struct ComputerData {
+        std::string compName;  // Host name
+        int numInstances;      // Number of worker instances
+    };
+
+    std::string scriptName() const { return script; }
+    int numGames() const { return nGames; }
+    int gamesPerIter() const { return q; }
+    double initialGain() const { return C; }
+    const std::vector<ParamData>& params() const { return paramVec; }
+    const std::vector<ComputerData>& computers() const { return computerVec; }
+
+private:
+    std::string script; // Name of external script
+    int nGames;         // Nominal number of games
+    int q;              // Number of games per iteration
+    double C;           // Initial gain factor
+
+    std::vector<ParamData> paramVec;
+    std::vector<ComputerData> computerVec;
+};
+
+SpsaConfig::SpsaConfig(const std::string& filename)
+    : nGames(0), q(0), C(0) {
+    std::ifstream is(filename);
+    while (true) {
+        std::string line;
+        std::getline(is, line);
+        if (!is.good())
+            break;
+        line = trim(line);
+        if (line.length() <= 0 || line[0] == '#')
+            continue;
+        std::vector<std::string> words;
+        splitString(line, words);
+        auto error = [&line]() { throw ChessParseError("Error in config file: " + line); };
+        const int nWords = words.size();
+        if (nWords < 2)
+            error();
+        std::string key = toLowerCase(words[0]);
+        if (key == "script") {
+            if (nWords != 2)
+                error();
+            script = words[1];
+        } else if (key == "numgames") {
+            int tmp;
+            if (nWords != 2 || !str2Num(words[1], tmp))
+                error();
+            nGames = tmp;
+        } else if (key == "q") {
+            int tmp;
+            if (nWords != 2 || !str2Num(words[1], tmp))
+                error();
+            q = (tmp + 1) / 2 * 2;
+        } else if (key == "c") {
+            double tmp;
+            if (nWords != 2 || !str2Num(words[1], tmp))
+                error();
+            C = tmp;
+        } else if (key == "parameter") {
+            if (nWords != 3 && nWords != 6)
+                error();
+            ParamData pd;
+            pd.parName = words[1];
+            if (!str2Num(words[2], pd.c0) || (pd.c0 <= 0))
+                error();
+            if (nWords == 6) {
+                if (!str2Num(words[3], pd.value) ||
+                        !str2Num(words[4], pd.minValue) ||
+                        !str2Num(words[5], pd.maxValue))
+                    error();
+            } else {
+                Parameters& uciPars = Parameters::instance();
+                std::shared_ptr<Parameters::ParamBase> par = uciPars.getParam(pd.parName);
+                if (!par)
+                    throw ChessParseError("No such parameter: " + pd.parName);
+                auto sPar = dynamic_cast<Parameters::SpinParam*>(par.get());
+                if (!sPar)
+                    throw ChessParseError("Incorrect parameter type: " + pd.parName);
+                pd.value = sPar->getDefaultValue();
+                pd.minValue = sPar->getMinValue();
+                pd.maxValue = sPar->getMaxValue();
+            }
+            paramVec.push_back(pd);
+        } else if (key == "computer") {
+            ComputerData cd;
+            if (nWords != 3 || !str2Num(words[2], cd.numInstances) || (cd.numInstances <= 0))
+                error();
+            cd.compName = words[1];
+            computerVec.push_back(cd);
+        } else {
+            error();
+        }
+    }
+    if (nGames < q || q <= 0 || C <= 0)
+        throw ChessParseError("Error in config file");
+    if (computerVec.empty())
+        throw ChessParseError("No computers defined");
+    if (paramVec.empty())
+        throw ChessParseError("No parameters defined");
+}
+
+void
+Spsa::spsa(const std::string& configFile) {
+    GameScheduler gs;
+    SpsaConfig conf(configFile);
+    std::cout << "script: " << conf.scriptName() << std::endl;
+    std::cout << "nGames: " << conf.numGames() << std::endl;
+    std::cout << "q     : " << conf.gamesPerIter() << std::endl;
+    std::cout << "C     : " << conf.initialGain() << std::endl;
+    for (const SpsaConfig::ParamData& pd : conf.params())
+        std::cout << "param: " << pd.parName << " c0: " << pd.c0
+                  << " start: " << pd.value << " min: " << pd.minValue
+                  << " max: " << pd.maxValue << std::endl;
+    for (const SpsaConfig::ComputerData& cd : conf.computers()) {
+        std::cout << "computer: " << cd.compName << " nInst: " << cd.numInstances << std::endl;
+        for (int i = 0; i < cd.numInstances; i++) {
+            GameRunner gr(conf.scriptName(), cd.compName, i+1);
+            gs.addWorker(gr);
+        }
+    }
+
+    gs.startWorkers();
+
+    std::vector<SpsaConfig::ParamData> parInfo = conf.params();
+    const int gamesPerIter = conf.gamesPerIter();
+    const int q = gamesPerIter / 2;
+    const double C = conf.initialGain();
+    const int nIter = conf.numGames() / gamesPerIter;
+
+    const double A = nIter * 0.1;
+    const double alpha = 0.602;
+    const double gamma = 0.101;
+    const double drawRate = 0.43;
+    const double a = 4 * C * pow(A + 1, alpha) / (1 - drawRate) * sqrt(q*2);
+
+    const int N = parInfo.size();
+    std::vector<double> accum(N);
+    Random rnd;
+    rnd.setSeed(seeder.nextU64());
+
+    for (int i = 0; i < N; i++)
+        std::cout << parInfo[i].parName << " " << parInfo[i].value << std::endl;
+
+    const double t0 = currentTime();
+    for (int k = 0; (k < nIter) || true; k++) {
+        double ak = a / pow(A + k + 1, alpha);
+        double ck = 1.0 / pow(k + 1, gamma);
+        for (int i = 0; i < N; i++)
+            accum[i] = 0;
+        for (int g = 0; g < q; g++) {
+            GameScheduler::WorkUnit wu;
+            wu.id = g;
+            wu.signVec.resize(N);
+            wu.engine1Params.resize(N);
+            wu.engine2Params.resize(N);
+            for (int i = 0; i < N; i++) {
+                wu.signVec[i] = (rnd.nextU64() & 1) ? 1 : -1;
+                wu.engine1Params[i].name = parInfo[i].parName;
+                wu.engine2Params[i].name = parInfo[i].parName;
+                double c0 = parInfo[i].c0;
+                wu.engine1Params[i].value = clamp(parInfo[i].value + c0 * ck * wu.signVec[i],
+                                                  parInfo[i].minValue, parInfo[i].maxValue);
+                wu.engine2Params[i].value = clamp(parInfo[i].value - c0 * ck * wu.signVec[i],
+                                                  parInfo[i].minValue, parInfo[i].maxValue);
+            }
+            gs.addWorkUnit(wu);
+        }
+        for (int g = 0; g < q; g++) {
+            GameScheduler::WorkUnit wu;
+            gs.getResult(wu);
+            double dy = -(wu.result - 0.5);
+            for (int i = 0; i < N; i++)
+                accum[i] += dy / (2 * ck * wu.signVec[i]);
+        }
+        std::cout << "Iteration: " << k << " ak:" << ak << " ck:" << ck << " time:" << currentTime() - t0
+                  << " games:" << (k+1)*gamesPerIter << std::endl;
+        for (int i = 0; i < N; i++) {
+            parInfo[i].value -= ak * parInfo[i].c0 * accum[i] / q;
+            std::cout << parInfo[i].parName << " " << parInfo[i].value << " 0 *" << std::endl;
+        }
     }
 }
 

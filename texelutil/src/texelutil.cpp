@@ -27,11 +27,11 @@ parseParValues(const std::string& fname, std::vector<ParamValue>& parValues) {
             throw ChessParseError("Invalid parameter specification:" + line);
         if (!uciPars.getParam(fields[0]))
             throw ChessParseError("No such parameter:" + fields[0]);
-        int value;
+        double value;
         if (str2Num(fields[1], value)) {
             ParamValue pv;
             pv.name = fields[0];
-            pv.value = value;
+            pv.value = (int)floor(value + 0.5);
             parValues.push_back(pv);
         }
     }
@@ -86,6 +86,7 @@ usage() {
     std::cerr << " enginesim nGames p1 p2 ... : Simulate engine with parameters p1, p2, ...\n";
     std::cerr << " tourneysim nSimul nRounds elo1 elo2 ... : Simulate tournament\n";
     std::cerr << " spsasim nSimul nIter gamesPerIter a c param1 ... : Simulate SPSA optimization\n";
+    std::cerr << " spsa spsafile.conf : Run SPSA optimization using the given configuration file\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -379,6 +380,11 @@ main(int argc, char* argv[]) {
                 startParams.push_back(tmp);
             }
             Spsa::spsaSimulation(nSimul, nIter, gamesPerIter, a, c, startParams);
+        } else if (cmd == "spsa") {
+            if (argc != 3)
+                usage();
+            std::string filename = argv[2];
+            Spsa::spsa(filename);
         } else {
             usage();
         }

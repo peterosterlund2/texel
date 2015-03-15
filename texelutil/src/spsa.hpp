@@ -30,6 +30,9 @@ public:
     /** Simulate SPSA optimization nSimul times, using nIter*gamesPerIter games each time. */
     static void spsaSimulation(int nSimul, int nIter, int gamesPerIter, double a, double c,
                                const std::vector<double>& startParams);
+
+    /** Run SPSA optimization with parameters given by the configuration file. */
+    static void spsa(const std::string& configFile);
 };
 
 /** Simulate game results given win, draw and loss probabilities. */
