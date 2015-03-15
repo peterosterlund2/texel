@@ -1038,12 +1038,12 @@ void
 EvaluateTest::testCantWin() {
     Position pos = TextIO::readFEN("8/8/8/3k4/3p4/3K4/4N3/8 w - - 0 1");
     int score1 = evalWhite(pos);
-    ASSERT(score1 < 0);
+    ASSERT(score1 <= 0);
     UndoInfo ui;
     pos.makeMove(TextIO::stringToMove(pos, "Nxd4"), ui);
     int score2 = evalWhite(pos);
     ASSERT(score2 <= 0);
-    ASSERT(score2 > score1);
+    ASSERT(score2 >= score1);
 }
 
 void

@@ -382,11 +382,11 @@ extern int pieceValue[Piece::nPieceTypes];
 
 // Evaluation parameters
 
-DECLARE_PARAM(pV, 100, 1, 200, useUciParam);
-DECLARE_PARAM(nV, 385, 1, 800, useUciParam);
-DECLARE_PARAM(bV, 385, 1, 800, useUciParam);
-DECLARE_PARAM(rV, 597, 1, 1200, useUciParam);
-DECLARE_PARAM(qV, 1215, 1, 2400, useUciParam);
+DECLARE_PARAM(pV, 98, 1, 200, useUciParam);
+DECLARE_PARAM(nV, 398, 1, 800, useUciParam);
+DECLARE_PARAM(bV, 398, 1, 800, useUciParam);
+DECLARE_PARAM(rV, 610, 1, 1200, useUciParam);
+DECLARE_PARAM(qV, 1235, 1, 2400, useUciParam);
 DECLARE_PARAM(kV, 9900, 9900, 9900, false); // Used by SEE algorithm but not included in board material sums
 
 DECLARE_PARAM(pawnIslandPenalty,        8, 0, 50, useUciParam);

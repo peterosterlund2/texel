@@ -36,7 +36,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.06a2";
+    std::string name = "Texel 1.06a3";
     if (sizeof(char*) == 4)
         name += " 32-bit";
     if (sizeof(char*) == 8)
@@ -59,6 +59,7 @@ ComputerPlayer::initEngine() {
 
     knightMobScore.addListener(Evaluate::updateEvalParams);
     castleFactor.addListener(Evaluate::updateEvalParams, false);
+//    bV.addListener([]() { Parameters::instance().set("KnightValue", num2Str((int)bV)); });
     pV.addListener([]() { pieceValue[Piece::WPAWN]   = pieceValue[Piece::BPAWN]   = pV; });
     nV.addListener([]() { pieceValue[Piece::WKNIGHT] = pieceValue[Piece::BKNIGHT] = nV; });
     bV.addListener([]() { pieceValue[Piece::WBISHOP] = pieceValue[Piece::BBISHOP] = bV; });
