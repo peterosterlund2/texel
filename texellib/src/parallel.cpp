@@ -161,8 +161,6 @@ WorkerThread::mainLoop(int minProbeDepth) {
     logFile.open("/home/petero/treelog.dmp", pd, threadNo);
 
 //    UtilizationTimer uTimer;
-    std::mutex m;
-    std::unique_lock<std::mutex> lock(m);
     Position pos;
     std::shared_ptr<SplitPoint> sp;
     for (int iter = 0; ; iter++) {
