@@ -626,12 +626,15 @@ Spsa::spsa(const std::string& configFile) {
     const double a = 4 * C * pow(A + 1, alpha) / (1 - drawRate) * sqrt(q*2);
 
     const int N = parInfo.size();
+    std::vector<double> startValue(N);
     std::vector<double> accum(N);
     Random rnd;
     rnd.setSeed(seeder.nextU64());
 
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < N; i++) {
+        startValue[i] = parInfo[i].value;
         std::cout << parInfo[i].parName << " " << parInfo[i].value << std::endl;
+    }
 
     const double t0 = currentTime();
     for (int k = 0; (k < nIter) || true; k++) {
@@ -668,7 +671,8 @@ Spsa::spsa(const std::string& configFile) {
                   << " games:" << (k+1)*gamesPerIter << std::endl;
         for (int i = 0; i < N; i++) {
             parInfo[i].value -= ak * parInfo[i].c0 * accum[i] / q;
-            std::cout << parInfo[i].parName << " " << parInfo[i].value << " 0 *" << std::endl;
+            std::cout << parInfo[i].parName << " " << parInfo[i].value << " "
+                      << startValue[i] << " *" << std::endl;
         }
     }
 }
