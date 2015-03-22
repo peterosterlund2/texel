@@ -369,6 +369,9 @@ Position::deSerialize(const SerializeData& data) {
     whiteBB_ = blackBB_ = 0;
     wMtrl_ = bMtrl_ = -::kV;
     wMtrlPawns_ = bMtrlPawns_ = 0;
+    U64 hash = 0;
+    pHashKey = 0;
+    matId = {};
     for (int i = 0; i < 4; i++) {
         int sq0 = i * 16;
         U64 v = data.v[i];
@@ -378,22 +381,29 @@ Position::deSerialize(const SerializeData& data) {
             int square = sq0 + sq;
             squares[square] = piece;
 
+            U64 key = psHashKeys[piece][square];
+            hash ^= key;
             const U64 sqMask = 1ULL << square;
             pieceTypeBB_[piece] |= sqMask;
             if (piece != Piece::EMPTY) {
+                matId.addPiece(piece);
                 int pVal = ::pieceValue[piece];
                 if (Piece::isWhite(piece)) {
                     wMtrl_ += pVal;
                     whiteBB_ |= sqMask;
-                    if (piece == Piece::WPAWN)
+                    if (piece == Piece::WPAWN) {
                         wMtrlPawns_ += pVal;
+                        pHashKey ^= key;
+                    }
                     if (piece == Piece::WKING)
                         wKingSq_ = square;
                 } else {
                     bMtrl_ += pVal;
                     blackBB_ |= sqMask;
-                    if (piece == Piece::BPAWN)
+                    if (piece == Piece::BPAWN) {
                         bMtrlPawns_ += pVal;
+                        pHashKey ^= key;
+                    }
                     if (piece == Piece::BKING)
                         bKingSq_ = square;
                 }
@@ -415,7 +425,11 @@ Position::deSerialize(const SerializeData& data) {
     flags >>= 4;
     whiteMove = (flags & 1) != 0;
 
-    computeZobristHash();
+    if (whiteMove)
+        hash ^= whiteHashKey;
+    hash ^= castleHashKeys[castleMask];
+    hash ^= epHashKeys[(epSquare >= 0) ? getX(epSquare) + 1 : 0];
+    hashKey = hash;
 }
 
 // ----------------------------------------------------------------------------
