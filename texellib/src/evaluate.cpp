@@ -333,18 +333,14 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     { // Pawn
         const int loMtrl = pawnLoMtrl;
         const int hiMtrl = pawnHiMtrl;
-        mhd.wPawnIPF = interpolate(bMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
-        mhd.bPawnIPF = interpolate(wMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
-        if (wCorr > 100)
-            mhd.wPawnIPF = mhd.wPawnIPF * 100 / wCorr;
-        if (bCorr > 100)
-            mhd.bPawnIPF = mhd.bPawnIPF * 100 / bCorr;
+        mhd.pawnIPF = interpolate(wMtrlNoPawns + bMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
+        if (wCorr + bCorr > 200)
+            mhd.pawnIPF = mhd.pawnIPF * 200 / (wCorr + bCorr);
     }
     { // Knight/bishop
         const int loMtrl = minorLoMtrl;
         const int hiMtrl = minorHiMtrl;
-        mhd.wKnightIPF = interpolate(bMtrl, loMtrl, 0, hiMtrl, IPOLMAX);
-        mhd.bKnightIPF = interpolate(wMtrl, loMtrl, 0, hiMtrl, IPOLMAX);
+        mhd.knightIPF = interpolate(wMtrl + bMtrl, loMtrl, 0, hiMtrl, IPOLMAX);
     }
     { // Castle
         const int loMtrl = castleLoMtrl;
@@ -381,8 +377,7 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     { // Knight outpost
         const int loMtrl = knightOutpostLoMtrl;
         const int hiMtrl = knightOutpostHiMtrl;
-        mhd.wKnightOutPostIPF = interpolate(bMtrlPawns, loMtrl, 0, hiMtrl, IPOLMAX);
-        mhd.bKnightOutPostIPF = interpolate(wMtrlPawns, loMtrl, 0, hiMtrl, IPOLMAX);
+        mhd.knightOutPostIPF = interpolate(wMtrlPawns + bMtrlPawns, loMtrl, 0, hiMtrl, IPOLMAX);
     }
 }
 
@@ -407,16 +402,11 @@ Evaluate::pieceSquareEval(const Position& pos) {
 
     // Kings/pawns
     if (pos.wMtrlPawns() + pos.bMtrlPawns() > 0) {
-        {
-            const int k1 = pos.psScore1(Piece::WKING) + pos.psScore1(Piece::WPAWN);
-            const int k2 = pos.psScore2(Piece::WKING) + pos.psScore2(Piece::WPAWN);
-            score += interpolate(k2, k1, mhd->wPawnIPF);
-        }
-        {
-            const int k1 = pos.psScore1(Piece::BKING) + pos.psScore1(Piece::BPAWN);
-            const int k2 = pos.psScore2(Piece::BKING) + pos.psScore2(Piece::BPAWN);
-            score -= interpolate(k2, k1, mhd->bPawnIPF);
-        }
+        const int k1 = (pos.psScore1(Piece::WKING) + pos.psScore1(Piece::WPAWN)) -
+                       (pos.psScore1(Piece::BKING) + pos.psScore1(Piece::BPAWN));
+        const int k2 = (pos.psScore2(Piece::WKING) + pos.psScore2(Piece::WPAWN)) -
+                       (pos.psScore2(Piece::BKING) + pos.psScore2(Piece::BPAWN));
+        score += interpolate(k2, k1, mhd->pawnIPF);
     } else { // Use symmetric tables if no pawns left
         if (pos.wMtrl() > pos.bMtrl())
             score += EndGameEval::mateEval(pos.getKingSq(true), pos.getKingSq(false));
@@ -429,12 +419,11 @@ Evaluate::pieceSquareEval(const Position& pos) {
 
     // Knights/bishops
     {
-        int n1 = pos.psScore1(Piece::WKNIGHT) + pos.psScore1(Piece::WBISHOP);
-        int n2 = pos.psScore2(Piece::WKNIGHT) + pos.psScore2(Piece::WBISHOP);
-        score += interpolate(n2, n1, mhd->wKnightIPF);
-        n1 = pos.psScore1(Piece::BKNIGHT) + pos.psScore1(Piece::BBISHOP);
-        n2 = pos.psScore2(Piece::BKNIGHT) + pos.psScore2(Piece::BBISHOP);
-        score -= interpolate(n2, n1, mhd->bKnightIPF);
+        int n1 = (pos.psScore1(Piece::WKNIGHT) + pos.psScore1(Piece::WBISHOP)) -
+                 (pos.psScore1(Piece::BKNIGHT) + pos.psScore1(Piece::BBISHOP));
+        int n2 = (pos.psScore2(Piece::WKNIGHT) + pos.psScore2(Piece::WBISHOP)) -
+                 (pos.psScore2(Piece::BKNIGHT) + pos.psScore2(Piece::BBISHOP));
+        score += interpolate(n2, n1, mhd->knightIPF);
     }
 
     // Queens
@@ -1122,7 +1111,7 @@ Evaluate::knightEval(const Position& pos) {
             int sq = BitBoard::extractSquare(m);
             outPost += knightOutpostBonus[63-sq];
         }
-        score += interpolate(0, outPost, mhd->wKnightOutPostIPF);
+        score += interpolate(0, outPost, mhd->knightOutPostIPF);
     }
 
     m = bKnights & phd->outPostsB;
@@ -1132,7 +1121,7 @@ Evaluate::knightEval(const Position& pos) {
             int sq = BitBoard::extractSquare(m);
             outPost += knightOutpostBonus[sq];
         }
-        score -= interpolate(0, outPost, mhd->bKnightOutPostIPF);
+        score -= interpolate(0, outPost, mhd->knightOutPostIPF);
     }
 
     return score;

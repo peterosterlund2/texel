@@ -55,13 +55,13 @@ private:
         MaterialHashData();
         int id;
         int score;
-        S16 wPawnIPF, bPawnIPF;
-        S16 wKnightIPF, bKnightIPF;
+        S16 pawnIPF;
+        S16 knightIPF;
         S16 castleIPF, queenIPF;
         S16 wPassedPawnIPF, bPassedPawnIPF;
         S16 kingSafetyIPF;
         S16 diffColorBishopIPF;
-        S16 wKnightOutPostIPF, bKnightOutPostIPF;
+        S16 knightOutPostIPF;
         U8 endGame;
     };
 
