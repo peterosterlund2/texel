@@ -941,12 +941,16 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
         }
     }
 
+    U64 stalePawns = computeStalePawns(pos) & ~passedPawnsW & ~passedPawnsB;
+    score -= BitBoard::bitCount(wPawns & ~((stalePawns & wPawns) | passedPawnsW)) * activePawnPenalty;
+    score += BitBoard::bitCount(bPawns & ~((stalePawns & bPawns) | passedPawnsB)) * activePawnPenalty;
+
     ph.key = pos.pawnZobristHash();
     ph.score = score;
     ph.passedBonusW = (S16)passedBonusW;
     ph.passedBonusB = (S16)passedBonusB;
     ph.passedPawns = passedPawnsW | passedPawnsB;
-    ph.stalePawns = computeStalePawns(pos) & ~passedPawnsW & ~passedPawnsB;
+    ph.stalePawns = stalePawns;
 }
 
 int

@@ -60,6 +60,7 @@ DEFINE_PARAM(pawnRaceBonus);
 DEFINE_PARAM(passedPawnEGFactor);
 DEFINE_PARAM(RBehindPP1);
 DEFINE_PARAM(RBehindPP2);
+DEFINE_PARAM(activePawnPenalty);
 
 DEFINE_PARAM(QvsRMBonus1);
 DEFINE_PARAM(QvsRMBonus2);
@@ -623,6 +624,7 @@ Parameters::Parameters() {
     REGISTER_PARAM(passedPawnEGFactor, "PassedPawnEGFactor");
     REGISTER_PARAM(RBehindPP1, "RookBehindPassedPawn1");
     REGISTER_PARAM(RBehindPP2, "RookBehindPassedPawn2");
+    REGISTER_PARAM(activePawnPenalty, "ActivePawnPenalty");
 
     REGISTER_PARAM(QvsRMBonus1, "QueenVsRookMinorBonus1");
     REGISTER_PARAM(QvsRMBonus2, "QueenVsRookMinorBonus2");

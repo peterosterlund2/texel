@@ -832,6 +832,7 @@ ChessTool::printParams() {
     os << "passedPawnEGFactor       : " << passedPawnEGFactor << std::endl;
     os << "RBehindPP1               : " << RBehindPP1 << std::endl;
     os << "RBehindPP2               : " << RBehindPP2 << std::endl;
+    os << "activePawnPenalty        : " << activePawnPenalty << std::endl;
 
     os << "QvsRMBonus1         : " << QvsRMBonus1 << std::endl;
     os << "QvsRMBonus2         : " << QvsRMBonus2 << std::endl;
@@ -1052,6 +1053,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(passedPawnEGFactor, "passedPawnEGFactor", hppFile);
     replaceValue(RBehindPP1, "RBehindPP1", hppFile);
     replaceValue(RBehindPP2, "RBehindPP2", hppFile);
+    replaceValue(activePawnPenalty, "activePawnPenalty", hppFile);
 
     replaceValue(QvsRMBonus1, "QvsRMBonus1", hppFile);
     replaceValue(QvsRMBonus2, "QvsRMBonus2", hppFile);

@@ -397,6 +397,7 @@ DECLARE_PARAM(pawnRaceBonus,            181, 0, 1000, useUciParam);
 DECLARE_PARAM(passedPawnEGFactor,       63, 1, 128, useUciParam);
 DECLARE_PARAM(RBehindPP1,               10, -100, 100, useUciParam);
 DECLARE_PARAM(RBehindPP2,               24, -100, 100, useUciParam);
+DECLARE_PARAM(activePawnPenalty,         3, -50, 50, useUciParam);
 
 DECLARE_PARAM(QvsRMBonus1,         30, -100, 100, useUciParam);
 DECLARE_PARAM(QvsRMBonus2,         -8, -100, 100, useUciParam);
