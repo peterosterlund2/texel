@@ -559,31 +559,60 @@ EndGameEval::isBishopPawnDraw(const Position& pos) {
         return false; // No draw against proper bishop pair
 
     const Piece::Type pawn = whiteBishop ? Piece::WPAWN : Piece::BPAWN;
-    if (pos.pieceTypeBB(pawn) == 0)
+    const U64 pawns = pos.pieceTypeBB(pawn);
+    if (pawns == 0)
         return true; // Only bishops on same color can not win
 
     // Check for rook pawn + wrong color bishop
     if (whiteBishop) {
-        if (((pos.pieceTypeBB(pawn) & BitBoard::maskBToHFiles) == 0) &&
-            !lightBishop &&
-            ((pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(A8,B8,A7,B7)) != 0)) {
+        if (!(pawns & BitBoard::maskBToHFiles) && !lightBishop &&
+            (pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(A8,B8,A7,B7)))
             return true;
-        } else
-        if (((pos.pieceTypeBB(pawn) & BitBoard::maskAToGFiles) == 0) &&
-            !darkBishop &&
-            ((pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(G8,H8,G7,H7)) != 0)) {
+        if (!(pawns & BitBoard::maskAToGFiles) && !darkBishop &&
+            (pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(G8,H8,G7,H7)))
             return true;
+        if (pos.bMtrl() == 0) {
+            if ((pos.bKingSq() == H8) && (pawns & BitBoard::sqMask(G6)) &&
+                !darkBishop && !pos.isWhiteMove() && !(pawns & BitBoard::sqMask(G7)))
+                return true; // Stalemate
+            if ((pos.bKingSq() == A8) && (pawns & BitBoard::sqMask(B6)) &&
+                !lightBishop && !pos.isWhiteMove() && !(pawns & BitBoard::sqMask(B7)))
+                return true; // Stalemate
+            if ((pawns == BitBoard::sqMask(B6)) &&
+                (pos.pieceTypeBB(bishop) == BitBoard::sqMask(A7)) &&
+                (pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(A8,B7)) &&
+                (!pos.isWhiteMove() || !(pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(A6,C6,C7,C8))))
+                return true;
+            if ((pawns == BitBoard::sqMask(G6)) &&
+                (pos.pieceTypeBB(bishop) == BitBoard::sqMask(H7)) &&
+                (pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(H8,G7)) &&
+                (!pos.isWhiteMove() || !(pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(H6,F6,F7,F8))))
+                return true;
         }
     } else {
-        if (((pos.pieceTypeBB(pawn) & BitBoard::maskBToHFiles) == 0) &&
-            !darkBishop &&
-            ((pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(A1,B1,A2,B2)) != 0)) {
+        if (!(pawns & BitBoard::maskBToHFiles) && !darkBishop &&
+            (pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(A1,B1,A2,B2)))
             return true;
-        } else
-        if (((pos.pieceTypeBB(pawn) & BitBoard::maskAToGFiles) == 0) &&
-            !lightBishop &&
-            ((pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(G1,H1,G2,H2)) != 0)) {
+        if (!(pawns & BitBoard::maskAToGFiles) && !lightBishop &&
+            (pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(G1,H1,G2,H2)))
             return true;
+        if (pos.wMtrl() == 0) { // Check for stalemate
+            if ((pos.wKingSq() == H1) && (pawns & BitBoard::sqMask(G3)) &&
+                !lightBishop && pos.isWhiteMove() && !(pawns & BitBoard::sqMask(G2)))
+                return true; // Stalemate
+            if ((pos.wKingSq() == A1) && (pawns & BitBoard::sqMask(B3)) &&
+                !darkBishop && pos.isWhiteMove() && !(pawns & BitBoard::sqMask(B2)))
+                return true; // Stalemate
+            if ((pawns == BitBoard::sqMask(B3)) &&
+                (pos.pieceTypeBB(bishop) == BitBoard::sqMask(A2)) &&
+                (pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(A1,B2)) &&
+                (pos.isWhiteMove() || !(pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(A3,C3,C2,C1))))
+                return true;
+            if ((pawns == BitBoard::sqMask(G3)) &&
+                (pos.pieceTypeBB(bishop) == BitBoard::sqMask(H2)) &&
+                (pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(H1,G2)) &&
+                (pos.isWhiteMove() || !(pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(H3,F3,F2,F1))))
+                return true;
         }
     }
 
@@ -608,14 +637,14 @@ EndGameEval::isBishopPawnDraw(const Position& pos) {
         (pos.getPiece(a8) != oKnight) && ((pos.pieceTypeBB(king) & corner) == 0) &&
         (BitBoard::bitCount(pos.pieceTypeBB(oPawn) & acFile) <= 1)) {
         if (pos.getPiece(c7) == pawn) {
-            if (BitBoard::bitCount(pos.pieceTypeBB(pawn) & ~bFile) == 1) {
+            if (BitBoard::bitCount(pawns & ~bFile) == 1) {
                 int oKingSq = pos.getKingSq(!whiteBishop);
                 if ((oKingSq == c8) || (oKingSq == d7))
                     return true;
             }
         } else {
             int oKingSq = pos.getKingSq(!whiteBishop);
-            if ((pos.pieceTypeBB(pawn) & ~bFile) == 0) {
+            if ((pawns & ~bFile) == 0) {
                 if ((oKingSq == a8) || (oKingSq == b8) || (oKingSq == c8) ||
                     (oKingSq == d8) || (oKingSq == d7))
                     return true;

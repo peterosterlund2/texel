@@ -72,8 +72,8 @@ class Evaluate;
 int swapSquareY(int square);
 Position swapColors(const Position& pos);
 Position mirrorX(const Position& pos);
-int evalWhite(const Position& pos);
-int evalWhite(Evaluate& eval, const Position& pos);
+int evalWhite(const Position& pos, bool testMirror = false);
+int evalWhite(Evaluate& eval, const Position& pos, bool testMirror = false);
 
 
 #endif /* EVALUATETEST_HPP_ */

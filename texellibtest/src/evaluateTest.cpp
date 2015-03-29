@@ -95,7 +95,8 @@ Position mirrorX(const Position& pos) {
 }
 
 /** Evaluation position and check position serialization. */
-int evalPos(Evaluate& eval, const Position& pos, bool testMirror) {
+static int
+evalPos(Evaluate& eval, const Position& pos, bool evalMirror, bool testMirror) {
     {
         Position pos1(pos);
         U64 h1 = pos1.historyHash();
@@ -114,35 +115,39 @@ int evalPos(Evaluate& eval, const Position& pos, bool testMirror) {
     ASSERT_EQUAL(pos.wMtrlPawns(), pos2.wMtrlPawns());
     ASSERT_EQUAL(pos.bMtrlPawns(), pos2.bMtrlPawns());
 
-    if (testMirror) {
+    int evalScore = eval.evalPos(pos);
+
+    if (evalMirror) {
         Position mir = mirrorX(pos);
-        evalPos(eval, mir, false);
+        int mirrorEval = evalPos(eval, mir, false, false);
+        if (testMirror)
+            ASSERT_EQUAL(evalScore, mirrorEval);
     }
 
-    return eval.evalPos(pos);
+    return evalScore;
 }
 
 int evalPos(Evaluate& eval, const Position& pos) {
-    return evalPos(eval, pos, true);
+    return evalPos(eval, pos, true, true);
 }
 
 /** Return static evaluation score for white, regardless of whose turn it is to move. */
 int
-evalWhite(const Position& pos) {
+evalWhite(const Position& pos, bool testMirror) {
     static std::shared_ptr<Evaluate::EvalHashTables> et;
     if (!et)
         et = Evaluate::getEvalHashTables();
     Evaluate eval(*et);
-    return evalWhite(eval, pos);
+    return evalWhite(eval, pos, testMirror);
 }
 
 int
-evalWhite(Evaluate& eval, const Position& pos) {
-    int ret = evalPos(eval, pos);
+evalWhite(Evaluate& eval, const Position& pos, bool testMirror) {
+    int ret = evalPos(eval, pos, true, testMirror);
     std::string fen = TextIO::toFEN(pos);
     Position symPos = swapColors(pos);
     std::string symFen = TextIO::toFEN(symPos);
-    int symScore = evalPos(eval, symPos);
+    int symScore = evalPos(eval, symPos, true, testMirror);
     ASSERT_EQUALM((fen + " == " + symFen).c_str(), ret, symScore);
     ASSERT_EQUAL(pos.materialId(), PositionTest::computeMaterialId(pos));
     ASSERT_EQUAL(symPos.materialId(), PositionTest::computeMaterialId(symPos));
@@ -166,9 +171,9 @@ moveScore(const Position& pos, const std::string& moveStr) {
 }
 
 static int
-evalFEN(const std::string& fen) {
+evalFEN(const std::string& fen, bool testMirror = false) {
     Position pos = TextIO::readFEN(fen);
-    return evalWhite(pos);
+    return evalWhite(pos, testMirror);
 }
 
 /**
@@ -425,52 +430,52 @@ EvaluateTest::testEndGameEval() {
     Position pos;
     pos.setPiece(Position::getSquare(4, 1), Piece::WKING);
     pos.setPiece(Position::getSquare(4, 6), Piece::BKING);
-    int score = evalWhite(pos);
+    int score = evalWhite(pos, true);
     ASSERT_EQUAL(0, score);
 
     pos.setPiece(Position::getSquare(3, 1), Piece::WBISHOP);
-    score = evalWhite(pos);
+    score = evalWhite(pos, true);
     ASSERT_EQUAL(0, score);   // Insufficient material to mate
 
     pos.setPiece(Position::getSquare(3, 1), Piece::WKNIGHT);
-    score = evalWhite(pos);
+    score = evalWhite(pos, true);
     ASSERT_EQUAL(0, score);   // Insufficient material to mate
 
     pos.setPiece(Position::getSquare(3, 1), Piece::WROOK);
-    score = evalWhite(pos);
+    score = evalWhite(pos, true);
     const int rV = ::rV;
     ASSERT(std::abs(score) > rV + 90);   // Enough material to force mate
 
     pos.setPiece(Position::getSquare(3, 6), Piece::BBISHOP);
-    score = evalWhite(pos);
+    score = evalWhite(pos, true);
     const int bV = ::bV;
     ASSERT(score >= 0);
     ASSERT(score < rV - bV);   // Insufficient excess material to mate
 
     pos.setPiece(Position::getSquare(5, 6), Piece::BROOK);
-    score = evalWhite(pos);
+    score = evalWhite(pos, true);
     ASSERT(score <= 0);
     ASSERT(-score < bV);
 
     pos.setPiece(Position::getSquare(2, 6), Piece::BBISHOP);
-    score = evalWhite(pos);
+    score = evalWhite(pos, true);
     ASSERT(-score > bV * 2);
 
     // KRPKB is win for white
-    score = evalFEN("8/3bk3/8/8/8/3P4/3RK3/8 w - - 0 1");
+    score = evalFEN("8/3bk3/8/8/8/3P4/3RK3/8 w - - 0 1", true);
     const int pV = ::pV;
     ASSERT(score > rV + pV - bV - 100);
 
     // KNNK is a draw
-    score = evalFEN("8/8/4k3/8/8/3NK3/3N4/8 w - - 0 1");
+    score = evalFEN("8/8/4k3/8/8/3NK3/3N4/8 w - - 0 1", true);
     ASSERT_EQUAL(0, score);
 
     const int nV = ::nV;
-    score = evalFEN("8/8/8/4k3/N6N/P2K4/8/8 b - - 0 66");
+    score = evalFEN("8/8/8/4k3/N6N/P2K4/8/8 b - - 0 66", true);
     ASSERT(score > nV * 2);
 
     pos = TextIO::readFEN("8/8/3k4/8/8/3NK3/2B5/8 b - - 0 1");
-    score = evalWhite(pos);
+    score = evalWhite(pos, true);
     ASSERT(score > 560);  // KBNK is won
     score = moveScore(pos, "Kc6");
     ASSERT(score > 0);      // Black king going into wrong corner, good for white
@@ -478,12 +483,12 @@ EvaluateTest::testEndGameEval() {
     ASSERT(score < 0);      // Black king going away from wrong corner, good for black
 
     // KRN vs KR is generally drawn
-    score = evalFEN("rk/p/8/8/8/8/NKR/8 w - - 0 1");
+    score = evalFEN("rk/p/8/8/8/8/NKR/8 w - - 0 1", true);
     ASSERT(score < nV - 2 * pV);
 
     // KRKB, defending king should prefer corner that bishop cannot attack
     pos = TextIO::readFEN("6B1/8/8/8/8/2k5/4r3/2K5 w - - 0 93");
-    score = evalWhite(pos);
+    score = evalWhite(pos, true);
     ASSERT(score >= -pV);
     score = moveScore(pos, "Kd1");
     ASSERT(score < 0);
@@ -495,15 +500,15 @@ EvaluateTest::testEndGameEval() {
     ASSERT(score > pV);
 
     { // Test KRPKM
-        int score1 = evalFEN("8/2b5/k7/P7/RK6/8/8/8 w - - 0 1");
+        int score1 = evalFEN("8/2b5/k7/P7/RK6/8/8/8 w - - 0 1", true);
         ASSERT(score1 < 165);
-        int score2 = evalFEN("8/1b6/k7/P7/RK6/8/8/8 w - - 0 1");
+        int score2 = evalFEN("8/1b6/k7/P7/RK6/8/8/8 w - - 0 1", true);
         ASSERT(score2 > 300);
-        int score3 = evalFEN("8/3b4/1k6/1P6/1RK5/8/8/8 w - - 0 1");
+        int score3 = evalFEN("8/3b4/1k6/1P6/1RK5/8/8/8 w - - 0 1", true);
         ASSERT(score3 > 300);
-        int score4 = evalFEN("8/3n4/1k6/1P6/1RK5/8/8/8 w - - 0 1");
+        int score4 = evalFEN("8/3n4/1k6/1P6/1RK5/8/8/8 w - - 0 1", true);
         ASSERT(score4 > 400);
-        int score5 = evalFEN("8/2n5/k7/P7/RK6/8/8/8 w - - 0 1");
+        int score5 = evalFEN("8/2n5/k7/P7/RK6/8/8/8 w - - 0 1", true);
         ASSERT(score5 > 400);
     }
 }
@@ -512,21 +517,21 @@ void
 EvaluateTest::testEndGameSymmetry() {
     // Test symmetry for pawnless endings
     {
-        int score1 = evalFEN("8/8/3rk3/8/8/8/8/3QK3 w - - 0 1");
-        int score2 = evalFEN("8/8/8/Q4r2/K4k2/8/8/8 w - - 0 1");
+        int score1 = evalFEN("8/8/3rk3/8/8/8/8/3QK3 w - - 0 1", true);
+        int score2 = evalFEN("8/8/8/Q4r2/K4k2/8/8/8 w - - 0 1", true);
         ASSERT_EQUAL(score2, score1);
-        int score3 = evalFEN("3KQ3/8/8/8/8/3kr3/8/8 w - - 0 1");
+        int score3 = evalFEN("3KQ3/8/8/8/8/3kr3/8/8 w - - 0 1", true);
         ASSERT_EQUAL(score3, score1);
-        int score4 = evalFEN("8/8/8/2k4K/2r4Q/8/8/8 w - - 0 1");
+        int score4 = evalFEN("8/8/8/2k4K/2r4Q/8/8/8 w - - 0 1", true);
         ASSERT_EQUAL(score4, score1);
     }
     {
-        int score1 = evalFEN("8/8/3rk3/8/8/8/8/3RK3 w - - 0 1");
-        int score2 = evalFEN("8/8/8/R4r2/K4k2/8/8/8 w - - 0 1");
+        int score1 = evalFEN("8/8/3rk3/8/8/8/8/3RK3 w - - 0 1", true);
+        int score2 = evalFEN("8/8/8/R4r2/K4k2/8/8/8 w - - 0 1", true);
         ASSERT_EQUAL(score2, score1);
-        int score3 = evalFEN("3KR3/8/8/8/8/3kr3/8/8 w - - 0 1");
+        int score3 = evalFEN("3KR3/8/8/8/8/3kr3/8/8 w - - 0 1", true);
         ASSERT_EQUAL(score3, score1);
-        int score4 = evalFEN("8/8/8/2k4K/2r4R/8/8/8 w - - 0 1");
+        int score4 = evalFEN("8/8/8/2k4K/2r4R/8/8/8 w - - 0 1", true);
         ASSERT_EQUAL(score4, score1);
     }
 }
@@ -722,85 +727,99 @@ EvaluateTest::testBishAndRookPawns() {
     const int winScore = bV;
     const int drawish = bV / 20;
     Position pos = TextIO::readFEN("k7/8/8/8/2B5/2K5/P7/8 w - - 0 1");
-    ASSERT(evalWhite(pos) > winScore);
+    ASSERT(evalWhite(pos, true) > winScore);
 
     pos = TextIO::readFEN("k7/8/8/8/3B4/2K5/P7/8 w - - 0 1");
-    ASSERT(evalWhite(pos) < drawish);
+    ASSERT(evalWhite(pos, true) < drawish);
 
     pos = TextIO::readFEN("8/2k5/8/8/3B4/2K5/P7/8 w - - 0 1");
-    ASSERT(evalWhite(pos) > winScore);
+    ASSERT(evalWhite(pos, true) > winScore);
 
     pos = TextIO::readFEN("8/2k5/8/8/3B4/2K4P/8/8 w - - 0 1");
-    ASSERT(evalWhite(pos) > winScore);
+    ASSERT(evalWhite(pos, true) > winScore);
 
     pos = TextIO::readFEN("8/2k5/8/8/4B3/2K4P/8/8 w - - 0 1");
-    ASSERT(evalWhite(pos) > winScore);
+    ASSERT(evalWhite(pos, true) > winScore);
 
     pos = TextIO::readFEN("8/6k1/8/8/4B3/2K4P/8/8 w - - 0 1");
-    ASSERT(evalWhite(pos) < drawish);
+    ASSERT(evalWhite(pos, true) < drawish);
 
     pos = TextIO::readFEN("8/6k1/8/8/4B3/2K4P/7P/8 w - - 0 1");
-    ASSERT(evalWhite(pos) < drawish);
+    ASSERT(evalWhite(pos, true) < drawish);
 
     pos = TextIO::readFEN("8/6k1/8/8/2B1B3/2K4P/7P/8 w - - 0 1");
-    ASSERT(evalWhite(pos) < drawish);
+    ASSERT(evalWhite(pos, true) < drawish);
 
     pos = TextIO::readFEN("8/6k1/8/2B5/4B3/2K4P/7P/8 w - - 0 1");
-    ASSERT(evalWhite(pos) > winScore);
+    ASSERT(evalWhite(pos, true) > winScore);
 
     pos = TextIO::readFEN("8/6k1/8/8/4B3/2K4P/P7/8 w - - 0 1");
-    ASSERT(evalWhite(pos) > winScore);
+    ASSERT(evalWhite(pos, true) > winScore);
 
     pos = TextIO::readFEN("8/6k1/8/8/4B3/2K3PP/8/8 w - - 0 1");
-    ASSERT(evalWhite(pos) > winScore);
+    ASSERT(evalWhite(pos, true) > winScore);
 }
 
 void
 EvaluateTest::testBishAndPawnFortress() {
-    ASSERT_EQUAL(0, evalFEN("1k5B/1p6/1P6/3K4/8/8/8/8 w - - 0 1"));
-    ASSERT_EQUAL(0, evalFEN("k6B/1p6/1P6/3K4/8/8/8/8 w - - 0 1"));
-    ASSERT(evalFEN("4k3/1p6/1P3B2/3K4/8/8/8/8 w - - 0 1") > 0);
+    ASSERT_EQUAL(0, evalFEN("1k5B/1p6/1P6/3K4/8/8/8/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("k6B/1p6/1P6/3K4/8/8/8/8 w - - 0 1", true));
+    ASSERT(evalFEN("4k3/1p6/1P3B2/3K4/8/8/8/8 w - - 0 1", true) > 0);
 
-    ASSERT_EQUAL(0, evalFEN("2k4B/1pP5/1P6/3K4/8/8/8/8 w - - 0 1"));
-    ASSERT_EQUAL(0, evalFEN("7B/1pPk4/1P6/3K4/8/8/8/8 w - - 0 1"));
-    ASSERT(evalFEN("k6B/1pP5/1P6/3K4/8/8/8/8 w - - 0 1") > 0);
-    ASSERT_EQUAL(0, evalFEN("2k4B/1pP5/1P6/3K2B1/1P6/8/8/8 w - - 0 1"));
-    ASSERT(evalFEN("2k4B/1pP5/1P6/3K4/1P6/3B4/8/8 w - - 0 1") > 0);
+    ASSERT_EQUAL(0, evalFEN("2k4B/1pP5/1P6/3K4/8/8/8/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("7B/1pPk4/1P6/3K4/8/8/8/8 w - - 0 1", true));
+    ASSERT(evalFEN("k6B/1pP5/1P6/3K4/8/8/8/8 w - - 0 1", true) > 0);
+    ASSERT_EQUAL(0, evalFEN("2k4B/1pP5/1P6/3K2B1/1P6/8/8/8 w - - 0 1", true));
+    ASSERT(evalFEN("2k4B/1pP5/1P6/3K4/1P6/3B4/8/8 w - - 0 1", true) > 0);
 
-    ASSERT(evalFEN("nk5B/1p6/1P6/1P6/1P6/1P3K2/1P6/8 w - - 0 1") > 0);
-    ASSERT_EQUAL(0, evalFEN("rk5B/1p6/1P5B/1P4B1/1P6/1P3K2/1P6/8 w - - 0 1"));
-    ASSERT_EQUAL(0, evalFEN("1k5B/1p6/1P6/1P6/1P6/1P3K2/1P6/7n w - - 0 1"));
+    ASSERT(evalFEN("nk5B/1p6/1P6/1P6/1P6/1P3K2/1P6/8 w - - 0 1", true) > 0);
+    ASSERT_EQUAL(0, evalFEN("rk5B/1p6/1P5B/1P4B1/1P6/1P3K2/1P6/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("1k5B/1p6/1P6/1P6/1P6/1P3K2/1P6/7n w - - 0 1", true));
 
-    ASSERT_EQUAL(0, evalFEN("r1k4B/1pP5/1P6/3K4/1P6/8/3B4/8 w - - 0 1"));
-    ASSERT(evalFEN("n1k4B/1pP5/1P6/3K4/1P6/8/3B4/8 w - - 0 1") > 0);
+    ASSERT_EQUAL(0, evalFEN("r1k4B/1pP5/1P6/3K4/1P6/8/3B4/8 w - - 0 1", true));
+    ASSERT(evalFEN("n1k4B/1pP5/1P6/3K4/1P6/8/3B4/8 w - - 0 1", true) > 0);
 
-    ASSERT_EQUAL(0, evalFEN("2k5/1p6/1P6/4B1K1/8/8/8/8 b - - 0 1"));
-    ASSERT(evalFEN("2k5/Kp6/1P6/4B3/8/8/8/8 b - - 0 1") > 0);
-    ASSERT_EQUAL(0, evalFEN("k7/1pK5/1P6/8/3B4/8/8/8 w - - 0 1"));
-    ASSERT_EQUAL(0, evalFEN("3k4/1p6/1P6/5K2/3B4/8/8/8 w - - 0 1"));
-    ASSERT(evalFEN("1K1k4/1p6/1P6/8/3B4/8/8/8 w - - 0 1") > 0);
+    ASSERT_EQUAL(0, evalFEN("2k5/1p6/1P6/4B1K1/8/8/8/8 b - - 0 1", true));
+    ASSERT(evalFEN("2k5/Kp6/1P6/4B3/8/8/8/8 b - - 0 1", true) > 0);
+    ASSERT_EQUAL(0, evalFEN("k7/1pK5/1P6/8/3B4/8/8/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("3k4/1p6/1P6/5K2/3B4/8/8/8 w - - 0 1", true));
+    ASSERT(evalFEN("1K1k4/1p6/1P6/8/3B4/8/8/8 w - - 0 1", true) > 0);
 
-    ASSERT(evalFEN("8/8/6p1/2b5/2k2P1P/6p1/6P1/7K w - - 1 1") < 0);
-    ASSERT(evalFEN("8/8/6p1/2b5/2k4P/6pP/6P1/7K w - - 1 1") < 0);
+    ASSERT(evalFEN("8/8/6p1/2b5/2k2P1P/6p1/6P1/7K w - - 1 1", true) < 0);
+    ASSERT(evalFEN("8/8/6p1/2b5/2k4P/6pP/6P1/7K w - - 1 1", true) < 0);
 
-    ASSERT_EQUAL(0, evalFEN("8/8/8/8/7p/4k1p1/5bP1/5K2 w - - 1 1"));
-    ASSERT(evalFEN("8/8/8/8/7p/4k1p1/5bP1/5K2 b - - 1 1") < 0);
-    ASSERT(evalFEN("2k5/1pB5/1P3K2/P7/8/8/8/8 b - - 1 1") > 0);
-    ASSERT(evalFEN("2k5/1p6/1P1BK3/P7/8/8/8/8 b - - 1 1") > 0);
-    ASSERT_EQUAL(0, evalFEN("2k1K3/1p6/1P6/P7/8/6B1/8/8 b - - 1 1"));
-    ASSERT_EQUAL(0, evalFEN("k1K3/1p6/1P6/P7/8/8/5B2/8 b - - 1 1"));
-    ASSERT(evalFEN("k3K3/1p6/1P6/P7/8/8/5B2/8 b - - 1 1") > 0);
-    ASSERT_EQUAL(0, evalFEN("k3K3/1p6/1P6/P7/8/8/7B/8 b - - 1 1"));
-    ASSERT_EQUAL(0, evalFEN("k7/1pK5/1P6/P7/8/8/7B/8 b - - 1 1"));
-    ASSERT_EQUAL(0, evalFEN("k7/1pK5/1P6/P7/8/4B3/8/8 b - - 1 1"));
-    ASSERT_EQUAL(0, evalFEN("k1K5/1p6/1P6/P7/8/4B3/8/8 b - - 1 1"));
-    ASSERT(evalFEN("8/8/8/2b5/4k2p/4P1p1/6P1/7K w - - 1 1") < 0);
-    ASSERT_EQUAL(0, evalFEN("8/4b3/4P3/8/7p/6p1/5kP1/7K w - - 1 2"));
-    ASSERT_EQUAL(0, evalFEN("8/8/8/2b1k3/4P2p/6p1/6P1/7K w - - 1 1"));
+    ASSERT_EQUAL(0, evalFEN("8/8/8/8/7p/4k1p1/5bP1/5K2 w - - 1 1", true));
+    ASSERT(evalFEN("8/8/8/8/7p/4k1p1/5bP1/5K2 b - - 1 1", true) < 0);
+    ASSERT(evalFEN("2k5/1pB5/1P3K2/P7/8/8/8/8 b - - 1 1", true) > 0);
+    ASSERT(evalFEN("2k5/1p6/1P1BK3/P7/8/8/8/8 b - - 1 1", true) > 0);
+    ASSERT_EQUAL(0, evalFEN("2k1K3/1p6/1P6/P7/8/6B1/8/8 b - - 1 1", true));
+    ASSERT_EQUAL(0, evalFEN("k1K3/1p6/1P6/P7/8/8/5B2/8 b - - 1 1", true));
+    ASSERT(evalFEN("k3K3/1p6/1P6/P7/8/8/5B2/8 b - - 1 1", true) > 0);
+    ASSERT_EQUAL(0, evalFEN("k3K3/1p6/1P6/P7/8/8/7B/8 b - - 1 1", true));
+    ASSERT_EQUAL(0, evalFEN("k7/1pK5/1P6/P7/8/8/7B/8 b - - 1 1", true));
+    ASSERT_EQUAL(0, evalFEN("k7/1pK5/1P6/P7/8/4B3/8/8 b - - 1 1", true));
+    ASSERT_EQUAL(0, evalFEN("k1K5/1p6/1P6/P7/8/4B3/8/8 b - - 1 1", true));
+    ASSERT(evalFEN("8/8/8/2b5/4k2p/4P1p1/6P1/7K w - - 1 1", true) < 0);
+    ASSERT_EQUAL(0, evalFEN("8/4b3/4P3/8/7p/6p1/5kP1/7K w - - 1 2", true));
+    ASSERT_EQUAL(0, evalFEN("8/8/8/2b1k3/4P2p/6p1/6P1/7K w - - 1 1", true));
 
-    ASSERT_EQUAL(0, evalFEN("8/8/8/8/6p1/6p1/4k1P1/6K1 b - - 0 10"));
-    ASSERT_EQUAL(0, evalFEN("8/6p1/6p1/8/6p1/8/4k1P1/6K1 b - - 0 1"));
-    ASSERT(evalFEN("8/6p1/6p1/8/6p1/6P1/4k1K1/8 b - - 0 1") < 0);
+    ASSERT_EQUAL(0, evalFEN("8/8/8/8/6p1/6p1/4k1P1/6K1 b - - 0 10", true));
+    ASSERT_EQUAL(0, evalFEN("8/6p1/6p1/8/6p1/8/4k1P1/6K1 b - - 0 1", true));
+    ASSERT(evalFEN("8/6p1/6p1/8/6p1/6P1/4k1K1/8 b - - 0 1", true) < 0);
+
+    ASSERT_EQUAL(0, evalFEN("7k/5K2/6P1/8/8/3B4/8/8 b - - 1 1", true));
+    ASSERT_EQUAL(0, evalFEN("7k/1B3K2/6P1/8/8/3B4/8/8 b - - 1 1", true));
+    ASSERT(evalFEN("7k/5K2/6P1/8/3B4/8/8/8 b - - 1 1", true) > 500);
+    ASSERT(evalFEN("7k/5KP1/6P1/8/8/3B4/8/8 b - - 1 1", true) > 700);
+    ASSERT(evalFEN("7k/5K2/6P1/8/8/3B4/8/8 w - - 1 1", true) > 500);
+    ASSERT(evalFEN("8/5K1k/6P1/8/8/3B4/8/8 b - - 1 1", true) > 500);
+    ASSERT(evalFEN("7k/5K2/8/6P1/2B5/8/8/8 b - - 1 1", true) > 500);
+
+    ASSERT_EQUAL(0, evalFEN("8/Bk6/1P6/2K5/8/8/8/8 b - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("k7/B7/1P6/8/8/5K2/8/8 b - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("k7/B7/1PK5/8/8/8/8/8 b - - 0 1", true));
+    ASSERT(evalFEN("k7/B7/1PK5/8/8/8/8/8 w - - 0 1", true) > 500);
+    ASSERT_EQUAL(0, evalFEN("k7/B7/1P6/3K4/8/8/8/8 w - - 0 1", true));
 }
 
 void
