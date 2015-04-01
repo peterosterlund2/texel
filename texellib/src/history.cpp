@@ -51,3 +51,24 @@ History::reScale() {
         }
     }
 }
+
+void
+History::print() const {
+    for (int p = 1; p <= 12; p += 3) {
+        for (int row = 7; row >= 0; row--) {
+            std::cout << "hist:";
+            for (int d = 0; d < 3; d++) {
+                int piece = p + d;
+                if (d > 0)
+                    std::cout << "  ";
+                for (int col = 0; col < 8; col++) {
+                    int sq = Position::getSquare(col, row);
+                    int hist = ht[piece][sq].getScore();
+                    std::cout << ' ' << std::setw(2) << hist;
+                }
+            }
+            std::cout << '\n';
+        }
+        std::cout << "hist:\n";
+    }
+}

@@ -51,12 +51,17 @@ public:
     /** Get a score between 0 and 49, depending of the success/fail ratio of the move. */
     int getHistScore(const Position& pos, const Move& m) const;
 
+    /** Print all history tables. */
+    void print() const;
+
 private:
     static int depthWeight(int depth);
 
     static int depthTable[6];
 
     struct Entry {
+        int getScore() const;
+
         RelaxedShared<int> countSuccess;
         RelaxedShared<int> countFail;
         mutable RelaxedShared<int> score;
@@ -107,16 +112,21 @@ inline int
 History::getHistScore(const Position& pos, const Move& m) const {
     int p = pos.getPiece(m.from());
     const Entry& e = ht[p][m.to()];
-    int ret = e.score;
+    return e.getScore();
+}
+
+inline int
+History::Entry::getScore() const {
+    int ret = score;
     if (ret >= 0)
         return ret;
-    int succ = e.countSuccess;
-    int fail = e.countFail;
+    int succ = countSuccess;
+    int fail = countFail;
     if (succ + fail > 0) {
         ret = succ * 49 / (succ + fail);
     } else
         ret = 0;
-    e.score = ret;
+    score = ret;
     return ret;
 }
 
