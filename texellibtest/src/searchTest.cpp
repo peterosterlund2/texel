@@ -26,6 +26,7 @@
 #include "searchTest.hpp"
 #include "evaluateTest.hpp"
 #include "positionTest.hpp"
+#include "tbTest.hpp"
 #include "constants.hpp"
 #include "position.hpp"
 #include "moveGen.hpp"
@@ -526,6 +527,22 @@ SearchTest::testTBSearch() {
     sc.init(pos, nullHist, 0);
     score = idSearch(sc, 4, 3).score();
     ASSERT(std::abs(score) < 50);
+
+    {
+        TBTest::initTB("", 0, "");
+        pos = TextIO::readFEN("8/8/8/3rk3/8/8/8/KQ6 w - - 0 1"); // KQKR long mate
+        sc.init(pos, nullHist, 0);
+        MoveList moves;
+        MoveGen::pseudoLegalMoves(sc.pos, moves);
+        MoveGen::removeIllegal(sc.pos, moves);
+        sc.scoreMoveList(moves, 0);
+        sc.timeLimit(10000, 20000); // Should take less than 2s to generate the TB
+        Move bestM = sc.iterativeDeepening(moves, -1, -1, false, 1, false, -1);
+        ASSERT_EQUAL(sc.pos.materialId(), PositionTest::computeMaterialId(sc.pos));
+        ASSERT_EQUAL(mate0 - 33 * 2, bestM.score());
+        TBTest::initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
+        tt.clear();
+    }
 }
 
 void

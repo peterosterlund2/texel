@@ -113,6 +113,9 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     const bool smp = pd.numHelperThreads() > 0;
     maxNodes = initialMaxNodes;
     this->minProbeDepth = (TBProbe::tbEnabled() ? minProbeDepth : MAX_SEARCH_DEPTH) * plyScale;
+    if ((maxDepth < 0) && (maxNodes < 0) && !TBProbe::tbEnabled())
+        if (tt.updateTB(pos, maxTimeMillis))
+            this->minProbeDepth = 1; // In-memory on-demand tables can be probed aggressively
     std::vector<MoveInfo> rootMoves;
     getRootMoves(scMovesIn, rootMoves, maxDepth);
 
@@ -307,7 +310,7 @@ Search::storeSearchResult(std::vector<MoveInfo>& scMoves, int mi, int depth,
     scMoves[mi].pv.clear();
     tt.extractPVMoves(pos, scMoves[mi].move, scMoves[mi].pv);
     if ((maxTimeMillis < 0) && SearchConst::isWinScore(std::abs(score)))
-        TBProbe::extendPV(pos, scMoves[mi].pv);
+        TBProbe::extendPV(pos, scMoves[mi].pv, tt);
 }
 
 void
@@ -537,7 +540,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     if (tb && depth >= minProbeDepth && !singularSearch) {
         TranspositionTable::TTEntry tbEnt;
         tbEnt.clear();
-        if (TBProbe::tbProbe(pos, ply, alpha, beta, tbEnt)) {
+        if (TBProbe::tbProbe(pos, ply, alpha, beta, tt, tbEnt)) {
             tbHits++;
             nodesToGo -= 1000;
             int type = tbEnt.getType();
@@ -1081,7 +1084,7 @@ Search::getRootMoves(const MoveList& rootMovesIn,
         if (rootMoves.size == legalMoves.size) {
             // Game mode, handle missing TBs
             std::vector<Move> movesToSearch;
-            if (TBProbe::getSearchMoves(pos, legalMoves, movesToSearch))
+            if (TBProbe::getSearchMoves(pos, legalMoves, movesToSearch, tt))
                 rootMoves.filter(movesToSearch);
         }
     }

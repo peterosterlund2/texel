@@ -86,13 +86,20 @@ TBProbe::tbEnabled() {
 
 bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
-                 TranspositionTable::TTEntry& ent) {
+                 TranspositionTable& tt, TranspositionTable::TTEntry& ent) {
     const int nPieces = BitBoard::bitCount(pos.occupiedBB());
     bool mateSearch = SearchConst::isLoseScore(alpha) || SearchConst::isWinScore(beta);
 
+    // Probe on-demand TB
+    int dtmScore;
+    if (nPieces <= 4 && tt.probeDTM(pos, ply, dtmScore)) {
+        ent.setScore(dtmScore, ply);
+        ent.setType(TType::T_EXACT);
+        return true;
+    }
+
     if (mateSearch || pos.getHalfMoveClock() > 0) {
         // Need DTM or DTZ probe
-        int dtmScore;
         bool hasDtm = false;
         if (nPieces <= gtbMaxPieces && gtbProbeDTM(pos, ply, dtmScore)) {
             if (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - pos.getHalfMoveClock()) {
@@ -140,11 +147,12 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
 
 bool
 TBProbe::getSearchMoves(Position& pos, const MoveList& legalMoves,
-                        std::vector<Move>& movesToSearch) {
+                        std::vector<Move>& movesToSearch,
+                        TranspositionTable& tt) {
     const int mate0 = SearchConst::MATE0;
     const int ply = 0;
     TranspositionTable::TTEntry rootEnt;
-    if (!tbProbe(pos, ply, -mate0, mate0, rootEnt) || rootEnt.getType() == TType::T_LE)
+    if (!tbProbe(pos, ply, -mate0, mate0, tt, rootEnt) || rootEnt.getType() == TType::T_LE)
         return false;
     const int rootScore = rootEnt.getScore(ply);
     if (!SearchConst::isWinScore(rootScore))
@@ -160,7 +168,7 @@ TBProbe::getSearchMoves(Position& pos, const MoveList& legalMoves,
         ent.clear();
         bool progressMove = false;
         bool badMove = false;
-        if (tbProbe(pos, ply+1, -mate0, mate0, ent)) {
+        if (tbProbe(pos, ply+1, -mate0, mate0, tt, ent)) {
             const int type = ent.getType();
             const int score = -ent.getScore(ply+1);
             if (score >= rootScore && (type == TType::T_EXACT || type == TType::T_LE))
@@ -178,8 +186,18 @@ TBProbe::getSearchMoves(Position& pos, const MoveList& legalMoves,
     return !hasProgress && !movesToSearch.empty();
 }
 
+bool
+TBProbe::dtmProbe(Position& pos, int ply, TranspositionTable& tt, int& score) {
+    const int nPieces = BitBoard::bitCount(pos.occupiedBB());
+    if (nPieces <= 4 && tt.probeDTM(pos, ply, score))
+        return true;
+    if (TBProbe::gtbProbeDTM(pos, ply, score))
+        return true;
+    return false;
+}
+
 void
-TBProbe::extendPV(const Position& rootPos, std::vector<Move>& pv) {
+TBProbe::extendPV(const Position& rootPos, std::vector<Move>& pv, TranspositionTable& tt) {
     Position pos(rootPos);
     UndoInfo ui;
     int ply = 0;
@@ -187,14 +205,14 @@ TBProbe::extendPV(const Position& rootPos, std::vector<Move>& pv) {
     for (int i = 0; i < (int)pv.size(); i++) {
         const Move& m = pv[i];
         pos.makeMove(m, ui);
-        if (TBProbe::gtbProbeDTM(pos, ply, score) && SearchConst::isWinScore(std::abs(score)) &&
+        if (dtmProbe(pos, ply, tt, score) && SearchConst::isWinScore(std::abs(score)) &&
             (SearchConst::MATE0 - 1 - abs(score) - ply <= 100 - pos.getHalfMoveClock())) {
             // TB win, replace rest of PV since it may be inaccurate
             pv.erase(pv.begin()+i+1, pv.end());
             break;
         }
     }
-    if (!TBProbe::gtbProbeDTM(pos, ply, score) || !SearchConst::isWinScore(std::abs(score)))
+    if (!dtmProbe(pos, ply, tt, score) || !SearchConst::isWinScore(std::abs(score)))
         return; // No TB win
     if (SearchConst::MATE0 - 1 - abs(score) - ply > 100 - pos.getHalfMoveClock())
         return; // Mate too far away, perhaps 50-move draw
@@ -209,7 +227,7 @@ TBProbe::extendPV(const Position& rootPos, std::vector<Move>& pv) {
             const Move& m = moveList[mi];
             pos.makeMove(m, ui);
             int newScore;
-            if (TBProbe::gtbProbeDTM(pos, ply+1, newScore)) {
+            if (dtmProbe(pos, ply+1, tt, newScore)) {
                 if (!pos.isWhiteMove())
                     newScore = -newScore;
                 if (newScore == score) {

@@ -30,10 +30,30 @@
 #include "move.hpp"
 #include "constants.hpp"
 #include "util/alignedAlloc.hpp"
+#include "tbgen.hpp"
 
+#include <memory>
 #include <vector>
 
 class Position;
+class TranspositionTable;
+
+
+/** TB storage type that uses part of a transposition table. */
+class TTStorage {
+public:
+    TTStorage(TranspositionTable& tt);
+
+    void resize(U32 size);
+
+    const PositionValue operator[](U32 idx) const;
+    void store(U32 idx, PositionValue pv);
+
+private:
+    TranspositionTable& table;
+    U64 idx0;
+};
+
 
 /**
  * Implements the main transposition table using Cuckoo hashing.
@@ -105,6 +125,8 @@ public:
 
     /** Constructor. Creates an empty transposition table with numEntries slots. */
     TranspositionTable(int log2Size);
+    TranspositionTable(const TranspositionTable& other) = delete;
+    TranspositionTable operator=(const TranspositionTable& other) = delete;
 
     void reSize(int log2Size);
 
@@ -135,6 +157,29 @@ public:
     /** Print hash table statistics. */
     void printStats() const;
 
+
+    // Methods to handle tablebase generation and probing
+
+    /**
+     * Possibly create or remove a tablebase based on the provided root position
+     * and available thinking time.
+     * Return true if TBs are available.
+     */
+    bool updateTB(const Position& pos, RelaxedShared<S64>& maxTimeMillis);
+
+    /** Probe tablebase.
+     * @param pos  The position to probe.
+     * @param ply  The ply value used to adjust mate scores.
+     * @param score The tablebase score. Only modified for tablebase hits.
+     * @return True if pos was found in the tablebase, false otherwise.
+     */
+    bool probeDTM(const Position& pos, int ply, int& score);
+
+    /** Low-level methods to read/write a single byte in the table. Used by TB generator code. */
+    U8 getByte(U64 idx);
+    void putByte(U64 idx, U8 value);
+    U64 byteSize() const;
+
 private:
     /** Get position in hash table given zobrist key. */
     size_t getIndex(U64 key) const;
@@ -144,8 +189,36 @@ private:
 
 
     vector_aligned<TTEntryStorage> table;
+    U64 hashMask; // Mask to convert zobrist key to table index
     U8 generation;
+
+    // On-demand TB generation
+    TTStorage ttStorage;
+    std::shared_ptr<TBGenerator<TTStorage>> tbGen;
+    int notUsedCnt; // Number of times updateTB() has found the tablebase
+                    // unsuitable for the current root position
 };
+
+
+inline
+TTStorage::TTStorage(TranspositionTable& tt)
+    : table(tt), idx0(0) {}
+
+inline void
+TTStorage::resize(U32 size) {
+    assert(table.byteSize() > size);
+    idx0 = table.byteSize() - size;
+}
+
+inline const PositionValue
+TTStorage::operator[](U32 idx) const {
+    return PositionValue(table.getByte(idx0 + idx));
+}
+
+inline void
+TTStorage::store(U32 idx, PositionValue pv) {
+    table.putByte(idx0 + idx, (U8)pv.getState());
+}
 
 
 inline
@@ -304,16 +377,12 @@ TranspositionTable::TTEntry::getBits(int first, int size) const {
 
 inline size_t
 TranspositionTable::getIndex(U64 key) const {
-    return (size_t)(key & (table.size() - 1));
+    return (size_t)(key & hashMask);
 }
 
 inline U64
 TranspositionTable::getStoredKey(U64 key) {
     return key;
-}
-
-inline TranspositionTable::TranspositionTable(int log2Size) {
-    reSize(log2Size);
 }
 
 inline void
@@ -356,12 +425,38 @@ TranspositionTable::nextGeneration() {
     generation = (generation + 1) & 15;
 }
 
-inline void
-TranspositionTable::clear() {
-    TTEntry ent;
-    ent.clear();
-    for (size_t i = 0; i < table.size(); i++)
-        ent.store(table[i]);
+inline U8
+TranspositionTable::getByte(U64 idx) {
+    U64 ent = idx / 16;
+    int offs = idx & 0xf;
+    U64 data = (offs < 8) ? table[ent].key.load(std::memory_order_relaxed)
+                          : table[ent].data.load(std::memory_order_relaxed);
+    offs &= 0x7;
+    return (data >> (offs * 8)) & 0xff;
 }
+
+inline void
+TranspositionTable::putByte(U64 idx, U8 value) {
+    U64 ent = idx / 16;
+    int offs = idx & 0xf;
+    if (offs < 8) {
+        U64 data = table[ent].key.load(std::memory_order_relaxed);
+        data &= ~(0xffULL << (offs * 8));
+        data |= ((U64)value) << (offs * 8);
+        table[ent].key.store(data, std::memory_order_relaxed);
+    } else {
+        offs &= 0x07;
+        U64 data = table[ent].data.load(std::memory_order_relaxed);
+        data &= ~(0xffULL << (offs * 8));
+        data |= ((U64)value) << (offs * 8);
+        table[ent].data.store(data, std::memory_order_relaxed);
+    }
+}
+
+inline U64
+TranspositionTable::byteSize() const {
+    return table.size() * 16;
+}
+
 
 #endif /* TRANSPOSITIONTABLE_HPP_ */

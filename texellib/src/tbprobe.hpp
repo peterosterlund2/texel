@@ -52,6 +52,7 @@ public:
      *             but is restored to original state before function returns.
      */
     static bool tbProbe(Position& pos, int ply, int alpha, int beta,
+                        TranspositionTable& tt,
                         TranspositionTable::TTEntry& ent);
 
     /** If some TB files are missing, it may be necessary to only search a subset
@@ -61,13 +62,16 @@ public:
      * @param pos           The root position.
      * @param legalMoves    The set of legal root moves.
      * @param movesToSearch The moves to search.
+     * @param tt            TranspositionTable that can contain on-demand tablebase.
      * @return True if a subset should be searched, false to search all moves.
      */
     static bool getSearchMoves(Position& pos, const MoveList& legalMoves,
-                               std::vector<Move>& movesToSearch);
+                               std::vector<Move>& movesToSearch,
+                               TranspositionTable& tt);
 
     /** Enhance PV with DTM information from gaviota tablebases. */
-    static void extendPV(const Position& rootPos, std::vector<Move>& pv);
+    static void extendPV(const Position& rootPos, std::vector<Move>& pv,
+                         TranspositionTable& tt);
 
     /** Probe gaviota DTM tablebases.
      * @param pos  The position to probe. The position can be temporarily modified
@@ -137,6 +141,9 @@ private:
     static bool gtbProbeDTM(const GtbProbeData& gtbData, int ply, int& score);
 
     static bool gtbProbeWDL(const GtbProbeData& gtbData, int ply, int& score);
+
+    /** Probe GTB and on-demand TBs to find a DTM score. */
+    static bool dtmProbe(Position& pos, int ply, TranspositionTable& tt, int& score);
 };
 
 

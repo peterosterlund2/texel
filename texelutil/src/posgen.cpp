@@ -14,6 +14,7 @@
 #include "parameters.hpp"
 #include "util/timeUtil.hpp"
 #include "chesstool.hpp"
+#include "tbgen.hpp"
 
 bool
 PosGenerator::generate(const std::string& type) {
@@ -670,5 +671,56 @@ PosGenerator::dtzTest(const std::vector<std::string>& tbTypes) {
                   << " t:" << (t1-t0) << std::endl;
         std::cout << tbType << " minSlack:" << minSlack << " maxSlack:" << maxSlack
                   << " minSlack2:" << minSlack2 << " maxSlack2:" << maxSlack2 << std::endl;
+    }
+}
+
+void
+PosGenerator::tbgenTest(const std::vector<std::string>& tbTypes) {
+    ChessTool::setupTB();
+    for (std::string tbType : tbTypes) {
+        std::vector<int> pieces;
+        bool whitePawns, blackPawns;
+        getPieces(tbType, pieces, whitePawns, blackPawns);
+        if (whitePawns || blackPawns) {
+            std::cout << "tbType: " << tbType << " pawns not supported" << std::endl;
+            continue;
+        }
+        PieceCount pc;
+        pc.nwq = pc.nwr = pc.nwb = pc.nwn = 0;
+        pc.nbq = pc.nbr = pc.nbb = pc.nbn = 0;
+        for (int p : pieces) {
+            switch (p) {
+            case Piece::WQUEEN:  pc.nwq++; break;
+            case Piece::WROOK:   pc.nwr++; break;
+            case Piece::WBISHOP: pc.nwb++; break;
+            case Piece::WKNIGHT: pc.nwn++; break;
+            case Piece::BQUEEN:  pc.nbq++; break;
+            case Piece::BROOK:   pc.nbr++; break;
+            case Piece::BBISHOP: pc.nbb++; break;
+            case Piece::BKNIGHT: pc.nbn++; break;
+            }
+        }
+        VectorStorage vs;
+        TBGenerator<VectorStorage> tbGen(vs, pc);
+        RelaxedShared<S64> maxTimeMillis(-1);
+        tbGen.generate(maxTimeMillis, false);
+        double t0 = currentTime();
+
+        U64 nPos = 0;
+        iteratePositions(tbType, [&](Position& pos) {
+            nPos++;
+            int score, gtbScore;
+            if (!tbGen.probeDTM(pos, 0, score))
+                throw ChessParseError("tbGen probe failed, pos:" + TextIO::toFEN(pos));
+            if (!TBProbe::gtbProbeDTM(pos, 0, gtbScore))
+                throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
+            if (score != gtbScore) {
+                std::cout << tbType << " i:" << nPos << " score:" << score << " gtbScore:" << gtbScore
+                          << " pos:" << TextIO::toFEN(pos) << std::endl;
+                throw ChessParseError("stop");
+            }
+        });
+        double t1 = currentTime();
+        std::cout << tbType << " nPos:" << nPos << " compare time:" << (t1-t0) << std::endl;
     }
 }

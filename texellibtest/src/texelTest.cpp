@@ -38,6 +38,7 @@
 #include "treeLoggerTest.hpp"
 #include "utilTest.hpp"
 #include "tbTest.hpp"
+#include "tbgenTest.hpp"
 
 #include "computerPlayer.hpp"
 #include "tbprobe.hpp"
@@ -52,6 +53,7 @@ runSuite(const SuiteBase& suite) {
 int main() {
     UciParams::gtbPath->set(gtbDefaultPath);
     UciParams::rtbPath->set(rtbDefaultPath);
+    UciParams::gtbCache->set("128");
     ComputerPlayer::initEngine();
     runSuite(BitBoardTest());
     runSuite(BookTest());
@@ -71,5 +73,6 @@ int main() {
     runSuite(TreeLoggerTest());
     runSuite(UtilTest());
     runSuite(TBTest());
+    runSuite(TBGenTest());
     return 0;
 }

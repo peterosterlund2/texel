@@ -38,6 +38,9 @@ public:
     /** Compare RTB DTZ probe results to GTB DTM probe results, report any unexpected differences. */
     static void dtzTest(const std::vector<std::string>& tbTypes);
 
+    /** Compare tbgen probe results to GTB DTM probe results, report any differences. */
+    static void tbgenTest(const std::vector<std::string>& tbTypes);
+
 private:
     static void genQvsN();
 };

@@ -37,8 +37,9 @@
 
 #include "cute.h"
 
-static void initTB(const std::string& gtbPath, int cacheMB,
-                   const std::string& rtbPath) {
+void
+TBTest::initTB(const std::string& gtbPath, int cacheMB,
+               const std::string& rtbPath) {
     TBProbe::initialize(gtbPath, cacheMB, rtbPath);
 }
 
@@ -61,8 +62,8 @@ static void setupTBFiles(const std::vector<std::string>& tbFiles) {
             throw "Unsupported file type";
         }
     }
-    initTB("", 0, "");
-    initTB(tmpDir, gtbDefaultCacheMB, tmpDir);
+    TBTest::initTB("", 0, "");
+    TBTest::initTB(tmpDir, gtbDefaultCacheMB, tmpDir);
 }
 
 /** Probe both DTM and WDL, check consistency and return DTM value. */
@@ -335,22 +336,23 @@ void
 TBTest::tbTest() {
     int ply = 29;
     const int mate0 = SearchConst::MATE0;
+    TranspositionTable& tt = SearchTest::tt;
 
     // DTM > 100 when ignoring 50-move rule, RTB probes must be used when available
     Position pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 0 1");
     TranspositionTable::TTEntry ent;
-    bool res = TBProbe::tbProbe(pos, ply, -10, 10, ent);
+    bool res = TBProbe::tbProbe(pos, ply, -10, 10, tt, ent);
     ASSERT(res);
     ASSERT_EQUAL(TType::T_LE, ent.getType());
     ASSERT(ent.getScore(ply) < 0);
 
-    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
     ASSERT(res);
     ASSERT_EQUAL(TType::T_LE, ent.getType());
     ASSERT(ent.getScore(ply) < 0);
 
     initTB(gtbDefaultPath, gtbDefaultCacheMB, ""); // Disable syzygy tables
-    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
     ASSERT(res);
     ASSERT_EQUAL(TType::T_EXACT, ent.getType());
     ASSERT(ent.getScore(ply) < 0);
@@ -360,43 +362,43 @@ TBTest::tbTest() {
 
     // Half-move clock small, DTM mate wins
     pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 0 1");
-    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
     ASSERT(res);
     ASSERT_EQUAL(TType::T_EXACT, ent.getType());
     ASSERT_EQUAL(-(mate0 - ply - 23), ent.getScore(ply));
-    res = TBProbe::tbProbe(pos, ply, -10, 10, ent);
+    res = TBProbe::tbProbe(pos, ply, -10, 10, tt, ent);
     ASSERT(res);
     ASSERT_EQUAL(TType::T_LE, ent.getType());
     ASSERT(SearchConst::isLoseScore(ent.getScore(ply)));
 
     // Half-move clock large, must follow DTZ path to win
     pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 90 1");
-    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
     ASSERT(res);
     ASSERT_EQUAL(TType::T_LE, ent.getType());
     ASSERT(SearchConst::isLoseScore(ent.getScore(ply)));
     ASSERT(ent.getScore(ply) > -(mate0 - ply - 23));
-    res = TBProbe::tbProbe(pos, ply, -10, 10, ent);
+    res = TBProbe::tbProbe(pos, ply, -10, 10, tt, ent);
     ASSERT(res);
     ASSERT_EQUAL(TType::T_LE, ent.getType());
     ASSERT(SearchConst::isLoseScore(ent.getScore(ply)));
 
     // Mate in one, half-move clock small
     pos = TextIO::readFEN("8/8/4B3/8/kBK5/8/8/8 w - - 0 1");
-    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
     ASSERT(res);
     ASSERT_EQUAL(TType::T_EXACT, ent.getType());
     ASSERT_EQUAL(mate0 - 2 - ply, ent.getScore(ply));
 
     // Mate in one, half-move clock large
     pos = TextIO::readFEN("8/8/4B3/8/kBK5/8/8/8 w - - 99 1");
-    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
     ASSERT(res);
     ASSERT_EQUAL(TType::T_EXACT, ent.getType());
     ASSERT_EQUAL(mate0 - 2 - ply, ent.getScore(ply));
     // Same position, no GTB tables available
     initTB("/no/such/dir", gtbDefaultCacheMB, rtbDefaultPath);
-    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, ent);
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
     ASSERT(!res || ent.getScore(ply) != 0);
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
 }
@@ -417,6 +419,7 @@ static void compareMoves(const std::vector<std::string>& strMoves,
 
 void
 TBTest::testMissingTables() {
+    TranspositionTable& tt = SearchTest::tt;
     for (int loop = 0; loop < 2; loop++) {
         bool gtb = loop == 1;
         // No progress move in TBs, must search all zeroing moves
@@ -428,7 +431,7 @@ TBTest::testMissingTables() {
         MoveList legalMoves;
         getLegalMoves(pos, legalMoves);
         std::vector<Move> movesToSearch;
-        bool res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch);
+        bool res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch, tt);
         ASSERT_EQUAL(true, res);
         if (gtb)
             compareMoves(std::vector<std::string>{"e7e8q", "e7e8r", "e7e8b", "e7e8n"}, movesToSearch);
@@ -447,7 +450,7 @@ TBTest::testMissingTables() {
         pos = TextIO::readFEN("8/4P3/8/8/2k1K3/8/8/8 w - - 0 1");
         getLegalMoves(pos, legalMoves);
         movesToSearch.clear();
-        res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch);
+        res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch, tt);
         ASSERT_EQUAL(false, res);
 
         // No progress move in TBs, must search all unknown zeroing moves
@@ -458,7 +461,7 @@ TBTest::testMissingTables() {
         pos = TextIO::readFEN("8/4P3/8/8/2k1K3/8/8/8 w - - 0 1");
         getLegalMoves(pos, legalMoves);
         movesToSearch.clear();
-        res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch);
+        res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch, tt);
         if (gtb) {
             ASSERT_EQUAL(true, res);
             compareMoves(std::vector<std::string>{"e7e8q", "e7e8b", "e7e8n"}, movesToSearch);
@@ -472,7 +475,7 @@ TBTest::testMissingTables() {
             pos = TextIO::readFEN("8/4P3/8/8/1k2K3/8/8/8 w - - 0 1");
             getLegalMoves(pos, legalMoves);
             movesToSearch.clear();
-            res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch);
+            res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch, tt);
             ASSERT_EQUAL(false, res);
         }
     }

@@ -34,11 +34,31 @@
 using namespace std;
 
 
+TranspositionTable::TranspositionTable(int log2Size)
+    : ttStorage(*this) {
+    reSize(log2Size);
+}
+
 void
 TranspositionTable::reSize(int log2Size) {
     const size_t numEntries = ((size_t)1) << log2Size;
     table.resize(numEntries);
     generation = 0;
+
+    hashMask = table.size() - 1;
+    tbGen.reset();
+    notUsedCnt = 0;
+}
+
+void
+TranspositionTable::clear() {
+    hashMask = table.size() - 1;
+    tbGen.reset();
+    notUsedCnt = 0;
+    TTEntry ent;
+    ent.clear();
+    for (size_t i = 0; i < table.size(); i++)
+        ent.store(table[i]);
 }
 
 void
@@ -198,4 +218,61 @@ TranspositionTable::printStats() const {
             std::cout << "hstat:" << ss.str() << std::endl;
         }
     }
+}
+
+// --------------------------------------------------------------------------------
+
+bool
+TranspositionTable::updateTB(const Position& pos, RelaxedShared<S64>& maxTimeMillis) {
+    if (BitBoard::bitCount(pos.occupiedBB()) > 4 ||
+        pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) { // pos not suitable for TB generation
+        if (tbGen && notUsedCnt++ > 3) {
+            tbGen.reset();
+            hashMask = table.size() - 1;
+            notUsedCnt = 0;
+        }
+        return tbGen != nullptr;
+    }
+
+    int score;
+    if (tbGen && tbGen->probeDTM(pos, 0, score)) {
+        notUsedCnt = 0;
+        return true; // pos already in TB
+    }
+
+    static S64 requiredTime = 3000;
+    if (maxTimeMillis >= 0 && maxTimeMillis < requiredTime)
+        return false; // Not enough time to generate TB
+
+    U64 ttSize = table.size() * 16;
+    if (ttSize < 8 * 1024 * 1024)
+        return false; // Need at least 5MB for TB storage
+
+    PieceCount pc;
+    pc.nwq = BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN));
+    pc.nwr = BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK));
+    pc.nwb = BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP));
+    pc.nwn = BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT));
+    pc.nbq = BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN));
+    pc.nbr = BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK));
+    pc.nbb = BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP));
+    pc.nbn = BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT));
+
+    tbGen = std::make_shared<TBGenerator<TTStorage>>(ttStorage, pc);
+    if (!tbGen->generate(maxTimeMillis, false)) {
+        // Increase requiredTime unless computation was aborted
+        S64 maxT = maxTimeMillis;
+        if (maxT != 0)
+            requiredTime = std::max(maxT, requiredTime) * 2;
+        return false;
+    }
+    int shift = (ttSize < 16 * 1024 * 1024) ? 2 : 1;
+    hashMask = (table.size() - 1) >> shift;
+    notUsedCnt = 0;
+    return true;
+}
+
+bool
+TranspositionTable::probeDTM(const Position& pos, int ply, int& score) {
+    return tbGen && tbGen->probeDTM(pos, ply, score);
 }

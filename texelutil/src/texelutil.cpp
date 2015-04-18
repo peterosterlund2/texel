@@ -8,6 +8,7 @@
 #include "chesstool.hpp"
 #include "posgen.hpp"
 #include "spsa.hpp"
+#include "tbgen.hpp"
 #include "parameters.hpp"
 #include "chessParseError.hpp"
 #include "computerPlayer.hpp"
@@ -87,6 +88,8 @@ usage() {
     std::cerr << " tourneysim nSimul nRounds elo1 elo2 ... : Simulate tournament\n";
     std::cerr << " spsasim nSimul nIter gamesPerIter a c param1 ... : Simulate SPSA optimization\n";
     std::cerr << " spsa spsafile.conf : Run SPSA optimization using the given configuration file\n";
+    std::cerr << " tbgen wq wr wb wn bq br bb bn : Generate pawn-less tablebase in memory\n";
+    std::cerr << " tbgentest type1 [type2 ...] : Compare pawnless tablebase against GTB\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -385,6 +388,36 @@ main(int argc, char* argv[]) {
                 usage();
             std::string filename = argv[2];
             Spsa::spsa(filename);
+        } else if (cmd == "tbgen") {
+            if (argc != 10)
+                usage();
+            PieceCount pc;
+            if (!str2Num(argv[2], pc.nwq) ||
+                !str2Num(argv[3], pc.nwr) ||
+                !str2Num(argv[4], pc.nwb) ||
+                !str2Num(argv[5], pc.nwn) ||
+                !str2Num(argv[6], pc.nbq) ||
+                !str2Num(argv[7], pc.nbr) ||
+                !str2Num(argv[8], pc.nbb) ||
+                !str2Num(argv[9], pc.nbn))
+                usage();
+#if 1
+                VectorStorage vs;
+                TBGenerator<VectorStorage> tbGen(vs, pc);
+#else
+                TranspositionTable tt(19);
+                TTStorage tts(tt);
+                TBGenerator<TTStorage> tbGen(tts, pc);
+#endif
+                RelaxedShared<S64> maxTimeMillis(-1);
+                tbGen.generate(maxTimeMillis, true);
+        } else if (cmd == "tbgentest") {
+            if (argc < 3)
+                usage();
+            std::vector<std::string> tbTypes;
+            for (int i = 2; i < argc; i++)
+                tbTypes.push_back(argv[i]);
+            PosGenerator::tbgenTest(tbTypes);
         } else {
             usage();
         }

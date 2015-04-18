@@ -41,6 +41,9 @@ public:
 
     cute::suite getSuite() const override;
 
+    static void initTB(const std::string& gtbPath, int cacheMB,
+                       const std::string& rtbPath);
+
 private:
     static void dtmTest();
     static void kpkTest();
