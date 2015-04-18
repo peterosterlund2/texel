@@ -413,6 +413,20 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
         }
     }
 
+    // KRKBNN is generally a draw
+    if (!pos.pieceTypeBB(Piece::WQUEEN, Piece::WROOK, Piece::WPAWN) &&
+        (nWN <= 2) && (nWB1 + nWB2 <= 1) && pos.pieceTypeBB(Piece::BROOK)) {
+        if (!doEval) return 1;
+        if (score > 0)
+            return score / 8;
+    }
+    if (!pos.pieceTypeBB(Piece::BQUEEN, Piece::BROOK, Piece::BPAWN) &&
+        (nBN <= 2) && (nBB1 + nBB2 <= 1) && pos.pieceTypeBB(Piece::WROOK)) {
+        if (!doEval) return 1;
+        if (score < 0)
+            return score / 8;
+    }
+
     if ((bMtrlPawns == 0) && (wMtrlNoPawns - bMtrlNoPawns > bV)) {
         if (!doEval) return 1;
         return score + 300;       // Enough excess material, should win

@@ -667,6 +667,18 @@ EvaluateTest::testEndGameCorrections() {
     int krkn = evalEgFen("8/3nk3/8/8/8/3RK3/8/8 w - - 0 1", 1);
     ASSERT(krkn > 0);
     ASSERT(krkn < 50);
+
+    // KRKBNN is a draw
+    int kbnnkr = evalEgFen("8/3rk3/8/8/8/3N4/2NBK3/8 w - - 0 1");
+    ASSERT(kbnnkr >= 0);
+    ASSERT(kbnnkr < 50);
+
+    score = evalFEN("4k3/8/4R1n1/4Pn2/8/8/P2K2b1/8 b - - 6 1", true);
+    ASSERT(score >= -50);
+
+    // KRKBBN is a win for the BBN side
+    int kbbnkr = evalEgFen("8/3rk3/8/8/8/3B4/2NBK3/8 w - - 0 1");
+    ASSERT(kbbnkr >= 300);
 }
 
 /**
