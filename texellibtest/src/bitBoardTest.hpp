@@ -37,6 +37,7 @@ public:
 private:
     static void testKingAttacks();
     static void testKnightAttacks();
+    static void testPawnAttacks();
     static void testSquaresBetween();
     static void testGetDirection();
     static void testGetDistance();

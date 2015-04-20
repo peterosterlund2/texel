@@ -59,6 +59,43 @@ BitBoardTest::testKnightAttacks() {
                  BitBoard::knightAttacks[TextIO::getSquare("g1")]);
 }
 
+void
+BitBoardTest::testPawnAttacks() {
+    for (int sq = 0; sq < 64; sq++) {
+        int x = Position::getX(sq);
+        int y = Position::getY(sq);
+        U64 atk = BitBoard::wPawnAttacksMask(1ULL << sq);
+        U64 expected = 0;
+        if (y < 7) {
+            if (x > 0)
+                expected |= 1ULL << (sq + 7);
+            if (x < 7)
+                expected |= 1ULL << (sq + 9);
+        }
+        ASSERT_EQUAL(expected, atk);
+
+        atk = BitBoard::bPawnAttacksMask(1ULL << sq);
+        expected = 0;
+        if (y > 0) {
+            if (x > 0)
+                expected |= 1ULL << (sq - 9);
+            if (x < 7)
+                expected |= 1ULL << (sq - 7);
+        }
+        ASSERT_EQUAL(expected, atk);
+    }
+
+    ASSERT_EQUAL(BitBoard::sqMask(A5,B5,C5),
+                 BitBoard::wPawnAttacksMask(BitBoard::sqMask(A4,B4)));
+    ASSERT_EQUAL(BitBoard::sqMask(A6,C6,E6),
+                 BitBoard::wPawnAttacksMask(BitBoard::sqMask(B5,D5)));
+
+    ASSERT_EQUAL(BitBoard::sqMask(B1,G1),
+                 BitBoard::bPawnAttacksMask(BitBoard::sqMask(A2,H2)));
+    ASSERT_EQUAL(BitBoard::sqMask(F3,H3,F2,H2),
+                 BitBoard::bPawnAttacksMask(BitBoard::sqMask(G4,G3)));
+}
+
 /** Test of squaresBetween[][], of class BitBoard. */
 void
 BitBoardTest::testSquaresBetween() {
@@ -313,6 +350,7 @@ BitBoardTest::getSuite() const {
     cute::suite s;
     s.push_back(CUTE(testKingAttacks));
     s.push_back(CUTE(testKnightAttacks));
+    s.push_back(CUTE(testPawnAttacks));
     s.push_back(CUTE(testSquaresBetween));
     s.push_back(CUTE(testGetDirection));
     s.push_back(CUTE(testGetDistance));

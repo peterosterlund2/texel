@@ -80,6 +80,7 @@ DEFINE_PARAM(pieceTradeThreshold);
 
 DEFINE_PARAM(threatBonus1);
 DEFINE_PARAM(threatBonus2);
+DEFINE_PARAM(latentAttackBonus);
 
 DEFINE_PARAM(rookHalfOpenBonus);
 DEFINE_PARAM(rookOpenBonus);
@@ -644,6 +645,7 @@ Parameters::Parameters() {
 
     REGISTER_PARAM(threatBonus1, "ThreatBonus1");
     REGISTER_PARAM(threatBonus2, "ThreatBonus2");
+    REGISTER_PARAM(latentAttackBonus, "LatentAttackBonus");
 
     REGISTER_PARAM(rookHalfOpenBonus, "RookHalfOpenBonus");
     REGISTER_PARAM(rookOpenBonus, "RookOpenBonus");

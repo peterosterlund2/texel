@@ -102,6 +102,11 @@ public:
     static U64 bishopAttacks(int sq, U64 occupied);
     static U64 rookAttacks(int sq, U64 occupied);
 
+    /** Shift mask in the NW and NE directions. */
+    static U64 wPawnAttacksMask(U64 mask);
+    /** Shift mask in the SW and SE directions. */
+    static U64 bPawnAttacksMask(U64 mask);
+
     static U64 squaresBetween[64][64];
 
     /** Get direction between two squares, 8*sign(dy) + sign(dx) */
@@ -156,6 +161,18 @@ BitBoard::bishopAttacks(int sq, U64 occupied) {
 inline U64
 BitBoard::rookAttacks(int sq, U64 occupied) {
     return rTables[sq][(int)(((occupied & rMasks[sq]) * rMagics[sq]) >> (64 - rBits[sq]))];
+}
+
+inline U64
+BitBoard::wPawnAttacksMask(U64 mask) {
+    return ((mask & maskBToHFiles) << 7) |
+           ((mask & maskAToGFiles) << 9);
+}
+
+inline U64
+BitBoard::bPawnAttacksMask(U64 mask) {
+    return ((mask & maskBToHFiles) >> 9) |
+           ((mask & maskAToGFiles) >> 7);
 }
 
 inline int

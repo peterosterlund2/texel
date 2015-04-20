@@ -415,8 +415,9 @@ DECLARE_PARAM(pieceTradeBonus,     10, 0, 100, useUciParam);
 DECLARE_PARAM(pawnTradeThreshold,  361, 100, 1000, useUciParam);
 DECLARE_PARAM(pieceTradeThreshold, 717, 10, 1000, useUciParam);
 
-DECLARE_PARAM(threatBonus1,     63, 5, 500, useUciParam);
+DECLARE_PARAM(threatBonus1,       63, 5, 500, useUciParam);
 DECLARE_PARAM(threatBonus2,     1191, 100, 10000, useUciParam);
+DECLARE_PARAM(latentAttackBonus,  11, -50, 50, useUciParam);
 
 DECLARE_PARAM(rookHalfOpenBonus,     14, 0, 100, useUciParam);
 DECLARE_PARAM(rookOpenBonus,         21, 0, 100, useUciParam);

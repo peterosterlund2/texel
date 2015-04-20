@@ -852,6 +852,7 @@ ChessTool::printParams() {
 
     os << "threatBonus1     : " << threatBonus1 << std::endl;
     os << "threatBonus2     : " << threatBonus2 << std::endl;
+    os << "latentAttackBonus: " << latentAttackBonus << std::endl;
 
     os << "rookHalfOpenBonus     : " << rookHalfOpenBonus << std::endl;
     os << "rookOpenBonus         : " << rookOpenBonus << std::endl;
@@ -1073,6 +1074,7 @@ ChessTool::patchParams(const std::string& directory) {
 
     replaceValue(threatBonus1, "threatBonus1", hppFile);
     replaceValue(threatBonus2, "threatBonus2", hppFile);
+    replaceValue(latentAttackBonus, "latentAttackBonus", hppFile);
 
     replaceValue(rookHalfOpenBonus, "rookHalfOpenBonus", hppFile);
     replaceValue(rookOpenBonus, "rookOpenBonus", hppFile);

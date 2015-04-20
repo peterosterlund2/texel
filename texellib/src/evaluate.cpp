@@ -184,14 +184,10 @@ Evaluate::evalPos(const Position& pos) {
     wKingAttacks = bKingAttacks = 0;
     wKingZone = BitBoard::kingAttacks[pos.getKingSq(true)]; wKingZone |= wKingZone << 8;
     bKingZone = BitBoard::kingAttacks[pos.getKingSq(false)]; bKingZone |= bKingZone >> 8;
-    wAttacksBB = bAttacksBB = 0L;
+    wAttacksBB = bAttacksBB = 0;
 
-    U64 pawns = pos.pieceTypeBB(Piece::WPAWN);
-    wPawnAttacks = ((pawns & BitBoard::maskBToHFiles) << 7) |
-                   ((pawns & BitBoard::maskAToGFiles) << 9);
-    pawns = pos.pieceTypeBB(Piece::BPAWN);
-    bPawnAttacks = ((pawns & BitBoard::maskBToHFiles) >> 9) |
-                   ((pawns & BitBoard::maskAToGFiles) >> 7);
+    wPawnAttacks = BitBoard::wPawnAttacksMask(pos.pieceTypeBB(Piece::WPAWN));
+    bPawnAttacks = BitBoard::bPawnAttacksMask(pos.pieceTypeBB(Piece::BPAWN));
 
     score += pieceSquareEval(pos);
     if (print) std::cout << "eval pst    :" << score << std::endl;
@@ -840,12 +836,10 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     ph.outPostsB = wPawnNoAtks & bPawnAttacks;
 
     U64 wBackward = wPawns & ~((wPawns | bPawns) >> 8) & (bPawnAttacks >> 8) & wPawnNoAtks;
-    wBackward &= (((wPawns & BitBoard::maskBToHFiles) >> 9) |
-                  ((wPawns & BitBoard::maskAToGFiles) >> 7));
+    wBackward &= BitBoard::bPawnAttacksMask(wPawns);
     wBackward &= ~BitBoard::northFill(bPawnFiles);
     U64 bBackward = bPawns & ~((wPawns | bPawns) << 8) & (wPawnAttacks << 8) & bPawnNoAtks;
-    bBackward &= (((bPawns & BitBoard::maskBToHFiles) << 7) |
-                  ((bPawns & BitBoard::maskAToGFiles) << 9));
+    bBackward &= BitBoard::wPawnAttacksMask(bPawns);
     bBackward &= ~BitBoard::northFill(wPawnFiles);
     score -= (BitBoard::bitCount(wBackward) - BitBoard::bitCount(bBackward)) * pawnBackwardPenalty;
 
@@ -1156,7 +1150,26 @@ Evaluate::threatBonus(const Position& pos) {
         tmp += ::pieceValue[pos.getPiece(sq)];
     }
     score -= tmp + tmp * tmp / threatBonus2;
-    return score / threatBonus1;
+    score /= threatBonus1;
+
+    // Compute "latent" pawn attacks on enemy pieces
+    const U64 occupied = pos.occupiedBB();
+    U64 pawnTargets = (pos.pieceTypeBB(Piece::WPAWN) << 8) & ~occupied;
+    pawnTargets |= ((pawnTargets & BitBoard::maskRow3) << 8) & ~occupied;
+    pawnTargets &= wPawnAttacks;
+    int latentAttacks = 0;
+    latentAttacks += BitBoard::bitCount(BitBoard::wPawnAttacksMask(pawnTargets) &
+                                        pos.pieceTypeBB(Piece::BKNIGHT, Piece::BBISHOP,
+                                                        Piece::BROOK, Piece::BQUEEN));
+    pawnTargets = (pos.pieceTypeBB(Piece::BPAWN) >> 8) & ~occupied;
+    pawnTargets |= ((pawnTargets & BitBoard::maskRow6) >> 8) & ~occupied;
+    pawnTargets &= bPawnAttacks;
+    latentAttacks -= BitBoard::bitCount(BitBoard::bPawnAttacksMask(pawnTargets) &
+                                        pos.pieceTypeBB(Piece::WKNIGHT, Piece::WBISHOP,
+                                                        Piece::WROOK, Piece::WQUEEN));
+    score += latentAttacks * latentAttackBonus;
+
+    return score;
 }
 
 int
