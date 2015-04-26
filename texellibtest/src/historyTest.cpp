@@ -50,7 +50,7 @@ testGetHistScore() {
     ASSERT_EQUAL(0, hs.getHistScore(pos, m2));
 
     hs.addFail(pos, m1, 1);
-    ASSERT_EQUAL(2 * 49 / 3, hs.getHistScore(pos, m1));
+    ASSERT_EQUAL((2 * 49 +3/2) / 3, hs.getHistScore(pos, m1));
     ASSERT_EQUAL(0, hs.getHistScore(pos, m2));
 
     hs.addFail(pos, m1, 1);
