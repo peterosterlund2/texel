@@ -1,6 +1,6 @@
 /*
     Texel - A UCI chess engine.
-    Copyright (C) 2012  Peter Österlund, peterosterlund2@gmail.com
+    Copyright (C) 2012,2015  Peter Österlund, peterosterlund2@gmail.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ static void testGetKillerScore() {
     ASSERT_EQUAL(4, kt.getKillerScore(0, m3));
 
     ASSERT_EQUAL(0, kt.getKillerScore(1, m3));
-    ASSERT_EQUAL(2, kt.getKillerScore(2, m3));
+    ASSERT_EQUAL(0, kt.getKillerScore(2, m3));
     ASSERT_EQUAL(0, kt.getKillerScore(3, m3));
     ASSERT_EQUAL(0, kt.getKillerScore(4, m3));
 
