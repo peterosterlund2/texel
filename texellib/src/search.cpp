@@ -878,7 +878,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             int sVal = std::numeric_limits<int>::min();
             bool mayReduce = (m.score() < 53) && (!isCapture || m.score() < 0) && !isPromotion;
             bool givesCheck = MoveGen::givesCheck(pos, m);
-            bool negSEECheck = (depth > 4*plyScale) && givesCheck && negSEE(m);
+            bool negSEECheck = (depth > 3*plyScale) && givesCheck && negSEE(m);
             bool doFutility = false;
             if (mayReduce && haveLegalMoves && !givesCheck && !passedPawnPush(pos, m)) {
                 if (normalBound && !isLoseScore(bestScore) && (mi >= lmpMoveCountLimit))
