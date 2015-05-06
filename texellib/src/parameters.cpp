@@ -560,6 +560,11 @@ ParamTable<14> kingAttackWeight { 0, 400, useUciParam,
     {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13 }
 };
 
+ParamTable<5> qContactCheckBonus { -1000, 1000, useUciParam,
+    {-559,-286,  0, 286, 559 },
+    {  -2,  -1,  0,   1,   2 }
+};
+
 ParamTable<5> kingPPSupportK { 0, 200, useUciParam,
     { 47, 71, 65, 56, 98 },
     {  1,  2,  3,  4,  5 }
@@ -724,6 +729,7 @@ Parameters::Parameters() {
     pawnShelterTable.registerParams("PawnShelterTable", *this);
     pawnStormTable.registerParams("PawnStormTable", *this);
     kingAttackWeight.registerParams("KingAttackWeight", *this);
+    qContactCheckBonus.registerParams("QueenContactCheckBonus", *this);
     kingPPSupportK.registerParams("KingPassedPawnSupportK", *this);
     kingPPSupportP.registerParams("KingPassedPawnSupportP", *this);
     pawnDoubledPenalty.registerParams("PawnDoubledPenalty", *this);

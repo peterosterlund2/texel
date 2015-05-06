@@ -1335,6 +1335,42 @@ EvaluateTest::testStalePawns() {
     ASSERT_EQUAL(BitBoard::sqMask(C4,C5,D3,D4,E4,E5,F7), sp);
 }
 
+int
+EvaluateTest::getNContactChecks(const std::string& fen) {
+    Position pos = TextIO::readFEN(fen);
+    Position symPos = swapColors(pos);
+    std::string symFen = TextIO::toFEN(symPos);
+
+    static std::shared_ptr<Evaluate::EvalHashTables> et;
+    if (!et)
+        et = Evaluate::getEvalHashTables();
+    Evaluate eval(*et);
+    evalPos(eval, pos, false, false);
+    int nContact = eval.getNContactChecks(pos);
+
+    evalPos(eval, symPos, false, false);
+    int nContact2 = eval.getNContactChecks(symPos);
+    ASSERT_EQUALM((fen + " == " + symFen).c_str(), -nContact, nContact2);
+
+    return nContact;
+}
+
+void
+EvaluateTest::testContactChecks() {
+    ASSERT_EQUAL(0, getNContactChecks(TextIO::startPosFEN));
+    ASSERT_EQUAL(1, getNContactChecks("r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1"));
+    ASSERT_EQUAL(0, getNContactChecks("r1bqkb1r/pppp1ppp/2n4n/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1"));
+    ASSERT_EQUAL(0, getNContactChecks("r1b1kbnr/ppppqppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1"));
+    ASSERT_EQUAL(0, getNContactChecks("r1b1kbnr/ppppqppp/2n5/4p2Q/2B1P3/5R2/PPPP1PPP/RNB1K1N1 w Qkq - 0 1")); //
+    ASSERT_EQUAL(0, getNContactChecks("2b1kbnr/ppprqppp/2n5/4p2Q/2B1P3/5R2/PPPP1PPP/RNB1K1N1 w Qk - 0 1"));
+    ASSERT_EQUAL(1, getNContactChecks("r2q1rk1/pbppppbp/1pn3p1/6N1/3PP2Q/2N5/PPPB1PP1/2KRR3 w - - 0 1"));
+    ASSERT_EQUAL(2, getNContactChecks("r2q1rk1/pbpppp2/1pn3pQ/8/4P3/2BP1N2/PPP1NPP1/2KRR3 w - - 0 1"));
+    ASSERT_EQUAL(1, getNContactChecks("r4rk1/pbpppp2/1p4pQ/8/nq1BP3/2NP1N2/PPP2PP1/2KRR3 w - - 0 1"));
+    ASSERT_EQUAL(2, getNContactChecks("rnbq1rk1/pppppp1p/5PpQ/6N1/8/8/PPPPP1PP/RNB1KB1R w KQ - 0 1"));
+    ASSERT_EQUAL(2, getNContactChecks("rnbq1rk1/ppppp3/6K1/4Q3/8/5N2/PPPPP1P1/RNB2B1R w - - 0 1"));
+    ASSERT_EQUAL(0, getNContactChecks("r1b1qr2/pp2npp1/1b2p2k/nP1pP1NP/6Q1/2P5/P4PP1/RNB1K2R b KQ - 2 14"));
+}
+
 cute::suite
 EvaluateTest::getSuite() const {
     cute::suite s;
@@ -1368,5 +1404,6 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testUciParamTable));
     s.push_back(CUTE(testSwindleScore));
     s.push_back(CUTE(testStalePawns));
+    s.push_back(CUTE(testContactChecks));
     return s;
 }

@@ -65,6 +65,8 @@ private:
     static void testUciParamTable();
     static void testSwindleScore();
     static void testStalePawns();
+    static int getNContactChecks(const std::string& fen);
+    static void testContactChecks();
 };
 
 class Position;

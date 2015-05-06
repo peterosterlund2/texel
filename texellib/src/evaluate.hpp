@@ -163,6 +163,9 @@ private:
     /** Compute king safety for both kings. */
     int kingSafety(const Position& pos);
 
+    /** Compute number of white contact checks minus number of black contact checks. */
+    int getNContactChecks(const Position& pos) const;
+
     KingSafetyHashData& getKingSafetyHashEntry(vector_aligned<KingSafetyHashData>& ksHash, U64 key);
     int kingSafetyKPPart(const Position& pos);
 
@@ -182,8 +185,11 @@ private:
      // King safety variables
     U64 wKingZone, bKingZone;       // Squares close to king that are worth attacking
     int wKingAttacks, bKingAttacks; // Number of attacks close to white/black king
-    U64 wAttacksBB, bAttacksBB;
+    U64 wAttacksBB, bAttacksBB;     // Attacks by pieces and pawns, but not king
     U64 wPawnAttacks, bPawnAttacks; // Squares attacked by white/black pawns
+    U64 wQueenContactChecks;        // White queen checks adjacent to black king
+    U64 bQueenContactChecks;
+    U64 wContactSupport, bContactSupport; // Attacks from P,N,B,R,K
 };
 
 
@@ -288,6 +294,16 @@ Evaluate::getKingSafetyHashEntry(vector_aligned<Evaluate::KingSafetyHashData>& k
         ksHash[e1].current = 0;
         return ksHash[e0];
     }
+}
+
+inline int
+Evaluate::getNContactChecks(const Position& pos) const {
+    int nContact = 0;
+    nContact += BitBoard::bitCount(wQueenContactChecks & ~bAttacksBB &
+                                   wContactSupport & ~pos.whiteBB());
+    nContact -= BitBoard::bitCount(bQueenContactChecks & ~wAttacksBB &
+                                   bContactSupport & ~pos.blackBB());
+    return nContact;
 }
 
 #endif /* EVALUATE_HPP_ */
