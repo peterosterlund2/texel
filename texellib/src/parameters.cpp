@@ -35,6 +35,8 @@ namespace UciParams {
     std::shared_ptr<Parameters::SpinParam> threads(std::make_shared<Parameters::SpinParam>("Threads", 1, 64, 1));
     std::shared_ptr<Parameters::SpinParam> multiPV(std::make_shared<Parameters::SpinParam>("MultiPV", 1, 256, 1));
 
+    std::shared_ptr<Parameters::CheckParam> useNullMove(std::make_shared<Parameters::CheckParam>("UseNullMove", true));
+
     std::shared_ptr<Parameters::StringParam> gtbPath(std::make_shared<Parameters::StringParam>("GaviotaTbPath", ""));
     std::shared_ptr<Parameters::SpinParam> gtbCache(std::make_shared<Parameters::SpinParam>("GaviotaTbCache", 1, 2047, 1));
     std::shared_ptr<Parameters::StringParam> rtbPath(std::make_shared<Parameters::StringParam>("SyzygyPath", ""));
@@ -607,6 +609,8 @@ Parameters::Parameters() {
     addPar(UciParams::strength);
     addPar(UciParams::threads);
     addPar(UciParams::multiPV);
+
+    addPar(UciParams::useNullMove);
 
     addPar(UciParams::gtbPath);
     addPar(UciParams::gtbCache);
