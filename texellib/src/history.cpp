@@ -25,6 +25,9 @@
 
 #include "history.hpp"
 
+const int History::maxSum;
+const int History::maxVal;
+
 int History::depthTable[] = {
     0, 1, 6, 19, 42, 56
 };
