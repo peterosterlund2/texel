@@ -13,6 +13,11 @@
 #include "chessParseError.hpp"
 #include "computerPlayer.hpp"
 
+#include "cute.h"
+#include "ide_listener.h"
+#include "cute_runner.h"
+#include "test/bookBuildTest.hpp"
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -53,6 +58,7 @@ usage() {
     std::cerr << " -iv file : Set initial parameter values\n";
     std::cerr << " -e : Use cross entropy error function\n";
     std::cerr << "cmd is one of:\n";
+    std::cerr << "test : Run CUTE tests\n";
     std::cerr << " p2f      : Convert from PGN to FEN\n";
     std::cerr << " f2p      : Convert from FEN to PGN\n";
     std::cerr << " filter type pars : Keep positions that satisfy a condition\n";
@@ -142,6 +148,17 @@ getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
     }
 }
 
+static void
+runTests() {
+    auto runSuite = [](const UtilSuiteBase& suite) {
+        cute::ide_listener lis;
+        cute::makeRunner(lis)(suite.getSuite(), suite.getName().c_str());
+    };
+
+    ComputerPlayer::initEngine();
+    runSuite(BookBuildTest());
+}
+
 int
 main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
@@ -166,7 +183,9 @@ main(int argc, char* argv[]) {
 
         std::string cmd = argv[1];
         ChessTool chessTool(useEntropyErrorFunction);
-        if (cmd == "p2f") {
+        if (cmd == "test") {
+            runTests();
+        } else if (cmd == "p2f") {
             chessTool.pgnToFen(std::cin);
         } else if (cmd == "f2p") {
             chessTool.fenToPgn(std::cin);
