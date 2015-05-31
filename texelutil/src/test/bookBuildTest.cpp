@@ -239,11 +239,122 @@ BookBuildTest::testBookNodeDAG() {
     ASSERT_EQUAL(13, n1->getNegaMaxScore());
 }
 
+void
+BookBuildTest::testExtend() {
+    Book book;
+    Position pos = TextIO::readFEN(TextIO::startPosFEN);
+    const U64 rootHash = pos.bookHash();
+
+    std::shared_ptr<BookNode> n1 = book.getBookNode(rootHash);
+    ASSERT(!n1);
+
+    std::vector<U64> toSearch;
+    Move e4(TextIO::uciStringToMove("e2e4"));
+    book.extend(pos, e4, toSearch);
+    n1 = book.getBookNode(rootHash);
+    ASSERT(n1);
+    ASSERT_EQUAL(2, book.bookNodes.size());
+    ASSERT_EQUAL(2, toSearch.size());
+    ASSERT_EQUAL(rootHash, pos.bookHash());
+    ASSERT(contains(toSearch, rootHash));
+    UndoInfo ui1;
+    pos.makeMove(e4, ui1);
+    const U64 n2Hash = pos.bookHash();
+    std::shared_ptr<BookNode> n2 = book.getBookNode(n2Hash);
+    ASSERT(n2);
+    ASSERT(contains(toSearch, n2Hash));
+
+    Move nf3(TextIO::uciStringToMove("g1f3"));
+    const int t = 10000;
+    n1->setSearchResult(nf3, 10, t);
+    Move nc6(TextIO::uciStringToMove("b8c6"));
+    n2->setSearchResult(nc6, -8, t);
+    ASSERT_EQUAL(-8, n2->getNegaMaxScore());
+    ASSERT_EQUAL(10, n1->getNegaMaxScore());
+
+    toSearch.clear();
+    Move nf6(TextIO::uciStringToMove("g8f6"));
+    book.extend(pos, nf6, toSearch);
+    ASSERT_EQUAL(3, book.bookNodes.size());
+    ASSERT_EQUAL(2, toSearch.size());
+    ASSERT(contains(toSearch, n2Hash));
+    UndoInfo ui2;
+    pos.makeMove(nf6, ui2);
+    const U64 n3Hash = pos.bookHash();
+    std::shared_ptr<BookNode> n3 = book.getBookNode(n3Hash);
+    ASSERT(n3);
+    ASSERT(contains(toSearch, n3Hash));
+
+    n3->setSearchResult(nf3, 7, t);
+    ASSERT_EQUAL(7, n3->getNegaMaxScore());
+    ASSERT_EQUAL(-7, n2->getNegaMaxScore());
+    ASSERT_EQUAL(10, n1->getNegaMaxScore());
+
+    pos.unMakeMove(nf6, ui2);
+    pos.unMakeMove(e4, ui1);
+    Move d4(TextIO::uciStringToMove("d2d4"));
+    toSearch.clear();
+    book.extend(pos, d4, toSearch);
+    ASSERT_EQUAL(4, book.bookNodes.size());
+    ASSERT_EQUAL(2, toSearch.size());
+    ASSERT_EQUAL(rootHash, pos.bookHash());
+    pos.makeMove(d4, ui1);
+    const U64 n5Hash = pos.bookHash();
+    std::shared_ptr<BookNode> n5 = book.getBookNode(n5Hash);
+    ASSERT(n5);
+    ASSERT(contains(toSearch, n5Hash));
+    ASSERT(contains(toSearch, rootHash));
+
+    n5->setSearchResult(nc6, -12, t);
+    ASSERT_EQUAL(-12, n5->getNegaMaxScore());
+    ASSERT_EQUAL(12, n1->getNegaMaxScore());
+
+    toSearch.clear();
+    book.extend(pos, nf6, toSearch);
+    ASSERT_EQUAL(5, book.bookNodes.size());
+    ASSERT_EQUAL(2, toSearch.size());
+    ASSERT_EQUAL(n5Hash, pos.bookHash());
+    pos.makeMove(nf6, ui2);
+    const U64 n6Hash = pos.bookHash();
+    std::shared_ptr<BookNode> n6 = book.getBookNode(n6Hash);
+    ASSERT(n6);
+    ASSERT(contains(toSearch, n6Hash));
+    ASSERT(contains(toSearch, n5Hash));
+
+    n6->setSearchResult(nf3, 11, t);
+    ASSERT_EQUAL(11, n6->getNegaMaxScore());
+    ASSERT_EQUAL(-11, n5->getNegaMaxScore());
+    ASSERT_EQUAL(11, n1->getNegaMaxScore());
+
+    toSearch.clear();
+    book.extend(pos, e4, toSearch);
+    ASSERT_EQUAL(6, book.bookNodes.size());
+    ASSERT_EQUAL(3, toSearch.size());
+    ASSERT_EQUAL(n6Hash, pos.bookHash());
+    UndoInfo ui3;
+    pos.makeMove(e4, ui3);
+    const U64 n4Hash = pos.bookHash();
+    std::shared_ptr<BookNode> n4 = book.getBookNode(n4Hash);
+    ASSERT(n4);
+    ASSERT(contains(toSearch, n4Hash));
+    ASSERT(contains(toSearch, n6Hash));
+    ASSERT(contains(toSearch, n3Hash));
+
+    n4->setSearchResult(nc6, -12, t);
+    ASSERT_EQUAL(-12, n4->getNegaMaxScore());
+    ASSERT_EQUAL(12, n6->getNegaMaxScore());
+    ASSERT_EQUAL(-12, n5->getNegaMaxScore());
+    ASSERT_EQUAL(12, n3->getNegaMaxScore());
+    ASSERT_EQUAL(-8, n2->getNegaMaxScore());
+    ASSERT_EQUAL(12, n1->getNegaMaxScore());
+}
+
 cute::suite
 BookBuildTest::getSuite() const {
     cute::suite s;
     s.push_back(CUTE(testBookNode));
     s.push_back(CUTE(testShortestDepth));
     s.push_back(CUTE(testBookNodeDAG));
+    s.push_back(CUTE(testExtend));
     return s;
 }

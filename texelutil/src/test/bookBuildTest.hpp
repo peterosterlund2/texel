@@ -18,6 +18,7 @@ private:
     static void testBookNode();
     static void testShortestDepth();
     static void testBookNodeDAG();
+    static void testExtend();
 };
 
 #endif /* BOOKBUILDTEST_HPP_ */

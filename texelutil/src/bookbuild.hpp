@@ -91,6 +91,9 @@ public:
     const U32 getSearchTime() const;
 
 private:
+    BookNode(const BookNode& other) = delete;
+    BookNode& operator=(const BookNode& other) = delete;
+
     /** Update depth of this node and all descendants. */
     void updateDepth();
 
@@ -120,7 +123,7 @@ private:
 };
 
 class Book {
-    friend class BookBuildTest;
+    friend class ::BookBuildTest;
 public:
     /** Constructor. Create an empty book. */
     Book();
@@ -144,6 +147,10 @@ public:
      * returns false.
      */
     bool getPosition(U64 hashKey, Position& pos, std::vector<Move>& moveList) const;
+
+    /** Get the book node corresponding to a hash key.
+     * Return null if there is no matching node in the book. */
+    std::shared_ptr<BookNode> getBookNode(U64 hashKey) const;
 
 private:
     /** Initialize parent/child relations in all book nodes
@@ -193,6 +200,8 @@ BookNode::getDepth() const {
 
 inline int
 BookNode::bookScoreW() const {
+    if (searchScore == INVALID_SCORE)
+        return INVALID_SCORE;
     bool wtm = depth % 2 == 0;
     int fullMoveCounter = (depth + 1) / 2;
     return searchScore + fullMoveCounter * BOOK_LENGTH_BONUS * (wtm ? 1 : -1);
@@ -200,6 +209,8 @@ BookNode::bookScoreW() const {
 
 inline int
 BookNode::bookScoreB() const {
+    if (searchScore == INVALID_SCORE)
+        return INVALID_SCORE;
     bool wtm = depth % 2 == 0;
     int fullMoveCounter = depth / 2;
     return searchScore - fullMoveCounter * BOOK_LENGTH_BONUS * (wtm ? 1 : -1);
