@@ -264,6 +264,17 @@ BookBuildTest::testExtend() {
     ASSERT(n2);
     ASSERT(contains(toSearch, n2Hash));
 
+    Position pos2;
+    std::vector<Move> moveList;
+    ASSERT(book.getPosition(rootHash, pos2, moveList));
+    ASSERT(pos2.equals(TextIO::readFEN(TextIO::startPosFEN)));
+    ASSERT_EQUAL(0, moveList.size());
+    moveList.clear();
+    ASSERT(book.getPosition(n2Hash, pos2, moveList));
+    ASSERT(pos2.equals(pos));
+    ASSERT_EQUAL(1, moveList.size());
+    ASSERT_EQUAL(e4, moveList[0]);
+
     Move nf3(TextIO::uciStringToMove("g1f3"));
     const int t = 10000;
     n1->setSearchResult(nf3, 10, t);
@@ -290,6 +301,13 @@ BookBuildTest::testExtend() {
     ASSERT_EQUAL(-7, n2->getNegaMaxScore());
     ASSERT_EQUAL(10, n1->getNegaMaxScore());
 
+    moveList.clear();
+    ASSERT(book.getPosition(n3Hash, pos2, moveList));
+    ASSERT(pos2.equals(pos));
+    ASSERT_EQUAL(2, moveList.size());
+    ASSERT_EQUAL(e4, moveList[0]);
+    ASSERT_EQUAL(nf6, moveList[1]);
+
     pos.unMakeMove(nf6, ui2);
     pos.unMakeMove(e4, ui1);
     Move d4(TextIO::uciStringToMove("d2d4"));
@@ -309,6 +327,12 @@ BookBuildTest::testExtend() {
     ASSERT_EQUAL(-12, n5->getNegaMaxScore());
     ASSERT_EQUAL(12, n1->getNegaMaxScore());
 
+    moveList.clear();
+    ASSERT(book.getPosition(n5Hash, pos2, moveList));
+    ASSERT(pos2.equals(pos));
+    ASSERT_EQUAL(1, moveList.size());
+    ASSERT_EQUAL(d4, moveList[0]);
+
     toSearch.clear();
     book.extend(pos, nf6, toSearch);
     ASSERT_EQUAL(5, book.bookNodes.size());
@@ -325,6 +349,13 @@ BookBuildTest::testExtend() {
     ASSERT_EQUAL(11, n6->getNegaMaxScore());
     ASSERT_EQUAL(-11, n5->getNegaMaxScore());
     ASSERT_EQUAL(11, n1->getNegaMaxScore());
+
+    moveList.clear();
+    ASSERT(book.getPosition(n6Hash, pos2, moveList));
+    ASSERT(pos2.equals(pos));
+    ASSERT_EQUAL(2, moveList.size());
+    ASSERT_EQUAL(d4, moveList[0]);
+    ASSERT_EQUAL(nf6, moveList[1]);
 
     toSearch.clear();
     book.extend(pos, e4, toSearch);
@@ -347,6 +378,76 @@ BookBuildTest::testExtend() {
     ASSERT_EQUAL(12, n3->getNegaMaxScore());
     ASSERT_EQUAL(-8, n2->getNegaMaxScore());
     ASSERT_EQUAL(12, n1->getNegaMaxScore());
+
+    moveList.clear();
+    ASSERT(book.getPosition(n4Hash, pos2, moveList));
+    ASSERT(pos2.equals(pos));
+    ASSERT_EQUAL(3, moveList.size());
+    ASSERT_EQUAL(e4, moveList[0]);
+    ASSERT_EQUAL(nf6, moveList[1]);
+    ASSERT_EQUAL(d4, moveList[2]);
+}
+
+void
+BookBuildTest::testExtendConnectToChild() {
+    Book book;
+    Position pos = TextIO::readFEN(TextIO::startPosFEN);
+    const U64 n1Hash = pos.bookHash();
+
+    std::vector<U64> toSearch;
+    Move e4(TextIO::uciStringToMove("e2e4"));
+    book.extend(pos, e4, toSearch);
+    std::shared_ptr<BookNode> n1 = book.getBookNode(n1Hash);
+    Move nf3(TextIO::uciStringToMove("g1f3"));
+    const int t = 10000;
+    n1->setSearchResult(nf3, 10, t);
+
+    UndoInfo ui1;
+    pos.makeMove(e4, ui1);
+    const U64 n2Hash = pos.bookHash();
+    std::shared_ptr<BookNode> n2 = book.getBookNode(n2Hash);
+    Move nc6(TextIO::uciStringToMove("b8c6"));
+    n2->setSearchResult(nc6, -8, t);
+
+    Move nf6(TextIO::uciStringToMove("g8f6"));
+    book.extend(pos, nf6, toSearch);
+    UndoInfo ui2;
+    pos.makeMove(nf6, ui2);
+    const U64 n3Hash = pos.bookHash();
+    std::shared_ptr<BookNode> n3 = book.getBookNode(n3Hash);
+    n3->setSearchResult(nf3, 7, t);
+
+    Move d4(TextIO::uciStringToMove("d2d4"));
+    book.extend(pos, d4, toSearch);
+    UndoInfo ui3;
+    pos.makeMove(d4, ui3);
+    const U64 n4Hash = pos.bookHash();
+    std::shared_ptr<BookNode> n4 = book.getBookNode(n4Hash);
+    n4->setSearchResult(nc6, -12, t);
+
+    pos.unMakeMove(d4, ui3);
+    pos.unMakeMove(nf6, ui2);
+    pos.unMakeMove(e4, ui1);
+    book.extend(pos, d4, toSearch);
+    pos.makeMove(d4, ui1);
+    const U64 n5Hash = pos.bookHash();
+    std::shared_ptr<BookNode> n5 = book.getBookNode(n5Hash);
+    n5->setSearchResult(nc6, -12, t);
+
+    book.extend(pos, nf6, toSearch);
+    pos.makeMove(nf6, ui2);
+    const U64 n6Hash = pos.bookHash();
+    std::shared_ptr<BookNode> n6 = book.getBookNode(n6Hash);
+    ASSERT_EQUAL(1, n6->getChildren().size());
+    ASSERT_EQUAL(2, n4->getParents().size());
+    n6->setSearchResult(nf3, 11, t);
+
+    ASSERT_EQUAL(-12, n4->getNegaMaxScore());
+    ASSERT_EQUAL(12, n6->getNegaMaxScore());
+    ASSERT_EQUAL(-12, n5->getNegaMaxScore());
+    ASSERT_EQUAL(12, n3->getNegaMaxScore());
+    ASSERT_EQUAL(-8, n2->getNegaMaxScore());
+    ASSERT_EQUAL(12, n1->getNegaMaxScore());
 }
 
 cute::suite
@@ -356,5 +457,6 @@ BookBuildTest::getSuite() const {
     s.push_back(CUTE(testShortestDepth));
     s.push_back(CUTE(testBookNodeDAG));
     s.push_back(CUTE(testExtend));
+    s.push_back(CUTE(testExtendConnectToChild));
     return s;
 }
