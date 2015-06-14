@@ -7,62 +7,71 @@
 
 #include "bookbuild.hpp"
 #include "moveGen.hpp"
+#include "search.hpp"
 #include "textio.hpp"
 
 namespace BookBuild {
 
 void
-BookNode::initScores(bool force) {
-    if (force || (negaMaxScore == INVALID_SCORE)) {
+BookNode::updateNegaMax(const std::set<U64>& pendingPositions,
+                        bool updateThis, bool updateChildren, bool updateParents) {
+    if (!updateThis && (negaMaxScore != INVALID_SCORE))
+        return;
+    if (updateChildren) {
         for (auto& e : children)
-            e.second->initScores();
-        computeNegaMax();
+            e.second->updateNegaMax(pendingPositions, false, true, false);
+    }
+    bool propagate = computeNegaMax(pendingPositions);
+    if (updateParents && propagate) {
+        for (auto& e : parents) {
+            std::shared_ptr<BookNode> parent = e.second.lock();
+            assert(parent);
+            parent->updateNegaMax(pendingPositions, true, false, true);
+        }
     }
 }
 
 bool
-BookNode::computeNegaMax() {
+BookNode::computeNegaMax(const std::set<U64>& pendingPositions) {
+    // FIXME!! Use pendingPositions
+
     int oldNM = negaMaxScore;
     int oldBW = negaMaxBookScoreW;
     int oldBB = negaMaxBookScoreB;
 
     negaMaxScore = searchScore;
+    for (const auto& e : children)
+        negaMaxScore = std::max(negaMaxScore, negateScore(e.second->negaMaxScore));
+
     negaMaxBookScoreW = bookScoreW();
     negaMaxBookScoreB = bookScoreB();
     for (const auto& e : children) {
-        if (e.second->negaMaxScore != INVALID_SCORE) {
-            negaMaxScore = std::max(negaMaxScore, -e.second->negaMaxScore);
-            negaMaxBookScoreW = std::max(negaMaxBookScoreW, -e.second->negaMaxBookScoreW);
-            negaMaxBookScoreB = std::max(negaMaxBookScoreB, -e.second->negaMaxBookScoreB);
-        }
+        negaMaxBookScoreW = std::max(negaMaxBookScoreW, negateScore(e.second->negaMaxBookScoreW));
+        negaMaxBookScoreB = std::max(negaMaxBookScoreB, negateScore(e.second->negaMaxBookScoreB));
     }
     return ((negaMaxScore != oldNM) ||
             (negaMaxBookScoreW != oldBW) ||
             (negaMaxBookScoreB != oldBB));
 }
 
-void
-BookNode::propagateScore() {
-    bool propagate = computeNegaMax();
-    if (propagate) {
-        for (auto& e : parents) {
-            std::shared_ptr<BookNode> parent = e.second.lock();
-            assert(parent);
-            parent->propagateScore();
-        }
-    }
+int
+BookNode::negateScore(int score) const {
+    if (score == IGNORE_SCORE || score == INVALID_SCORE)
+        return score; // No negation
+    if (SearchConst::isWinScore(score))
+        return -(score-1);
+    if (SearchConst::isLoseScore(score))
+        return -(score+1);
+    return -score;
 }
 
 void
-BookNode::setSearchResult(const Move& bestMove, int score, int time) {
-    bool propagate = score != searchScore;
+BookNode::setSearchResult(const std::set<U64>& pendingPositions,
+                          const Move& bestMove, int score, int time) {
     bestNonBookMove = bestMove;
     searchScore = score;
     searchTime = time;
-    if (propagate)
-        propagateScore();
-    else
-        computeNegaMax();
+    updateNegaMax(pendingPositions);
 }
 
 void
@@ -83,20 +92,102 @@ BookNode::updateDepth() {
             e.second->updateDepth();
 }
 
-Book::Book()
-    : startPosHash(TextIO::readFEN(TextIO::startPosFEN).bookHash()) {
+// ----------------------------------------------------------------------------
+
+Book::Book(const std::string& backupFile0)
+    : startPosHash(TextIO::readFEN(TextIO::startPosFEN).bookHash()),
+      backupFile(backupFile0) {
+    addRootNode();
+    if (!backupFile.empty())
+        writeToFile(backupFile);
+}
+
+void
+Book::improve(const std::string& bookFile, int searchTime, const std::string& fen) {
+    readFromFile(bookFile);
+
+    class DropoutSelector : public PositionSelector {
+    public:
+        DropoutSelector(Book& b) : book(b), whiteBook(true) {
+        }
+
+        bool getNextPosition(Position& pos, Move& move) override {
+            bool foundPos = false; // FIXME!!
+
+            if (foundPos)
+                whiteBook = !whiteBook;
+            return foundPos;
+        }
+
+    private:
+        Book& book;
+        bool whiteBook;
+    };
+
+    DropoutSelector selector(*this);
+    extendBook(selector, searchTime);
+
+    writeToFile(bookFile + ".out");
+}
+
+void
+Book::importPGN(const std::string& bookFile, const std::string& pgnFile, int searchTime) {
+    readFromFile(bookFile);
+
+    class PgnSelector : public PositionSelector {
+    public:
+        PgnSelector(Book& b, const std::string& pgnFile) : book(b) {
+        }
+
+        bool getNextPosition(Position& pos, Move& move) override {
+            return false; // FIXME!!
+        }
+
+    private:
+        Book& book;
+    };
+
+    PgnSelector selector(*this, pgnFile);
+    extendBook(selector, searchTime);
+
+    writeToFile(bookFile + ".out");
+}
+
+void
+Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFile,
+                     int maxPathError) {
+    readFromFile(bookFile);
+}
+
+void
+Book::interactiveQuery(const std::string& bookFile) {
+    readFromFile(bookFile);
+}
+
+// ----------------------------------------------------------------------------
+
+void
+Book::addRootNode() {
+    if (bookNodes.find(startPosHash) == bookNodes.end()) {
+        auto rootNode(std::make_shared<BookNode>(startPosHash));
+        rootNode->setState(BookNode::INITIALIZED);
+        bookNodes[startPosHash] = rootNode;
+        Position pos = TextIO::readFEN(TextIO::startPosFEN);
+        setChildRefs(pos);
+        writeBackup(*rootNode);
+    }
 }
 
 void
 Book::readFromFile(const std::string& filename) {
     bookNodes.clear();
     hashToParent.clear();
+    pendingPositions.clear();
 
     // Read all book entries
     std::ifstream is;
     is.open(filename.c_str(), std::ios_base::in |
                               std::ios_base::binary);
-    is.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
     while (true) {
         BookNode::BookSerializeData bsd;
@@ -112,11 +203,13 @@ Book::readFromFile(const std::string& filename) {
     // Find positions for all book entries by exploring moves from the starting position
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     initPositions(pos);
+    addRootNode();
 
     // Initialize all negamax scores
-    const auto& it = bookNodes.find(startPosHash);
-    if (it != bookNodes.end())
-        it->second->initScores();
+    bookNodes.find(startPosHash)->second->updateNegaMax(pendingPositions);
+
+    if (!backupFile.empty())
+        writeToFile(backupFile);
 }
 
 void
@@ -137,18 +230,120 @@ Book::writeToFile(const std::string& filename) {
 }
 
 void
-Book::extend(Position& pos, const Move& move, std::vector<U64>& toSearch) {
-    auto it = bookNodes.find(pos.bookHash());
-    if (pos.bookHash() == startPosHash) {
-        if (bookNodes.find(startPosHash) == bookNodes.end()) {
-            auto rootNode(std::make_shared<BookNode>(startPosHash));
-            rootNode->setState(BookNode::INITIALIZED);
-            bookNodes[startPosHash] = rootNode;
-            setChildRefs(pos);
-        }
-    } else {
-        assert(it != bookNodes.end());
+Book::extendBook(PositionSelector& selector, int searchTime) {
+    const int numThreads = 1;
+    TranspositionTable tt(27);
+
+    SearchScheduler scheduler;
+    for (int i = 0; i < numThreads; i++) {
+        auto sr = std::make_shared<SearchRunner>(i, tt);
+        scheduler.addWorker(sr);
     }
+    scheduler.startWorkers();
+
+    int numPending = 0;
+    const int desiredQueueLen = numThreads + 1;
+    int workId = 0;   // Work unit ID number
+    int commitId = 0; // Next work unit to be stored in opening book
+    std::set<SearchScheduler::WorkUnit> completed; // Completed but not yet commited to book
+    while (true) {
+        bool workAdded = false;
+        if (numPending < desiredQueueLen) {
+            Position pos;
+            Move move;
+            if (selector.getNextPosition(pos, move)) {
+                assert(bookNodes.find(pos.bookHash()) != bookNodes.end());
+                std::vector<U64> toSearch;
+                if (move.isEmpty()) {
+                    toSearch.push_back(pos.bookHash());
+                } else
+                    addPosToBook(pos, move, toSearch);
+                for (U64 hKey : toSearch) {
+                    Position pos2;
+                    std::vector<Move> moveList;
+                    if (!getPosition(hKey, pos2, moveList))
+                        assert(false);
+                    SearchScheduler::WorkUnit wu;
+                    wu.id = workId++;
+                    wu.hashKey = hKey;
+                    wu.gameMoves = moveList;
+                    wu.movesToSearch = getMovesToSearch(pos2);
+                    wu.searchTime = searchTime;
+                    scheduler.addWorkUnit(wu);
+                    numPending++;
+                    addPending(hKey);
+                    workAdded = true;
+                }
+            }
+        }
+        if (!workAdded && (numPending == 0))
+            break;
+        if (!workAdded || (numPending >= desiredQueueLen)) {
+            SearchScheduler::WorkUnit wu;
+            scheduler.getResult(wu);
+            completed.insert(wu);
+            while (!completed.empty() && completed.begin()->id == commitId) {
+                wu = *completed.begin();
+                completed.erase(completed.begin());
+                numPending--;
+                commitId++;
+                removePending(wu.hashKey);
+                auto it = bookNodes.find(wu.hashKey);
+                assert(it != bookNodes.end());
+                BookNode& bn = *it->second;
+                bn.setSearchResult(pendingPositions,
+                                   wu.bestMove, wu.bestMove.score(), wu.searchTime);
+                scheduler.reportResult(wu);
+            }
+        }
+    }
+}
+
+std::vector<Move>
+Book::getMovesToSearch(Position& pos) {
+    std::vector<Move> ret;
+    MoveList moves;
+    MoveGen::pseudoLegalMoves(pos, moves);
+    MoveGen::removeIllegal(pos, moves);
+    UndoInfo ui;
+    for (int i = 0; i < moves.size; i++) {
+        const Move& m = moves[i];
+        pos.makeMove(m, ui);
+        auto it = bookNodes.find(pos.bookHash());
+        bool include = it == bookNodes.end();
+        if (!include) {
+            if (pendingPositions.find(pos.bookHash()) == pendingPositions.end()) {
+                BookNode& bn = *it->second;
+                if (bn.getNegaMaxScore() == INVALID_SCORE)
+                    include = true;
+            }
+        }
+        if (include)
+            ret.push_back(m);
+        pos.unMakeMove(m, ui);
+    }
+    return ret;
+}
+
+void
+Book::addPending(U64 hashKey) {
+    pendingPositions.insert(hashKey);
+    auto it = bookNodes.find(hashKey);
+    assert(it != bookNodes.end());
+    it->second->updateNegaMax(pendingPositions);
+}
+
+void
+Book::removePending(U64 hashKey) {
+    pendingPositions.erase(hashKey);
+    auto it = bookNodes.find(hashKey);
+    assert(it != bookNodes.end());
+    it->second->updateNegaMax(pendingPositions);
+}
+
+void
+Book::addPosToBook(Position& pos, const Move& move, std::vector<U64>& toSearch) {
+    assert(bookNodes.find(pos.bookHash()) != bookNodes.end());
 
     UndoInfo ui;
     pos.makeMove(move, ui);
@@ -158,7 +353,7 @@ Book::extend(Position& pos, const Move& move, std::vector<U64>& toSearch) {
 
     bookNodes[childHash] = childNode;
     setChildRefs(pos);
-    childNode->initScores();
+    childNode->updateNegaMax(pendingPositions);
 
     toSearch.push_back(pos.bookHash());
 
@@ -203,6 +398,7 @@ Book::extend(Position& pos, const Move& move, std::vector<U64>& toSearch) {
 
     pos.unMakeMove(move, ui);
     childNode->setState(BookNode::State::INITIALIZED);
+    writeBackup(*childNode);
 }
 
 bool
@@ -286,46 +482,203 @@ Book::setChildRefs(Position& pos) {
 }
 
 void
-Book::makeConsistent() {
-#if 0
-    while (true) {
-        // Find node with maximum fullMoveCounter
-        node = findInconsistenNode();
-        if (!node)
-            break;
+Book::writeBackup(const BookNode& bookNode) {
+    if (backupFile.empty())
+        return;
+    std::ofstream os;
+    os.open(backupFile.c_str(), std::ios_base::out |
+                                std::ios_base::binary |
+                                std::ios_base::app);
+    os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    BookNode::BookSerializeData bsd;
+    bookNode.serialize(bsd);
+    os.write((const char*)&bsd.data[0], sizeof(bsd.data));
+    os.close();
+}
 
-        // Update node->children and node->parents
+// ----------------------------------------------------------------------------
 
-        auto requiredTime = ...;
-        requiredTime = std::max(requiredTime, minTime);
+SearchRunner::SearchRunner(int instanceNo0, TranspositionTable& tt0)
+    : instanceNo(instanceNo0), tt(tt0) {
+}
 
-        if ((node->bestNonBookMove in children) ||
-            (node->searchTime < requiredTime / 2)) {
-            node->search(requiredTime); // Updates node->searchScore and node->searchTime
-        }
-
-        childNegaMax = max(i=0,nChild, -child.negaMaxScore);
-
-        if (node->searchScore > childNegaMax) {
-            // Add child to book
-            // Update child->parents and node->children
-            continue;
-        }
-
-        node->negaMaxScore = childNegaMax;
-
-        node->negaMaxBookScoreW = ...;
-        node->negaMaxBookScoreB = ...;
+Move
+SearchRunner::analyze(const std::vector<Move>& gameMoves,
+                      const std::vector<Move>& movesToSearch,
+                      int searchTime) {
+    Position pos = TextIO::readFEN(TextIO::startPosFEN);
+    UndoInfo ui;
+    std::vector<U64> posHashList(200 + gameMoves.size());
+    int posHashListSize = 0;
+    for (const Move& m : gameMoves) {
+        posHashList[posHashListSize++] = pos.zobristHash();
+        pos.makeMove(m, ui);
+        if (pos.getHalfMoveClock() == 0)
+            posHashListSize = 0;
     }
-#endif
+
+    if (movesToSearch.empty()) {
+        MoveList legalMoves;
+        MoveGen::pseudoLegalMoves(pos, legalMoves);
+        MoveGen::removeIllegal(pos, legalMoves);
+        Move bestMove;
+        int bestScore = IGNORE_SCORE;
+        if (legalMoves.size == 0) {
+            if (MoveGen::inCheck(pos))
+                bestScore = -SearchConst::MATE0;
+            else
+                bestScore = 0; // stalemate
+        }
+        bestMove.setScore(bestScore);
+        return bestMove;
+    }
+
+    kt.clear();
+    ht.init();
+    Search::SearchTables st(tt, kt, ht, et);
+    ParallelData pd(tt);
+    Search sc(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
+
+    int minTimeLimit = searchTime;
+    int maxTimeLimit = searchTime;
+    sc.timeLimit(minTimeLimit, maxTimeLimit);
+
+    MoveList moveList;
+    for (const Move& m : movesToSearch)
+        moveList.addMove(m.from(), m.to(), m.promoteTo());
+
+    int maxDepth = -1;
+    S64 maxNodes = -1;
+    bool verbose = false;
+    int maxPV = 1;
+    bool onlyExact = true;
+    int minProbeDepth = 1;
+    Move bestMove = sc.iterativeDeepening(moveList, maxDepth, maxNodes, verbose, maxPV,
+                                          onlyExact, minProbeDepth);
+    return bestMove;
+}
+
+SearchScheduler::SearchScheduler()
+    : stopped(false) {
+}
+
+SearchScheduler::~SearchScheduler() {
+    stopWorkers();
 }
 
 void
-Book::extend(bool white) {
-
-
-
+SearchScheduler::addWorker(const std::shared_ptr<SearchRunner>& sr) {
+    workers.push_back(sr);
 }
 
+void
+SearchScheduler::startWorkers() {
+    for (auto w : workers) {
+        SearchRunner& sr = *w;
+        auto thread = std::make_shared<std::thread>([this,&sr]() {
+            workerLoop(sr);
+        });
+        threads.push_back(thread);
+    }
+}
+
+void
+SearchScheduler::stopWorkers() {
+    {
+        std::lock_guard<std::mutex> L(mutex);
+        stopped = true;
+        pendingCv.notify_all();
+    }
+    for (auto& t : threads) {
+        t->join();
+        t.reset();
+    }
+}
+
+void
+SearchScheduler::addWorkUnit(const WorkUnit& wu) {
+    std::lock_guard<std::mutex> L(mutex);
+    bool empty = pending.empty();
+    pending.push_back(wu);
+    if (empty)
+        pendingCv.notify_all();
+}
+
+void
+SearchScheduler::getResult(WorkUnit& wu) {
+    std::unique_lock<std::mutex> L(mutex);
+    while (complete.empty())
+        completeCv.wait(L);
+    wu = complete.front();
+    complete.pop_front();
+}
+
+void
+SearchScheduler::reportResult(const WorkUnit& wu) const {
+    Position pos = TextIO::readFEN(TextIO::startPosFEN);
+    UndoInfo ui;
+    std::string moves;
+    for (const Move& m : wu.gameMoves) {
+        if (!moves.empty())
+            moves += ' ';
+        moves += TextIO::moveToString(pos, m, false);
+        pos.makeMove(m, ui);
+    }
+    std::set<std::string> excluded;
+    MoveList legalMoves;
+    MoveGen::pseudoLegalMoves(pos, legalMoves);
+    MoveGen::removeIllegal(pos, legalMoves);
+    for (int i = 0; i < legalMoves.size; i++) {
+        const Move& m = legalMoves[i];
+        if (!contains(wu.movesToSearch, m))
+            excluded.insert(TextIO::moveToString(pos, m, false));
+    }
+    std::string excludedS;
+    for (const std::string& m : excluded) {
+        if (!excludedS.empty())
+            excludedS += ' ';
+        excludedS += m;
+    }
+
+    int score = wu.bestMove.score();
+    if (!pos.isWhiteMove())
+        score = -score;
+
+    std::string bestMove = TextIO::moveToString(pos, wu.bestMove, false);
+
+    std::cout << std::setw(5) << std::right << wu.id << ' '
+              << std::setw(6) << std::right << score << ' '
+              << std::setw(6) << std::left  << bestMove << ' '
+              << std::setw(6) << std::right << wu.searchTime << " : "
+              << moves << " : "
+              << excludedS << " : "
+              << TextIO::toFEN(pos)
+              << std::endl;
+}
+
+void
+SearchScheduler::workerLoop(SearchRunner& sr) {
+    while (true) {
+        WorkUnit wu;
+        {
+            std::unique_lock<std::mutex> L(mutex);
+            while (!stopped && pending.empty())
+                pendingCv.wait(L);
+            if (stopped)
+                return;
+            wu = pending.front();
+            pending.pop_front();
+        }
+        wu.bestMove = sr.analyze(wu.gameMoves, wu.movesToSearch, wu.searchTime);
+        wu.instNo = sr.instNo();
+        {
+            std::unique_lock<std::mutex> L(mutex);
+            bool empty = complete.empty();
+            complete.push_back(wu);
+            if (empty)
+                completeCv.notify_all();
+        }
+    }
+}
 
 } // Namespace BookBuild

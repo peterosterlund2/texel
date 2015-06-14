@@ -8,6 +8,8 @@
 #include "chesstool.hpp"
 #include "posgen.hpp"
 #include "spsa.hpp"
+#include "bookbuild.hpp"
+
 #include "tbgen.hpp"
 #include "parameters.hpp"
 #include "chessParseError.hpp"
@@ -58,7 +60,8 @@ usage() {
     std::cerr << " -iv file : Set initial parameter values\n";
     std::cerr << " -e : Use cross entropy error function\n";
     std::cerr << "cmd is one of:\n";
-    std::cerr << "test : Run CUTE tests\n";
+    std::cerr << " test : Run CUTE tests\n";
+    std::cerr << "\n";
     std::cerr << " p2f      : Convert from PGN to FEN\n";
     std::cerr << " f2p      : Convert from FEN to PGN\n";
     std::cerr << " filter type pars : Keep positions that satisfy a condition\n";
@@ -81,7 +84,9 @@ usage() {
     std::cerr << " residual xType inclNo : Print evaluation error as function of material\n";
     std::cerr << "                         xType is mtrlsum, mtrldiff, pawnsum, pawndiff or eval\n";
     std::cerr << "                         inclNo is 0/1 to exclude/include position/game numbers\n";
+    std::cerr << "\n";
     std::cerr << " genfen qvsn : Generate all positions of a given type\n";
+    std::cerr << "\n";
     std::cerr << " tblist nPieces : Print all tablebase types\n";
     std::cerr << " dtmstat type1 [type2 ...] : Generate tablebase DTM statistics\n";
     std::cerr << " dtzstat type1 [type2 ...] : Generate tablebase DTZ statistics\n";
@@ -89,13 +94,21 @@ usage() {
     std::cerr << " wdltest type1 [type2 ...] : Compare RTB and GTB WDL tables\n";
     std::cerr << " dtztest type1 [type2 ...] : Compare RTB DTZ and GTB DTM tables\n";
     std::cerr << " dtz fen                   : Retrieve DTZ value for a position\n";
+    std::cerr << "\n";
     std::cerr << " gamesim meanResult drawProb nGames nSimul : Simulate game results\n";
     std::cerr << " enginesim nGames p1 p2 ... : Simulate engine with parameters p1, p2, ...\n";
     std::cerr << " tourneysim nSimul nRounds elo1 elo2 ... : Simulate tournament\n";
     std::cerr << " spsasim nSimul nIter gamesPerIter a c param1 ... : Simulate SPSA optimization\n";
     std::cerr << " spsa spsafile.conf : Run SPSA optimization using the given configuration file\n";
+    std::cerr << "\n";
     std::cerr << " tbgen wq wr wb wn bq br bb bn : Generate pawn-less tablebase in memory\n";
-    std::cerr << " tbgentest type1 [type2 ...] : Compare pawnless tablebase against GTB\n";
+    std::cerr << " tbgentest type1 [type2 ...]   : Compare pawnless tablebase against GTB\n";
+    std::cerr << "\n";
+    std::cerr << " book improve bookFile searchTime [fen]         : Improve an opening book\n";
+    std::cerr << " book import bookFile pgnFile searchTime        : Import moves from PGN file\n";
+    std::cerr << " book export bookFile polyglotFile maxPathError : Export as polyglot book\n";
+    std::cerr << " book query bookFile                            : Interactive query mode\n";
+
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -437,6 +450,47 @@ main(int argc, char* argv[]) {
             for (int i = 2; i < argc; i++)
                 tbTypes.push_back(argv[i]);
             PosGenerator::tbgenTest(tbTypes);
+        } else if (cmd == "book") {
+            if (argc < 4)
+                usage();
+            std::string bookCmd = argv[2];
+            std::string bookFile = argv[3];
+            std::string logFile = bookFile + ".log";
+            if (bookCmd == "improve") {
+                if ((argc < 5) || (argc > 6))
+                    usage();
+                std::string fen;
+                if (argc == 6)
+                    fen = argv[5];
+                int searchTime;
+                if (!str2Num(argv[4], searchTime))
+                    usage();
+                BookBuild::Book book(logFile);
+                book.improve(bookFile, searchTime, fen);
+            } else if (bookCmd == "import") {
+                if (argc != 6)
+                    usage();
+                std::string pgnFile = argv[4];
+                int searchTime;
+                if (!str2Num(argv[5], searchTime))
+                    usage();
+                BookBuild::Book book(logFile);
+                book.importPGN(bookFile, pgnFile, searchTime);
+            } else if (bookCmd == "export") {
+                if (argc != 6)
+                    usage();
+                std::string polyglotFile = argv[4];
+                int maxPathError;
+                if (!str2Num(argv[5], maxPathError))
+                    usage();
+                BookBuild::Book book("");
+                book.exportPolyglot(bookFile, polyglotFile, maxPathError);
+            } else if (bookCmd == "query") {
+                if (argc != 4)
+                    usage();
+                BookBuild::Book book("");
+                book.interactiveQuery(bookFile);
+            }
         } else {
             usage();
         }
