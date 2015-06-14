@@ -201,7 +201,7 @@ contains(const std::vector<T>& v, const T& e) {
 
 /** Return true if vector v contains element e converted to a string. */
 inline bool
-contains(const std::vector<std::string> v, const char* e) {
+contains(const std::vector<std::string>& v, const char* e) {
     return contains(v, std::string(e));
 }
 

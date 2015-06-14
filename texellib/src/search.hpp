@@ -107,7 +107,7 @@ public:
     void setMinProbeDepth(int depth);
 
     Move iterativeDeepening(const MoveList& scMovesIn,
-                            int maxDepth, U64 initialMaxNodes, bool verbose,
+                            int maxDepth, S64 initialMaxNodes, bool verbose,
                             int maxPV = 1, bool onlyExact = false,
                             int minProbeDepth = 0);
 

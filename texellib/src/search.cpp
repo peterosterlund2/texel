@@ -94,7 +94,7 @@ Search::setStrength(int strength, U64 randomSeed) {
 
 Move
 Search::iterativeDeepening(const MoveList& scMovesIn,
-                           int maxDepth, U64 initialMaxNodes,
+                           int maxDepth, S64 initialMaxNodes,
                            bool verbose, int maxPV, bool onlyExact,
                            int minProbeDepth) {
     tStart = currentTimeMillis();
