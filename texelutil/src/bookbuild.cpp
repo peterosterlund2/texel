@@ -36,8 +36,6 @@ BookNode::computeNegaMax(const BookData& bookData) {
     int oldNM = negaMaxScore;
     int oldEW = expansionCostWhite;
     int oldEB = expansionCostBlack;
-    const int ownCost = bookData.ownPathErrorCost();
-    const int otherCost = bookData.otherPathErrorCost();
 
     negaMaxScore = searchScore;
     if (negaMaxScore != INVALID_SCORE)
@@ -54,6 +52,8 @@ BookNode::computeNegaMax(const BookData& bookData) {
             int moveError = negaMaxScore - searchScore;
             assert(moveError >= 0);
             bool wtm = getDepth() % 2 == 0;
+            int ownCost = bookData.ownPathErrorCost();
+            int otherCost = bookData.otherPathErrorCost();
             expansionCostWhite = moveError * (wtm ? ownCost : otherCost);
             expansionCostBlack = moveError * (wtm ? otherCost : ownCost);
         }
@@ -67,24 +67,15 @@ BookNode::computeNegaMax(const BookData& bookData) {
 
     for (const auto& e : children) {
         const BookNode& child = *(e.second);
-        int moveError = (negaMaxScore == INVALID_SCORE) ? 1000 :
-                         negaMaxScore - negateScore(child.negaMaxScore);
-        bool wtm = getDepth() % 2 == 0;
         if ((expansionCostWhite != INVALID_SCORE) &&
             (child.expansionCostWhite != IGNORE_SCORE)) {
-            int cost = child.expansionCostWhite;
-            assert(cost >= 0);
-            cost += bookData.bookDepthCost() +
-                    moveError * (wtm ? ownCost : otherCost);
+            int cost = getExpansionCost(bookData, child, true);
             if ((expansionCostWhite == IGNORE_SCORE) || (expansionCostWhite > cost))
                 expansionCostWhite = cost;
         }
         if ((expansionCostBlack != INVALID_SCORE) &&
             (child.expansionCostBlack != IGNORE_SCORE)) {
-            int cost = child.expansionCostBlack;
-            assert(cost >= 0);
-            cost += bookData.bookDepthCost() +
-                    moveError * (wtm ? otherCost : ownCost);
+            int cost = getExpansionCost(bookData, child, false);
             if ((expansionCostBlack == IGNORE_SCORE) || (expansionCostBlack > cost))
                 expansionCostBlack = cost;
         }
@@ -93,6 +84,20 @@ BookNode::computeNegaMax(const BookData& bookData) {
     return ((negaMaxScore != oldNM) ||
             (expansionCostWhite != oldEW) ||
             (expansionCostBlack != oldEB));
+}
+
+int
+BookNode::getExpansionCost(const BookData& bookData, const BookNode& child, bool white) const {
+    const int ownCost = bookData.ownPathErrorCost();
+    const int otherCost = bookData.otherPathErrorCost();
+    int moveError = (negaMaxScore == INVALID_SCORE) ? 1000 :
+                     negaMaxScore - negateScore(child.negaMaxScore);
+    assert(moveError >= 0);
+    bool wtm = getDepth() % 2 == 0;
+    int cost = white ? child.expansionCostWhite : child.expansionCostBlack;
+    assert(cost >= 0);
+    cost += bookData.bookDepthCost() + moveError * (wtm == white ? ownCost : otherCost);
+    return cost;
 }
 
 int
@@ -336,6 +341,7 @@ Book::extendBook(PositionSelector& selector, int searchTime) {
                 BookNode& bn = *it->second;
                 bn.setSearchResult(bookData,
                                    wu.bestMove, wu.bestMove.score(), wu.searchTime);
+                writeBackup(bn);
                 scheduler.reportResult(wu);
             }
         }

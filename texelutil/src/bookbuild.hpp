@@ -125,9 +125,12 @@ public:
     /** Get negamax scores. */
     int getNegaMaxScore() const;
 
-    /** */
+    /** Return the best expansion cost for this node. */
     int getExpansionCostWhite() const;
     int getExpansionCostBlack() const;
+
+    /** Compute expansion cost for a child node. */
+    int getExpansionCost(const BookData& bookData, const BookNode& child, bool white) const;
 
     struct BookSerializeData {
         U8 data[16];
