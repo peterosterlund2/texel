@@ -30,11 +30,84 @@ const int IGNORE_SCORE = SearchConst::UNKNOWN_SCORE + 1;
 const int INVALID_SCORE = SearchConst::UNKNOWN_SCORE + 2;
 
 
-/** Bonus per move for staying in the opening book. */
-const int BOOK_LENGTH_BONUS = 2;
+/** Global book data needed by per book node computations. */
+class BookData {
+public:
+    BookData(int bookDepthCost, int ownPathErrorCost, int otherPathErrorCost)
+        : bookDepthC(bookDepthCost), ownPathErrorC(ownPathErrorCost),
+          otherPathErrorC(otherPathErrorCost) {}
 
-/** Represents a book position, its connections to parent/child book positions,
- *  and information about the best non-book move. */
+    int bookDepthCost() const { return bookDepthC; }
+    int ownPathErrorCost() const { return ownPathErrorC; }
+    int otherPathErrorCost() const { return otherPathErrorC; }
+
+    void clearPending() { pendingPositions.clear(); }
+    void addPending(U64 hashKey) { pendingPositions.insert(hashKey); }
+    void removePending(U64 hashKey) { pendingPositions.erase(hashKey); }
+
+    bool isPending(U64 hashKey) const {
+        return pendingPositions.find(hashKey) != pendingPositions.end();
+    }
+
+private:
+    std::set<U64> pendingPositions; // Positions currently being searched
+    const int bookDepthC;      // Cost per existing book depth for extending a book line one ply
+    const int ownPathErrorC;   // Cost for extending a move where the book player plays inaccurate
+    const int otherPathErrorC; // Cost for extending a move where the opponent plays inaccurate
+};
+
+/**
+ * The BookNode class represents a book position, its connections to parent/child book
+ * positions, and information about the best non-book move.
+ *
+ * Each node has a search score (searchScore), which has one of the following values:
+ * - INVALID_SCORE : No search has been performed for this position.
+ * - IGNORE_SCORE  : There is at least one legal move in this position, but all legal
+ *                   moves already have a corresponding BookNode with a score that is
+ *                   not INVALID_SCORE.
+ * - A value returned by iterative deepening search. This value can be MATE0 or 0 if
+ *   the game is over (lost or draw), or a mate or heuristic search score.
+ *   The iterative deepening search must include at least all legal moves that don't
+ *   correspond to a child node or corresponds to a child not with INVALID_SCORE.
+ *   Mate scores are always correct in the sense that they identify the side that wins
+ *   assuming optimal play, but the search is not guaranteed to have found the fastest
+ *   possible mate.
+ *
+ * Each node has a negaMaxScore which is computed as follows:
+ * - If searchScore is INVALID_SCORE, the negaMaxScore is also INVALID_SCORE.
+ * - Otherwise, if the node is a leaf node, the negaMaxScore is equal to searchScore.
+ * - Otherwise, the negaMaxScore is the maximum of searchScore and
+ *   negateScore(child[i].negaMaxScore), taken over all child nodes.
+ * Note that negaMaxScore can never be equal to IGNORE_SCORE.
+ *
+ * Each node has a book expansion cost for the white player. (It also has a book expansion
+ * cost for the black player that works in an analogous way.) The best node to add to the
+ * opening book is determined by starting at the root node and repeatedly selecting a
+ * child node with the smallest expansion cost. The expansion cost is defined as follows:
+ * - If the node is a leaf node, the expansion cost is:
+ *   - IGNORE_SCORE if the node is currently being searched.
+ *   - INVALID_SCORE if negaMaxScore is INVALID_SCORE.
+ *   - 0 if negaMaxScore is not INVALID_SCORE.
+ * - If the expansion cost of any child node is INVALID_SCORE, the expansion cost is
+ *   INVALID_SCORE.
+ * - If searchScore is INVALID_SCORE, the expansion cost is INVALID_SCORE.
+ * - Otherwise, the expansion cost is the smallest of:
+ *   - k * moveError, where:
+ *      k = k1 if the book player is to move,
+ *      k = k2 if the other player is to move
+ *     moveError = negaMaxScore - searchScore (always >= 0)
+ *   - ka + child[i].expansionCost + kb * moveError, where:
+ *      ka = k3 if child[i].expansionCost >= 0
+ *      ka = 0  otherwise
+ *      kb = k1 if the book player is to move and child[i].expansionCost >= 0
+ *      kb = k2 if the other player is to move and child[i].expansionCost >= 0
+ *      kb = 0 otherwise
+ *      moveError = negaMaxScore - negateScore(child[i].negaMaxScore)
+ *   Choices corresponding to nodes currently being searched are ignored. If all choices
+ *   are ignored the expansion cost is IGNORE_SCORE.
+ *   k1, k2 and k3 are positive constants that control how book depth, own errors and
+ *   opponent errors are weighted when deciding what node to expand next.
+ */
 class BookNode {
 public:
     /** Create an empty node. */
@@ -49,18 +122,12 @@ public:
     /** Return shortest distance to the root node. */
     int getDepth() const;
 
-    /** Get "book score" corresponding to searchScore, from white's perspective.
-     * The score is positive if good for the side to move, but the score is better
-     * for white the longer the book line is. */
-    int bookScoreW() const;
-
-    /** Get "book score" corresponding to searchScore, from black's perspective. */
-    int bookScoreB() const;
-
     /** Get negamax scores. */
     int getNegaMaxScore() const;
-    int getNegaMaxBookScoreW() const;
-    int getNegaMaxBookScoreB() const;
+
+    /** */
+    int getExpansionCostWhite() const;
+    int getExpansionCostBlack() const;
 
     struct BookSerializeData {
         U8 data[16];
@@ -75,7 +142,7 @@ public:
     void addParent(U16 move, const std::shared_ptr<BookNode>& parent);
 
     /** Set search result data. */
-    void setSearchResult(const std::set<U64>& pendingPositions,
+    void setSearchResult(const BookData& bookData,
                          const Move& bestMove, int score, int searchTime);
 
     enum State {
@@ -88,7 +155,7 @@ public:
     void setState(State s);
 
     /** Recursively initialize negamax scores of this node and all children and parents. */
-    void updateNegaMax(const std::set<U64>& pendingPositions,
+    void updateNegaMax(const BookData& bookData,
                        bool updateThis = true, bool updateChildren = true, bool updateParents = true);
 
     /** Get all children. */
@@ -111,21 +178,21 @@ private:
 
     /** Compute negaMax scores for this node assuming all child nodes are already up to date.
      * Return true if any score was modified. */
-    bool computeNegaMax(const std::set<U64>& pendingPositions);
+    bool computeNegaMax(const BookData& bookData);
 
 
     U64 hashKey;
-    int depth;             // Length of shortest path to the root node
+    int depth;              // Length of shortest path to the root node
 
-    Move bestNonBookMove;  // Best non-book move. Empty if all legal moves are
-                           // included in the book.
-    S16 searchScore;       // Score for best non-book move.
-                           // IGNORE_SCORE, -MATE0 or 0 (stalemate) if no non-book move.
-    U32 searchTime;        // Time in milliseconds spent on computing searchScore and bestNonBookMove
+    Move bestNonBookMove;   // Best non-book move. Empty if all legal moves are
+                            // included in the book.
+    S16 searchScore;        // Score for best non-book move.
+                            // IGNORE_SCORE, -MATE0 or 0 (stalemate) if no non-book move.
+    U32 searchTime;         // Time in milliseconds spent on computing searchScore and bestNonBookMove
 
-    int negaMaxScore;      // Best score in this position. max(searchScore, -child_i(pos))
-    int negaMaxBookScoreW; // Best book score for white, max(bookScoreW(), -child_i.bookScoreW())
-    int negaMaxBookScoreB; // Best book score for black, max(bookScoreB(), -child_i.bookScoreB())
+    int negaMaxScore;       // Best score in this position. max(searchScore, -child_i(pos))
+    int expansionCostWhite; // Smallest expansion cost for white
+    int expansionCostBlack; // Smallest expansion cost for black
 
     std::map<U16, std::shared_ptr<BookNode>> children;   // Compressed move -> BookNode
     std::multimap<U16, std::weak_ptr<BookNode>> parents; // Compressed move -> BookNode
@@ -139,7 +206,8 @@ class Book {
 public:
     /** Constructor. Create an empty book.
      * @param backupFile The backup path name. Empty string disables backup. */
-    Book(const std::string& backupFile);
+    Book(const std::string& backupFile, int bookDepthCost = 100,
+         int ownPathErrorCost = 200, int otherPathErrorCost = 50);
 
     Book(const Book& other) = delete;
     Book& operator=(const Book& other) = delete;
@@ -231,8 +299,7 @@ private:
     /** Map from position hash code to all parent book position hash codes. */
     std::set<std::pair<U64, U64>> hashToParent;
 
-    /** Positions that are currently being searched. */
-    std::set<U64> pendingPositions;
+    BookData bookData;
 };
 
 /** Calls Search::iterativeDeepening() to analyze a position. */
@@ -326,8 +393,8 @@ BookNode::BookNode(U64 hashKey0, bool rootNode)
     : hashKey(hashKey0), depth(rootNode ? 0 : INT_MAX),
       searchScore(0), searchTime(0),
       negaMaxScore(INVALID_SCORE),
-      negaMaxBookScoreW(INVALID_SCORE),
-      negaMaxBookScoreB(INVALID_SCORE),
+      expansionCostWhite(INVALID_SCORE),
+      expansionCostBlack(INVALID_SCORE),
       state(BookNode::EMPTY) {
 }
 
@@ -342,36 +409,18 @@ BookNode::getDepth() const {
 }
 
 inline int
-BookNode::bookScoreW() const {
-    if (searchScore == INVALID_SCORE)
-        return INVALID_SCORE;
-    bool wtm = depth % 2 == 0;
-    int fullMoveCounter = (depth + 1) / 2;
-    return searchScore + fullMoveCounter * BOOK_LENGTH_BONUS * (wtm ? 1 : -1);
-}
-
-inline int
-BookNode::bookScoreB() const {
-    if (searchScore == INVALID_SCORE)
-        return INVALID_SCORE;
-    bool wtm = depth % 2 == 0;
-    int fullMoveCounter = depth / 2;
-    return searchScore - fullMoveCounter * BOOK_LENGTH_BONUS * (wtm ? 1 : -1);
-}
-
-inline int
 BookNode::getNegaMaxScore() const {
     return negaMaxScore;
 }
 
 inline int
-BookNode::getNegaMaxBookScoreW() const {
-    return negaMaxBookScoreW;
+BookNode::getExpansionCostWhite() const {
+    return expansionCostWhite;
 }
 
 inline int
-BookNode::getNegaMaxBookScoreB() const {
-    return negaMaxBookScoreB;
+BookNode::getExpansionCostBlack() const {
+    return expansionCostBlack;
 }
 
 inline void

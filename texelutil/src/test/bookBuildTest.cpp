@@ -15,7 +15,7 @@ using namespace BookBuild;
 
 void
 BookBuildTest::testBookNode() {
-    std::set<U64> pp;
+    BookData bd(100, 200, 50);
     {
         BookNode bn(1234);
         ASSERT_EQUAL(INT_MAX, bn.getDepth());
@@ -33,14 +33,14 @@ BookBuildTest::testBookNode() {
 
     Move e4(TextIO::uciStringToMove("e2e4"));
     Move d4(TextIO::uciStringToMove("d2d4"));
-    bn->setSearchResult(pp, d4, 17, 4711);
+    bn->setSearchResult(bd, d4, 17, 4711);
     ASSERT_EQUAL(d4, bn->getBestNonBookMove());
     ASSERT_EQUAL(17, bn->getSearchScore());
     ASSERT_EQUAL(4711, bn->getSearchTime());
 
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
-    ASSERT_EQUAL(17, bn->getNegaMaxBookScoreW());
-    ASSERT_EQUAL(17, bn->getNegaMaxBookScoreB());
+    ASSERT_EQUAL(0, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(0, bn->getExpansionCostBlack());
 
     {
         BookNode::BookSerializeData bsd;
@@ -56,7 +56,7 @@ BookBuildTest::testBookNode() {
         ASSERT_EQUAL(4711, bn2.getSearchTime());
     }
 
-    auto child(std::make_shared<BookNode>(1234, false));
+    auto child(std::make_shared<BookNode>(22222222, false));
     U16 e4c = e4.getCompressedMove();
     bn->addChild(e4c, child);
     child->addParent(e4c, bn);
@@ -72,17 +72,17 @@ BookBuildTest::testBookNode() {
 
     Move e5(TextIO::uciStringToMove("e7e5"));
     Move c5(TextIO::uciStringToMove("c7c5"));
-    child->setSearchResult(pp, c5, -20, 10000);
+    child->setSearchResult(bd, c5, -20, 10000);
     ASSERT_EQUAL(20, bn->getNegaMaxScore());
-    ASSERT_EQUAL(22, bn->getNegaMaxBookScoreW());
-    ASSERT_EQUAL(20, bn->getNegaMaxBookScoreB());
+    ASSERT_EQUAL(100, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(100, bn->getExpansionCostBlack());
 
-    child->setSearchResult(pp, c5, -16, 10000);
+    child->setSearchResult(bd, c5, -16, 10000);
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
-    ASSERT_EQUAL(18, bn->getNegaMaxBookScoreW());
-    ASSERT_EQUAL(17, bn->getNegaMaxBookScoreB());
+    ASSERT_EQUAL(0, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(0, bn->getExpansionCostBlack());
 
-    auto child2(std::make_shared<BookNode>(1235, false));
+    auto child2(std::make_shared<BookNode>(33333333, false));
     U16 e5c = e5.getCompressedMove();
     child->addChild(e5c, child2);
     child2->addParent(e5c, child);
@@ -102,43 +102,108 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(2, child2->getDepth());
 
     Move nf3(TextIO::uciStringToMove("g1f3"));
-    child2->setSearchResult(pp, nf3, 17, 10000);
+    child2->setSearchResult(bd, nf3, 17, 10000);
     ASSERT_EQUAL(17, child2->getNegaMaxScore());
-    ASSERT_EQUAL(19, child2->bookScoreW());
-    ASSERT_EQUAL(15, child2->bookScoreB());
-    ASSERT_EQUAL(19, child2->getNegaMaxBookScoreW());
-    ASSERT_EQUAL(15, child2->getNegaMaxBookScoreB());
+    ASSERT_EQUAL(0, child2->getExpansionCostWhite());
+    ASSERT_EQUAL(0, child2->getExpansionCostBlack());
 
     ASSERT_EQUAL(-16, child->getNegaMaxScore());
-    ASSERT_EQUAL(-18, child->bookScoreW());
-    ASSERT_EQUAL(-16, child->bookScoreB());
-    ASSERT_EQUAL(-18, child->getNegaMaxBookScoreW());
-    ASSERT_EQUAL(-15, child->getNegaMaxBookScoreB());
+    ASSERT_EQUAL(0, child->getExpansionCostWhite());
+    ASSERT_EQUAL(0, child->getExpansionCostBlack());
 
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
-    ASSERT_EQUAL(17, bn->bookScoreW());
-    ASSERT_EQUAL(17, bn->bookScoreB());
-    ASSERT_EQUAL(18, bn->getNegaMaxBookScoreW());
-    ASSERT_EQUAL(17, bn->getNegaMaxBookScoreB());
+    ASSERT_EQUAL(0, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(0, bn->getExpansionCostBlack());
 
-    child2->setSearchResult(pp, nf3, 10, 10000);
+    child2->setSearchResult(bd, nf3, 10, 10000);
     ASSERT_EQUAL(10, child2->getNegaMaxScore());
-    ASSERT_EQUAL(12, child2->bookScoreW());
-    ASSERT_EQUAL(8, child2->bookScoreB());
-    ASSERT_EQUAL(12, child2->getNegaMaxBookScoreW());
-    ASSERT_EQUAL(8, child2->getNegaMaxBookScoreB());
+    ASSERT_EQUAL(0, child2->getExpansionCostWhite());
+    ASSERT_EQUAL(0, child2->getExpansionCostBlack());
 
     ASSERT_EQUAL(-10, child->getNegaMaxScore());
-    ASSERT_EQUAL(-18, child->bookScoreW());
-    ASSERT_EQUAL(-16, child->bookScoreB());
-    ASSERT_EQUAL(-12, child->getNegaMaxBookScoreW());
-    ASSERT_EQUAL(-8, child->getNegaMaxBookScoreB());
+    ASSERT_EQUAL(100, child->getExpansionCostWhite());
+    ASSERT_EQUAL(100, child->getExpansionCostBlack());
 
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
-    ASSERT_EQUAL(17, bn->bookScoreW());
-    ASSERT_EQUAL(17, bn->bookScoreB());
-    ASSERT_EQUAL(17, bn->getNegaMaxBookScoreW());
-    ASSERT_EQUAL(17, bn->getNegaMaxBookScoreB());
+    ASSERT_EQUAL(0, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(0, bn->getExpansionCostBlack());
+
+    bn->setSearchResult(bd, d4, 5, 10000);
+    child->setSearchResult(bd, c5, -25, 10000);
+    child2->setSearchResult(bd, nf3, 17, 10000);
+    ASSERT_EQUAL(17, bn->getNegaMaxScore());
+    ASSERT_EQUAL(0, child2->getExpansionCostWhite());
+    ASSERT_EQUAL(0, child2->getExpansionCostBlack());
+    ASSERT_EQUAL(100, child->getExpansionCostWhite());
+    ASSERT_EQUAL(100, child->getExpansionCostBlack());
+    ASSERT_EQUAL(200, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(200, bn->getExpansionCostBlack());
+
+    child->setSearchResult(bd, c5, -18, 10000);
+    ASSERT_EQUAL(17, bn->getNegaMaxScore());
+    ASSERT_EQUAL(0, child2->getExpansionCostWhite());
+    ASSERT_EQUAL(0, child2->getExpansionCostBlack());
+    ASSERT_EQUAL(50, child->getExpansionCostWhite());
+    ASSERT_EQUAL(100, child->getExpansionCostBlack());
+    ASSERT_EQUAL(150, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(200, bn->getExpansionCostBlack());
+
+    bd.addPending(child2->getHashKey());
+    child2->updateNegaMax(bd);
+    ASSERT_EQUAL(17, bn->getNegaMaxScore());
+    ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostWhite());
+    ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostBlack());
+    ASSERT_EQUAL(50, child->getExpansionCostWhite());
+    ASSERT_EQUAL(200, child->getExpansionCostBlack());
+    ASSERT_EQUAL(150, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(300, bn->getExpansionCostBlack());
+
+    bd.addPending(child->getHashKey());
+    child->updateNegaMax(bd);
+    ASSERT_EQUAL(17, bn->getNegaMaxScore());
+    ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostWhite());
+    ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostBlack());
+    ASSERT_EQUAL(IGNORE_SCORE, child->getExpansionCostWhite());
+    ASSERT_EQUAL(IGNORE_SCORE, child->getExpansionCostBlack());
+    ASSERT_EQUAL(12*200, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(12*50, bn->getExpansionCostBlack());
+
+    bd.addPending(bn->getHashKey());
+    bn->updateNegaMax(bd);
+    bd.removePending(child->getHashKey());
+    child->updateNegaMax(bd);
+    ASSERT_EQUAL(17, bn->getNegaMaxScore());
+    ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostWhite());
+    ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostBlack());
+    ASSERT_EQUAL(50, child->getExpansionCostWhite());
+    ASSERT_EQUAL(200, child->getExpansionCostBlack());
+    ASSERT_EQUAL(150, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(300, bn->getExpansionCostBlack());
+
+    bd.removePending(bn->getHashKey());
+    bn->updateNegaMax(bd);
+    bd.removePending(child2->getHashKey());
+    child2->updateNegaMax(bd);
+    bn->setSearchResult(bd, d4, INVALID_SCORE, 10000);
+    child->setSearchResult(bd, c5, -18, 10000);
+    child2->setSearchResult(bd, nf3, 17, 10000);
+    ASSERT_EQUAL(INVALID_SCORE, bn->getNegaMaxScore());
+    ASSERT_EQUAL(0, child2->getExpansionCostWhite());
+    ASSERT_EQUAL(0, child2->getExpansionCostBlack());
+    ASSERT_EQUAL(50, child->getExpansionCostWhite());
+    ASSERT_EQUAL(100, child->getExpansionCostBlack());
+    ASSERT_EQUAL(INVALID_SCORE, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(INVALID_SCORE, bn->getExpansionCostBlack());
+
+    bd.addPending(bn->getHashKey());
+    bn->updateNegaMax(bd);
+    ASSERT_EQUAL(INVALID_SCORE, bn->getNegaMaxScore());
+    ASSERT_EQUAL(0, child2->getExpansionCostWhite());
+    ASSERT_EQUAL(0, child2->getExpansionCostBlack());
+    ASSERT_EQUAL(50, child->getExpansionCostWhite());
+    ASSERT_EQUAL(100, child->getExpansionCostBlack());
+    ASSERT_EQUAL(200150, bn->getExpansionCostWhite());
+    ASSERT_EQUAL(50200, bn->getExpansionCostBlack());
 }
 
 void
@@ -177,7 +242,7 @@ BookBuildTest::testShortestDepth() {
 
 void
 BookBuildTest::testBookNodeDAG() {
-    std::set<U64> pp;
+    BookData bd(100, 200, 50);
     auto n1(std::make_shared<BookNode>(1, true));
     auto n2(std::make_shared<BookNode>(2, false));
     auto n3(std::make_shared<BookNode>(3, false));
@@ -210,12 +275,12 @@ BookBuildTest::testBookNodeDAG() {
     n4->addParent(m, n6);
 
     Move nm(0, 0, Piece::EMPTY);
-    n1->setSearchResult(pp, nm, 10, 10000);
-    n2->setSearchResult(pp, nm, -8, 10000);
-    n3->setSearchResult(pp, nm, 7, 10000);
-    n4->setSearchResult(pp, nm, -12, 10000);
-    n5->setSearchResult(pp, nm, -12, 10000);
-    n6->setSearchResult(pp, nm, 11, 10000);
+    n1->setSearchResult(bd, nm, 10, 10000);
+    n2->setSearchResult(bd, nm, -8, 10000);
+    n3->setSearchResult(bd, nm, 7, 10000);
+    n4->setSearchResult(bd, nm, -12, 10000);
+    n5->setSearchResult(bd, nm, -12, 10000);
+    n6->setSearchResult(bd, nm, 11, 10000);
 
     ASSERT_EQUAL(-12, n4->getNegaMaxScore());
     ASSERT_EQUAL(12, n3->getNegaMaxScore());
@@ -224,7 +289,7 @@ BookBuildTest::testBookNodeDAG() {
     ASSERT_EQUAL(-12, n5->getNegaMaxScore());
     ASSERT_EQUAL(12, n1->getNegaMaxScore());
 
-    n4->setSearchResult(pp, nm, -6, 10000);
+    n4->setSearchResult(bd, nm, -6, 10000);
     ASSERT_EQUAL(-6, n4->getNegaMaxScore());
     ASSERT_EQUAL(7, n3->getNegaMaxScore());
     ASSERT_EQUAL(-7, n2->getNegaMaxScore());
@@ -232,7 +297,7 @@ BookBuildTest::testBookNodeDAG() {
     ASSERT_EQUAL(-11, n5->getNegaMaxScore());
     ASSERT_EQUAL(11, n1->getNegaMaxScore());
 
-    n1->setSearchResult(pp, nm, 13, 10000);
+    n1->setSearchResult(bd, nm, 13, 10000);
     ASSERT_EQUAL(-6, n4->getNegaMaxScore());
     ASSERT_EQUAL(7, n3->getNegaMaxScore());
     ASSERT_EQUAL(-7, n2->getNegaMaxScore());
@@ -243,8 +308,8 @@ BookBuildTest::testBookNodeDAG() {
 
 void
 BookBuildTest::testAddPosToBook() {
-    std::set<U64> pp;
-    Book book("");
+    Book book("", 100, 200, 50);
+    const BookData& bd = book.bookData;
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     const U64 rootHash = pos.bookHash();
 
@@ -280,9 +345,9 @@ BookBuildTest::testAddPosToBook() {
 
     Move nf3(TextIO::uciStringToMove("g1f3"));
     const int t = 10000;
-    n1->setSearchResult(pp, nf3, 10, t);
+    n1->setSearchResult(bd, nf3, 10, t);
     Move nc6(TextIO::uciStringToMove("b8c6"));
-    n2->setSearchResult(pp, nc6, -8, t);
+    n2->setSearchResult(bd, nc6, -8, t);
     ASSERT_EQUAL(-8, n2->getNegaMaxScore());
     ASSERT_EQUAL(10, n1->getNegaMaxScore());
 
@@ -299,7 +364,7 @@ BookBuildTest::testAddPosToBook() {
     ASSERT(n3);
     ASSERT(contains(toSearch, n3Hash));
 
-    n3->setSearchResult(pp, nf3, 7, t);
+    n3->setSearchResult(bd, nf3, 7, t);
     ASSERT_EQUAL(7, n3->getNegaMaxScore());
     ASSERT_EQUAL(-7, n2->getNegaMaxScore());
     ASSERT_EQUAL(10, n1->getNegaMaxScore());
@@ -326,7 +391,7 @@ BookBuildTest::testAddPosToBook() {
     ASSERT(contains(toSearch, n5Hash));
     ASSERT(contains(toSearch, rootHash));
 
-    n5->setSearchResult(pp, nc6, -12, t);
+    n5->setSearchResult(bd, nc6, -12, t);
     ASSERT_EQUAL(-12, n5->getNegaMaxScore());
     ASSERT_EQUAL(12, n1->getNegaMaxScore());
 
@@ -348,7 +413,7 @@ BookBuildTest::testAddPosToBook() {
     ASSERT(contains(toSearch, n6Hash));
     ASSERT(contains(toSearch, n5Hash));
 
-    n6->setSearchResult(pp, nf3, 11, t);
+    n6->setSearchResult(bd, nf3, 11, t);
     ASSERT_EQUAL(11, n6->getNegaMaxScore());
     ASSERT_EQUAL(-11, n5->getNegaMaxScore());
     ASSERT_EQUAL(11, n1->getNegaMaxScore());
@@ -374,7 +439,7 @@ BookBuildTest::testAddPosToBook() {
     ASSERT(contains(toSearch, n6Hash));
     ASSERT(contains(toSearch, n3Hash));
 
-    n4->setSearchResult(pp, nc6, -12, t);
+    n4->setSearchResult(bd, nc6, -12, t);
     ASSERT_EQUAL(-12, n4->getNegaMaxScore());
     ASSERT_EQUAL(12, n6->getNegaMaxScore());
     ASSERT_EQUAL(-12, n5->getNegaMaxScore());
@@ -393,9 +458,8 @@ BookBuildTest::testAddPosToBook() {
 
 void
 BookBuildTest::testAddPosToBookConnectToChild() {
-    std::set<U64> pp;
-
     Book book("");
+    const BookData& bd = book.bookData;
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     const U64 n1Hash = pos.bookHash();
 
@@ -405,14 +469,14 @@ BookBuildTest::testAddPosToBookConnectToChild() {
     std::shared_ptr<BookNode> n1 = book.getBookNode(n1Hash);
     Move nf3(TextIO::uciStringToMove("g1f3"));
     const int t = 10000;
-    n1->setSearchResult(pp, nf3, 10, t);
+    n1->setSearchResult(bd, nf3, 10, t);
 
     UndoInfo ui1;
     pos.makeMove(e4, ui1);
     const U64 n2Hash = pos.bookHash();
     std::shared_ptr<BookNode> n2 = book.getBookNode(n2Hash);
     Move nc6(TextIO::uciStringToMove("b8c6"));
-    n2->setSearchResult(pp, nc6, -8, t);
+    n2->setSearchResult(bd, nc6, -8, t);
 
     Move nf6(TextIO::uciStringToMove("g8f6"));
     book.addPosToBook(pos, nf6, toSearch);
@@ -420,7 +484,7 @@ BookBuildTest::testAddPosToBookConnectToChild() {
     pos.makeMove(nf6, ui2);
     const U64 n3Hash = pos.bookHash();
     std::shared_ptr<BookNode> n3 = book.getBookNode(n3Hash);
-    n3->setSearchResult(pp, nf3, 7, t);
+    n3->setSearchResult(bd, nf3, 7, t);
 
     Move d4(TextIO::uciStringToMove("d2d4"));
     book.addPosToBook(pos, d4, toSearch);
@@ -428,7 +492,7 @@ BookBuildTest::testAddPosToBookConnectToChild() {
     pos.makeMove(d4, ui3);
     const U64 n4Hash = pos.bookHash();
     std::shared_ptr<BookNode> n4 = book.getBookNode(n4Hash);
-    n4->setSearchResult(pp, nc6, -12, t);
+    n4->setSearchResult(bd, nc6, -12, t);
 
     pos.unMakeMove(d4, ui3);
     pos.unMakeMove(nf6, ui2);
@@ -437,7 +501,7 @@ BookBuildTest::testAddPosToBookConnectToChild() {
     pos.makeMove(d4, ui1);
     const U64 n5Hash = pos.bookHash();
     std::shared_ptr<BookNode> n5 = book.getBookNode(n5Hash);
-    n5->setSearchResult(pp, nc6, -12, t);
+    n5->setSearchResult(bd, nc6, -12, t);
 
     book.addPosToBook(pos, nf6, toSearch);
     pos.makeMove(nf6, ui2);
@@ -445,7 +509,7 @@ BookBuildTest::testAddPosToBookConnectToChild() {
     std::shared_ptr<BookNode> n6 = book.getBookNode(n6Hash);
     ASSERT_EQUAL(1, n6->getChildren().size());
     ASSERT_EQUAL(2, n4->getParents().size());
-    n6->setSearchResult(pp, nf3, 11, t);
+    n6->setSearchResult(bd, nf3, 11, t);
 
     ASSERT_EQUAL(-12, n4->getNegaMaxScore());
     ASSERT_EQUAL(12, n6->getNegaMaxScore());

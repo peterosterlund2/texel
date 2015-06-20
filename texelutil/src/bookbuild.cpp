@@ -13,45 +13,86 @@
 namespace BookBuild {
 
 void
-BookNode::updateNegaMax(const std::set<U64>& pendingPositions,
+BookNode::updateNegaMax(const BookData& bookData,
                         bool updateThis, bool updateChildren, bool updateParents) {
     if (!updateThis && (negaMaxScore != INVALID_SCORE))
         return;
     if (updateChildren) {
         for (auto& e : children)
-            e.second->updateNegaMax(pendingPositions, false, true, false);
+            e.second->updateNegaMax(bookData, false, true, false);
     }
-    bool propagate = computeNegaMax(pendingPositions);
+    bool propagate = computeNegaMax(bookData);
     if (updateParents && propagate) {
         for (auto& e : parents) {
             std::shared_ptr<BookNode> parent = e.second.lock();
             assert(parent);
-            parent->updateNegaMax(pendingPositions, true, false, true);
+            parent->updateNegaMax(bookData, true, false, true);
         }
     }
 }
 
 bool
-BookNode::computeNegaMax(const std::set<U64>& pendingPositions) {
-    // FIXME!! Use pendingPositions
-
+BookNode::computeNegaMax(const BookData& bookData) {
     int oldNM = negaMaxScore;
-    int oldBW = negaMaxBookScoreW;
-    int oldBB = negaMaxBookScoreB;
+    int oldEW = expansionCostWhite;
+    int oldEB = expansionCostBlack;
+    const int ownCost = bookData.ownPathErrorCost();
+    const int otherCost = bookData.otherPathErrorCost();
 
     negaMaxScore = searchScore;
-    for (const auto& e : children)
-        negaMaxScore = std::max(negaMaxScore, negateScore(e.second->negaMaxScore));
+    if (negaMaxScore != INVALID_SCORE)
+        for (const auto& e : children)
+            negaMaxScore = std::max(negaMaxScore, negateScore(e.second->negaMaxScore));
 
-    negaMaxBookScoreW = bookScoreW();
-    negaMaxBookScoreB = bookScoreB();
-    for (const auto& e : children) {
-        negaMaxBookScoreW = std::max(negaMaxBookScoreW, negateScore(e.second->negaMaxBookScoreW));
-        negaMaxBookScoreB = std::max(negaMaxBookScoreB, negateScore(e.second->negaMaxBookScoreB));
+    expansionCostWhite = IGNORE_SCORE;
+    expansionCostBlack = IGNORE_SCORE;
+    if (!bookData.isPending(hashKey)) {
+        if (searchScore == INVALID_SCORE) {
+            expansionCostWhite = INVALID_SCORE;
+            expansionCostBlack = INVALID_SCORE;
+        } else if (searchScore != IGNORE_SCORE) {
+            int moveError = negaMaxScore - searchScore;
+            assert(moveError >= 0);
+            bool wtm = getDepth() % 2 == 0;
+            expansionCostWhite = moveError * (wtm ? ownCost : otherCost);
+            expansionCostBlack = moveError * (wtm ? otherCost : ownCost);
+        }
     }
+    for (const auto& e : children) {
+        if (e.second->expansionCostWhite == INVALID_SCORE)
+            expansionCostWhite = INVALID_SCORE;
+        if (e.second->expansionCostBlack == INVALID_SCORE)
+            expansionCostBlack = INVALID_SCORE;
+    }
+
+    for (const auto& e : children) {
+        const BookNode& child = *(e.second);
+        int moveError = (negaMaxScore == INVALID_SCORE) ? 1000 :
+                         negaMaxScore - negateScore(child.negaMaxScore);
+        bool wtm = getDepth() % 2 == 0;
+        if ((expansionCostWhite != INVALID_SCORE) &&
+            (child.expansionCostWhite != IGNORE_SCORE)) {
+            int cost = child.expansionCostWhite;
+            assert(cost >= 0);
+            cost += bookData.bookDepthCost() +
+                    moveError * (wtm ? ownCost : otherCost);
+            if ((expansionCostWhite == IGNORE_SCORE) || (expansionCostWhite > cost))
+                expansionCostWhite = cost;
+        }
+        if ((expansionCostBlack != INVALID_SCORE) &&
+            (child.expansionCostBlack != IGNORE_SCORE)) {
+            int cost = child.expansionCostBlack;
+            assert(cost >= 0);
+            cost += bookData.bookDepthCost() +
+                    moveError * (wtm ? otherCost : ownCost);
+            if ((expansionCostBlack == IGNORE_SCORE) || (expansionCostBlack > cost))
+                expansionCostBlack = cost;
+        }
+    }
+
     return ((negaMaxScore != oldNM) ||
-            (negaMaxBookScoreW != oldBW) ||
-            (negaMaxBookScoreB != oldBB));
+            (expansionCostWhite != oldEW) ||
+            (expansionCostBlack != oldEB));
 }
 
 int
@@ -66,12 +107,12 @@ BookNode::negateScore(int score) const {
 }
 
 void
-BookNode::setSearchResult(const std::set<U64>& pendingPositions,
+BookNode::setSearchResult(const BookData& bookData,
                           const Move& bestMove, int score, int time) {
     bestNonBookMove = bestMove;
     searchScore = score;
     searchTime = time;
-    updateNegaMax(pendingPositions);
+    updateNegaMax(bookData);
 }
 
 void
@@ -94,9 +135,11 @@ BookNode::updateDepth() {
 
 // ----------------------------------------------------------------------------
 
-Book::Book(const std::string& backupFile0)
+Book::Book(const std::string& backupFile0, int bookDepthCost,
+           int ownPathErrorCost, int otherPathErrorCost)
     : startPosHash(TextIO::readFEN(TextIO::startPosFEN).bookHash()),
-      backupFile(backupFile0) {
+      backupFile(backupFile0),
+      bookData(bookDepthCost, ownPathErrorCost, otherPathErrorCost) {
     addRootNode();
     if (!backupFile.empty())
         writeToFile(backupFile);
@@ -182,7 +225,7 @@ void
 Book::readFromFile(const std::string& filename) {
     bookNodes.clear();
     hashToParent.clear();
-    pendingPositions.clear();
+    bookData.clearPending();
 
     // Read all book entries
     std::ifstream is;
@@ -206,7 +249,7 @@ Book::readFromFile(const std::string& filename) {
     addRootNode();
 
     // Initialize all negamax scores
-    bookNodes.find(startPosHash)->second->updateNegaMax(pendingPositions);
+    bookNodes.find(startPosHash)->second->updateNegaMax(bookData);
 
     if (!backupFile.empty())
         writeToFile(backupFile);
@@ -291,7 +334,7 @@ Book::extendBook(PositionSelector& selector, int searchTime) {
                 auto it = bookNodes.find(wu.hashKey);
                 assert(it != bookNodes.end());
                 BookNode& bn = *it->second;
-                bn.setSearchResult(pendingPositions,
+                bn.setSearchResult(bookData,
                                    wu.bestMove, wu.bestMove.score(), wu.searchTime);
                 scheduler.reportResult(wu);
             }
@@ -312,7 +355,7 @@ Book::getMovesToSearch(Position& pos) {
         auto it = bookNodes.find(pos.bookHash());
         bool include = it == bookNodes.end();
         if (!include) {
-            if (pendingPositions.find(pos.bookHash()) == pendingPositions.end()) {
+            if (!bookData.isPending(pos.bookHash())) {
                 BookNode& bn = *it->second;
                 if (bn.getNegaMaxScore() == INVALID_SCORE)
                     include = true;
@@ -327,18 +370,18 @@ Book::getMovesToSearch(Position& pos) {
 
 void
 Book::addPending(U64 hashKey) {
-    pendingPositions.insert(hashKey);
+    bookData.addPending(hashKey);
     auto it = bookNodes.find(hashKey);
     assert(it != bookNodes.end());
-    it->second->updateNegaMax(pendingPositions);
+    it->second->updateNegaMax(bookData);
 }
 
 void
 Book::removePending(U64 hashKey) {
-    pendingPositions.erase(hashKey);
+    bookData.removePending(hashKey);
     auto it = bookNodes.find(hashKey);
     assert(it != bookNodes.end());
-    it->second->updateNegaMax(pendingPositions);
+    it->second->updateNegaMax(bookData);
 }
 
 void
@@ -353,7 +396,7 @@ Book::addPosToBook(Position& pos, const Move& move, std::vector<U64>& toSearch) 
 
     bookNodes[childHash] = childNode;
     setChildRefs(pos);
-    childNode->updateNegaMax(pendingPositions);
+    childNode->updateNegaMax(bookData);
 
     toSearch.push_back(pos.bookHash());
 
