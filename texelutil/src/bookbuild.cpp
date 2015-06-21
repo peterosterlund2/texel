@@ -95,8 +95,10 @@ BookNode::getExpansionCost(const BookData& bookData, const BookNode& child, bool
     assert(moveError >= 0);
     bool wtm = getDepth() % 2 == 0;
     int cost = white ? child.expansionCostWhite : child.expansionCostBlack;
-    assert(cost >= 0);
-    cost += bookData.bookDepthCost() + moveError * (wtm == white ? ownCost : otherCost);
+    if (cost >= 0)
+        cost += bookData.bookDepthCost() + moveError * (wtm == white ? ownCost : otherCost);
+    else
+        assert(cost == IGNORE_SCORE || cost == INVALID_SCORE);
     return cost;
 }
 
@@ -126,6 +128,10 @@ BookNode::updateDepth() {
     for (auto& e : parents) {
         std::shared_ptr<BookNode> parent = e.second.lock();
         assert(parent);
+        if (parent->depth == INT_MAX)
+            parent->updateDepth();
+        assert(parent->depth >= 0);
+        assert(parent->depth < INT_MAX);
         if (depth != INT_MAX)
             assert((depth - parent->depth) % 2 != 0);
         if (depth > parent->depth + 1) {
@@ -160,11 +166,31 @@ Book::improve(const std::string& bookFile, int searchTime, const std::string& fe
         }
 
         bool getNextPosition(Position& pos, Move& move) override {
-            bool foundPos = false; // FIXME!!
-
-            if (foundPos)
-                whiteBook = !whiteBook;
-            return foundPos;
+            std::shared_ptr<BookNode> ptr = book.bookNodes.find(book.startPosHash)->second;
+            while (true) {
+                int cost = whiteBook ? ptr->getExpansionCostWhite() : ptr->getExpansionCostBlack();
+                if (cost == IGNORE_SCORE)
+                    return false;
+                bool foundChild = false;
+                for (const auto& e : ptr->getChildren()) {
+                    std::shared_ptr<BookNode> child = e.second;
+                    int childCost = ptr->getExpansionCost(book.bookData, *child, whiteBook);
+                    if (cost == childCost) {
+                        ptr = child;
+                        foundChild = true;
+                        break;
+                    }
+                }
+                if (!foundChild)
+                    break;
+            }
+            move = ptr->getBestNonBookMove();
+            if (ptr->getChildren().find(move.getCompressedMove()) != ptr->getChildren().end())
+                move = Move();
+            std::vector<Move> moveList;
+            book.getPosition(ptr->getHashKey(), pos, moveList);
+            whiteBook = !whiteBook;
+            return true;
         }
 
     private:
@@ -217,7 +243,7 @@ Book::interactiveQuery(const std::string& bookFile) {
 void
 Book::addRootNode() {
     if (bookNodes.find(startPosHash) == bookNodes.end()) {
-        auto rootNode(std::make_shared<BookNode>(startPosHash));
+        auto rootNode(std::make_shared<BookNode>(startPosHash, true));
         rootNode->setState(BookNode::INITIALIZED);
         bookNodes[startPosHash] = rootNode;
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
@@ -244,6 +270,8 @@ Book::readFromFile(const std::string& filename) {
             break;
         auto bn(std::make_shared<BookNode>(0));
         bn->deSerialize(bsd);
+        if (bn->getHashKey() == startPosHash)
+            bn->setRootNode();
         bookNodes[bn->getHashKey()] = bn;
     }
     is.close();
@@ -401,8 +429,6 @@ Book::addPosToBook(Position& pos, const Move& move, std::vector<U64>& toSearch) 
     auto childNode = std::make_shared<BookNode>(childHash);
 
     bookNodes[childHash] = childNode;
-    setChildRefs(pos);
-    childNode->updateNegaMax(bookData);
 
     toSearch.push_back(pos.bookHash());
 
@@ -439,11 +465,14 @@ Book::addPosToBook(Position& pos, const Move& move, std::vector<U64>& toSearch) 
         }
         assert(found);
 
-        childNode->addParent(move2.getCompressedMove(), parent);
         parent->addChild(move2.getCompressedMove(), childNode);
+        childNode->addParent(move2.getCompressedMove(), parent);
         toSearch.push_back(parent->getHashKey());
     }
     assert(nParents > 0);
+
+    setChildRefs(pos);
+    childNode->updateNegaMax(bookData);
 
     pos.unMakeMove(move, ui);
     childNode->setState(BookNode::State::INITIALIZED);

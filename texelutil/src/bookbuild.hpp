@@ -139,6 +139,7 @@ public:
     /** Serialize/deserialize object. */
     void serialize(BookSerializeData& bsd) const;
     void deSerialize(const BookSerializeData& bsd);
+    void setRootNode();
 
     /** Add a parent/child relationship. */
     void addChild(U16 move, const std::shared_ptr<BookNode>& child);
@@ -438,6 +439,11 @@ BookNode::deSerialize(const BookSerializeData& bsd) {
     Serializer::deSerialize<sizeof(bsd.data)>(bsd.data, hashKey, move, searchScore, searchTime);
     bestNonBookMove.setFromCompressed(move);
     state = DESERIALIZED;
+}
+
+inline void
+BookNode::setRootNode() {
+    depth = 0;
 }
 
 inline void

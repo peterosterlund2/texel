@@ -511,6 +511,7 @@ BookBuildTest::testAddPosToBookConnectToChild() {
     pos.unMakeMove(d4, ui3);
     pos.unMakeMove(nf6, ui2);
     pos.unMakeMove(e4, ui1);
+    ASSERT_EQUAL(book.startPosHash, pos.bookHash());
     book.addPosToBook(pos, d4, toSearch);
     pos.makeMove(d4, ui1);
     const U64 n5Hash = pos.bookHash();
