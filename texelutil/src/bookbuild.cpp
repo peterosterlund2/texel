@@ -41,6 +41,7 @@ BookNode::computeNegaMax(const BookData& bookData) {
     if (negaMaxScore != INVALID_SCORE)
         for (const auto& e : children)
             negaMaxScore = std::max(negaMaxScore, negateScore(e.second->negaMaxScore));
+    // FIXME!! Ignore searchScore if it corresponds to a child node that has a valid negaMaxScore.
 
     expansionCostWhite = IGNORE_SCORE;
     expansionCostBlack = IGNORE_SCORE;
@@ -49,13 +50,8 @@ BookNode::computeNegaMax(const BookData& bookData) {
             expansionCostWhite = INVALID_SCORE;
             expansionCostBlack = INVALID_SCORE;
         } else if (searchScore != IGNORE_SCORE) {
-            int moveError = negaMaxScore - searchScore;
-            assert(moveError >= 0);
-            bool wtm = getDepth() % 2 == 0;
-            int ownCost = bookData.ownPathErrorCost();
-            int otherCost = bookData.otherPathErrorCost();
-            expansionCostWhite = moveError * (wtm ? ownCost : otherCost);
-            expansionCostBlack = moveError * (wtm ? otherCost : ownCost);
+            expansionCostWhite = getExpansionCost(bookData, nullptr, true);
+            expansionCostBlack = getExpansionCost(bookData, nullptr, false);
         }
     }
     for (const auto& e : children) {
@@ -66,15 +62,15 @@ BookNode::computeNegaMax(const BookData& bookData) {
     }
 
     for (const auto& e : children) {
-        const BookNode& child = *(e.second);
+        std::shared_ptr<BookNode> child = e.second;
         if ((expansionCostWhite != INVALID_SCORE) &&
-            (child.expansionCostWhite != IGNORE_SCORE)) {
+            (child->expansionCostWhite != IGNORE_SCORE)) {
             int cost = getExpansionCost(bookData, child, true);
             if ((expansionCostWhite == IGNORE_SCORE) || (expansionCostWhite > cost))
                 expansionCostWhite = cost;
         }
         if ((expansionCostBlack != INVALID_SCORE) &&
-            (child.expansionCostBlack != IGNORE_SCORE)) {
+            (child->expansionCostBlack != IGNORE_SCORE)) {
             int cost = getExpansionCost(bookData, child, false);
             if ((expansionCostBlack == IGNORE_SCORE) || (expansionCostBlack > cost))
                 expansionCostBlack = cost;
@@ -87,19 +83,29 @@ BookNode::computeNegaMax(const BookData& bookData) {
 }
 
 int
-BookNode::getExpansionCost(const BookData& bookData, const BookNode& child, bool white) const {
+BookNode::getExpansionCost(const BookData& bookData, const std::shared_ptr<BookNode>& child,
+                           bool white) const {
     const int ownCost = bookData.ownPathErrorCost();
     const int otherCost = bookData.otherPathErrorCost();
-    int moveError = (negaMaxScore == INVALID_SCORE) ? 1000 :
-                     negaMaxScore - negateScore(child.negaMaxScore);
-    assert(moveError >= 0);
-    bool wtm = getDepth() % 2 == 0;
-    int cost = white ? child.expansionCostWhite : child.expansionCostBlack;
-    if (cost >= 0)
-        cost += bookData.bookDepthCost() + moveError * (wtm == white ? ownCost : otherCost);
-    else
-        assert(cost == IGNORE_SCORE || cost == INVALID_SCORE);
-    return cost;
+    if (child) {
+        int moveError = (negaMaxScore == INVALID_SCORE) ? 1000 :
+                        negaMaxScore - negateScore(child->negaMaxScore);
+        assert(moveError >= 0);
+        bool wtm = getDepth() % 2 == 0;
+        int cost = white ? child->expansionCostWhite : child->expansionCostBlack;
+        if (cost >= 0)
+            cost += bookData.bookDepthCost() + moveError * (wtm == white ? ownCost : otherCost);
+        else
+            assert(cost == IGNORE_SCORE || cost == INVALID_SCORE);
+        return cost;
+    } else {
+        int moveError = negaMaxScore - searchScore;
+        assert(moveError >= 0);
+        bool wtm = getDepth() % 2 == 0;
+        int ownCost = bookData.ownPathErrorCost();
+        int otherCost = bookData.otherPathErrorCost();
+        return moveError * (wtm == white ? ownCost : otherCost);
+    }
 }
 
 int
@@ -166,6 +172,9 @@ Book::improve(const std::string& bookFile, int searchTime, const std::string& fe
         }
 
         bool getNextPosition(Position& pos, Move& move) override {
+            // FIXME!! If the best non-book move is better than the best book move, the non-book move
+            // should have a very low expansion cost.
+
             std::shared_ptr<BookNode> ptr = book.bookNodes.find(book.startPosHash)->second;
             while (true) {
                 int cost = whiteBook ? ptr->getExpansionCostWhite() : ptr->getExpansionCostBlack();
@@ -174,7 +183,7 @@ Book::improve(const std::string& bookFile, int searchTime, const std::string& fe
                 bool foundChild = false;
                 for (const auto& e : ptr->getChildren()) {
                     std::shared_ptr<BookNode> child = e.second;
-                    int childCost = ptr->getExpansionCost(book.bookData, *child, whiteBook);
+                    int childCost = ptr->getExpansionCost(book.bookData, child, whiteBook);
                     if (cost == childCost) {
                         ptr = child;
                         foundChild = true;
@@ -236,6 +245,91 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
 void
 Book::interactiveQuery(const std::string& bookFile) {
     readFromFile(bookFile);
+
+    Position pos = TextIO::readFEN(TextIO::startPosFEN);
+    std::vector<Move> movePath;
+
+    for (std::string prevStr, cmdStr; true; prevStr = cmdStr) {
+        printBookInfo(pos, movePath);
+        std::cout << "Command:" << std::flush;
+        std::getline(std::cin, cmdStr);
+        if (!std::cin)
+            break;
+        if (cmdStr.length() == 0)
+            cmdStr = prevStr;
+
+        if (startsWith(cmdStr, "q"))
+            break;
+
+        if (startsWith(cmdStr, "?")) {
+            std::cout << "  d n        - Go to child \"n\"" << std::endl;
+            std::cout << "  move       - Go to child \"move\"" << std::endl;
+            std::cout << "  u [levels] - Move up" << std::endl;
+            std::cout << "  h key      - Go to node with given hash key" << std::endl;
+            std::cout << "  q          - Quit" << std::endl;
+            std::cout << "  ?          - Print this help" << std::endl;
+        } else {
+            std::vector<Move> childMoves;
+            std::shared_ptr<BookNode> node = getBookNode(pos.bookHash());
+            assert(node);
+            getOrderedChildMoves(*node, childMoves);
+            Move childMove;
+            for (const Move& m : childMoves) {
+                std::string moveS = TextIO::moveToString(pos, m, false);
+                if (toLowerCase(moveS) == toLowerCase(cmdStr)) {
+                    childMove = m;
+                    break;
+                }
+            }
+            if (childMove.isEmpty() && startsWith(cmdStr, "d")) {
+                std::vector<std::string> split;
+                splitString(cmdStr, split);
+                if (split.size() > 1) {
+                    int moveNo = -1;
+                    if (str2Num(split[1], moveNo) && (moveNo >= 0) &&
+                        (moveNo < (int)childMoves.size()))
+                        childMove = childMoves[moveNo];
+                }
+            }
+            if (!childMove.isEmpty()) {
+                UndoInfo ui;
+                pos.makeMove(childMove, ui);
+                movePath.push_back(childMove);
+            } else if (startsWith(cmdStr, "u")) {
+                int levels = 1;
+                std::vector<std::string> split;
+                splitString(cmdStr, split);
+                if (split.size() > 1)
+                    str2Num(split[1], levels);
+                while (levels > 0 && !movePath.empty()) {
+                    movePath.pop_back();
+                    levels--;
+                }
+                pos = TextIO::readFEN(TextIO::startPosFEN);
+                for (const Move& m : movePath) {
+                    UndoInfo ui;
+                    pos.makeMove(m, ui);
+                }
+            } else if (startsWith(cmdStr, "h")) {
+                std::vector<std::string> split;
+                splitString(cmdStr, split);
+                if (split.size() > 1) {
+                    std::string tmp = split[1];
+                    if (startsWith(tmp, "0x"))
+                        tmp = tmp.substr(2);
+                    U64 hashKey;
+                    if (hexStr2Num(tmp, hashKey)) {
+                        Position tmpPos;
+                        std::vector<Move> moveList;
+                        if (getPosition(hashKey, tmpPos, moveList)) {
+                            pos = tmpPos;
+                            movePath = moveList;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -572,6 +666,92 @@ Book::writeBackup(const BookNode& bookNode) {
     bookNode.serialize(bsd);
     os.write((const char*)&bsd.data[0], sizeof(bsd.data));
     os.close();
+}
+
+void
+Book::printBookInfo(Position& pos, const std::vector<Move>& movePath) const {
+    std::cout << TextIO::asciiBoard(pos);
+    std::cout << TextIO::toFEN(pos) << std::endl;
+    std::cout << num2Hex(pos.bookHash()) << std::endl;
+    std::shared_ptr<BookNode> node = getBookNode(pos.bookHash());
+    if (!node) {
+        std::cout << "not in book" << std::endl;
+        return;
+    }
+    {
+        UndoInfo ui;
+        std::string moves;
+        Position tmpPos = TextIO::readFEN(TextIO::startPosFEN);
+        for (const Move& m : movePath) {
+            if (!moves.empty())
+                moves += ' ';
+            moves += TextIO::moveToString(tmpPos, m, false);
+            tmpPos.makeMove(m, ui);
+        }
+        std::cout << (moves.empty() ? "root position" : moves) << std::endl;
+    }
+    {
+        Position tmpPos;
+        std::vector<Move> moveList;
+        if (!getPosition(pos.bookHash(), tmpPos, moveList)) {
+            std::cout << "error, getPosition failed" << std::endl;
+            return;
+        }
+        UndoInfo ui;
+        std::string moves;
+        tmpPos = TextIO::readFEN(TextIO::startPosFEN);
+        for (const Move& m : moveList) {
+            if (!moves.empty())
+                moves += ' ';
+            moves += TextIO::moveToString(tmpPos, m, false);
+            tmpPos.makeMove(m, ui);
+        }
+        std::cout << (moves.empty() ? "root position" : moves) << std::endl;
+    }
+
+    std::vector<Move> childMoves;
+    getOrderedChildMoves(*node, childMoves);
+    for (size_t mi = 0; mi < childMoves.size(); mi++) {
+        const Move& childMove = childMoves[mi];
+        auto it = node->getChildren().find(childMove.getCompressedMove());
+        assert(it != node->getChildren().end());
+        std::shared_ptr<BookNode> child = it->second;
+        int color = pos.isWhiteMove() ? -1 : 1;
+        int negaMaxScore = child->getNegaMaxScore() * color;
+        int expandCostW = node->getExpansionCost(bookData, child, true);
+        int expandCostB = node->getExpansionCost(bookData, child, false);
+        std::cout << std::setw(2) << mi << ' '
+                  << std::setw(6) << TextIO::moveToString(pos, childMove, false) << ' '
+                  << std::setw(6) << negaMaxScore << ' '
+                  << std::setw(6) << expandCostW << ' '
+                  << std::setw(6) << expandCostB << std::endl;
+    }
+
+    std::cout << "-- "
+              << std::setw(6) << TextIO::moveToString(pos, node->getBestNonBookMove(), false) << ' '
+              << std::setw(6) << node->getSearchScore() * (pos.isWhiteMove() ? 1 : -1) << ' '
+              << std::setw(6) << node->getExpansionCost(bookData, nullptr, true) << ' '
+              << std::setw(6) << node->getExpansionCost(bookData, nullptr, false) << ' '
+              << std::setw(8) << node->getSearchTime() << std::endl;
+}
+
+void
+Book::getOrderedChildMoves(const BookNode& node, std::vector<Move>& moves) const {
+    std::vector<std::pair<int,U16>> childMoves;
+    for (const auto& e : node.getChildren()) {
+        Move childMove;
+        childMove.setFromCompressed(e.first);
+        std::shared_ptr<BookNode> child = e.second;
+        childMoves.push_back(std::make_pair(child->getNegaMaxScore(),
+                                            childMove.getCompressedMove()));
+    }
+    std::sort(childMoves.begin(), childMoves.end());
+    moves.clear();
+    for (const auto& e : childMoves) {
+        Move m;
+        m.setFromCompressed(e.second);
+        moves.push_back(m);
+    }
 }
 
 // ----------------------------------------------------------------------------

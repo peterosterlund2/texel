@@ -129,8 +129,9 @@ public:
     int getExpansionCostWhite() const;
     int getExpansionCostBlack() const;
 
-    /** Compute expansion cost for a child node. */
-    int getExpansionCost(const BookData& bookData, const BookNode& child, bool white) const;
+    /** Compute expansion cost for a child node, or for this node if child is null. */
+    int getExpansionCost(const BookData& bookData, const std::shared_ptr<BookNode>& child,
+                         bool white) const;
 
     struct BookSerializeData {
         U8 data[16];
@@ -288,6 +289,12 @@ private:
 
     /** Write a book node to the backup file. */
     void writeBackup(const BookNode& bookNode);
+
+    /** Print book information for a position to cout. */
+    void printBookInfo(Position& pos, const std::vector<Move>& movePath) const;
+
+    /** Get vector of moves corresponding to child nodes, ordered from best to worst move. */
+    void getOrderedChildMoves(const BookNode& node, std::vector<Move>& moves) const;
 
 
     /** Hash key corresponding to initial position. */

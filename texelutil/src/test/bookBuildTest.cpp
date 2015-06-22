@@ -76,15 +76,15 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(20, bn->getNegaMaxScore());
     ASSERT_EQUAL(100, bn->getExpansionCostWhite());
     ASSERT_EQUAL(100, bn->getExpansionCostBlack());
-    ASSERT_EQUAL(100, bn->getExpansionCost(bd, *child, true));
-    ASSERT_EQUAL(100, bn->getExpansionCost(bd, *child, false));
+    ASSERT_EQUAL(100, bn->getExpansionCost(bd, child, true));
+    ASSERT_EQUAL(100, bn->getExpansionCost(bd, child, false));
 
     child->setSearchResult(bd, c5, -16, 10000);
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
     ASSERT_EQUAL(0, bn->getExpansionCostWhite());
     ASSERT_EQUAL(0, bn->getExpansionCostBlack());
-    ASSERT_EQUAL(300, bn->getExpansionCost(bd, *child, true));
-    ASSERT_EQUAL(150, bn->getExpansionCost(bd, *child, false));
+    ASSERT_EQUAL(300, bn->getExpansionCost(bd, child, true));
+    ASSERT_EQUAL(150, bn->getExpansionCost(bd, child, false));
 
     auto child2(std::make_shared<BookNode>(33333333, false));
     U16 e5c = e5.getCompressedMove();
@@ -110,8 +110,8 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(17, child2->getNegaMaxScore());
     ASSERT_EQUAL(0, child2->getExpansionCostWhite());
     ASSERT_EQUAL(0, child2->getExpansionCostBlack());
-    ASSERT_EQUAL(150, child->getExpansionCost(bd, *child2, true));
-    ASSERT_EQUAL(300, child->getExpansionCost(bd, *child2, false));
+    ASSERT_EQUAL(150, child->getExpansionCost(bd, child2, true));
+    ASSERT_EQUAL(300, child->getExpansionCost(bd, child2, false));
 
     ASSERT_EQUAL(-16, child->getNegaMaxScore());
     ASSERT_EQUAL(0, child->getExpansionCostWhite());
@@ -120,8 +120,8 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
     ASSERT_EQUAL(0, bn->getExpansionCostWhite());
     ASSERT_EQUAL(0, bn->getExpansionCostBlack());
-    ASSERT_EQUAL(300, bn->getExpansionCost(bd, *child, true));
-    ASSERT_EQUAL(150, bn->getExpansionCost(bd, *child, false));
+    ASSERT_EQUAL(300, bn->getExpansionCost(bd, child, true));
+    ASSERT_EQUAL(150, bn->getExpansionCost(bd, child, false));
 
     child2->setSearchResult(bd, nf3, 10, 10000);
     ASSERT_EQUAL(10, child2->getNegaMaxScore());
@@ -131,8 +131,8 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(-10, child->getNegaMaxScore());
     ASSERT_EQUAL(100, child->getExpansionCostWhite());
     ASSERT_EQUAL(100, child->getExpansionCostBlack());
-    ASSERT_EQUAL(100, child->getExpansionCost(bd, *child2, true));
-    ASSERT_EQUAL(100, child->getExpansionCost(bd, *child2, false));
+    ASSERT_EQUAL(100, child->getExpansionCost(bd, child2, true));
+    ASSERT_EQUAL(100, child->getExpansionCost(bd, child2, false));
 
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
     ASSERT_EQUAL(0, bn->getExpansionCostWhite());
@@ -146,12 +146,12 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(0, child2->getExpansionCostBlack());
     ASSERT_EQUAL(100, child->getExpansionCostWhite());
     ASSERT_EQUAL(100, child->getExpansionCostBlack());
-    ASSERT_EQUAL(100, child->getExpansionCost(bd, *child2, true));
-    ASSERT_EQUAL(100, child->getExpansionCost(bd, *child2, false));
+    ASSERT_EQUAL(100, child->getExpansionCost(bd, child2, true));
+    ASSERT_EQUAL(100, child->getExpansionCost(bd, child2, false));
     ASSERT_EQUAL(200, bn->getExpansionCostWhite());
     ASSERT_EQUAL(200, bn->getExpansionCostBlack());
-    ASSERT_EQUAL(200, bn->getExpansionCost(bd, *child, true));
-    ASSERT_EQUAL(200, bn->getExpansionCost(bd, *child, false));
+    ASSERT_EQUAL(200, bn->getExpansionCost(bd, child, true));
+    ASSERT_EQUAL(200, bn->getExpansionCost(bd, child, false));
 
     child->setSearchResult(bd, c5, -18, 10000);
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
