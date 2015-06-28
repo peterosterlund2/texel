@@ -173,13 +173,13 @@ public:
     const S16 getSearchScore() const;
     const U32 getSearchTime() const;
 
+    /** Negate a score for a child node to produce the corresponding score
+     *  for the parent node. Also handles special scores, i.e. mate, invalid, ignore. */
+    static int negateScore(int score);
+
 private:
     /** Update depth of this node and all descendants. */
     void updateDepth();
-
-    /** Negate a score for a child node to produce the corresponding score
-     *  for the parent node. Also handles special scores, i.e. mate, invalid, ignore. */
-    int negateScore(int score) const;
 
     /** Compute negaMax scores for this node assuming all child nodes are already up to date.
      * Return true if any score was modified. */
@@ -217,11 +217,11 @@ public:
     Book(const Book& other) = delete;
     Book& operator=(const Book& other) = delete;
 
-    /** Improve the opening book. If fen is a non-empty string, only improve the part
-     * of the book rooted at that fen position.
+    /** Improve the opening book. If startMoves is a non-empty string, only improve the part
+     * of the book rooted at the position obtained after playing those moves.
      * This function does not return until no more book moves can be added, which in
      * practice never happens. */
-    void improve(const std::string& bookFile, int searchTime, const std::string& fen);
+    void improve(const std::string& bookFile, int searchTime, const std::string& startMoves);
 
     /** Add all moves from a PGN file to the book. */
     void importPGN(const std::string& bookFile, const std::string& pgnFile, int searchTime);
@@ -402,7 +402,7 @@ private:
 inline
 BookNode::BookNode(U64 hashKey0, bool rootNode)
     : hashKey(hashKey0), depth(rootNode ? 0 : INT_MAX),
-      searchScore(0), searchTime(0),
+      searchScore(INVALID_SCORE), searchTime(0),
       negaMaxScore(INVALID_SCORE),
       expansionCostWhite(INVALID_SCORE),
       expansionCostBlack(INVALID_SCORE),
