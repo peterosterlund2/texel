@@ -108,7 +108,7 @@ public:
     /** Get current position. */
     const Position& getPos() const;
 
-    /** Get the i:th mvoe in this position. */
+    /** Get the i:th move in this position. */
     const Move& getMove() const;
 
     /** Get preComment + postComment for move i. */

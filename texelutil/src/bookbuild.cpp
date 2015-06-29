@@ -6,6 +6,7 @@
  */
 
 #include "bookbuild.hpp"
+#include "gametree.hpp"
 #include "moveGen.hpp"
 #include "search.hpp"
 #include "textio.hpp"
@@ -47,7 +48,7 @@ BookNode::computeNegaMax(const BookData& bookData) {
     if (negaMaxScore != INVALID_SCORE)
         for (const auto& e : children)
             negaMaxScore = std::max(negaMaxScore, negateScore(e.second->negaMaxScore));
-    
+
     expansionCostWhite = IGNORE_SCORE;
     expansionCostBlack = IGNORE_SCORE;
     if (!bookData.isPending(hashKey)) {
@@ -191,9 +192,6 @@ Book::improve(const std::string& bookFile, int searchTime, const std::string& st
         }
 
         bool getNextPosition(Position& pos, Move& move) override {
-            // FIXME!! If the best non-book move is better than the best book move, the non-book move
-            // should have a very low expansion cost.
-
             std::shared_ptr<BookNode> ptr = book.bookNodes.find(startHash)->second;
             while (true) {
                 int cost = whiteBook ? ptr->getExpansionCostWhite() : ptr->getExpansionCostBlack();
@@ -234,26 +232,33 @@ Book::improve(const std::string& bookFile, int searchTime, const std::string& st
 }
 
 void
-Book::importPGN(const std::string& bookFile, const std::string& pgnFile, int searchTime) {
+Book::importPGN(const std::string& bookFile, const std::string& pgnFile) {
     readFromFile(bookFile);
 
-    class PgnSelector : public PositionSelector {
-    public:
-        PgnSelector(Book& b, const std::string& pgnFile) : book(b) {
+    // Create book nodes for all positions in the PGN file
+    std::ifstream is(pgnFile);
+    GameTree gt(is);
+    int nGames = 0;
+    int nAdded = 0;
+    while (gt.readPGN()) {
+        nGames++;
+        GameNode gn = gt.getRootNode();
+        while (true) {
+            if (bookNodes.find(gn.getPos().bookHash()) == bookNodes.end()) {
+                gn.goBack();
+                Position pos = gn.getPos();
+                gn.goForward(0);
+                assert(!gn.getMove().isEmpty());
+                std::vector<U64> toSearch;
+                addPosToBook(pos, gn.getMove(), toSearch);
+                nAdded++;
+            }
+            if (gn.nChildren() == 0)
+                break;
+            gn.goForward(0);
         }
-
-        bool getNextPosition(Position& pos, Move& move) override {
-            return false; // FIXME!!
-        }
-
-    private:
-        Book& book;
-    };
-
-    PgnSelector selector(*this, pgnFile);
-    extendBook(selector, searchTime);
-
-    writeToFile(bookFile + ".out");
+    }
+    std::cout << "Added " << nAdded << " positions from " << nGames << " games" << std::endl;
 }
 
 void
@@ -443,7 +448,7 @@ Book::extendBook(PositionSelector& selector, int searchTime) {
     const int desiredQueueLen = numThreads + 1;
     int workId = 0;   // Work unit ID number
     int commitId = 0; // Next work unit to be stored in opening book
-    std::set<SearchScheduler::WorkUnit> completed; // Completed but not yet commited to book
+    std::set<SearchScheduler::WorkUnit> completed; // Completed but not yet committed to book
     while (true) {
         bool workAdded = false;
         if (numPending < desiredQueueLen) {
