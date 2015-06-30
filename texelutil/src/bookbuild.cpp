@@ -171,7 +171,8 @@ Book::Book(const std::string& backupFile0, int bookDepthCost,
 }
 
 void
-Book::improve(const std::string& bookFile, int searchTime, const std::string& startMoves) {
+Book::improve(const std::string& bookFile, int searchTime, int numThreads,
+              const std::string& startMoves) {
     readFromFile(bookFile);
 
     Position startPos = TextIO::readFEN(TextIO::startPosFEN);
@@ -224,7 +225,7 @@ Book::improve(const std::string& bookFile, int searchTime, const std::string& st
     };
 
     DropoutSelector selector(*this, startPos.bookHash());
-    extendBook(selector, searchTime);
+    extendBook(selector, searchTime, numThreads);
 
     writeToFile(bookFile + ".out");
 }
@@ -432,8 +433,7 @@ Book::writeToFile(const std::string& filename) {
 }
 
 void
-Book::extendBook(PositionSelector& selector, int searchTime) {
-    const int numThreads = 1;
+Book::extendBook(PositionSelector& selector, int searchTime, int numThreads) {
     TranspositionTable tt(27);
 
     SearchScheduler scheduler;

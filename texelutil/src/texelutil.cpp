@@ -104,7 +104,7 @@ usage() {
     std::cerr << " tbgen wq wr wb wn bq br bb bn : Generate pawn-less tablebase in memory\n";
     std::cerr << " tbgentest type1 [type2 ...]   : Compare pawnless tablebase against GTB\n";
     std::cerr << "\n";
-    std::cerr << " book improve bookFile searchTime \"startmoves\"  : Improve an opening book\n";
+    std::cerr << " book improve bookFile searchTime nThreads \"startmoves\" : Improve opening book\n";
     std::cerr << " book import bookFile pgnFile                   : Import moves from PGN file\n";
     std::cerr << " book export bookFile polyglotFile maxPathError : Export as polyglot book\n";
     std::cerr << " book query bookFile                            : Interactive query mode\n";
@@ -457,16 +457,17 @@ main(int argc, char* argv[]) {
             std::string bookFile = argv[3];
             std::string logFile = bookFile + ".log";
             if (bookCmd == "improve") {
-                if ((argc < 5) || (argc > 6))
+                if ((argc < 6) || (argc > 7))
                     usage();
                 std::string startMoves;
-                if (argc == 6)
-                    startMoves = argv[5];
-                int searchTime;
-                if (!str2Num(argv[4], searchTime))
+                if (argc == 7)
+                    startMoves = argv[6];
+                int searchTime, numThreads;
+                if (!str2Num(argv[4], searchTime) || (searchTime <= 0) ||
+                    !str2Num(argv[5], numThreads) || (numThreads <= 0))
                     usage();
                 BookBuild::Book book(logFile);
-                book.improve(bookFile, searchTime, startMoves);
+                book.improve(bookFile, searchTime, numThreads, startMoves);
             } else if (bookCmd == "import") {
                 if (argc != 5)
                     usage();

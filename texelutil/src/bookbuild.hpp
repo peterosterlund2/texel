@@ -221,7 +221,8 @@ public:
      * of the book rooted at the position obtained after playing those moves.
      * This function does not return until no more book moves can be added, which in
      * practice never happens. */
-    void improve(const std::string& bookFile, int searchTime, const std::string& startMoves);
+    void improve(const std::string& bookFile, int searchTime, int numThreads,
+                 const std::string& startMoves);
 
     /** Add all moves from a PGN file to the book. */
     void importPGN(const std::string& bookFile, const std::string& pgnFile);
@@ -253,7 +254,7 @@ private:
     };
 
     /** Extend book using positions provided by the selector. */
-    void extendBook(PositionSelector& selector, int searchTime);
+    void extendBook(PositionSelector& selector, int searchTime, int numThreads);
 
     /** Get the list of legal moves to include in the search. */
     std::vector<Move> getMovesToSearch(Position& pos);

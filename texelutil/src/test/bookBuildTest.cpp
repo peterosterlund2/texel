@@ -557,7 +557,8 @@ BookBuildTest::testSelector() {
         };
         TestSelector selector(book);
         int searchTime = 10;
-        book.extendBook(selector, searchTime);
+        int nThreads = 1;
+        book.extendBook(selector, searchTime, nThreads);
         ASSERT_EQUAL(1, selector.nCalls);
         ASSERT_EQUAL(1, book.bookNodes.size());
 
@@ -593,7 +594,8 @@ BookBuildTest::testSelector() {
         };
         TestSelector selector(book);
         int searchTime = 10;
-        book.extendBook(selector, searchTime);
+        int nThreads = 1;
+        book.extendBook(selector, searchTime, nThreads);
         ASSERT(selector.nCalls >= 9);
         ASSERT_EQUAL(9, book.bookNodes.size());
     }
