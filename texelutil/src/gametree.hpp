@@ -91,7 +91,7 @@ private:
                          std::shared_ptr<Node>& child);
 
     Move move;                  // Move leading to this node. Empty in root node.
-    UndoInfo ui;
+    UndoInfo ui;                // UndoInfo needed to get to parent position.
     int nag;                    // Numeric annotation glyph
     std::string preComment;     // Comment before move
     std::string postComment;    // Comment after move

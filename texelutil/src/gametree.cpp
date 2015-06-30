@@ -197,8 +197,7 @@ void Node::addChild(Position& pos, std::shared_ptr<Node>& node, std::shared_ptr<
     node->children.push_back(child);
     node = child;
     child = std::make_shared<Node>();
-    UndoInfo ui;
-    pos.makeMove(node->getMove(), ui);
+    pos.makeMove(node->getMove(), node->ui);
 }
 
 void Node::parsePgn(PgnScanner& scanner, Position pos, std::shared_ptr<Node> node) {
@@ -216,7 +215,9 @@ void Node::parsePgn(PgnScanner& scanner, Position pos, std::shared_ptr<Node> nod
                 moveAdded = false;
             }
             if (node->getParent()) {
-                parsePgn(scanner, pos, node->getParent());
+                Position pos2(pos);
+                pos2.unMakeMove(node->getMove(), node->getUndoInfo());
+                parsePgn(scanner, pos2, node->getParent());
             } else {
                 int nestLevel = 1;
                 while (nestLevel > 0) {
@@ -271,9 +272,6 @@ void Node::parsePgn(PgnScanner& scanner, Position pos, std::shared_ptr<Node> nod
                     moveAdded = false;
                 }
                 nodeToAdd->move = TextIO::stringToMove(pos, tok.token);
-                pos.makeMove(nodeToAdd->move, nodeToAdd->ui);
-                pos.unMakeMove(nodeToAdd->move, nodeToAdd->ui);
-
                 if (nodeToAdd->move.isEmpty()) {
                     std::cerr << TextIO::asciiBoard(pos) << " wtm:" << (pos.isWhiteMove()?1:0) << " move:" << tok.token << std::endl;
                     throw ChessParseError("Invalid move");

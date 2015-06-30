@@ -99,14 +99,12 @@ BookNode::getExpansionCost(const BookData& bookData, const std::shared_ptr<BookN
         assert(moveError >= 0);
         bool wtm = getDepth() % 2 == 0;
         int cost = white ? child->expansionCostWhite : child->expansionCostBlack;
-        if (cost >= 0)
+        if (cost != IGNORE_SCORE && cost != INVALID_SCORE)
             cost += bookData.bookDepthCost() + moveError * (wtm == white ? ownCost : otherCost);
-        else
-            assert(cost == IGNORE_SCORE || cost == INVALID_SCORE);
         return cost;
     } else {
         if (children.find(bestNonBookMove.getCompressedMove()) != children.end()) {
-            return 0; // bestNonBookMove is obsoleted by a child node
+            return -10000; // bestNonBookMove is obsoleted by a child node
         } else {
             int moveError = negaMaxScore - searchScore;
             assert(moveError >= 0);
@@ -243,20 +241,21 @@ Book::importPGN(const std::string& bookFile, const std::string& pgnFile) {
     while (gt.readPGN()) {
         nGames++;
         GameNode gn = gt.getRootNode();
-        while (true) {
-            if (bookNodes.find(gn.getPos().bookHash()) == bookNodes.end()) {
+        std::function<void(void)> addToBook = [&]() {
+            Position base = gn.getPos();
+            for (int i = 0; i < gn.nChildren(); i++) {
+                gn.goForward(i);
+                if (bookNodes.find(gn.getPos().bookHash()) == bookNodes.end()) {
+                    assert(!gn.getMove().isEmpty());
+                    std::vector<U64> toSearch;
+                    addPosToBook(base, gn.getMove(), toSearch);
+                    nAdded++;
+                }
+                addToBook();
                 gn.goBack();
-                Position pos = gn.getPos();
-                gn.goForward(0);
-                assert(!gn.getMove().isEmpty());
-                std::vector<U64> toSearch;
-                addPosToBook(pos, gn.getMove(), toSearch);
-                nAdded++;
             }
-            if (gn.nChildren() == 0)
-                break;
-            gn.goForward(0);
-        }
+        };
+        addToBook();
     }
     std::cout << "Added " << nAdded << " positions from " << nGames << " games" << std::endl;
 }
