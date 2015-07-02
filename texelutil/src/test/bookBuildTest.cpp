@@ -66,7 +66,7 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(0, child->getChildren().size());
     ASSERT_EQUAL(1, child->getParents().size());
     ASSERT_EQUAL(child, bn->getChildren().find(e4c)->second);
-    ASSERT_EQUAL(bn, child->getParents().lower_bound(e4c)->second.lock());
+    ASSERT_EQUAL(bn, child->getParents().lower_bound(BookNode::ParentInfo(e4c))->parent.lock());
     ASSERT_EQUAL(0, bn->getDepth());
     ASSERT_EQUAL(1, child->getDepth());
 
@@ -96,11 +96,11 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(1, child->getChildren().size());
     ASSERT_EQUAL(1, child->getParents().size());
     ASSERT_EQUAL(child, bn->getChildren().find(e4c)->second);
-    ASSERT_EQUAL(bn, child->getParents().lower_bound(e4c)->second.lock());
+    ASSERT_EQUAL(bn, child->getParents().lower_bound(BookNode::ParentInfo(e4c))->parent.lock());
     ASSERT_EQUAL(0, child2->getChildren().size());
     ASSERT_EQUAL(1, child2->getParents().size());
     ASSERT_EQUAL(child2, child->getChildren().find(e5c)->second);
-    ASSERT_EQUAL(child, child2->getParents().lower_bound(e5c)->second.lock());
+    ASSERT_EQUAL(child, child2->getParents().lower_bound(BookNode::ParentInfo(e5c))->parent.lock());
     ASSERT_EQUAL(0, bn->getDepth());
     ASSERT_EQUAL(1, child->getDepth());
     ASSERT_EQUAL(2, child2->getDepth());
@@ -163,7 +163,7 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(200, bn->getExpansionCostBlack());
 
     bd.addPending(child2->getHashKey());
-    child2->updateNegaMax(bd);
+    child2->updateScores(bd);
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
     ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostWhite());
     ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostBlack());
@@ -173,7 +173,7 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(300, bn->getExpansionCostBlack());
 
     bd.addPending(child->getHashKey());
-    child->updateNegaMax(bd);
+    child->updateScores(bd);
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
     ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostWhite());
     ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostBlack());
@@ -183,9 +183,9 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(12*50, bn->getExpansionCostBlack());
 
     bd.addPending(bn->getHashKey());
-    bn->updateNegaMax(bd);
+    bn->updateScores(bd);
     bd.removePending(child->getHashKey());
-    child->updateNegaMax(bd);
+    child->updateScores(bd);
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
     ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostWhite());
     ASSERT_EQUAL(IGNORE_SCORE, child2->getExpansionCostBlack());
@@ -195,9 +195,9 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(300, bn->getExpansionCostBlack());
 
     bd.removePending(bn->getHashKey());
-    bn->updateNegaMax(bd);
+    bn->updateScores(bd);
     bd.removePending(child2->getHashKey());
-    child2->updateNegaMax(bd);
+    child2->updateScores(bd);
     bn->setSearchResult(bd, d4, INVALID_SCORE, 10000);
     child->setSearchResult(bd, c5, -18, 10000);
     child2->setSearchResult(bd, nf3, 17, 10000);
@@ -210,7 +210,7 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(INVALID_SCORE, bn->getExpansionCostBlack());
 
     bd.addPending(bn->getHashKey());
-    bn->updateNegaMax(bd);
+    bn->updateScores(bd);
     ASSERT_EQUAL(INVALID_SCORE, bn->getNegaMaxScore());
     ASSERT_EQUAL(0, child2->getExpansionCostWhite());
     ASSERT_EQUAL(0, child2->getExpansionCostBlack());

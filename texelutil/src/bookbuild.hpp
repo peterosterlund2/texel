@@ -15,6 +15,8 @@
 #include <memory>
 #include <vector>
 #include <deque>
+#include <unordered_set>
+#include <unordered_map>
 #include <map>
 #include <climits>
 
@@ -159,15 +161,30 @@ public:
     State getState() const;
     void setState(State s);
 
-    /** Recursively initialize negamax scores of this node and all children and parents. */
-    void updateNegaMax(const BookData& bookData,
-                       bool updateThis = true, bool updateChildren = true, bool updateParents = true);
+    /** Recursively initialize scores (negamax, expansion costs, path errors)
+     *  of this node and all children and parents. */
+    void updateScores(const BookData& bookData);
 
     /** Get all children. */
     const std::map<U16, std::shared_ptr<BookNode>>& getChildren() const { return children; }
 
+    struct ParentInfo {
+        ParentInfo(U16 cMove, const std::weak_ptr<BookNode> p = std::weak_ptr<BookNode>())
+            : compressedMove(cMove), parent(p) {}
+
+        bool operator<(const ParentInfo& other) const {
+            if (compressedMove != other.compressedMove)
+                return compressedMove < other.compressedMove;
+            std::owner_less<std::weak_ptr<BookNode>> ol;
+            return ol(parent, other.parent);
+        }
+
+        U16 compressedMove;
+        std::weak_ptr<BookNode> parent;
+    };
+
     /** Get all parents. */
-    const std::multimap<U16, std::weak_ptr<BookNode>>& getParents() const { return parents; }
+    const std::set<ParentInfo>& getParents() const { return parents; }
 
     const Move& getBestNonBookMove() const;
     const S16 getSearchScore() const;
@@ -185,6 +202,10 @@ private:
      * Return true if any score was modified. */
     bool computeNegaMax(const BookData& bookData);
 
+    /** Compuate path error for this node assuming all parent nodes are already up to date.
+     * Return true if white or black path error was modified. */
+    bool computePathError(const BookData& bookData);
+
 
     U64 hashKey;
     int depth;              // Length of shortest path to the root node
@@ -199,8 +220,8 @@ private:
     int expansionCostWhite; // Smallest expansion cost for white
     int expansionCostBlack; // Smallest expansion cost for black
 
-    std::map<U16, std::shared_ptr<BookNode>> children;   // Compressed move -> BookNode
-    std::multimap<U16, std::weak_ptr<BookNode>> parents; // Compressed move -> BookNode
+    std::map<U16, std::shared_ptr<BookNode>> children; // Compressed move -> BookNode
+    std::set<ParentInfo> parents;                      // Compressed move -> BookNode
     State state;
 };
 
@@ -306,10 +327,21 @@ private:
     std::string backupFile;
 
     /** All positions in the opening book. */
-    std::map<U64, std::shared_ptr<BookNode>> bookNodes;
+    std::unordered_map<U64, std::shared_ptr<BookNode>> bookNodes;
 
     /** Map from position hash code to all parent book position hash codes. */
-    std::set<std::pair<U64, U64>> hashToParent;
+    struct H2P {
+        H2P(U64 c, U64 p) : childHash(c), parentHash(p) {}
+        bool operator==(const H2P& o) const {
+            return childHash == o.childHash && parentHash == o.parentHash;
+        }
+        struct HashFun { // Make sure all elements with same childHash end up in the same bucket
+            std::size_t operator()(const H2P& h) const { return h.childHash; }
+        };
+        U64 childHash;
+        U64 parentHash;
+    };
+    std::unordered_set<H2P, H2P::HashFun> hashToParent;
 
     BookData bookData;
 };
@@ -461,7 +493,7 @@ BookNode::addChild(U16 move, const std::shared_ptr<BookNode>& child) {
 
 inline void
 BookNode::addParent(U16 move, const std::shared_ptr<BookNode>& parent) {
-    parents.insert(std::make_pair(move, parent));
+    parents.insert(ParentInfo(move, parent));
     updateDepth();
 }
 

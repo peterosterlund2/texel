@@ -14,22 +14,44 @@
 namespace BookBuild {
 
 void
-BookNode::updateNegaMax(const BookData& bookData,
-                        bool updateThis, bool updateChildren, bool updateParents) {
-    if (!updateThis && (negaMaxScore != INVALID_SCORE))
-        return;
-    if (updateChildren) {
-        for (auto& e : children)
-            e.second->updateNegaMax(bookData, false, true, false);
-    }
-    bool propagate = computeNegaMax(bookData);
-    if (updateParents && propagate) {
-        for (auto& e : parents) {
-            std::shared_ptr<BookNode> parent = e.second.lock();
-            assert(parent);
-            parent->updateNegaMax(bookData, true, false, true);
+BookNode::updateScores(const BookData& bookData) {
+    std::function<void(BookNode*)> updatePathErrors =
+        [&updatePathErrors,&bookData](BookNode* node) {
+        bool modified = node->computePathError(bookData);
+        if (modified)
+            for (auto& e : node->children)
+                updatePathErrors(&*e.second);
+    };
+
+    std::function<void(BookNode*,bool,bool,bool)> updateNegaMax =
+        [&updatePathErrors,&updateNegaMax,&bookData](BookNode* node,
+                                                     bool updateThis,
+                                                     bool updateChildren,
+                                                     bool updateParents) {
+        if (!updateThis && (node->negaMaxScore != INVALID_SCORE))
+            return;
+        if (updateChildren) {
+            for (auto& e : node->children)
+                updateNegaMax(&*e.second, false, true, false);
         }
-    }
+        bool propagate = node->computeNegaMax(bookData);
+        for (auto& e : node->children)
+            updatePathErrors(&*e.second);
+        if (updateParents && propagate) {
+            for (auto& e : node->parents) {
+                std::shared_ptr<BookNode> parent = e.parent.lock();
+                assert(parent);
+                updateNegaMax(&*parent, true, false, true);
+            }
+        }
+    };
+
+    updateNegaMax(this, true, true, true);
+}
+
+bool
+BookNode::computePathError(const BookData& bookData) {
+    return false; // FIXME!!
 }
 
 bool
@@ -133,14 +155,14 @@ BookNode::setSearchResult(const BookData& bookData,
     bestNonBookMove = bestMove;
     searchScore = score;
     searchTime = time;
-    updateNegaMax(bookData);
+    updateScores(bookData);
 }
 
 void
 BookNode::updateDepth() {
     bool updated = false;
     for (auto& e : parents) {
-        std::shared_ptr<BookNode> parent = e.second.lock();
+        std::shared_ptr<BookNode> parent = e.parent.lock();
         assert(parent);
         if (parent->depth == INT_MAX)
             parent->updateDepth();
@@ -407,7 +429,7 @@ Book::readFromFile(const std::string& filename) {
     addRootNode();
 
     // Initialize all negamax scores
-    bookNodes.find(startPosHash)->second->updateNegaMax(bookData);
+    bookNodes.find(startPosHash)->second->updateScores(bookData);
 
     if (!backupFile.empty())
         writeToFile(backupFile);
@@ -533,7 +555,7 @@ Book::addPending(U64 hashKey) {
     bookData.addPending(hashKey);
     auto it = bookNodes.find(hashKey);
     assert(it != bookNodes.end());
-    it->second->updateNegaMax(bookData);
+    it->second->updateScores(bookData);
 }
 
 void
@@ -541,7 +563,7 @@ Book::removePending(U64 hashKey) {
     bookData.removePending(hashKey);
     auto it = bookNodes.find(hashKey);
     assert(it != bookNodes.end());
-    it->second->updateNegaMax(bookData);
+    it->second->updateScores(bookData);
 }
 
 void
@@ -558,12 +580,14 @@ Book::addPosToBook(Position& pos, const Move& move, std::vector<U64>& toSearch) 
 
     toSearch.push_back(pos.bookHash());
 
-    auto b = hashToParent.lower_bound(std::make_pair(childHash, (U64)0));
-    auto e = hashToParent.lower_bound(std::make_pair(childHash+1, (U64)0));
+    std::size_t bucket = hashToParent.bucket(H2P(childHash, 0));
+    auto b = hashToParent.begin(bucket);
+    auto e = hashToParent.end(bucket);
     int nParents = 0;
     for (auto p = b; p != e; ++p) {
-        assert(p->first == childHash);
-        U64 parentHash = p->second;
+        if (p->childHash != childHash)
+            continue;
+        U64 parentHash = p->parentHash;
         auto it2 = bookNodes.find(parentHash);
         assert(it2 != bookNodes.end());
         nParents++;
@@ -598,7 +622,7 @@ Book::addPosToBook(Position& pos, const Move& move, std::vector<U64>& toSearch) 
     assert(nParents > 0);
 
     setChildRefs(pos);
-    childNode->updateNegaMax(bookData);
+    childNode->updateScores(bookData);
 
     pos.unMakeMove(move, ui);
     childNode->setState(BookNode::State::INITIALIZED);
@@ -617,13 +641,13 @@ Book::getPosition(U64 hashKey, Position& pos, std::vector<Move>& moveList) const
         return false;
     const auto& parents = it->second->getParents();
     assert(!parents.empty());
-    std::shared_ptr<BookNode> parent = parents.begin()->second.lock();
+    std::shared_ptr<BookNode> parent = parents.begin()->parent.lock();
     assert(parent);
     bool ok = getPosition(parent->getHashKey(), pos, moveList);
     assert(ok);
 
     Move m;
-    m.setFromCompressed(parents.begin()->first);
+    m.setFromCompressed(parents.begin()->compressedMove);
     UndoInfo ui;
     pos.makeMove(m, ui);
     moveList.push_back(m);
@@ -674,7 +698,7 @@ Book::setChildRefs(Position& pos) {
     for (int i = 0; i < moves.size; i++) {
         pos.makeMove(moves[i], ui);
         U64 childHash = pos.bookHash();
-        hashToParent.insert(std::make_pair(childHash, hash));
+        hashToParent.insert(H2P(childHash, hash));
         auto it2 = bookNodes.find(childHash);
         if (it2 != bookNodes.end()) {
             auto child = it2->second;
