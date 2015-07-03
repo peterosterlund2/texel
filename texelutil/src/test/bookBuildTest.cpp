@@ -41,6 +41,8 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
     ASSERT_EQUAL(0, bn->getExpansionCostWhite());
     ASSERT_EQUAL(0, bn->getExpansionCostBlack());
+    ASSERT_EQUAL(0, bn->getPathErrorWhite());
+    ASSERT_EQUAL(0, bn->getPathErrorBlack());
 
     {
         BookNode::BookSerializeData bsd;
@@ -78,6 +80,10 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(100, bn->getExpansionCostBlack());
     ASSERT_EQUAL(100, bn->getExpansionCost(bd, child, true));
     ASSERT_EQUAL(100, bn->getExpansionCost(bd, child, false));
+    ASSERT_EQUAL(0, bn->getPathErrorWhite());
+    ASSERT_EQUAL(0, bn->getPathErrorBlack());
+    ASSERT_EQUAL(0, child->getPathErrorWhite());
+    ASSERT_EQUAL(0, child->getPathErrorBlack());
 
     child->setSearchResult(bd, c5, -16, 10000);
     ASSERT_EQUAL(17, bn->getNegaMaxScore());
@@ -85,6 +91,10 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(0, bn->getExpansionCostBlack());
     ASSERT_EQUAL(300, bn->getExpansionCost(bd, child, true));
     ASSERT_EQUAL(150, bn->getExpansionCost(bd, child, false));
+    ASSERT_EQUAL(0, bn->getPathErrorWhite());
+    ASSERT_EQUAL(0, bn->getPathErrorBlack());
+    ASSERT_EQUAL(1, child->getPathErrorWhite());
+    ASSERT_EQUAL(0, child->getPathErrorBlack());
 
     auto child2(std::make_shared<BookNode>(33333333, false));
     U16 e5c = e5.getCompressedMove();
@@ -122,6 +132,13 @@ BookBuildTest::testBookNode() {
     ASSERT_EQUAL(0, bn->getExpansionCostBlack());
     ASSERT_EQUAL(300, bn->getExpansionCost(bd, child, true));
     ASSERT_EQUAL(150, bn->getExpansionCost(bd, child, false));
+
+    ASSERT_EQUAL(0, bn->getPathErrorWhite());
+    ASSERT_EQUAL(0, bn->getPathErrorBlack());
+    ASSERT_EQUAL(1, child->getPathErrorWhite());
+    ASSERT_EQUAL(0, child->getPathErrorBlack());
+    ASSERT_EQUAL(1, child2->getPathErrorWhite());
+    ASSERT_EQUAL(1, child2->getPathErrorBlack());
 
     child2->setSearchResult(bd, nf3, 10, 10000);
     ASSERT_EQUAL(10, child2->getNegaMaxScore());
@@ -465,9 +482,9 @@ BookBuildTest::testAddPosToBook() {
     ASSERT(book.getPosition(n4Hash, pos2, moveList));
     ASSERT(pos2.equals(pos));
     ASSERT_EQUAL(3, moveList.size());
-    ASSERT_EQUAL(e4, moveList[0]);
+    ASSERT_EQUAL(d4, moveList[0]);
     ASSERT_EQUAL(nf6, moveList[1]);
-    ASSERT_EQUAL(d4, moveList[2]);
+    ASSERT_EQUAL(e4, moveList[2]);
 }
 
 void

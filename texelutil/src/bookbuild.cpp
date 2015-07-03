@@ -15,19 +15,21 @@ namespace BookBuild {
 
 void
 BookNode::updateScores(const BookData& bookData) {
-    std::function<void(BookNode*)> updatePathErrors =
-        [&updatePathErrors,&bookData](BookNode* node) {
-        bool modified = node->computePathError(bookData);
-        if (modified)
-            for (auto& e : node->children)
-                updatePathErrors(&*e.second);
+    struct Compare {
+        bool operator()(const BookNode* n1, const BookNode* n2) const {
+            if (n1->getDepth() != n2->getDepth())
+                return n1->getDepth() < n2->getDepth();
+            return n1 < n2;
+        }
     };
+    std::set<BookNode*,Compare> toUpdate;
+    toUpdate.insert(this);
 
     std::function<void(BookNode*,bool,bool,bool)> updateNegaMax =
-        [&updatePathErrors,&updateNegaMax,&bookData](BookNode* node,
-                                                     bool updateThis,
-                                                     bool updateChildren,
-                                                     bool updateParents) {
+        [&updateNegaMax,&bookData,&toUpdate](BookNode* node,
+                                             bool updateThis,
+                                             bool updateChildren,
+                                             bool updateParents) {
         if (!updateThis && (node->negaMaxScore != INVALID_SCORE))
             return;
         if (updateChildren) {
@@ -35,8 +37,9 @@ BookNode::updateScores(const BookData& bookData) {
                 updateNegaMax(&*e.second, false, true, false);
         }
         bool propagate = node->computeNegaMax(bookData);
-        for (auto& e : node->children)
-            updatePathErrors(&*e.second);
+        if (propagate)
+            for (auto& e : node->children)
+                toUpdate.insert(&*e.second);
         if (updateParents && propagate) {
             for (auto& e : node->parents) {
                 std::shared_ptr<BookNode> parent = e.parent.lock();
@@ -45,13 +48,17 @@ BookNode::updateScores(const BookData& bookData) {
             }
         }
     };
-
     updateNegaMax(this, true, true, true);
-}
 
-bool
-BookNode::computePathError(const BookData& bookData) {
-    return false; // FIXME!!
+    std::function<void(BookNode*)> updatePathErrors =
+        [&updatePathErrors,&bookData](BookNode* node) {
+        bool modified = node->computePathError(bookData);
+        if (modified)
+            for (auto& e : node->children)
+                updatePathErrors(&*e.second);
+    };
+    for (BookNode* n : toUpdate)
+        updatePathErrors(n);
 }
 
 bool
@@ -136,6 +143,45 @@ BookNode::getExpansionCost(const BookData& bookData, const std::shared_ptr<BookN
             return moveError * (wtm == white ? ownCost : otherCost);
         }
     }
+}
+
+bool
+BookNode::computePathError(const BookData& bookData) {
+    if (getDepth() == 0) {
+        assert(pathErrorWhite == 0);
+        assert(pathErrorBlack == 0);
+        return false;
+    }
+
+    const int oldPW = pathErrorWhite;
+    const int oldPB = pathErrorBlack;
+
+    pathErrorWhite = INT_MAX;
+    pathErrorBlack = INT_MAX;
+    for (auto& e : parents) {
+        std::shared_ptr<BookNode> parent = e.parent.lock();
+        assert(parent);
+        int errW = parent->getPathErrorWhite();
+        int errB = parent->getPathErrorBlack();
+        if (errW == INVALID_SCORE || errB == INVALID_SCORE)
+            continue;
+        if (getNegaMaxScore() == INVALID_SCORE || parent->getNegaMaxScore() == INVALID_SCORE)
+            continue;
+        int delta = parent->getNegaMaxScore() - negateScore(getNegaMaxScore());
+        assert(delta >= 0);
+        if ((getDepth() % 2) != 0)
+            errW += delta;
+        else
+            errB += delta;
+        pathErrorWhite = std::min(pathErrorWhite, errW);
+        pathErrorBlack = std::min(pathErrorBlack, errB);
+    }
+    if (pathErrorWhite == INT_MAX || pathErrorBlack == INT_MAX) {
+        pathErrorWhite = INVALID_SCORE;
+        pathErrorBlack = INVALID_SCORE;
+    }
+
+    return (pathErrorWhite != oldPW) || (pathErrorBlack != oldPB);
 }
 
 int
@@ -639,18 +685,29 @@ Book::getPosition(U64 hashKey, Position& pos, std::vector<Move>& moveList) const
     auto it = bookNodes.find(hashKey);
     if (it == bookNodes.end())
         return false;
-    const auto& parents = it->second->getParents();
-    assert(!parents.empty());
-    std::shared_ptr<BookNode> parent = parents.begin()->parent.lock();
-    assert(parent);
-    bool ok = getPosition(parent->getHashKey(), pos, moveList);
+
+    int bestErr = INT_MAX;
+    std::shared_ptr<BookNode> bestParent;
+    Move bestMove;
+    for (const auto& p : it->second->getParents()) {
+        std::shared_ptr<BookNode> parent = p.parent.lock();
+        assert(parent);
+        int err = parent->getPathErrorWhite() + parent->getPathErrorBlack();
+        if (err < bestErr) {
+            bestErr = err;
+            bestParent = parent;
+            bestMove.setFromCompressed(p.compressedMove);
+            assert(!bestMove.isEmpty());
+        }
+    }
+    assert(bestParent);
+
+    bool ok = getPosition(bestParent->getHashKey(), pos, moveList);
     assert(ok);
 
-    Move m;
-    m.setFromCompressed(parents.begin()->compressedMove);
     UndoInfo ui;
-    pos.makeMove(m, ui);
-    moveList.push_back(m);
+    pos.makeMove(bestMove, ui);
+    moveList.push_back(bestMove);
     return true;
 }
 
@@ -780,15 +837,31 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath) const {
         std::cout << std::setw(2) << mi << ' '
                   << std::setw(6) << TextIO::moveToString(pos, childMove, false) << ' '
                   << std::setw(6) << negaMaxScore << ' '
+                  << std::setw(6) << child->getPathErrorWhite() << ' '
+                  << std::setw(6) << child->getPathErrorBlack() << ' '
                   << std::setw(6) << expandCostW << ' '
                   << std::setw(6) << expandCostB << std::endl;
     }
 
     std::string moveS = node->getBestNonBookMove().isEmpty() ? "--" :
                         TextIO::moveToString(pos, node->getBestNonBookMove(), false);
+
+    int errW = node->getPathErrorWhite();
+    int errB = node->getPathErrorBlack();
+    if ((node->getNegaMaxScore() != INVALID_SCORE) &&
+        (node->getSearchScore() != INVALID_SCORE) &&
+        (node->getSearchScore() != IGNORE_SCORE)) {
+        if ((node->getDepth() % 2) == 0)
+            errW += node->getNegaMaxScore() - node->getSearchScore();
+        else
+            errB += node->getNegaMaxScore() - node->getSearchScore();
+    } else
+        errW = errB = INVALID_SCORE;
     std::cout << "-- "
               << std::setw(6) << moveS << ' '
               << std::setw(6) << node->getSearchScore() * (pos.isWhiteMove() ? 1 : -1) << ' '
+              << std::setw(6) << errW << ' '
+              << std::setw(6) << errB << ' '
               << std::setw(6) << node->getExpansionCost(bookData, nullptr, true) << ' '
               << std::setw(6) << node->getExpansionCost(bookData, nullptr, false) << ' '
               << std::setw(8) << node->getSearchTime() << std::endl;

@@ -99,10 +99,10 @@ private:
  *      k = k2 if the other player is to move
  *     moveError = negaMaxScore - searchScore (always >= 0)
  *   - ka + child[i].expansionCost + kb * moveError, where:
- *      ka = k3 if child[i].expansionCost >= 0
+ *      ka = k3 if child[i].expansionCost is not ignore or invalid
  *      ka = 0  otherwise
- *      kb = k1 if the book player is to move and child[i].expansionCost >= 0
- *      kb = k2 if the other player is to move and child[i].expansionCost >= 0
+ *      kb = k1 if the book player is to move and child[i].expansionCost is not ignore or invalid
+ *      kb = k2 if the other player is to move and child[i].expansionCost is not ignore or invalid
  *      kb = 0 otherwise
  *      moveError = negaMaxScore - negateScore(child[i].negaMaxScore)
  *   Choices corresponding to nodes currently being searched are ignored. If all choices
@@ -131,6 +131,10 @@ public:
     int getExpansionCostWhite() const;
     int getExpansionCostBlack() const;
 
+    /** Return smallest path error from root to this node. */
+    int getPathErrorWhite() const;
+    int getPathErrorBlack() const;
+
     /** Compute expansion cost for a child node, or for this node if child is null. */
     int getExpansionCost(const BookData& bookData, const std::shared_ptr<BookNode>& child,
                          bool white) const;
@@ -155,7 +159,7 @@ public:
     enum State {
         EMPTY,             // Newly constructed, node contains no useful data
         DESERIALIZED,      // Deserialized but non-serialized data not initialized
-        INITIALIZED,       // All data initialized, consistency not yet analyzed
+        INITIALIZED,       // All data initialized
     };
 
     State getState() const;
@@ -219,6 +223,9 @@ private:
     int negaMaxScore;       // Best score in this position. max(searchScore, -child_i(pos))
     int expansionCostWhite; // Smallest expansion cost for white
     int expansionCostBlack; // Smallest expansion cost for black
+
+    int pathErrorWhite;     // Smallest path error for white from root to this node
+    int pathErrorBlack;     // Smallest path error for black from root to this node
 
     std::map<U16, std::shared_ptr<BookNode>> children; // Compressed move -> BookNode
     std::set<ParentInfo> parents;                      // Compressed move -> BookNode
@@ -434,12 +441,16 @@ private:
 
 inline
 BookNode::BookNode(U64 hashKey0, bool rootNode)
-    : hashKey(hashKey0), depth(rootNode ? 0 : INT_MAX),
+    : hashKey(hashKey0), depth(INT_MAX),
       searchScore(INVALID_SCORE), searchTime(0),
       negaMaxScore(INVALID_SCORE),
       expansionCostWhite(INVALID_SCORE),
       expansionCostBlack(INVALID_SCORE),
+      pathErrorWhite(INVALID_SCORE),
+      pathErrorBlack(INVALID_SCORE),
       state(BookNode::EMPTY) {
+    if (rootNode)
+        setRootNode();
 }
 
 inline U64
@@ -467,6 +478,16 @@ BookNode::getExpansionCostBlack() const {
     return expansionCostBlack;
 }
 
+inline int
+BookNode::getPathErrorWhite() const {
+    return pathErrorWhite;
+}
+
+inline int
+BookNode::getPathErrorBlack() const {
+    return pathErrorBlack;
+}
+
 inline void
 BookNode::serialize(BookSerializeData& bsd) const {
     U16 move = bestNonBookMove.getCompressedMove();
@@ -484,6 +505,8 @@ BookNode::deSerialize(const BookSerializeData& bsd) {
 inline void
 BookNode::setRootNode() {
     depth = 0;
+    pathErrorWhite = 0;
+    pathErrorBlack = 0;
 }
 
 inline void
