@@ -260,7 +260,7 @@ public:
                         int maxPathError);
 
     /** Query the book interactively, taking query commands from standard input. */
-    void interactiveQuery(const std::string& bookFile);
+    void interactiveQuery(const std::string& bookFile, int maxErrSelf, int maxErrOther);
 
 private:
     /** Add root node if not already present. */
@@ -319,8 +319,33 @@ private:
     /** Write a book node to the backup file. */
     void writeBackup(const BookNode& bookNode);
 
+    struct BookWeight {
+        BookWeight(int wW, int wB) : weightWhite(wW), weightBlack(wB) {}
+        int weightWhite; // Weight when book player is white
+        int weightBlack; // Weight when book player is black
+    };
+
+    /** Compute book weights for all nodes in the tree. weightWhite is computed
+     *  recursively as follows:
+     *    weightWhite = 1                         if leaf node
+     *    weightWhite = sum(child_i.weightWhite)  if white to move
+     *    weightWhite = min(child_i.weightWhite)  if black to move and >= 1 valid child
+     *    weightWhite = 0                         if black to move and no valid child
+     *  Only children with pathErrorWhite <= maxErrSelf and pathErrorBlack <= maxErrOther
+     *  are considered.
+     *  weightBlack is computed in an analogous way:
+     */
+    void computeWeights(int maxErrSelf, int maxErrOther,
+                        std::map<U64,BookWeight>& weights);
+
+    /** Decide if a move in a position is good enough to be a book move. */
+    bool bookMoveOk(const BookNode* node, U16 cMove, int maxErrSelf, int maxErrOther,
+                    bool whiteBook) const;
+
     /** Print book information for a position to cout. */
-    void printBookInfo(Position& pos, const std::vector<Move>& movePath) const;
+    void printBookInfo(Position& pos, const std::vector<Move>& movePath,
+                       const std::map<U64,BookWeight>& weights,
+                       int maxErrSelf, int maxErrOther) const;
 
     /** Get vector of moves corresponding to child nodes, ordered from best to worst move. */
     void getOrderedChildMoves(const BookNode& node, std::vector<Move>& moves) const;

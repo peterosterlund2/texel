@@ -336,14 +336,17 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
 }
 
 void
-Book::interactiveQuery(const std::string& bookFile) {
+Book::interactiveQuery(const std::string& bookFile, int maxErrSelf, int maxErrOther) {
     readFromFile(bookFile);
+
+    std::map<U64,BookWeight> weights;
+    computeWeights(maxErrSelf, maxErrOther, weights);
 
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     std::vector<Move> movePath;
 
     for (std::string prevStr, cmdStr; true; prevStr = cmdStr) {
-        printBookInfo(pos, movePath);
+        printBookInfo(pos, movePath, weights, maxErrSelf, maxErrOther);
         std::cout << "Command:" << std::flush;
         std::getline(std::cin, cmdStr);
         if (!std::cin)
@@ -359,6 +362,7 @@ Book::interactiveQuery(const std::string& bookFile) {
             std::cout << "  move       - Go to child \"move\"" << std::endl;
             std::cout << "  u [levels] - Move up" << std::endl;
             std::cout << "  h key      - Go to node with given hash key" << std::endl;
+            std::cout << "  f fen      - Go to node given by FEN string" << std::endl;
             std::cout << "  q          - Quit" << std::endl;
             std::cout << "  ?          - Print this help" << std::endl;
             continue;
@@ -419,6 +423,22 @@ Book::interactiveQuery(const std::string& bookFile) {
                         pos = tmpPos;
                         movePath = moveList;
                     }
+                }
+            }
+        } else if (startsWith(cmdStr, "f")) {
+            size_t idx = cmdStr.find(' ');
+            if (idx != std::string::npos) {
+                std::string fen = cmdStr.substr(idx + 1);
+                fen = trim(fen);
+                try {
+                    Position tmpPos = TextIO::readFEN(fen);
+                    std::vector<Move> moveList;
+                    if (getPosition(tmpPos.bookHash(), tmpPos, moveList)) {
+                        pos = tmpPos;
+                        movePath = moveList;
+                    }
+                } catch (const ChessParseError& ex) {
+                    std::cerr << "Error: " << ex.what() << std::endl;
                 }
             }
         }
@@ -782,7 +802,125 @@ Book::writeBackup(const BookNode& bookNode) {
 }
 
 void
-Book::printBookInfo(Position& pos, const std::vector<Move>& movePath) const {
+Book::computeWeights(int maxErrSelf, int maxErrOther,
+                     std::map<U64,BookWeight>& weights) {
+    weights.clear();
+    std::function<void(BookNode*)> compWeights =
+        [&compWeights,maxErrSelf,maxErrOther,&weights,this](const BookNode* node) {
+        const U64 hKey = node->getHashKey();
+        if (weights.find(hKey) != weights.end())
+            return;
+        for (auto& c : node->getChildren())
+            compWeights(&*c.second);
+        if (node->getNegaMaxScore() == INVALID_SCORE) {
+            weights.insert(std::make_pair(hKey, BookWeight(0, 0)));
+            return;
+        }
+        
+        bool wtm = (node->getDepth() % 2) == 0;
+        int weightW = wtm ? 0 : INT_MAX;
+        int weightB = wtm ? INT_MAX : 0;
+        for (auto& c : node->getChildren()) {
+            bool bookOkW = bookMoveOk(node, c.first, maxErrSelf, maxErrOther, true);
+            bool bookOkB = bookMoveOk(node, c.first, maxErrSelf, maxErrOther, false);
+            auto it = weights.find(c.second->getHashKey());
+            assert(it != weights.end());
+            if (wtm) {
+                if (bookOkW)
+                    weightW += it->second.weightWhite;
+                if (bookOkB) {
+                    int w = it->second.weightBlack;
+                    assert(w != 0);
+                    weightB = std::min(weightB, w);
+                }
+            } else {
+                if (bookOkW) {
+                    int w = it->second.weightWhite;
+                    assert(w != 0);
+                    weightW = std::min(weightW, w);
+                }
+                if (bookOkB)
+                    weightB += it->second.weightBlack;
+            }
+        }
+        bool bookOkW = bookMoveOk(node, Move().getCompressedMove(), maxErrSelf, maxErrOther, true);
+        bool bookOkB = bookMoveOk(node, Move().getCompressedMove(), maxErrSelf, maxErrOther, false);
+        if (wtm) {
+            if (bookOkW)
+                weightW += 1;
+            if (bookOkB)
+                weightB = std::min(weightB, 1);
+        } else {
+            if (bookOkW)
+                weightW = std::min(weightW, 1);
+            if (bookOkB)
+                weightB += 1;
+        }
+        if (weightW == INT_MAX)
+            weightW = 0;
+        if (weightB == INT_MAX)
+            weightB = 0;
+        weights.insert(std::make_pair(hKey, BookWeight(weightW, weightB)));
+    };
+    compWeights(&*bookNodes.find(startPosHash)->second);
+}
+
+bool
+Book::bookMoveOk(const BookNode* node, U16 cMove, int maxErrSelf, int maxErrOther,
+                 bool whiteBook) const {
+    if (node->getNegaMaxScore() == INVALID_SCORE)
+        return false;
+    const bool wtm = (node->getDepth() % 2) == 0;
+    int errW = node->getPathErrorWhite();
+    int errB = node->getPathErrorBlack();
+    if (errW == INVALID_SCORE || errB == INVALID_SCORE)
+        return false;
+    Move move;
+    move.setFromCompressed(cMove);
+    if (move.isEmpty()) {
+        if (node->getSearchScore() == INVALID_SCORE ||
+            node->getSearchScore() == IGNORE_SCORE)
+            return false;
+        auto it = node->getChildren().find(node->getBestNonBookMove().getCompressedMove());
+        if ((it != node->getChildren().end()) &&
+            (it->second->getNegaMaxScore() != INVALID_SCORE))
+            return false;
+        int delta = node->getNegaMaxScore() - node->getSearchScore();
+        assert(delta >= 0);
+        if (delta == 0)
+            return true; // Best move is always good enough
+        if (wtm) {
+            errW += delta;
+        } else {
+            errB += delta;
+        }
+    } else {
+        auto it = node->getChildren().find(cMove);
+        assert(it != node->getChildren().end());
+        auto child = it->second;
+        if (child->getNegaMaxScore() == INVALID_SCORE)
+            return false;
+        int delta = node->getNegaMaxScore() - BookNode::negateScore(child->getNegaMaxScore());
+        assert(delta >= 0);
+        if (delta == 0)
+            return true; // Best move is always good enough
+        if (wtm) {
+            errW += delta;
+        } else {
+            errB += delta;
+        }
+    }
+    if (wtm) {
+        return errW <= (whiteBook ? maxErrSelf : maxErrOther);
+    } else {
+        return errB <= (whiteBook ? maxErrOther : maxErrSelf);
+    }
+}
+
+void
+Book::printBookInfo(Position& pos, const std::vector<Move>& movePath,
+                    const std::map<U64,BookWeight>& weights,
+                    int maxErrSelf, int maxErrOther) const {
     std::cout << TextIO::asciiBoard(pos);
     std::cout << TextIO::toFEN(pos) << std::endl;
     std::cout << num2Hex(pos.bookHash()) << std::endl;
@@ -834,13 +972,20 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath) const {
             negaMaxScore = BookNode::negateScore(negaMaxScore);
         int expandCostW = node->getExpansionCost(bookData, child, true);
         int expandCostB = node->getExpansionCost(bookData, child, false);
+        auto wi = weights.find(child->getHashKey());
+        assert(wi != weights.end());
+        bool bookOkW = bookMoveOk(&*node, childMove.getCompressedMove(), maxErrSelf, maxErrOther, true);
+        bool bookOkB = bookMoveOk(&*node, childMove.getCompressedMove(), maxErrSelf, maxErrOther, false);
         std::cout << std::setw(2) << mi << ' '
                   << std::setw(6) << TextIO::moveToString(pos, childMove, false) << ' '
                   << std::setw(6) << negaMaxScore << ' '
                   << std::setw(6) << child->getPathErrorWhite() << ' '
                   << std::setw(6) << child->getPathErrorBlack() << ' '
                   << std::setw(6) << expandCostW << ' '
-                  << std::setw(6) << expandCostB << std::endl;
+                  << std::setw(6) << expandCostB << ' '
+                  << std::setw(6) << (bookOkW ? wi->second.weightWhite : 0) << ' '
+                  << std::setw(6) << (bookOkB ? wi->second.weightBlack : 0) << ' '
+                  << std::endl;
     }
 
     std::string moveS = node->getBestNonBookMove().isEmpty() ? "--" :
@@ -857,6 +1002,10 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath) const {
             errB += node->getNegaMaxScore() - node->getSearchScore();
     } else
         errW = errB = INVALID_SCORE;
+    auto wi = weights.find(node->getHashKey());
+    assert(wi != weights.end());
+    bool bookOkW = bookMoveOk(&*node, Move().getCompressedMove(), maxErrSelf, maxErrOther, true);
+    bool bookOkB = bookMoveOk(&*node, Move().getCompressedMove(), maxErrSelf, maxErrOther, false);
     std::cout << "-- "
               << std::setw(6) << moveS << ' '
               << std::setw(6) << node->getSearchScore() * (pos.isWhiteMove() ? 1 : -1) << ' '
@@ -864,6 +1013,8 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath) const {
               << std::setw(6) << errB << ' '
               << std::setw(6) << node->getExpansionCost(bookData, nullptr, true) << ' '
               << std::setw(6) << node->getExpansionCost(bookData, nullptr, false) << ' '
+              << std::setw(6) << (bookOkW ? 1 : 0) << ' '
+              << std::setw(6) << (bookOkB ? 1 : 0) << ' '
               << std::setw(8) << node->getSearchTime() << std::endl;
 }
 

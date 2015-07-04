@@ -107,7 +107,7 @@ usage() {
     std::cerr << " book improve bookFile searchTime nThreads \"startmoves\" : Improve opening book\n";
     std::cerr << " book import bookFile pgnFile                   : Import moves from PGN file\n";
     std::cerr << " book export bookFile polyglotFile maxPathError : Export as polyglot book\n";
-    std::cerr << " book query bookFile                            : Interactive query mode\n";
+    std::cerr << " book query bookFile maxErrSelf maxErrOther     : Interactive query mode\n";
 
     std::cerr << std::flush;
     ::exit(2);
@@ -484,10 +484,14 @@ main(int argc, char* argv[]) {
                 BookBuild::Book book("");
                 book.exportPolyglot(bookFile, polyglotFile, maxPathError);
             } else if (bookCmd == "query") {
-                if (argc != 4)
+                if (argc != 6)
+                    usage();
+                int maxErrSelf, maxErrOther;
+                if (!str2Num(argv[4], maxErrSelf) ||
+                    !str2Num(argv[5], maxErrOther))
                     usage();
                 BookBuild::Book book("");
-                book.interactiveQuery(bookFile);
+                book.interactiveQuery(bookFile, maxErrSelf, maxErrOther);
             }
         } else {
             usage();
