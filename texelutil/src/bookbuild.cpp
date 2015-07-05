@@ -259,7 +259,7 @@ Book::improve(const std::string& bookFile, int searchTime, int numThreads,
         }
 
         bool getNextPosition(Position& pos, Move& move) override {
-            std::shared_ptr<BookNode> ptr = book.bookNodes.find(startHash)->second;
+            std::shared_ptr<BookNode> ptr = book.getBookNode(startHash);
             while (true) {
                 int cost = whiteBook ? ptr->getExpansionCostWhite() : ptr->getExpansionCostBlack();
                 if (cost == IGNORE_SCORE)
@@ -314,7 +314,7 @@ Book::importPGN(const std::string& bookFile, const std::string& pgnFile) {
             Position base = gn.getPos();
             for (int i = 0; i < gn.nChildren(); i++) {
                 gn.goForward(i);
-                if (bookNodes.find(gn.getPos().bookHash()) == bookNodes.end()) {
+                if (!getBookNode(gn.getPos().bookHash())) {
                     assert(!gn.getMove().isEmpty());
                     std::vector<U64> toSearch;
                     addPosToBook(base, gn.getMove(), toSearch);
@@ -351,6 +351,7 @@ Book::interactiveQuery(const std::string& bookFile, int maxErrSelf, int maxErrOt
         std::getline(std::cin, cmdStr);
         if (!std::cin)
             break;
+        cmdStr = trim(cmdStr);
         if (cmdStr.length() == 0)
             cmdStr = prevStr;
 
@@ -358,13 +359,14 @@ Book::interactiveQuery(const std::string& bookFile, int maxErrSelf, int maxErrOt
             break;
 
         if (startsWith(cmdStr, "?")) {
-            std::cout << "  d n        - Go to child \"n\"" << std::endl;
-            std::cout << "  move       - Go to child \"move\"" << std::endl;
-            std::cout << "  u [levels] - Move up" << std::endl;
-            std::cout << "  h key      - Go to node with given hash key" << std::endl;
-            std::cout << "  f fen      - Go to node given by FEN string" << std::endl;
-            std::cout << "  q          - Quit" << std::endl;
-            std::cout << "  ?          - Print this help" << std::endl;
+            std::cout << "  d n           - Go to child \"n\"" << std::endl;
+            std::cout << "  move          - Go to child \"move\"" << std::endl;
+            std::cout << "  u [levels]    - Move up" << std::endl;
+            std::cout << "  h key         - Go to node with given hash key" << std::endl;
+            std::cout << "  f fen         - Go to node given by FEN string" << std::endl;
+            std::cout << "  r [errS errO] - Re-read book from file" << std::endl;
+            std::cout << "  q             - Quit" << std::endl;
+            std::cout << "  ?             - Print this help" << std::endl;
             continue;
         }
         std::vector<Move> childMoves;
@@ -441,6 +443,19 @@ Book::interactiveQuery(const std::string& bookFile, int maxErrSelf, int maxErrOt
                     std::cerr << "Error: " << ex.what() << std::endl;
                 }
             }
+        } else if (startsWith(cmdStr, "r")) {
+            std::vector<std::string> split;
+            splitString(cmdStr, split);
+            if (split.size() == 3) {
+                str2Num(split[1], maxErrSelf);
+                str2Num(split[2], maxErrOther);
+            }
+            readFromFile(bookFile);
+            computeWeights(maxErrSelf, maxErrOther, weights);
+            if (!getBookNode(pos.bookHash())) {
+                pos = TextIO::readFEN(TextIO::startPosFEN);
+                movePath.clear();
+            }
         }
     }
 }
@@ -449,7 +464,7 @@ Book::interactiveQuery(const std::string& bookFile, int maxErrSelf, int maxErrOt
 
 void
 Book::addRootNode() {
-    if (bookNodes.find(startPosHash) == bookNodes.end()) {
+    if (!getBookNode(startPosHash)) {
         auto rootNode(std::make_shared<BookNode>(startPosHash, true));
         rootNode->setState(BookNode::INITIALIZED);
         bookNodes[startPosHash] = rootNode;
@@ -495,7 +510,7 @@ Book::readFromFile(const std::string& filename) {
     addRootNode();
 
     // Initialize all negamax scores
-    bookNodes.find(startPosHash)->second->updateScores(bookData);
+    getBookNode(startPosHash)->updateScores(bookData);
 
     if (!backupFile.empty())
         writeToFile(backupFile);
@@ -542,7 +557,7 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads) {
             Position pos;
             Move move;
             if (selector.getNextPosition(pos, move)) {
-                assert(bookNodes.find(pos.bookHash()) != bookNodes.end());
+                assert(getBookNode(pos.bookHash()));
                 std::vector<U64> toSearch;
                 if (move.isEmpty()) {
                     toSearch.push_back(pos.bookHash());
@@ -578,12 +593,11 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads) {
                 numPending--;
                 commitId++;
                 removePending(wu.hashKey);
-                auto it = bookNodes.find(wu.hashKey);
-                assert(it != bookNodes.end());
-                BookNode& bn = *it->second;
-                bn.setSearchResult(bookData,
-                                   wu.bestMove, wu.bestMove.score(), wu.searchTime);
-                writeBackup(bn);
+                auto bn = getBookNode(wu.hashKey);
+                assert(bn);
+                bn->setSearchResult(bookData,
+                                    wu.bestMove, wu.bestMove.score(), wu.searchTime);
+                writeBackup(*bn);
                 scheduler.reportResult(wu);
             }
         }
@@ -600,12 +614,11 @@ Book::getMovesToSearch(Position& pos) {
     for (int i = 0; i < moves.size; i++) {
         const Move& m = moves[i];
         pos.makeMove(m, ui);
-        auto it = bookNodes.find(pos.bookHash());
-        bool include = it == bookNodes.end();
+        auto bn = getBookNode(pos.bookHash());
+        bool include = !bn;
         if (!include) {
             if (!bookData.isPending(pos.bookHash())) {
-                BookNode& bn = *it->second;
-                if (bn.getNegaMaxScore() == INVALID_SCORE)
+                if (bn->getNegaMaxScore() == INVALID_SCORE)
                     include = true;
             }
         }
@@ -619,27 +632,27 @@ Book::getMovesToSearch(Position& pos) {
 void
 Book::addPending(U64 hashKey) {
     bookData.addPending(hashKey);
-    auto it = bookNodes.find(hashKey);
-    assert(it != bookNodes.end());
-    it->second->updateScores(bookData);
+    auto bn = getBookNode(hashKey);
+    assert(bn);
+    bn->updateScores(bookData);
 }
 
 void
 Book::removePending(U64 hashKey) {
     bookData.removePending(hashKey);
-    auto it = bookNodes.find(hashKey);
-    assert(it != bookNodes.end());
-    it->second->updateScores(bookData);
+    auto bn = getBookNode(hashKey);
+    assert(bn);
+    bn->updateScores(bookData);
 }
 
 void
 Book::addPosToBook(Position& pos, const Move& move, std::vector<U64>& toSearch) {
-    assert(bookNodes.find(pos.bookHash()) != bookNodes.end());
+    assert(getBookNode(pos.bookHash()));
 
     UndoInfo ui;
     pos.makeMove(move, ui);
     U64 childHash = pos.bookHash();
-    assert(bookNodes.find(childHash) == bookNodes.end());
+    assert(!getBookNode(childHash));
     auto childNode = std::make_shared<BookNode>(childHash);
 
     bookNodes[childHash] = childNode;
@@ -654,10 +667,9 @@ Book::addPosToBook(Position& pos, const Move& move, std::vector<U64>& toSearch) 
         if (p->childHash != childHash)
             continue;
         U64 parentHash = p->parentHash;
-        auto it2 = bookNodes.find(parentHash);
-        assert(it2 != bookNodes.end());
+        std::shared_ptr<BookNode> parent = getBookNode(parentHash);
+        assert(parent);
         nParents++;
-        std::shared_ptr<BookNode> parent = it2->second;
 
         Position pos2;
         std::vector<Move> dummyMoves;
@@ -702,14 +714,14 @@ Book::getPosition(U64 hashKey, Position& pos, std::vector<Move>& moveList) const
         return true;
     }
 
-    auto it = bookNodes.find(hashKey);
-    if (it == bookNodes.end())
+    auto node = getBookNode(hashKey);
+    if (!node)
         return false;
 
     int bestErr = INT_MAX;
     std::shared_ptr<BookNode> bestParent;
     Move bestMove;
-    for (const auto& p : it->second->getParents()) {
+    for (const auto& p : node->getParents()) {
         std::shared_ptr<BookNode> parent = p.parent.lock();
         assert(parent);
         int err = parent->getPathErrorWhite() + parent->getPathErrorBlack();
@@ -742,10 +754,9 @@ Book::getBookNode(U64 hashKey) const {
 void
 Book::initPositions(Position& pos) {
     const U64 hash = pos.bookHash();
-    const auto it = bookNodes.find(hash);
-    if (it == bookNodes.end())
+    std::shared_ptr<BookNode> node = getBookNode(hash);
+    if (!node)
         return;
-    std::shared_ptr<BookNode>& node = it->second;
 
     setChildRefs(pos);
     for (auto& e : node->getChildren()) {
@@ -764,9 +775,8 @@ Book::initPositions(Position& pos) {
 void
 Book::setChildRefs(Position& pos) {
     const U64 hash = pos.bookHash();
-    const auto it = bookNodes.find(hash);
-    assert(it != bookNodes.end());
-    std::shared_ptr<BookNode>& node = it->second;
+    std::shared_ptr<BookNode> node = getBookNode(hash);
+    assert(node);
 
     MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
@@ -776,9 +786,8 @@ Book::setChildRefs(Position& pos) {
         pos.makeMove(moves[i], ui);
         U64 childHash = pos.bookHash();
         hashToParent.insert(H2P(childHash, hash));
-        auto it2 = bookNodes.find(childHash);
-        if (it2 != bookNodes.end()) {
-            auto child = it2->second;
+        auto child = getBookNode(childHash);
+        if (child) {
             node->addChild(moves[i].getCompressedMove(), child);
             child->addParent(moves[i].getCompressedMove(), node);
         }
@@ -862,7 +871,7 @@ Book::computeWeights(int maxErrSelf, int maxErrOther,
             weightB = 0;
         weights.insert(std::make_pair(hKey, BookWeight(weightW, weightB)));
     };
-    compWeights(&*bookNodes.find(startPosHash)->second);
+    compWeights(&*getBookNode(startPosHash));
 }
 
 bool
