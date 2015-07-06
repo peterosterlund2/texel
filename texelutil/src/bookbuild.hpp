@@ -257,7 +257,7 @@ public:
 
     /** Convert the book to polyglot format. */
     void exportPolyglot(const std::string& bookFile, const std::string& polyglotFile,
-                        int maxPathError);
+                        int maxErrSelf, int maxErrOther);
 
     /** Query the book interactively, taking query commands from standard input. */
     void interactiveQuery(const std::string& bookFile, int maxErrSelf, int maxErrOther);

@@ -19,6 +19,7 @@
 #include "ide_listener.h"
 #include "cute_runner.h"
 #include "test/bookBuildTest.hpp"
+#include "test/polyglotTest.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -106,7 +107,8 @@ usage() {
     std::cerr << "\n";
     std::cerr << " book improve bookFile searchTime nThreads \"startmoves\" : Improve opening book\n";
     std::cerr << " book import bookFile pgnFile                   : Import moves from PGN file\n";
-    std::cerr << " book export bookFile polyglotFile maxPathError : Export as polyglot book\n";
+    std::cerr << " book export bookFile polyglotFile maxErrSelf maxErrOther\n";
+    std::cerr << "                                                : Export as polyglot book\n";
     std::cerr << " book query bookFile maxErrSelf maxErrOther     : Interactive query mode\n";
 
     std::cerr << std::flush;
@@ -170,6 +172,7 @@ runTests() {
 
     ComputerPlayer::initEngine();
     runSuite(BookBuildTest());
+    runSuite(PolyglotTest());
 }
 
 int
@@ -475,14 +478,15 @@ main(int argc, char* argv[]) {
                 BookBuild::Book book(logFile);
                 book.importPGN(bookFile, pgnFile);
             } else if (bookCmd == "export") {
-                if (argc != 6)
+                if (argc != 7)
                     usage();
                 std::string polyglotFile = argv[4];
-                int maxPathError;
-                if (!str2Num(argv[5], maxPathError))
+                int maxErrSelf, maxErrOther;
+                if (!str2Num(argv[5], maxErrSelf) ||
+                    !str2Num(argv[6], maxErrOther))
                     usage();
                 BookBuild::Book book("");
-                book.exportPolyglot(bookFile, polyglotFile, maxPathError);
+                book.exportPolyglot(bookFile, polyglotFile, maxErrSelf, maxErrOther);
             } else if (bookCmd == "query") {
                 if (argc != 6)
                     usage();

@@ -6,6 +6,7 @@
  */
 
 #include "bookbuild.hpp"
+#include "polyglot.hpp"
 #include "gametree.hpp"
 #include "moveGen.hpp"
 #include "search.hpp"
@@ -331,8 +332,96 @@ Book::importPGN(const std::string& bookFile, const std::string& pgnFile) {
 
 void
 Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFile,
-                     int maxPathError) {
+                     int maxErrSelf, int maxErrOther) {
     readFromFile(bookFile);
+
+    std::map<U64,BookWeight> weights;
+    computeWeights(maxErrSelf, maxErrOther, weights);
+
+    class BookMoves {
+    public:
+        void addMove(U16 m, int w) {
+            for (size_t i = 0; i < vec.size(); i++)
+                if (vec[i].move == m) {
+                    vec[i].weight += w;
+                    return;
+                }
+            vec.push_back(MoveWeight(m, w));
+        }
+
+        void scaleWeights() {
+            int maxW = 0;
+            for (size_t i = 0; i < vec.size(); i++)
+                maxW = std::max(maxW, vec[i].weight);
+            const int maxAllowedW = 0xffff;
+            if (maxW <= maxAllowedW)
+                return;
+            for (size_t i = 0; i < vec.size(); i++) {
+                double w = vec[i].weight;
+                w = w * maxAllowedW / maxW;
+                vec[i].weight = clamp((int)w, 1, maxAllowedW);
+            }
+        }
+
+        int nMoves() const { return vec.size(); }
+        U16 getMove(int i) const { return vec[i].move; }
+        U16 getWeight(int i) const { return vec[i].weight; }
+
+    private:
+        struct MoveWeight {
+            MoveWeight(U16 m, int w) : move(m), weight(w) {}
+            U16 move;
+            int weight;
+        };
+        std::vector<MoveWeight> vec;
+    };
+    std::map<U64, BookMoves> pgBook;
+
+    Position pos;
+    std::vector<Move> moveList;
+    for (auto& e : bookNodes) {
+        std::shared_ptr<BookNode> node = e.second;
+        if (!getPosition(node->getHashKey(), pos, moveList))
+            assert(false);
+        const bool wtm = pos.isWhiteMove();
+        BookMoves& bm = pgBook[PolyglotBook::getHashKey(pos)];
+        for (auto& c : node->getChildren()) {
+            U16 cMove = c.first;
+            std::shared_ptr<BookNode> child = c.second;
+            if (bookMoveOk(&*node, cMove, maxErrSelf, maxErrOther, wtm)) {
+                Move move;
+                move.setFromCompressed(cMove);
+                U16 pgMove = PolyglotBook::getMove(pos, move);
+                auto wi = weights.find(child->getHashKey());
+                assert(wi != weights.end());
+                int w = wtm ? wi->second.weightWhite : wi->second.weightBlack;
+                bm.addMove(pgMove, w);
+            }
+        }
+
+        if (bookMoveOk(&*node, Move().getCompressedMove(), maxErrSelf, maxErrOther, wtm)) {
+            Move move = node->getBestNonBookMove();
+            U16 pgMove = PolyglotBook::getMove(pos, move);
+            bm.addMove(pgMove, 1);
+        }
+    }
+
+    std::ofstream os;
+    os.open(polyglotFile.c_str(), std::ios_base::out |
+                                  std::ios_base::binary |
+                                  std::ios_base::trunc);
+    os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    PolyglotBook::PGEntry ent;
+    for (auto& e : pgBook) {
+        U64 pgHash = e.first;
+        BookMoves& bm = e.second;
+        bm.scaleWeights();
+        for (int i = 0; i < bm.nMoves(); i++) {
+            assert(bm.getWeight(i) > 0);
+            PolyglotBook::serialize(pgHash, bm.getMove(i), bm.getWeight(i), ent);
+            os.write((const char*)&ent.data[0], sizeof(ent.data));
+        }
+    }
 }
 
 void
@@ -532,7 +621,6 @@ Book::writeToFile(const std::string& filename) {
         node->serialize(bsd);
         os.write((const char*)&bsd.data[0], sizeof(bsd.data));
     }
-    os.close();
 }
 
 void
@@ -807,7 +895,6 @@ Book::writeBackup(const BookNode& bookNode) {
     BookNode::BookSerializeData bsd;
     bookNode.serialize(bsd);
     os.write((const char*)&bsd.data[0], sizeof(bsd.data));
-    os.close();
 }
 
 void
@@ -1011,8 +1098,6 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath,
             errB += node->getNegaMaxScore() - node->getSearchScore();
     } else
         errW = errB = INVALID_SCORE;
-    auto wi = weights.find(node->getHashKey());
-    assert(wi != weights.end());
     bool bookOkW = bookMoveOk(&*node, Move().getCompressedMove(), maxErrSelf, maxErrOther, true);
     bool bookOkB = bookMoveOk(&*node, Move().getCompressedMove(), maxErrSelf, maxErrOther, false);
     std::cout << "-- "
