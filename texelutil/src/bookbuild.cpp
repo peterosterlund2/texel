@@ -1098,16 +1098,23 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath,
             errB += node->getNegaMaxScore() - node->getSearchScore();
     } else
         errW = errB = INVALID_SCORE;
+    int expCostW = node->getExpansionCost(bookData, nullptr, true);
+    int expCostB = node->getExpansionCost(bookData, nullptr, false);
     bool bookOkW = bookMoveOk(&*node, Move().getCompressedMove(), maxErrSelf, maxErrOther, true);
     bool bookOkB = bookMoveOk(&*node, Move().getCompressedMove(), maxErrSelf, maxErrOther, false);
     std::cout << "-- "
               << std::setw(6) << moveS << ' '
               << std::setw(6) << node->getSearchScore() * (pos.isWhiteMove() ? 1 : -1) << ' '
               << std::setw(6) << errW << ' '
-              << std::setw(6) << errB << ' '
-              << std::setw(6) << node->getExpansionCost(bookData, nullptr, true) << ' '
-              << std::setw(6) << node->getExpansionCost(bookData, nullptr, false) << ' '
-              << std::setw(6) << (bookOkW ? 1 : 0) << ' '
+              << std::setw(6) << errB << ' ';
+    if (node->getSearchScore() == IGNORE_SCORE) {
+        std::cout << std::setw(6) << "--" << ' '
+                  << std::setw(6) << "--" << ' ';
+    } else {            
+        std::cout << std::setw(6) << expCostW << ' '
+                  << std::setw(6) << expCostB << ' ';
+    }
+    std::cout << std::setw(6) << (bookOkW ? 1 : 0) << ' '
               << std::setw(6) << (bookOkB ? 1 : 0) << ' '
               << std::setw(8) << node->getSearchTime() << std::endl;
 }
@@ -1280,7 +1287,8 @@ SearchScheduler::reportResult(const WorkUnit& wu) const {
     if (!pos.isWhiteMove())
         score = -score;
 
-    std::string bestMove = TextIO::moveToString(pos, wu.bestMove, false);
+    std::string bestMove = wu.bestMove.isEmpty() ? "--" :
+                           TextIO::moveToString(pos, wu.bestMove, false);
 
     std::cout << std::setw(5) << std::right << wu.id << ' '
               << std::setw(6) << std::right << score << ' '
