@@ -105,11 +105,12 @@ usage() {
     std::cerr << " tbgen wq wr wb wn bq br bb bn : Generate pawn-less tablebase in memory\n";
     std::cerr << " tbgentest type1 [type2 ...]   : Compare pawnless tablebase against GTB\n";
     std::cerr << "\n";
-    std::cerr << " book improve bookFile searchTime nThreads \"startmoves\" : Improve opening book\n";
-    std::cerr << " book import bookFile pgnFile                   : Import moves from PGN file\n";
+    std::cerr << " book improve bookFile searchTime nThreads \"startmoves\" [c1 c2 c3]\n";
+    std::cerr << "                                            : Improve opening book\n";
+    std::cerr << " book import bookFile pgnFile               : Import moves from PGN file\n";
     std::cerr << " book export bookFile polyglotFile maxErrSelf maxErrOther\n";
-    std::cerr << "                                                : Export as polyglot book\n";
-    std::cerr << " book query bookFile maxErrSelf maxErrOther     : Interactive query mode\n";
+    std::cerr << "                                            : Export as polyglot book\n";
+    std::cerr << " book query bookFile maxErrSelf maxErrOther : Interactive query mode\n";
 
     std::cerr << std::flush;
     ::exit(2);
@@ -460,17 +461,28 @@ main(int argc, char* argv[]) {
             std::string bookFile = argv[3];
             std::string logFile = bookFile + ".log";
             if (bookCmd == "improve") {
-                if ((argc < 6) || (argc > 7))
+                if ((argc < 6) || (argc > 10))
                     usage();
                 std::string startMoves;
-                if (argc == 7)
+                if (argc >= 7)
                     startMoves = argv[6];
                 int searchTime, numThreads;
                 if (!str2Num(argv[4], searchTime) || (searchTime <= 0) ||
                     !str2Num(argv[5], numThreads) || (numThreads <= 0))
                     usage();
-                BookBuild::Book book(logFile);
-                book.improve(bookFile, searchTime, numThreads, startMoves);
+                std::shared_ptr<BookBuild::Book> book;
+                if (argc == 10) {
+                    int bookDepthCost, ownPErrCost, otherPErrCost;
+                    if (!str2Num(argv[7], bookDepthCost) || (bookDepthCost <= 0) ||
+                        !str2Num(argv[8], ownPErrCost)   || (ownPErrCost   <= 0) ||
+                        !str2Num(argv[9], otherPErrCost) || (otherPErrCost <= 0))
+                        usage();
+                    book = std::make_shared<BookBuild::Book>(logFile, bookDepthCost,
+                                                             ownPErrCost, otherPErrCost);
+                } else {
+                    book = std::make_shared<BookBuild::Book>(logFile);
+                }
+                book->improve(bookFile, searchTime, numThreads, startMoves);
             } else if (bookCmd == "import") {
                 if (argc != 5)
                     usage();
