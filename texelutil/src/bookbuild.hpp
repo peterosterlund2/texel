@@ -257,10 +257,10 @@ public:
 
     /** Convert the book to polyglot format. */
     void exportPolyglot(const std::string& bookFile, const std::string& polyglotFile,
-                        int maxErrSelf, int maxErrOther);
+                        int maxErrSelf, double errOtherExpConst);
 
     /** Query the book interactively, taking query commands from standard input. */
-    void interactiveQuery(const std::string& bookFile, int maxErrSelf, int maxErrOther);
+    void interactiveQuery(const std::string& bookFile, int maxErrSelf, double errOtherExpConst);
 
 private:
     /** Add root node if not already present. */
@@ -320,32 +320,36 @@ private:
     void writeBackup(const BookNode& bookNode);
 
     struct BookWeight {
-        BookWeight(int wW, int wB) : weightWhite(wW), weightBlack(wB) {}
-        int weightWhite; // Weight when book player is white
-        int weightBlack; // Weight when book player is black
+        BookWeight(double wW = 0.0, double wB = 0.0) : weightWhite(wW), weightBlack(wB) {}
+        BookWeight& operator+=(const BookWeight& bw) {
+            weightWhite += bw.weightWhite;
+            weightBlack += bw.weightBlack;
+            return *this;
+        }
+        double weightWhite; // Weight when book player is white
+        double weightBlack; // Weight when book player is black
     };
+    using WeightInfo = std::unordered_map<U64,BookWeight>;
 
-    /** Compute book weights for all nodes in the tree. weightWhite is computed
-     *  recursively as follows:
-     *    weightWhite = 1                         if leaf node
-     *    weightWhite = sum(child_i.weightWhite)  if white to move
-     *    weightWhite = min(child_i.weightWhite)  if black to move and >= 1 valid child
-     *    weightWhite = 0                         if black to move and no valid child
-     *  Only children with pathErrorWhite <= maxErrSelf and pathErrorBlack <= maxErrOther
-     *  are considered.
-     *  weightBlack is computed in an analogous way:
-     */
-    void computeWeights(int maxErrSelf, int maxErrOther,
-                        std::map<U64,BookWeight>& weights);
+    /** Compute book weights for all nodes in the tree. weightWhite for a node is computed as:
+     *    weightWhite = sum(exp(-errB / errOtherExpConst))
+     *  where the sum is taken over all descendant leaf nodes with errW <= maxErrSelf
+     *  and errW,errB is the maximum path error for all nodes from this node to the leaf node.
+     *  weightBlack is computed in an analogous way. */
+    void computeWeights(int maxErrSelf, double errOtherExpConst,
+                        WeightInfo& weights);
+
+    /** Compute accumulated white/black path errors for the dropout move of a node.
+     *  If the dropout move is not valid, errW and errB are set to INVALID_SCORE. */
+    static void getDropoutPathErrors(const BookNode& node, int& errW, int& errB);
 
     /** Decide if a move in a position is good enough to be a book move. */
-    bool bookMoveOk(const BookNode* node, U16 cMove, int maxErrSelf, int maxErrOther,
-                    bool whiteBook) const;
+    bool bookMoveOk(const BookNode& node, U16 cMove, int maxErrSelf) const;
 
     /** Print book information for a position to cout. */
     void printBookInfo(Position& pos, const std::vector<Move>& movePath,
-                       const std::map<U64,BookWeight>& weights,
-                       int maxErrSelf, int maxErrOther) const;
+                       const WeightInfo& weights,
+                       int maxErrSelf, double errOtherExpConst) const;
 
     /** Get vector of moves corresponding to child nodes, ordered from best to worst move. */
     void getOrderedChildMoves(const BookNode& node, std::vector<Move>& moves) const;

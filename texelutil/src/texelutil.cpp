@@ -108,9 +108,9 @@ usage() {
     std::cerr << " book improve bookFile searchTime nThreads \"startmoves\" [c1 c2 c3]\n";
     std::cerr << "                                            : Improve opening book\n";
     std::cerr << " book import bookFile pgnFile               : Import moves from PGN file\n";
-    std::cerr << " book export bookFile polyglotFile maxErrSelf maxErrOther\n";
+    std::cerr << " book export bookFile polyglotFile maxErrSelf errOtherExpConst\n";
     std::cerr << "                                            : Export as polyglot book\n";
-    std::cerr << " book query bookFile maxErrSelf maxErrOther : Interactive query mode\n";
+    std::cerr << " book query bookFile maxErrSelf errOtherExpConst : Interactive query mode\n";
 
     std::cerr << std::flush;
     ::exit(2);
@@ -493,21 +493,23 @@ main(int argc, char* argv[]) {
                 if (argc != 7)
                     usage();
                 std::string polyglotFile = argv[4];
-                int maxErrSelf, maxErrOther;
+                int maxErrSelf;
+                double errOtherExpConst;
                 if (!str2Num(argv[5], maxErrSelf) ||
-                    !str2Num(argv[6], maxErrOther))
+                    !str2Num(argv[6], errOtherExpConst))
                     usage();
                 BookBuild::Book book("");
-                book.exportPolyglot(bookFile, polyglotFile, maxErrSelf, maxErrOther);
+                book.exportPolyglot(bookFile, polyglotFile, maxErrSelf, errOtherExpConst);
             } else if (bookCmd == "query") {
                 if (argc != 6)
                     usage();
-                int maxErrSelf, maxErrOther;
+                int maxErrSelf;
+                double errOtherExpConst;
                 if (!str2Num(argv[4], maxErrSelf) ||
-                    !str2Num(argv[5], maxErrOther))
+                    !str2Num(argv[5], errOtherExpConst))
                     usage();
                 BookBuild::Book book("");
-                book.interactiveQuery(bookFile, maxErrSelf, maxErrOther);
+                book.interactiveQuery(bookFile, maxErrSelf, errOtherExpConst);
             }
         } else {
             usage();
