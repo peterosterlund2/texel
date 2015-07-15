@@ -206,7 +206,7 @@ private:
      * Return true if any score was modified. */
     bool computeNegaMax(const BookData& bookData);
 
-    /** Compuate path error for this node assuming all parent nodes are already up to date.
+    /** Compute path error for this node assuming all parent nodes are already up to date.
      * Return true if white or black path error was modified. */
     bool computePathError(const BookData& bookData);
 
