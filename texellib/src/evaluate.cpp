@@ -839,9 +839,11 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     U64 wBackward = wPawns & ~((wPawns | bPawns) >> 8) & (bPawnAttacks >> 8) & wPawnNoAtks;
     wBackward &= BitBoard::bPawnAttacksMask(wPawns);
     wBackward &= ~BitBoard::northFill(bPawnFiles);
+    wBackward &= BitBoard::maskRow2 | BitBoard::maskRow3;
     U64 bBackward = bPawns & ~((wPawns | bPawns) << 8) & (wPawnAttacks << 8) & bPawnNoAtks;
     bBackward &= BitBoard::wPawnAttacksMask(bPawns);
     bBackward &= ~BitBoard::northFill(wPawnFiles);
+    bBackward &= BitBoard::maskRow6 | BitBoard::maskRow7;
     score -= (BitBoard::bitCount(wBackward) - BitBoard::bitCount(bBackward)) * pawnBackwardPenalty;
 
     // Evaluate "semi-backward pawns", defined as pawns on 2:nd or 3:rd rank that can advance,
