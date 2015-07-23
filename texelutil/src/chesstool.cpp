@@ -812,6 +812,7 @@ ChessTool::printParams() {
     printTable(pawnStormTable, "pawnStormTable", os);
     printTable(kingAttackWeight, "kingAttackWeight", os);
     printTable(qContactCheckBonus, "qContactCheckBonus", os);
+    printTable(pieceKingAttackBonus, "pieceKingAttackBonus", os);
     printTable(kingPPSupportK, "kingPPSupportK", os);
     printTable(kingPPSupportP, "kingPPSupportP", os);
     printTable(pawnDoubledPenalty, "pawnDoubledPenalty", os);
@@ -1035,6 +1036,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(pawnStormTable, "pawnStormTable", cppFile);
     replaceTable(kingAttackWeight, "kingAttackWeight", cppFile);
     replaceTable(qContactCheckBonus, "qContactCheckBonus", cppFile);
+    replaceTable(pieceKingAttackBonus, "pieceKingAttackBonus", cppFile);
     replaceTable(kingPPSupportK, "kingPPSupportK", cppFile);
     replaceTable(kingPPSupportP, "kingPPSupportP", cppFile);
     replaceTable(pawnDoubledPenalty, "pawnDoubledPenalty", cppFile);

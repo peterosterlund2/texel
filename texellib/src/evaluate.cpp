@@ -1248,6 +1248,18 @@ Evaluate::kingSafety(const Position& pos) {
     bContactSupport |= BitBoard::kingAttacks[pos.bKingSq()] | bPawnAttacks;
     score += qContactCheckBonus[clamp(getNContactChecks(pos)+2, 0, 4)];
 
+    // Bonus for piece majority on the side where the kings are located
+    static const int kingZone[8] = {0,0,0, 1,1, 2,2,2};
+    const int wKingZone = kingZone[Position::getX(wKing)];
+    const int bKingZone = kingZone[Position::getX(bKing)];
+    if ((wKingZone == 0 && bKingZone == 0) || (wKingZone == 2 && bKingZone == 2)) {
+        U64 wPieces = pos.pieceTypeBB(Piece::WQUEEN, Piece::WROOK, Piece::WKNIGHT);
+        U64 bPieces = pos.pieceTypeBB(Piece::BQUEEN, Piece::BROOK, Piece::BKNIGHT);
+        U64 mask = (wKingZone == 0) ? 0x0F0F0F0F0F0F0F0FULL : 0xF0F0F0F0F0F0F0F0ULL;
+        int delta = BitBoard::bitCount(wPieces & mask) - BitBoard::bitCount(bPieces & mask);
+        score += pieceKingAttackBonus[clamp(delta+3, 0, 6)];
+    }
+
     const int kSafety = interpolate(0, score, mhd->kingSafetyIPF);
     return kSafety;
 }

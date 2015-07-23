@@ -490,6 +490,7 @@ extern ParamTable<14> kingAttackWeight;
 extern ParamTable<5> kingPPSupportK;
 extern ParamTable<8> kingPPSupportP;
 extern ParamTable<5> qContactCheckBonus;
+extern ParamTable<7> pieceKingAttackBonus;
 
 extern ParamTable<8> pawnDoubledPenalty;
 extern ParamTable<8> pawnIsolatedPenalty;
