@@ -964,19 +964,24 @@ Book::computeWeights(int maxErrSelf, double errOtherExpConst, WeightInfo& weight
 void
 Book::getDropoutPathErrors(const BookNode& node, int& errW, int& errB) {
     errW = errB = INVALID_SCORE;
-    if ((node.getNegaMaxScore() != INVALID_SCORE) &&
-        (node.getSearchScore() != INVALID_SCORE) &&
-        (node.getSearchScore() != IGNORE_SCORE)) {
-        errW = node.getPathErrorWhite();
-        errB = node.getPathErrorBlack();
-        if (errW != INVALID_SCORE && errB != INVALID_SCORE) {
-            int delta = node.getNegaMaxScore() - node.getSearchScore();
-            assert(delta >= 0);
-            if ((node.getDepth() % 2) == 0)
-                errW += delta;
-            else
-                errB += delta;
-        }
+    if ((node.getNegaMaxScore() == INVALID_SCORE) ||
+        (node.getSearchScore() == INVALID_SCORE) ||
+        (node.getSearchScore() == IGNORE_SCORE))
+        return;
+
+    U16 cMove = node.getBestNonBookMove().getCompressedMove();
+    if (node.getChildren().find(cMove) != node.getChildren().end())
+        return;
+
+    errW = node.getPathErrorWhite();
+    errB = node.getPathErrorBlack();
+    if (errW != INVALID_SCORE && errB != INVALID_SCORE) {
+        int delta = node.getNegaMaxScore() - node.getSearchScore();
+        assert(delta >= 0);
+        if ((node.getDepth() % 2) == 0)
+            errW += delta;
+        else
+            errB += delta;
     }
 }
     
