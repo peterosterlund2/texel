@@ -391,7 +391,7 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
             if (bookMoveOk(*node, cMove, maxErrSelf)) {
                 Move move;
                 move.setFromCompressed(cMove);
-                U16 pgMove = PolyglotBook::getMove(pos, move);
+                U16 pgMove = PolyglotBook::getPGMove(pos, move);
                 auto wi = weights.find(child->getHashKey());
                 assert(wi != weights.end());
                 double w = wtm ? wi->second.weightWhite : wi->second.weightBlack;
@@ -401,7 +401,7 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
 
         if (bookMoveOk(*node, Move().getCompressedMove(), maxErrSelf)) {
             Move move = node->getBestNonBookMove();
-            U16 pgMove = PolyglotBook::getMove(pos, move);
+            U16 pgMove = PolyglotBook::getPGMove(pos, move);
             int errW, errB;
             getDropoutPathErrors(*node, errW, errB);
             double wW = 0.0, wB = 0.0;
@@ -984,7 +984,7 @@ Book::getDropoutPathErrors(const BookNode& node, int& errW, int& errB) {
             errB += delta;
     }
 }
-    
+
 bool
 Book::bookMoveOk(const BookNode& node, U16 cMove, int maxErrSelf) const {
     if (node.getNegaMaxScore() == INVALID_SCORE)
@@ -1074,7 +1074,7 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath,
         ss << d;
         return ss.str();
     };
-    
+
     std::vector<Move> childMoves;
     getOrderedChildMoves(*node, childMoves);
     for (size_t mi = 0; mi < childMoves.size(); mi++) {
@@ -1122,7 +1122,7 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath,
     if (node->getSearchScore() == IGNORE_SCORE) {
         std::cout << std::setw(6) << "--" << ' '
                   << std::setw(6) << "--" << ' ';
-    } else {            
+    } else {
         std::cout << std::setw(6) << expCostW << ' '
                   << std::setw(6) << expCostB << ' ';
     }

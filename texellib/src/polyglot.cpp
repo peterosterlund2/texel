@@ -52,7 +52,7 @@ PolyglotBook::getHashKey(const Position& pos) {
 }
 
 U16
-PolyglotBook::getMove(const Position& pos, const Move& move) {
+PolyglotBook::getPGMove(const Position& pos, const Move& move) {
     int fromX = Position::getX(move.from());
     int fromY = Position::getY(move.from());
     int toX = Position::getX(move.to());
@@ -90,6 +90,43 @@ PolyglotBook::getMove(const Position& pos, const Move& move) {
     return toX | (toY << 3) | (fromX << 6) | (fromY << 9) | (prom << 12);
 }
 
+Move
+PolyglotBook::getMove(const Position& pos, U16 move) {
+    bool wtm = pos.isWhiteMove();
+    int toFile = move & 7;
+    int toRow = (move >> 3) & 7;
+    int fromFile = (move >> 6) & 7;
+    int fromRow = (move >> 9) & 7;
+    int prom = (move >> 12) & 7;
+
+    int from = Position::getSquare(fromFile, fromRow);
+    int to = Position::getSquare(toFile, toRow);
+    int promoteTo;
+    switch (prom) {
+    case 1: promoteTo = wtm ? Piece::WKNIGHT : Piece::BKNIGHT; break;
+    case 2: promoteTo = wtm ? Piece::WBISHOP : Piece::BBISHOP; break;
+    case 3: promoteTo = wtm ? Piece::WROOK   : Piece::BROOK;   break;
+    case 4: promoteTo = wtm ? Piece::WQUEEN  : Piece::BQUEEN;  break;
+    default: promoteTo = Piece::EMPTY; break;
+    }
+
+    // Convert castling moves
+    if ((from == E1) && (pos.getPiece(from) == Piece::WKING)) {
+        if (to == H1)
+            to = G1;
+        else if (to == A1)
+            to = C1;
+    }
+    if ((from == E8) && (pos.getPiece(from) == Piece::BKING)) {
+        if (to == H8)
+            to = G8;
+        else if (to == A8)
+            to = C8;
+    }
+
+    return Move(from, to, promoteTo);
+}
+
 void
 PolyglotBook::serialize(U64 hash, U16 move, U16 weight, PGEntry& ent) {
     for (int i = 0; i < 8; i++)
@@ -100,6 +137,19 @@ PolyglotBook::serialize(U64 hash, U16 move, U16 weight, PGEntry& ent) {
         ent.data[10+i] = weight >> (8*(1-i));
     for (int i = 0; i < 4; i++)
         ent.data[12+i] = 0;
+}
+
+void
+PolyglotBook::deSerialize(const PGEntry& ent, U64& hash, U16& move, U16& weight) {
+    hash = 0;
+    for (int i = 0; i < 8; i++)
+        hash = (hash << 8) | ent.data[i];
+    move = 0;
+    for (int i = 0; i < 2; i++)
+        move = (move << 8) | ent.data[8+i];
+    weight = 0;
+    for (int i = 0; i < 2; i++)
+        weight = (weight << 8) | ent.data[10+i];
 }
 
 U64

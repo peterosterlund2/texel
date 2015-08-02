@@ -7,7 +7,7 @@
 
 #include "polyglotTest.hpp"
 
-#include "../polyglot.hpp"
+#include "polyglot.hpp"
 #include "textio.hpp"
 
 #include "cute.h"
@@ -44,50 +44,70 @@ PolyglotTest::testHashKey() {
 
 void
 PolyglotTest::testMove() {
+    auto getPGMove = [](const Position& pos, const Move& move) -> U16 {
+        U16 ret = PolyglotBook::getPGMove(pos, move);
+        Move m = PolyglotBook::getMove(pos, ret);
+        ASSERT_EQUAL(move, m);
+        return ret;
+    };
+
     Position pos = TextIO::readFEN("r3k2r/ppp1qppp/2npbn2/2b1p3/2B1P3/2NP1N2/PPPBQPPP/R3K2R w KQkq - 0 1");
     ASSERT_EQUAL((4 << 0) | (2 << 3) | (3 << 6) | (1 << 9) | (0 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("d2e3")));
+                 getPGMove(pos, TextIO::uciStringToMove("d2e3")));
 
     // Castling
     ASSERT_EQUAL((7 << 0) | (0 << 3) | (4 << 6) | (0 << 9) | (0 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("e1g1")));
+                 getPGMove(pos, TextIO::uciStringToMove("e1g1")));
     ASSERT_EQUAL((0 << 0) | (0 << 3) | (4 << 6) | (0 << 9) | (0 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("e1c1")));
+                 getPGMove(pos, TextIO::uciStringToMove("e1c1")));
     ASSERT_EQUAL((7 << 0) | (7 << 3) | (4 << 6) | (7 << 9) | (0 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("e8g8")));
+                 getPGMove(pos, TextIO::uciStringToMove("e8g8")));
     ASSERT_EQUAL((0 << 0) | (7 << 3) | (4 << 6) | (7 << 9) | (0 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("e8c8")));
+                 getPGMove(pos, TextIO::uciStringToMove("e8c8")));
 
     // Not castling, even though from/to squares match castling moves
     pos = TextIO::readFEN("r3q2r/ppp1kppp/2npbn2/2b1p3/2B1P3/2NP1N2/PPPBKPPP/R3Q2R w - - 0 1");
     ASSERT_EQUAL((6 << 0) | (0 << 3) | (4 << 6) | (0 << 9) | (0 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("e1g1")));
+                 getPGMove(pos, TextIO::uciStringToMove("e1g1")));
     ASSERT_EQUAL((2 << 0) | (0 << 3) | (4 << 6) | (0 << 9) | (0 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("e1c1")));
+                 getPGMove(pos, TextIO::uciStringToMove("e1c1")));
     ASSERT_EQUAL((6 << 0) | (7 << 3) | (4 << 6) | (7 << 9) | (0 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("e8g8")));
+                 getPGMove(pos, TextIO::uciStringToMove("e8g8")));
     ASSERT_EQUAL((2 << 0) | (7 << 3) | (4 << 6) | (7 << 9) | (0 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("e8c8")));
+                 getPGMove(pos, TextIO::uciStringToMove("e8c8")));
 
     // Promotion
     pos = TextIO::readFEN("r3q2r/pPp1kppp/2npbn2/2b1p3/2B1P3/2NP1N2/PpPBKPPP/R3Q2R w - - 0 1");
     ASSERT_EQUAL((0 << 0) | (7 << 3) | (1 << 6) | (6 << 9) | (1 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("b7a8n")));
+                 getPGMove(pos, TextIO::uciStringToMove("b7a8n")));
     ASSERT_EQUAL((0 << 0) | (7 << 3) | (1 << 6) | (6 << 9) | (2 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("b7a8b")));
+                 getPGMove(pos, TextIO::uciStringToMove("b7a8b")));
     ASSERT_EQUAL((0 << 0) | (7 << 3) | (1 << 6) | (6 << 9) | (3 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("b7a8r")));
+                 getPGMove(pos, TextIO::uciStringToMove("b7a8r")));
     ASSERT_EQUAL((0 << 0) | (7 << 3) | (1 << 6) | (6 << 9) | (4 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("b7a8q")));
+                 getPGMove(pos, TextIO::uciStringToMove("b7a8q")));
 
+    pos = TextIO::readFEN("r3q2r/pPp1kppp/2npbn2/2b1p3/2B1P3/2NP1N2/PpPBKPPP/R3Q2R b - - 0 1");
     ASSERT_EQUAL((0 << 0) | (0 << 3) | (1 << 6) | (1 << 9) | (1 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("b2a1n")));
+                 getPGMove(pos, TextIO::uciStringToMove("b2a1n")));
     ASSERT_EQUAL((0 << 0) | (0 << 3) | (1 << 6) | (1 << 9) | (2 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("b2a1b")));
+                 getPGMove(pos, TextIO::uciStringToMove("b2a1b")));
     ASSERT_EQUAL((0 << 0) | (0 << 3) | (1 << 6) | (1 << 9) | (3 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("b2a1r")));
+                 getPGMove(pos, TextIO::uciStringToMove("b2a1r")));
     ASSERT_EQUAL((0 << 0) | (0 << 3) | (1 << 6) | (1 << 9) | (4 << 12),
-                 PolyglotBook::getMove(pos, TextIO::uciStringToMove("b2a1q")));
+                 getPGMove(pos, TextIO::uciStringToMove("b2a1q")));
+}
+
+void
+PolyglotTest::testSerialize() {
+    PolyglotBook::PGEntry ent;
+    PolyglotBook::serialize(0x123456789abcdef0ULL, 53000, 61000, ent);
+    U64 hash;
+    U16 move, weight;
+    PolyglotBook::deSerialize(ent, hash, move, weight);
+    ASSERT_EQUAL(0x123456789abcdef0ULL, hash);
+    ASSERT_EQUAL(53000, move);
+    ASSERT_EQUAL(61000, weight);
 }
 
 cute::suite
@@ -95,5 +115,6 @@ PolyglotTest::getSuite() const {
     cute::suite s;
     s.push_back(CUTE(testHashKey));
     s.push_back(CUTE(testMove));
+    s.push_back(CUTE(testSerialize));
     return s;
 }

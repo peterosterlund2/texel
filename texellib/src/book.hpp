@@ -57,7 +57,17 @@ private:
     /** Add a move to a position in the opening book. */
     void addToBook(const Position& pos, const Move& moveToAdd);
 
-    int getWeight(int count);
+    struct BookEntry {
+        Move move;
+        int count;
+        BookEntry(const Move& m, int cnt = 1) : move(m), count(cnt) { }
+    };
+
+    /** Get all book entries for a position. */
+    void getBookEntries(const Position& pos, std::vector<BookEntry>& bookMoves) const;
+
+    /** Return transformed count used for weighted random selection. */
+    int getWeight(int count, bool pgBook);
 
     static void createBinBook(std::vector<S8>& binBook);
 
@@ -68,12 +78,6 @@ private:
 
     static int promToPiece(int prom, bool whiteMove);
 
-
-    struct BookEntry {
-        Move move;
-        int count;
-        BookEntry(const Move& m) : move(m), count(1) { }
-    };
 
     using BookMap = std::map<U64, std::vector<BookEntry>>;
     static BookMap bookMap;

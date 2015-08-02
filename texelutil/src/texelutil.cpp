@@ -19,7 +19,6 @@
 #include "ide_listener.h"
 #include "cute_runner.h"
 #include "test/bookBuildTest.hpp"
-#include "test/polyglotTest.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -173,7 +172,6 @@ runTests() {
 
     ComputerPlayer::initEngine();
     runSuite(BookBuildTest());
-    runSuite(PolyglotTest());
 }
 
 int

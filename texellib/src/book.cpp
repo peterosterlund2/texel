@@ -26,9 +26,13 @@
 #include "book.hpp"
 #include "position.hpp"
 #include "moveGen.hpp"
+#include "polyglot.hpp"
+#include "parameters.hpp"
 #include "textio.hpp"
 #include "util/timeUtil.hpp"
 
+#include <fstream>
+#include <iomanip>
 #include <cassert>
 
 
@@ -42,17 +46,17 @@ void
 Book::getBookMove(Position& pos, Move& out) {
     initBook();
     out = Move();
-    BookMap::iterator it = bookMap.find(pos.zobristHash());
-    if (it == bookMap.end())
+    std::vector<BookEntry> bookMoves;
+    getBookEntries(pos, bookMoves);
+    if (bookMoves.empty())
         return;
-    const std::vector<BookEntry>& bookMoves = it->second;
 
+    bool pgBook = !UciParams::bookFile->getStringPar().empty();
     MoveList legalMoves;
     MoveGen::pseudoLegalMoves(pos, legalMoves);
     MoveGen::removeIllegal(pos, legalMoves);
     int sum = 0;
-    for (size_t i = 0; i < bookMoves.size(); i++) {
-        const BookEntry& be = bookMoves[i];
+    for (const BookEntry& be : bookMoves) {
         bool contains = false;
         for (int mi = 0; mi < legalMoves.size; mi++)
             if (legalMoves[mi].equals(be.move)) {
@@ -63,16 +67,16 @@ Book::getBookMove(Position& pos, Move& out) {
             // If an illegal move was found, it means there was a hash collision.
             return;
         }
-        sum += getWeight(be.count);
+        sum += getWeight(be.count, pgBook);
     }
     if (sum <= 0)
         return;
     int rnd = rndGen.nextInt(sum);
     sum = 0;
-    for (size_t i = 0; i < bookMoves.size(); i++) {
-        sum += getWeight(bookMoves[i].count);
+    for (const BookEntry& be : bookMoves) {
+        sum += getWeight(be.count, pgBook);
         if (rnd < sum) {
-            out = bookMoves[i].move;
+            out = be.move;
             return;
         }
     }
@@ -85,19 +89,75 @@ std::string
 Book::getAllBookMoves(const Position& pos) {
     initBook();
     std::string ret;
-    BookMap::iterator it = bookMap.find(pos.zobristHash());
-    if (it != bookMap.end()) {
-        std::vector<BookEntry>& bookMoves = it->second;
-        for (size_t i = 0; i < bookMoves.size(); i++) {
-            BookEntry& be = bookMoves[i];
-            std::string moveStr = TextIO::moveToString(pos, be.move, false);
-            ret += moveStr;
-            ret += '(';
-            ret += num2Str(be.count);
-            ret += ") ";
-        }
+    std::vector<BookEntry> bookMoves;
+    getBookEntries(pos, bookMoves);
+    for (size_t i = 0; i < bookMoves.size(); i++) {
+        BookEntry& be = bookMoves[i];
+        std::string moveStr = TextIO::moveToString(pos, be.move, false);
+        ret += moveStr;
+        ret += '(';
+        ret += num2Str(be.count);
+        ret += ") ";
     }
     return ret;
+}
+
+void
+Book::getBookEntries(const Position& pos, std::vector<BookEntry>& bookMoves) const {
+    bool pgBook = !UciParams::bookFile->getStringPar().empty();
+    if (pgBook) {
+        std::string filename = UciParams::bookFile->getStringPar();
+        std::fstream fs(filename.c_str(), std::ios_base::in | std::ios_base::binary);
+        fs.seekg(0, std::ios_base::end);
+        S64 fileLen = fs.tellg();
+        const int entSize = 16;
+        int numEntries = fileLen / entSize;
+
+        auto readEntry = [&fs,entSize](int entNo, PolyglotBook::PGEntry& ent) {
+            S64 offs = entNo * entSize;
+            fs.seekg(offs, std::ios_base::beg);
+            fs.read((char*)ent.data, entSize);
+            if (!fs)
+                for (int i = 0; i < entSize; i++)
+                    ent.data[i] = 0;
+        };
+
+        const U64 key = PolyglotBook::getHashKey(pos);
+        PolyglotBook::PGEntry ent;
+        U64 entHash;
+        U16 entMove, entWeight;
+
+        // Find first entry with hash key >= wantedKey
+        int lo = -1;
+        int hi = numEntries;
+        // ent[lo] < key <= ent[hi]
+        while (hi - lo > 1) {
+            int mid = (lo + hi) / 2;
+            readEntry(mid, ent);
+            PolyglotBook::deSerialize(ent, entHash, entMove, entWeight);
+            if (entHash < key) {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+
+        // Read all entries with matching hash key
+        int entNo = hi;
+        while (entNo < numEntries) {
+            readEntry(entNo, ent);
+            PolyglotBook::deSerialize(ent, entHash, entMove, entWeight);
+            if (entHash != key)
+                break;
+            Move m = PolyglotBook::getMove(pos, entMove);
+            bookMoves.push_back(BookEntry(m, entWeight));
+            entNo++;
+        }
+    } else {
+        BookMap::iterator it = bookMap.find(pos.zobristHash());
+        if (it != bookMap.end())
+            bookMoves = it->second;
+    }
 }
 
 void
@@ -161,9 +221,13 @@ Book::addToBook(const Position& pos, const Move& moveToAdd) {
 }
 
 int
-Book::getWeight(int count) {
-    double tmp = ::sqrt((double)count);
-    return (int)(tmp * ::sqrt(tmp) * 100 + 1);
+Book::getWeight(int count, bool pgBook) {
+    if (pgBook) {
+        return count;
+    } else {
+        double tmp = ::sqrt((double)count);
+        return (int)(tmp * ::sqrt(tmp) * 100 + 1);
+    }
 }
 
 void

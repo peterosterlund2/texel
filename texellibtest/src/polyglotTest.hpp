@@ -8,15 +8,16 @@
 #ifndef POLYGLOTTEST_HPP_
 #define POLYGLOTTEST_HPP_
 
-#include "utilSuiteBase.hpp"
+#include "suiteBase.hpp"
 
-class PolyglotTest : public UtilSuiteBase {
+class PolyglotTest : public SuiteBase {
     std::string getName() const override { return "PolyglotTest"; }
 
     cute::suite getSuite() const override;
 private:
     static void testHashKey();
     static void testMove();
+    static void testSerialize();
 };
 
 #endif /* POLYGLOTTEST_HPP_ */

@@ -39,6 +39,7 @@
 #include "utilTest.hpp"
 #include "tbTest.hpp"
 #include "tbgenTest.hpp"
+#include "polyglotTest.hpp"
 
 #include "computerPlayer.hpp"
 #include "tbprobe.hpp"
@@ -74,5 +75,6 @@ int main() {
     runSuite(UtilTest());
     runSuite(TBTest());
     runSuite(TBGenTest());
+    runSuite(PolyglotTest());
     return 0;
 }

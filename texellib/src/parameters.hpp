@@ -359,6 +359,7 @@ Parameters::set(const std::string& name, const std::string& value) {
 namespace UciParams {
     extern std::shared_ptr<Parameters::SpinParam> hash;
     extern std::shared_ptr<Parameters::CheckParam> ownBook;
+    extern std::shared_ptr<Parameters::StringParam> bookFile;
     extern std::shared_ptr<Parameters::CheckParam> ponder;
     extern std::shared_ptr<Parameters::CheckParam> analyseMode;
     extern std::shared_ptr<Parameters::SpinParam> strength;
