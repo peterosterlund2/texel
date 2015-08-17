@@ -81,7 +81,7 @@ public:
      * Decide if two positions are equal in the sense of the draw by repetition rule.
      * @return True if positions are equal, false otherwise.
      */
-    bool drawRuleEquals(Position other) const;
+    bool drawRuleEquals(const Position& other) const;
 
     bool isWhiteMove() const;
 
@@ -319,7 +319,7 @@ Position::materialId() const {
 }
 
 inline bool
-Position::drawRuleEquals(Position other) const {
+Position::drawRuleEquals(const Position& other) const {
     for (int i = 0; i < 64; i++)
         if (squares[i] != other.squares[i])
             return false;
