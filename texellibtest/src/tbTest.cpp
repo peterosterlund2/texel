@@ -329,6 +329,12 @@ TBTest::rtbTest() {
     ASSERT(resDTZ);
     ASSERT_EQUAL(0, wdl);
     ASSERT_EQUAL(0, dtz);
+
+    pos = TextIO::readFEN("6k1/8/5Q2/6K1/6Pp/8/8/7Q b - g3 0 1");
+    int success;
+    dtz = Syzygy::probe_dtz(pos, &success);
+    ASSERT_EQUAL(1, success);
+    ASSERT_EQUAL(-2, dtz);
 }
 
 /** Test TBProbe::tbProbe() function. */
