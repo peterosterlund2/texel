@@ -27,16 +27,19 @@
 #include "posgen.hpp"
 #include "spsa.hpp"
 #include "bookbuild.hpp"
+#include "pathsearch.hpp"
 
 #include "tbgen.hpp"
 #include "parameters.hpp"
 #include "chessParseError.hpp"
 #include "computerPlayer.hpp"
+#include "textio.hpp"
 
 #include "cute.h"
 #include "ide_listener.h"
 #include "cute_runner.h"
 #include "test/bookBuildTest.hpp"
+#include "test/pathsearchTest.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -128,7 +131,8 @@ usage() {
     std::cerr << " book export bookFile polyglotFile maxErrSelf errOtherExpConst\n";
     std::cerr << "                                            : Export as polyglot book\n";
     std::cerr << " book query bookFile maxErrSelf errOtherExpConst : Interactive query mode\n";
-
+    std::cerr << "\n";
+    std::cerr << " pathsearch [-i \"initFen\"] \"goalFen\"\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -190,12 +194,14 @@ runTests() {
 
     ComputerPlayer::initEngine();
     runSuite(BookBuildTest());
+    runSuite(PathSearchTest());
 }
 
 int
 main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
 
+    bool testMode = false;
     try {
         ComputerPlayer::initEngine();
         bool useEntropyErrorFunction = false;
@@ -217,7 +223,7 @@ main(int argc, char* argv[]) {
         std::string cmd = argv[1];
         ChessTool chessTool(useEntropyErrorFunction);
         if (cmd == "test") {
-            runTests();
+            testMode = true;
         } else if (cmd == "p2f") {
             chessTool.pgnToFen(std::cin);
         } else if (cmd == "f2p") {
@@ -527,11 +533,26 @@ main(int argc, char* argv[]) {
                 BookBuild::Book book("");
                 book.interactiveQuery(bookFile, maxErrSelf, errOtherExpConst);
             }
+        } else if (cmd == "pathsearch") {
+            std::string initFen, goalFen;
+            if (argc == 5 && argv[2] == std::string("-i")) {
+                initFen = argv[3];
+                goalFen = argv[4];
+            } else if (argc == 3) {
+                initFen = TextIO::startPosFEN;
+                goalFen = argv[2];
+            } else
+                usage();
+            PathSearch ps(goalFen);
+            ps.search(initFen);
         } else {
             usage();
         }
     } catch (std::exception& ex) {
         std::cerr << "Error: " << ex.what() << std::endl;
     }
+    if (testMode)
+        runTests();
+
     return 0;
 }
