@@ -34,6 +34,7 @@
 #include <vector>
 #include <array>
 #include <algorithm>
+#include <memory>
 #include <atomic>
 #include <cctype>
 #include <iomanip>
@@ -54,6 +55,12 @@ template <typename T> class AlignedAllocator;
 /** std::vector with cache line aware allocator. */
 template <typename T>
 class vector_aligned : public std::vector<T, AlignedAllocator<T>> { };
+
+template <typename T, typename ...Args>
+inline std::unique_ptr<T>
+make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
 
 
 /** Helper class to perform static initialization of a class T. */
