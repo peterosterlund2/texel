@@ -200,9 +200,9 @@ WorkerThread::mainLoop(int minProbeDepth) {
         const int alpha = sp->getAlpha();
         const int beta = sp->getBeta();
         const S64 nodes0 = pd.getNumSearchedNodes();
-        auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd, *sp, spMove,
-                                                             sc, alpha, nodes0, prio));
-        sc.setStopHandler(stopHandler);
+        auto stopHandler = make_unique<ThreadStopHandler>(*this, pd, *sp, spMove,
+                                                          sc, alpha, nodes0, prio);
+        sc.setStopHandler(std::move(stopHandler));
         const int ply = sp->getPly();
         const int lmr = spMove.getLMR();
         const int captSquare = spMove.getRecaptureSquare();
