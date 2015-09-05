@@ -38,10 +38,10 @@
 int main(int argc, char* argv[]) {
     ComputerPlayer::initEngine();
     if ((argc == 2) && (std::string(argv[1]) == "txt")) {
-        std::shared_ptr<Player> whitePlayer = std::make_shared<HumanPlayer>();
-        std::shared_ptr<ComputerPlayer> blackPlayer = std::make_shared<ComputerPlayer>();
+        auto whitePlayer = make_unique<HumanPlayer>();
+        auto blackPlayer = make_unique<ComputerPlayer>();
         blackPlayer->setTTLogSize(21);
-        TUIGame game(whitePlayer, blackPlayer);
+        TUIGame game(std::move(whitePlayer), std::move(blackPlayer));
         game.play();
     } else if ((argc == 3) && (std::string(argv[1]) == "tree")) {
         TreeLoggerReader::main(argv[2]);
