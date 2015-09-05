@@ -83,7 +83,7 @@ public:
         virtual void notifyStats(U64 nodes, int nps, U64 tbHits, int time) = 0;
     };
 
-    void setListener(std::unique_ptr<Listener> listener);
+    void setListener(const std::shared_ptr<Listener>& listener);
 
     /** Exception thrown to stop the search. */
     class StopSearch : public std::exception {
@@ -94,7 +94,7 @@ public:
         virtual bool shouldStop() = 0;
     };
 
-    void setStopHandler(std::unique_ptr<StopHandler> stopHandler);
+    void setStopHandler(const std::shared_ptr<StopHandler>& stopHandler);
 
     /** Set which thread is owning this Search object. */
     void setThreadNo(int tNo);
@@ -260,8 +260,8 @@ private:
     bool mainNumaNode; // True if this thread runs on the NUMA node holding the transposition table
     TreeLogger& logFile;
 
-    std::unique_ptr<Listener> listener;
-    std::unique_ptr<StopHandler> stopHandler;
+    std::shared_ptr<Listener> listener;
+    std::shared_ptr<StopHandler> stopHandler;
     Move emptyMove;
 
     static const int MAX_SEARCH_DEPTH = 100;
@@ -299,13 +299,13 @@ Search::SearchTables::SearchTables(TranspositionTable& tt0, KillerTable& kt0, Hi
 }
 
 inline void
-Search::setListener(std::unique_ptr<Listener> listener) {
-    this->listener = std::move(listener);
+Search::setListener(const std::shared_ptr<Listener>& listener) {
+    this->listener = listener;
 }
 
 inline void
-Search::setStopHandler(std::unique_ptr<StopHandler> stopHandler) {
-    this->stopHandler = std::move(stopHandler);
+Search::setStopHandler(const std::shared_ptr<StopHandler>& stopHandler) {
+    this->stopHandler = stopHandler;
 }
 
 inline bool

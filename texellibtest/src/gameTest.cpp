@@ -41,7 +41,7 @@
  */
 void
 GameTest::testHaveDrawOffer() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(false, game.haveDrawOffer());
 
     bool res = game.processString("e4");
@@ -133,7 +133,7 @@ GameTest::testHaveDrawOffer() {
  */
 void
 GameTest::testDraw50() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(false, game.haveDrawOffer());
     bool res = game.processString("draw 50");
     ASSERT_EQUAL(true, res);
@@ -191,7 +191,7 @@ GameTest::testDraw50() {
  */
 void
 GameTest::testDrawRep() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(false, game.haveDrawOffer());
     game.processString("Nc3");
     game.processString("Nc6");
@@ -264,7 +264,7 @@ GameTest::testDrawRep() {
  */
 void
 GameTest::testResign() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.processString("f3");
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
@@ -290,7 +290,7 @@ GameTest::testResign() {
  */
 void
 GameTest::testProcessString() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(TextIO::startPosFEN, TextIO::toFEN(game.pos));
     bool res = game.processString("Nf3");
     ASSERT_EQUAL(true, res);
@@ -344,7 +344,7 @@ GameTest::testProcessString() {
  */
 void
 GameTest::testGetGameState() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.processString("f3");
     game.processString("e5");
@@ -361,7 +361,7 @@ GameTest::testGetGameState() {
  */
 void
 GameTest::testInsufficientMaterial() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.processString("setpos 4k3/8/8/8/8/8/8/4K3 w - - 0 1");
     ASSERT_EQUAL(Game::DRAW_NO_MATE, game.getGameState());
@@ -405,7 +405,7 @@ GameTest::testInsufficientMaterial() {
  */
 void
 GameTest::testPerfT() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     game.processString("new");
     U64 n1[] = { 20, 400, 8902, 197281, 4865609, 119060324, 3195901860ULL, 84998978956ULL};
     doTestPerfTFast(game.pos, 5, n1);

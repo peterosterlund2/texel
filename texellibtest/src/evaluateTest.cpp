@@ -134,7 +134,9 @@ int evalPos(Evaluate& eval, const Position& pos) {
 /** Return static evaluation score for white, regardless of whose turn it is to move. */
 int
 evalWhite(const Position& pos, bool testMirror) {
-    static auto et = Evaluate::getEvalHashTables();
+    static std::shared_ptr<Evaluate::EvalHashTables> et;
+    if (!et)
+        et = Evaluate::getEvalHashTables();
     Evaluate eval(*et);
     return evalWhite(eval, pos, testMirror);
 }

@@ -121,7 +121,7 @@ private:
     ParallelData pd;
     KillerTable kt;
     History ht;
-    std::unique_ptr<Evaluate::EvalHashTables> et;
+    std::shared_ptr<Evaluate::EvalHashTables> et;
     TreeLogger treeLog;
 
     Position pos;

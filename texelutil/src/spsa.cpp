@@ -404,7 +404,7 @@ private:
     std::mutex mutex;
 
     std::vector<GameRunner> workers;
-    std::vector<std::unique_ptr<std::thread>> threads;
+    std::vector<std::shared_ptr<std::thread>> threads;
 
     std::deque<WorkUnit> pending;
     std::condition_variable pendingCv;
@@ -429,10 +429,10 @@ GameScheduler::addWorker(const GameRunner& gr) {
 void
 GameScheduler::startWorkers() {
     for (GameRunner& gr : workers) {
-        auto thread = make_unique<std::thread>([this,&gr]() {
+        auto thread = std::make_shared<std::thread>([this,&gr]() {
             workerLoop(gr);
         });
-        threads.push_back(std::move(thread));
+        threads.push_back(thread);
     }
 }
 

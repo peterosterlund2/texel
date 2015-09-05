@@ -53,7 +53,7 @@ void
 WorkerThread::start() {
     assert(!thread);
     const int minProbeDepth = TBProbe::tbEnabled() ? UciParams::minProbeDepth->getIntPar() : 100;
-    thread = make_unique<std::thread>([this,minProbeDepth](){ mainLoop(minProbeDepth); });
+    thread = std::make_shared<std::thread>([this,minProbeDepth](){ mainLoop(minProbeDepth); });
 }
 
 void
@@ -153,9 +153,9 @@ WorkerThread::mainLoop(int minProbeDepth) {
     if (!et)
         et = Evaluate::getEvalHashTables();
     if (!kt)
-        kt = make_unique<KillerTable>();
+        kt = std::make_shared<KillerTable>();
     if (!ht)
-        ht = make_unique<History>();
+        ht = std::make_shared<History>();
 
     TreeLogger logFile;
     logFile.open("/home/petero/treelog.dmp", pd, threadNo);
@@ -200,9 +200,9 @@ WorkerThread::mainLoop(int minProbeDepth) {
         const int alpha = sp->getAlpha();
         const int beta = sp->getBeta();
         const S64 nodes0 = pd.getNumSearchedNodes();
-        auto stopHandler(make_unique<ThreadStopHandler>(*this, pd, *sp, spMove,
-                                                        sc, alpha, nodes0, prio));
-        sc.setStopHandler(std::move(stopHandler));
+        auto stopHandler(std::make_shared<ThreadStopHandler>(*this, pd, *sp, spMove,
+                                                             sc, alpha, nodes0, prio));
+        sc.setStopHandler(stopHandler);
         const int ply = sp->getPly();
         const int lmr = spMove.getLMR();
         const int captSquare = spMove.getRecaptureSquare();
@@ -531,10 +531,10 @@ ParallelData::addRemoveWorkers(int numWorkers) {
         threads.pop_back();
     }
     for (int i = threads.size(); i < numWorkers; i++)
-        threads.push_back(make_unique<WorkerThread>(i+1, *this, tt));
+        threads.push_back(std::make_shared<WorkerThread>(i+1, *this, tt));
     helperFailHigh.resize(numWorkers + 1);
     for (int i = 0; i < numWorkers + 1; i++)
-        helperFailHigh[i] = make_unique<RelaxedShared<bool>>(false);
+        helperFailHigh[i] = std::make_shared<RelaxedShared<bool>>(false);
 }
 
 void

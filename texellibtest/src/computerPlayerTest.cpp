@@ -73,7 +73,7 @@ void
 ComputerPlayerTest::testDrawRep() {
     HumanPlayer hp1, hp2;
 
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_shared<HumanPlayer>(), std::make_shared<HumanPlayer>());
     ComputerPlayer cp;
     cp.maxDepth = 3;
     cp.maxTimeMillis = -1;
