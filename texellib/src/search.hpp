@@ -83,7 +83,7 @@ public:
         virtual void notifyStats(U64 nodes, int nps, U64 tbHits, int time) = 0;
     };
 
-    void setListener(const std::shared_ptr<Listener>& listener);
+    void setListener(std::unique_ptr<Listener> listener);
 
     /** Exception thrown to stop the search. */
     class StopSearch : public std::exception {
@@ -260,7 +260,7 @@ private:
     bool mainNumaNode; // True if this thread runs on the NUMA node holding the transposition table
     TreeLogger& logFile;
 
-    std::shared_ptr<Listener> listener;
+    std::unique_ptr<Listener> listener;
     std::shared_ptr<StopHandler> stopHandler;
     Move emptyMove;
 
@@ -299,8 +299,8 @@ Search::SearchTables::SearchTables(TranspositionTable& tt0, KillerTable& kt0, Hi
 }
 
 inline void
-Search::setListener(const std::shared_ptr<Listener>& listener) {
-    this->listener = listener;
+Search::setListener(std::unique_ptr<Listener> listener) {
+    this->listener = std::move(listener);
 }
 
 inline void
