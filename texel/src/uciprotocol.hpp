@@ -43,7 +43,7 @@ private:
     std::vector<Move> moves;
 
     // Engine data
-    std::shared_ptr<EngineControl> engine;
+    std::unique_ptr<EngineControl> engine;
 
     // Set to true to break out of main loop
     bool quit;

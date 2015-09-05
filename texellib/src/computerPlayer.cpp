@@ -36,7 +36,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.06a19";
+    std::string name = "Texel 1.06a20";
     if (sizeof(char*) == 4)
         name += " 32-bit";
     if (sizeof(char*) == 8)
@@ -121,7 +121,6 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
 
     // Find best move using iterative deepening
     currentSearch = &sc;
-    sc.setListener(listener);
     Move bestM;
     if ((moves.size == 1) && (canClaimDraw(pos, posHashList, posHashListSize, moves[0]) == "")) {
         bestM = moves[0];

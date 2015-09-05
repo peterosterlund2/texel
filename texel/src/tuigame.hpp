@@ -35,8 +35,8 @@
  */
 class TUIGame : public Game {
 public:
-    TUIGame(const std::shared_ptr<Player>& whitePlayer,
-            const std::shared_ptr<Player>& blackPlayer);
+    TUIGame(std::unique_ptr<Player> whitePlayer,
+            std::unique_ptr<Player> blackPlayer);
 
     /**
      * Administrate a game between two players, human or computer.

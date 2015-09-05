@@ -504,7 +504,7 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
     std::vector<U64> nullHist(200);
     KillerTable kt;
     History ht;
-    std::shared_ptr<Evaluate::EvalHashTables> et = Evaluate::getEvalHashTables();
+    auto et = Evaluate::getEvalHashTables();
     Search::SearchTables st(tt, kt, ht, *et);
     TreeLogger treeLog;
     const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score

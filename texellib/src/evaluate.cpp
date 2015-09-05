@@ -1398,9 +1398,9 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
     return ksh.score;
 }
 
-std::shared_ptr<Evaluate::EvalHashTables>
+std::unique_ptr<Evaluate::EvalHashTables>
 Evaluate::getEvalHashTables() {
-    return std::make_shared<EvalHashTables>();
+    return make_unique<EvalHashTables>();
 }
 
 int

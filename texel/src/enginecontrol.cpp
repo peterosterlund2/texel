@@ -218,7 +218,7 @@ void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
     Search::SearchTables st(tt, kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
-    sc->setListener(std::make_shared<SearchListener>(os));
+    sc->setListener(make_unique<SearchListener>(os));
     sc->setStrength(UciParams::strength->getIntPar(), randomSeed);
     std::shared_ptr<MoveList> moves(std::make_shared<MoveList>());
     MoveGen::pseudoLegalMoves(pos, *moves);

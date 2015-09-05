@@ -51,8 +51,6 @@ public:
 
     void setTTLogSize(int logSize);
 
-    void setListener(const std::shared_ptr<Search::Listener>& listener);
-
     std::string getCommand(const Position& posIn, bool drawOffer, const std::vector<Position>& history) override;
 
     bool isHumanPlayer() override;
@@ -88,22 +86,16 @@ private:
     int maxNodes;
     TranspositionTable tt;
     ParallelData pd;
-    std::shared_ptr<Evaluate::EvalHashTables> et;
+    std::unique_ptr<Evaluate::EvalHashTables> et;
     Book book;
     bool bookEnabled;
     Search* currentSearch;
-    std::shared_ptr<Search::Listener> listener;
 };
 
 
 inline void
 ComputerPlayer::setTTLogSize(int logSize) {
     tt.reSize(logSize);
-}
-
-inline void
-ComputerPlayer::setListener(const std::shared_ptr<Search::Listener>& listener) {
-    this->listener = listener;
 }
 
 inline bool

@@ -435,7 +435,7 @@ public:
     ~SearchScheduler();
 
     /** Add a SearchRunner. */
-    void addWorker(const std::shared_ptr<SearchRunner>& sr);
+    void addWorker(std::unique_ptr<SearchRunner> sr);
 
     /** Start the worker threads. Creates one thread for each SearchRunner object. */
     void startWorkers();
@@ -474,8 +474,8 @@ private:
     bool stopped;
     std::mutex mutex;
 
-    std::vector<std::shared_ptr<SearchRunner>> workers;
-    std::vector<std::shared_ptr<std::thread>> threads;
+    std::vector<std::unique_ptr<SearchRunner>> workers;
+    std::vector<std::unique_ptr<std::thread>> threads;
 
     std::deque<WorkUnit> pending;
     std::condition_variable pendingCv;

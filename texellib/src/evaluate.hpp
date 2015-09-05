@@ -89,7 +89,7 @@ public:
     static const int* psTab2[Piece::nPieceTypes];
 
     /** Get evaluation hash tables. */
-    static std::shared_ptr<EvalHashTables> getEvalHashTables();
+    static std::unique_ptr<EvalHashTables> getEvalHashTables();
 
     /**
      * Static evaluation of a position.

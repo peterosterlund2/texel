@@ -44,7 +44,7 @@ Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                TreeLogger& logFile0)
     : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), pd(pd0), threadNo(0),
       mainNumaNode(true), logFile(logFile0) {
-    stopHandler = std::make_shared<DefaultStopHandler>(*this);
+    stopHandler = make_unique<DefaultStopHandler>(*this);
     spVec.push_back(rootSp);
     init(pos0, posHashList0, posHashListSize0);
 }
