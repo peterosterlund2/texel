@@ -194,7 +194,7 @@ private:
 
     // On-demand TB generation
     TTStorage ttStorage;
-    std::shared_ptr<TBGenerator<TTStorage>> tbGen;
+    std::unique_ptr<TBGenerator<TTStorage>> tbGen;
     int notUsedCnt; // Number of times updateTB() has found the tablebase
                     // unsuitable for the current root position
 };
