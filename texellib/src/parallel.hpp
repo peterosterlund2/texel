@@ -86,11 +86,11 @@ private:
 
     int threadNo;
     ParallelData& pd;
-    std::shared_ptr<std::thread> thread;
+    std::unique_ptr<std::thread> thread;
 
-    std::shared_ptr<Evaluate::EvalHashTables> et;
-    std::shared_ptr<KillerTable> kt;
-    std::shared_ptr<History> ht;
+    std::unique_ptr<Evaluate::EvalHashTables> et;
+    std::unique_ptr<KillerTable> kt;
+    std::unique_ptr<History> ht;
     TranspositionTable& tt;
 
     double pUseful; // Probability that thread is currently doing something useful, for debugging
@@ -355,10 +355,10 @@ public:
 
 private:
     /** Vector of helper threads. Master thread not included. */
-    std::vector<std::shared_ptr<WorkerThread>> threads;
+    std::vector<std::unique_ptr<WorkerThread>> threads;
 
     /** Vector of fail-high signals. Master thread included. */
-    std::vector<std::shared_ptr<RelaxedShared<bool>>> helperFailHigh;
+    std::vector<std::unique_ptr<RelaxedShared<bool>>> helperFailHigh;
 
     TranspositionTable& tt;
 

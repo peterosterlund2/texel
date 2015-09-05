@@ -53,7 +53,7 @@ void
 WorkerThread::start() {
     assert(!thread);
     const int minProbeDepth = TBProbe::tbEnabled() ? UciParams::minProbeDepth->getIntPar() : 100;
-    thread = std::make_shared<std::thread>([this,minProbeDepth](){ mainLoop(minProbeDepth); });
+    thread = make_unique<std::thread>([this,minProbeDepth](){ mainLoop(minProbeDepth); });
 }
 
 void
@@ -153,9 +153,9 @@ WorkerThread::mainLoop(int minProbeDepth) {
     if (!et)
         et = Evaluate::getEvalHashTables();
     if (!kt)
-        kt = std::make_shared<KillerTable>();
+        kt = make_unique<KillerTable>();
     if (!ht)
-        ht = std::make_shared<History>();
+        ht = make_unique<History>();
 
     TreeLogger logFile;
     logFile.open("/home/petero/treelog.dmp", pd, threadNo);
@@ -531,10 +531,10 @@ ParallelData::addRemoveWorkers(int numWorkers) {
         threads.pop_back();
     }
     for (int i = threads.size(); i < numWorkers; i++)
-        threads.push_back(std::make_shared<WorkerThread>(i+1, *this, tt));
+        threads.push_back(make_unique<WorkerThread>(i+1, *this, tt));
     helperFailHigh.resize(numWorkers + 1);
     for (int i = 0; i < numWorkers + 1; i++)
-        helperFailHigh[i] = std::make_shared<RelaxedShared<bool>>(false);
+        helperFailHigh[i] = make_unique<RelaxedShared<bool>>(false);
 }
 
 void
