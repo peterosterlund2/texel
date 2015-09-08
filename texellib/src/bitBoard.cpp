@@ -64,14 +64,14 @@ const U64 BitBoard::maskCorners;
 
 U64* BitBoard::rTables[64];
 U64 BitBoard::rMasks[64];
-int BitBoard::rBits[64] = { 12, 11, 11, 11, 11, 11, 11, 12,
-                            11, 10, 10, 11, 10, 10, 10, 11,
-                            11, 10, 10, 10, 10, 10, 10, 11,
-                            11, 10, 10, 10, 10, 10, 10, 11,
-                            11, 10, 10, 10, 10, 10, 10, 11,
-                            11, 10, 10, 11, 10, 10, 10, 11,
-                            10,  9,  9,  9,  9,  9, 10, 10,
-                            11, 10, 10, 10, 10, 11, 10, 11 };
+int BitBoard::rBits[64] = { 64-12, 64-11, 64-11, 64-11, 64-11, 64-11, 64-11, 64-12,
+                            64-11, 64-10, 64-10, 64-11, 64-10, 64-10, 64-10, 64-11,
+                            64-11, 64-10, 64-10, 64-10, 64-10, 64-10, 64-10, 64-11,
+                            64-11, 64-10, 64-10, 64-10, 64-10, 64-10, 64-10, 64-11,
+                            64-11, 64-10, 64-10, 64-10, 64-10, 64-10, 64-10, 64-11,
+                            64-11, 64-10, 64-10, 64-11, 64-10, 64-10, 64-10, 64-11,
+                            64-10, 64- 9, 64- 9, 64- 9, 64- 9, 64- 9, 64-10, 64-10,
+                            64-11, 64-10, 64-10, 64-10, 64-10, 64-11, 64-10, 64-11 };
 const U64 BitBoard::rMagics[64] = {
     0x19a80065ff2bffffULL, 0x3fd80075ffebffffULL, 0x4010000df6f6fffeULL, 0x0050001faffaffffULL,
     0x0050028004ffffb0ULL, 0x7f600280089ffff1ULL, 0x7f5000b0029ffffcULL, 0x5b58004848a7fffaULL,
@@ -93,14 +93,14 @@ const U64 BitBoard::rMagics[64] = {
 
 U64* BitBoard::bTables[64];
 U64 BitBoard::bMasks[64];
-const int BitBoard::bBits[64] = { 5, 4, 5, 5, 5, 5, 4, 5,
-                                  4, 4, 5, 5, 5, 5, 4, 4,
-                                  4, 4, 7, 7, 7, 7, 4, 4,
-                                  5, 5, 7, 9, 9, 7, 5, 5,
-                                  5, 5, 7, 9, 9, 7, 5, 5,
-                                  4, 4, 7, 7, 7, 7, 4, 4,
-                                  4, 4, 5, 5, 5, 5, 4, 4,
-                                  5, 4, 5, 5, 5, 5, 4, 5 };
+const int BitBoard::bBits[64] = { 64-5, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-5,
+                                  64-4, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-4,
+                                  64-4, 64-4, 64-7, 64-7, 64-7, 64-7, 64-4, 64-4,
+                                  64-5, 64-5, 64-7, 64-9, 64-9, 64-7, 64-5, 64-5,
+                                  64-5, 64-5, 64-7, 64-9, 64-9, 64-7, 64-5, 64-5,
+                                  64-4, 64-4, 64-7, 64-7, 64-7, 64-7, 64-4, 64-4,
+                                  64-4, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-4,
+                                  64-5, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-5 };
 const U64 BitBoard::bMagics[64] = {
     0x0006eff5367ff600ULL, 0x00345835ba77ff2bULL, 0x00145f68a3f5dab6ULL, 0x003a1863fb56f21dULL,
     0x0012eb6bfe9d93cdULL, 0x000d82827f3420d6ULL, 0x00074bcd9c7fec97ULL, 0x000034fe99f9ffffULL,
@@ -305,10 +305,10 @@ BitBoard::staticInitialize() {
     // Rook magics
     int rTableSize = 0;
     for (int sq = 0; sq < 64; sq++)
-        rTableSize += 1 << rBits[sq];
+        rTableSize += 1 << (64 - rBits[sq]);
     int bTableSize = 0;
     for (int sq = 0; sq < 64; sq++)
-        bTableSize += 1 << bBits[sq];
+        bTableSize += 1 << (64 - bBits[sq]);
     tableData.resize(rTableSize + bTableSize);
 
     int tableUsed = 0;
@@ -316,7 +316,7 @@ BitBoard::staticInitialize() {
         int x = Position::getX(sq);
         int y = Position::getY(sq);
         rMasks[sq] = addRookRays(x, y, 0ULL, true);
-        int tableSize = 1 << rBits[sq];
+        int tableSize = 1 << (64 - rBits[sq]);
         U64* table = &tableData[tableUsed];
         tableUsed += tableSize;
         const U64 unInit = 0xffffffffffffffffULL;
@@ -324,7 +324,7 @@ BitBoard::staticInitialize() {
         int nPatterns = 1 << BitBoard::bitCount(rMasks[sq]);
         for (int i = 0; i < nPatterns; i++) {
             U64 p = createPattern(i, rMasks[sq]);
-            int entry = (int)((p * rMagics[sq]) >> (64 - rBits[sq]));
+            int entry = (int)((p * rMagics[sq]) >> rBits[sq]);
             U64 atks = addRookRays(x, y, p, false);
             if (table[entry] == unInit) {
                 table[entry] = atks;
@@ -340,7 +340,7 @@ BitBoard::staticInitialize() {
         int x = Position::getX(sq);
         int y = Position::getY(sq);
         bMasks[sq] = addBishopRays(x, y, 0ULL, true);
-        int tableSize = 1 << bBits[sq];
+        int tableSize = 1 << (64 - bBits[sq]);
         U64* table = &tableData[tableUsed];
         tableUsed += tableSize;
         const U64 unInit = 0xffffffffffffffffULL;
@@ -348,7 +348,7 @@ BitBoard::staticInitialize() {
         int nPatterns = 1 << BitBoard::bitCount(bMasks[sq]);
         for (int i = 0; i < nPatterns; i++) {
             U64 p = createPattern(i, bMasks[sq]);
-            int entry = (int)((p * bMagics[sq]) >> (64 - bBits[sq]));
+            int entry = (int)((p * bMagics[sq]) >> bBits[sq]);
             U64 atks = addBishopRays(x, y, p, false);
             if (table[entry] == unInit) {
                 table[entry] = atks;
