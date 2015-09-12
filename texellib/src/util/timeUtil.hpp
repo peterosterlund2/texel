@@ -54,7 +54,7 @@ public:
      * A negative p indicates the CPU is idle. */
     void setPUseful(double p);
 
-    /** Return elapsed time size last reset, the amount of useful time spent,
+    /** Return elapsed time since last reset, the amount of useful time spent,
      * and the amount of time the CPU has been idle. */
     void getStats(double& elapsed, double& useful, double& sleep);
 
