@@ -37,8 +37,8 @@ public:
 
     cute::suite getSuite() const override;
 private:
-    static void checkBlockedConsistency(const PathSearch& ps, Position& pos);
-    static int hScore(const PathSearch& ps, const std::string& fen);
+    static void checkBlockedConsistency(PathSearch& ps, Position& pos);
+    static int hScore(PathSearch& ps, const std::string& fen);
 
     static void testMaterial();
     static void testNeighbors();

@@ -34,7 +34,7 @@
 
 
 void
-PathSearchTest::checkBlockedConsistency(const PathSearch& ps, Position& pos) {
+PathSearchTest::checkBlockedConsistency(PathSearch& ps, Position& pos) {
     U64 blocked;
     if (!ps.computeBlocked(pos, blocked))
         return;
@@ -53,7 +53,7 @@ PathSearchTest::checkBlockedConsistency(const PathSearch& ps, Position& pos) {
 }
 
 int
-PathSearchTest::hScore(const PathSearch& ps, const std::string& fen) {
+PathSearchTest::hScore(PathSearch& ps, const std::string& fen) {
     {
         Position pos0 = TextIO::readFEN(TextIO::startPosFEN);
         checkBlockedConsistency(ps, pos0);
@@ -211,16 +211,17 @@ PathSearchTest::testNeighbors() {
 
 void
 PathSearchTest::testShortestPath() {
+    PathSearch ps(TextIO::startPosFEN);
     std::shared_ptr<PathSearch::ShortestPathData> spd;
-    spd = PathSearch::shortestPaths(Piece::WKING,
-                                    TextIO::getSquare("h8"),
-                                    BitBoard::sqMask(G2,G3,G4,G5,G6,G7,F7,E7,D7,C7,B7));
+    spd = ps.shortestPaths(Piece::WKING,
+                           TextIO::getSquare("h8"),
+                           BitBoard::sqMask(G2,G3,G4,G5,G6,G7,F7,E7,D7,C7,B7));
     ASSERT_EQUAL(~BitBoard::sqMask(G2,G3,G4,G5,G6,G7,F7,E7,D7,C7,B7), spd->fromSquares);
     ASSERT_EQUAL(0, spd->pathLen[H8]);
     ASSERT_EQUAL(13, spd->pathLen[A1]);
     ASSERT_EQUAL(12, spd->pathLen[F6]);
 
-    spd = PathSearch::shortestPaths(Piece::BKNIGHT, TextIO::getSquare("a1"), 0);
+    spd = ps.shortestPaths(Piece::BKNIGHT, TextIO::getSquare("a1"), 0);
     ASSERT_EQUAL(~0ULL, spd->fromSquares);
     ASSERT_EQUAL(0, spd->pathLen[A1]);
     ASSERT_EQUAL(6, spd->pathLen[H8]);
@@ -228,18 +229,18 @@ PathSearchTest::testShortestPath() {
     ASSERT_EQUAL(4, spd->pathLen[B2]);
     ASSERT_EQUAL(4, spd->pathLen[C3]);
 
-    spd = PathSearch::shortestPaths(Piece::WROOK, TextIO::getSquare("a1"), 0);
+    spd = ps.shortestPaths(Piece::WROOK, TextIO::getSquare("a1"), 0);
     ASSERT_EQUAL(~0ULL, spd->fromSquares);
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             int d = ((x != 0) ? 1 : 0) + ((y != 0) ? 1 : 0);
             int sq = Position::getSquare(x, y);
-            ASSERT_EQUAL(d, spd->pathLen[sq]);
+            ASSERT_EQUAL(d, (int)(spd->pathLen[sq]));
         }
     }
 
-    spd = PathSearch::shortestPaths(Piece::WPAWN, TextIO::getSquare("d8"),
-                                    BitBoard::sqMask(D3,E2,F1));
+    spd = ps.shortestPaths(Piece::WPAWN, TextIO::getSquare("d8"),
+                           BitBoard::sqMask(D3,E2,F1));
     int expected[64] = {
         -1,-1,-1, 0,-1,-1,-1,-1,
         -1,-1, 1, 1, 1,-1,-1,-1,

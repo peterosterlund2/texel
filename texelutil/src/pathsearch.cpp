@@ -24,7 +24,6 @@
  */
 
 #include "pathsearch.hpp"
-#include "assignment.hpp"
 #include "moveGen.hpp"
 #include "textio.hpp"
 #include "util/timeUtil.hpp"
@@ -83,9 +82,21 @@ PathSearch::PathSearch(const std::string& goal)
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
         goalPieceCnt[p] = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)p));
 
+    // Set up caches
+    pathDataCache.resize(PathCacheSize);
+
+    Matrix<int> m(8, 8);
+    captureAP[0] = Assignment<int>(m);
+    captureAP[1] = Assignment<int>(m);
+    for (int c = 0; c < 2; c++) {
+        for (int n = 0; n <= maxMoveAPSize; n++) {
+            Matrix<int> m(n, n);
+            moveAP[c][n] = Assignment<int>(m);
+        }
+    }
+
     // FIXME! Handle ep square in goalPos by searching for previous position and
     // append the double pawn move after the search.
-
 
     staticInit();
 }
@@ -219,8 +230,19 @@ PathSearch::printSolution(int idx) const {
     std::cout << std::endl;
 }
 
+#if 0
+static void
+printMatrix(const Matrix<int>& m) {
+    for (int i = 0; i < m.numRows(); i++) {
+	for (int j = 0; j < m.numCols(); j++)
+            std::cout << ' ' << std::setw(4) << m(i, j);
+        std::cout << std::endl;
+    }
+}
+#endif
+
 int
-PathSearch::distLowerBound(const Position& pos) const {
+PathSearch::distLowerBound(const Position& pos) {
     int pieceCnt[Piece::nPieceTypes];
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
         pieceCnt[p] = BitBoard::bitCount(pos.pieceTypeBB((Piece::Type)p));
@@ -277,7 +299,7 @@ PathSearch::distLowerBound(const Position& pos) const {
         const int bigCost = 1000;
         for (int c = 0; c < 2; c++) {
             const Piece::Type  p = (c == 0) ? Piece::WPAWN : Piece::BPAWN;
-            Matrix<int> m(8, 8);
+            Assignment<int>& as = captureAP[c];
             U64 from = pos.pieceTypeBB(p);
             int fi = 0;
             while (from) {
@@ -287,26 +309,25 @@ PathSearch::distLowerBound(const Position& pos) const {
                 while (to) {
                     int toSq = BitBoard::extractSquare(to);
                     int d = std::abs(Position::getX(fromSq) - Position::getX(toSq));
-                    m(fi, ti) = d;
+                    as.setCost(fi, ti, d);
                     ti++;
                 }
                 for ( ; ti < 8; ti++)
-                    m(fi, ti) = 0;    // sq -> captured, no cost
+                    as.setCost(fi, ti, 0);    // sq -> captured, no cost
                 fi++;
             }
             for (; fi < 8; fi++) {
                 int ti;
                 for (ti = 0; ti < goalPieceCnt[p]; ti++)
-                    m(fi, ti) = bigCost; // captured -> sq, not possible
+                    as.setCost(fi, ti, bigCost); // captured -> sq, not possible
                 for ( ; ti < 8; ti++)
-                    m(fi, ti) = 0;       // captured -> captured, no cost
+                    as.setCost(fi, ti, 0);       // captured -> captured, no cost
             }
 
-            Assignment<int> as(m);
-            std::vector<int> s = as.optWeightMatch();
+            const std::vector<int>& s = as.optWeightMatch();
             int cost = 0;
             for (int i = 0; i < 8; i++)
-                cost += m(i, s[i]);
+                cost += as.getCost(i, s[i]);
             if (c == 0) {
                 int neededBCaptured = cost;
                 if (neededBCaptured > numBlackExtraPieces)
@@ -424,7 +445,8 @@ PathSearch::distLowerBound(const Position& pos) const {
             U64 fromPieces = (wtm ? pos.whiteBB() : pos.blackBB()) & ~blocked;
             int N = BitBoard::bitCount(fromPieces);
             if (N > 0) {
-                Matrix<int> m(N, N);
+                assert(N <= maxMoveAPSize);
+                Assignment<int>& as = moveAP[c][N];
                 const int bigCost = 1000;
                 for (int f = 0; f < N; f++) {
                     assert(fromPieces != 0);
@@ -471,15 +493,16 @@ PathSearch::distLowerBound(const Position& pos) const {
                                     break;
                                 }
                             }
-                            m(f, t) = pLen < 0 ? bigCost : pLen;
+                            as.setCost(f, t, pLen < 0 ? bigCost : pLen);
                             t++;
                         }
                     }
+                    for (; t < N; t++)
+                        as.setCost(f, t, 0);
                 }
-                Assignment<int> as(m);
-                std::vector<int> s = as.optWeightMatch();
+                const std::vector<int>& s = as.optWeightMatch();
                 for (int i = 0; i < N; i++)
-                    cost += m(i, s[i]);
+                    cost += as.getCost(i, s[i]);
                 if (cost >= bigCost)
                     return INT_MAX;
             }
@@ -606,6 +629,12 @@ PathSearch::computeBlocked(const Position& pos, U64& blocked) const {
 
 std::shared_ptr<PathSearch::ShortestPathData>
 PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked) {
+    U64 h = blocked * 0x9e3779b97f4a7c55ULL + (int)p * 0x9e3779b97f51ULL + toSq * 0x9e3779cdULL;
+    h &= PathCacheSize - 1;
+    PathCacheEntry& entry = pathDataCache[h];
+    if (entry.blocked == blocked && entry.toSq == toSq && entry.piece == (int)p)
+        return entry.spd;
+
     auto spd = std::make_shared<ShortestPathData>();
     for (int i = 0; i < 64; i++)
         spd->pathLen[i] = -1;
@@ -627,6 +656,12 @@ PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked) {
         dist++;
     }
     spd->fromSquares = reached;
+
+    entry.piece = p;
+    entry.toSq = toSq;
+    entry.blocked = blocked;
+    entry.spd = spd;
+
     return spd;
 }
 

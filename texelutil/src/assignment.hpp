@@ -58,11 +58,14 @@ public:
      */
     Assignment(const Matrix<WeightType>& w);
 
+    /** Create an empty assignment problem instance. */
+    Assignment();
+
     /**
      * Find a minimum weight matching.
      * Time complexity: O(N^3)
      */
-    std::vector<int> optWeightMatch();
+    const std::vector<int>& optWeightMatch();
 
     /**
      * Change one entry in the cost matrix.
@@ -91,6 +94,15 @@ private:
 
     // Saved solution from last call to optWeightMatch()
     State state_;
+
+    // Variables used in optWeightMatch
+    std::vector<WeightType> lx;
+    std::vector<int> My;
+    std::vector<bool> S, T;
+    std::vector<int> NlS;
+    std::vector<int> slackY;
+    std::vector<int> slackArgMin;
+    std::vector<int> Mx2, My2;
 };
 
 
@@ -145,11 +157,10 @@ Assignment<WeightType>::operator()(int i, int j) const
     return getCost(i, j);
 }
 
-
 template <typename WeightType>
 Assignment<WeightType>::Assignment(const Matrix<WeightType>& w)
     : w_(w) {
-    assert(w.numRows() > 0);
+    assert(w.numRows() >= 0);
     assert(w.numRows() == w.numCols());
 
     const int N = w_.numRows();
@@ -161,42 +172,56 @@ Assignment<WeightType>::Assignment(const Matrix<WeightType>& w)
 
     state_.ly = std::vector<WeightType>(N, 0);
     state_.Mx = std::vector<int>(N, -1);
+
+    lx.resize(N);
+    My.resize(N);
+    S.resize(N);
+    T.resize(N);
+    NlS.resize(N);
+    slackY.resize(N);
+    slackArgMin.resize(N);
+    Mx2.resize(N);
+    My2.resize(N);
+}
+
+template <typename WeightType>
+Assignment<WeightType>::Assignment()
+    : Assignment(Matrix<WeightType>(0, 0)) {
 }
 
 /**
  * This function implements the hungarian method.
  */
 template <typename WeightType>
-std::vector<int>
+const std::vector<int>&
 Assignment<WeightType>::optWeightMatch()
 {
     const int N = w_.numRows();
 
     // The labeling function
-    std::vector<WeightType> lx(N, 0);
-    std::vector<WeightType> ly(state_.ly);
+    lx.assign(N, 0);
+    std::vector<WeightType>& ly(state_.ly);
 
     // The matching. -1 means unmatched.
     // Mx maps from source to target vertexes, and My maps in the other direction.
     // That is: My(Mx(x)) = x
-    std::vector<int> Mx(state_.Mx);
-    std::vector<int> My(N, -1);
+    std::vector<int>& Mx(state_.Mx);
+    My.assign(N, -1);
 
     // The S and T sets
-    std::vector<bool> S(N, false);
-    std::vector<bool> T(N, false);
+    S.assign(N, false);
+    T.assign(N, false);
 
     // Neighborhood to S induced by the lx/ly labeling
     // Indexed by target vertex. Contains corresponding source vertex,
     // or -1 if not in the neighborhood.
-    std::vector<int> NlS(N, -1);
+    NlS.assign(N, -1);
 
     // Indexed by target vertex. min(x in S, lx(x) + ly(y) - w(x,y))
-    std::vector<int> slackY(N, 0);
+    slackY.assign(N, 0);
 
     // Contains an x that minimizes the slackY expression.
-    std::vector<int> slackArgMin(N, -1);
-
+    slackArgMin.assign(N, -1);
 
     // Compute initial feasible labeling.
     for (int x = 0; x < N; x++) {
@@ -294,8 +319,8 @@ Assignment<WeightType>::optWeightMatch()
                 }
             } else if (yFree) {
                 // Augment M
-                std::vector<int> Mx2(Mx);
-                std::vector<int> My2(My);
+                Mx2 = Mx;
+                My2 = My;
                 int t = y;
                 int s = NlS[t];
                 assert(s >= 0);
@@ -340,10 +365,7 @@ Assignment<WeightType>::optWeightMatch()
         maxLY = std::max(maxLY, abs(ly[i]));
     }
     if (maxLY >= std::numeric_limits<WeightType>::max() / 2)
-        ly = std::vector<WeightType>(N, 0);
-
-    state_.ly = ly;
-    state_.Mx = Mx;
+        ly.assign(N, 0);
 
     return Mx;
 }

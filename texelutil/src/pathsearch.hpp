@@ -28,6 +28,7 @@
 
 #include "util/util.hpp"
 #include "position.hpp"
+#include "assignment.hpp"
 
 #include <string>
 #include <vector>
@@ -67,7 +68,7 @@ private:
     /** Compute a lower bound for the minimum number of plies from position pos
      * to position goalPos. If INT_MAX is returned, it means that goalPos can not be
      * reached from pos. */
-    int distLowerBound(const Position& pos) const;
+    int distLowerBound(const Position& pos);
 
     /** Compute blocked pieces in a position. A block piece is a piece that
      *  can not move without making it impossible to reach the goal position.
@@ -83,7 +84,7 @@ private:
     /** Compute shortest path for a piece p to toSq from all possible start squares,
      *  taking blocked squares into account. For squares that can not reach toSq,
      *  the shortest path is set to 1. */
-    static std::shared_ptr<ShortestPathData> shortestPaths(Piece::Type p, int toSq, U64 blocked);
+    std::shared_ptr<ShortestPathData> shortestPaths(Piece::Type p, int toSq, U64 blocked);
 
     /** Compute all squares that can reach toSquares in one move while
      *  taking blocked squares into account. */
@@ -126,6 +127,23 @@ private:
 
     // Nodes ordered by "ply+bound". Elements are indices in the nodes vector.
     std::priority_queue<int, std::vector<int>, TreeNodeCompare> queue;
+
+    // Cache of recently used ShortestPathData objects
+    static const int PathCacheSize = 1024*1024;
+    struct PathCacheEntry {
+        PathCacheEntry() : piece(-1), toSq(-1), blocked(0) {}
+        int piece;
+        int toSq;
+        U64 blocked;
+        std::shared_ptr<ShortestPathData> spd;
+    };
+    std::vector<PathCacheEntry> pathDataCache;
+
+    // Assignment objects used to compute number of required captures for white/black.
+    Assignment<int> captureAP[2];
+    // Assignment objects used to compute piece movements.
+    static const int maxMoveAPSize = 16;
+    Assignment<int> moveAP[2][maxMoveAPSize + 1];
 
     // Squares reachable by a pawn on an empty board, starting at a given square.
     static U64 wPawnReachable[64];
