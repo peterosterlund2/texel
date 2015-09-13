@@ -30,7 +30,7 @@ namespace SearchConst {
     const int MATE0 = 32000;
     const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
     const int plyScale = 8; // Fractional ply resolution
-    const int MIN_SMP_DEPTH = 10; // Minimum depth for SMP work sharing
+    const int MIN_SMP_DEPTH = 7; // Minimum depth for SMP work sharing
     const int MAX_SP_PER_THREAD = 32; // Maximum number of SplitPoints per thread
 
     inline bool isWinScore(int score) { return score > MATE0 / 2; }
