@@ -83,7 +83,7 @@ private:
     /** Compute shortest path for a piece p to toSq from all possible start squares,
      *  taking blocked squares into account. For squares that can not reach toSq,
      *  the shortest path is set to 1. */
-    static void shortestPaths(Piece::Type p, int toSq, U64 blocked, ShortestPathData& spd);
+    static std::shared_ptr<ShortestPathData> shortestPaths(Piece::Type p, int toSq, U64 blocked);
 
     /** Compute all squares that can reach toSquares in one move while
      *  taking blocked squares into account. */

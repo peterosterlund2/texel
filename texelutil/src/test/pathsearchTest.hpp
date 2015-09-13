@@ -46,6 +46,8 @@ private:
     static void testValidPieceCount();
     static void testPawnReachable();
     static void testCastling();
+    static void testReachable();
+    static void testRemainingMoves();
 };
 
 #endif /* PATHSEARCHTEST_HPP_ */

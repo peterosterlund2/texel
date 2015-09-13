@@ -130,11 +130,12 @@ PathSearch::search(const std::string& initialFen) {
         const U32 idx = queue.top();
         queue.pop();
         const TreeNode& tn = nodes[idx];
-        if (tn.ply >= best)
+        if (tn.ply + tn.bound >= best)
             continue;
         if (tn.ply + tn.bound > minCost) {
             minCost = tn.ply + tn.bound;
-            std::cout << "min cost: " << minCost << " queue: " << queue.size() << std::endl;
+            std::cout << "min cost: " << minCost << " queue: " << queue.size()
+                      << " time:" << (currentTime() - t0) << std::endl;
         }
 
         numNodes++;
@@ -153,7 +154,7 @@ PathSearch::search(const std::string& initialFen) {
         MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
         for (int i = 0; i < moves.size; i++) {
-            if ((1ULL << moves[i].from()) & blocked)
+            if (((1ULL << moves[i].from()) | (1ULL << moves[i].to())) & blocked)
                 continue;
             pos.makeMove(moves[i], ui);
             addPosition(pos, idx);
@@ -263,16 +264,16 @@ PathSearch::distLowerBound(const Position& pos) const {
     if (!computeBlocked(pos, blocked))
         return INT_MAX;
 
-    bool wCanPromote, bCanPromote; // True if promotion possible
+    int wMaxPromote = 0, bMaxPromote = 0; // Max number of possible white/black promotions
 
     // Compute number of required captures to get pawns into correct files.
     // Check that excess material can satisfy both required captures and
     // required pawn promotions.
     {
-        int numWhiteExtraPieces = (BitBoard::bitCount(pos.whiteBB()) -
-                                   BitBoard::bitCount(goalPos.whiteBB()));
-        int numBlackExtraPieces = (BitBoard::bitCount(pos.blackBB()) -
-                                   BitBoard::bitCount(goalPos.blackBB()));
+        const int numWhiteExtraPieces = (BitBoard::bitCount(pos.whiteBB()) -
+                                         BitBoard::bitCount(goalPos.whiteBB()));
+        const int numBlackExtraPieces = (BitBoard::bitCount(pos.blackBB()) -
+                                         BitBoard::bitCount(goalPos.blackBB()));
         const int bigCost = 1000;
         for (int c = 0; c < 2; c++) {
             const Piece::Type  p = (c == 0) ? Piece::WPAWN : Piece::BPAWN;
@@ -307,10 +308,10 @@ PathSearch::distLowerBound(const Position& pos) const {
             for (int i = 0; i < 8; i++)
                 cost += m(i, s[i]);
             if (c == 0) {
-                if (cost > numBlackExtraPieces)
+                int neededBCaptured = cost;
+                if (neededBCaptured > numBlackExtraPieces)
                     return INT_MAX;
 
-                int neededBCaptured = cost;
                 int neededBProm = (std::max(0, goalPieceCnt[Piece::BQUEEN]  - pieceCnt[Piece::BQUEEN]) +
                                    std::max(0, goalPieceCnt[Piece::BROOK]   - pieceCnt[Piece::BROOK]) +
                                    std::max(0, goalPieceCnt[Piece::BBISHOP] - pieceCnt[Piece::BBISHOP]) +
@@ -322,12 +323,12 @@ PathSearch::distLowerBound(const Position& pos) const {
                                      std::max(0, pieceCnt[Piece::BKNIGHT] - goalPieceCnt[Piece::BKNIGHT]));
                 if (neededBCaptured + neededBProm > excessBPawns + excessBPieces)
                     return INT_MAX;
-                bCanPromote = (cost < numBlackExtraPieces) && (excessBPawns > 0);
+                bMaxPromote = excessBPawns - std::max(0, neededBCaptured - excessBPieces);
             } else {
-                if (cost > numWhiteExtraPieces)
+                int neededWCaptured = cost;
+                if (neededWCaptured > numWhiteExtraPieces)
                     return INT_MAX;
 
-                int neededWCaptured = cost;
                 int neededWProm = (std::max(0, goalPieceCnt[Piece::WQUEEN]  - pieceCnt[Piece::WQUEEN]) +
                                    std::max(0, goalPieceCnt[Piece::WROOK]   - pieceCnt[Piece::WROOK]) +
                                    std::max(0, goalPieceCnt[Piece::WBISHOP] - pieceCnt[Piece::WBISHOP]) +
@@ -340,54 +341,182 @@ PathSearch::distLowerBound(const Position& pos) const {
 
                 if (neededWCaptured + neededWProm > excessWPawns + excessWPieces)
                     return INT_MAX;
-                wCanPromote = (cost < numWhiteExtraPieces) && (excessWPawns > 0);
+                wMaxPromote = excessWPawns - std::max(0, neededWCaptured - excessWPieces);
             }
         }
     }
 
+    int neededMoves[2] = {0, 0};
+    {
+        struct SqPathData {
+            SqPathData() : square(-1) {}
+            SqPathData(int s, const std::shared_ptr<ShortestPathData>& d)
+                : square(s), spd(d) {}
+            int square;
+            std::shared_ptr<ShortestPathData> spd;
+        };
+        std::vector<SqPathData> pending, completed;
+        U64 pieces = goalPos.occupiedBB() & ~blocked;
+        while (pieces) {
+            int sq = BitBoard::extractSquare(pieces);
+            pending.emplace_back(sq, nullptr);
+        }
+        SqPathData promPath[2][8]; // Pawn cost to each possible promotion square
+        while (!pending.empty()) {
+            auto e = pending.back();
+            pending.pop_back();
+            int sq = e.square;
+            Piece::Type p = (Piece::Type)goalPos.getPiece(sq);
+            auto spd = shortestPaths(p, sq, blocked);
+            U64 from = spd->fromSquares & pos.pieceTypeBB(p);
+            bool promotionPossible = false;
+            if (!from) {
+                bool wtm = Piece::isWhite(p);
+                bool testPromote = false;
+                if (wtm) {
+                    if (Position::getY(sq) == 7) {
+                        switch (p) {
+                        case Piece::WQUEEN: case Piece::WROOK: case Piece::WBISHOP: case Piece::WKNIGHT:
+                            testPromote = true;
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                } else {
+                    if (Position::getY(sq) == 0) {
+                        switch (p) {
+                        case Piece::BQUEEN: case Piece::BROOK: case Piece::BBISHOP: case Piece::BKNIGHT:
+                            testPromote = true;
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                }
+                if (testPromote) {
+                    int c = wtm ? 0 : 1;
+                    int x = Position::getX(sq);
+                    if (!promPath[c][x].spd)
+                        promPath[c][x].spd = shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
+                                                           sq, blocked);
+                    if (promPath[c][x].spd->fromSquares & pos.pieceTypeBB(wtm ? Piece::WPAWN : Piece::BPAWN))
+                        promotionPossible = true;
+                }
+                if (!promotionPossible)
+                    return INT_MAX;
+            }
+            if ((spd->fromSquares == (1ULL << sq)) && !promotionPossible) {
+                blocked |= 1ULL << sq;
+                pending.insert(pending.end(), completed.begin(), completed.end());
+                completed.clear();
+                for (int c = 0; c < 2; c++)
+                    for (int x = 0; x < 8; x++)
+                        promPath[c][x].spd = nullptr;
+            } else {
+                completed.emplace_back(sq, spd);
+            }
+        }
+
+        for (int c = 0; c < 2; c++) {
+            bool wtm = (c == 0);
+            int cost = 0;
+            U64 fromPieces = (wtm ? pos.whiteBB() : pos.blackBB()) & ~blocked;
+            int N = BitBoard::bitCount(fromPieces);
+            if (N > 0) {
+                Matrix<int> m(N, N);
+                const int bigCost = 1000;
+                for (int f = 0; f < N; f++) {
+                    assert(fromPieces != 0);
+                    int fromSq = BitBoard::extractSquare(fromPieces);
+                    bool canPromote = wtm ? (wMaxPromote > 0) && (pos.getPiece(fromSq) == Piece::WPAWN)
+                                          : (bMaxPromote > 0) && (pos.getPiece(fromSq) == Piece::BPAWN);
+                    int t = 0;
+                    for (size_t ci = 0; ci < completed.size(); ci++) {
+                        int toSq = completed[ci].square;
+                        int p = goalPos.getPiece(toSq);
+                        if (Piece::isWhite(p) == wtm) {
+                            assert(t < N);
+                            int pLen;
+                            if (p == pos.getPiece(fromSq)) {
+                                pLen = completed[ci].spd->pathLen[fromSq];
+                                if (pLen < 0)
+                                    pLen = bigCost;
+                            } else
+                                pLen = bigCost;
+                            if (canPromote) {
+                                switch (p) {
+                                case Piece::WQUEEN: case Piece::BQUEEN:
+                                case Piece::WROOK: case Piece::BROOK:
+                                case Piece::WBISHOP: case Piece::BBISHOP:
+                                case Piece::WKNIGHT: case Piece::BKNIGHT: {
+                                    int cost2 = INT_MAX;
+                                    for (int x = 0; x < 8; x++) {
+                                        int promSq = wtm ? 7*8 + x : x;
+                                        if (!promPath[c][x].spd)
+                                            promPath[c][x].spd =
+                                                shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
+                                                              promSq, blocked);
+                                        int promCost = promPath[c][x].spd->pathLen[fromSq];
+                                        if (promCost >= 0) {
+                                            int tmp = completed[ci].spd->pathLen[promSq];
+                                            if (tmp >= 0)
+                                                cost2 = std::min(cost2, promCost + tmp);
+                                        }
+                                    }
+                                    pLen = std::min(pLen, cost2);
+                                    break;
+                                }
+                                default:
+                                    break;
+                                }
+                            }
+                            m(f, t) = pLen < 0 ? bigCost : pLen;
+                            t++;
+                        }
+                    }
+                }
+                Assignment<int> as(m);
+                std::vector<int> s = as.optWeightMatch();
+                for (int i = 0; i < N; i++)
+                    cost += m(i, s[i]);
+                if (cost >= bigCost)
+                    return INT_MAX;
+            }
+            neededMoves[c] = cost;
+        }
+    }
+
+    // Compute number of needed moves to perform all captures
+    int nBlackToCapture = BitBoard::bitCount(pos.blackBB()) - BitBoard::bitCount(goalPos.blackBB());
+    int nWhiteToCapture = BitBoard::bitCount(pos.whiteBB()) - BitBoard::bitCount(goalPos.whiteBB());
+    neededMoves[0] = std::max(neededMoves[0], nBlackToCapture);
+    neededMoves[1] = std::max(neededMoves[1], nWhiteToCapture);
 
 
+    // Compute number of needed plies from number of needed white/black moves
+    int wNeededPlies = neededMoves[0] * 2;
+    int bNeededPlies = neededMoves[1] * 2;
+    if (pos.isWhiteMove())
+        bNeededPlies++;
+    else
+        wNeededPlies++;
+    if (goalPos.isWhiteMove())
+        bNeededPlies--;
+    else
+        wNeededPlies--;
+    int ret = std::max(wNeededPlies, bNeededPlies);
+    assert(ret >= 0);
+    return ret;
 
-    // For each piece type, compute minimum number of moves needed to move all
-    // pieces from current to target positions.
-    // * Use single source shortest path algorithm to compute distance between
-    //   all source and target squares.
-    // * Use hungarian algorithm to compute optimal matching.
-    // * Set weight = 1000 for unreachable source/target combinations.
-    // * If optimal matching has cost > 1000, there is no solution.
-
-    // Note that shortest path can involve promoting an unneeded pawn
-    // to the correct piece type and then move the promoted piece to
-    // its target square.
 
     // Note that shortest path can involve castling moves.
 
     // Note that extra moves can be needed to get rid of unwanted castling flags.
 
-    // B3k2B/1pppppp1/8/8/8/8/PPPP1PPP/RN1QK1NR w KQ - 0 1
-    //   Unreachable, 2 promotions required
-
-    // B3k2B/1pppppp1/8/8/8/8/PPP2PPP/RN1QK1NR w KQ - 0 1
-    //   Should be reachable, 2 promotions required and 2 available.  6 captures
-    //   needed to promote, but 7 available.
-
     // Bn1qk2B/1pppppp1/8/8/8/8/PPP2PPP/RN1QK1NR w KQ - 0 1
     //   Unreachable, 6 captures needed to promote. 7 captures available, but
     //   the 2 bishop captures can not help white to promote.
-
-    // Nn1qk2B/1pppppp1/8/8/8/8/PPPP1PPP/RN1QK1NR w KQ - 0 1
-    //   Unreachable, only 1 pawn promotion available, but need to promote to
-    //   both knight (to satisfy piece counts) and bishop (existing bishops can
-    //   not reach target square).
-
-    // 4k3/1p6/2P5/3P4/4P1B1/3P4/2P2PP1/4K3 w - - 0 1
-    //   If starting from this pos and goal pos has pawn on f3 and bishop on a4,
-    //   all other pieces at current position, there is no solution.
-    //   The f2 pawn must go to f3, so nothing can replace the e4 pawn if it moves.
-    //   Therefore, e4, d5, c6 are all blocked and there is no way for the
-    //   bishop to get to the other side of the pawn chain.
-
-    return 0;
 }
 
 bool
@@ -403,10 +532,14 @@ PathSearch::computeBlocked(const Position& pos, U64& blocked) const {
         return false;
     blocked = goalUnMovedPawns;
 
+    U64 wUsefulPawnSquares = 0;
+    // Compute pawns that are blocked because advancing them would leave too few
+    // remaining pawns in the cone of squares that can reach the pawn square.
     U64 m = wGoalPawns & ~blocked;
     while (m) {
         int sq = BitBoard::extractSquare(m);
         U64 mask = bPawnReachable[sq];
+        wUsefulPawnSquares |= mask;
         int nGoal = BitBoard::bitCount(wGoalPawns & mask);
         int nCurr = BitBoard::bitCount(wCurrPawns & mask);
         if (nCurr < nGoal)
@@ -415,16 +548,44 @@ PathSearch::computeBlocked(const Position& pos, U64& blocked) const {
             blocked |= (1ULL << sq);
     }
 
+    if (BitBoard::bitCount(wGoalPawns) == BitBoard::bitCount(wCurrPawns)) {
+        // Compute pawns that are blocked because advancing them would put
+        // them on a square from which no goal pawn square can be reached.
+        m = wGoalPawns & wCurrPawns & ~blocked;
+        while (m) {
+            int sq = BitBoard::extractSquare(m);
+            U64 tgt = BitBoard::wPawnAttacks[sq] | (1ULL << (sq + 8));
+            if ((tgt & wUsefulPawnSquares) == 0)
+                blocked |= (1ULL << sq);
+        }
+    }
+
+    U64 bUsefulPawnSquares = 0;
+    // Compute pawns that are blocked because advancing them would leave too few
+    // remaining pawns in the cone of squares that can reach the pawn square.
     m = bGoalPawns & ~blocked;
     while (m) {
         int sq = BitBoard::extractSquare(m);
         U64 mask = wPawnReachable[sq];
+        bUsefulPawnSquares |= mask;
         int nGoal = BitBoard::bitCount(bGoalPawns & mask);
         int nCurr = BitBoard::bitCount(bCurrPawns & mask);
         if (nCurr < nGoal)
             return false;
         if ((nCurr == nGoal) && (bCurrPawns & (1ULL << sq)))
             blocked |= (1ULL << sq);
+    }
+
+    if (BitBoard::bitCount(bGoalPawns) == BitBoard::bitCount(bCurrPawns)) {
+        // Compute pawns that are blocked because advancing them would put
+        // them on a square from which no goal pawn square can be reached.
+        m = bGoalPawns & bCurrPawns & ~blocked;
+        while (m) {
+            int sq = BitBoard::extractSquare(m);
+            U64 tgt = BitBoard::bPawnAttacks[sq] | (1ULL >> (sq - 8));
+            if ((tgt & bUsefulPawnSquares) == 0)
+                blocked |= (1ULL << sq);
+        }
     }
 
     // Handle castling rights
@@ -443,11 +604,12 @@ PathSearch::computeBlocked(const Position& pos, U64& blocked) const {
     return true;
 }
 
-void
-PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked, ShortestPathData& spd) {
+std::shared_ptr<PathSearch::ShortestPathData>
+PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked) {
+    auto spd = std::make_shared<ShortestPathData>();
     for (int i = 0; i < 64; i++)
-        spd.pathLen[i] = -1;
-    spd.pathLen[toSq] = 0;
+        spd->pathLen[i] = -1;
+    spd->pathLen[toSq] = 0;
     U64 reached = 1ULL << toSq;
     int dist = 1;
     U64 newSquares = reached;
@@ -459,12 +621,13 @@ PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked, ShortestPathData
         U64 m = newSquares;
         while (m) {
             int sq = BitBoard::extractSquare(m);
-            spd.pathLen[sq] = dist;
+            spd->pathLen[sq] = dist;
         }
         reached |= newSquares;
         dist++;
     }
-    spd.fromSquares = reached;
+    spd->fromSquares = reached;
+    return spd;
 }
 
 U64

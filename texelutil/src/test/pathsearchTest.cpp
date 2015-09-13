@@ -105,6 +105,11 @@ PathSearchTest::testMaterial() {
         PathSearch ps("rnbqk1nr/b1pp1ppp/1p6/4p3/8/5N2/PPPPPPPP/R1BQKB1R w KQkq - 0 1");
         ASSERT(hScore(ps, TextIO::startPosFEN) <= 8);
     }
+    {
+        PathSearch ps("rnbqkbnr/ppp2ppp/8/8/8/8/PPP2PPP/RNBQKBNR w KQkq - 0 1");
+        ASSERT(hScore(ps, TextIO::startPosFEN) >= 4);
+        ASSERT(hScore(ps, TextIO::startPosFEN) <= 10);
+    }
 }
 
 void
@@ -206,36 +211,35 @@ PathSearchTest::testNeighbors() {
 
 void
 PathSearchTest::testShortestPath() {
-    PathSearch::ShortestPathData spd;
-    PathSearch::shortestPaths(Piece::WKING,
-                              TextIO::getSquare("h8"),
-                              BitBoard::sqMask(G2,G3,G4,G5,G6,G7,F7,E7,D7,C7,B7),
-                              spd);
-    ASSERT_EQUAL(~BitBoard::sqMask(G2,G3,G4,G5,G6,G7,F7,E7,D7,C7,B7), spd.fromSquares);
-    ASSERT_EQUAL(0, spd.pathLen[H8]);
-    ASSERT_EQUAL(13, spd.pathLen[A1]);
-    ASSERT_EQUAL(12, spd.pathLen[F6]);
+    std::shared_ptr<PathSearch::ShortestPathData> spd;
+    spd = PathSearch::shortestPaths(Piece::WKING,
+                                    TextIO::getSquare("h8"),
+                                    BitBoard::sqMask(G2,G3,G4,G5,G6,G7,F7,E7,D7,C7,B7));
+    ASSERT_EQUAL(~BitBoard::sqMask(G2,G3,G4,G5,G6,G7,F7,E7,D7,C7,B7), spd->fromSquares);
+    ASSERT_EQUAL(0, spd->pathLen[H8]);
+    ASSERT_EQUAL(13, spd->pathLen[A1]);
+    ASSERT_EQUAL(12, spd->pathLen[F6]);
 
-    PathSearch::shortestPaths(Piece::BKNIGHT, TextIO::getSquare("a1"), 0, spd);
-    ASSERT_EQUAL(~0ULL, spd.fromSquares);
-    ASSERT_EQUAL(0, spd.pathLen[A1]);
-    ASSERT_EQUAL(6, spd.pathLen[H8]);
-    ASSERT_EQUAL(5, spd.pathLen[A8]);
-    ASSERT_EQUAL(4, spd.pathLen[B2]);
-    ASSERT_EQUAL(4, spd.pathLen[C3]);
+    spd = PathSearch::shortestPaths(Piece::BKNIGHT, TextIO::getSquare("a1"), 0);
+    ASSERT_EQUAL(~0ULL, spd->fromSquares);
+    ASSERT_EQUAL(0, spd->pathLen[A1]);
+    ASSERT_EQUAL(6, spd->pathLen[H8]);
+    ASSERT_EQUAL(5, spd->pathLen[A8]);
+    ASSERT_EQUAL(4, spd->pathLen[B2]);
+    ASSERT_EQUAL(4, spd->pathLen[C3]);
 
-    PathSearch::shortestPaths(Piece::WROOK, TextIO::getSquare("a1"), 0, spd);
-    ASSERT_EQUAL(~0ULL, spd.fromSquares);
+    spd = PathSearch::shortestPaths(Piece::WROOK, TextIO::getSquare("a1"), 0);
+    ASSERT_EQUAL(~0ULL, spd->fromSquares);
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             int d = ((x != 0) ? 1 : 0) + ((y != 0) ? 1 : 0);
             int sq = Position::getSquare(x, y);
-            ASSERT_EQUAL(d, spd.pathLen[sq]);
+            ASSERT_EQUAL(d, spd->pathLen[sq]);
         }
     }
 
-    PathSearch::shortestPaths(Piece::WPAWN, TextIO::getSquare("d8"),
-                              BitBoard::sqMask(D3,E2,F1), spd);
+    spd = PathSearch::shortestPaths(Piece::WPAWN, TextIO::getSquare("d8"),
+                                    BitBoard::sqMask(D3,E2,F1));
     int expected[64] = {
         -1,-1,-1, 0,-1,-1,-1,-1,
         -1,-1, 1, 1, 1,-1,-1,-1,
@@ -247,8 +251,8 @@ PathSearchTest::testShortestPath() {
          6, 6, 6, 6, 6,-1, 6, 6,
     };
     for (int i = 0; i < 64; i++) {
-        ASSERT_EQUAL(expected[Position::mirrorY(i)], (int)spd.pathLen[i]);
-        ASSERT_EQUAL(expected[Position::mirrorY(i)] >= 0, (spd.fromSquares & (1ULL << i)) != 0);
+        ASSERT_EQUAL(expected[Position::mirrorY(i)], (int)spd->pathLen[i]);
+        ASSERT_EQUAL(expected[Position::mirrorY(i)] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
     }
 }
 
@@ -297,11 +301,14 @@ PathSearchTest::testPawnReachable() {
         bool res = ps.computeBlocked(pos, blocked);
         ASSERT(res);
         ASSERT_EQUAL(BitBoard::sqMask(C2,G2,D3,E4,D5,C6,B7), blocked);
+        ASSERT_EQUAL(INT_MAX, hScore(ps, TextIO::toFEN(pos)));
     }
     {
         PathSearch ps("rnbqkbnr/pppppppp/8/8/5P2/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
         ASSERT_EQUAL(INT_MAX, hScore(ps, TextIO::startPosFEN));
-        ASSERT(hScore(ps, "r1bqkbnr/pppppppp/n7/8/8/5P2/PPPP1PPP/RNBQKBNR b KQkq - 0 1") <= 2);
+        ASSERT_EQUAL(2, hScore(ps, "r1bqkbnr/pppppppp/n7/8/8/5P2/PPPP1PPP/RNBQKBNR w KQkq - 0 1"));
+        ASSERT(hScore(ps, "r1bqkbnr/pppppppp/n7/8/8/5P2/PPPP1PPP/RNBQKBNR b KQkq - 0 1") <= 9);
+        ASSERT(hScore(ps, "r1bqkbnr/pppppppp/n7/8/8/5P2/PPPP1PPP/RNBQKBNR b KQkq - 0 1") >= 3);
     }
     {
         PathSearch ps("r1bqkbnr/pppppppp/8/8/8/5P2/PPPP1PPP/RNBQKBNR w KQkq - 3 6");
@@ -314,6 +321,15 @@ PathSearchTest::testPawnReachable() {
     {
         PathSearch ps("r2qk2r/1pp3p1/1p4p1/8/8/8/PPP3PP/RNBQKBNR w KQkq - 0 1");
         ASSERT_EQUAL(INT_MAX, hScore(ps, "r2qk2r/ppp3pp/8/8/8/8/PPPPPPPP/R2QKBNR w KQkq - 0 1"));
+    }
+    {
+        PathSearch ps("8/rnbqkbnr/pppppppp/8/8/PPPPPPPP/RNBQKBNR/8 w - - 0 1");
+        Position pos = TextIO::readFEN("rnbqkbnr/pppppppp/8/8/8/3P4/PPP1PPPP/RNBQKBNR w KQkq - 0 1");
+        U64 blocked;
+        bool res = ps.computeBlocked(pos, blocked);
+        ASSERT(res);
+        ASSERT_EQUAL(BitBoard::sqMask(D3), blocked);
+        ASSERT_EQUAL(44, hScore(ps, TextIO::toFEN(pos)));
     }
 }
 
@@ -361,6 +377,46 @@ PathSearchTest::testCastling() {
     }
 }
 
+void
+PathSearchTest::testReachable() {
+    { // Queen is trapped, can not reach d3
+        PathSearch ps("rnbqkbnr/pppppppp/8/8/8/2Q5/1PPPPPPP/1NB1KBNR w Kkq - 0 1");
+        ASSERT_EQUAL(INT_MAX, hScore(ps, TextIO::startPosFEN));
+    }
+    { // Queen is trapped, can not reach d3
+        PathSearch ps("rnbqkbnr/pppppppp/8/8/8/2Q5/1PPPPPP1/1NB1KBN1 w kq - 0 1");
+        ASSERT_EQUAL(INT_MAX, hScore(ps, TextIO::startPosFEN));
+    }
+    { // Unreachable, 2 promotions required, only 1 available
+        PathSearch ps("B3k2B/1pppppp1/8/8/8/8/PPPP1PPP/RN1QK1NR w KQ - 0 1");
+        ASSERT_EQUAL(INT_MAX, hScore(ps, TextIO::startPosFEN));
+    }
+    { // Unreachable, only 1 pawn promotion available, but need to promote to
+      // both knight (to satisfy piece counts) and bishop (existing bishops can
+      // not reach target square).
+        PathSearch ps("Nn1qk2B/1pppppp1/8/8/8/8/PPPP1PPP/RN1QK1NR w KQ - 0 1");
+        ASSERT_EQUAL(INT_MAX, hScore(ps, TextIO::startPosFEN));
+    }
+}
+
+void
+PathSearchTest::testRemainingMoves() {
+    {
+        PathSearch ps("rnbqkbnr/pppppppp/8/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
+        ASSERT_EQUAL(4, hScore(ps, TextIO::startPosFEN));
+    }
+    {
+        PathSearch ps("rnbqk1nr/b1pp1ppp/1p6/4p3/8/5N2/PPPPPPPP/R1BQKB1R w KQkq - 0 1");
+        ASSERT_EQUAL(8, hScore(ps, TextIO::startPosFEN));
+    }
+    { // Reachable, 2 promotions required and available, 6 captured required and available
+        PathSearch ps("B3k2B/1pppppp1/8/8/8/8/PPP2PPP/RN1QK1NR w KQ - 0 1");
+        ASSERT(hScore(ps, TextIO::startPosFEN) >= 20);
+        ASSERT(hScore(ps, TextIO::startPosFEN) <= 76);
+    }
+}
+
+
 cute::suite
 PathSearchTest::getSuite() const {
     cute::suite s;
@@ -370,6 +426,8 @@ PathSearchTest::getSuite() const {
     s.push_back(CUTE(testValidPieceCount));
     s.push_back(CUTE(testPawnReachable));
     s.push_back(CUTE(testCastling));
+    s.push_back(CUTE(testReachable));
+    s.push_back(CUTE(testRemainingMoves));
 
     // FIXME!! Add test that tries to reach starting position with castling rights removed. (16 plies)
 
