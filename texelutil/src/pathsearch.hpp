@@ -43,8 +43,9 @@ class PathSearch {
 public:
     /** Create object to find a move path to a goal position.
      * A position is considered to match the goal position even if move
-     * numbers, en passant square, and/or castling flags are different. */
-    PathSearch(const std::string& goal);
+     * numbers, en passant square, and/or castling flags are different.
+     * Use scale a for ply and scale b for bound when ordering nodes to search. */
+    PathSearch(const std::string& goal, int a = 1, int b = 1);
 
     /** Search for shortest solution. Print solutions to standard output. */
     void search(const std::string& initialFen);
@@ -57,7 +58,7 @@ private:
     static void validatePieceCounts(const Position& pos);
 
     /** Queue a new position to be searched. */
-    void addPosition(const Position& pos, U32 parent);
+    void addPosition(const Position& pos, U32 parent, bool isRoot);
 
     /** Return true if pos is equal to the goal position. */
     bool isSolution(const Position& pos) const;
@@ -99,6 +100,8 @@ private:
         U32 parent;                  // Parent index, not used for root position
         U16 ply;                     // Number of moves already made, 0 for root node
         U16 bound;                   // Lower bound on number of moves to a solution
+
+        int sortWeight(int a, int b) const { return a * ply + b * bound; }
     };
 
     // All nodes encountered so far
@@ -109,12 +112,13 @@ private:
 
     class TreeNodeCompare {
     public:
-        TreeNodeCompare(const std::vector<TreeNode>& nodes0) : nodes(nodes0) {}
+        TreeNodeCompare(const std::vector<TreeNode>& nodes0, int a0, int b0)
+            : nodes(nodes0), k0(a0), k1(b0) {}
         bool operator()(int a, int b) const {
             const TreeNode& n1 = nodes[a];
             const TreeNode& n2 = nodes[b];
-            int min1 = n1.ply + n1.bound;
-            int min2 = n2.ply + n2.bound;
+            int min1 = n1.sortWeight(k0, k1);
+            int min2 = n2.sortWeight(k0, k1);
             if (min1 != min2)
                 return min1 > min2;
             if (n1.ply != n2.ply)
@@ -123,6 +127,7 @@ private:
         }
     private:
         const std::vector<TreeNode>& nodes;
+        int k0, k1;
     };
 
     // Nodes ordered by "ply+bound". Elements are indices in the nodes vector.

@@ -132,7 +132,7 @@ usage() {
     std::cerr << "                                            : Export as polyglot book\n";
     std::cerr << " book query bookFile maxErrSelf errOtherExpConst : Interactive query mode\n";
     std::cerr << "\n";
-    std::cerr << " pathsearch [-i \"initFen\"] \"goalFen\"\n";
+    std::cerr << " pathsearch [-w a:b] [-i \"initFen\"] \"goalFen\"\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -535,15 +535,27 @@ main(int argc, char* argv[]) {
             }
         } else if (cmd == "pathsearch") {
             std::string initFen, goalFen;
-            if (argc == 5 && argv[2] == std::string("-i")) {
-                initFen = argv[3];
-                goalFen = argv[4];
-            } else if (argc == 3) {
+            int a = 1, b = 1;
+            int arg = 2;
+            if (argc >= arg+2 && argv[arg] == std::string("-w")) {
+                std::string s(argv[arg+1]);
+                size_t idx = s.find(':');
+                if ((idx == std::string::npos) ||
+                    !str2Num(s.substr(0, idx), a) ||
+                    !str2Num(s.substr(idx+1), b))
+                    usage();
+                arg += 2;
+            }
+            if (argc >= arg+2 && argv[arg] == std::string("-i")) {
+                initFen = argv[arg+1];
+                arg += 2;
+            } else {
                 initFen = TextIO::startPosFEN;
-                goalFen = argv[2];
-            } else
+            }
+            if (arg+1 != argc)
                 usage();
-            PathSearch ps(goalFen);
+            goalFen = argv[arg];
+            PathSearch ps(goalFen, a, b);
             ps.search(initFen);
         } else {
             usage();

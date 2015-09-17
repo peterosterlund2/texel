@@ -75,8 +75,8 @@ PathSearch::staticInit() {
     staticInitDone = true;
 }
 
-PathSearch::PathSearch(const std::string& goal)
-    : queue(TreeNodeCompare(nodes)) {
+PathSearch::PathSearch(const std::string& goal, int a, int b)
+    : queue(TreeNodeCompare(nodes, a, b)) {
     goalPos = TextIO::readFEN(goal);
     validatePieceCounts(goalPos);
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
@@ -97,6 +97,9 @@ PathSearch::PathSearch(const std::string& goal)
 
     // FIXME! Handle ep square in goalPos by searching for previous position and
     // append the double pawn move after the search.
+
+    // FIXME!! Why is finding a path to this position hard? Seems the initial heurstic score is exact:
+    // 8/8/rnbqkbnr/pppppppp/PPPPPPPP/RNBQKBNR/8/8 w - - 0 1
 
     staticInit();
 }
@@ -130,7 +133,7 @@ void
 PathSearch::search(const std::string& initialFen) {
     Position pos = TextIO::readFEN(initialFen);
     validatePieceCounts(pos);
-    addPosition(pos, 0);
+    addPosition(pos, 0, true);
 
     double t0 = currentTime();
     U64 numNodes = 0;
@@ -168,7 +171,7 @@ PathSearch::search(const std::string& initialFen) {
             if (((1ULL << moves[i].from()) | (1ULL << moves[i].to())) & blocked)
                 continue;
             pos.makeMove(moves[i], ui);
-            addPosition(pos, idx);
+            addPosition(pos, idx, false);
             pos.unMakeMove(moves[i], ui);
         }
     }
@@ -178,14 +181,14 @@ PathSearch::search(const std::string& initialFen) {
 }
 
 void
-PathSearch::addPosition(const Position& pos, U32 parent) {
+PathSearch::addPosition(const Position& pos, U32 parent, bool isRoot) {
     if (nodeHash.find(pos.zobristHash()) != nodeHash.end())
         return;
 
     TreeNode tn;
     pos.serialize(tn.psd);
     tn.parent = parent;
-    tn.ply = (pos.getFullMoveCounter() - 1) * 2 + (pos.isWhiteMove() ? 0 : 1);
+    tn.ply = isRoot ? 0 : nodes[parent].ply + 1;
     int bound = distLowerBound(pos);
     if (bound < INT_MAX) {
         tn.bound = bound;
@@ -226,6 +229,7 @@ PathSearch::printSolution(int idx) const {
             }
         }
     };
+    std::cout << nodes[idx].ply << ": ";
     print(idx);
     std::cout << std::endl;
 }
