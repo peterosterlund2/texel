@@ -335,6 +335,21 @@ PathSearchTest::testPawnReachable() {
 }
 
 void
+PathSearchTest::testBlocked() {
+    {
+        PathSearch ps("2r2rk1/1bPn1pp1/4pq1p/p7/1p2PBPb/P4P2/1PQNB2P/R2K3R w - - 1 21");
+        Position pos = TextIO::readFEN("5Nkr/1bpnbpp1/2P1pq1p/p7/1p2PBP1/P2P1P2/1PQ1B2P/RN1K3R b - - 0 20");
+        U64 blocked;
+        bool res = ps.computeBlocked(pos, blocked);
+        ASSERT(res);
+        ASSERT_EQUAL(BitBoard::sqMask(B2,H2,A3,F3,G4,E6,H6,F7,G7), blocked);
+        int s = hScore(ps, TextIO::toFEN(pos));
+        ASSERT(s <= 35);
+        ASSERT(s >= 15);
+    }
+}
+
+void
 PathSearchTest::testCastling() {
     {
         PathSearch ps("rnbqkbnr/4p3/pppp1ppp/8/8/PPPP1PPP/4P3/RNBQKBNR w KQkq - 0 1");
@@ -426,11 +441,18 @@ PathSearchTest::getSuite() const {
     s.push_back(CUTE(testShortestPath));
     s.push_back(CUTE(testValidPieceCount));
     s.push_back(CUTE(testPawnReachable));
+    s.push_back(CUTE(testBlocked));
     s.push_back(CUTE(testCastling));
     s.push_back(CUTE(testReachable));
     s.push_back(CUTE(testRemainingMoves));
 
     // FIXME!! Add test that tries to reach starting position with castling rights removed. (16 plies)
+
+    // FIXME!! Unreachable. White pawn can not reach square where black needs to capture
+    // rnbqkbnr/p1pppppp/p7/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1
+
+    // FIXME!! Unreachable. White c1 bishop can not reach required capture square a6.
+    // rnbqkbnr/p1pppppp/p7/8/8/3P4/PPP1PPPP/RN1QKBNR w KQkq - 0 1
 
     return s;
 }

@@ -45,6 +45,7 @@ private:
     static void testShortestPath();
     static void testValidPieceCount();
     static void testPawnReachable();
+    static void testBlocked();
     static void testCastling();
     static void testReachable();
     static void testRemainingMoves();

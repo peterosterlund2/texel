@@ -164,6 +164,13 @@ PathSearch::search(const std::string& initialFen) {
         if (!computeBlocked(pos, blocked))
             continue;
 
+#if 0
+        static int cnt = 0;
+        if (((++cnt) % 10000) == 0)
+            std::cout << "ply:" << tn.ply << " bound:" << tn.bound << " "
+                      << TextIO::toFEN(pos) << std::endl;
+#endif
+
         MoveList moves;
         MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
@@ -553,8 +560,8 @@ PathSearch::computeBlocked(const Position& pos, U64& blocked) const {
     const U64 wCurrPawns = pos.pieceTypeBB(Piece::WPAWN);
     const U64 bCurrPawns = pos.pieceTypeBB(Piece::BPAWN);
 
-    U64 goalUnMovedPawns = (wGoalPawns | bGoalPawns) & (BitBoard::maskRow2 | BitBoard::maskRow7);
-    U64 currUnMovedPawns = (wCurrPawns | bCurrPawns) & (BitBoard::maskRow2 | BitBoard::maskRow7);
+    U64 goalUnMovedPawns = (wGoalPawns & BitBoard::maskRow2) | (bGoalPawns & BitBoard::maskRow7);
+    U64 currUnMovedPawns = (wCurrPawns & BitBoard::maskRow2) | (bCurrPawns & BitBoard::maskRow7);
     if (goalUnMovedPawns & ~currUnMovedPawns)
         return false;
     blocked = goalUnMovedPawns;
