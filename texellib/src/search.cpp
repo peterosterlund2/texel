@@ -260,7 +260,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             std::cout << ss.str() << std::endl;
         }
         if (maxTimeMillis >= 0)
-            if (tNow - tStart >= minTimeMillis)
+            if (tNow - tStart >= minTimeMillis * 0.01 * minTimeUsage)
                 break;
         if (depthS >= maxDepth * plyScale)
             break;

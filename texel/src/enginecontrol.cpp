@@ -200,12 +200,12 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
             int inc  = white ? sPar.wInc : sPar.bInc;
             const int margin = std::min(static_cast<int>(bufferTime), time * 9 / 10);
             int timeLimit = (time + inc * (moves - 1) - margin) / moves;
-            minTimeLimit = (int)(timeLimit * minTimeUsage * 0.01);
+            minTimeLimit = timeLimit;
             if (UciParams::ponder->getBoolPar()) {
                 const double ponderHitRate = timePonderHitRate * 0.01;
                 minTimeLimit = (int)ceil(minTimeLimit / (1 - ponderHitRate));
             }
-            maxTimeLimit = (int)(minTimeLimit * clamp(moves * 0.5, 2.5, static_cast<int>(maxTimeUsage) * 0.01));
+            maxTimeLimit = (int)(minTimeLimit * clamp(moves * 0.5, 2.0, static_cast<int>(maxTimeUsage) * 0.01));
 
             // Leave at least 1s on the clock, but can't use negative time
             minTimeLimit = clamp(minTimeLimit, 1, time - margin);

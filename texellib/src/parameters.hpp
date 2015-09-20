@@ -533,8 +533,8 @@ DECLARE_PARAM(deltaPruningMargin, 152, 0, 1000, useUciParam);
 
 DECLARE_PARAM(timeMaxRemainingMoves, 35, 2, 200, useUciParam);
 DECLARE_PARAM(bufferTime, 1000, 1, 10000, true);
-DECLARE_PARAM(minTimeUsage, 85, 1, 100, useUciParam);
-DECLARE_PARAM(maxTimeUsage, 400, 100, 1000, useUciParam);
+DECLARE_PARAM(minTimeUsage, 75, 1, 100, useUciParam);
+DECLARE_PARAM(maxTimeUsage, 350, 100, 1000, useUciParam);
 DECLARE_PARAM(timePonderHitRate, 35, 1, 100, useUciParam);
 
 
