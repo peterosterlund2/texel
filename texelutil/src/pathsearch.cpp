@@ -149,6 +149,7 @@ PathSearch::search(const std::string& initialFen) {
         if (tn.ply + tn.bound > minCost) {
             minCost = tn.ply + tn.bound;
             std::cout << "min cost: " << minCost << " queue: " << queue.size()
+                      << " nodes:" << numNodes
                       << " time:" << (currentTime() - t0) << std::endl;
         }
 
@@ -297,16 +298,17 @@ PathSearch::distLowerBound(const Position& pos) {
     if (!computeBlocked(pos, blocked))
         return INT_MAX;
 
+    const int numWhiteExtraPieces = (BitBoard::bitCount(pos.whiteBB()) -
+                                     BitBoard::bitCount(goalPos.whiteBB()));
+    const int numBlackExtraPieces = (BitBoard::bitCount(pos.blackBB()) -
+                                     BitBoard::bitCount(goalPos.blackBB()));
+
     int wMaxPromote = 0, bMaxPromote = 0; // Max number of possible white/black promotions
 
     // Compute number of required captures to get pawns into correct files.
     // Check that excess material can satisfy both required captures and
     // required pawn promotions.
     {
-        const int numWhiteExtraPieces = (BitBoard::bitCount(pos.whiteBB()) -
-                                         BitBoard::bitCount(goalPos.whiteBB()));
-        const int numBlackExtraPieces = (BitBoard::bitCount(pos.blackBB()) -
-                                         BitBoard::bitCount(goalPos.blackBB()));
         const int bigCost = 1000;
         for (int c = 0; c < 2; c++) {
             const Piece::Type  p = (c == 0) ? Piece::WPAWN : Piece::BPAWN;
@@ -399,11 +401,12 @@ PathSearch::distLowerBound(const Position& pos) {
             pending.pop_back();
             int sq = e.square;
             Piece::Type p = (Piece::Type)goalPos.getPiece(sq);
-            auto spd = shortestPaths(p, sq, blocked);
+            const bool wtm = Piece::isWhite(p);
+            const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
+            auto spd = shortestPaths(p, sq, blocked, maxCapt);
             U64 from = spd->fromSquares & pos.pieceTypeBB(p);
             bool promotionPossible = false;
             if (!from) {
-                bool wtm = Piece::isWhite(p);
                 bool testPromote = false;
                 if (wtm) {
                     if (Position::getY(sq) == 7) {
@@ -431,7 +434,7 @@ PathSearch::distLowerBound(const Position& pos) {
                     int x = Position::getX(sq);
                     if (!promPath[c][x].spd)
                         promPath[c][x].spd = shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
-                                                           sq, blocked);
+                                                           sq, blocked, maxCapt);
                     if (promPath[c][x].spd->fromSquares & pos.pieceTypeBB(wtm ? Piece::WPAWN : Piece::BPAWN))
                         promotionPossible = true;
                 }
@@ -451,7 +454,8 @@ PathSearch::distLowerBound(const Position& pos) {
         }
 
         for (int c = 0; c < 2; c++) {
-            bool wtm = (c == 0);
+            const bool wtm = (c == 0);
+            const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
             int cost = 0;
             U64 fromPieces = (wtm ? pos.whiteBB() : pos.blackBB()) & ~blocked;
             int N = BitBoard::bitCount(fromPieces);
@@ -489,7 +493,7 @@ PathSearch::distLowerBound(const Position& pos) {
                                         if (!promPath[c][x].spd)
                                             promPath[c][x].spd =
                                                 shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
-                                                              promSq, blocked);
+                                                              promSq, blocked, maxCapt);
                                         int promCost = promPath[c][x].spd->pathLen[fromSq];
                                         if (promCost >= 0) {
                                             int tmp = completed[ci].spd->pathLen[promSq];
@@ -639,11 +643,15 @@ PathSearch::computeBlocked(const Position& pos, U64& blocked) const {
 }
 
 std::shared_ptr<PathSearch::ShortestPathData>
-PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked) {
-    U64 h = blocked * 0x9e3779b97f4a7c55ULL + (int)p * 0x9e3779b97f51ULL + toSq * 0x9e3779cdULL;
+PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
+    if (p != Piece::WPAWN && p != Piece::BPAWN)
+        maxCapt = 6;
+    U64 h = blocked * 0x9e3779b97f4a7c55ULL + (int)p * 0x9e3779b97f51ULL +
+            toSq * 0x9e3779cdULL + maxCapt * 0x964e55ULL;
     h &= PathCacheSize - 1;
     PathCacheEntry& entry = pathDataCache[h];
-    if (entry.blocked == blocked && entry.toSq == toSq && entry.piece == (int)p)
+    if (entry.blocked == blocked && entry.toSq == toSq &&
+        entry.piece == (int)p && entry.maxCapt == maxCapt)
         return entry.spd;
 
     auto spd = std::make_shared<ShortestPathData>();
@@ -668,8 +676,18 @@ PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked) {
     }
     spd->fromSquares = reached;
 
+    if (maxCapt < 6) {
+        for (int x = 0; x < 8; x++)
+            if (std::abs(x - Position::getX(toSq)) > maxCapt) {
+                for (int y = 0; y < 8; y++)
+                    spd->pathLen[Position::getSquare(x, y)] = -1;
+                spd->fromSquares &= ~BitBoard::maskFile[x];
+            }
+    }
+
     entry.piece = p;
     entry.toSq = toSq;
+    entry.maxCapt = maxCapt;
     entry.blocked = blocked;
     entry.spd = spd;
 
