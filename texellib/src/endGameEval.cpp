@@ -729,6 +729,45 @@ EndGameEval::isBishopPawnDraw(const Position& pos) {
         }
     }
 
+    // Check for WPg7,h6, BPh7 fortress
+    if (BitBoard::bitCount(pos.pieceTypeBB(bishop)) == 1) {
+        if (whiteBishop) {
+            U64 otherPawns = pos.pieceTypeBB(Piece::BPAWN);
+            if (darkBishop) {  // H8 corner
+                if ((pos.getPiece(H7) == Piece::BPAWN) &&
+                    (pos.getPiece(H6) == Piece::WPAWN) &&
+                    (pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(H8,G8,F8,F7)) &&
+                    ((pawns & 0x003F7F7F7F7F7F00ULL) == 0) &&
+                    ((BitBoard::southFill((otherPawns & BitBoard::maskFileG) >> 7) & pawns) == 0))
+                    return true;
+            } else {           // A8 corner
+                if ((pos.getPiece(A7) == Piece::BPAWN) &&
+                    (pos.getPiece(A6) == Piece::WPAWN) &&
+                    (pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(A8,B8,C8,C7)) &&
+                    ((pawns & 0x00FCFEFEFEFEFE00ULL) == 0) &&
+                    ((BitBoard::southFill((otherPawns & BitBoard::maskFileB) >> 9) & pawns) == 0))
+                    return true;
+            }
+        } else {
+            U64 otherPawns = pos.pieceTypeBB(Piece::WPAWN);
+            if (lightBishop) { // H1 corner
+                if ((pos.getPiece(H2) == Piece::WPAWN) &&
+                    (pos.getPiece(H3) == Piece::BPAWN) &&
+                    (pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(H1,G1,F1,F2)) &&
+                    ((pawns & 0x007F7F7F7F7F3F00ULL) == 0) &&
+                    ((BitBoard::northFill((otherPawns & BitBoard::maskFileG) << 9) & pawns) == 0))
+                    return true;
+            } else {           // A1 corner
+                if ((pos.getPiece(A2) == Piece::WPAWN) &&
+                    (pos.getPiece(A3) == Piece::BPAWN) &&
+                    (pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(A1,B1,C1,C2)) &&
+                    ((pawns & 0x00FEFEFEFEFEFC00ULL) == 0) &&
+                    ((BitBoard::northFill((otherPawns & BitBoard::maskFileB) << 7) & pawns) == 0))
+                    return true;
+            }
+        }
+    }
+
     return false;
 }
 

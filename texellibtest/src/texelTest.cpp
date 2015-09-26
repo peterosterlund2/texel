@@ -46,35 +46,41 @@
 #include "parameters.hpp"
 
 void
-runSuite(const SuiteBase& suite) {
-    cute::ide_listener lis;
-    cute::makeRunner(lis)(suite.getSuite(), suite.getName().c_str());
+runSuite(const SuiteBase& suite, const std::vector<std::string>& suiteNames) {
+    if (suiteNames.empty() || contains(suiteNames, suite.getName())) {
+        cute::ide_listener lis;
+        cute::makeRunner(lis)(suite.getSuite(), suite.getName().c_str());
+    }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    std::vector<std::string> suiteNames;
+    for (int i = 1; i < argc; i++)
+        suiteNames.emplace_back(argv[i]);
+
     UciParams::gtbPath->set(gtbDefaultPath);
     UciParams::rtbPath->set(rtbDefaultPath);
     UciParams::gtbCache->set("128");
     ComputerPlayer::initEngine();
-    runSuite(BitBoardTest());
-    runSuite(BookTest());
-    runSuite(ComputerPlayerTest());
-    runSuite(EvaluateTest());
-    runSuite(GameTest());
-    runSuite(HistoryTest());
-    runSuite(KillerTableTest());
-    runSuite(MoveGenTest());
-    runSuite(MoveTest());
-    runSuite(PieceTest());
-    runSuite(PositionTest());
-    runSuite(SearchTest());
-    runSuite(TextIOTest());
-    runSuite(TranspositionTableTest());
-    runSuite(ParallelTest());
-    runSuite(TreeLoggerTest());
-    runSuite(UtilTest());
-    runSuite(TBTest());
-    runSuite(TBGenTest());
-    runSuite(PolyglotTest());
+    runSuite(BitBoardTest(), suiteNames);
+    runSuite(BookTest(), suiteNames);
+    runSuite(ComputerPlayerTest(), suiteNames);
+    runSuite(EvaluateTest(), suiteNames);
+    runSuite(GameTest(), suiteNames);
+    runSuite(HistoryTest(), suiteNames);
+    runSuite(KillerTableTest(), suiteNames);
+    runSuite(MoveGenTest(), suiteNames);
+    runSuite(MoveTest(), suiteNames);
+    runSuite(PieceTest(), suiteNames);
+    runSuite(PositionTest(), suiteNames);
+    runSuite(SearchTest(), suiteNames);
+    runSuite(TextIOTest(), suiteNames);
+    runSuite(TranspositionTableTest(), suiteNames);
+    runSuite(ParallelTest(), suiteNames);
+    runSuite(TreeLoggerTest(), suiteNames);
+    runSuite(UtilTest(), suiteNames);
+    runSuite(TBTest(), suiteNames);
+    runSuite(TBGenTest(), suiteNames);
+    runSuite(PolyglotTest(), suiteNames);
     return 0;
 }

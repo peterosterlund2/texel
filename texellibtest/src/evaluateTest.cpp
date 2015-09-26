@@ -830,6 +830,31 @@ EvaluateTest::testBishAndPawnFortress() {
     ASSERT_EQUAL(0, evalFEN("k7/B7/1PK5/8/8/8/8/8 b - - 0 1", true));
     ASSERT(evalFEN("k7/B7/1PK5/8/8/8/8/8 w - - 0 1", true) > 500);
     ASSERT_EQUAL(0, evalFEN("k7/B7/1P6/3K4/8/8/8/8 w - - 0 1", true));
+
+    ASSERT_EQUAL(0, evalFEN("6k1/6Pp/7P/8/3B4/3K4/8/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("6k1/6Pp/7P/8/3B4/3K4/8/8 b - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("6k1/6Pp/7P/8/3B4/3K3P/8/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("6k1/6Pp/7P/8/3B4/3K3P/8/8 b - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("8/5kPp/7P/7P/3B4/3K4/8/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("8/5kPp/7P/7P/3B4/3K4/8/8 b - - 0 1", true));
+    ASSERT(evalFEN("6k1/6Pp/8/7P/3B4/3K4/8/8 w - - 0 1", true) > 500);
+    ASSERT(evalFEN("6k1/6Pp/8/7P/3B4/3K4/8/8 b - - 0 1", true) > 500);
+    ASSERT(evalFEN("8/5kPp/7P/7P/3B4/2BK4/8/8 w - - 0 1", true) > 500);
+    ASSERT(evalFEN("8/5kPp/7P/8/3B4/3K2P1/8/8 w - - 0 1", true) > 500);
+    ASSERT(evalFEN("8/5kPp/7P/8/3B4/3K4/1P6/8 w - - 0 1", true) > 500);
+    ASSERT(evalFEN("8/5kPp/7P/8/8/3K4/2B5/8 w - - 0 1", true) > 500);
+    ASSERT(evalFEN("6k1/6Pp/8/8/8/3K4/3B4/8 w - - 0 1", true) > 400);
+    ASSERT(evalFEN("6k1/6P1/7P/8/8/3K4/3B4/8 w - - 0 1", true) > 500);
+    ASSERT_EQUAL(0, evalFEN("6k1/7p/7P/8/8/3K4/3B4/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("8/5k1p/7P/8/8/3K4/3B4/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("7k/7p/7P/8/8/3K4/3B4/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("6k1/1p4Pp/7P/8/3B4/3K4/8/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("6k1/1p4Pp/7P/8/3B4/3K3P/8/8 w - - 0 1", true));
+    ASSERT(evalFEN("6k1/6Pp/6pP/8/3B4/3K3P/8/8 w - - 0 1", true) > 500);
+    ASSERT_EQUAL(0, evalFEN("5k2/3p3p/5K1P/7P/3B3P/8/8/8 w - - 0 1", true));
+    ASSERT_EQUAL(0, evalFEN("6k1/6Pp/7P/8/3BK3/8/6pP/8 w - - 0 1", true));
+    ASSERT(evalFEN("6k1/6Pp/7P/6p1/3BK1pP/8/8/8 w - - 0 1", true) > 500);
+    ASSERT_EQUAL(0, evalFEN("6k1/6Pp/7P/6pP/3BK1p1/8/8/8 w - - 0 1", true));
 }
 
 void
