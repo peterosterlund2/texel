@@ -677,6 +677,11 @@ EvaluateTest::testEndGameCorrections() {
     // KRKBBN is a win for the BBN side
     int kbbnkr = evalEgFen("8/3rk3/8/8/8/3B4/2NBK3/8 w - - 0 1");
     ASSERT(kbbnkr >= 300);
+
+    // KRBNKRB is a generally a win
+    int krbnkrb = evalEgFen("8/4k3/3br3/8/8/3RBN2/4K3/8 w - - 0 1", 0);
+    ASSERT(krbnkrb > 200);
+    ASSERT(krbnkrb < 300);
 }
 
 /**

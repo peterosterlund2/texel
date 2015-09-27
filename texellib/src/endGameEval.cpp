@@ -399,8 +399,10 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
         if (score > 0) {
             if (wMtrlNoPawns < rV)
                 return -pos.bMtrl() / 50;
+            else if ((nWN + nWB1 + nWB2 <= 1) || !pos.pieceTypeBB(Piece::WROOK, Piece::WQUEEN))
+                return score / 8;   // Too little excess material, probably draw
             else
-                return score / 8;        // Too little excess material, probably draw
+                return score;       // May or may not be a win, TBs required
         }
     }
     if ((bMtrlPawns == 0) && (bMtrlNoPawns <= wMtrlNoPawns + bV)) {
@@ -408,8 +410,10 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
         if (score < 0) {
             if (bMtrlNoPawns < rV)
                 return pos.wMtrl() / 50;
+            else if ((nBN + nBB1 + nBB2 <= 1) || !pos.pieceTypeBB(Piece::BROOK, Piece::BQUEEN))
+                return score / 8;   // Too little excess material, probably draw
             else
-                return score / 8;        // Too little excess material, probably draw
+                return score;       // May or may not be a win, TBs required
         }
     }
 
