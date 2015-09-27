@@ -556,7 +556,8 @@ main(int argc, char* argv[]) {
                 usage();
             goalFen = argv[arg];
             PathSearch ps(goalFen, a, b);
-            ps.search(initFen);
+            std::vector<Move> movePath;
+            ps.search(initFen, movePath);
         } else {
             usage();
         }

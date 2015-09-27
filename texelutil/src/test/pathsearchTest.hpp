@@ -49,6 +49,7 @@ private:
     static void testCastling();
     static void testReachable();
     static void testRemainingMoves();
+    static void testSearch();
 };
 
 #endif /* PATHSEARCHTEST_HPP_ */

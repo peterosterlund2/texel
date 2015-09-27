@@ -47,8 +47,10 @@ public:
      * Use scale a for ply and scale b for bound when ordering nodes to search. */
     PathSearch(const std::string& goal, int a = 1, int b = 1);
 
-    /** Search for shortest solution. Print solutions to standard output. */
-    void search(const std::string& initialFen);
+    /** Search for shortest solution. Print solutions to standard output.
+     * Return length of shortest path found.
+     */
+    int search(const std::string& initialFen, std::vector<Move>& movePath);
 
     /** Return goal position. */
     const Position& getGoalPos() const;
@@ -66,8 +68,9 @@ private:
     /** Return true if pos is equal to the goal position. */
     bool isSolution(const Position& pos) const;
 
-    /** Print move sequence leading to position given by index "idx". */
-    void printSolution(int idx) const;
+    /** Get move sequence leading to position given by index "idx".
+     * Also print move sequence to standard output. */
+    void getSolution(int idx, std::vector<Move>& movePath) const;
 
     /** Compute a lower bound for the minimum number of plies from position pos
      * to position goalPos. If INT_MAX is returned, it means that goalPos can not be

@@ -515,6 +515,27 @@ PathSearchTest::testRemainingMoves() {
     }
 }
 
+void
+PathSearchTest::testSearch() {
+    { // Start position without castling rights
+        PathSearch ps("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1");
+        std::vector<Move> movePath;
+        int best = ps.search(TextIO::startPosFEN, movePath);
+        ASSERT_EQUAL(16, best);
+    }
+    {
+        PathSearch ps("rnbqk1nr/ppppppbp/6p1/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
+        std::vector<Move> movePath;
+        int best = ps.search(TextIO::startPosFEN, movePath);
+        ASSERT_EQUAL(4, best);
+        ASSERT_EQUAL(4, movePath.size());
+        ASSERT_EQUAL("a2a4", TextIO::moveToUCIString(movePath[0]));
+        ASSERT_EQUAL("g7g6", TextIO::moveToUCIString(movePath[1]));
+        ASSERT_EQUAL("b1a3", TextIO::moveToUCIString(movePath[2]));
+        ASSERT_EQUAL("f8g7", TextIO::moveToUCIString(movePath[3]));
+    }
+}
+
 
 cute::suite
 PathSearchTest::getSuite() const {
@@ -528,8 +549,8 @@ PathSearchTest::getSuite() const {
     s.push_back(CUTE(testCastling));
     s.push_back(CUTE(testReachable));
     s.push_back(CUTE(testRemainingMoves));
+    s.push_back(CUTE(testSearch));
 
-    // FIXME!! Add test that tries to reach starting position with castling rights removed. (16 plies)
 
     // FIXME!! Unreachable. White pawn can not reach square where black needs to capture
     // rnbqkbnr/p1pppppp/p7/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1

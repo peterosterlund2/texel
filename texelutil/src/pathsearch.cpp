@@ -129,8 +129,8 @@ PathSearch::validatePieceCounts(const Position& pos) {
         throw ChessParseError("Too many black pieces");
 }
 
-void
-PathSearch::search(const std::string& initialFen) {
+int
+PathSearch::search(const std::string& initialFen, std::vector<Move>& movePath) {
     Position pos = TextIO::readFEN(initialFen);
     validatePieceCounts(pos);
     addPosition(pos, 0, true);
@@ -157,7 +157,7 @@ PathSearch::search(const std::string& initialFen) {
 
         pos.deSerialize(tn.psd);
         if (tn.ply < best && isSolution(pos)) {
-            printSolution(idx);
+            getSolution(idx, movePath);
             best = tn.ply;
         }
 
@@ -186,6 +186,8 @@ PathSearch::search(const std::string& initialFen) {
     double t1 = currentTime();
     std::cout << "nodes: " << numNodes
               << " time: " << t1 - t0 <<  std::endl;
+
+    return best;
 }
 
 void
@@ -208,8 +210,8 @@ PathSearch::addPosition(const Position& pos, U32 parent, bool isRoot) {
 }
 
 void
-PathSearch::printSolution(int idx) const {
-    std::function<void(int)> print = [this,&print](U32 idx) {
+PathSearch::getSolution(int idx, std::vector<Move>& movePath) const {
+    std::function<void(int)> print = [this,&movePath,&print](U32 idx) {
         const TreeNode& tn = nodes[idx];
         int ply = tn.ply;
         if (ply > 0)
@@ -231,6 +233,7 @@ PathSearch::printSolution(int idx) const {
                 if (pos.equals(target)) {
                     pos.unMakeMove(moves[i], ui);
                     std::cout << TextIO::moveToString(pos, moves[i], false);
+                    movePath.push_back(moves[i]);
                     break;
                 }
                 pos.unMakeMove(moves[i], ui);
