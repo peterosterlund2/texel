@@ -397,51 +397,40 @@ PathSearch::distLowerBound(const Position& pos) {
         }
         SqPathData promPath[2][8]; // Pawn cost to each possible promotion square
         while (!pending.empty()) {
-            auto e = pending.back();
+            const auto e = pending.back();
             pending.pop_back();
-            int sq = e.square;
-            Piece::Type p = (Piece::Type)goalPos.getPiece(sq);
+            const int sq = e.square;
+            const Piece::Type p = (Piece::Type)goalPos.getPiece(sq);
             const bool wtm = Piece::isWhite(p);
             const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
             auto spd = shortestPaths(p, sq, blocked, maxCapt);
-            U64 from = spd->fromSquares & pos.pieceTypeBB(p);
+            bool testPromote = false;
+            switch (p) {
+            case Piece::WQUEEN: case Piece::WROOK: case Piece::WBISHOP: case Piece::WKNIGHT:
+                if (wtm && Position::getY(sq) == 7)
+                    testPromote = true;
+                break;
+            case Piece::BQUEEN: case Piece::BROOK: case Piece::BBISHOP: case Piece::BKNIGHT:
+                if (!wtm && Position::getY(sq) == 0)
+                    testPromote = true;
+                break;
+            default:
+                break;
+            }
             bool promotionPossible = false;
-            if (!from) {
-                bool testPromote = false;
-                if (wtm) {
-                    if (Position::getY(sq) == 7) {
-                        switch (p) {
-                        case Piece::WQUEEN: case Piece::WROOK: case Piece::WBISHOP: case Piece::WKNIGHT:
-                            testPromote = true;
-                            break;
-                        default:
-                            break;
-                        }
-                    }
-                } else {
-                    if (Position::getY(sq) == 0) {
-                        switch (p) {
-                        case Piece::BQUEEN: case Piece::BROOK: case Piece::BBISHOP: case Piece::BKNIGHT:
-                            testPromote = true;
-                            break;
-                        default:
-                            break;
-                        }
-                    }
-                }
-                if (testPromote) {
-                    int c = wtm ? 0 : 1;
-                    int x = Position::getX(sq);
-                    if (!promPath[c][x].spd)
-                        promPath[c][x].spd = shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
-                                                           sq, blocked, maxCapt);
-                    if (promPath[c][x].spd->fromSquares & pos.pieceTypeBB(wtm ? Piece::WPAWN : Piece::BPAWN))
-                        promotionPossible = true;
-                }
-                if (!promotionPossible)
-                    return INT_MAX;
+            if (testPromote) {
+                int c = wtm ? 0 : 1;
+                int x = Position::getX(sq);
+                Piece::Type pawn = wtm ? Piece::WPAWN : Piece::BPAWN;
+                if (!promPath[c][x].spd)
+                    promPath[c][x].spd = shortestPaths(pawn,
+                                                       sq, blocked, maxCapt);
+                if (promPath[c][x].spd->fromSquares & pos.pieceTypeBB(pawn))
+                    promotionPossible = true;
             }
             if ((spd->fromSquares == (1ULL << sq)) && !promotionPossible) {
+                if (pos.getPiece(sq) != p)
+                    return INT_MAX;
                 blocked |= 1ULL << sq;
                 pending.insert(pending.end(), completed.begin(), completed.end());
                 completed.clear();

@@ -50,6 +50,9 @@ public:
     /** Search for shortest solution. Print solutions to standard output. */
     void search(const std::string& initialFen);
 
+    /** Return goal position. */
+    const Position& getGoalPos() const;
+
 private:
     /** Initialize static data if not already done. */
     void staticInit();
@@ -167,5 +170,9 @@ PathSearch::isSolution(const Position& pos) const {
     return pos.drawRuleEquals(goalPos);
 }
 
+inline const Position&
+PathSearch::getGoalPos() const {
+    return goalPos;
+}
 
 #endif /* PATHSEARCH_HPP_ */

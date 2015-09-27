@@ -33,6 +33,43 @@
 
 
 
+static int
+swapSquareY(int square) {
+    int x = Position::getX(square);
+    int y = Position::getY(square);
+    return Position::getSquare(x, 7-y);
+}
+
+static Position
+swapColors(const Position& pos) {
+    Position sym;
+    sym.setWhiteMove(!pos.isWhiteMove());
+    for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 8; y++) {
+            int sq = Position::getSquare(x, y);
+            int p = pos.getPiece(sq);
+            p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
+            sym.setPiece(swapSquareY(sq), p);
+        }
+    }
+
+    int castleMask = 0;
+    if (pos.a1Castle()) castleMask |= 1 << Position::A8_CASTLE;
+    if (pos.h1Castle()) castleMask |= 1 << Position::H8_CASTLE;
+    if (pos.a8Castle()) castleMask |= 1 << Position::A1_CASTLE;
+    if (pos.h8Castle()) castleMask |= 1 << Position::H1_CASTLE;
+    sym.setCastleMask(castleMask);
+
+    if (pos.getEpSquare() >= 0)
+        sym.setEpSquare(swapSquareY(pos.getEpSquare()));
+
+    sym.setHalfMoveClock(pos.getHalfMoveClock());
+    sym.setFullMoveCounter(pos.getFullMoveCounter());
+
+    return sym;
+}
+
+
 void
 PathSearchTest::checkBlockedConsistency(PathSearch& ps, Position& pos) {
     U64 blocked;
@@ -53,16 +90,25 @@ PathSearchTest::checkBlockedConsistency(PathSearch& ps, Position& pos) {
 }
 
 int
-PathSearchTest::hScore(PathSearch& ps, const std::string& fen) {
+PathSearchTest::hScore(PathSearch& ps, const std::string& fen, bool testMirrorY) {
     {
         Position pos0 = TextIO::readFEN(TextIO::startPosFEN);
         checkBlockedConsistency(ps, pos0);
     }
     Position pos = TextIO::readFEN(fen);
     checkBlockedConsistency(ps, pos);
-    int hScore = ps.distLowerBound(pos);
-    ASSERT(hScore >= 0);
-    return hScore;
+    const int score = ps.distLowerBound(pos);
+    ASSERT(score >= 0);
+
+    if (testMirrorY) {
+        Position posSym = swapColors(pos);
+        Position goalPosSym = swapColors(ps.getGoalPos());
+        PathSearch psSym(TextIO::toFEN(goalPosSym));
+        int score2 = hScore(psSym, TextIO::toFEN(posSym), false);
+        ASSERT_EQUAL(score, score2);
+    }
+
+    return score;
 }
 
 void
@@ -437,6 +483,18 @@ PathSearchTest::testReachable() {
         ASSERT_EQUAL(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"));
     }
 #endif
+    { // Reachable, use promotion to get bishop through blocking boundary
+        PathSearch ps("r1bqkbnr/B1pppppp/1p6/8/8/1P6/2PPPPPP/RN1QKBNR w KQkq - 0 1");
+        ASSERT(hScore(ps, "rnbqkbnr/2pppppp/1p6/8/8/1P6/P1PPPPPP/RNBQKBNR w KQkq - 0 1") <= 12);
+    }
+    { // Reachable, capture blocked bishop and promote a new bishop on the same square
+        PathSearch ps("B3k3/1ppppppp/3r4/8/8/8/1PPPPPPP/4K3 w - - 0 1");
+        ASSERT(hScore(ps, "B2rk3/1ppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1") <= 12);
+    }
+    { // Not reachable, bishop can not reach goal square, no promotion possible
+        PathSearch ps("B3k3/1ppppppp/3r4/8/8/8/1PPPPPPP/4K3 w - - 0 1");
+        ASSERT_EQUAL(INT_MAX, hScore(ps, "3rk3/1ppppppp/B7/8/8/8/1PPPPPPP/4K3 w - - 0 1"));
+    }
 }
 
 void
