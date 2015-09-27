@@ -192,19 +192,21 @@ PathSearch::search(const std::string& initialFen, std::vector<Move>& movePath) {
 
 void
 PathSearch::addPosition(const Position& pos, U32 parent, bool isRoot) {
-    if (nodeHash.find(pos.zobristHash()) != nodeHash.end())
+    const int ply = isRoot ? 0 : nodes[parent].ply + 1;
+    auto it = nodeHash.find(pos.zobristHash());
+    if ((it != nodeHash.end()) && (it->second <= ply))
         return;
 
     TreeNode tn;
     pos.serialize(tn.psd);
     tn.parent = parent;
-    tn.ply = isRoot ? 0 : nodes[parent].ply + 1;
+    tn.ply = ply;
     int bound = distLowerBound(pos);
     if (bound < INT_MAX) {
         tn.bound = bound;
         U32 idx = nodes.size();
         nodes.push_back(tn);
-        nodeHash.insert(pos.zobristHash());
+        nodeHash[pos.zobristHash()] = ply;
         queue.push(idx);
     }
 }

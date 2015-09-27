@@ -32,7 +32,7 @@
 
 #include <string>
 #include <vector>
-#include <unordered_set>
+#include <unordered_map>
 #include <queue>
 
 /**
@@ -116,7 +116,7 @@ private:
     std::vector<TreeNode> nodes;
 
     // Hash table of already seen nodes, to avoid duplicate work after transpositions
-    std::unordered_set<U64> nodeHash;
+    std::unordered_map<U64,int> nodeHash;
 
     class TreeNodeCompare {
     public:

@@ -523,6 +523,12 @@ PathSearchTest::testSearch() {
         int best = ps.search(TextIO::startPosFEN, movePath);
         ASSERT_EQUAL(16, best);
     }
+    { // Start position without castling rights
+        PathSearch ps("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1", 1, 9);
+        std::vector<Move> movePath;
+        int best = ps.search(TextIO::startPosFEN, movePath);
+        ASSERT_EQUAL(16, best);
+    }
     {
         PathSearch ps("rnbqk1nr/ppppppbp/6p1/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
         std::vector<Move> movePath;
