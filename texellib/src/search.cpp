@@ -788,6 +788,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             hashMoveSelected && !singularSearch &&
             (ent.getType() != TType::T_LE) &&
             (ent.getDepth() >= depth - 3 * plyScale) &&
+            !isWinScore(std::abs(ent.getScore(ply))) &&
             (getMoveExtend(hashMove, recaptureSquare) <= 0) &&
             (ply + depth / plyScale < MAX_SEARCH_DEPTH) &&
             MoveGen::isLegal(pos, hashMove, inCheck)) {
