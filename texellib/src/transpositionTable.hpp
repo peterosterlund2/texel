@@ -319,6 +319,12 @@ TranspositionTable::TTEntry::isCutOff(int alpha, int beta, int ply, int depth) c
             ((eType == TType::T_LE) && (score <= alpha)))
             return true;
     }
+    if (isWinScore(score) && score >= beta &&
+            (eType == TType::T_EXACT || eType == TType::T_GE))
+        return true;
+    if (isLoseScore(score) && score <= alpha &&
+            (eType == TType::T_EXACT || eType == TType::T_LE))
+        return true;
     return false;
 }
 

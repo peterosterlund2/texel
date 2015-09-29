@@ -168,7 +168,7 @@ testMateDepth() {
     TranspositionTable::TTEntry ent;
     ent.clear();
     const int mate0 = SearchConst::MATE0;
-    const int ply = 5;
+    int ply = 5;
     tt.probe(pos.historyHash(), ent);
     ASSERT_EQUAL(TType::T_EXACT, ent.getType());
     ASSERT_EQUAL(-(mate0 - 3 - ply), ent.getScore(ply));
@@ -184,6 +184,58 @@ testMateDepth() {
     ent.setDepth(3*plyScale);
     ASSERT(ent.isCutOff(-mate0, mate0, ply, 3*plyScale));
     ASSERT(ent.isCutOff(-mate0, mate0, ply, 4*plyScale));
+
+    // A mate score outside the alpha/beta window should always cause a cutoff
+    ply = 0;
+    ent.clear();
+    ent.setDepth(3 * plyScale);
+    ent.setType(TType::T_EXACT);
+    ent.setScore(mate0 - 100, ply);
+    ASSERT(!ent.isCutOff(-mate0, mate0      , ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-mate0, mate0 -  99, ply, 4 * plyScale));
+    ASSERT( ent.isCutOff(-mate0, mate0 -  99, ply, 3 * plyScale));
+    ASSERT( ent.isCutOff(-mate0, mate0 - 100, ply, 4 * plyScale));
+    ASSERT( ent.isCutOff(-mate0, mate0 - 110, ply, 4 * plyScale));
+
+    ent.setType(TType::T_GE);
+    ASSERT(!ent.isCutOff(-mate0, mate0      , ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-mate0, mate0 -  99, ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-mate0, mate0 -  99, ply, 3 * plyScale));
+    ASSERT( ent.isCutOff(-mate0, mate0 - 100, ply, 4 * plyScale));
+    ASSERT( ent.isCutOff(-mate0, mate0 - 110, ply, 4 * plyScale));
+
+    ent.setType(TType::T_LE);
+    ASSERT(!ent.isCutOff(-mate0, mate0      , ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-mate0, mate0 -  99, ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-mate0, mate0 -  99, ply, 3 * plyScale));
+    ASSERT(!ent.isCutOff(-mate0, mate0 - 100, ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-mate0, mate0 - 110, ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(mate0-70, mate0 - 60, ply, 4 * plyScale));
+    ASSERT( ent.isCutOff(mate0-70, mate0 - 60, ply, 3 * plyScale));
+
+    ent.setType(TType::T_EXACT);
+    ent.setScore(-(mate0 - 100), ply);
+    ASSERT(!ent.isCutOff(-mate0        , mate0, ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-(mate0 -  99), mate0, ply, 4 * plyScale));
+    ASSERT( ent.isCutOff(-(mate0 -  99), mate0, ply, 3 * plyScale));
+    ASSERT( ent.isCutOff(-(mate0 - 100), mate0, ply, 4 * plyScale));
+    ASSERT( ent.isCutOff(-(mate0 - 110), mate0, ply, 4 * plyScale));
+
+    ent.setType(TType::T_LE);
+    ASSERT(!ent.isCutOff(-mate0        , mate0, ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-(mate0 -  99), mate0, ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-(mate0 -  99), mate0, ply, 3 * plyScale));
+    ASSERT( ent.isCutOff(-(mate0 - 100), mate0, ply, 4 * plyScale));
+    ASSERT( ent.isCutOff(-(mate0 - 110), mate0, ply, 4 * plyScale));
+
+    ent.setType(TType::T_GE);
+    ASSERT(!ent.isCutOff(-mate0        , mate0, ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-(mate0 -  99), mate0, ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-(mate0 -  99), mate0, ply, 3 * plyScale));
+    ASSERT(!ent.isCutOff(-(mate0 - 100), mate0, ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-(mate0 - 110), mate0, ply, 4 * plyScale));
+    ASSERT(!ent.isCutOff(-(mate0 - 60), -(mate0 - 70), ply, 4 * plyScale));
+    ASSERT( ent.isCutOff(-(mate0 - 60), -(mate0 - 70), ply, 3 * plyScale));
 }
 
 cute::suite
