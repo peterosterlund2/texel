@@ -910,7 +910,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                             lmr = 3*plyScale;
                         } else if ((lmrCount > lmrMoveCountLimit1) && (depth > 3*plyScale) && !isCapture) {
                             lmr = 2*plyScale;
-                        } else {
+                        } else if (mi >= 2) {
                             lmr = 1*plyScale;
                         }
                     }
