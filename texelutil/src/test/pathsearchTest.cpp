@@ -553,7 +553,7 @@ PathSearchTest::testEnPassant() {
         ASSERT_EQUAL("d2d4", TextIO::moveToUCIString(movePath[4]));
     }
     {
-        PathSearch ps("rnbqkbnr/pp1ppppp/8/8/2pPP3/7P/PPP2PP1/RNBQKBNR b KQkq e3 0 1");
+        PathSearch ps("rnbqkbnr/ppppp1pp/8/8/3PPp2/7P/PPP2PP1/RNBQKBNR b KQkq e3 0 1");
         std::vector<Move> movePath;
         int best = ps.search(TextIO::startPosFEN, movePath);
         ASSERT_EQUAL(5, best);
