@@ -104,6 +104,28 @@ testReadFEN() {
 
     wasError = testFENParseError("1B1B4/6k1/7r/7P/6q1/r7/q7/7K b - - acn 6; acs 0;");
     ASSERT_EQUAL(false, wasError);  // Extra stuff after FEN string is allowed
+
+    // Test invalid en passant square detection
+    pos = TextIO::readFEN("rnbqkbnr/pp1ppppp/8/8/2pPP3/8/PPP2PPP/RNBQKBNR b KQkq d3 0 1");
+    ASSERT_EQUAL(TextIO::getSquare("d3"), pos.getEpSquare());
+
+    pos = TextIO::readFEN("rnbqkbnr/pp1ppppp/8/8/2pPP3/8/PPP2PPP/RNBQKBNR w KQkq d3 0 1");
+    ASSERT(pos.equals(TextIO::readFEN("rnbqkbnr/pp1ppppp/8/8/2pPP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 1")));
+
+    pos = TextIO::readFEN("rnbqkbnr/ppp2ppp/8/2Ppp3/8/8/PP1PPPPP/RNBQKBNR w KQkq d6 0 1");
+    ASSERT_EQUAL(TextIO::getSquare("d6"), pos.getEpSquare());
+
+    pos = TextIO::readFEN("rnbqkbnr/ppp2ppp/8/2Ppp3/8/8/PP1PPPPP/RNBQKBNR b KQkq d6 0 1");
+    ASSERT(pos.equals(TextIO::readFEN("rnbqkbnr/ppp2ppp/8/2Ppp3/8/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1")));
+
+    pos = TextIO::readFEN("rnbqkbnr/pppppppp/8/8/3PP3/8/PPP2PPP/RNBQKBNR b KQkq d3 0 1");
+    ASSERT_EQUAL(-1, pos.getEpSquare());
+
+    pos = TextIO::readFEN("rnbqkbnr/ppp2ppp/8/3pp3/8/8/PPPPPPPP/RNBQKBNR w KQkq e6 0 1");
+    ASSERT_EQUAL(-1, pos.getEpSquare());
+
+    pos = TextIO::readFEN("rnbqkbnr/pp1ppppp/8/8/2pPP3/3P4/PP3PPP/RNBQKBNR b KQkq d3 0 1");
+    ASSERT(pos.equals(TextIO::readFEN("rnbqkbnr/pp1ppppp/8/8/2pPP3/3P4/PP3PPP/RNBQKBNR b KQkq - 0 1")));
 }
 
 /**
