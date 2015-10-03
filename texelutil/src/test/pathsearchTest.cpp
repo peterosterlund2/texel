@@ -542,6 +542,25 @@ PathSearchTest::testSearch() {
     }
 }
 
+void
+PathSearchTest::testEnPassant() {
+    {
+        PathSearch ps("rnbqkbnr/pp1ppppp/8/8/2pPP3/7P/PPP2PP1/RNBQKBNR b KQkq d3 0 1");
+        std::vector<Move> movePath;
+        int best = ps.search(TextIO::startPosFEN, movePath);
+        ASSERT_EQUAL(5, best);
+        ASSERT_EQUAL(5, movePath.size());
+        ASSERT_EQUAL("d2d4", TextIO::moveToUCIString(movePath[4]));
+    }
+    {
+        PathSearch ps("rnbqkbnr/pp1ppppp/8/8/2pPP3/7P/PPP2PP1/RNBQKBNR b KQkq e3 0 1");
+        std::vector<Move> movePath;
+        int best = ps.search(TextIO::startPosFEN, movePath);
+        ASSERT_EQUAL(5, best);
+        ASSERT_EQUAL(5, movePath.size());
+        ASSERT_EQUAL("e2e4", TextIO::moveToUCIString(movePath[4]));
+    }
+}
 
 cute::suite
 PathSearchTest::getSuite() const {
@@ -556,6 +575,7 @@ PathSearchTest::getSuite() const {
     s.push_back(CUTE(testReachable));
     s.push_back(CUTE(testRemainingMoves));
     s.push_back(CUTE(testSearch));
+    s.push_back(CUTE(testEnPassant));
 
 
     // FIXME!! Unreachable. White pawn can not reach square where black needs to capture

@@ -82,6 +82,27 @@ PathSearch::PathSearch(const std::string& goal, int a, int b)
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
         goalPieceCnt[p] = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)p));
 
+    // Handle en passant square by solving for the position before the
+    // the forced pawn move that set up the en passant square.
+    int epSq = goalPos.getEpSquare();
+    if (epSq != -1) {
+        int f, t, p;
+        if (goalPos.isWhiteMove()) {
+            f = epSq + 8;
+            t = epSq - 8;
+            p = Piece::BPAWN;
+        } else {
+            f = epSq - 8;
+            t = epSq + 8;
+            p = Piece::WPAWN;
+        }
+        epMove = Move(f, t, Piece::EMPTY);
+        goalPos.setPiece(f, p);
+        goalPos.setPiece(t, Piece::EMPTY);
+        goalPos.setEpSquare(-1);
+        goalPos.setWhiteMove(!goalPos.isWhiteMove());
+    }
+
     // Set up caches
     pathDataCache.resize(PathCacheSize);
 
@@ -94,9 +115,6 @@ PathSearch::PathSearch(const std::string& goal, int a, int b)
             moveAP[c][n] = Assignment<int>(m);
         }
     }
-
-    // FIXME! Handle ep square in goalPos by searching for previous position and
-    // append the double pawn move after the search.
 
     // FIXME!! Why is finding a path to this position hard? Seems the initial heurstic score is exact:
     // 8/8/rnbqkbnr/pppppppp/PPPPPPPP/RNBQKBNR/8/8 w - - 0 1
@@ -131,11 +149,12 @@ PathSearch::validatePieceCounts(const Position& pos) {
 
 int
 PathSearch::search(const std::string& initialFen, std::vector<Move>& movePath) {
-    Position pos = TextIO::readFEN(initialFen);
-    validatePieceCounts(pos);
-    addPosition(pos, 0, true);
+    Position startPos = TextIO::readFEN(initialFen);
+    validatePieceCounts(startPos);
+    addPosition(startPos, 0, true);
 
     double t0 = currentTime();
+    Position pos;
     U64 numNodes = 0;
     int minCost = -1;
     int best = INT_MAX;
@@ -157,7 +176,7 @@ PathSearch::search(const std::string& initialFen, std::vector<Move>& movePath) {
 
         pos.deSerialize(tn.psd);
         if (tn.ply < best && isSolution(pos)) {
-            getSolution(idx, movePath);
+            getSolution(startPos, idx, movePath);
             best = tn.ply;
         }
 
@@ -187,7 +206,8 @@ PathSearch::search(const std::string& initialFen, std::vector<Move>& movePath) {
     std::cout << "nodes: " << numNodes
               << " time: " << t1 - t0 <<  std::endl;
 
-    return best;
+    int epCost = epMove.isEmpty() ? 0 : 1;
+    return best + epCost;
 }
 
 void
@@ -212,38 +232,43 @@ PathSearch::addPosition(const Position& pos, U32 parent, bool isRoot) {
 }
 
 void
-PathSearch::getSolution(int idx, std::vector<Move>& movePath) const {
-    std::function<void(int)> print = [this,&movePath,&print](U32 idx) {
+PathSearch::getSolution(const Position& startPos, int idx, std::vector<Move>& movePath) const {
+    std::function<void(int)> getMoves = [this,&movePath,&getMoves](U32 idx) {
         const TreeNode& tn = nodes[idx];
-        int ply = tn.ply;
-        if (ply > 0)
-            print(tn.parent);
-        if (ply > 1)
-            std::cout << ' ';
-        if (ply > 0) {
-            Position target;
-            target.deSerialize(tn.psd);
+        if (tn.ply == 0)
+            return;
+        getMoves(tn.parent);
+        Position target;
+        target.deSerialize(tn.psd);
 
-            Position pos;
-            pos.deSerialize(nodes[tn.parent].psd);
-            MoveList moves;
-            MoveGen::pseudoLegalMoves(pos, moves);
-            MoveGen::removeIllegal(pos, moves);
-            UndoInfo ui;
-            for (int i = 0; i < moves.size; i++) {
-                pos.makeMove(moves[i], ui);
-                if (pos.equals(target)) {
-                    pos.unMakeMove(moves[i], ui);
-                    std::cout << TextIO::moveToString(pos, moves[i], false);
-                    movePath.push_back(moves[i]);
-                    break;
-                }
+        Position pos;
+        pos.deSerialize(nodes[tn.parent].psd);
+        MoveList moves;
+        MoveGen::pseudoLegalMoves(pos, moves);
+        MoveGen::removeIllegal(pos, moves);
+        UndoInfo ui;
+        for (int i = 0; i < moves.size; i++) {
+            pos.makeMove(moves[i], ui);
+            if (pos.equals(target)) {
                 pos.unMakeMove(moves[i], ui);
+                movePath.push_back(moves[i]);
+                break;
             }
+            pos.unMakeMove(moves[i], ui);
         }
     };
     std::cout << nodes[idx].ply << ": ";
-    print(idx);
+    getMoves(idx);
+    if (!epMove.isEmpty())
+        movePath.push_back(epMove);
+    Position pos = startPos;
+    UndoInfo ui;
+    for (size_t i = 0; i < movePath.size(); i++) {
+        if (i > 0)
+            std::cout << ' ';
+        std::cout << TextIO::moveToString(pos, movePath[i], false);
+        pos.makeMove(movePath[i], ui);
+    }
     std::cout << std::endl;
 }
 

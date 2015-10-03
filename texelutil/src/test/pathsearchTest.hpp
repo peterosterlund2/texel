@@ -50,6 +50,7 @@ private:
     static void testReachable();
     static void testRemainingMoves();
     static void testSearch();
+    static void testEnPassant();
 };
 
 #endif /* PATHSEARCHTEST_HPP_ */
