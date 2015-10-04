@@ -131,6 +131,7 @@ usage() {
     std::cerr << " book export bookFile polyglotFile maxErrSelf errOtherExpConst\n";
     std::cerr << "                                            : Export as polyglot book\n";
     std::cerr << " book query bookFile maxErrSelf errOtherExpConst : Interactive query mode\n";
+    std::cerr << " book stats bookFile                        : Print book statistics\n";
     std::cerr << "\n";
     std::cerr << " pathsearch [-w a:b] [-i \"initFen\"] \"goalFen\"\n";
     std::cerr << std::flush;
@@ -532,6 +533,11 @@ main(int argc, char* argv[]) {
                     usage();
                 BookBuild::Book book("");
                 book.interactiveQuery(bookFile, maxErrSelf, errOtherExpConst);
+            } else if (bookCmd == "stats") {
+                if (argc != 4)
+                    usage();
+                BookBuild::Book book("");
+                book.statistics(bookFile);
             }
         } else if (cmd == "pathsearch") {
             std::string initFen, goalFen;

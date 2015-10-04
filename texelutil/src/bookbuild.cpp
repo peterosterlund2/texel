@@ -580,6 +580,23 @@ Book::interactiveQuery(const std::string& bookFile, int maxErrSelf, double errOt
     }
 }
 
+void
+Book::statistics(const std::string& bookFile) {
+    readFromFile(bookFile);
+    const int maxPly = 1000;
+    Histogram<0, maxPly> hist;
+    for (auto& bn : bookNodes)
+        hist.add(bn.second->getDepth());
+
+    int maxNonZero = 0;
+    for (int i = 1; i < maxPly; i++)
+        if (hist.get(i) > 0)
+            maxNonZero = i;
+
+    for (int i = 0; i <= maxNonZero; i++)
+        std::cout << std::setw(2) << i << ' ' << hist.get(i) << std::endl;
+}
+
 // ----------------------------------------------------------------------------
 
 void

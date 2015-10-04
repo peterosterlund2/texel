@@ -280,6 +280,9 @@ public:
     /** Query the book interactively, taking query commands from standard input. */
     void interactiveQuery(const std::string& bookFile, int maxErrSelf, double errOtherExpConst);
 
+    /** Compute and print statistics about the book. */
+    void statistics(const std::string& bookFile);
+
 private:
     /** Add root node if not already present. */
     void addRootNode();
