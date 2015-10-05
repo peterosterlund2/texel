@@ -392,6 +392,19 @@ PathSearchTest::testPawnReachable() {
         ASSERT_EQUAL(BitBoard::sqMask(D3), blocked);
         ASSERT_EQUAL(44, hScore(ps, TextIO::toFEN(pos)));
     }
+
+    { // Reachable, pawn can not reach goal square, but can be promoted to piece that can
+        PathSearch ps("rnbqkbnr/ppp1ppp1/2p5/8/8/8/PPPPPPP1/RNBQKBNR w KQq - 0 1");
+        ASSERT(hScore(ps, TextIO::startPosFEN) <= 24);
+    }
+    { // Not reachable, white pawn can not reach square where it needs to be captured
+        PathSearch ps("rnbqkbnr/ppp1pppp/2p5/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1");
+        ASSERT_EQUAL(INT_MAX, hScore(ps, TextIO::startPosFEN));
+    }
+    { // Not reachable, white c1 bishop can not reach required capture square a6.
+        PathSearch ps("rnbqkbnr/p1pppppp/p7/8/8/3P4/PPP1PPPP/RN1QKBNR w KQkq - 0 1");
+        ASSERT_EQUAL(INT_MAX, hScore(ps, TextIO::startPosFEN));
+    }
 }
 
 void
@@ -477,12 +490,6 @@ PathSearchTest::testReachable() {
         PathSearch ps("rnbqk1nr/pppp1ppp/8/2b5/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1");
         ASSERT_EQUAL(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"));
     }
-#if 0 // Requires more advanced pawn reachability calculation
-    { // Unreachable, too many captures needed to be able to promote pawn to knight.
-        PathSearch ps("rnbq2nr/pppkb1pp/3pp3/8/8/8/PPPPPPP1/RNBQKBNR w KQ - 0 1");
-        ASSERT_EQUAL(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"));
-    }
-#endif
     { // Reachable, use promotion to get bishop through blocking boundary
         PathSearch ps("r1bqkbnr/B1pppppp/1p6/8/8/1P6/2PPPPPP/RN1QKBNR w KQkq - 0 1");
         ASSERT(hScore(ps, "rnbqkbnr/2pppppp/1p6/8/8/1P6/P1PPPPPP/RNBQKBNR w KQkq - 0 1") >= 12);
@@ -495,6 +502,14 @@ PathSearchTest::testReachable() {
     { // Not reachable, bishop can not reach goal square, no promotion possible
         PathSearch ps("B3k3/1ppppppp/3r4/8/8/8/1PPPPPPP/4K3 w - - 0 1");
         ASSERT_EQUAL(INT_MAX, hScore(ps, "3rk3/1ppppppp/B7/8/8/8/1PPPPPPP/4K3 w - - 0 1"));
+    }
+    { // Reachable, one promotion needed and available
+        PathSearch ps("rnbqkbnB/pp1pppp1/1p6/8/8/1P6/P1PPPPP1/RN1QKBNR w KQq - 0 1");
+        ASSERT(hScore(ps, TextIO::startPosFEN) <= 20);
+    }
+    { // Unreachable, no promotion possible, can not reach capture square
+        PathSearch ps("rnbqkbn1/p1ppppp1/p4r2/8/8/8/PPPP1PP1/RNBQK1NR w KQq - 0 1");
+        ASSERT_EQUAL(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPB/RNBQK1NR w KQkq - 0 1"));
     }
 }
 
@@ -576,13 +591,5 @@ PathSearchTest::getSuite() const {
     s.push_back(CUTE(testRemainingMoves));
     s.push_back(CUTE(testSearch));
     s.push_back(CUTE(testEnPassant));
-
-
-    // FIXME!! Unreachable. White pawn can not reach square where black needs to capture
-    // rnbqkbnr/p1pppppp/p7/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1
-
-    // FIXME!! Unreachable. White c1 bishop can not reach required capture square a6.
-    // rnbqkbnr/p1pppppp/p7/8/8/3P4/PPP1PPPP/RN1QKBNR w KQkq - 0 1
-
     return s;
 }

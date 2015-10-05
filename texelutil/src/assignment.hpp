@@ -31,7 +31,7 @@
 #include <limits>
 
 
-template<class T>
+template<typename T>
 class Matrix {
 public:
     Matrix(int rows, int cols);
@@ -42,6 +42,8 @@ public:
 
     int numRows() const;
     int numCols() const;
+
+    void printMatrix(bool negate) const;
 
 private:
     std::vector<T> data_;
@@ -89,6 +91,9 @@ public:
     const State& getState() const;
     void setState(const State& state);
 
+    // Print cost matrix to stdout
+    void printMatrix() const { w_.printMatrix(true); }
+
 private:
     Matrix<WeightType> w_;
 
@@ -106,7 +111,7 @@ private:
 };
 
 
-template<class T>
+template<typename T>
 inline Matrix<T>::Matrix(int rows, int cols)
     : rows_(rows), cols_(cols) {
     const int size = rows_ * cols_;
@@ -115,24 +120,35 @@ inline Matrix<T>::Matrix(int rows, int cols)
         data_[i] = 0;
 }
 
-template<class T>
+template<typename T>
 inline const T& Matrix<T>::operator()(int row, int col) const {
     return data_[row * cols_ + col];
 }
 
-template<class T>
+template<typename T>
 inline T& Matrix<T>::operator()(int row, int col) {
     return data_[row * cols_ + col];
 }
 
-template<class T>
+template<typename T>
 inline int Matrix<T>::numRows() const {
     return rows_;
 }
 
-template<class T>
+template<typename T>
 inline int Matrix<T>::numCols() const {
     return cols_;
+}
+
+template <typename T>
+void
+Matrix<T>::printMatrix(bool negate) const {
+    int s = negate ? -1 : 1;
+    for (int i = 0; i < numRows(); i++) {
+	for (int j = 0; j < numCols(); j++)
+            std::cout << ' ' << std::setw(4) << s*(*this)(i, j);
+        std::cout << std::endl;
+    }
 }
 
 

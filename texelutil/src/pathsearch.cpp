@@ -116,9 +116,6 @@ PathSearch::PathSearch(const std::string& goal, int a, int b)
         }
     }
 
-    // FIXME!! Why is finding a path to this position hard? Seems the initial heurstic score is exact:
-    // 8/8/rnbqkbnr/pppppppp/PPPPPPPP/RNBQKBNR/8/8 w - - 0 1
-
     staticInit();
 }
 
@@ -272,17 +269,6 @@ PathSearch::getSolution(const Position& startPos, int idx, std::vector<Move>& mo
     std::cout << std::endl;
 }
 
-#if 0
-static void
-printMatrix(const Matrix<int>& m) {
-    for (int i = 0; i < m.numRows(); i++) {
-	for (int j = 0; j < m.numCols(); j++)
-            std::cout << ' ' << std::setw(4) << m(i, j);
-        std::cout << std::endl;
-    }
-}
-#endif
-
 int
 PathSearch::distLowerBound(const Position& pos) {
     int pieceCnt[Piece::nPieceTypes];
@@ -332,8 +318,8 @@ PathSearch::distLowerBound(const Position& pos) {
                                      BitBoard::bitCount(goalPos.whiteBB()));
     const int numBlackExtraPieces = (BitBoard::bitCount(pos.blackBB()) -
                                      BitBoard::bitCount(goalPos.blackBB()));
-
-    int wMaxPromote = 0, bMaxPromote = 0; // Max number of possible white/black promotions
+    const int excessWPawns = pieceCnt[Piece::WPAWN] - goalPieceCnt[Piece::WPAWN];
+    const int excessBPawns = pieceCnt[Piece::BPAWN] - goalPieceCnt[Piece::BPAWN];
 
     // Compute number of required captures to get pawns into correct files.
     // Check that excess material can satisfy both required captures and
@@ -380,14 +366,12 @@ PathSearch::distLowerBound(const Position& pos) {
                                    std::max(0, goalPieceCnt[Piece::BROOK]   - pieceCnt[Piece::BROOK]) +
                                    std::max(0, goalPieceCnt[Piece::BBISHOP] - pieceCnt[Piece::BBISHOP]) +
                                    std::max(0, goalPieceCnt[Piece::BKNIGHT] - pieceCnt[Piece::BKNIGHT]));
-                int excessBPawns = pieceCnt[Piece::BPAWN] - goalPieceCnt[Piece::BPAWN];
                 int excessBPieces = (std::max(0, pieceCnt[Piece::BQUEEN]  - goalPieceCnt[Piece::BQUEEN]) +
                                      std::max(0, pieceCnt[Piece::BROOK]   - goalPieceCnt[Piece::BROOK]) +
                                      std::max(0, pieceCnt[Piece::BBISHOP] - goalPieceCnt[Piece::BBISHOP]) +
                                      std::max(0, pieceCnt[Piece::BKNIGHT] - goalPieceCnt[Piece::BKNIGHT]));
                 if (neededBCaptured + neededBProm > excessBPawns + excessBPieces)
                     return INT_MAX;
-                bMaxPromote = excessBPawns - std::max(0, neededBCaptured - excessBPieces);
             } else {
                 int neededWCaptured = cost;
                 if (neededWCaptured > numWhiteExtraPieces)
@@ -397,7 +381,6 @@ PathSearch::distLowerBound(const Position& pos) {
                                    std::max(0, goalPieceCnt[Piece::WROOK]   - pieceCnt[Piece::WROOK]) +
                                    std::max(0, goalPieceCnt[Piece::WBISHOP] - pieceCnt[Piece::WBISHOP]) +
                                    std::max(0, goalPieceCnt[Piece::WKNIGHT] - pieceCnt[Piece::WKNIGHT]));
-                int excessWPawns = pieceCnt[Piece::WPAWN] - goalPieceCnt[Piece::WPAWN];
                 int excessWPieces = (std::max(0, pieceCnt[Piece::WQUEEN]  - goalPieceCnt[Piece::WQUEEN]) +
                                      std::max(0, pieceCnt[Piece::WROOK]   - goalPieceCnt[Piece::WROOK]) +
                                      std::max(0, pieceCnt[Piece::WBISHOP] - goalPieceCnt[Piece::WBISHOP]) +
@@ -405,7 +388,6 @@ PathSearch::distLowerBound(const Position& pos) {
 
                 if (neededWCaptured + neededWProm > excessWPawns + excessWPieces)
                     return INT_MAX;
-                wMaxPromote = excessWPawns - std::max(0, neededWCaptured - excessWPieces);
             }
         }
     }
@@ -472,6 +454,19 @@ PathSearch::distLowerBound(const Position& pos) {
             }
         }
 
+        // Compute squares where pieces have to be captured
+        int captureSquares[2][16]; // [c][idx], -1 terminated. Squares where pieces need to be captured
+        for (int c = 0; c < 2; c++) {
+            const bool whiteToBeCaptured = (c == 0);
+            const Piece::Type pawn = whiteToBeCaptured ? Piece::BPAWN : Piece::WPAWN;
+            U64 capt = goalPos.pieceTypeBB(pawn) & ~pos.pieceTypeBB(pawn);
+            capt &= whiteToBeCaptured ? (blocked >> 8) : (blocked << 8);
+            int idx = 0;
+            while (capt)
+                captureSquares[c][idx++] = BitBoard::extractSquare(capt);
+            captureSquares[c][idx++] = -1;
+        }
+
         for (int c = 0; c < 2; c++) {
             const bool wtm = (c == 0);
             const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
@@ -485,8 +480,8 @@ PathSearch::distLowerBound(const Position& pos) {
                 for (int f = 0; f < N; f++) {
                     assert(fromPieces != 0);
                     int fromSq = BitBoard::extractSquare(fromPieces);
-                    bool canPromote = wtm ? (wMaxPromote > 0) && (pos.getPiece(fromSq) == Piece::WPAWN)
-                                          : (bMaxPromote > 0) && (pos.getPiece(fromSq) == Piece::BPAWN);
+                    bool canPromote = wtm ? (excessWPawns > 0) && (pos.getPiece(fromSq) == Piece::WPAWN)
+                                          : (excessBPawns > 0) && (pos.getPiece(fromSq) == Piece::BPAWN);
                     int t = 0;
                     for (size_t ci = 0; ci < completed.size(); ci++) {
                         int toSq = completed[ci].square;
@@ -531,8 +526,49 @@ PathSearch::distLowerBound(const Position& pos) {
                             t++;
                         }
                     }
-                    for (; t < N; t++)
-                        as.setCost(f, t, 0);
+
+                    // Handle pieces to be captured
+                    int idx = 0;
+                    for (; t < N; t++) {
+                        int cost = 0;
+                        int captSq = captureSquares[c][idx];
+                        if (captSq >= 0) {
+                            auto spd = shortestPaths((Piece::Type)pos.getPiece(fromSq), captSq,
+                                                     blocked, maxCapt);
+                            int pLen = spd->pathLen[fromSq];
+                            if (pLen < 0)
+                                pLen = bigCost;
+                            int fromP = pos.getPiece(fromSq);
+                            if (canPromote && (fromP == Piece::WPAWN || fromP == Piece::BPAWN)) {
+                                int firstP = wtm ? Piece::WQUEEN : Piece::BQUEEN;
+                                int lastP = wtm ? Piece::WKNIGHT : Piece::BKNIGHT;
+                                for (int x = 0; x < 8; x++) {
+                                    int promSq = wtm ? 7*8 + x : x;
+                                    if (!promPath[c][x].spd)
+                                        promPath[c][x].spd =
+                                            shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
+                                                          promSq, blocked, maxCapt);
+                                    int promCost = promPath[c][x].spd->pathLen[fromSq];
+                                    if (promCost >= 0 && promCost < pLen) {
+                                        int cost2 = INT_MAX;
+                                        for (int p = firstP; p <= lastP; p++) {
+                                            auto spd2 = shortestPaths((Piece::Type)p, captSq,
+                                                                      blocked, maxCapt);
+                                            int tmp = spd2->pathLen[promSq];
+                                            if (tmp >= 0)
+                                                cost2 = std::min(cost2, promCost + tmp);
+                                        }
+                                        pLen = std::min(pLen, cost2);
+                                    }
+                                }
+                            }
+                            cost = pLen;
+                            idx++;
+                        }
+                        as.setCost(f, t, cost);
+                    }
+                    if (captureSquares[c][idx] != -1)
+                        return INT_MAX;
                 }
                 const std::vector<int>& s = as.optWeightMatch();
                 for (int i = 0; i < N; i++)
