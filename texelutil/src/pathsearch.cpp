@@ -697,6 +697,17 @@ PathSearch::computeBlocked(const Position& pos, U64& blocked) const {
     return true;
 }
 
+#if 0
+template <typename T>
+static void printTable(const T* tbl) {
+    for (int y = 7; y >= 0; y--) {
+        for (int x = 0; x < 8; x++)
+            std::cout << ' ' << std::setw(2) << (int)tbl[y*8+x];
+        std::cout << '\n';
+    }
+}
+#endif
+
 std::shared_ptr<PathSearch::ShortestPathData>
 PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
     if (p != Piece::WPAWN && p != Piece::BPAWN)
@@ -714,31 +725,98 @@ PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
         spd->pathLen[i] = -1;
     spd->pathLen[toSq] = 0;
     U64 reached = 1ULL << toSq;
-    int dist = 1;
-    U64 newSquares = reached;
-    while (true) {
-        U64 neighbors = computeNeighbors(p, newSquares, blocked);
-        newSquares = neighbors & ~reached;
-        if (newSquares == 0)
-            break;
-        U64 m = newSquares;
-        while (m) {
-            int sq = BitBoard::extractSquare(m);
-            spd->pathLen[sq] = dist;
+
+    if (maxCapt < 6) { // pawn
+        if (maxCapt == 0) {
+            int sq = toSq;
+            int d = (p == Piece::WPAWN) ? -8 : 8;
+            int dist = 1;
+            while (true) {
+                sq += d;
+                if ((sq < 0) || (sq > 63) || (blocked & (1ULL << sq)))
+                    break;
+                spd->pathLen[sq] = dist;
+                reached |= 1ULL << sq;
+                if (Position::getY(sq) != ((d > 0) ? 5 : 2))
+                    dist++;
+            }
+        } else {
+            auto sub = shortestPaths(p, toSq, blocked, maxCapt-1);
+            auto minLen = [](int a, int b) {
+                if (b != -1)
+                    b++;
+                if (a == -1) return b;
+                if (b == -1) return a;
+                return std::min(a, b);
+            };
+            if (p == Piece::WPAWN) {
+                for (int y = Position::getY(toSq) - 1; y >= 0; y--) {
+                    bool newReached = false;
+                    for (int x = 0; x < 8; x++) {
+                        int sq = Position::getSquare(x, y);
+                        if (blocked & (1ULL << sq))
+                            continue;
+                        int best = sub->pathLen[sq];
+                        best = minLen(best, spd->pathLen[sq+8]);
+                        if ((y == 1) && !(blocked & (1ULL << (sq+8))))
+                            best = minLen(best, spd->pathLen[sq+16]);
+                        if (x > 0)
+                            best = minLen(best, sub->pathLen[sq+7]);
+                        if (x < 7)
+                            best = minLen(best, sub->pathLen[sq+9]);
+                        spd->pathLen[sq] = best;
+                        if (best != -1) {
+                            reached |= 1ULL << sq;
+                            newReached = true;
+                        }
+                    }
+                    if (!newReached)
+                        break;
+                }
+            } else {
+                for (int y = Position::getY(toSq) + 1; y < 8; y++) {
+                    bool newReached = false;
+                    for (int x = 0; x < 8; x++) {
+                        int sq = Position::getSquare(x, y);
+                        if (blocked & (1ULL << sq))
+                            continue;
+                        int best = sub->pathLen[sq];
+                        best = minLen(best, spd->pathLen[sq-8]);
+                        if ((y == 6) && !(blocked & (1ULL << (sq-8))))
+                            best = minLen(best, spd->pathLen[sq-16]);
+                        if (x > 0)
+                            best = minLen(best, sub->pathLen[sq-9]);
+                        if (x < 7)
+                            best = minLen(best, sub->pathLen[sq-7]);
+                        spd->pathLen[sq] = best;
+                        if (best != -1) {
+                            reached |= 1ULL << sq;
+                            newReached = true;
+                        }
+                    }
+                    if (!newReached)
+                        break;
+                }
+            }
         }
-        reached |= newSquares;
-        dist++;
+    } else {
+        int dist = 1;
+        U64 newSquares = reached;
+        while (true) {
+            U64 neighbors = computeNeighbors(p, newSquares, blocked);
+            newSquares = neighbors & ~reached;
+            if (newSquares == 0)
+                break;
+            U64 m = newSquares;
+            while (m) {
+                int sq = BitBoard::extractSquare(m);
+                spd->pathLen[sq] = dist;
+            }
+            reached |= newSquares;
+            dist++;
+        }
     }
     spd->fromSquares = reached;
-
-    if (maxCapt < 6) {
-        for (int x = 0; x < 8; x++)
-            if (std::abs(x - Position::getX(toSq)) > maxCapt) {
-                for (int y = 0; y < 8; y++)
-                    spd->pathLen[Position::getSquare(x, y)] = -1;
-                spd->fromSquares &= ~BitBoard::maskFile[x];
-            }
-    }
 
     entry.piece = p;
     entry.toSq = toSq;

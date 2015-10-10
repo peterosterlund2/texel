@@ -287,32 +287,82 @@ PathSearchTest::testShortestPath() {
 
     spd = ps.shortestPaths(Piece::WPAWN, TextIO::getSquare("d8"),
                            BitBoard::sqMask(D3,E2,F1), 8);
-    int expected[64] = {
-        -1,-1,-1, 0,-1,-1,-1,-1,
-        -1,-1, 1, 1, 1,-1,-1,-1,
-        -1, 2, 2, 2, 2, 2,-1,-1,
-         3, 3, 3, 3, 3, 3, 3,-1,
-         4, 4, 4, 4, 4, 4, 4, 4,
-         5, 5, 5,-1, 5, 5, 5, 5,
-         5, 5, 5, 6,-1, 5, 5, 5,
-         6, 6, 6, 6, 6,-1, 6, 6,
+    int expected[7][64] = {
+        {   -1,-1,-1, 0,-1,-1,-1,-1,
+            -1,-1,-1, 1,-1,-1,-1,-1,
+            -1,-1,-1, 2,-1,-1,-1,-1,
+            -1,-1,-1, 3,-1,-1,-1,-1,
+            -1,-1,-1, 4,-1,-1,-1,-1,
+            -1,-1,-1,-1,-1,-1,-1,-1,
+            -1,-1,-1,-1,-1,-1,-1,-1,
+            -1,-1,-1,-1,-1,-1,-1,-1,
+        },
+        {   -1,-1,-1, 0,-1,-1,-1,-1,
+            -1,-1, 1, 1, 1,-1,-1,-1,
+            -1,-1, 2, 2, 2,-1,-1,-1,
+            -1,-1, 3, 3, 3,-1,-1,-1,
+            -1,-1, 4, 4, 4,-1,-1,-1,
+            -1,-1, 5,-1, 5,-1,-1,-1,
+            -1,-1, 5,-1,-1,-1,-1,-1,
+            -1,-1, 6,-1,-1,-1,-1,-1,
+        },
+        {   -1,-1,-1, 0,-1,-1,-1,-1,
+            -1,-1, 1, 1, 1,-1,-1,-1,
+            -1, 2, 2, 2, 2, 2,-1,-1,
+            -1, 3, 3, 3, 3, 3,-1,-1,
+            -1, 4, 4, 4, 4, 4,-1,-1,
+            -1, 5, 5,-1, 5, 5,-1,-1,
+            -1, 5, 5, 6,-1, 5,-1,-1,
+            -1, 6, 6, 6,-1,-1,-1,-1,
+        },
+        {   -1,-1,-1, 0,-1,-1,-1,-1,
+            -1,-1, 1, 1, 1,-1,-1,-1,
+            -1, 2, 2, 2, 2, 2,-1,-1,
+             3, 3, 3, 3, 3, 3, 3,-1,
+             4, 4, 4, 4, 4, 4, 4,-1,
+             5, 5, 5,-1, 5, 5, 5,-1,
+             5, 5, 5, 6,-1, 5, 5,-1,
+             6, 6, 6, 6, 6,-1, 6,-1,
+        },
+        {   -1,-1,-1, 0,-1,-1,-1,-1,
+            -1,-1, 1, 1, 1,-1,-1,-1,
+            -1, 2, 2, 2, 2, 2,-1,-1,
+             3, 3, 3, 3, 3, 3, 3,-1,
+             4, 4, 4, 4, 4, 4, 4, 4,
+             5, 5, 5,-1, 5, 5, 5, 5,
+             5, 5, 5, 6,-1, 5, 5, 5,
+             6, 6, 6, 6, 6,-1, 6, 6,
+        },
+        {   -1,-1,-1, 0,-1,-1,-1,-1,
+            -1,-1, 1, 1, 1,-1,-1,-1,
+            -1, 2, 2, 2, 2, 2,-1,-1,
+             3, 3, 3, 3, 3, 3, 3,-1,
+             4, 4, 4, 4, 4, 4, 4, 4,
+             5, 5, 5,-1, 5, 5, 5, 5,
+             5, 5, 5, 6,-1, 5, 5, 5,
+             6, 6, 6, 6, 6,-1, 6, 6,
+        },
+        {   -1,-1,-1, 0,-1,-1,-1,-1,
+            -1,-1, 1, 1, 1,-1,-1,-1,
+            -1, 2, 2, 2, 2, 2,-1,-1,
+             3, 3, 3, 3, 3, 3, 3,-1,
+             4, 4, 4, 4, 4, 4, 4, 4,
+             5, 5, 5,-1, 5, 5, 5, 5,
+             5, 5, 5, 6,-1, 5, 5, 5,
+             6, 6, 6, 6, 6,-1, 6, 6, }
     };
     for (int i = 0; i < 64; i++) {
-        ASSERT_EQUAL(expected[Position::mirrorY(i)], (int)spd->pathLen[i]);
-        ASSERT_EQUAL(expected[Position::mirrorY(i)] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
+        ASSERT_EQUAL(expected[6][Position::mirrorY(i)], (int)spd->pathLen[i]);
+        ASSERT_EQUAL(expected[6][Position::mirrorY(i)] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
     }
 
     for (int maxCapt = 0; maxCapt < 8; maxCapt++) {
+        int tIdx = std::min(maxCapt, 6);
         spd = ps.shortestPaths(Piece::WPAWN, TextIO::getSquare("d8"),
                                BitBoard::sqMask(D3,E2,F1), maxCapt);
         for (int i = 0; i < 64; i++) {
             ASSERT_EQUAL(spd->pathLen[i] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
-            int x = Position::getX(i);
-            if (std::abs(x-3) > maxCapt) {
-                ASSERT_EQUAL(-1, (int)spd->pathLen[i]);
-            } else {
-                ASSERT_EQUAL(expected[Position::mirrorY(i)], (int)spd->pathLen[i]);
-            }
+            ASSERT_EQUAL(expected[tIdx][Position::mirrorY(i)], (int)spd->pathLen[i]);
         }
     }
 }
@@ -509,6 +559,14 @@ PathSearchTest::testReachable() {
     }
     { // Unreachable, no promotion possible, can not reach capture square
         PathSearch ps("rnbqkbn1/p1ppppp1/p4r2/8/8/8/PPPP1PP1/RNBQK1NR w KQq - 0 1");
+        ASSERT_EQUAL(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPB/RNBQK1NR w KQkq - 0 1"));
+    }
+    { // Unreachable, too many captures needed to be able to promote pawn to knight.
+        PathSearch ps("rnbq2nr/pppkb1pp/3pp3/8/8/8/PPPPPPP1/RNBQKBNR w KQ - 0 1");
+        ASSERT_EQUAL(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"));
+    }
+    {
+        PathSearch ps("rnbqkbn1/p1ppppp1/p7/8/8/8/PPP1PPP1/RNBQK1NR w KQq - 0 1");
         ASSERT_EQUAL(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPB/RNBQK1NR w KQkq - 0 1"));
     }
 }
