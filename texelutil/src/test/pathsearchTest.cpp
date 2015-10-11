@@ -256,6 +256,31 @@ PathSearchTest::testNeighbors() {
 }
 
 void
+PathSearchTest::comparePaths(Piece::Type p, int sq, U64 blocked, int maxMoves,
+                             const std::vector<int>& expected, bool testColorReversed) {
+    PathSearch ps(TextIO::startPosFEN);
+    auto spd = ps.shortestPaths(p, sq, blocked, maxMoves);
+    for (int i = 0; i < 64; i++) {
+        ASSERT_EQUAL(expected[Position::mirrorY(i)], (int)spd->pathLen[i]);
+        ASSERT_EQUAL(expected[Position::mirrorY(i)] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
+    }
+
+    if (testColorReversed) {
+        Piece::Type oP = (Piece::Type)(Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p));
+        int oSq = Position::getSquare(Position::getX(sq), 7 - Position::getY(sq));
+        U64 oBlocked = 0;
+        std::vector<int> oExpected(64);
+        for (int s = 0; s < 64; s++) {
+            int oS = Position::getSquare(Position::getX(s), 7 - Position::getY(s));
+            if ((1ULL << s) & blocked)
+                oBlocked |= (1ULL << oS);
+            oExpected[oS] = expected[s];
+        }
+        comparePaths(oP, oSq, oBlocked, maxMoves, oExpected, false);
+    }
+}
+
+void
 PathSearchTest::testShortestPath() {
     PathSearch ps(TextIO::startPosFEN);
     std::shared_ptr<PathSearch::ShortestPathData> spd;
@@ -287,7 +312,7 @@ PathSearchTest::testShortestPath() {
 
     spd = ps.shortestPaths(Piece::WPAWN, TextIO::getSquare("d8"),
                            BitBoard::sqMask(D3,E2,F1), 8);
-    int expected[7][64] = {
+    std::vector<int> expected[7] = {
         {   -1,-1,-1, 0,-1,-1,-1,-1,
             -1,-1,-1, 1,-1,-1,-1,-1,
             -1,-1,-1, 2,-1,-1,-1,-1,
@@ -351,19 +376,25 @@ PathSearchTest::testShortestPath() {
              5, 5, 5, 6,-1, 5, 5, 5,
              6, 6, 6, 6, 6,-1, 6, 6, }
     };
-    for (int i = 0; i < 64; i++) {
-        ASSERT_EQUAL(expected[6][Position::mirrorY(i)], (int)spd->pathLen[i]);
-        ASSERT_EQUAL(expected[6][Position::mirrorY(i)] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
+    for (int maxCapt = 0; maxCapt < 16; maxCapt++) {
+        int tIdx = std::min(maxCapt, 6);
+        comparePaths(Piece::WPAWN, TextIO::getSquare("d8"), BitBoard::sqMask(D3,E2,F1),
+                     maxCapt, expected[tIdx]);
     }
 
-    for (int maxCapt = 0; maxCapt < 8; maxCapt++) {
-        int tIdx = std::min(maxCapt, 6);
-        spd = ps.shortestPaths(Piece::WPAWN, TextIO::getSquare("d8"),
-                               BitBoard::sqMask(D3,E2,F1), maxCapt);
-        for (int i = 0; i < 64; i++) {
-            ASSERT_EQUAL(spd->pathLen[i] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
-            ASSERT_EQUAL(expected[tIdx][Position::mirrorY(i)], (int)spd->pathLen[i]);
-        }
+    {
+        std::vector<int> expected = {
+            -1,-1,-1,-1,-1,-1,-1,-1,
+            -1,-1,-1,-1,-1,-1,-1,-1,
+            -1,-1,-1,-1,-1,-1,-1,-1,
+            -1,-1,-1,-1,-1,-1,-1, 0,
+            -1,-1,-1,-1,-1,-1, 1, 1,
+            -1,-1,-1,-1,-1, 2,-1,-1,
+            -1,-1,-1,-1, 3, 3, 3,-1,
+            -1,-1,-1,-1, 4, 4, 4,-1,
+        };
+        comparePaths(Piece::WPAWN, TextIO::getSquare("h5"),
+                     BitBoard::sqMask(G3,H3), 3, expected);
     }
 }
 

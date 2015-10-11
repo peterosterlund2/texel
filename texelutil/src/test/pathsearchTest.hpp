@@ -27,6 +27,8 @@
 #define PATHSEARCHTEST_HPP_
 
 #include "utilSuiteBase.hpp"
+#include "piece.hpp"
+#include "util/util.hpp"
 
 class Position;
 class PathSearch;
@@ -39,6 +41,8 @@ public:
 private:
     static void checkBlockedConsistency(PathSearch& ps, Position& pos);
     static int hScore(PathSearch& ps, const std::string& fen, bool testMirrorY = true);
+    static void comparePaths(Piece::Type p, int sq, U64 blocked, int maxMoves,
+                             const std::vector<int>& expected, bool testColorReversed = true);
 
     static void testMaterial();
     static void testNeighbors();
