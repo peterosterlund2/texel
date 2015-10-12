@@ -254,10 +254,11 @@ PathSearch::getSolution(const Position& startPos, int idx, std::vector<Move>& mo
             pos.unMakeMove(moves[i], ui);
         }
     };
-    std::cout << nodes[idx].ply << ": ";
+    movePath.clear();
     getMoves(idx);
     if (!epMove.isEmpty())
         movePath.push_back(epMove);
+    std::cout << nodes[idx].ply << ": ";
     Position pos = startPos;
     UndoInfo ui;
     for (size_t i = 0; i < movePath.size(); i++) {
