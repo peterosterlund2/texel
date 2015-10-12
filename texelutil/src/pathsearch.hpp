@@ -77,6 +77,23 @@ private:
      * reached from pos. */
     int distLowerBound(const Position& pos);
 
+    /** Return true if there are enough remaining pieces to reach goalPos. */
+    bool enoughRemainingPieces(int pieceCnt[]) const;
+
+    /** Compute number of required captures to get pawns into correct files.
+     * Check that excess material can satisfy both required captures and
+     * required pawn promotions. */
+    bool capturesFeasible(const Position& pos, int pieceCnt[],
+                          int numWhiteExtraPieces, int numBlackExtraPieces,
+                          int excessWPawns, int excessBPawns);
+
+    /** Compute lower bound of number of needed moves for white/black.
+     * Return false if it is discovered that goalPos is not reachable. */
+    bool computeNeededMoves(const Position& pos, U64 blocked,
+                            int numWhiteExtraPieces, int numBlackExtraPieces,
+                            int excessWPawns, int excessBPawns,
+                            int neededMoves[]);
+
     /** Compute blocked pieces in a position. A block piece is a piece that
      *  can not move without making it impossible to reach the goal position.
      *  If false is returned, it is impossible to reach goalPos from pos. */

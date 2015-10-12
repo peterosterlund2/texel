@@ -269,46 +269,17 @@ PathSearch::getSolution(const Position& startPos, int idx, std::vector<Move>& mo
     std::cout << std::endl;
 }
 
+
+// --------------------------------------------------------------------------------
+
 int
 PathSearch::distLowerBound(const Position& pos) {
     int pieceCnt[Piece::nPieceTypes];
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
         pieceCnt[p] = BitBoard::bitCount(pos.pieceTypeBB((Piece::Type)p));
 
-    // Make sure there are enough remaining pieces
-    {
-        int wProm = pieceCnt[Piece::WPAWN] - goalPieceCnt[Piece::WPAWN];
-        if (wProm < 0)
-            return INT_MAX;
-        wProm -= std::max(0, goalPieceCnt[Piece::WQUEEN] - pieceCnt[Piece::WQUEEN]);
-        if (wProm < 0)
-            return INT_MAX;
-        wProm -= std::max(0, goalPieceCnt[Piece::WROOK] - pieceCnt[Piece::WROOK]);
-        if (wProm < 0)
-            return INT_MAX;
-        wProm -= std::max(0, goalPieceCnt[Piece::WBISHOP] - pieceCnt[Piece::WBISHOP]);
-        if (wProm < 0)
-            return INT_MAX;
-        wProm -= std::max(0, goalPieceCnt[Piece::WKNIGHT] - pieceCnt[Piece::WKNIGHT]);
-        if (wProm < 0)
-            return INT_MAX;
-
-        int bProm = pieceCnt[Piece::BPAWN] - goalPieceCnt[Piece::BPAWN];
-        if (bProm < 0)
-            return INT_MAX;
-        bProm -= std::max(0, goalPieceCnt[Piece::BQUEEN] - pieceCnt[Piece::BQUEEN]);
-        if (bProm < 0)
-            return INT_MAX;
-        bProm -= std::max(0, goalPieceCnt[Piece::BROOK] - pieceCnt[Piece::BROOK]);
-        if (bProm < 0)
-            return INT_MAX;
-        bProm -= std::max(0, goalPieceCnt[Piece::BBISHOP] - pieceCnt[Piece::BBISHOP]);
-        if (bProm < 0)
-            return INT_MAX;
-        bProm -= std::max(0, goalPieceCnt[Piece::BKNIGHT] - pieceCnt[Piece::BKNIGHT]);
-        if (bProm < 0)
-            return INT_MAX;
-    }
+    if (!enoughRemainingPieces(pieceCnt))
+        return INT_MAX;
 
     U64 blocked;
     if (!computeBlocked(pos, blocked))
@@ -321,271 +292,20 @@ PathSearch::distLowerBound(const Position& pos) {
     const int excessWPawns = pieceCnt[Piece::WPAWN] - goalPieceCnt[Piece::WPAWN];
     const int excessBPawns = pieceCnt[Piece::BPAWN] - goalPieceCnt[Piece::BPAWN];
 
-    // Compute number of required captures to get pawns into correct files.
-    // Check that excess material can satisfy both required captures and
-    // required pawn promotions.
-    {
-        const int bigCost = 1000;
-        for (int c = 0; c < 2; c++) {
-            const Piece::Type  p = (c == 0) ? Piece::WPAWN : Piece::BPAWN;
-            Assignment<int>& as = captureAP[c];
-            U64 from = pos.pieceTypeBB(p);
-            int fi = 0;
-            while (from) {
-                int fromSq = BitBoard::extractSquare(from);
-                U64 to = goalPos.pieceTypeBB(p);
-                int ti = 0;
-                while (to) {
-                    int toSq = BitBoard::extractSquare(to);
-                    int d = std::abs(Position::getX(fromSq) - Position::getX(toSq));
-                    as.setCost(fi, ti, d);
-                    ti++;
-                }
-                for ( ; ti < 8; ti++)
-                    as.setCost(fi, ti, 0);    // sq -> captured, no cost
-                fi++;
-            }
-            for (; fi < 8; fi++) {
-                int ti;
-                for (ti = 0; ti < goalPieceCnt[p]; ti++)
-                    as.setCost(fi, ti, bigCost); // captured -> sq, not possible
-                for ( ; ti < 8; ti++)
-                    as.setCost(fi, ti, 0);       // captured -> captured, no cost
-            }
-
-            const std::vector<int>& s = as.optWeightMatch();
-            int cost = 0;
-            for (int i = 0; i < 8; i++)
-                cost += as.getCost(i, s[i]);
-            if (c == 0) {
-                int neededBCaptured = cost;
-                if (neededBCaptured > numBlackExtraPieces)
-                    return INT_MAX;
-
-                int neededBProm = (std::max(0, goalPieceCnt[Piece::BQUEEN]  - pieceCnt[Piece::BQUEEN]) +
-                                   std::max(0, goalPieceCnt[Piece::BROOK]   - pieceCnt[Piece::BROOK]) +
-                                   std::max(0, goalPieceCnt[Piece::BBISHOP] - pieceCnt[Piece::BBISHOP]) +
-                                   std::max(0, goalPieceCnt[Piece::BKNIGHT] - pieceCnt[Piece::BKNIGHT]));
-                int excessBPieces = (std::max(0, pieceCnt[Piece::BQUEEN]  - goalPieceCnt[Piece::BQUEEN]) +
-                                     std::max(0, pieceCnt[Piece::BROOK]   - goalPieceCnt[Piece::BROOK]) +
-                                     std::max(0, pieceCnt[Piece::BBISHOP] - goalPieceCnt[Piece::BBISHOP]) +
-                                     std::max(0, pieceCnt[Piece::BKNIGHT] - goalPieceCnt[Piece::BKNIGHT]));
-                if (neededBCaptured + neededBProm > excessBPawns + excessBPieces)
-                    return INT_MAX;
-            } else {
-                int neededWCaptured = cost;
-                if (neededWCaptured > numWhiteExtraPieces)
-                    return INT_MAX;
-
-                int neededWProm = (std::max(0, goalPieceCnt[Piece::WQUEEN]  - pieceCnt[Piece::WQUEEN]) +
-                                   std::max(0, goalPieceCnt[Piece::WROOK]   - pieceCnt[Piece::WROOK]) +
-                                   std::max(0, goalPieceCnt[Piece::WBISHOP] - pieceCnt[Piece::WBISHOP]) +
-                                   std::max(0, goalPieceCnt[Piece::WKNIGHT] - pieceCnt[Piece::WKNIGHT]));
-                int excessWPieces = (std::max(0, pieceCnt[Piece::WQUEEN]  - goalPieceCnt[Piece::WQUEEN]) +
-                                     std::max(0, pieceCnt[Piece::WROOK]   - goalPieceCnt[Piece::WROOK]) +
-                                     std::max(0, pieceCnt[Piece::WBISHOP] - goalPieceCnt[Piece::WBISHOP]) +
-                                     std::max(0, pieceCnt[Piece::WKNIGHT] - goalPieceCnt[Piece::WKNIGHT]));
-
-                if (neededWCaptured + neededWProm > excessWPawns + excessWPieces)
-                    return INT_MAX;
-            }
-        }
-    }
+    if (!capturesFeasible(pos, pieceCnt, numWhiteExtraPieces, numBlackExtraPieces,
+                          excessWPawns, excessBPawns))
+        return INT_MAX;
 
     int neededMoves[2] = {0, 0};
-    {
-        struct SqPathData {
-            SqPathData() : square(-1) {}
-            SqPathData(int s, const std::shared_ptr<ShortestPathData>& d)
-                : square(s), spd(d) {}
-            int square;
-            std::shared_ptr<ShortestPathData> spd;
-        };
-        std::vector<SqPathData> pending, completed;
-        U64 pieces = goalPos.occupiedBB() & ~blocked;
-        while (pieces) {
-            int sq = BitBoard::extractSquare(pieces);
-            pending.emplace_back(sq, nullptr);
-        }
-        SqPathData promPath[2][8]; // Pawn cost to each possible promotion square
-        while (!pending.empty()) {
-            const auto e = pending.back();
-            pending.pop_back();
-            const int sq = e.square;
-            const Piece::Type p = (Piece::Type)goalPos.getPiece(sq);
-            const bool wtm = Piece::isWhite(p);
-            const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
-            auto spd = shortestPaths(p, sq, blocked, maxCapt);
-            bool testPromote = false;
-            switch (p) {
-            case Piece::WQUEEN: case Piece::WROOK: case Piece::WBISHOP: case Piece::WKNIGHT:
-                if (wtm && Position::getY(sq) == 7)
-                    testPromote = true;
-                break;
-            case Piece::BQUEEN: case Piece::BROOK: case Piece::BBISHOP: case Piece::BKNIGHT:
-                if (!wtm && Position::getY(sq) == 0)
-                    testPromote = true;
-                break;
-            default:
-                break;
-            }
-            bool promotionPossible = false;
-            if (testPromote) {
-                int c = wtm ? 0 : 1;
-                int x = Position::getX(sq);
-                Piece::Type pawn = wtm ? Piece::WPAWN : Piece::BPAWN;
-                if (!promPath[c][x].spd)
-                    promPath[c][x].spd = shortestPaths(pawn,
-                                                       sq, blocked, maxCapt);
-                if (promPath[c][x].spd->fromSquares & pos.pieceTypeBB(pawn))
-                    promotionPossible = true;
-            }
-            if ((spd->fromSquares == (1ULL << sq)) && !promotionPossible) {
-                if (pos.getPiece(sq) != p)
-                    return INT_MAX;
-                blocked |= 1ULL << sq;
-                pending.insert(pending.end(), completed.begin(), completed.end());
-                completed.clear();
-                for (int c = 0; c < 2; c++)
-                    for (int x = 0; x < 8; x++)
-                        promPath[c][x].spd = nullptr;
-            } else {
-                completed.emplace_back(sq, spd);
-            }
-        }
-
-        // Compute squares where pieces have to be captured
-        int captureSquares[2][16]; // [c][idx], -1 terminated. Squares where pieces need to be captured
-        for (int c = 0; c < 2; c++) {
-            const bool whiteToBeCaptured = (c == 0);
-            const Piece::Type pawn = whiteToBeCaptured ? Piece::BPAWN : Piece::WPAWN;
-            U64 capt = goalPos.pieceTypeBB(pawn) & ~pos.pieceTypeBB(pawn);
-            capt &= whiteToBeCaptured ? (blocked >> 8) : (blocked << 8);
-            int idx = 0;
-            while (capt)
-                captureSquares[c][idx++] = BitBoard::extractSquare(capt);
-            captureSquares[c][idx++] = -1;
-        }
-
-        for (int c = 0; c < 2; c++) {
-            const bool wtm = (c == 0);
-            const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
-            int cost = 0;
-            U64 fromPieces = (wtm ? pos.whiteBB() : pos.blackBB()) & ~blocked;
-            int N = BitBoard::bitCount(fromPieces);
-            if (N > 0) {
-                assert(N <= maxMoveAPSize);
-                Assignment<int>& as = moveAP[c][N];
-                const int bigCost = 1000;
-                for (int f = 0; f < N; f++) {
-                    assert(fromPieces != 0);
-                    int fromSq = BitBoard::extractSquare(fromPieces);
-                    bool canPromote = wtm ? (excessWPawns > 0) && (pos.getPiece(fromSq) == Piece::WPAWN)
-                                          : (excessBPawns > 0) && (pos.getPiece(fromSq) == Piece::BPAWN);
-                    int t = 0;
-                    for (size_t ci = 0; ci < completed.size(); ci++) {
-                        int toSq = completed[ci].square;
-                        int p = goalPos.getPiece(toSq);
-                        if (Piece::isWhite(p) == wtm) {
-                            assert(t < N);
-                            int pLen;
-                            if (p == pos.getPiece(fromSq)) {
-                                pLen = completed[ci].spd->pathLen[fromSq];
-                                if (pLen < 0)
-                                    pLen = bigCost;
-                            } else
-                                pLen = bigCost;
-                            if (canPromote) {
-                                switch (p) {
-                                case Piece::WQUEEN: case Piece::BQUEEN:
-                                case Piece::WROOK: case Piece::BROOK:
-                                case Piece::WBISHOP: case Piece::BBISHOP:
-                                case Piece::WKNIGHT: case Piece::BKNIGHT: {
-                                    int cost2 = INT_MAX;
-                                    for (int x = 0; x < 8; x++) {
-                                        int promSq = wtm ? 7*8 + x : x;
-                                        if (!promPath[c][x].spd)
-                                            promPath[c][x].spd =
-                                                shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
-                                                              promSq, blocked, maxCapt);
-                                        int promCost = promPath[c][x].spd->pathLen[fromSq];
-                                        if (promCost >= 0) {
-                                            int tmp = completed[ci].spd->pathLen[promSq];
-                                            if (tmp >= 0)
-                                                cost2 = std::min(cost2, promCost + tmp);
-                                        }
-                                    }
-                                    pLen = std::min(pLen, cost2);
-                                    break;
-                                }
-                                default:
-                                    break;
-                                }
-                            }
-                            as.setCost(f, t, pLen < 0 ? bigCost : pLen);
-                            t++;
-                        }
-                    }
-
-                    // Handle pieces to be captured
-                    int idx = 0;
-                    for (; t < N; t++) {
-                        int cost = 0;
-                        int captSq = captureSquares[c][idx];
-                        if (captSq >= 0) {
-                            auto spd = shortestPaths((Piece::Type)pos.getPiece(fromSq), captSq,
-                                                     blocked, maxCapt);
-                            int pLen = spd->pathLen[fromSq];
-                            if (pLen < 0)
-                                pLen = bigCost;
-                            int fromP = pos.getPiece(fromSq);
-                            if (canPromote && (fromP == Piece::WPAWN || fromP == Piece::BPAWN)) {
-                                int firstP = wtm ? Piece::WQUEEN : Piece::BQUEEN;
-                                int lastP = wtm ? Piece::WKNIGHT : Piece::BKNIGHT;
-                                for (int x = 0; x < 8; x++) {
-                                    int promSq = wtm ? 7*8 + x : x;
-                                    if (!promPath[c][x].spd)
-                                        promPath[c][x].spd =
-                                            shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
-                                                          promSq, blocked, maxCapt);
-                                    int promCost = promPath[c][x].spd->pathLen[fromSq];
-                                    if (promCost >= 0 && promCost < pLen) {
-                                        int cost2 = INT_MAX;
-                                        for (int p = firstP; p <= lastP; p++) {
-                                            auto spd2 = shortestPaths((Piece::Type)p, captSq,
-                                                                      blocked, maxCapt);
-                                            int tmp = spd2->pathLen[promSq];
-                                            if (tmp >= 0)
-                                                cost2 = std::min(cost2, promCost + tmp);
-                                        }
-                                        pLen = std::min(pLen, cost2);
-                                    }
-                                }
-                            }
-                            cost = pLen;
-                            idx++;
-                        }
-                        as.setCost(f, t, cost);
-                    }
-                    if (captureSquares[c][idx] != -1)
-                        return INT_MAX;
-                }
-                const std::vector<int>& s = as.optWeightMatch();
-                for (int i = 0; i < N; i++)
-                    cost += as.getCost(i, s[i]);
-                if (cost >= bigCost)
-                    return INT_MAX;
-            }
-            neededMoves[c] = cost;
-        }
-    }
+    if (!computeNeededMoves(pos, blocked, numWhiteExtraPieces, numBlackExtraPieces,
+                            excessWPawns, excessBPawns, neededMoves))
+        return INT_MAX;
 
     // Compute number of needed moves to perform all captures
     int nBlackToCapture = BitBoard::bitCount(pos.blackBB()) - BitBoard::bitCount(goalPos.blackBB());
     int nWhiteToCapture = BitBoard::bitCount(pos.whiteBB()) - BitBoard::bitCount(goalPos.whiteBB());
     neededMoves[0] = std::max(neededMoves[0], nBlackToCapture);
     neededMoves[1] = std::max(neededMoves[1], nWhiteToCapture);
-
 
     // Compute number of needed plies from number of needed white/black moves
     int wNeededPlies = neededMoves[0] * 2;
@@ -601,15 +321,305 @@ PathSearch::distLowerBound(const Position& pos) {
     int ret = std::max(wNeededPlies, bNeededPlies);
     assert(ret >= 0);
     return ret;
+}
 
+bool
+PathSearch::enoughRemainingPieces(int pieceCnt[]) const {
+    int wProm = pieceCnt[Piece::WPAWN] - goalPieceCnt[Piece::WPAWN];
+    if (wProm < 0)
+        return false;
+    wProm -= std::max(0, goalPieceCnt[Piece::WQUEEN] - pieceCnt[Piece::WQUEEN]);
+    if (wProm < 0)
+        return false;
+    wProm -= std::max(0, goalPieceCnt[Piece::WROOK] - pieceCnt[Piece::WROOK]);
+    if (wProm < 0)
+        return false;
+    wProm -= std::max(0, goalPieceCnt[Piece::WBISHOP] - pieceCnt[Piece::WBISHOP]);
+    if (wProm < 0)
+        return false;
+    wProm -= std::max(0, goalPieceCnt[Piece::WKNIGHT] - pieceCnt[Piece::WKNIGHT]);
+    if (wProm < 0)
+        return false;
 
-    // Note that shortest path can involve castling moves.
+    int bProm = pieceCnt[Piece::BPAWN] - goalPieceCnt[Piece::BPAWN];
+    if (bProm < 0)
+        return false;
+    bProm -= std::max(0, goalPieceCnt[Piece::BQUEEN] - pieceCnt[Piece::BQUEEN]);
+    if (bProm < 0)
+        return false;
+    bProm -= std::max(0, goalPieceCnt[Piece::BROOK] - pieceCnt[Piece::BROOK]);
+    if (bProm < 0)
+        return false;
+    bProm -= std::max(0, goalPieceCnt[Piece::BBISHOP] - pieceCnt[Piece::BBISHOP]);
+    if (bProm < 0)
+        return false;
+    bProm -= std::max(0, goalPieceCnt[Piece::BKNIGHT] - pieceCnt[Piece::BKNIGHT]);
+    if (bProm < 0)
+        return false;
+    return true;
+}
 
-    // Note that extra moves can be needed to get rid of unwanted castling flags.
+bool
+PathSearch::capturesFeasible(const Position& pos, int pieceCnt[],
+                             int numWhiteExtraPieces, int numBlackExtraPieces,
+                             int excessWPawns, int excessBPawns) {
+    const int bigCost = 1000;
+    for (int c = 0; c < 2; c++) {
+        const Piece::Type  p = (c == 0) ? Piece::WPAWN : Piece::BPAWN;
+        Assignment<int>& as = captureAP[c];
+        U64 from = pos.pieceTypeBB(p);
+        int fi = 0;
+        while (from) {
+            int fromSq = BitBoard::extractSquare(from);
+            U64 to = goalPos.pieceTypeBB(p);
+            int ti = 0;
+            while (to) {
+                int toSq = BitBoard::extractSquare(to);
+                int d = std::abs(Position::getX(fromSq) - Position::getX(toSq));
+                as.setCost(fi, ti, d);
+                ti++;
+            }
+            for ( ; ti < 8; ti++)
+                as.setCost(fi, ti, 0);    // sq -> captured, no cost
+            fi++;
+        }
+        for (; fi < 8; fi++) {
+            int ti;
+            for (ti = 0; ti < goalPieceCnt[p]; ti++)
+                as.setCost(fi, ti, bigCost); // captured -> sq, not possible
+            for ( ; ti < 8; ti++)
+                as.setCost(fi, ti, 0);       // captured -> captured, no cost
+        }
 
-    // Bn1qk2B/1pppppp1/8/8/8/8/PPP2PPP/RN1QK1NR w KQ - 0 1
-    //   Unreachable, 6 captures needed to promote. 7 captures available, but
-    //   the 2 bishop captures can not help white to promote.
+        const std::vector<int>& s = as.optWeightMatch();
+        int cost = 0;
+        for (int i = 0; i < 8; i++)
+            cost += as.getCost(i, s[i]);
+        if (c == 0) {
+            int neededBCaptured = cost;
+            if (neededBCaptured > numBlackExtraPieces)
+                return false;
+
+            int neededBProm = (std::max(0, goalPieceCnt[Piece::BQUEEN]  - pieceCnt[Piece::BQUEEN]) +
+                               std::max(0, goalPieceCnt[Piece::BROOK]   - pieceCnt[Piece::BROOK]) +
+                               std::max(0, goalPieceCnt[Piece::BBISHOP] - pieceCnt[Piece::BBISHOP]) +
+                               std::max(0, goalPieceCnt[Piece::BKNIGHT] - pieceCnt[Piece::BKNIGHT]));
+            int excessBPieces = (std::max(0, pieceCnt[Piece::BQUEEN]  - goalPieceCnt[Piece::BQUEEN]) +
+                                 std::max(0, pieceCnt[Piece::BROOK]   - goalPieceCnt[Piece::BROOK]) +
+                                 std::max(0, pieceCnt[Piece::BBISHOP] - goalPieceCnt[Piece::BBISHOP]) +
+                                 std::max(0, pieceCnt[Piece::BKNIGHT] - goalPieceCnt[Piece::BKNIGHT]));
+            if (neededBCaptured + neededBProm > excessBPawns + excessBPieces)
+                return false;
+        } else {
+            int neededWCaptured = cost;
+            if (neededWCaptured > numWhiteExtraPieces)
+                return false;
+
+            int neededWProm = (std::max(0, goalPieceCnt[Piece::WQUEEN]  - pieceCnt[Piece::WQUEEN]) +
+                               std::max(0, goalPieceCnt[Piece::WROOK]   - pieceCnt[Piece::WROOK]) +
+                               std::max(0, goalPieceCnt[Piece::WBISHOP] - pieceCnt[Piece::WBISHOP]) +
+                               std::max(0, goalPieceCnt[Piece::WKNIGHT] - pieceCnt[Piece::WKNIGHT]));
+            int excessWPieces = (std::max(0, pieceCnt[Piece::WQUEEN]  - goalPieceCnt[Piece::WQUEEN]) +
+                                 std::max(0, pieceCnt[Piece::WROOK]   - goalPieceCnt[Piece::WROOK]) +
+                                 std::max(0, pieceCnt[Piece::WBISHOP] - goalPieceCnt[Piece::WBISHOP]) +
+                                 std::max(0, pieceCnt[Piece::WKNIGHT] - goalPieceCnt[Piece::WKNIGHT]));
+
+            if (neededWCaptured + neededWProm > excessWPawns + excessWPieces)
+                return false;
+        }
+    }
+    return true;
+}
+
+bool
+PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
+                               int numWhiteExtraPieces, int numBlackExtraPieces,
+                               int excessWPawns, int excessBPawns,
+                               int neededMoves[]) {
+    struct SqPathData {
+        SqPathData() : square(-1) {}
+        SqPathData(int s, const std::shared_ptr<ShortestPathData>& d)
+            : square(s), spd(d) {}
+        int square;
+        std::shared_ptr<ShortestPathData> spd;
+    };
+    std::vector<SqPathData> pending, completed;
+    U64 pieces = goalPos.occupiedBB() & ~blocked;
+    while (pieces) {
+        int sq = BitBoard::extractSquare(pieces);
+        pending.emplace_back(sq, nullptr);
+    }
+    SqPathData promPath[2][8]; // Pawn cost to each possible promotion square
+    while (!pending.empty()) {
+        const auto e = pending.back();
+        pending.pop_back();
+        const int sq = e.square;
+        const Piece::Type p = (Piece::Type)goalPos.getPiece(sq);
+        const bool wtm = Piece::isWhite(p);
+        const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
+        auto spd = shortestPaths(p, sq, blocked, maxCapt);
+        bool testPromote = false;
+        switch (p) {
+        case Piece::WQUEEN: case Piece::WROOK: case Piece::WBISHOP: case Piece::WKNIGHT:
+            if (wtm && Position::getY(sq) == 7)
+                testPromote = true;
+            break;
+        case Piece::BQUEEN: case Piece::BROOK: case Piece::BBISHOP: case Piece::BKNIGHT:
+            if (!wtm && Position::getY(sq) == 0)
+                testPromote = true;
+            break;
+        default:
+            break;
+        }
+        bool promotionPossible = false;
+        if (testPromote) {
+            int c = wtm ? 0 : 1;
+            int x = Position::getX(sq);
+            Piece::Type pawn = wtm ? Piece::WPAWN : Piece::BPAWN;
+            if (!promPath[c][x].spd)
+                promPath[c][x].spd = shortestPaths(pawn, sq, blocked, maxCapt);
+            if (promPath[c][x].spd->fromSquares & pos.pieceTypeBB(pawn))
+                promotionPossible = true;
+        }
+        if ((spd->fromSquares == (1ULL << sq)) && !promotionPossible) {
+            if (pos.getPiece(sq) != p)
+                return false;
+            blocked |= 1ULL << sq;
+            pending.insert(pending.end(), completed.begin(), completed.end());
+            completed.clear();
+            for (int c = 0; c < 2; c++)
+                for (int x = 0; x < 8; x++)
+                    promPath[c][x].spd = nullptr;
+        } else {
+            completed.emplace_back(sq, spd);
+        }
+    }
+
+    // Compute squares where pieces have to be captured
+    int captureSquares[2][16]; // [c][idx], -1 terminated. Squares where pieces need to be captured
+    for (int c = 0; c < 2; c++) {
+        const bool whiteToBeCaptured = (c == 0);
+        const Piece::Type pawn = whiteToBeCaptured ? Piece::BPAWN : Piece::WPAWN;
+        U64 capt = goalPos.pieceTypeBB(pawn) & ~pos.pieceTypeBB(pawn);
+        capt &= whiteToBeCaptured ? (blocked >> 8) : (blocked << 8);
+        int idx = 0;
+        while (capt)
+            captureSquares[c][idx++] = BitBoard::extractSquare(capt);
+        captureSquares[c][idx++] = -1;
+    }
+
+    for (int c = 0; c < 2; c++) {
+        const bool wtm = (c == 0);
+        const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
+        int cost = 0;
+        U64 fromPieces = (wtm ? pos.whiteBB() : pos.blackBB()) & ~blocked;
+        int N = BitBoard::bitCount(fromPieces);
+        if (N > 0) {
+            assert(N <= maxMoveAPSize);
+            Assignment<int>& as = moveAP[c][N];
+            const int bigCost = 1000;
+            for (int f = 0; f < N; f++) {
+                assert(fromPieces != 0);
+                int fromSq = BitBoard::extractSquare(fromPieces);
+                bool canPromote = wtm ? (excessWPawns > 0) && (pos.getPiece(fromSq) == Piece::WPAWN)
+                    : (excessBPawns > 0) && (pos.getPiece(fromSq) == Piece::BPAWN);
+                int t = 0;
+                for (size_t ci = 0; ci < completed.size(); ci++) {
+                    int toSq = completed[ci].square;
+                    int p = goalPos.getPiece(toSq);
+                    if (Piece::isWhite(p) == wtm) {
+                        assert(t < N);
+                        int pLen;
+                        if (p == pos.getPiece(fromSq)) {
+                            pLen = completed[ci].spd->pathLen[fromSq];
+                            if (pLen < 0)
+                                pLen = bigCost;
+                        } else
+                            pLen = bigCost;
+                        if (canPromote) {
+                            switch (p) {
+                            case Piece::WQUEEN: case Piece::BQUEEN:
+                            case Piece::WROOK: case Piece::BROOK:
+                            case Piece::WBISHOP: case Piece::BBISHOP:
+                            case Piece::WKNIGHT: case Piece::BKNIGHT: {
+                                int cost2 = INT_MAX;
+                                for (int x = 0; x < 8; x++) {
+                                    int promSq = wtm ? 7*8 + x : x;
+                                    if (!promPath[c][x].spd)
+                                        promPath[c][x].spd =
+                                            shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
+                                                          promSq, blocked, maxCapt);
+                                    int promCost = promPath[c][x].spd->pathLen[fromSq];
+                                    if (promCost >= 0) {
+                                        int tmp = completed[ci].spd->pathLen[promSq];
+                                        if (tmp >= 0)
+                                            cost2 = std::min(cost2, promCost + tmp);
+                                    }
+                                }
+                                pLen = std::min(pLen, cost2);
+                                break;
+                            }
+                            default:
+                                break;
+                            }
+                        }
+                        as.setCost(f, t, pLen < 0 ? bigCost : pLen);
+                        t++;
+                    }
+                }
+
+                // Handle pieces to be captured
+                int idx = 0;
+                for (; t < N; t++) {
+                    int cost = 0;
+                    int captSq = captureSquares[c][idx];
+                    if (captSq >= 0) {
+                        auto spd = shortestPaths((Piece::Type)pos.getPiece(fromSq), captSq,
+                                                 blocked, maxCapt);
+                        int pLen = spd->pathLen[fromSq];
+                        if (pLen < 0)
+                            pLen = bigCost;
+                        int fromP = pos.getPiece(fromSq);
+                        if (canPromote && (fromP == Piece::WPAWN || fromP == Piece::BPAWN)) {
+                            int firstP = wtm ? Piece::WQUEEN : Piece::BQUEEN;
+                            int lastP = wtm ? Piece::WKNIGHT : Piece::BKNIGHT;
+                            for (int x = 0; x < 8; x++) {
+                                int promSq = wtm ? 7*8 + x : x;
+                                if (!promPath[c][x].spd)
+                                    promPath[c][x].spd =
+                                        shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
+                                                      promSq, blocked, maxCapt);
+                                int promCost = promPath[c][x].spd->pathLen[fromSq];
+                                if (promCost >= 0 && promCost < pLen) {
+                                    int cost2 = INT_MAX;
+                                    for (int p = firstP; p <= lastP; p++) {
+                                        auto spd2 = shortestPaths((Piece::Type)p, captSq,
+                                                                  blocked, maxCapt);
+                                        int tmp = spd2->pathLen[promSq];
+                                        if (tmp >= 0)
+                                            cost2 = std::min(cost2, promCost + tmp);
+                                    }
+                                    pLen = std::min(pLen, cost2);
+                                }
+                            }
+                        }
+                        cost = pLen;
+                        idx++;
+                    }
+                    as.setCost(f, t, cost);
+                }
+                if (captureSquares[c][idx] != -1)
+                    return false;
+            }
+            const std::vector<int>& s = as.optWeightMatch();
+            for (int i = 0; i < N; i++)
+                cost += as.getCost(i, s[i]);
+            if (cost >= bigCost)
+                return false;
+        }
+        neededMoves[c] = cost;
+    }
+    return true;
 }
 
 bool
@@ -696,6 +706,8 @@ PathSearch::computeBlocked(const Position& pos, U64& blocked) const {
 
     return true;
 }
+
+// --------------------------------------------------------------------------------
 
 #if 0
 template <typename T>
