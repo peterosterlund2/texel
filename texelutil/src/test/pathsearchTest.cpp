@@ -486,6 +486,11 @@ PathSearchTest::testPawnReachable() {
         PathSearch ps("rnbqkbnr/p1pppppp/p7/8/8/3P4/PPP1PPPP/RN1QKBNR w KQkq - 0 1");
         ASSERT_EQUAL(INT_MAX, hScore(ps, TextIO::startPosFEN));
     }
+
+    { // Reachable by en passant capture
+        PathSearch ps("rnbqkbnr/p1pppppp/8/8/8/2p5/PP1PPPPP/RNBQKBNR w KQkq - 0 1");
+        ASSERT(hScore(ps, "rnbqkbnr/p1pppppp/8/8/1pP5/8/PP1PPPPP/RNBQKBNR b KQkq c3 0 1") <= 1);
+    }
 }
 
 void

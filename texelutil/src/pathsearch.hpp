@@ -87,6 +87,19 @@ private:
                           int numWhiteExtraPieces, int numBlackExtraPieces,
                           int excessWPawns, int excessBPawns);
 
+    struct ShortestPathData {
+        S8 pathLen[64];    // Distance to target square
+        U64 fromSquares;   // Bitboard corresponding to pathLen[i] >= 0
+    };
+
+    struct SqPathData {
+        SqPathData() : square(-1) {}
+        SqPathData(int s, const std::shared_ptr<ShortestPathData>& d)
+            : square(s), spd(d) {}
+        int square;
+        std::shared_ptr<ShortestPathData> spd;
+    };
+
     /** Compute lower bound of number of needed moves for white/black.
      * Return false if it is discovered that goalPos is not reachable. */
     bool computeNeededMoves(const Position& pos, U64 blocked,
@@ -94,16 +107,19 @@ private:
                             int excessWPawns, int excessBPawns,
                             int neededMoves[]);
 
+    /** Compute shortest path data to all non-blocked goal squares. Update
+     * blocked if it is discovered that more pieces are blocked.
+     * Return false if it is discovered the goalPos is not reachable. */
+    bool computeShortestPathData(const Position& pos,
+                                 int numWhiteExtraPieces, int numBlackExtraPieces,
+                                 SqPathData promPath[][8],
+                                 std::vector<SqPathData>& sqPathData, U64& blocked);
+
     /** Compute blocked pieces in a position. A block piece is a piece that
      *  can not move without making it impossible to reach the goal position.
      *  If false is returned, it is impossible to reach goalPos from pos. */
     bool computeBlocked(const Position& pos, U64& blocked) const;
 
-
-    struct ShortestPathData {
-        S8 pathLen[64];    // Distance to target square
-        U64 fromSquares;   // Bitboard corresponding to pathLen[i] >= 0
-    };
 
     /** Compute shortest path for a piece p to toSq from all possible start squares,
      *  taking blocked squares into account. For squares that can not reach toSq,

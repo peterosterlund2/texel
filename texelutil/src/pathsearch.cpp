@@ -437,68 +437,17 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
                                int numWhiteExtraPieces, int numBlackExtraPieces,
                                int excessWPawns, int excessBPawns,
                                int neededMoves[]) {
-    struct SqPathData {
-        SqPathData() : square(-1) {}
-        SqPathData(int s, const std::shared_ptr<ShortestPathData>& d)
-            : square(s), spd(d) {}
-        int square;
-        std::shared_ptr<ShortestPathData> spd;
-    };
-    std::vector<SqPathData> pending, completed;
-    U64 pieces = goalPos.occupiedBB() & ~blocked;
-    while (pieces) {
-        int sq = BitBoard::extractSquare(pieces);
-        pending.emplace_back(sq, nullptr);
-    }
+    std::vector<SqPathData> sqPathData;
     SqPathData promPath[2][8]; // Pawn cost to each possible promotion square
-    while (!pending.empty()) {
-        const auto e = pending.back();
-        pending.pop_back();
-        const int sq = e.square;
-        const Piece::Type p = (Piece::Type)goalPos.getPiece(sq);
-        const bool wtm = Piece::isWhite(p);
-        const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
-        auto spd = shortestPaths(p, sq, blocked, maxCapt);
-        bool testPromote = false;
-        switch (p) {
-        case Piece::WQUEEN: case Piece::WROOK: case Piece::WBISHOP: case Piece::WKNIGHT:
-            if (wtm && Position::getY(sq) == 7)
-                testPromote = true;
-            break;
-        case Piece::BQUEEN: case Piece::BROOK: case Piece::BBISHOP: case Piece::BKNIGHT:
-            if (!wtm && Position::getY(sq) == 0)
-                testPromote = true;
-            break;
-        default:
-            break;
-        }
-        bool promotionPossible = false;
-        if (testPromote) {
-            int c = wtm ? 0 : 1;
-            int x = Position::getX(sq);
-            Piece::Type pawn = wtm ? Piece::WPAWN : Piece::BPAWN;
-            if (!promPath[c][x].spd)
-                promPath[c][x].spd = shortestPaths(pawn, sq, blocked, maxCapt);
-            if (promPath[c][x].spd->fromSquares & pos.pieceTypeBB(pawn))
-                promotionPossible = true;
-        }
-        if ((spd->fromSquares == (1ULL << sq)) && !promotionPossible) {
-            if (pos.getPiece(sq) != p)
-                return false;
-            blocked |= 1ULL << sq;
-            pending.insert(pending.end(), completed.begin(), completed.end());
-            completed.clear();
-            for (int c = 0; c < 2; c++)
-                for (int x = 0; x < 8; x++)
-                    promPath[c][x].spd = nullptr;
-        } else {
-            completed.emplace_back(sq, spd);
-        }
-    }
+    if (!computeShortestPathData(pos, numWhiteExtraPieces, numBlackExtraPieces,
+                                 promPath, sqPathData, blocked))
+        return false;
 
     // Compute squares where pieces have to be captured
     int captureSquares[2][16]; // [c][idx], -1 terminated. Squares where pieces need to be captured
     for (int c = 0; c < 2; c++) {
+        // If a pawn has to go to a square in front of a blocked square, a capture has
+        // to be made on the pawn goal square.
         const bool whiteToBeCaptured = (c == 0);
         const Piece::Type pawn = whiteToBeCaptured ? Piece::BPAWN : Piece::WPAWN;
         U64 capt = goalPos.pieceTypeBB(pawn) & ~pos.pieceTypeBB(pawn);
@@ -525,14 +474,14 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
                 bool canPromote = wtm ? (excessWPawns > 0) && (pos.getPiece(fromSq) == Piece::WPAWN)
                     : (excessBPawns > 0) && (pos.getPiece(fromSq) == Piece::BPAWN);
                 int t = 0;
-                for (size_t ci = 0; ci < completed.size(); ci++) {
-                    int toSq = completed[ci].square;
+                for (size_t ci = 0; ci < sqPathData.size(); ci++) {
+                    int toSq = sqPathData[ci].square;
                     int p = goalPos.getPiece(toSq);
                     if (Piece::isWhite(p) == wtm) {
                         assert(t < N);
                         int pLen;
                         if (p == pos.getPiece(fromSq)) {
-                            pLen = completed[ci].spd->pathLen[fromSq];
+                            pLen = sqPathData[ci].spd->pathLen[fromSq];
                             if (pLen < 0)
                                 pLen = bigCost;
                         } else
@@ -552,7 +501,7 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
                                                           promSq, blocked, maxCapt);
                                     int promCost = promPath[c][x].spd->pathLen[fromSq];
                                     if (promCost >= 0) {
-                                        int tmp = completed[ci].spd->pathLen[promSq];
+                                        int tmp = sqPathData[ci].spd->pathLen[promSq];
                                         if (tmp >= 0)
                                             cost2 = std::min(cost2, promCost + tmp);
                                     }
@@ -619,6 +568,65 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
                 return false;
         }
         neededMoves[c] = cost;
+    }
+    return true;
+}
+
+bool
+PathSearch::computeShortestPathData(const Position& pos,
+                                    int numWhiteExtraPieces, int numBlackExtraPieces,
+                                    SqPathData promPath[][8],
+                                    std::vector<SqPathData>& sqPathData, U64& blocked) {
+    std::vector<SqPathData> pending;
+    U64 pieces = goalPos.occupiedBB() & ~blocked;
+    while (pieces) {
+        int sq = BitBoard::extractSquare(pieces);
+        pending.emplace_back(sq, nullptr);
+    }
+    while (!pending.empty()) {
+        const auto e = pending.back();
+        pending.pop_back();
+        const int sq = e.square;
+        const Piece::Type p = (Piece::Type)goalPos.getPiece(sq);
+        const bool wtm = Piece::isWhite(p);
+        const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
+        auto spd = shortestPaths(p, sq, blocked, maxCapt);
+        bool testPromote = false;
+        switch (p) {
+        case Piece::WQUEEN: case Piece::WROOK: case Piece::WBISHOP: case Piece::WKNIGHT:
+            if (wtm && Position::getY(sq) == 7)
+                testPromote = true;
+            break;
+        case Piece::BQUEEN: case Piece::BROOK: case Piece::BBISHOP: case Piece::BKNIGHT:
+            if (!wtm && Position::getY(sq) == 0)
+                testPromote = true;
+            break;
+        default:
+            break;
+        }
+        bool promotionPossible = false;
+        if (testPromote) {
+            int c = wtm ? 0 : 1;
+            int x = Position::getX(sq);
+            Piece::Type pawn = wtm ? Piece::WPAWN : Piece::BPAWN;
+            if (!promPath[c][x].spd)
+                promPath[c][x].spd = shortestPaths(pawn, sq, blocked, maxCapt);
+            if (promPath[c][x].spd->fromSquares & pos.pieceTypeBB(pawn))
+                promotionPossible = true;
+        }
+        if ((spd->fromSquares == (1ULL << sq)) && !promotionPossible) {
+            // Piece on goal square can not move, must be same piece on sq in pos
+            if (pos.getPiece(sq) != p)
+                return false;
+            blocked |= 1ULL << sq;
+            pending.insert(pending.end(), sqPathData.begin(), sqPathData.end());
+            sqPathData.clear();
+            for (int c = 0; c < 2; c++)
+                for (int x = 0; x < 8; x++)
+                    promPath[c][x].spd = nullptr;
+        } else {
+            sqPathData.emplace_back(sq, spd);
+        }
     }
     return true;
 }
