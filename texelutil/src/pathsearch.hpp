@@ -112,8 +112,18 @@ private:
      * Return false if it is discovered the goalPos is not reachable. */
     bool computeShortestPathData(const Position& pos,
                                  int numWhiteExtraPieces, int numBlackExtraPieces,
-                                 SqPathData promPath[][8],
+                                 SqPathData promPath[2][8],
                                  std::vector<SqPathData>& sqPathData, U64& blocked);
+
+    /** Compute shortest path for a pawn on fromSq to a target square after
+     * a suitable promotion. */
+    int promPathLen(bool wtm, int fromSq, int targetPiece, U64 blocked, int maxCapt,
+                    const ShortestPathData& toSqPath, SqPathData promPath[8]);
+
+    /** Compute shortest path for a pawn on fromSq to a target square after
+     * any valid promotion. */
+    int promPathLen(bool wtm, int fromSq, U64 blocked, int maxCapt,
+                    int toSq, SqPathData promPath[8], int pLen);
 
     /** Compute blocked pieces in a position. A block piece is a piece that
      *  can not move without making it impossible to reach the goal position.

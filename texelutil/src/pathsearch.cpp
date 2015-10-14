@@ -470,9 +470,9 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
             const int bigCost = 1000;
             for (int f = 0; f < N; f++) {
                 assert(fromPieces != 0);
-                int fromSq = BitBoard::extractSquare(fromPieces);
+                const int fromSq = BitBoard::extractSquare(fromPieces);
                 bool canPromote = wtm ? (excessWPawns > 0) && (pos.getPiece(fromSq) == Piece::WPAWN)
-                    : (excessBPawns > 0) && (pos.getPiece(fromSq) == Piece::BPAWN);
+                                      : (excessBPawns > 0) && (pos.getPiece(fromSq) == Piece::BPAWN);
                 int t = 0;
                 for (size_t ci = 0; ci < sqPathData.size(); ci++) {
                     int toSq = sqPathData[ci].square;
@@ -487,31 +487,9 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
                         } else
                             pLen = bigCost;
                         if (canPromote) {
-                            switch (p) {
-                            case Piece::WQUEEN: case Piece::BQUEEN:
-                            case Piece::WROOK: case Piece::BROOK:
-                            case Piece::WBISHOP: case Piece::BBISHOP:
-                            case Piece::WKNIGHT: case Piece::BKNIGHT: {
-                                int cost2 = INT_MAX;
-                                for (int x = 0; x < 8; x++) {
-                                    int promSq = wtm ? 7*8 + x : x;
-                                    if (!promPath[c][x].spd)
-                                        promPath[c][x].spd =
-                                            shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
-                                                          promSq, blocked, maxCapt);
-                                    int promCost = promPath[c][x].spd->pathLen[fromSq];
-                                    if (promCost >= 0) {
-                                        int tmp = sqPathData[ci].spd->pathLen[promSq];
-                                        if (tmp >= 0)
-                                            cost2 = std::min(cost2, promCost + tmp);
-                                    }
-                                }
-                                pLen = std::min(pLen, cost2);
-                                break;
-                            }
-                            default:
-                                break;
-                            }
+                            int cost2 = promPathLen(wtm, fromSq, p, blocked, maxCapt,
+                                                    *sqPathData[ci].spd, promPath[c]);
+                            pLen = std::min(pLen, cost2);
                         }
                         as.setCost(f, t, pLen < 0 ? bigCost : pLen);
                         t++;
@@ -529,30 +507,9 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
                         int pLen = spd->pathLen[fromSq];
                         if (pLen < 0)
                             pLen = bigCost;
-                        int fromP = pos.getPiece(fromSq);
-                        if (canPromote && (fromP == Piece::WPAWN || fromP == Piece::BPAWN)) {
-                            int firstP = wtm ? Piece::WQUEEN : Piece::BQUEEN;
-                            int lastP = wtm ? Piece::WKNIGHT : Piece::BKNIGHT;
-                            for (int x = 0; x < 8; x++) {
-                                int promSq = wtm ? 7*8 + x : x;
-                                if (!promPath[c][x].spd)
-                                    promPath[c][x].spd =
-                                        shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
-                                                      promSq, blocked, maxCapt);
-                                int promCost = promPath[c][x].spd->pathLen[fromSq];
-                                if (promCost >= 0 && promCost < pLen) {
-                                    int cost2 = INT_MAX;
-                                    for (int p = firstP; p <= lastP; p++) {
-                                        auto spd2 = shortestPaths((Piece::Type)p, captSq,
-                                                                  blocked, maxCapt);
-                                        int tmp = spd2->pathLen[promSq];
-                                        if (tmp >= 0)
-                                            cost2 = std::min(cost2, promCost + tmp);
-                                    }
-                                    pLen = std::min(pLen, cost2);
-                                }
-                            }
-                        }
+                        if (canPromote)
+                            pLen = promPathLen(wtm, fromSq, blocked, maxCapt, captSq,
+                                               promPath[c], pLen);
                         cost = pLen;
                         idx++;
                     }
@@ -575,7 +532,7 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
 bool
 PathSearch::computeShortestPathData(const Position& pos,
                                     int numWhiteExtraPieces, int numBlackExtraPieces,
-                                    SqPathData promPath[][8],
+                                    SqPathData promPath[2][8],
                                     std::vector<SqPathData>& sqPathData, U64& blocked) {
     std::vector<SqPathData> pending;
     U64 pieces = goalPos.occupiedBB() & ~blocked;
@@ -629,6 +586,61 @@ PathSearch::computeShortestPathData(const Position& pos,
         }
     }
     return true;
+}
+
+int
+PathSearch::promPathLen(bool wtm, int fromSq, int targetPiece, U64 blocked, int maxCapt,
+                        const ShortestPathData& toSqPath, SqPathData promPath[8]) {
+    int pLen = INT_MAX;
+    switch (targetPiece) {
+    case Piece::WQUEEN:  case Piece::BQUEEN:
+    case Piece::WROOK:   case Piece::BROOK:
+    case Piece::WBISHOP: case Piece::BBISHOP:
+    case Piece::WKNIGHT: case Piece::BKNIGHT: {
+        for (int x = 0; x < 8; x++) {
+            int promSq = wtm ? 7*8 + x : x;
+            if (!promPath[x].spd)
+                promPath[x].spd = shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
+                                                promSq, blocked, maxCapt);
+            int promCost = promPath[x].spd->pathLen[fromSq];
+            if (promCost >= 0) {
+                int tmp = toSqPath.pathLen[promSq];
+                if (tmp >= 0)
+                    pLen = std::min(pLen, promCost + tmp);
+            }
+        }
+        break;
+    default:
+        break;
+    }
+    }
+    return pLen;
+}
+
+int
+PathSearch::promPathLen(bool wtm, int fromSq, U64 blocked, int maxCapt,
+                        int toSq, SqPathData promPath[8], int pLen) {
+    int firstP = wtm ? Piece::WQUEEN : Piece::BQUEEN;
+    int lastP = wtm ? Piece::WKNIGHT : Piece::BKNIGHT;
+    for (int x = 0; x < 8; x++) {
+        int promSq = wtm ? 7*8 + x : x;
+        if (!promPath[x].spd)
+            promPath[x].spd =
+                shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
+                              promSq, blocked, maxCapt);
+        int promCost = promPath[x].spd->pathLen[fromSq];
+        if (promCost >= 0 && promCost < pLen) {
+            int cost2 = INT_MAX;
+            for (int p = firstP; p <= lastP; p++) {
+                auto spd2 = shortestPaths((Piece::Type)p, toSq, blocked, maxCapt);
+                int tmp = spd2->pathLen[promSq];
+                if (tmp >= 0)
+                    cost2 = std::min(cost2, promCost + tmp);
+            }
+            pLen = std::min(pLen, cost2);
+        }
+    }
+    return pLen;
 }
 
 bool
