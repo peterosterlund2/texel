@@ -318,7 +318,8 @@ Book::improve(const std::string& bookFile, int searchTime, int numThreads,
 }
 
 void
-Book::importPGN(const std::string& bookFile, const std::string& pgnFile) {
+Book::importPGN(const std::string& bookFile, const std::string& pgnFile,
+                int maxPly) {
     readFromFile(bookFile);
 
     // Create book nodes for all positions in the PGN file
@@ -329,7 +330,9 @@ Book::importPGN(const std::string& bookFile, const std::string& pgnFile) {
     while (gt.readPGN()) {
         nGames++;
         GameNode gn = gt.getRootNode();
-        std::function<void(void)> addToBook = [&]() {
+        std::function<void(int)> addToBook = [&](int ply) {
+            if (ply >= maxPly)
+                return;
             Position base = gn.getPos();
             for (int i = 0; i < gn.nChildren(); i++) {
                 gn.goForward(i);
@@ -339,11 +342,11 @@ Book::importPGN(const std::string& bookFile, const std::string& pgnFile) {
                     addPosToBook(base, gn.getMove(), toSearch);
                     nAdded++;
                 }
-                addToBook();
+                addToBook(ply+1);
                 gn.goBack();
             }
         };
-        addToBook();
+        addToBook(0);
     }
     std::cout << "Added " << nAdded << " positions from " << nGames << " games" << std::endl;
 }

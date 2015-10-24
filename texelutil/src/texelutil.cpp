@@ -127,7 +127,7 @@ usage() {
     std::cerr << "\n";
     std::cerr << " book improve bookFile searchTime nThreads \"startmoves\" [c1 c2 c3]\n";
     std::cerr << "                                            : Improve opening book\n";
-    std::cerr << " book import bookFile pgnFile               : Import moves from PGN file\n";
+    std::cerr << " book import bookFile pgnFile [maxPly]      : Import moves from PGN file\n";
     std::cerr << " book export bookFile polyglotFile maxErrSelf errOtherExpConst\n";
     std::cerr << "                                            : Export as polyglot book\n";
     std::cerr << " book query bookFile maxErrSelf errOtherExpConst : Interactive query mode\n";
@@ -507,11 +507,14 @@ main(int argc, char* argv[]) {
                 }
                 book->improve(bookFile, searchTime, numThreads, startMoves);
             } else if (bookCmd == "import") {
-                if (argc != 5)
+                if (argc < 5 || argc > 6)
                     usage();
                 std::string pgnFile = argv[4];
+                int maxPly = INT_MAX;
+                if ((argc > 5) && !str2Num(argv[5], maxPly))
+                    usage();
                 BookBuild::Book book(logFile);
-                book.importPGN(bookFile, pgnFile);
+                book.importPGN(bookFile, pgnFile, maxPly);
             } else if (bookCmd == "export") {
                 if (argc != 7)
                     usage();

@@ -270,8 +270,8 @@ public:
     void improve(const std::string& bookFile, int searchTime, int numThreads,
                  const std::string& startMoves);
 
-    /** Add all moves from a PGN file to the book. */
-    void importPGN(const std::string& bookFile, const std::string& pgnFile);
+    /** Add moves from a PGN file to the book. */
+    void importPGN(const std::string& bookFile, const std::string& pgnFile, int maxPly);
 
     /** Convert the book to polyglot format. */
     void exportPolyglot(const std::string& bookFile, const std::string& polyglotFile,
