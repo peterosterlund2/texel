@@ -393,39 +393,52 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
             return 0;
     }
 
+    const int nWR = BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK));
+    const int nBR = BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK));
+
     // Give bonus/penalty if advantage is/isn't large enough to win
     if ((wMtrlPawns == 0) && (wMtrlNoPawns <= bMtrlNoPawns + bV)) {
         if (!doEval) return 1;
         if (score > 0) {
-            if (wMtrlNoPawns < rV)
+            if (wMtrlNoPawns < rV) {
                 return -pos.bMtrl() / 50;
-            else if ((nWN + nWB1 + nWB2 <= 1) || !pos.pieceTypeBB(Piece::WROOK, Piece::WQUEEN))
-                return score / 8;   // Too little excess material, probably draw
-            else
-                return score;       // May or may not be a win, TBs required
+            } else {
+                int nMinor = nWN + nWB1 + nWB2;
+                if ((nMinor == 1) && (nWR == 2) && (nBR >= 2))
+                    return score;       // Often a win
+                if ((nMinor <= 1) || !pos.pieceTypeBB(Piece::WROOK, Piece::WQUEEN))
+                    return score / 8;   // Too little excess material, probably draw
+                else
+                    return score;       // May or may not be a win, TBs required
+            }
         }
     }
     if ((bMtrlPawns == 0) && (bMtrlNoPawns <= wMtrlNoPawns + bV)) {
         if (!doEval) return 1;
         if (score < 0) {
-            if (bMtrlNoPawns < rV)
+            if (bMtrlNoPawns < rV) {
                 return pos.wMtrl() / 50;
-            else if ((nBN + nBB1 + nBB2 <= 1) || !pos.pieceTypeBB(Piece::BROOK, Piece::BQUEEN))
-                return score / 8;   // Too little excess material, probably draw
-            else
-                return score;       // May or may not be a win, TBs required
+            } else {
+                int nMinor = nBN + nBB1 + nBB2;
+                if ((nMinor == 1) && (nBR == 2) && (nWR >= 2))
+                    return score;       // Often a win
+                if ((nMinor <= 1) || !pos.pieceTypeBB(Piece::BROOK, Piece::BQUEEN))
+                    return score / 8;   // Too little excess material, probably draw
+                else
+                    return score;       // May or may not be a win, TBs required
+            }
         }
     }
 
     // KRKBNN is generally a draw
     if (!pos.pieceTypeBB(Piece::WQUEEN, Piece::WROOK, Piece::WPAWN) &&
-        (nWN <= 2) && (nWB1 + nWB2 <= 1) && pos.pieceTypeBB(Piece::BROOK)) {
+        (nWN <= 2) && (nWB1 + nWB2 <= 1) && (nBR > 0)) {
         if (!doEval) return 1;
         if (score > 0)
             return score / 8;
     }
     if (!pos.pieceTypeBB(Piece::BQUEEN, Piece::BROOK, Piece::BPAWN) &&
-        (nBN <= 2) && (nBB1 + nBB2 <= 1) && pos.pieceTypeBB(Piece::WROOK)) {
+        (nBN <= 2) && (nBB1 + nBB2 <= 1) && (nWR > 0)) {
         if (!doEval) return 1;
         if (score < 0)
             return score / 8;
@@ -441,22 +454,22 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
     }
 
     // Give bonus for advantage larger than KRKP, to avoid evaluation discontinuity
-    if ((pos.bMtrl() == pV) && pos.pieceTypeBB(Piece::WROOK) && (pos.wMtrl() > rV)) {
+    if ((pos.bMtrl() == pV) && (nWR > 0) && (pos.wMtrl() > rV)) {
         if (!doEval) return 1;
         return score + krkpBonus;
     }
-    if ((pos.wMtrl() == pV) && pos.pieceTypeBB(Piece::BROOK) && (pos.bMtrl() > rV)) {
+    if ((pos.wMtrl() == pV) && (nBR > 0) && (pos.bMtrl() > rV)) {
         if (!doEval) return 1;
         return score - krkpBonus;
     }
 
     // Bonus for KRPKN
-    if (pos.pieceTypeBB(Piece::WROOK) && pos.pieceTypeBB(Piece::WPAWN) &&
+    if ((nWR > 0) && pos.pieceTypeBB(Piece::WPAWN) &&
         !pos.pieceTypeBB(Piece::BBISHOP) && (pos.bMtrl() == nV)  && (bMtrlPawns == 0)) {
         if (!doEval) return 1;
         return score + krpknBonus;
     }
-    if (pos.pieceTypeBB(Piece::BROOK) && pos.pieceTypeBB(Piece::BPAWN) &&
+    if ((nBR > 0) && pos.pieceTypeBB(Piece::BPAWN) &&
         !pos.pieceTypeBB(Piece::WBISHOP) && (pos.wMtrl() == nV)  && (wMtrlPawns == 0)) {
         if (!doEval) return 1;
         return score - krpknBonus;
@@ -464,13 +477,13 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
 
     // Bonus for KRPKB
     int krpkbAdjustment = 0;
-    if (pos.pieceTypeBB(Piece::WROOK) && pos.pieceTypeBB(Piece::WPAWN) &&
+    if ((nWR > 0) && pos.pieceTypeBB(Piece::WPAWN) &&
         !pos.pieceTypeBB(Piece::BKNIGHT) && (pos.bMtrl() == bV)  && (bMtrlPawns == 0)) {
         if (!doEval) return 1;
         score += krpkbBonus;
         krpkbAdjustment += krpkbBonus;
     }
-    if (pos.pieceTypeBB(Piece::BROOK) && pos.pieceTypeBB(Piece::BPAWN) &&
+    if ((nBR > 0) && pos.pieceTypeBB(Piece::BPAWN) &&
         !pos.pieceTypeBB(Piece::WKNIGHT) && (pos.wMtrl() == bV)  && (wMtrlPawns == 0)) {
         if (!doEval) return 1;
         score -= krpkbBonus;
@@ -514,8 +527,7 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
     };
 
     // Account for draw factor in rook endgames
-    if ((BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK)) == 1) &&
-        (BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK)) == 1) &&
+    if ((nWR == 1) && (nBR == 1) &&
         (pos.pieceTypeBB(Piece::WQUEEN, Piece::WBISHOP, Piece::WKNIGHT,
                          Piece::BQUEEN, Piece::BBISHOP, Piece::BKNIGHT) == 0) &&
         (BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) > 1)) {
@@ -526,7 +538,7 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
     }
 
     // Correction for draw factor in RvsB endgames
-    if ((BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK)) == 1) &&
+    if ((nWR == 1) &&
         (BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP)) == 1) &&
         (pos.pieceTypeBB(Piece::WQUEEN, Piece::WBISHOP, Piece::WKNIGHT,
                          Piece::BQUEEN, Piece::BROOK, Piece::BKNIGHT) == 0) &&
@@ -537,7 +549,7 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
         return score;
     }
     // Correction for draw factor in RvsB endgames
-    if ((BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK)) == 1) &&
+    if ((nBR == 1) &&
         (BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP)) == 1) &&
         (pos.pieceTypeBB(Piece::BQUEEN, Piece::BBISHOP, Piece::BKNIGHT,
                          Piece::WQUEEN, Piece::WROOK, Piece::WKNIGHT) == 0) &&

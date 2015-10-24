@@ -682,6 +682,15 @@ EvaluateTest::testEndGameCorrections() {
     int krbnkrb = evalEgFen("8/4k3/3br3/8/8/3RBN2/4K3/8 w - - 0 1", 0);
     ASSERT(krbnkrb > 200);
     ASSERT(krbnkrb < 300);
+
+    // KRRMKRR is generally a win, except that the 50 move rule
+    // sometimes makes it a draw
+    int krrnkrr = evalEgFen("8/5r2/3r4/4k3/2R4R/4K3/4N3/8 w - -", 0);
+    ASSERT(krrnkrr > 200);
+    ASSERT(krrnkrr < 300);
+    int krrbkrr = evalEgFen("8/5r2/3r4/4k3/2R4R/4K3/4B3/8 w - -", 0);
+    ASSERT(krrbkrr > 200);
+    ASSERT(krrbkrr < 300);
 }
 
 /**
