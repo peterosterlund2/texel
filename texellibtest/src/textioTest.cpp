@@ -403,6 +403,11 @@ testAsciiBoard() {
     ASSERT_EQUAL(12, countSubStr(aBrd, "*")); // 12 black pieces
     ASSERT_EQUAL(3, countSubStr(aBrd, "*Q")); // 3 black queens
     ASSERT_EQUAL(3, countSubStr(aBrd, " P")); // 3 white pawns
+
+    aBrd = TextIO::asciiBoard(BitBoard::sqMask(A1,C2,D4));
+    ASSERT_EQUAL(3, countSubStr(aBrd, "1"));
+    std::string sqList = TextIO::squareList(BitBoard::sqMask(A1,C2,D4));
+    ASSERT_EQUAL("a1,c2,d4", sqList);
 }
 
 /**

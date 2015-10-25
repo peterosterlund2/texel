@@ -648,3 +648,16 @@ TextIO::asciiBoard(U64 mask) {
     }
     return ret;
 }
+
+std::string
+TextIO::squareList(U64 mask) {
+    std::string ret;
+    while (mask) {
+        int sq = BitBoard::extractSquare(mask);
+        if (!ret.empty())
+            ret += ',';
+        ret += squareToString(sq);
+    }
+    return ret;
+}
+    
