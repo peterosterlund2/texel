@@ -81,6 +81,8 @@ public:
     WeightType getCost(int i, int j) const;
     WeightType operator()(int i, int j) const;
 
+    int getSize() const;
+
     struct State {
         std::vector<WeightType> ly;
         std::vector<int> Mx;
@@ -154,22 +156,19 @@ Matrix<T>::printMatrix(bool negate) const {
 
 template <typename WeightType>
 inline const typename Assignment<WeightType>::State&
-Assignment<WeightType>::getState() const
-{
+Assignment<WeightType>::getState() const {
     return state_;
 }
 
 template <typename WeightType>
 inline void
-Assignment<WeightType>::setState(const State& state)
-{
+Assignment<WeightType>::setState(const State& state) {
     state_ = state;
 }
 
 template <typename WeightType>
 inline WeightType
-Assignment<WeightType>::operator()(int i, int j) const
-{
+Assignment<WeightType>::operator()(int i, int j) const {
     return getCost(i, j);
 }
 
@@ -210,8 +209,7 @@ Assignment<WeightType>::Assignment()
  */
 template <typename WeightType>
 const std::vector<int>&
-Assignment<WeightType>::optWeightMatch()
-{
+Assignment<WeightType>::optWeightMatch() {
     const int N = w_.numRows();
 
     // The labeling function
@@ -387,17 +385,21 @@ Assignment<WeightType>::optWeightMatch()
 }
 
 template <typename WeightType>
-void
-Assignment<WeightType>::setCost(int i, int j, WeightType w)
-{
+inline void
+Assignment<WeightType>::setCost(int i, int j, WeightType w) {
     w_(i, j) = -w;
 }
 
 template <typename WeightType>
-WeightType
-Assignment<WeightType>::getCost(int i, int j) const
-{
+inline WeightType
+Assignment<WeightType>::getCost(int i, int j) const {
     return -w_(i, j);
+}
+
+template <typename WeightType>
+inline int
+Assignment<WeightType>::getSize() const {
+    return w_.numRows();
 }
 
 #endif /* ASSIGNMENT_HPP_ */

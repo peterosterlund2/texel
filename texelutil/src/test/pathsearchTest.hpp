@@ -55,6 +55,7 @@ private:
     static void testRemainingMoves();
     static void testSearch();
     static void testEnPassant();
+    static void testCaptureSquares();
 };
 
 #endif /* PATHSEARCHTEST_HPP_ */

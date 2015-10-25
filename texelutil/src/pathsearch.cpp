@@ -36,6 +36,8 @@ bool PathSearch::staticInitDone = false;
 U64 PathSearch::wPawnReachable[64];
 U64 PathSearch::bPawnReachable[64];
 
+const int PathSearch::bigCost;
+
 
 void
 PathSearch::staticInit() {
@@ -364,7 +366,6 @@ bool
 PathSearch::capturesFeasible(const Position& pos, int pieceCnt[],
                              int numWhiteExtraPieces, int numBlackExtraPieces,
                              int excessWPawns, int excessBPawns) {
-    const int bigCost = 1000;
     for (int c = 0; c < 2; c++) {
         const Piece::Type  p = (c == 0) ? Piece::WPAWN : Piece::BPAWN;
         Assignment<int>& as = captureAP[c];
@@ -443,9 +444,14 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
                                  promPath, sqPathData, blocked))
         return false;
 
-    // Compute squares where pieces have to be captured
-    int captureSquares[2][16]; // [c][idx], -1 terminated. Squares where pieces need to be captured
-    for (int c = 0; c < 2; c++) {
+    // Sets of squares where pieces have to be captured
+    U64 captureSquares[2][16]; // [c][idx], 0 terminated.
+    // Sum of zero bits in captureSquares
+    int nCaptureConstraints[2];
+
+    // Compute initial estimate of captureSquares[0]. Further computations are based
+    // on analyzing the assignment problem cost matrix for the other side.
+    for (int c = 0; c < 1; c++) {
         // If a pawn has to go to a square in front of a blocked square, a capture has
         // to be made on the pawn goal square.
         const bool whiteToBeCaptured = (c == 0);
@@ -453,12 +459,18 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
         U64 capt = goalPos.pieceTypeBB(pawn) & ~pos.pieceTypeBB(pawn);
         capt &= whiteToBeCaptured ? (blocked >> 8) : (blocked << 8);
         int idx = 0;
-        while (capt)
-            captureSquares[c][idx++] = BitBoard::extractSquare(capt);
-        captureSquares[c][idx++] = -1;
+        while (capt) {
+            captureSquares[c][idx++] = 1ULL << BitBoard::extractSquare(capt);
+        }
+        nCaptureConstraints[c] = 63 * idx;
+        captureSquares[c][idx++] = 0;
     }
+    captureSquares[1][0] = 0;
+    nCaptureConstraints[1] = 0;
 
-    for (int c = 0; c < 2; c++) {
+    int c = 0;
+    bool solved[2] = { false, false };
+    while (!solved[c]) {
         const bool wtm = (c == 0);
         const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
         int cost = 0;
@@ -467,10 +479,11 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
         if (N > 0) {
             assert(N <= maxMoveAPSize);
             Assignment<int>& as = moveAP[c][N];
-            const int bigCost = 1000;
+            int rowToSq[16], colToSq[16];
             for (int f = 0; f < N; f++) {
                 assert(fromPieces != 0);
                 const int fromSq = BitBoard::extractSquare(fromPieces);
+                rowToSq[f] = fromSq;
                 bool canPromote = wtm ? (excessWPawns > 0) && (pos.getPiece(fromSq) == Piece::WPAWN)
                                       : (excessBPawns > 0) && (pos.getPiece(fromSq) == Piece::BPAWN);
                 int t = 0;
@@ -479,6 +492,7 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
                     int p = goalPos.getPiece(toSq);
                     if (Piece::isWhite(p) == wtm) {
                         assert(t < N);
+                        colToSq[t] = toSq;
                         int pLen;
                         if (p == pos.getPiece(fromSq)) {
                             pLen = sqPathData[ci].spd->pathLen[fromSq];
@@ -500,31 +514,35 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
                 int idx = 0;
                 for (; t < N; t++) {
                     int cost = 0;
-                    int captSq = captureSquares[c][idx];
-                    if (captSq >= 0) {
-                        auto spd = shortestPaths((Piece::Type)pos.getPiece(fromSq), captSq,
-                                                 blocked, maxCapt);
-                        int pLen = spd->pathLen[fromSq];
-                        if (pLen < 0)
-                            pLen = bigCost;
-                        if (canPromote)
-                            pLen = promPathLen(wtm, fromSq, blocked, maxCapt, captSq,
-                                               promPath[c], pLen);
-                        cost = pLen;
+                    U64 captSquares = captureSquares[c][idx];
+                    if (captSquares) {
+                        cost = minDistToSquares(pos.getPiece(fromSq), fromSq, blocked, maxCapt,
+                                                promPath[c], captSquares, canPromote);
                         idx++;
                     }
+                    colToSq[t] = -1;
                     as.setCost(f, t, cost);
                 }
-                if (captureSquares[c][idx] != -1)
+                if (captureSquares[c][idx])
                     return false;
             }
-            const std::vector<int>& s = as.optWeightMatch();
-            for (int i = 0; i < N; i++)
-                cost += as.getCost(i, s[i]);
+            cost = solveAssignment(as);
             if (cost >= bigCost)
                 return false;
+
+            int nConstr;
+            if (!computeAllCutSets(as, rowToSq, colToSq, wtm, blocked, maxCapt,
+                                   captureSquares[1-c], nConstr))
+                return false;
+            assert(nCaptureConstraints[1-c] <= nConstr);
+            if (nCaptureConstraints[1-c] < nConstr) {
+                nCaptureConstraints[1-c] = nConstr;
+                solved[1-c] = false;
+            }
         }
         neededMoves[c] = cost;
+        solved[c] = true;
+        c = 1 - c;
     }
     return true;
 }
@@ -617,6 +635,112 @@ PathSearch::promPathLen(bool wtm, int fromSq, int targetPiece, U64 blocked, int 
     return pLen;
 }
 
+bool
+PathSearch::computeAllCutSets(const Assignment<int>& as, int rowToSq[16], int colToSq[16],
+                              bool wtm, U64 blocked, int maxCapt,
+                              U64 cutSets[16], int& nConstraints) {
+    const int N = as.getSize();
+    int nCutSets = 0;
+    for (int t = 0; t < N; t++) {
+        int toSq = colToSq[t];
+        if (toSq == -1)
+            break;
+        int p = goalPos.getPiece(toSq);
+        if (p == (wtm ? Piece::WPAWN : Piece::BPAWN)) {
+            U64 fromSqMask = 0;
+            for (int f = 0; f < N; f++)
+                if (as.getCost(f, t) < bigCost)
+                    fromSqMask |= 1ULL << rowToSq[f];
+            if (!computeCutSets(wtm, fromSqMask, toSq, blocked, maxCapt, cutSets, nCutSets))
+                return false;
+        }
+    }
+    cutSets[nCutSets++] = 0;
+
+    int nConstr = 0;
+    for (int i = 0; cutSets[i] != 0; i++) {
+        assert(i < 16);
+        nConstr += BitBoard::bitCount(~cutSets[i]);
+    }
+    nConstraints = nConstr;
+
+    return true;
+}
+
+bool
+PathSearch::computeCutSets(bool wtm, U64 fromSqMask, int toSq, U64 blocked, int maxCapt,
+                           U64 cutSets[16], int& nCutSets) {
+    U64 allPaths = 0;
+    U64 m = fromSqMask;
+    while (m) {
+        int fromSq = BitBoard::extractSquare(m);
+        allPaths |= allPawnPaths(wtm, fromSq, toSq, blocked, maxCapt);
+    }
+    if (!allPaths)
+        return true;
+
+    int n = nCutSets;
+    U64 oldSquares = 0;
+    U64 newSquares = 1ULL << toSq;
+    while (true) {
+        // Add squares reachable by non-capture moves
+        while (true) {
+            U64 tmp = (wtm ? (newSquares >> 8) : (newSquares << 8)) & allPaths;
+            if ((newSquares | tmp) == newSquares)
+                break;
+            newSquares |= tmp;
+        }
+
+        if (newSquares & fromSqMask)
+            break;
+
+        if (n >= 15)
+            return false;
+        cutSets[n++] = newSquares & ~oldSquares;
+        oldSquares = newSquares;
+
+        // Add squares reachable by capture moves
+        newSquares |= (wtm ? BitBoard::bPawnAttacksMask(newSquares)
+                           : BitBoard::wPawnAttacksMask(newSquares)) & allPaths;
+    }
+    cutSets[n] = 0;
+    nCutSets = n;
+    return true;
+}
+
+U64
+PathSearch::allPawnPaths(bool wtm, int fromSq, int toSq, U64 blocked, int maxCapt) {
+    int yDelta = Position::getY(fromSq) - Position::getY(toSq);
+    maxCapt = std::min(maxCapt, std::abs(yDelta)); // Can't make use of more than yDelta captures
+    Piece::Type pawn = wtm ? Piece::WPAWN : Piece::BPAWN;
+    Piece::Type oPawn = wtm ? Piece::BPAWN : Piece::WPAWN;
+    U64 mask = 0;
+    for (int c = 0; c <= maxCapt; c++) {
+        auto tData = shortestPaths(pawn, toSq, blocked, c);
+        auto fData = shortestPaths(oPawn, fromSq, blocked, maxCapt-c);
+        mask |= tData->fromSquares & fData->fromSquares;
+    }
+    return mask;
+}
+
+int
+PathSearch::minDistToSquares(int piece, int fromSq, U64 blocked, int maxCapt,
+                             SqPathData promPath[8], U64 targetSquares, bool canPromote) {
+    const bool wtm = Piece::isWhite(piece);
+    int best = bigCost;
+    while (targetSquares) {
+        int captSq = BitBoard::extractSquare(targetSquares);
+        auto spd = shortestPaths((Piece::Type)piece, captSq, blocked, maxCapt);
+        int pLen = spd->pathLen[fromSq];
+        if (pLen < 0)
+            pLen = bigCost;
+        if (canPromote)
+            pLen = promPathLen(wtm, fromSq, blocked, maxCapt, captSq, promPath, pLen);
+        best = std::min(best, pLen);
+    }
+    return best;
+}
+
 int
 PathSearch::promPathLen(bool wtm, int fromSq, U64 blocked, int maxCapt,
                         int toSq, SqPathData promPath[8], int pLen) {
@@ -641,6 +765,89 @@ PathSearch::promPathLen(bool wtm, int fromSq, U64 blocked, int maxCapt,
         }
     }
     return pLen;
+}
+
+int
+PathSearch::solveAssignment(Assignment<int>& as) {
+    const int N = as.getSize();
+
+    // Count number of choices for each row/column
+    int nValidR[16];
+    int nValidC[16];
+    for (int i = 0; i < N; i++)
+        nValidR[i] = nValidC[i] = 0;
+    for (int r = 0; r < N; r++) {
+        for (int c = 0; c < N; c++) {
+            if (as(r,c) < bigCost) {
+                nValidR[r]++;
+                nValidC[c]++;
+            }
+        }
+    }
+
+    // Find rows/columns with exactly one choice
+    U64 rowsToCheck = 0;
+    U64 colsToCheck = 0;
+    for (int i = 0; i < N; i++) {
+        if (nValidR[i] == 1)
+            rowsToCheck |= (1 << i);
+        if (nValidC[i] == 1)
+            colsToCheck |= (1 << i);
+    }
+
+    // If a row/column only has one choice, remove all other choices from the corresponding column/row
+    U64 rowsHandled = 0;
+    U64 colsHandled = 0;
+    while (true) {
+        bool finished = true;
+        if (rowsToCheck) {
+            int r = BitBoard::extractSquare(rowsToCheck);
+            if ((nValidR[r] == 1) && !(rowsHandled & (1 << r))) {
+                int c;
+                for (c = 0; c < N; c++)
+                    if (as(r, c) < bigCost)
+                        break;
+                for (int r2 = 0; r2 < N; r2++) {
+                    if ((r2 != r) && (as(r2, c) < bigCost)) {
+                        as.setCost(r2, c, bigCost);
+                        if (--nValidR[r2] == 1)
+                            rowsToCheck |= 1 << r2;
+                    }
+                }
+                finished = false;
+                rowsHandled |= 1 << r;
+                colsHandled |= 1 << c;
+            }
+        }
+        if (colsToCheck) {
+            int c = BitBoard::extractSquare(colsToCheck);
+            if ((nValidC[c] == 1) && !(colsHandled & (1 << c))) {
+                int r;
+                for (r = 0; r < N; r++)
+                    if (as(r, c) < bigCost)
+                        break;
+                for (int c2 = 0; c2 < N; c2++) {
+                    if ((c2 != c) && (as(r, c2) < bigCost)) {
+                        as.setCost(r, c2, bigCost);
+                        if (--nValidC[c2] == 1)
+                            colsToCheck |= 1 << c2;
+                    }
+                }
+                finished = false;
+                rowsHandled |= 1 << r;
+                colsHandled |= 1 << c;
+            }
+        }
+        if (finished)
+            break;
+    }
+
+    // Solve the assignment problem and return the optimal cost
+    int cost = 0;
+    const std::vector<int>& s = as.optWeightMatch();
+    for (int i = 0; i < N; i++)
+        cost += as.getCost(i, s[i]);
+    return cost;
 }
 
 bool

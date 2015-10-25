@@ -120,10 +120,37 @@ private:
     int promPathLen(bool wtm, int fromSq, int targetPiece, U64 blocked, int maxCapt,
                     const ShortestPathData& toSqPath, SqPathData promPath[8]);
 
+    /** Compute all cutsets for all pawns in the assignment problem. */
+    bool computeAllCutSets(const Assignment<int>& as, int rowToSq[16], int colToSq[16],
+                           bool wtm, U64 blocked, int maxCapt,
+                           U64 cutSets[16], int& nConstraints);
+
+    /** Assume a pawn has to move from one of the fromSqMask squares to the toSq square.
+     * A cut set is a set of squares that if they were blocked would prevent the pawn
+     * from reaching toSq regardless of which square in fromSqMask it started from.
+     * Compute zero or more such cut sets and add them to cutSets.
+     * Return false if nCutSets becomes > 15. */
+    bool computeCutSets(bool wtm, U64 fromSqMask, int toSq, U64 blocked, int maxCapt,
+                        U64 cutSets[16], int& nCutSets);
+
+    /** Compute the union of all possible pawn paths from a source square
+     * to a target square. */
+    U64 allPawnPaths(bool wtm, int fromSq, int toSq, U64 blocked, int maxCapt);
+
+    /** Compute shortest distance from one square to one of several possible target squares. */
+    int minDistToSquares(int piece, int fromSq, U64 blocked, int maxCapt,
+                         SqPathData promPath[8], U64 targetSquares, bool canPromote);
+
     /** Compute shortest path for a pawn on fromSq to a target square after
      * any valid promotion. */
     int promPathLen(bool wtm, int fromSq, U64 blocked, int maxCapt,
                     int toSq, SqPathData promPath[8], int pLen);
+
+    /** Compute and return the smallest cost of a solution to the given assignment
+     * problem. Also use heuristics to set weights to bigCost in cases where it can
+     * be proved that the weight can not be part of *any* solution. Weights that can
+     * be part of a non-optimal solution are not modified. */
+    static int solveAssignment(Assignment<int>& as);
 
     /** Compute blocked pieces in a position. A block piece is a piece that
      *  can not move without making it impossible to reach the goal position.
@@ -142,6 +169,7 @@ private:
      *  taking blocked squares into account. */
     static U64 computeNeighbors(Piece::Type p, U64 toSquares, U64 blocked);
 
+    static const int bigCost = 1000;
 
     Position goalPos;
     int goalPieceCnt[Piece::nPieceTypes];

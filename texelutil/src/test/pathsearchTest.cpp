@@ -284,15 +284,14 @@ void
 PathSearchTest::testShortestPath() {
     PathSearch ps(TextIO::startPosFEN);
     std::shared_ptr<PathSearch::ShortestPathData> spd;
-    spd = ps.shortestPaths(Piece::WKING,
-                           TextIO::getSquare("h8"),
+    spd = ps.shortestPaths(Piece::WKING, H8,
                            BitBoard::sqMask(G2,G3,G4,G5,G6,G7,F7,E7,D7,C7,B7), 8);
     ASSERT_EQUAL(~BitBoard::sqMask(G2,G3,G4,G5,G6,G7,F7,E7,D7,C7,B7), spd->fromSquares);
     ASSERT_EQUAL(0, spd->pathLen[H8]);
     ASSERT_EQUAL(13, spd->pathLen[A1]);
     ASSERT_EQUAL(12, spd->pathLen[F6]);
 
-    spd = ps.shortestPaths(Piece::BKNIGHT, TextIO::getSquare("a1"), 0, 8);
+    spd = ps.shortestPaths(Piece::BKNIGHT, A1, 0, 8);
     ASSERT_EQUAL(~0ULL, spd->fromSquares);
     ASSERT_EQUAL(0, spd->pathLen[A1]);
     ASSERT_EQUAL(6, spd->pathLen[H8]);
@@ -300,7 +299,7 @@ PathSearchTest::testShortestPath() {
     ASSERT_EQUAL(4, spd->pathLen[B2]);
     ASSERT_EQUAL(4, spd->pathLen[C3]);
 
-    spd = ps.shortestPaths(Piece::WROOK, TextIO::getSquare("a1"), 0, 8);
+    spd = ps.shortestPaths(Piece::WROOK, A1, 0, 8);
     ASSERT_EQUAL(~0ULL, spd->fromSquares);
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
@@ -310,8 +309,7 @@ PathSearchTest::testShortestPath() {
         }
     }
 
-    spd = ps.shortestPaths(Piece::WPAWN, TextIO::getSquare("d8"),
-                           BitBoard::sqMask(D3,E2,F1), 8);
+    spd = ps.shortestPaths(Piece::WPAWN, D8, BitBoard::sqMask(D3,E2,F1), 8);
     std::vector<int> expected[7] = {
         {   -1,-1,-1, 0,-1,-1,-1,-1,
             -1,-1,-1, 1,-1,-1,-1,-1,
@@ -378,7 +376,7 @@ PathSearchTest::testShortestPath() {
     };
     for (int maxCapt = 0; maxCapt < 16; maxCapt++) {
         int tIdx = std::min(maxCapt, 6);
-        comparePaths(Piece::WPAWN, TextIO::getSquare("d8"), BitBoard::sqMask(D3,E2,F1),
+        comparePaths(Piece::WPAWN, D8, BitBoard::sqMask(D3,E2,F1),
                      maxCapt, expected[tIdx]);
     }
 
@@ -393,8 +391,7 @@ PathSearchTest::testShortestPath() {
             -1,-1,-1,-1, 3, 3, 3,-1,
             -1,-1,-1,-1, 4, 4, 4,-1,
         };
-        comparePaths(Piece::WPAWN, TextIO::getSquare("h5"),
-                     BitBoard::sqMask(G3,H3), 3, expected);
+        comparePaths(Piece::WPAWN, H5, BitBoard::sqMask(G3,H3), 3, expected);
     }
 }
 
@@ -486,11 +483,12 @@ PathSearchTest::testPawnReachable() {
         PathSearch ps("rnbqkbnr/p1pppppp/p7/8/8/3P4/PPP1PPPP/RN1QKBNR w KQkq - 0 1");
         ASSERT_EQUAL(INT_MAX, hScore(ps, TextIO::startPosFEN));
     }
-
+#if 0
     { // Reachable by en passant capture
         PathSearch ps("rnbqkbnr/p1pppppp/8/8/8/2p5/PP1PPPPP/RNBQKBNR w KQkq - 0 1");
         ASSERT(hScore(ps, "rnbqkbnr/p1pppppp/8/8/1pP5/8/PP1PPPPP/RNBQKBNR b KQkq c3 0 1") <= 1);
     }
+#endif
 }
 
 void
@@ -671,6 +669,177 @@ PathSearchTest::testEnPassant() {
     }
 }
 
+void
+PathSearchTest::testCaptureSquares() {
+    { // Test solveAssignment
+        std::vector<int> initial = {
+            1, 1, 0, 0, 1, 1, 0, 1,
+            0, 1, 0, 0, 0, 1, 0, 1,
+            1, 1, 1, 0, 1, 1, 1, 1,
+            0, 1, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 1, 1, 0, 1,
+            1, 1, 1, 0, 1, 1, 0, 1,
+            1, 1, 1, 1, 1, 1, 1, 1,
+            0, 1, 0, 0, 0, 1, 0, 0
+        };
+        std::vector<int> reduced = {
+            1, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1,
+            0, 0, 0, 0, 0, 0, 1, 0,
+            0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0
+        };
+        Matrix<int> m(8, 8);
+        const int bigCost = PathSearch::bigCost;
+        for (int i = 0; i < 8; i++)
+            for (int j = 0; j < 8; j++)
+                m(i,j) = initial[i*8+j] ? 1 : bigCost;
+        Assignment<int> as(m);
+        PathSearch ps(TextIO::startPosFEN);
+        int cost = ps.solveAssignment(as);
+        ASSERT_EQUAL(8, cost);
+        for (int i = 0; i < 8; i++)
+            for (int j = 0; j < 8; j++)
+                ASSERT_EQUAL(reduced[i*8+j] ? 1 : bigCost, as.getCost(i, j));
+    }
+
+    {
+        PathSearch ps(TextIO::startPosFEN);
+        U64 m = ps.allPawnPaths(true, D3, F6, 0, 2);
+        ASSERT_EQUAL(BitBoard::sqMask(D3,D4,E4,E5,F5,F6), m);
+        m = ps.allPawnPaths(true, D3, F6, 0, 1);
+        ASSERT_EQUAL(0, m);
+        m = ps.allPawnPaths(true, D3, F6, 0, 3);
+        ASSERT_EQUAL(BitBoard::sqMask(D3,D4,E4,E5,F5,F6), m);
+        m = ps.allPawnPaths(true, D3, F6, 0, 4);
+        ASSERT_EQUAL(BitBoard::sqMask(D3,D4,E4,E5,F5,F6), m);
+
+        m = ps.allPawnPaths(true, D3, F6, BitBoard::sqMask(E4), 2);
+        ASSERT_EQUAL(BitBoard::sqMask(D3,D4,E5,F6), m);
+
+        m = ps.allPawnPaths(false, F6, D3, BitBoard::sqMask(E4), 2);
+        ASSERT_EQUAL(BitBoard::sqMask(D3,D4,E5,F6), m);
+
+        m = ps.allPawnPaths(true, E2, E7, 0, 0);
+        ASSERT_EQUAL(BitBoard::sqMask(E2,E3,E4,E5,E6,E7), m);
+        m = ps.allPawnPaths(true, E2, E7, BitBoard::sqMask(E4), 0);
+        ASSERT_EQUAL(0, m);
+        m = ps.allPawnPaths(true, E2, E7, 0, 1);
+        ASSERT_EQUAL(BitBoard::sqMask(E2,E3,E4,E5,E6,E7), m);
+        m = ps.allPawnPaths(true, E2, E7, 0, 2);
+        ASSERT_EQUAL(BitBoard::sqMask(E2,D3,E3,F3,D4,E4,F4,D5,E5,F5,D6,E6,F6,E7), m);
+        m = ps.allPawnPaths(true, E2, E7, 0, 3);
+        ASSERT_EQUAL(BitBoard::sqMask(E2,D3,E3,F3,D4,E4,F4,D5,E5,F5,D6,E6,F6,E7), m);
+        m = ps.allPawnPaths(true, E2, E7, BitBoard::sqMask(E4,F4), 2);
+        ASSERT_EQUAL(BitBoard::sqMask(E2,D3,E3,D4,D5,E5,D6,E6,E7), m);
+        m = ps.allPawnPaths(true, E2, E7, BitBoard::sqMask(D4,E4,F4), 4);
+        ASSERT_EQUAL(BitBoard::sqMask(E2,D3,F3,C4,G4,C5,D5,F5,G5,D6,E6,F6,E7), m);
+    }
+
+    {
+        PathSearch ps(TextIO::startPosFEN);
+        U64 cutSets[16];
+        int size = 0;
+        bool ret = ps.computeCutSets(true, BitBoard::sqMask(C2), A4, 0, 2, cutSets, size);
+        ASSERT_EQUAL(true, ret);
+        ASSERT_EQUAL(2, size);
+        ASSERT_EQUAL(BitBoard::sqMask(A4), cutSets[0]);
+        ASSERT_EQUAL(BitBoard::sqMask(B3), cutSets[1]);
+
+        size = 0;
+        ret = ps.computeCutSets(true, BitBoard::sqMask(C2), A6, 0, 2, cutSets, size);
+        ASSERT_EQUAL(true, ret);
+        ASSERT_EQUAL(2, size);
+        ASSERT_EQUAL(BitBoard::sqMask(A4,A5,A6), cutSets[0]);
+        ASSERT_EQUAL(BitBoard::sqMask(B3,B4,B5), cutSets[1]);
+
+        size = 0;
+        ret = ps.computeCutSets(true, BitBoard::sqMask(C2), A6, 0, 1, cutSets, size);
+        ASSERT_EQUAL(true, ret);
+        ASSERT_EQUAL(0, size);
+
+        size = 15;
+        ret = ps.computeCutSets(true, BitBoard::sqMask(C2), A6, 0, 1, cutSets, size);
+        ASSERT_EQUAL(true, ret);
+        ASSERT_EQUAL(15, size);
+
+        size = 0;
+        ret = ps.computeCutSets(true, BitBoard::sqMask(C2), A6, 0, 4, cutSets, size);
+        ASSERT_EQUAL(true, ret);
+        ASSERT_EQUAL(2, size);
+        ASSERT_EQUAL(BitBoard::sqMask(A4,A5,A6), cutSets[0]);
+        ASSERT_EQUAL(BitBoard::sqMask(B3,B4,B5), cutSets[1]);
+
+        size = 0;
+        ret = ps.computeCutSets(true, BitBoard::sqMask(C2), C6, 0, 2, cutSets, size);
+        ASSERT_EQUAL(true, ret);
+        ASSERT_EQUAL(0, size);
+
+        size = 0;
+        ret = ps.computeCutSets(false, BitBoard::sqMask(C7,G7), E5, 0, 2, cutSets, size);
+        ASSERT_EQUAL(true, ret);
+        ASSERT_EQUAL(2, size);
+        ASSERT_EQUAL(BitBoard::sqMask(E5), cutSets[0]);
+        ASSERT_EQUAL(BitBoard::sqMask(D6,F6), cutSets[1]);
+
+        ret = ps.computeCutSets(false, BitBoard::sqMask(C7,F7,G7), E5, 0, 2, cutSets, size);
+        ASSERT_EQUAL(true, ret);
+        ASSERT_EQUAL(3, size);
+        ASSERT_EQUAL(BitBoard::sqMask(E5), cutSets[0]);
+        ASSERT_EQUAL(BitBoard::sqMask(D6,F6), cutSets[1]);
+        ASSERT_EQUAL(BitBoard::sqMask(E5,E6), cutSets[2]);
+
+        size = 0;
+        ret = ps.computeCutSets(true, BitBoard::sqMask(D2,H2), F5, BitBoard::sqMask(E3), 2,
+                                cutSets, size);
+        ASSERT_EQUAL(true, ret);
+        ASSERT_EQUAL(2, size);
+        ASSERT_EQUAL(BitBoard::sqMask(F4,F5), cutSets[0]);
+        ASSERT_EQUAL(BitBoard::sqMask(E4,G4,G3), cutSets[1]);
+
+        size = 0;
+        ret = ps.computeCutSets(true, BitBoard::sqMask(A2), B3, BitBoard::sqMask(B4), 7,
+                                cutSets, size);
+        ASSERT_EQUAL(true, ret);
+        ASSERT_EQUAL(1, size);
+        ASSERT_EQUAL(BitBoard::sqMask(B3), cutSets[0]);
+
+        size = 13;
+        ret = ps.computeCutSets(true, BitBoard::sqMask(D2,H2), F5, BitBoard::sqMask(E3), 2,
+                                cutSets, size);
+        ASSERT_EQUAL(true, ret);
+        ASSERT_EQUAL(15, size);
+        ASSERT_EQUAL(BitBoard::sqMask(F4,F5), cutSets[13]);
+        ASSERT_EQUAL(BitBoard::sqMask(E4,G4,G3), cutSets[14]);
+
+        size = 14;
+        ret = ps.computeCutSets(true, BitBoard::sqMask(D2,H2), F5, BitBoard::sqMask(E3), 2,
+                                cutSets, size);
+        ASSERT_EQUAL(false, ret);
+    }
+
+    {
+        PathSearch ps("rnbqk3/pppppp1p/8/8/1P3P2/8/PPP1PPP1/RNBQKBNR w KQq - 0 1");
+        ASSERT(hScore(ps, TextIO::startPosFEN) >= 8);
+        ASSERT(hScore(ps, TextIO::startPosFEN) <= 26);
+    }
+    {
+        PathSearch ps("rnbqk3/pppppp1p/8/8/8/P1P1P1P1/8/RNBQKBNR w KQq - 0 1");
+        std::string startFen = "rnbqkbnr/pppppppp/8/8/8/8/1P1P1P1P/RNBQKBNR w KQkq - 0 1";
+        ASSERT(hScore(ps, startFen) >= 8);
+        ASSERT(hScore(ps, startFen) <= 28);
+    }
+    {
+        std::cout << "start:" << std::endl;
+        PathSearch ps("2b1kqr1/p2p3p/3p4/p2PpP2/PpP2p2/6P1/8/RRB1KQ1N w - - 0 1");
+        std::string startFen = "2b1kqr1/p1rp3p/1p1p1b2/3PpPp1/PpP3P1/6P1/4BN2/R1B1KQ1R w Q - 5 1";
+        ASSERT_EQUAL(INT_MAX, hScore(ps, startFen));
+    }                            
+}
+
 cute::suite
 PathSearchTest::getSuite() const {
     cute::suite s;
@@ -685,5 +854,6 @@ PathSearchTest::getSuite() const {
     s.push_back(CUTE(testRemainingMoves));
     s.push_back(CUTE(testSearch));
     s.push_back(CUTE(testEnPassant));
+    s.push_back(CUTE(testCaptureSquares));
     return s;
 }
