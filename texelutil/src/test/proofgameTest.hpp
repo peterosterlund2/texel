@@ -17,30 +17,30 @@
 */
 
 /*
- * pathsearchTest.hpp
+ * proofgameTest.hpp
  *
  *  Created on: Aug 22, 2015
  *      Author: petero
  */
 
-#ifndef PATHSEARCHTEST_HPP_
-#define PATHSEARCHTEST_HPP_
+#ifndef PROOFGAMETEST_HPP_
+#define PROOFGAMETEST_HPP_
 
 #include "utilSuiteBase.hpp"
 #include "piece.hpp"
 #include "util/util.hpp"
 
 class Position;
-class PathSearch;
+class ProofGame;
 
-class PathSearchTest : public UtilSuiteBase {
+class ProofGameTest : public UtilSuiteBase {
 public:
-    std::string getName() const override { return "PathSearchTest"; }
+    std::string getName() const override { return "ProofGameTest"; }
 
     cute::suite getSuite() const override;
 private:
-    static void checkBlockedConsistency(PathSearch& ps, Position& pos);
-    static int hScore(PathSearch& ps, const std::string& fen, bool testMirrorY = true);
+    static void checkBlockedConsistency(ProofGame& ps, Position& pos);
+    static int hScore(ProofGame& ps, const std::string& fen, bool testMirrorY = true);
     static void comparePaths(Piece::Type p, int sq, U64 blocked, int maxMoves,
                              const std::vector<int>& expected, bool testColorReversed = true);
 
@@ -58,4 +58,4 @@ private:
     static void testCaptureSquares();
 };
 
-#endif /* PATHSEARCHTEST_HPP_ */
+#endif /* PROOFGAMETEST_HPP_ */

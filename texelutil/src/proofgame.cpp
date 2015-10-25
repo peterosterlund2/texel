@@ -17,13 +17,13 @@
 */
 
 /*
- * pathsearch.cpp
+ * proofgame.cpp
  *
  *  Created on: Aug 15, 2015
  *      Author: petero
  */
 
-#include "pathsearch.hpp"
+#include "proofgame.hpp"
 #include "moveGen.hpp"
 #include "textio.hpp"
 #include "util/timeUtil.hpp"
@@ -32,15 +32,15 @@
 #include <climits>
 
 
-bool PathSearch::staticInitDone = false;
-U64 PathSearch::wPawnReachable[64];
-U64 PathSearch::bPawnReachable[64];
+bool ProofGame::staticInitDone = false;
+U64 ProofGame::wPawnReachable[64];
+U64 ProofGame::bPawnReachable[64];
 
-const int PathSearch::bigCost;
+const int ProofGame::bigCost;
 
 
 void
-PathSearch::staticInit() {
+ProofGame::staticInit() {
     if (staticInitDone)
         return;
 
@@ -77,7 +77,7 @@ PathSearch::staticInit() {
     staticInitDone = true;
 }
 
-PathSearch::PathSearch(const std::string& goal, int a, int b)
+ProofGame::ProofGame(const std::string& goal, int a, int b)
     : queue(TreeNodeCompare(nodes, a, b)) {
     goalPos = TextIO::readFEN(goal);
     validatePieceCounts(goalPos);
@@ -122,7 +122,7 @@ PathSearch::PathSearch(const std::string& goal, int a, int b)
 }
 
 void
-PathSearch::validatePieceCounts(const Position& pos) {
+ProofGame::validatePieceCounts(const Position& pos) {
     int pieceCnt[Piece::nPieceTypes];
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
         pieceCnt[p] = BitBoard::bitCount(pos.pieceTypeBB((Piece::Type)p));
@@ -147,7 +147,7 @@ PathSearch::validatePieceCounts(const Position& pos) {
 }
 
 int
-PathSearch::search(const std::string& initialFen, std::vector<Move>& movePath) {
+ProofGame::search(const std::string& initialFen, std::vector<Move>& movePath) {
     Position startPos = TextIO::readFEN(initialFen);
     validatePieceCounts(startPos);
     addPosition(startPos, 0, true);
@@ -210,7 +210,7 @@ PathSearch::search(const std::string& initialFen, std::vector<Move>& movePath) {
 }
 
 void
-PathSearch::addPosition(const Position& pos, U32 parent, bool isRoot) {
+ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot) {
     const int ply = isRoot ? 0 : nodes[parent].ply + 1;
     auto it = nodeHash.find(pos.zobristHash());
     if ((it != nodeHash.end()) && (it->second <= ply))
@@ -231,7 +231,7 @@ PathSearch::addPosition(const Position& pos, U32 parent, bool isRoot) {
 }
 
 void
-PathSearch::getSolution(const Position& startPos, int idx, std::vector<Move>& movePath) const {
+ProofGame::getSolution(const Position& startPos, int idx, std::vector<Move>& movePath) const {
     std::function<void(int)> getMoves = [this,&movePath,&getMoves](U32 idx) {
         const TreeNode& tn = nodes[idx];
         if (tn.ply == 0)
@@ -276,7 +276,7 @@ PathSearch::getSolution(const Position& startPos, int idx, std::vector<Move>& mo
 // --------------------------------------------------------------------------------
 
 int
-PathSearch::distLowerBound(const Position& pos) {
+ProofGame::distLowerBound(const Position& pos) {
     int pieceCnt[Piece::nPieceTypes];
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
         pieceCnt[p] = BitBoard::bitCount(pos.pieceTypeBB((Piece::Type)p));
@@ -327,7 +327,7 @@ PathSearch::distLowerBound(const Position& pos) {
 }
 
 bool
-PathSearch::enoughRemainingPieces(int pieceCnt[]) const {
+ProofGame::enoughRemainingPieces(int pieceCnt[]) const {
     int wProm = pieceCnt[Piece::WPAWN] - goalPieceCnt[Piece::WPAWN];
     if (wProm < 0)
         return false;
@@ -363,7 +363,7 @@ PathSearch::enoughRemainingPieces(int pieceCnt[]) const {
 }
 
 bool
-PathSearch::capturesFeasible(const Position& pos, int pieceCnt[],
+ProofGame::capturesFeasible(const Position& pos, int pieceCnt[],
                              int numWhiteExtraPieces, int numBlackExtraPieces,
                              int excessWPawns, int excessBPawns) {
     for (int c = 0; c < 2; c++) {
@@ -434,7 +434,7 @@ PathSearch::capturesFeasible(const Position& pos, int pieceCnt[],
 }
 
 bool
-PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
+ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
                                int numWhiteExtraPieces, int numBlackExtraPieces,
                                int excessWPawns, int excessBPawns,
                                int neededMoves[]) {
@@ -548,7 +548,7 @@ PathSearch::computeNeededMoves(const Position& pos, U64 blocked,
 }
 
 bool
-PathSearch::computeShortestPathData(const Position& pos,
+ProofGame::computeShortestPathData(const Position& pos,
                                     int numWhiteExtraPieces, int numBlackExtraPieces,
                                     SqPathData promPath[2][8],
                                     std::vector<SqPathData>& sqPathData, U64& blocked) {
@@ -607,7 +607,7 @@ PathSearch::computeShortestPathData(const Position& pos,
 }
 
 int
-PathSearch::promPathLen(bool wtm, int fromSq, int targetPiece, U64 blocked, int maxCapt,
+ProofGame::promPathLen(bool wtm, int fromSq, int targetPiece, U64 blocked, int maxCapt,
                         const ShortestPathData& toSqPath, SqPathData promPath[8]) {
     int pLen = INT_MAX;
     switch (targetPiece) {
@@ -636,7 +636,7 @@ PathSearch::promPathLen(bool wtm, int fromSq, int targetPiece, U64 blocked, int 
 }
 
 bool
-PathSearch::computeAllCutSets(const Assignment<int>& as, int rowToSq[16], int colToSq[16],
+ProofGame::computeAllCutSets(const Assignment<int>& as, int rowToSq[16], int colToSq[16],
                               bool wtm, U64 blocked, int maxCapt,
                               U64 cutSets[16], int& nConstraints) {
     const int N = as.getSize();
@@ -668,7 +668,7 @@ PathSearch::computeAllCutSets(const Assignment<int>& as, int rowToSq[16], int co
 }
 
 bool
-PathSearch::computeCutSets(bool wtm, U64 fromSqMask, int toSq, U64 blocked, int maxCapt,
+ProofGame::computeCutSets(bool wtm, U64 fromSqMask, int toSq, U64 blocked, int maxCapt,
                            U64 cutSets[16], int& nCutSets) {
     U64 allPaths = 0;
     U64 m = fromSqMask;
@@ -709,7 +709,7 @@ PathSearch::computeCutSets(bool wtm, U64 fromSqMask, int toSq, U64 blocked, int 
 }
 
 U64
-PathSearch::allPawnPaths(bool wtm, int fromSq, int toSq, U64 blocked, int maxCapt) {
+ProofGame::allPawnPaths(bool wtm, int fromSq, int toSq, U64 blocked, int maxCapt) {
     int yDelta = Position::getY(fromSq) - Position::getY(toSq);
     maxCapt = std::min(maxCapt, std::abs(yDelta)); // Can't make use of more than yDelta captures
     Piece::Type pawn = wtm ? Piece::WPAWN : Piece::BPAWN;
@@ -724,7 +724,7 @@ PathSearch::allPawnPaths(bool wtm, int fromSq, int toSq, U64 blocked, int maxCap
 }
 
 int
-PathSearch::minDistToSquares(int piece, int fromSq, U64 blocked, int maxCapt,
+ProofGame::minDistToSquares(int piece, int fromSq, U64 blocked, int maxCapt,
                              SqPathData promPath[8], U64 targetSquares, bool canPromote) {
     const bool wtm = Piece::isWhite(piece);
     int best = bigCost;
@@ -742,7 +742,7 @@ PathSearch::minDistToSquares(int piece, int fromSq, U64 blocked, int maxCapt,
 }
 
 int
-PathSearch::promPathLen(bool wtm, int fromSq, U64 blocked, int maxCapt,
+ProofGame::promPathLen(bool wtm, int fromSq, U64 blocked, int maxCapt,
                         int toSq, SqPathData promPath[8], int pLen) {
     int firstP = wtm ? Piece::WQUEEN : Piece::BQUEEN;
     int lastP = wtm ? Piece::WKNIGHT : Piece::BKNIGHT;
@@ -768,7 +768,7 @@ PathSearch::promPathLen(bool wtm, int fromSq, U64 blocked, int maxCapt,
 }
 
 int
-PathSearch::solveAssignment(Assignment<int>& as) {
+ProofGame::solveAssignment(Assignment<int>& as) {
     const int N = as.getSize();
 
     // Count number of choices for each row/column
@@ -851,7 +851,7 @@ PathSearch::solveAssignment(Assignment<int>& as) {
 }
 
 bool
-PathSearch::computeBlocked(const Position& pos, U64& blocked) const {
+ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
     const U64 wGoalPawns = goalPos.pieceTypeBB(Piece::WPAWN);
     const U64 bGoalPawns = goalPos.pieceTypeBB(Piece::BPAWN);
     const U64 wCurrPawns = pos.pieceTypeBB(Piece::WPAWN);
@@ -948,8 +948,8 @@ static void printTable(const T* tbl) {
 }
 #endif
 
-std::shared_ptr<PathSearch::ShortestPathData>
-PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
+std::shared_ptr<ProofGame::ShortestPathData>
+ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
     if (p != Piece::WPAWN && p != Piece::BPAWN)
         maxCapt = 6;
     U64 h = blocked * 0x9e3779b97f4a7c55ULL + (int)p * 0x9e3779b97f51ULL +
@@ -1068,7 +1068,7 @@ PathSearch::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
 }
 
 U64
-PathSearch::computeNeighbors(Piece::Type p, U64 toSquares, U64 blocked) {
+ProofGame::computeNeighbors(Piece::Type p, U64 toSquares, U64 blocked) {
     U64 ret = 0;
     switch (p) {
     case Piece::WKING: case Piece::BKING:

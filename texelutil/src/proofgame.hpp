@@ -17,14 +17,14 @@
 */
 
 /*
- * pathsearch.hpp
+ * proofgame.hpp
  *
  *  Created on: Aug 15, 2015
  *      Author: petero
  */
 
-#ifndef PATHSEARCH_HPP_
-#define PATHSEARCH_HPP_
+#ifndef PROOFGAME_HPP_
+#define PROOFGAME_HPP_
 
 #include "util/util.hpp"
 #include "position.hpp"
@@ -38,14 +38,14 @@
 /**
  * Search for a sequence of legal moves leading from a start to an end position.
  */
-class PathSearch {
-    friend class PathSearchTest;
+class ProofGame {
+    friend class ProofGameTest;
 public:
     /** Create object to find a move path to a goal position.
      * A position is considered to match the goal position even if move
      * numbers, en passant square, and/or castling flags are different.
      * Use scale a for ply and scale b for bound when ordering nodes to search. */
-    PathSearch(const std::string& goal, int a = 1, int b = 1);
+    ProofGame(const std::string& goal, int a = 1, int b = 1);
 
     /** Search for shortest solution. Print solutions to standard output.
      * Return length of shortest path found.
@@ -239,15 +239,15 @@ private:
 
 
 inline bool
-PathSearch::isSolution(const Position& pos) const {
+ProofGame::isSolution(const Position& pos) const {
     if (pos.zobristHash() != goalPos.zobristHash())
         return false;
     return pos.drawRuleEquals(goalPos);
 }
 
 inline const Position&
-PathSearch::getGoalPos() const {
+ProofGame::getGoalPos() const {
     return goalPos;
 }
 
-#endif /* PATHSEARCH_HPP_ */
+#endif /* PROOFGAME_HPP_ */

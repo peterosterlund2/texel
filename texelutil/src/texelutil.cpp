@@ -27,7 +27,7 @@
 #include "posgen.hpp"
 #include "spsa.hpp"
 #include "bookbuild.hpp"
-#include "pathsearch.hpp"
+#include "proofgame.hpp"
 
 #include "tbgen.hpp"
 #include "parameters.hpp"
@@ -39,7 +39,7 @@
 #include "ide_listener.h"
 #include "cute_runner.h"
 #include "test/bookBuildTest.hpp"
-#include "test/pathsearchTest.hpp"
+#include "test/proofgameTest.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -133,7 +133,7 @@ usage() {
     std::cerr << " book query bookFile maxErrSelf errOtherExpConst : Interactive query mode\n";
     std::cerr << " book stats bookFile                        : Print book statistics\n";
     std::cerr << "\n";
-    std::cerr << " pathsearch [-w a:b] [-i \"initFen\"] \"goalFen\"\n";
+    std::cerr << " proofgame [-w a:b] [-i \"initFen\"] \"goalFen\"\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -195,7 +195,7 @@ runTests() {
 
     ComputerPlayer::initEngine();
     runSuite(BookBuildTest());
-    runSuite(PathSearchTest());
+    runSuite(ProofGameTest());
 }
 
 int
@@ -542,7 +542,7 @@ main(int argc, char* argv[]) {
                 BookBuild::Book book("");
                 book.statistics(bookFile);
             }
-        } else if (cmd == "pathsearch") {
+        } else if (cmd == "proofgame") {
             std::string initFen, goalFen;
             int a = 1, b = 1;
             int arg = 2;
@@ -564,7 +564,7 @@ main(int argc, char* argv[]) {
             if (arg+1 != argc)
                 usage();
             goalFen = argv[arg];
-            PathSearch ps(goalFen, a, b);
+            ProofGame ps(goalFen, a, b);
             std::vector<Move> movePath;
             ps.search(initFen, movePath);
         } else {
