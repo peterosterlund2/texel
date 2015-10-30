@@ -866,9 +866,7 @@ ChessTool::printParams() {
     os << "RvsBPBonus           : " << RvsBPBonus << std::endl;
 
     os << "pawnTradePenalty    : " << pawnTradePenalty << std::endl;
-    os << "pieceTradeBonus     : " << pieceTradeBonus << std::endl;
     os << "pawnTradeThreshold  : " << pawnTradeThreshold << std::endl;
-    os << "pieceTradeThreshold : " << pieceTradeThreshold << std::endl;
 
     os << "threatBonus1     : " << threatBonus1 << std::endl;
     os << "threatBonus2     : " << threatBonus2 << std::endl;
@@ -1090,9 +1088,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(RvsBPBonus,   "RvsBPBonus", hppFile);
 
     replaceValue(pawnTradePenalty, "pawnTradePenalty", hppFile);
-    replaceValue(pieceTradeBonus, "pieceTradeBonus", hppFile);
     replaceValue(pawnTradeThreshold, "pawnTradeThreshold", hppFile);
-    replaceValue(pieceTradeThreshold, "pieceTradeThreshold", hppFile);
 
     replaceValue(threatBonus1, "threatBonus1", hppFile);
     replaceValue(threatBonus2, "threatBonus2", hppFile);

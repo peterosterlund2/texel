@@ -78,9 +78,7 @@ DEFINE_PARAM(krpknBonus);
 DEFINE_PARAM(RvsBPBonus);
 
 DEFINE_PARAM(pawnTradePenalty);
-DEFINE_PARAM(pieceTradeBonus);
 DEFINE_PARAM(pawnTradeThreshold);
-DEFINE_PARAM(pieceTradeThreshold);
 
 DEFINE_PARAM(threatBonus1);
 DEFINE_PARAM(threatBonus2);
@@ -657,9 +655,7 @@ Parameters::Parameters() {
     REGISTER_PARAM(RvsBPBonus, "RookVsBishopPawnBonus");
 
     REGISTER_PARAM(pawnTradePenalty, "PawnTradePenalty");
-    REGISTER_PARAM(pieceTradeBonus, "PieceTradeBonus");
     REGISTER_PARAM(pawnTradeThreshold, "PawnTradeThreshold");
-    REGISTER_PARAM(pieceTradeThreshold, "PieceTradeThreshold");
 
     REGISTER_PARAM(threatBonus1, "ThreatBonus1");
     REGISTER_PARAM(threatBonus2, "ThreatBonus2");

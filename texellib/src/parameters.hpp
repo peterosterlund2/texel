@@ -414,9 +414,7 @@ DECLARE_PARAM(krpknBonus,          259, 0, 400, useUciParam);
 DECLARE_PARAM(RvsBPBonus,          -38, -200, 200, useUciParam);
 
 DECLARE_PARAM(pawnTradePenalty,    54, 0, 100, useUciParam);
-DECLARE_PARAM(pieceTradeBonus,     10, 0, 100, useUciParam);
 DECLARE_PARAM(pawnTradeThreshold,  361, 100, 1000, useUciParam);
-DECLARE_PARAM(pieceTradeThreshold, 717, 10, 1000, useUciParam);
 
 DECLARE_PARAM(threatBonus1,       63, 5, 500, useUciParam);
 DECLARE_PARAM(threatBonus2,     1191, 100, 10000, useUciParam);
