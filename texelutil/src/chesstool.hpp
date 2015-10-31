@@ -127,6 +127,11 @@ public:
      * Uses big jumps to speed up finding large changes and to possibly get to a better local minimum. */
     void localOptimize2(std::istream& is, std::vector<ParamDomain>& pdVec);
 
+    /** Set all zeroPars parameters to 0, then adjust approxPars so that the difference compared to
+     * the original parameter values is minimized. */
+    void simplify(std::istream& is, std::vector<ParamDomain>& zeroPars,
+                  std::vector<ParamDomain>& approxPars);
+
     /** Print evaluation parameters to cout. */
     void printParams();
 

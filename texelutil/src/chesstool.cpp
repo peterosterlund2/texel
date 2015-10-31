@@ -766,6 +766,97 @@ ChessTool::localOptimize2(std::istream& is, std::vector<ParamDomain>& pdVec) {
 
 // --------------------------------------------------------------------------------
 
+void
+ChessTool::simplify(std::istream& is, std::vector<ParamDomain>& zeroPars,
+                    std::vector<ParamDomain>& approxPars) {
+    double t0 = currentTime();
+    Parameters& uciPars = Parameters::instance();
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+
+    qEval(positions);
+    for (PositionInfo& pi : positions)
+        pi.searchScore = pi.qScore; // Use searchScore to store original evaluation
+
+    for (ParamDomain& pd : zeroPars)
+        uciPars.set(pd.name, "0");
+
+    std::priority_queue<PrioParam> queue;
+    for (ParamDomain& pd : approxPars)
+        queue.push(PrioParam(pd));
+
+    ScoreToProb sp;
+    auto computeAvgErr = [&positions,&sp]() -> double {
+        double errSum = 0;
+        for (const PositionInfo& pi : positions) {
+            double p0 = sp.getProb(pi.searchScore);
+            double p1 = sp.getProb(pi.qScore);
+            double err = p1 - p0;
+            errSum += err * err;
+        }
+        return sqrt(errSum / positions.size());
+    };
+
+    qEval(positions);
+    double bestAvgErr = computeAvgErr();
+    {
+        std::stringstream ss;
+        ss << "Initial error: " << std::setprecision(14) << bestAvgErr;
+        std::cout << ss.str() << std::endl;
+    }
+
+    std::vector<PrioParam> tried;
+    while (!queue.empty()) {
+        PrioParam pp = queue.top(); queue.pop();
+        ParamDomain& pd = *pp.pd;
+        std::cout << pd.name << " prio:" << pp.priority << " q:" << queue.size()
+                  << " min:" << pd.minV << " max:" << pd.maxV << " val:" << pd.value << std::endl;
+        double oldBest = bestAvgErr;
+        bool improved = false;
+        for (int d = 0; d < 2; d++) {
+            while (true) {
+                const int newValue = pd.value + (d ? -1 : 1);
+                if ((newValue < pd.minV) || (newValue > pd.maxV))
+                    break;
+
+                uciPars.set(pd.name, num2Str(newValue));
+                qEval(positions);
+                double avgErr = computeAvgErr();
+                uciPars.set(pd.name, num2Str(pd.value));
+
+                std::stringstream ss;
+                ss << pd.name << ' ' << newValue << ' ' << std::setprecision(14) << avgErr
+                   << ((avgErr < bestAvgErr) ? " *" : "");
+                std::cout << ss.str() << std::endl;
+
+                if (avgErr >= bestAvgErr)
+                    break;
+                bestAvgErr = avgErr;
+                pd.value = newValue;
+                uciPars.set(pd.name, num2Str(pd.value));
+                improved = true;
+            }
+            if (improved)
+                break;
+        }
+        double improvement = oldBest - bestAvgErr;
+        std::cout << pd.name << " improvement:" << improvement << std::endl;
+        pp.priority = pp.priority * 0.1 + improvement * 0.9;
+        if (improved) {
+            for (PrioParam& pp2 : tried)
+                queue.push(pp2);
+            tried.clear();
+        }
+        tried.push_back(pp);
+    }
+
+    double t1 = currentTime();
+    ::usleep(100000);
+    std::cerr << "Elapsed time: " << t1 - t0 << std::endl;
+}
+
+// --------------------------------------------------------------------------------
+
 template <int N>
 static void
 printTableNxN(const ParamTable<N*N>& pt, const std::string& name,
