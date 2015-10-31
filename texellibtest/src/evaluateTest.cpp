@@ -121,7 +121,7 @@ evalPos(Evaluate& eval, const Position& pos, bool evalMirror, bool testMirror) {
         Position mir = mirrorX(pos);
         int mirrorEval = evalPos(eval, mir, false, false);
         if (testMirror)
-            ASSERT_EQUAL(evalScore, mirrorEval);
+            ASSERT(std::abs(evalScore - mirrorEval) <= 1);
     }
 
     return evalScore;
