@@ -237,7 +237,7 @@ EvaluateTest::testEvalPos() {
 
     // Test bishop mobility
     pos = TextIO::readFEN("r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3");
-    sc1 = moveScore(pos, "Bd3") - protectBonus[1];
+    sc1 = moveScore(pos, "Bd3") - protectBonusB;
     sc2 = moveScore(pos, "Bc4");
     ASSERT(sc2 > sc1);
 }

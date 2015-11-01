@@ -418,6 +418,8 @@ DECLARE_PARAM(pawnTradeThreshold,  348, 100, 1000, useUciParam);
 DECLARE_PARAM(threatBonus1,       68, 5, 500, useUciParam);
 DECLARE_PARAM(threatBonus2,     1196, 100, 10000, useUciParam);
 DECLARE_PARAM(latentAttackBonus,  10, -50, 50, useUciParam);
+DECLARE_PARAM(protectBonusB,      11, -50, 50, useUciParam);
+DECLARE_PARAM(protectBonusR,       7, -50, 50, useUciParam);
 
 DECLARE_PARAM(rookHalfOpenBonus,     13, 0, 100, useUciParam);
 DECLARE_PARAM(rookOpenBonus,         20, 0, 100, useUciParam);
@@ -464,7 +466,6 @@ extern ParamTableMirrored<64> kt1w, kt2w, pt1w, pt2w, nt1w, nt2w, bt1w, bt2w, qt
 
 extern ParamTable<64> knightOutpostBonus;
 extern ParamTable<64> protectedPawnBonus, attackedPawnBonus;
-extern ParamTable<4> protectBonus;
 
 extern ParamTable<15> rookMobScore;
 extern ParamTable<14> bishMobScore;

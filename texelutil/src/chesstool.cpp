@@ -898,7 +898,6 @@ ChessTool::printParams() {
     printTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", os);
     printTableNxN<8>(protectedPawnBonus, "protectedPawnBonus", os);
     printTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", os);
-    printTable(protectBonus, "protectBonus", os);
 
     printTable(rookMobScore, "rookMobScore", os);
     printTable(bishMobScore, "bishMobScore", os);
@@ -961,6 +960,8 @@ ChessTool::printParams() {
     os << "threatBonus1     : " << threatBonus1 << std::endl;
     os << "threatBonus2     : " << threatBonus2 << std::endl;
     os << "latentAttackBonus: " << latentAttackBonus << std::endl;
+    os << "protectBonusB    : " << protectBonusB << std::endl;
+    os << "protectBonusR    : " << protectBonusR << std::endl;
 
     os << "rookHalfOpenBonus     : " << rookHalfOpenBonus << std::endl;
     os << "rookOpenBonus         : " << rookOpenBonus << std::endl;
@@ -1119,7 +1120,6 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", cppFile);
     replaceTableNxN<8>(protectedPawnBonus, "protectedPawnBonus", cppFile);
     replaceTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", cppFile);
-    replaceTable(protectBonus, "protectBonus", cppFile);
 
     replaceTable(rookMobScore, "rookMobScore", cppFile);
     replaceTable(bishMobScore, "bishMobScore", cppFile);
@@ -1182,6 +1182,8 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(threatBonus1, "threatBonus1", hppFile);
     replaceValue(threatBonus2, "threatBonus2", hppFile);
     replaceValue(latentAttackBonus, "latentAttackBonus", hppFile);
+    replaceValue(protectBonusB, "protectBonusB", hppFile);
+    replaceValue(protectBonusR, "protectBonusR", hppFile);
 
     replaceValue(rookHalfOpenBonus, "rookHalfOpenBonus", hppFile);
     replaceValue(rookOpenBonus, "rookOpenBonus", hppFile);

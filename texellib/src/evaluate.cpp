@@ -1176,14 +1176,10 @@ Evaluate::threatBonus(const Position& pos) {
 int
 Evaluate::protectBonus(const Position& pos) {
     int score = 0;
-    score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT) & wPawnAttacks) * ::protectBonus[0];
-    score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP) & wPawnAttacks) * ::protectBonus[1];
-    score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK  ) & wPawnAttacks) * ::protectBonus[2];
-    score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN ) & wPawnAttacks) * ::protectBonus[3];
-    score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT) & bPawnAttacks) * ::protectBonus[0];
-    score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP) & bPawnAttacks) * ::protectBonus[1];
-    score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK  ) & bPawnAttacks) * ::protectBonus[2];
-    score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN ) & bPawnAttacks) * ::protectBonus[3];
+    score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP) & wPawnAttacks) * ::protectBonusB;
+    score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK  ) & wPawnAttacks) * ::protectBonusR;
+    score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP) & bPawnAttacks) * ::protectBonusB;
+    score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK  ) & bPawnAttacks) * ::protectBonusR;
     return score;
 }
 

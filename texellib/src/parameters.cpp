@@ -82,6 +82,8 @@ DEFINE_PARAM(pawnTradeThreshold);
 DEFINE_PARAM(threatBonus1);
 DEFINE_PARAM(threatBonus2);
 DEFINE_PARAM(latentAttackBonus);
+DEFINE_PARAM(protectBonusB);
+DEFINE_PARAM(protectBonusR);
 
 DEFINE_PARAM(rookHalfOpenBonus);
 DEFINE_PARAM(rookOpenBonus);
@@ -245,12 +247,12 @@ ParamTableMirrored<64> pt2w(pt2b);
 ParamTable<64> nt1b { -300, 200, useUciParam,
     {-234, -18, -38,  -3,  21, -60, -20,-218,
       -53, -47,  13,  38,  33,  92,  -1,  18,
-      -37,  -4,  22,  37,  94,  96,  44, -11,
+      -37,  -4,  22,  37,  94,  96,  44, -12,
       -13,   2,   9,  36,  16,  42,  21,  21,
       -17,   7,  11,   9,  26,  24,  26, -11,
       -46,  -9,   0,  11,  19,   1,  -4, -33,
-      -52, -36, -20,   3,  -1,  -5, -27, -26,
-      -71, -37, -38, -31, -22, -28, -38, -86 },
+      -52, -36, -20,   2,  -2,  -5, -27, -26,
+      -71, -38, -38, -31, -22, -28, -39, -86 },
     {   1,   2,   3,   4,   5,   6,   7,   8,
         9,  10,  11,  12,  13,  14,  15,  16,
        17,  18,  19,  20,  21,  22,  23,  24,
@@ -330,11 +332,11 @@ ParamTable<64> qt1b { -200, 200, useUciParam,
     { -31, -22, -22, -25,  25, -13,  78,  28,
       -61, -93, -51, -73,-103, -32, -63,  45,
       -46, -39, -69, -64, -32, -21, -32, -46,
-      -35, -36, -41, -62, -57, -51, -38, -44,
-      -26, -31, -19, -36, -29, -31,  -4, -35,
-      -26, -17, -15, -21, -12, -14,   2, -20,
+      -35, -35, -41, -62, -57, -51, -38, -44,
+      -26, -30, -19, -35, -29, -30,  -3, -35,
+      -25, -16, -14, -20, -10, -13,   3, -19,
       -29, -22, -13,  -5,  -6,   2,  -8, -29,
-      -15, -18,  -7,  -8,  -3, -18, -45, -18 },
+      -15, -18,  -7,  -8,  -3, -18, -45, -17 },
     {   1,   2,   3,   4,   5,   6,   7,   8,
         9,  10,  11,  12,  13,  14,  15,  16,
        17,  18,  19,  20,  21,  22,  23,  24,
@@ -442,11 +444,6 @@ ParamTable<64> attackedPawnBonus { -150, 100, useUciParam,
        17,  18,  19,  20,  20,  19,  18,  17,
         0,   0,   0,   0,   0,   0,   0,   0,
         0,   0,   0,   0,   0,   0,   0,   0 }
-};
-
-ParamTable<4> protectBonus { -50, 50, useUciParam,
-    {  1, 11,  7,  2 },
-    {  1,  2,  3,  4 }
 };
 
 ParamTable<15> rookMobScore { -50, 50, useUciParam,
@@ -658,6 +655,8 @@ Parameters::Parameters() {
     REGISTER_PARAM(threatBonus1, "ThreatBonus1");
     REGISTER_PARAM(threatBonus2, "ThreatBonus2");
     REGISTER_PARAM(latentAttackBonus, "LatentAttackBonus");
+    REGISTER_PARAM(protectBonusB, "ProtectBonusB");
+    REGISTER_PARAM(protectBonusR, "ProtectBonusR");
 
     REGISTER_PARAM(rookHalfOpenBonus, "RookHalfOpenBonus");
     REGISTER_PARAM(rookOpenBonus, "RookOpenBonus");
@@ -715,7 +714,6 @@ Parameters::Parameters() {
     knightOutpostBonus.registerParams("KnightOutpostBonus", *this);
     protectedPawnBonus.registerParams("ProtectedPawnBonus", *this);
     attackedPawnBonus.registerParams("AttackedPawnBonus", *this);
-    protectBonus.registerParams("ProtectBonus", *this);
     rookMobScore.registerParams("RookMobility", *this);
     bishMobScore.registerParams("BishopMobility", *this);
     knightMobScore.registerParams("KnightMobility", *this);
