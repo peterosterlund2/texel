@@ -935,7 +935,6 @@ ChessTool::printParams() {
     os << "rV : " << rV << std::endl;
     os << "qV : " << qV << std::endl;
 
-    os << "pawnIslandPenalty        : " << pawnIslandPenalty << std::endl;
     os << "pawnBackwardPenalty      : " << pawnBackwardPenalty << std::endl;
     os << "pawnSemiBackwardPenalty1 : " << pawnSemiBackwardPenalty1 << std::endl;
     os << "pawnSemiBackwardPenalty2 : " << pawnSemiBackwardPenalty2 << std::endl;
@@ -1157,7 +1156,6 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(rV, "rV", hppFile);
     replaceValue(qV, "qV", hppFile);
 
-    replaceValue(pawnIslandPenalty, "pawnIslandPenalty", hppFile);
     replaceValue(pawnBackwardPenalty, "pawnBackwardPenalty", hppFile);
     replaceValue(pawnSemiBackwardPenalty1, "pawnSemiBackwardPenalty1", hppFile);
     replaceValue(pawnSemiBackwardPenalty2, "pawnSemiBackwardPenalty2", hppFile);

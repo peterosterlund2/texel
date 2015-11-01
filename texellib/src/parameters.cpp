@@ -56,7 +56,6 @@ DEFINE_PARAM(rV);
 DEFINE_PARAM(qV);
 DEFINE_PARAM(kV);
 
-DEFINE_PARAM(pawnIslandPenalty);
 DEFINE_PARAM(pawnBackwardPenalty);
 DEFINE_PARAM(pawnSemiBackwardPenalty1);
 DEFINE_PARAM(pawnSemiBackwardPenalty2);
@@ -583,12 +582,12 @@ ParamTable<8> kingPPSupportP { 1, 64, useUciParam,
 };
 
 ParamTable<8> pawnDoubledPenalty { 0, 50, useUciParam,
-    { 38, 20, 15, 10, 10, 15, 20, 38 },
+    { 33, 19, 15,  9,  9, 15, 19, 33 },
     {  1,  2,  3,  4,  4,  3,  2,  1 }
 };
 
 ParamTable<8> pawnIsolatedPenalty { 0, 50, useUciParam,
-    {  2, 11,  9, 13, 13,  9, 11,  2 },
+    {  7, 14, 12, 19, 19, 12, 14,  7 },
     {  1,  2,  3,  4,  4,  3,  2,  1 }
 };
 
@@ -633,7 +632,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(qV, "QueenValue");
     REGISTER_PARAM(kV, "KingValue");
 
-    REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
     REGISTER_PARAM(pawnBackwardPenalty, "PawnBackwardPenalty");
     REGISTER_PARAM(pawnSemiBackwardPenalty1, "PawnSemiBackwardPenalty1");
     REGISTER_PARAM(pawnSemiBackwardPenalty2, "PawnSemiBackwardPenalty2");

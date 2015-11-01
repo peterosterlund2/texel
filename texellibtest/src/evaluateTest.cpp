@@ -499,7 +499,7 @@ EvaluateTest::testEndGameEval() {
 
     { // Test KRPKM
         int score1 = evalFEN("8/2b5/k7/P7/RK6/8/8/8 w - - 0 1", true);
-        ASSERT(score1 < 165);
+        ASSERT(score1 < 167);
         int score2 = evalFEN("8/1b6/k7/P7/RK6/8/8/8 w - - 0 1", true);
         ASSERT(score2 > 300);
         int score3 = evalFEN("8/3b4/1k6/1P6/1RK5/8/8/8 w - - 0 1", true);

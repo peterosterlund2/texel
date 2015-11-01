@@ -392,7 +392,6 @@ DECLARE_PARAM(rV, 610, 1, 1200, useUciParam);
 DECLARE_PARAM(qV, 1237, 1, 2400, useUciParam);
 DECLARE_PARAM(kV, 9900, 9900, 9900, false); // Used by SEE algorithm but not included in board material sums
 
-DECLARE_PARAM(pawnIslandPenalty,        8, 0, 50, useUciParam);
 DECLARE_PARAM(pawnBackwardPenalty,      14, 0, 50, useUciParam);
 DECLARE_PARAM(pawnSemiBackwardPenalty1, 6, -50, 50, useUciParam);
 DECLARE_PARAM(pawnSemiBackwardPenalty2, 2, -50, 50, useUciParam);

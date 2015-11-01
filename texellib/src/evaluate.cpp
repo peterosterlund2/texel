@@ -785,17 +785,12 @@ void
 Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     int score = 0;
 
-    // Evaluate double pawns and pawn islands
+    // Evaluate doubled pawns
     const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
     const U64 wPawnFiles = BitBoard::southFill(wPawns) & 0xff;
-    const int wIslands = BitBoard::bitCount(((~wPawnFiles) >> 1) & wPawnFiles);
-
     const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
     const U64 bPawnFiles = BitBoard::southFill(bPawns) & 0xff;
-    const int bIslands = BitBoard::bitCount(((~bPawnFiles) >> 1) & bPawnFiles);
-    score -= (wIslands - bIslands) * pawnIslandPenalty;
 
-    // Evaluate doubled pawns
     const U64 wDoubled = BitBoard::northFill(wPawns << 8) & wPawns;
     U64 m = wDoubled;
     while (m != 0) {
