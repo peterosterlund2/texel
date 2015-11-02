@@ -1306,14 +1306,12 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
 
                 U64 wOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(wPawns)) & 0xff;
                 if (wOpen != 0) {
-                    halfOpenFiles += kingSafetyHalfOpenBCDEFG1 * BitBoard::bitCount(wOpen & 0xe7);
+                    halfOpenFiles += kingSafetyHalfOpenBCDEFG * BitBoard::bitCount(wOpen & 0xe7);
                     halfOpenFiles += kingSafetyHalfOpenAH1 * BitBoard::bitCount(wOpen & 0x18);
                 }
                 U64 bOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(bPawns)) & 0xff;
-                if (bOpen != 0) {
-                    halfOpenFiles += kingSafetyHalfOpenBCDEFG2 * BitBoard::bitCount(bOpen & 0xe7);
+                if (bOpen != 0)
                     halfOpenFiles += kingSafetyHalfOpenAH2 * BitBoard::bitCount(bOpen & 0x18);
-                }
                 const int th = kingSafetyThreshold;
                 safety = std::min(safety, th);
 
@@ -1343,14 +1341,12 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
 
                 U64 bOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(bPawns)) & 0xff;
                 if (bOpen != 0) {
-                    halfOpenFiles += kingSafetyHalfOpenBCDEFG1 * BitBoard::bitCount(bOpen & 0xe7);
+                    halfOpenFiles += kingSafetyHalfOpenBCDEFG * BitBoard::bitCount(bOpen & 0xe7);
                     halfOpenFiles += kingSafetyHalfOpenAH1 * BitBoard::bitCount(bOpen & 0x18);
                 }
                 U64 wOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(wPawns)) & 0xff;
-                if (wOpen != 0) {
-                    halfOpenFiles += kingSafetyHalfOpenBCDEFG2 * BitBoard::bitCount(wOpen & 0xe7);
+                if (wOpen != 0)
                     halfOpenFiles += kingSafetyHalfOpenAH2 * BitBoard::bitCount(wOpen & 0x18);
-                }
                 const int th = kingSafetyThreshold;
                 safety = std::min(safety, th);
 

@@ -95,8 +95,7 @@ DEFINE_PARAM(bishopPairPawnPenalty);
 DEFINE_PARAM(trappedBishopPenalty);
 DEFINE_PARAM(oppoBishopPenalty);
 
-DEFINE_PARAM(kingSafetyHalfOpenBCDEFG1);
-DEFINE_PARAM(kingSafetyHalfOpenBCDEFG2);
+DEFINE_PARAM(kingSafetyHalfOpenBCDEFG);
 DEFINE_PARAM(kingSafetyHalfOpenAH1);
 DEFINE_PARAM(kingSafetyHalfOpenAH2);
 DEFINE_PARAM(kingSafetyWeight1);
@@ -554,7 +553,7 @@ ParamTable<9> pawnStormTable { -400, 100, useUciParam,
 };
 
 ParamTable<14> kingAttackWeight { 0, 400, useUciParam,
-    {  0,  3,  0,  6,  6, 13, 27, 53, 60, 96,105,142,198,332 },
+    {  0,  3,  0,  6,  6, 13, 27, 53, 60, 96,105,141,198,332 },
     {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13 }
 };
 
@@ -668,8 +667,7 @@ Parameters::Parameters() {
     REGISTER_PARAM(trappedBishopPenalty, "TrappedBishopPenalty");
     REGISTER_PARAM(oppoBishopPenalty, "OppositeBishopPenalty");
 
-    REGISTER_PARAM(kingSafetyHalfOpenBCDEFG1, "KingSafetyHalfOpenBCDEFG1");
-    REGISTER_PARAM(kingSafetyHalfOpenBCDEFG2, "KingSafetyHalfOpenBCDEFG2");
+    REGISTER_PARAM(kingSafetyHalfOpenBCDEFG, "KingSafetyHalfOpenBCDEFG");
     REGISTER_PARAM(kingSafetyHalfOpenAH1, "KingSafetyHalfOpenAH1");
     REGISTER_PARAM(kingSafetyHalfOpenAH2, "KingSafetyHalfOpenAH2");
     REGISTER_PARAM(kingSafetyWeight1, "KingSafetyWeight1");
