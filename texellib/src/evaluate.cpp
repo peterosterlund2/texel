@@ -1301,8 +1301,6 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
                 safety -= kingSafetyWeight2 * BitBoard::bitCount(bPawns & (shelter | (shelter << 8)));
                 shelter <<= 8;
                 safety += kingSafetyWeight3 * BitBoard::bitCount(wPawns & shelter);
-                shelter <<= 8;
-                safety -= kingSafetyWeight4 * BitBoard::bitCount(bPawns & shelter);
 
                 U64 wOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(wPawns)) & 0xff;
                 if (wOpen != 0) {
@@ -1336,8 +1334,6 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
                 safety -= kingSafetyWeight2 * BitBoard::bitCount(wPawns & (shelter | (shelter >> 8)));
                 shelter >>= 8;
                 safety += kingSafetyWeight3 * BitBoard::bitCount(bPawns & shelter);
-                shelter >>= 8;
-                safety -= kingSafetyWeight4 * BitBoard::bitCount(wPawns & shelter);
 
                 U64 bOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(bPawns)) & 0xff;
                 if (bOpen != 0) {

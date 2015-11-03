@@ -979,7 +979,6 @@ ChessTool::printParams() {
     os << "kingSafetyWeight1        : " << kingSafetyWeight1 << std::endl;
     os << "kingSafetyWeight2        : " << kingSafetyWeight2 << std::endl;
     os << "kingSafetyWeight3        : " << kingSafetyWeight3 << std::endl;
-    os << "kingSafetyWeight4        : " << kingSafetyWeight4 << std::endl;
     os << "kingSafetyThreshold      : " << kingSafetyThreshold << std::endl;
     os << "knightKingProtectBonus   : " << knightKingProtectBonus << std::endl;
     os << "bishopKingProtectBonus   : " << bishopKingProtectBonus << std::endl;
@@ -1200,7 +1199,6 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(kingSafetyWeight1, "kingSafetyWeight1", hppFile);
     replaceValue(kingSafetyWeight2, "kingSafetyWeight2", hppFile);
     replaceValue(kingSafetyWeight3, "kingSafetyWeight3", hppFile);
-    replaceValue(kingSafetyWeight4, "kingSafetyWeight4", hppFile);
     replaceValue(kingSafetyThreshold, "kingSafetyThreshold", hppFile);
     replaceValue(knightKingProtectBonus, "knightKingProtectBonus", hppFile);
     replaceValue(bishopKingProtectBonus, "bishopKingProtectBonus", hppFile);

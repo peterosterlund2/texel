@@ -101,7 +101,6 @@ DEFINE_PARAM(kingSafetyHalfOpenAH2);
 DEFINE_PARAM(kingSafetyWeight1);
 DEFINE_PARAM(kingSafetyWeight2);
 DEFINE_PARAM(kingSafetyWeight3);
-DEFINE_PARAM(kingSafetyWeight4);
 DEFINE_PARAM(kingSafetyThreshold);
 DEFINE_PARAM(knightKingProtectBonus);
 DEFINE_PARAM(bishopKingProtectBonus);
@@ -673,7 +672,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(kingSafetyWeight1, "KingSafetyWeight1");
     REGISTER_PARAM(kingSafetyWeight2, "KingSafetyWeight2");
     REGISTER_PARAM(kingSafetyWeight3, "KingSafetyWeight3");
-    REGISTER_PARAM(kingSafetyWeight4, "KingSafetyWeight4");
     REGISTER_PARAM(kingSafetyThreshold, "KingSafetyThreshold");
     REGISTER_PARAM(knightKingProtectBonus, "KnightKingProtectBonus");
     REGISTER_PARAM(bishopKingProtectBonus, "BishopKingProtectBonus");

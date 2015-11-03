@@ -437,7 +437,6 @@ DECLARE_PARAM(kingSafetyHalfOpenAH2,    13, 0, 100, useUciParam);
 DECLARE_PARAM(kingSafetyWeight1,        26, -50, 200, useUciParam);
 DECLARE_PARAM(kingSafetyWeight2,        -50, -50, 200, useUciParam);
 DECLARE_PARAM(kingSafetyWeight3,        7, -50, 200, useUciParam);
-DECLARE_PARAM(kingSafetyWeight4,        1, -50, 200, useUciParam);
 DECLARE_PARAM(kingSafetyThreshold,      46, 0, 200, useUciParam);
 DECLARE_PARAM(knightKingProtectBonus,   11, -50, 50, useUciParam);
 DECLARE_PARAM(bishopKingProtectBonus,   14, -50, 50, useUciParam);
