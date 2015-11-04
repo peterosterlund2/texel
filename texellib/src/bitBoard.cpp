@@ -35,7 +35,7 @@ U64 BitBoard::bPawnAttacks[64];
 U64 BitBoard::wPawnBlockerMask[64];
 U64 BitBoard::bPawnBlockerMask[64];
 
-const U64 BitBoard::maskFile[8] = {
+const U64 BitBoard::maskFile[9] = {
     0x0101010101010101ULL,
     0x0202020202020202ULL,
     0x0404040404040404ULL,
@@ -43,7 +43,8 @@ const U64 BitBoard::maskFile[8] = {
     0x1010101010101010ULL,
     0x2020202020202020ULL,
     0x4040404040404040ULL,
-    0x8080808080808080ULL
+    0x8080808080808080ULL,
+    0x0ULL                 // Outside board
 };
 
 U64 BitBoard::epMaskW[8];

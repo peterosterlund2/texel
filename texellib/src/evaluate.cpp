@@ -679,33 +679,15 @@ Evaluate::pawnBonus(const Position& pos) {
 template <bool white>
 static inline int
 evalConnectedPP(int x, int y, U64 ppMask) {
-    if ((x >= 7) || !(BitBoard::maskFile[x+1] & ppMask))
+    U64 fileMask = BitBoard::maskFile[x+1] & ppMask;
+    if (!fileMask)
         return 0;
-
     int y2 = 0;
     if (white) {
-        for (int i = 6; i >= 1; i--) {
-            int sq = Position::getSquare(x+1, i);
-            if (ppMask & (1ULL << sq)) {
-                y2 = i;
-                break;
-            }
-        }
+        y2 = BitBoard::bitCount(BitBoard::southFill(fileMask)) - 1;
     } else {
-        for (int i = 1; i <= 6; i++) {
-            int sq = Position::getSquare(x+1, i);
-            if (ppMask & (1ULL << sq)) {
-                y2 = i;
-                break;
-            }
-        }
-    }
-    if (y2 == 0)
-        return 0;
-
-    if (!white) {
         y = 7 - y;
-        y2 = 7 - y2;
+        y2 = BitBoard::bitCount(BitBoard::northFill(fileMask)) - 1;
     }
     return connectedPPBonus[(y-1)*6 + (y2-1)];
 }

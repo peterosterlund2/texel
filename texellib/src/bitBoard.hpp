@@ -67,7 +67,7 @@ public:
     static const U64 maskAToDFiles = 0x0F0F0F0F0F0F0F0FULL;
     static const U64 maskEToHFiles = 0xF0F0F0F0F0F0F0F0ULL;
 
-    static const U64 maskFile[8];
+    static const U64 maskFile[9];
 
     // Masks for squares where enemy pawn can capture en passant, indexed by file
     static U64 epMaskW[8], epMaskB[8];
