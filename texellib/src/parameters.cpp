@@ -98,10 +98,6 @@ DEFINE_PARAM(oppoBishopPenalty);
 DEFINE_PARAM(kingSafetyHalfOpenBCDEFG);
 DEFINE_PARAM(kingSafetyHalfOpenAH1);
 DEFINE_PARAM(kingSafetyHalfOpenAH2);
-DEFINE_PARAM(kingSafetyWeight1);
-DEFINE_PARAM(kingSafetyWeight2);
-DEFINE_PARAM(kingSafetyWeight3);
-DEFINE_PARAM(kingSafetyThreshold);
 DEFINE_PARAM(knightKingProtectBonus);
 DEFINE_PARAM(bishopKingProtectBonus);
 DEFINE_PARAM(pawnStormBonus);
@@ -202,12 +198,12 @@ ParamTableMirrored<64> kt2w(kt2b);
 /** Piece/square table for pawns during middle game. */
 ParamTable<64> pt1b { -200, 300, useUciParam,
     {   0,   0,   0,   0,   0,   0,   0,   0,
-      122,  89, 102, 105,  63,  85, -16, 136,
-       17,  28,  25,  23,  19,  39,  30,   7,
-       -7,  -5, -10,  -1,   4, -11,  -8,  -7,
-       -9,  -2,  -7,   0,  -1,   2,  -1, -17,
-      -12,  -9, -26, -15,  -5, -12,  -5,  -6,
-       -9, -13, -23, -19, -13,   0,   5,  -4,
+      122,  89, 102, 105,  62,  83, -20, 134,
+       17,  28,  25,  22,  17,  38,  32,   9,
+       -7,  -5, -10,  -1,   3,  -9,  -5,  -5,
+       -9,  -2,  -7,  -1,  -2,  -1,   1, -17,
+      -12,  -9, -26, -14,  -4, -11,   1,  -5,
+       -9, -13, -23, -12,  -7,  11,   9,   0,
         0,   0,   0,   0,   0,   0,   0,   0 },
     {   0,   0,   0,   0,   0,   0,   0,   0,
         1,   2,   3,   4,   5,   6,   7,   8,
@@ -542,12 +538,12 @@ ParamTable<4> castleFactor { 0, 128, useUciParam,
 };
 
 ParamTable<9> pawnShelterTable { -100, 100, useUciParam,
-    { 12, 29,-20,  7, 23,-11,  1,  9,  3 },
+    { 13, 39,-14, 12, 23, -7,  5,  6,  2 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9 }
 };
 
 ParamTable<9> pawnStormTable { -400, 100, useUciParam,
-    {-158,-88,-259, 34, 29,  6, 13,  4,-11 },
+    {-168,-103,-277, 28,  5, -8, 11, -1,-14 },
     {  1,   2,   3,  4,  5,  6,  7,  8,  9 }
 };
 
@@ -669,10 +665,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(kingSafetyHalfOpenBCDEFG, "KingSafetyHalfOpenBCDEFG");
     REGISTER_PARAM(kingSafetyHalfOpenAH1, "KingSafetyHalfOpenAH1");
     REGISTER_PARAM(kingSafetyHalfOpenAH2, "KingSafetyHalfOpenAH2");
-    REGISTER_PARAM(kingSafetyWeight1, "KingSafetyWeight1");
-    REGISTER_PARAM(kingSafetyWeight2, "KingSafetyWeight2");
-    REGISTER_PARAM(kingSafetyWeight3, "KingSafetyWeight3");
-    REGISTER_PARAM(kingSafetyThreshold, "KingSafetyThreshold");
     REGISTER_PARAM(knightKingProtectBonus, "KnightKingProtectBonus");
     REGISTER_PARAM(bishopKingProtectBonus, "BishopKingProtectBonus");
     REGISTER_PARAM(pawnStormBonus, "PawnStormBonus");

@@ -1290,28 +1290,21 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
         const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
         const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
         { // White pawn shelter bonus
-            int safety = 0;
             int halfOpenFiles = 0;
             if (Position::getY(pos.wKingSq()) < 2) {
                 U64 shelter = 1ULL << Position::getX(pos.wKingSq());
                 shelter |= ((shelter & BitBoard::maskBToHFiles) >> 1) |
                            ((shelter & BitBoard::maskAToGFiles) << 1);
-                shelter <<= 8;
-                safety += kingSafetyWeight1 * BitBoard::bitCount(wPawns & shelter);
-                safety -= kingSafetyWeight2 * BitBoard::bitCount(bPawns & (shelter | (shelter << 8)));
-                shelter <<= 8;
-                safety += kingSafetyWeight3 * BitBoard::bitCount(wPawns & shelter);
+                shelter = BitBoard::southFill(shelter);
 
-                U64 wOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(wPawns)) & 0xff;
+                U64 wOpen = shelter & (~BitBoard::southFill(wPawns)) & 0xff;
                 if (wOpen != 0) {
                     halfOpenFiles += kingSafetyHalfOpenBCDEFG * BitBoard::bitCount(wOpen & 0xe7);
                     halfOpenFiles += kingSafetyHalfOpenAH1 * BitBoard::bitCount(wOpen & 0x18);
                 }
-                U64 bOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(bPawns)) & 0xff;
+                U64 bOpen = shelter & (~BitBoard::southFill(bPawns)) & 0xff;
                 if (bOpen != 0)
                     halfOpenFiles += kingSafetyHalfOpenAH2 * BitBoard::bitCount(bOpen & 0x18);
-                const int th = kingSafetyThreshold;
-                safety = std::min(safety, th);
 
                 const int xKing = Position::getX(pos.wKingSq());
                 if (xKing >= 5)
@@ -1319,32 +1312,25 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
                 else if (xKing <= 2)
                     score += evalKingPawnShelter<true, false>(pos);
             }
-            const int kSafety = safety - halfOpenFiles;
+            const int kSafety = -halfOpenFiles;
             score += kSafety;
         }
         { // Black pawn shelter bonus
-            int safety = 0;
             int halfOpenFiles = 0;
             if (Position::getY(pos.bKingSq()) >= 6) {
                 U64 shelter = 1ULL << (56 + Position::getX(pos.bKingSq()));
                 shelter |= ((shelter & BitBoard::maskBToHFiles) >> 1) |
                            ((shelter & BitBoard::maskAToGFiles) << 1);
-                shelter >>= 8;
-                safety += kingSafetyWeight1 * BitBoard::bitCount(bPawns & shelter);
-                safety -= kingSafetyWeight2 * BitBoard::bitCount(wPawns & (shelter | (shelter >> 8)));
-                shelter >>= 8;
-                safety += kingSafetyWeight3 * BitBoard::bitCount(bPawns & shelter);
+                shelter = BitBoard::southFill(shelter);
 
-                U64 bOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(bPawns)) & 0xff;
+                U64 bOpen = shelter & (~BitBoard::southFill(bPawns)) & 0xff;
                 if (bOpen != 0) {
                     halfOpenFiles += kingSafetyHalfOpenBCDEFG * BitBoard::bitCount(bOpen & 0xe7);
                     halfOpenFiles += kingSafetyHalfOpenAH1 * BitBoard::bitCount(bOpen & 0x18);
                 }
-                U64 wOpen = BitBoard::southFill(shelter) & (~BitBoard::southFill(wPawns)) & 0xff;
+                U64 wOpen = shelter & (~BitBoard::southFill(wPawns)) & 0xff;
                 if (wOpen != 0)
                     halfOpenFiles += kingSafetyHalfOpenAH2 * BitBoard::bitCount(wOpen & 0x18);
-                const int th = kingSafetyThreshold;
-                safety = std::min(safety, th);
 
                 const int xKing = Position::getX(pos.bKingSq());
                 if (xKing >= 5)
@@ -1352,7 +1338,7 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
                 else if (xKing <= 2)
                     score -= evalKingPawnShelter<false, false>(pos);
             }
-            const int kSafety = safety - halfOpenFiles;
+            const int kSafety = -halfOpenFiles;
             score -= kSafety;
         }
         // Pawn storm bonus
