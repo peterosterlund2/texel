@@ -63,6 +63,7 @@ private:
     static void testKnightOutPost();
     static void testUciParam();
     static void testUciParamTable();
+    static void testUciParamTable2();
     static void testSwindleScore();
     static void testStalePawns();
     static int getNContactChecks(const std::string& fen);

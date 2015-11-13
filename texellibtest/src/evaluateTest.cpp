@@ -1300,6 +1300,47 @@ EvaluateTest::testUciParamTable() {
     }
 }
 
+
+ParamTable2<10> uciParTable2 { -100, 100, true,
+    { 10, 1, -1 },
+    [](int* p, int nPars, int i) {
+        assert(nPars == 3);
+        return p[0] + p[1] * i + p[2] * i * i;
+    }
+};
+
+ParamTableMirrored<10> uciParTable2M(uciParTable2);
+
+void
+EvaluateTest::testUciParamTable2() {
+    uciParTable2.registerParams("uciParTableB", Parameters::instance());
+    const int* table = uciParTable2.getTable();
+    const int* tableM = uciParTable2M.getTable();
+    for (int i = 0; i < 10; i++) {
+        ASSERT_EQUAL(10 + i - i * i, uciParTable2[i]);
+        ASSERT_EQUAL(10 + i - i * i, uciParTable2M[9 - i]);
+        ASSERT_EQUAL(uciParTable2[i], table[i]);
+        ASSERT_EQUAL(uciParTable2M[i], tableM[i]);
+    }
+
+    Parameters::instance().set("uciParTableB1", "7");
+    for (int i = 0; i < 10; i++) {
+        ASSERT_EQUAL(7 + i - i * i, uciParTable2[i]);
+        ASSERT_EQUAL(7 + i - i * i, uciParTable2M[9 - i]);
+        ASSERT_EQUAL(uciParTable2[i], table[i]);
+        ASSERT_EQUAL(uciParTable2M[i], tableM[i]);
+    }
+
+    Parameters::instance().set("uciParTableB2", "3");
+    Parameters::instance().set("uciParTableB3", "-2");
+    for (int i = 0; i < 10; i++) {
+        ASSERT_EQUAL(7 + 3 * i - 2 * i * i, uciParTable2[i]);
+        ASSERT_EQUAL(7 + 3 * i - 2 * i * i, uciParTable2M[9 - i]);
+        ASSERT_EQUAL(uciParTable2[i], table[i]);
+        ASSERT_EQUAL(uciParTable2M[i], tableM[i]);
+    }
+}
+
 void
 EvaluateTest::testSwindleScore() {
     for (int e = 0; e < 3000; e++) {
@@ -1439,6 +1480,7 @@ EvaluateTest::getSuite() const {
     s.push_back(CUTE(testKNPK));
     s.push_back(CUTE(testUciParam));
     s.push_back(CUTE(testUciParamTable));
+    s.push_back(CUTE(testUciParamTable2));
     s.push_back(CUTE(testSwindleScore));
     s.push_back(CUTE(testStalePawns));
     s.push_back(CUTE(testContactChecks));

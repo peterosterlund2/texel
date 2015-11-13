@@ -853,3 +853,29 @@ ParamTableBase::modifiedN(int* table, int* parNo, int N) {
             table[i] = -params[-parNo[i]]->getIntPar();
     notify();
 }
+
+void
+ParamTable2Base::registerParamsN(const std::string& name, Parameters& pars,
+                                 int* table, int N, int* parVals, int nPars) {
+    if (!uci)
+        return;
+    params.resize(nPars);
+
+    for (int i = 0; i < nPars; i++) {
+        int parVal = parVals[i];
+        std::string pName = name + num2Str(i + 1);
+        params[i] = std::make_shared<Parameters::SpinParam>(pName, minValue, maxValue, parVal);
+        pars.addPar(params[i]);
+        params[i]->addListener([=]() { modifiedN(table, N, parVals, nPars); }, false);
+    }
+    modifiedN(table, N, parVals, nPars);
+}
+
+void
+ParamTable2Base::modifiedN(int* table, int N, int* parVals, int nPars) {
+    for (int i = 0; i < nPars; i++)
+        parVals[i] = params[i]->getIntPar();
+    for (int i = 0; i < N; i++)
+        table[i] = func(parVals, nPars, i);
+    notify();
+}

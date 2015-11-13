@@ -261,8 +261,12 @@ private:
 /** Non-template base class to reduce executable code size. */
 class ParamTableBase : public Parameters::Listener {
 public:
+    virtual ~ParamTableBase() {}
+
     int getMinValue() const { return minValue; }
     int getMaxValue() const { return maxValue; }
+
+    virtual int operator[](int i) const = 0;
 
 protected:
     ParamTableBase(bool uci0, int minVal0, int maxVal0) :
@@ -296,10 +300,48 @@ private:
     int parNo[N];
 };
 
+class ParamTable2Base : public ParamTableBase {
+public:
+    using FuncType = std::function<int(int*, int, int)>;
+protected:
+    ParamTable2Base(bool uci, int minVal, int maxVal,
+                    const FuncType& func0) :
+        ParamTableBase(uci, minVal, maxVal),
+        func(func0) {}
+
+    void registerParamsN(const std::string& name, Parameters& pars,
+                         int* table, int N, int* parVals, int nPars);
+
+    void modifiedN(int* table, int N, int* parVals, int nPars);
+
+private:
+    FuncType func;
+};
+
+template <int N>
+class ParamTable2 : public ParamTable2Base {
+public:
+    ParamTable2(int minVal, int maxVal, bool uci,
+                std::initializer_list<int> parVals,
+                const FuncType& func);
+
+    int operator[](int i) const { return table[i]; }
+    const int* getTable() const { return table; }
+
+    void registerParams(const std::string& name, Parameters& pars) {
+        registerParamsN(name, pars, table, N, &parVals[0], parVals.size());
+    }
+
+private:
+    int table[N];
+    std::vector<int> parVals;
+};
+
+
 template <int N>
 class ParamTableMirrored {
 public:
-    ParamTableMirrored(ParamTable<N>& orig0) : orig(orig0) {
+    ParamTableMirrored(ParamTableBase& orig0) : orig(orig0) {
         orig.addListener([this]() {
             if (N == 64) {
                 for (int sq = 0; sq < N; sq++)
@@ -314,7 +356,7 @@ public:
     const int* getTable() const { return table; }
 private:
     int table[N];
-    ParamTable<N>& orig;
+    ParamTableBase& orig;
 };
 
 template <int N>
@@ -328,6 +370,15 @@ ParamTable<N>::ParamTable(int minVal0, int maxVal0, bool uci0,
         table[i] = table0.begin()[i];
         parNo[i] = parNo0.begin()[i];
     }
+}
+
+template <int N>
+ParamTable2<N>::ParamTable2(int minVal0, int maxVal0, bool uci0,
+                            std::initializer_list<int> parVals0,
+                            const FuncType& func0)
+    : ParamTable2Base(uci0, minVal0, maxVal0, func0) {
+    for (int i = 0; i < parVals0.size(); i++)
+        parVals.push_back(parVals0.begin()[i]);
 }
 
 inline bool

@@ -652,7 +652,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         } else {
             nullOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
         }
-        const int R = (depth > 6*plyScale) ? 4*plyScale : 3*plyScale;
+        const int R = std::min(depth, 4*plyScale);
         if (nullOk) {
             if (((ent.getType() == TType::T_EXACT) || (ent.getType() == TType::T_LE)) &&
                 (ent.getDepth() >= depth - R) && (ent.getScore(ply) < beta))
