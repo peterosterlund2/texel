@@ -302,7 +302,7 @@ private:
 
 class ParamTable2Base : public ParamTableBase {
 public:
-    using FuncType = std::function<int(int*, int, int)>;
+    using FuncType = std::function<int(const std::vector<int>&, int)>;
 protected:
     ParamTable2Base(bool uci, int minVal, int maxVal,
                     const FuncType& func0) :
@@ -310,9 +310,9 @@ protected:
         func(func0) {}
 
     void registerParamsN(const std::string& name, Parameters& pars,
-                         int* table, int N, int* parVals, int nPars);
+                         int* table, int N, std::vector<int>& parVals);
 
-    void modifiedN(int* table, int N, int* parVals, int nPars);
+    void modifiedN(int* table, int N, std::vector<int>& parVals);
 
 private:
     FuncType func;
@@ -329,7 +329,7 @@ public:
     const int* getTable() const { return table; }
 
     void registerParams(const std::string& name, Parameters& pars) {
-        registerParamsN(name, pars, table, N, &parVals[0], parVals.size());
+        registerParamsN(name, pars, table, N, parVals);
     }
 
 private:

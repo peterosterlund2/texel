@@ -856,9 +856,14 @@ ParamTableBase::modifiedN(int* table, int* parNo, int N) {
 
 void
 ParamTable2Base::registerParamsN(const std::string& name, Parameters& pars,
-                                 int* table, int N, int* parVals, int nPars) {
-    if (!uci)
+                                 int* table, int N, std::vector<int>& parVals) {
+    const int nPars = parVals.size();
+    if (!uci) {
+        for (int i = 0; i < N; i++)
+            table[i] = func(parVals, i);
+        notify();
         return;
+    }
     params.resize(nPars);
 
     for (int i = 0; i < nPars; i++) {
@@ -866,16 +871,17 @@ ParamTable2Base::registerParamsN(const std::string& name, Parameters& pars,
         std::string pName = name + num2Str(i + 1);
         params[i] = std::make_shared<Parameters::SpinParam>(pName, minValue, maxValue, parVal);
         pars.addPar(params[i]);
-        params[i]->addListener([=]() { modifiedN(table, N, parVals, nPars); }, false);
+        params[i]->addListener([=,&parVals]() { modifiedN(table, N, parVals); }, false);
     }
-    modifiedN(table, N, parVals, nPars);
+    modifiedN(table, N, parVals);
 }
 
 void
-ParamTable2Base::modifiedN(int* table, int N, int* parVals, int nPars) {
+ParamTable2Base::modifiedN(int* table, int N, std::vector<int>& parVals) {
+    const int nPars = parVals.size();
     for (int i = 0; i < nPars; i++)
         parVals[i] = params[i]->getIntPar();
     for (int i = 0; i < N; i++)
-        table[i] = func(parVals, nPars, i);
+        table[i] = func(parVals, i);
     notify();
 }

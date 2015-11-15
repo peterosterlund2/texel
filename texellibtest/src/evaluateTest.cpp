@@ -1303,41 +1303,63 @@ EvaluateTest::testUciParamTable() {
 
 ParamTable2<10> uciParTable2 { -100, 100, true,
     { 10, 1, -1 },
-    [](int* p, int nPars, int i) {
-        assert(nPars == 3);
+    [](const std::vector<int>& p, int i) {
+        assert(p.size() == 3);
         return p[0] + p[1] * i + p[2] * i * i;
     }
 };
-
 ParamTableMirrored<10> uciParTable2M(uciParTable2);
+
+ParamTable2<5> uciParTable2b { -100, 100, false,
+    { 1, 2, 3 },
+    [](const std::vector<int>& p, int i) {
+        assert(p.size() == 3);
+        return p[0] + p[1] * i + p[2] * i * i;
+    }
+};
+ParamTableMirrored<5> uciParTable2bM(uciParTable2b);
 
 void
 EvaluateTest::testUciParamTable2() {
-    uciParTable2.registerParams("uciParTableB", Parameters::instance());
-    const int* table = uciParTable2.getTable();
-    const int* tableM = uciParTable2M.getTable();
-    for (int i = 0; i < 10; i++) {
-        ASSERT_EQUAL(10 + i - i * i, uciParTable2[i]);
-        ASSERT_EQUAL(10 + i - i * i, uciParTable2M[9 - i]);
-        ASSERT_EQUAL(uciParTable2[i], table[i]);
-        ASSERT_EQUAL(uciParTable2M[i], tableM[i]);
+    {
+        uciParTable2.registerParams("uciParTableB", Parameters::instance());
+        const int* table = uciParTable2.getTable();
+        const int* tableM = uciParTable2M.getTable();
+        for (int i = 0; i < 10; i++) {
+            ASSERT_EQUAL(10 + i - i * i, uciParTable2[i]);
+            ASSERT_EQUAL(10 + i - i * i, uciParTable2M[9 - i]);
+            ASSERT_EQUAL(uciParTable2[i], table[i]);
+            ASSERT_EQUAL(uciParTable2M[i], tableM[i]);
+        }
+
+        Parameters::instance().set("uciParTableB1", "7");
+        for (int i = 0; i < 10; i++) {
+            ASSERT_EQUAL(7 + i - i * i, uciParTable2[i]);
+            ASSERT_EQUAL(7 + i - i * i, uciParTable2M[9 - i]);
+            ASSERT_EQUAL(uciParTable2[i], table[i]);
+            ASSERT_EQUAL(uciParTable2M[i], tableM[i]);
+        }
+
+        Parameters::instance().set("uciParTableB2", "3");
+        Parameters::instance().set("uciParTableB3", "-2");
+        for (int i = 0; i < 10; i++) {
+            ASSERT_EQUAL(7 + 3 * i - 2 * i * i, uciParTable2[i]);
+            ASSERT_EQUAL(7 + 3 * i - 2 * i * i, uciParTable2M[9 - i]);
+            ASSERT_EQUAL(uciParTable2[i], table[i]);
+            ASSERT_EQUAL(uciParTable2M[i], tableM[i]);
+        }
     }
 
-    Parameters::instance().set("uciParTableB1", "7");
-    for (int i = 0; i < 10; i++) {
-        ASSERT_EQUAL(7 + i - i * i, uciParTable2[i]);
-        ASSERT_EQUAL(7 + i - i * i, uciParTable2M[9 - i]);
-        ASSERT_EQUAL(uciParTable2[i], table[i]);
-        ASSERT_EQUAL(uciParTable2M[i], tableM[i]);
-    }
-
-    Parameters::instance().set("uciParTableB2", "3");
-    Parameters::instance().set("uciParTableB3", "-2");
-    for (int i = 0; i < 10; i++) {
-        ASSERT_EQUAL(7 + 3 * i - 2 * i * i, uciParTable2[i]);
-        ASSERT_EQUAL(7 + 3 * i - 2 * i * i, uciParTable2M[9 - i]);
-        ASSERT_EQUAL(uciParTable2[i], table[i]);
-        ASSERT_EQUAL(uciParTable2M[i], tableM[i]);
+    {
+        uciParTable2b.registerParams("uciParTableBb", Parameters::instance());
+        const int* table = uciParTable2b.getTable();
+        const int* tableM = uciParTable2bM.getTable();
+        for (int i = 0; i < 5; i++) {
+            ASSERT_EQUAL(1 + 2 * i + 3 * i * i, uciParTable2b[i]);
+            ASSERT_EQUAL(1 + 2 * i + 3 * i * i, uciParTable2bM[4 - i]);
+            ASSERT_EQUAL(uciParTable2b[i], table[i]);
+            ASSERT_EQUAL(uciParTable2bM[i], tableM[i]);
+        }
     }
 }
 
