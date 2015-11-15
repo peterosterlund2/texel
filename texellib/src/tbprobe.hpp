@@ -118,6 +118,11 @@ private:
     /** Initialize */
     static void gtbInitialize(const std::string& path, int cacheMB, int wdlFraction);
 
+    static bool tbProbe(Position& pos, int ply, int alpha, int beta,
+                        TranspositionTable& tt,
+                        TranspositionTable::TTEntry& ent,
+                        const int nPieces);
+
     static void initWDLBounds();
     static int getMaxDTZ(int matId);
     static int getMaxSubMate(const Position& pos);
@@ -144,7 +149,19 @@ private:
 
     /** Probe GTB and on-demand TBs to find a DTM score. */
     static bool dtmProbe(Position& pos, int ply, TranspositionTable& tt, int& score);
+
+    static int maxPieces;
 };
+
+inline bool
+TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
+                 TranspositionTable& tt,
+                 TranspositionTable::TTEntry& ent) {
+    const int nPieces = BitBoard::bitCount(pos.occupiedBB());
+    if (nPieces > maxPieces)
+        return false;
+    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces);
+}
 
 
 #endif /* TBPROBE_HPP_ */
