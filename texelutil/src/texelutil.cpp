@@ -105,6 +105,8 @@ usage() {
     std::cerr << " residual xType inclNo : Print evaluation error as function of material\n";
     std::cerr << "                         xType is mtrlsum, mtrldiff, pawnsum, pawndiff or eval\n";
     std::cerr << "                         inclNo is 0/1 to exclude/include position/game numbers\n";
+    std::cerr << " simplify z1 z2 ... : p1 p2 ... : Set zi to zero, adjust pi to approximate\n";
+    std::cerr << "                                  original evaluation\n";
     std::cerr << "\n";
     std::cerr << " genfen qvsn : Generate all positions of a given type\n";
     std::cerr << "\n";
@@ -158,11 +160,20 @@ parseParamDomains(int argc, char* argv[], std::vector<ParamDomain>& params) {
 }
 
 void
-getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
+getParams(int argc, char* argv[], std::vector<ParamDomain>& params1,
+          std::vector<ParamDomain>& params2) {
     Parameters& uciPars = Parameters::instance();
+    bool firstSet = true;
     for (int i = 2; i < argc; i++) {
-        ParamDomain pd;
         std::string parName(argv[i]);
+        if (parName == ":") {
+            if (!firstSet)
+                throw ChessParseError("Too many parameter sets");
+            firstSet = false;
+            continue;
+        }
+        std::vector<ParamDomain>& params = firstSet ? params1 : params2;
+        ParamDomain pd;
         if (uciPars.getParam(parName)) {
             pd.name = parName;
             params.push_back(pd);
@@ -176,14 +187,26 @@ getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
         } else
             throw ChessParseError("No such parameter:" + parName);
     }
-    for (ParamDomain& pd : params) {
+    auto setParamInfo = [&uciPars](ParamDomain& pd) {
         std::shared_ptr<Parameters::ParamBase> p = uciPars.getParam(pd.name);
         const Parameters::SpinParam& sp = dynamic_cast<const Parameters::SpinParam&>(*p.get());
         pd.minV = sp.getMinValue();
         pd.step = 1;
         pd.maxV = sp.getMaxValue();
         pd.value = sp.getIntPar();
-    }
+    };
+    for (ParamDomain& pd : params1)
+        setParamInfo(pd);
+    for (ParamDomain& pd : params2)
+        setParamInfo(pd);
+}
+
+void
+getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
+    std::vector<ParamDomain> params2;
+    getParams(argc, argv, params, params2);
+    if (!params2.empty())
+        throw ChessParseError("Unexpected second set of parameters");
 }
 
 static void
@@ -312,6 +335,10 @@ main(int argc, char* argv[]) {
             std::vector<ParamDomain> params;
             getParams(argc, argv, params);
             chessTool.localOptimize2(std::cin, params);
+        } else if (cmd == "simplify") {
+            std::vector<ParamDomain> zeroParams, params;
+            getParams(argc, argv, zeroParams, params);
+            chessTool.simplify(std::cin, zeroParams, params);
         } else if (cmd == "printpar") {
             chessTool.printParams();
         } else if (cmd == "patchpar") {
