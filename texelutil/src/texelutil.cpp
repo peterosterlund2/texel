@@ -511,6 +511,7 @@ main(int argc, char* argv[]) {
             std::string bookFile = argv[3];
             std::string logFile = bookFile + ".log";
             if (bookCmd == "improve") {
+                ChessTool::setupTB();
                 if ((argc < 6) || (argc > 10))
                     usage();
                 std::string startMoves;
