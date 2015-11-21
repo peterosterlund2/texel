@@ -43,6 +43,8 @@ static std::string currentRtbPath;
 static const char** gtbPaths = nullptr;
 static int gtbMaxPieces = 0;
 
+int TBProbe::maxPieces = 0;
+
 static std::unordered_map<int,int> maxDTM; // MatId -> Max DTM value in GTB TB
 static std::unordered_map<int,int> maxDTZ; // MatId -> Max DTZ value in RTB TB
 struct IIPairHash {
@@ -77,6 +79,8 @@ TBProbe::initialize(const std::string& gtbPath, int cacheMB,
         initWDLBounds();
         initialized = true;
     }
+
+    maxPieces = std::max({4, gtbMaxPieces, Syzygy::TBLargest});
 }
 
 bool
@@ -86,8 +90,8 @@ TBProbe::tbEnabled() {
 
 bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
-                 TranspositionTable& tt, TranspositionTable::TTEntry& ent) {
-    const int nPieces = BitBoard::bitCount(pos.occupiedBB());
+                 TranspositionTable& tt, TranspositionTable::TTEntry& ent,
+                 const int nPieces) {
     bool mateSearch = SearchConst::isLoseScore(alpha) || SearchConst::isWinScore(beta);
 
     // Probe on-demand TB
