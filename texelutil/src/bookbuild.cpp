@@ -327,26 +327,31 @@ Book::importPGN(const std::string& bookFile, const std::string& pgnFile,
     GameTree gt(is);
     int nGames = 0;
     int nAdded = 0;
-    while (gt.readPGN()) {
-        nGames++;
-        GameNode gn = gt.getRootNode();
-        std::function<void(int)> addToBook = [&](int ply) {
-            if (ply >= maxPly)
-                return;
-            Position base = gn.getPos();
-            for (int i = 0; i < gn.nChildren(); i++) {
-                gn.goForward(i);
-                if (!getBookNode(gn.getPos().bookHash())) {
-                    assert(!gn.getMove().isEmpty());
-                    std::vector<U64> toSearch;
-                    addPosToBook(base, gn.getMove(), toSearch);
-                    nAdded++;
+    try {
+        while (gt.readPGN()) {
+            nGames++;
+            GameNode gn = gt.getRootNode();
+            std::function<void(int)> addToBook = [&](int ply) {
+                if (ply >= maxPly)
+                    return;
+                Position base = gn.getPos();
+                for (int i = 0; i < gn.nChildren(); i++) {
+                    gn.goForward(i);
+                    if (!getBookNode(gn.getPos().bookHash())) {
+                        assert(!gn.getMove().isEmpty());
+                        std::vector<U64> toSearch;
+                        addPosToBook(base, gn.getMove(), toSearch);
+                        nAdded++;
+                    }
+                    addToBook(ply+1);
+                    gn.goBack();
                 }
-                addToBook(ply+1);
-                gn.goBack();
-            }
-        };
-        addToBook(0);
+            };
+            addToBook(0);
+        }
+    } catch (...) {
+        std::cerr << "Error parsing game " << nGames << std::endl;
+        throw;
     }
     std::cout << "Added " << nAdded << " positions from " << nGames << " games" << std::endl;
 }
