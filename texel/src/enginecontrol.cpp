@@ -242,7 +242,6 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     pd.wq.resetSplitDepth();
     pd.startAll();
     sc->timeLimit(minTimeLimit, maxTimeLimit);
-    tt.nextGeneration();
     bool ownBook = UciParams::ownBook->getBoolPar();
     bool analyseMode = UciParams::analyseMode->getBoolPar();
     int maxPV = (infinite || analyseMode) ? UciParams::multiPV->getIntPar() : 1;
@@ -254,6 +253,8 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
         ss.precision(2);
         ss << std::fixed << (evScore / 100.0);
         os << "info string Eval: " << ss.str() << std::endl;
+    } else {
+        tt.nextGeneration();
     }
     auto f = [this,ownBook,analyseMode,moves,maxDepth,maxNodes,maxPV,minProbeDepth]() {
         Numa::instance().bindThread(0);
