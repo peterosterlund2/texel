@@ -1355,10 +1355,19 @@ ChessTool::printResiduals(std::istream& is, const std::string& xTypeStr, bool in
 bool
 ChessTool::getCommentScore(const std::string& comment, int& score) {
     double fScore;
-    if (!str2Num(comment, fScore))
-        return false;
-    score = (int)std::round(fScore * 100);
-    return true;
+    if (str2Num(comment, fScore)) {
+        score = (int)std::round(fScore * 100);
+        return true;
+    }
+    if (startsWith(comment, "+M")) {
+        score = 10000;
+        return true;
+    }
+    if (startsWith(comment, "-M")) {
+        score = -10000;
+        return true;
+    }
+    return false;
 }
 
 void
