@@ -353,11 +353,11 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
     // Bonus for KRK
     if ((pos.bMtrl() == 0) && pos.pieceTypeBB(Piece::WROOK)) {
         if (!doEval) return 1;
-        return 400 + pos.wMtrl() - pos.bMtrl() + mateEval(pos.getKingSq(true), pos.getKingSq(false));
+        return 450 + pos.wMtrl() - pos.bMtrl() + mateEval(pos.getKingSq(true), pos.getKingSq(false));
     }
     if ((pos.wMtrl() == 0) && pos.pieceTypeBB(Piece::BROOK)) {
         if (!doEval) return 1;
-        return -(400 + pos.bMtrl() - pos.wMtrl() + mateEval(pos.getKingSq(false), pos.getKingSq(true)));
+        return -(450 + pos.bMtrl() - pos.wMtrl() + mateEval(pos.getKingSq(false), pos.getKingSq(true)));
     }
 
     // Bonus for KQK[BN]
@@ -365,11 +365,11 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
     const int nV = ::nV;
     if (pos.pieceTypeBB(Piece::WQUEEN) && (bMtrlPawns == 0) && (pos.bMtrl() <= std::max(bV,nV))) {
         if (!doEval) return 1;
-        return 200 + pos.wMtrl() - pos.bMtrl() + mateEval(pos.getKingSq(true), pos.getKingSq(false));
+        return 235 + pos.wMtrl() - pos.bMtrl() + mateEval(pos.getKingSq(true), pos.getKingSq(false));
     }
     if (pos.pieceTypeBB(Piece::BQUEEN) && (wMtrlPawns == 0) && (pos.wMtrl() <= std::max(bV,nV))) {
         if (!doEval) return 1;
-        return -(200 + pos.bMtrl() - pos.wMtrl() + mateEval(pos.getKingSq(false), pos.getKingSq(true)));
+        return -(235 + pos.bMtrl() - pos.wMtrl() + mateEval(pos.getKingSq(false), pos.getKingSq(true)));
     }
 
     // Bonus for KQK
@@ -1046,7 +1046,7 @@ EndGameEval::krpkrpEval(int wKing, int bKing, int wPawn, int wRook, int bRook, i
 
 int
 EndGameEval::kbnkEval(int wKing, int bKing, bool darkBishop) {
-    int score = 600;
+    int score = 640;
     if (darkBishop) { // Mirror X
         wKing ^= 7;
         bKing ^= 7;

@@ -121,7 +121,7 @@ evalPos(Evaluate& eval, const Position& pos, bool evalMirror, bool testMirror) {
         Position mir = mirrorX(pos);
         int mirrorEval = evalPos(eval, mir, false, false);
         if (testMirror)
-            ASSERT_EQUAL(evalScore, mirrorEval);
+            ASSERT(std::abs(evalScore - mirrorEval) <= 1);
     }
 
     return evalScore;
@@ -269,7 +269,7 @@ EvaluateTest::testPieceSquareEval() {
     pos.makeMove(TextIO::stringToMove(pos, "Nxc6"), ui);
     int score2 = evalWhite(pos);
     ASSERT(score2 < score);                 // Bishop worth more than knight in this case
-    ASSERT(moveScore(pos, "Qe2") >= -3);    // Queen away from edge is good
+    ASSERT(moveScore(pos, "Qe2") >= -5);    // Queen away from edge is good
 
     pos = TextIO::readFEN("5k2/4nppp/p1n5/1pp1p3/4P3/2P1BN2/PP3PPP/3R2K1 w - - 0 1");
     ASSERT(moveScore(pos, "Rd7") > 0);      // Rook on 7:th rank is good
@@ -499,7 +499,7 @@ EvaluateTest::testEndGameEval() {
 
     { // Test KRPKM
         int score1 = evalFEN("8/2b5/k7/P7/RK6/8/8/8 w - - 0 1", true);
-        ASSERT(score1 < 165);
+        ASSERT(score1 < 170);
         int score2 = evalFEN("8/1b6/k7/P7/RK6/8/8/8 w - - 0 1", true);
         ASSERT(score2 > 300);
         int score3 = evalFEN("8/3b4/1k6/1P6/1RK5/8/8/8 w - - 0 1", true);
@@ -711,7 +711,7 @@ EvaluateTest::testPassedPawns() {
     pos.setPiece(TextIO::getSquare("d5"), Piece::EMPTY);
     pos.setPiece(TextIO::getSquare("d4"), Piece::WKING); // 4R3/8/8/p7/P2K4/4pk2/8/8 w - - 0 1
     int score2 = evalWhite(pos);
-    ASSERT(score2 >= score - 5); // King closer to passed pawn promotion square
+    ASSERT(score2 >= score - 6); // King closer to passed pawn promotion square
 
     pos = TextIO::readFEN("4R3/8/8/3K4/8/4pk2/8/8 w - - 0 1");
     score = evalWhite(pos);
@@ -919,7 +919,7 @@ EvaluateTest::testKQKRP() {
     ASSERT(evalWhite(TextIO::readFEN("6k1/6p1/5rp1/8/6K1/3Q4/8/8 w - - 0 1")) < 50);
     ASSERT(evalWhite(TextIO::readFEN("8/8/8/3k4/8/3p2Q1/4r3/5K2 b - - 0 1")) < 50);
     ASSERT(evalWhite(TextIO::readFEN("8/8/8/8/2Q5/3pk3/4r3/5K2 w - - 0 1")) < 50);
-    ASSERT(evalWhite(TextIO::readFEN("8/8/8/4Q3/8/3pk3/4r3/5K2 b - - 0 1")) > 50);
+    ASSERT(evalWhite(TextIO::readFEN("8/8/8/4Q3/8/3pk3/4r3/5K2 b - - 0 1")) > 48);
     ASSERT(evalWhite(TextIO::readFEN("8/8/8/2k5/8/2p2Q2/3r4/4K3 b - - 3 2")) < 25);
     ASSERT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/4Q3/8 w - - 0 1")) > 100);
     ASSERT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/5Q2/8 w - - 0 1")) < 50);
@@ -933,7 +933,7 @@ void
 EvaluateTest::testKRKP() {
     const int pV = ::pV;
     const int rV = ::rV;
-    const int winScore = 363;
+    const int winScore = 343;
     const int drawish = (pV + rV) / 20;
     Position pos = TextIO::readFEN("6R1/8/8/8/5K2/2kp4/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
@@ -1117,7 +1117,7 @@ EvaluateTest::testCantWin() {
 void
 EvaluateTest::testPawnRace() {
     const int pV = ::pV;
-    const int winScore = 160;
+    const int winScore = 130;
     const int drawish = 78;
     Position pos = TextIO::readFEN("8/8/K7/1P3p2/8/6k1/8/8 w - - 0 1");
     ASSERT(evalWhite(pos) > winScore);
@@ -1143,7 +1143,7 @@ EvaluateTest::testKnightOutPost() {
     int s1 = evalWhite(pos);
     pos = TextIO::readFEN("rnrq2nk/ppp1p1pp/8/3PNp2/8/8/P3P3/R1RQ2NK w KQkq - 0 1");
     int s2 = evalWhite(pos);
-    ASSERT(s2 < s1);
+    ASSERT(s2 <= s1);
 
     // Test knight fork bonus symmetry (currently no such term in the evaluation though)
     evalFEN("rnbqkb1r/ppp2Npp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1");
