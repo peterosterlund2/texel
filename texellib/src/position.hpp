@@ -36,6 +36,11 @@
 #include <algorithm>
 #include <iostream>
 
+
+namespace TBProbeData {
+    extern int maxPieces;
+}
+
 /**
  * Stores the state of a chess position.
  * All required state is stored, except for all previous positions
@@ -76,6 +81,9 @@ public:
 
     /** Return the material identifier. */
     int materialId() const;
+
+    /** Return number of pieces, including kings and pawns. */
+    int nPieces() const;
 
     /**
      * Decide if two positions are equal in the sense of the draw by repetition rule.
@@ -297,7 +305,9 @@ Position::kingZobristHash() const {
 inline U64
 Position::historyHash() const {
     U64 ret = hashKey;
-    if (halfMoveClock >= 40) {
+    if (nPieces() <= TBProbeData::maxPieces) {
+        ret ^= moveCntKeys[std::min(halfMoveClock, 100)];
+    } else if (halfMoveClock >= 40) {
         if (halfMoveClock < 80)
             ret ^= moveCntKeys[halfMoveClock / 10];
         else
@@ -316,6 +326,11 @@ Position::bookHash() const {
 inline int
 Position::materialId() const {
     return matId();
+}
+
+inline int
+Position::nPieces() const {
+    return BitBoard::bitCount(occupiedBB());
 }
 
 inline bool

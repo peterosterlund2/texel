@@ -9,10 +9,12 @@
 #define TBGEN_HPP_
 
 #include "util/util.hpp"
-#include "position.hpp"
 
 #include <algorithm>
 #include <cassert>
+
+
+class Position;
 
 
 /** Represent the game-theoretic or intermediate value of a position. */

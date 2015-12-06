@@ -310,9 +310,8 @@ TBTest::rtbTest() {
     resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
     ASSERT(resWDL);
     resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
-    ASSERT(resDTZ);
+    ASSERT(!resDTZ);
     ASSERT(SearchConst::isLoseScore(wdl)); // WDL probes assume half-move clock is 0
-    ASSERT_EQUAL(0, dtz);
 
     pos = TextIO::readFEN("1R5Q/8/6k1/8/8/8/8/K1q5 w - - 0 1"); // DTZ == 101
     resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);

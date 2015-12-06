@@ -27,12 +27,17 @@
 #define TBPROBE_HPP_
 
 #include "transpositionTable.hpp"
-#include "moveGen.hpp"
+#include "position.hpp"
 
 #include <string>
 
 
-class Position;
+class MoveList;
+
+namespace TBProbeData {
+    /** Maximum number of pieces in any tablebase. */
+    extern int maxPieces;
+}
 
 /**
  * Handle tablebase probing.
@@ -149,16 +154,14 @@ private:
 
     /** Probe GTB and on-demand TBs to find a DTM score. */
     static bool dtmProbe(Position& pos, int ply, TranspositionTable& tt, int& score);
-
-    static int maxPieces;
 };
 
 inline bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                  TranspositionTable& tt,
                  TranspositionTable::TTEntry& ent) {
-    const int nPieces = BitBoard::bitCount(pos.occupiedBB());
-    if (nPieces > maxPieces)
+    const int nPieces = pos.nPieces();
+    if (nPieces > TBProbeData::maxPieces)
         return false;
     return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces);
 }

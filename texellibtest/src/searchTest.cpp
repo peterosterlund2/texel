@@ -523,10 +523,15 @@ SearchTest::testTBSearch() {
     ASSERT(SearchConst::isLoseScore(score));
     ASSERT(score > -(mate0 - 23));
 
-    pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 93 1"); // No way to avoid draw
-    sc.init(pos, nullHist, 0);
-    score = idSearch(sc, 4, 3).score();
-    ASSERT(std::abs(score) < 50);
+    {
+        TBTest::initTB("", 0, rtbDefaultPath);
+        pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 93 1"); // No way to avoid draw
+        sc.init(pos, nullHist, 0);
+        tt.clear();
+        score = idSearch(sc, 4, 3).score();
+        ASSERT(std::abs(score) < 900);
+        tt.clear();
+    }
 
     {
         TBTest::initTB("", 0, "");
