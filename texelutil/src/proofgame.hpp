@@ -216,7 +216,7 @@ private:
     // Cache of recently used ShortestPathData objects
     static const int PathCacheSize = 1024*1024;
     struct PathCacheEntry {
-        PathCacheEntry() : piece(-1), toSq(-1), blocked(0) {}
+        PathCacheEntry() : piece(-1), toSq(-1), maxCapt(-1), blocked(0) {}
         U8 piece;
         U8 toSq;
         U8 maxCapt;
