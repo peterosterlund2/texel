@@ -159,10 +159,11 @@ private:
     struct MoveInfo {
         Move move;
         U64 nodes;
+        bool knownLoss;
         int depth, alpha, beta;
         std::vector<Move> pv;
         MoveInfo(const Move& m, int n)
-            : move(m), nodes(n), depth(0), alpha(0), beta(0) {}
+            : move(m), nodes(n), knownLoss(false), depth(0), alpha(0), beta(0) {}
 
         int score() const { return move.score(); }
 

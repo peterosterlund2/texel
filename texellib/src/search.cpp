@@ -133,6 +133,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     }
     ht.reScale();
     int posHashFirstNew0 = posHashFirstNew;
+    bool knownLoss = false; // True if at least one of the first maxPV moves is a known loss
     try {
     for (int depthS = plyScale; ; depthS += plyScale, firstIteration = false) {
         initNodeStats();
@@ -196,6 +197,8 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             int betaRetryDelta = aspirationDelta;
             int alphaRetryDelta = aspirationDelta;
             while ((score >= beta) || ((mi < maxPV) && (score <= alpha))) {
+                if (!knownLoss && !rootMoves[mi].knownLoss && isLoseScore(score))
+                    break;
                 nodesThisMove -= totalNodes;
                 posHashList[posHashListSize++] = pos.zobristHash();
                 bool fh = score >= beta;
@@ -224,6 +227,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
                 notifyPV(rootMoves, mi, maxPV);
             }
             rootMoves[mi].nodes += nodesThisMove;
+            rootMoves[mi].knownLoss = isLoseScore(score);
             if ((mi < maxPV) || (score > rootMoves[maxPV-1].move.score())) {
                 MoveInfo tmp = rootMoves[mi];
                 int i = mi;
@@ -282,6 +286,10 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
         } else {
             // Moves that were hard to search should be searched early in the next iteration
             std::stable_sort(rootMoves.begin()+maxPV, rootMoves.end(), MoveInfo::SortByNodes());
+        }
+        if (!knownLoss && rootMoves[maxPV - 1].knownLoss) {
+            depthS = std::max(0, depthS - 1 * plyScale);
+            knownLoss = true;
         }
 //        std::cout << "fhInfo depth:" << depthS / plyScale << std::endl;
 //        pd.fhInfo.print(std::cout);
