@@ -64,7 +64,7 @@ TBProbe::initialize(const std::string& gtbPath, int cacheMB,
         currentRtbPath = rtbPath;
     }
 
-    int wdlFraction = (Syzygy::TBLargest >= 5) ? 8 : 96;
+    int wdlFraction = 8;
     if ((gtbPath != currentGtbPath) ||
         (cacheMB != currentGtbCacheMB) ||
         (wdlFraction != currentGtbWdlFraction)) {
@@ -95,17 +95,19 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
     bool mateSearch = SearchConst::isLoseScore(alpha) || SearchConst::isWinScore(beta);
 
     // Probe on-demand TB
+    bool hasDtm = false;
     int dtmScore;
     if (nPieces <= 4 && tt.probeDTM(pos, ply, dtmScore)) {
-        ent.setScore(dtmScore, ply);
-        ent.setType(TType::T_EXACT);
-        return true;
+        if (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - pos.getHalfMoveClock()) {
+            ent.setScore(dtmScore, ply);
+            ent.setType(TType::T_EXACT);
+            return true;
+        }
+        hasDtm = true;
     }
 
-    if (mateSearch || pos.getHalfMoveClock() > 0) {
-        // Need DTM or DTZ probe
-        bool hasDtm = false;
-        if (nPieces <= gtbMaxPieces && gtbProbeDTM(pos, ply, dtmScore)) {
+    if (mateSearch || pos.getHalfMoveClock() > 0 || Syzygy::TBLargest < 5) { // Need DTM or DTZ probe
+        if (!hasDtm && nPieces <= gtbMaxPieces && gtbProbeDTM(pos, ply, dtmScore)) {
             if (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - pos.getHalfMoveClock()) {
                 ent.setScore(dtmScore, ply);
                 ent.setType(TType::T_EXACT);
@@ -124,18 +126,13 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                 ent.setType(TType::T_EXACT);
             return true;
         }
-        if (hasDtm) {
-            ent.setScore(dtmScore, ply);
-            ent.setType(TType::T_EXACT);
-            return true;
-        }
     }
 
     if (pos.getHalfMoveClock() == 0) {
         // Try WDL probe if DTM/DTZ not needed or not available
         int wdlScore;
         if ((nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore)) ||
-                (nPieces <= gtbMaxPieces && gtbProbeWDL(pos, ply, wdlScore))) {
+            (nPieces <= std::min(gtbMaxPieces,4) && gtbProbeWDL(pos, ply, wdlScore))) { // Can't trust 5men because of 50move
             ent.setScore(wdlScore, ply);
             if (wdlScore > 0)
                 ent.setType(TType::T_GE);
@@ -177,7 +174,7 @@ TBProbe::getSearchMoves(Position& pos, const MoveList& legalMoves,
             const int score = -ent.getScore(ply+1);
             if (score >= rootScore && (type == TType::T_EXACT || type == TType::T_LE))
                 progressMove = true;
-            if ((score < rootScore)) //  && (type == TType::T_EXACT || type == TType::T_GE))
+            if ((score < rootScore - 1)) // -1 to handle +/-1 uncertainty in RTB tables
                 badMove = true;
         }
         if (progressMove)

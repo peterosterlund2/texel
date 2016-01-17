@@ -358,10 +358,7 @@ TBTest::tbTest() {
 
     initTB(gtbDefaultPath, gtbDefaultCacheMB, ""); // Disable syzygy tables
     res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
-    ASSERT(res);
-    ASSERT_EQUAL(TType::T_EXACT, ent.getType());
-    ASSERT(ent.getScore(ply) < 0);
-    ASSERT(ent.getScore(ply) >= -(mate0 - ply - 100));
+    ASSERT(!res);
 
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
 
@@ -406,6 +403,21 @@ TBTest::tbTest() {
     res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
     ASSERT(!res || ent.getScore(ply) != 0);
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
+
+    {
+        pos = TextIO::readFEN("2R5/4k3/Q7/8/8/8/8/K7 w - - 98 1");
+        Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::pd,
+                  nullptr, SearchTest::treeLog);
+        Move m = SearchTest::idSearch(sc, 4, 0);
+        ASSERT_EQUAL("a6e6", TextIO::moveToUCIString(m));
+    }
+    {
+        pos = TextIO::readFEN("2R5/4k3/Q7/8/8/8/8/K7 w - - 97 1");
+        Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::pd,
+                  nullptr, SearchTest::treeLog);
+        Move m = SearchTest::idSearch(sc, 4, 1);
+        ASSERT_EQUAL("c8c7", TextIO::moveToUCIString(m));
+    }
 }
 
 

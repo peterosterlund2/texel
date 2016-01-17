@@ -519,7 +519,7 @@ SearchTest::testTBSearch() {
 
     pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 92 1"); // DTZ path needed
     sc.init(pos, nullHist, 0);
-    score = idSearch(sc, 4, 3).score();
+    score = idSearch(sc, 6, 1).score();
     ASSERT(SearchConst::isLoseScore(score));
     ASSERT(score > -(mate0 - 23));
 
