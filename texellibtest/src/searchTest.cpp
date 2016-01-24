@@ -514,7 +514,7 @@ SearchTest::testTBSearch() {
     const int mate0 = SearchConst::MATE0;
     Position pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 0 1"); // DTM path wins
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
-    int score = idSearch(sc, 4, 3).score();
+    int score = idSearch(sc, 4, 2).score();
     ASSERT_EQUAL(-(mate0 - 23), score);
 
     pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 92 1"); // DTZ path needed

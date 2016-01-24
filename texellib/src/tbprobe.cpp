@@ -64,7 +64,7 @@ TBProbe::initialize(const std::string& gtbPath, int cacheMB,
         currentRtbPath = rtbPath;
     }
 
-    int wdlFraction = 8;
+    int wdlFraction = Syzygy::TBLargest >= gtbMaxPieces ? 8 : 96;
     if ((gtbPath != currentGtbPath) ||
         (cacheMB != currentGtbCacheMB) ||
         (wdlFraction != currentGtbWdlFraction)) {
@@ -92,13 +92,12 @@ bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                  TranspositionTable& tt, TranspositionTable::TTEntry& ent,
                  const int nPieces) {
-    bool mateSearch = SearchConst::isLoseScore(alpha) || SearchConst::isWinScore(beta);
-
     // Probe on-demand TB
+    const int hmc = pos.getHalfMoveClock();
     bool hasDtm = false;
     int dtmScore;
     if (nPieces <= 4 && tt.probeDTM(pos, ply, dtmScore)) {
-        if (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - pos.getHalfMoveClock()) {
+        if ((dtmScore == 0) || (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - hmc)) {
             ent.setScore(dtmScore, ply);
             ent.setType(TType::T_EXACT);
             return true;
@@ -106,44 +105,77 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
         hasDtm = true;
     }
 
-    if (mateSearch || pos.getHalfMoveClock() > 0 || Syzygy::TBLargest < 5) { // Need DTM or DTZ probe
-        if (!hasDtm && nPieces <= gtbMaxPieces && gtbProbeDTM(pos, ply, dtmScore)) {
-            if (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - pos.getHalfMoveClock()) {
-                ent.setScore(dtmScore, ply);
-                ent.setType(TType::T_EXACT);
+    // Try WDL probe. If the result is not draw, it can only be trusted if hmc == 0.
+    // 5-men GTB WDL probes can only be trusted if the score is draw, because they
+    // don't take the 50 move draw rule into account.
+    bool hasResult = false;
+    int wdlScore;
+    if (nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore)) {
+        if ((wdlScore == 0) || (hmc == 0))
+            hasResult = true;
+    } else if (nPieces <= gtbMaxPieces && gtbProbeWDL(pos, ply, wdlScore)) {
+        if ((wdlScore == 0) || (hmc == 0 && nPieces <= 4))
+            hasResult = true;
+    }
+    if (hasResult) {
+        ent.setScore(wdlScore, ply);
+        if (wdlScore > 0) {
+            ent.setType(TType::T_GE);
+            if (wdlScore >= beta)
                 return true;
-            }
-            hasDtm = true;
-        }
-        int dtzScore;
-        if (nPieces <= Syzygy::TBLargest && rtbProbeDTZ(pos, ply, dtzScore)) {
-            ent.setScore(dtzScore, ply);
-            if (dtzScore > 0)
-                ent.setType(TType::T_GE);
-            else if (dtzScore < 0)
-                ent.setType(TType::T_LE);
-            else
-                ent.setType(TType::T_EXACT);
+        } else if (wdlScore < 0) {
+            ent.setType(TType::T_LE);
+            if (wdlScore <= alpha)
+                return true;
+        } else {
+            ent.setType(TType::T_EXACT);
             return true;
         }
     }
 
-    if (pos.getHalfMoveClock() == 0) {
-        // Try WDL probe if DTM/DTZ not needed or not available
-        int wdlScore;
-        if ((nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore)) ||
-            (nPieces <= std::min(gtbMaxPieces,4) && gtbProbeWDL(pos, ply, wdlScore))) { // Can't trust 5men because of 50move
-            ent.setScore(wdlScore, ply);
-            if (wdlScore > 0)
-                ent.setType(TType::T_GE);
-            else if (wdlScore < 0)
-                ent.setType(TType::T_LE);
-            else
+    // Try GTB DTM probe if searching for fastest mate
+    const bool mateSearch = SearchConst::isLoseScore(alpha) || SearchConst::isWinScore(beta);
+    if (mateSearch && !hasDtm && nPieces <= gtbMaxPieces) {
+        if (gtbProbeDTM(pos, ply, dtmScore)) {
+            if ((dtmScore == 0) || (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - hmc)) {
+                ent.setScore(dtmScore, ply);
                 ent.setType(TType::T_EXACT);
+                return true;
+            }
+        }
+    }
+
+    // Try RTB DTZ probe
+    int dtzScore;
+    if (nPieces <= Syzygy::TBLargest && rtbProbeDTZ(pos, ply, dtzScore)) {
+        hasResult = true;
+        ent.setScore(dtzScore, ply);
+        if (dtzScore > 0) {
+            ent.setType(TType::T_GE);
+            if (dtzScore >= beta)
+                return true;
+        } else if (dtzScore < 0) {
+            ent.setType(TType::T_LE);
+            if (dtzScore <= alpha)
+                return true;
+        } else {
+            ent.setType(TType::T_EXACT);
             return true;
         }
     }
-    return false;
+
+    // Try GTB DTM probe if not searching for fastest mate
+    if (!mateSearch && !hasDtm && nPieces <= gtbMaxPieces) {
+        if (gtbProbeDTM(pos, ply, dtmScore)) {
+            if ((dtmScore == 0) || (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - hmc)) {
+                ent.setScore(dtmScore, ply);
+                ent.setType(TType::T_EXACT);
+                return true;
+            }
+        }
+    }
+
+    return hasResult;
 }
 
 bool
