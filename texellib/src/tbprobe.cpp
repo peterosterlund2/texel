@@ -109,13 +109,30 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
     // 5-men GTB WDL probes can only be trusted if the score is draw, because they
     // don't take the 50 move draw rule into account.
     bool hasResult = false;
+    bool checkABBound = false;
     int wdlScore;
     if (nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore)) {
         if ((wdlScore == 0) || (hmc == 0))
             hasResult = true;
+        else
+            checkABBound = true;
     } else if (nPieces <= gtbMaxPieces && gtbProbeWDL(pos, ply, wdlScore)) {
         if ((wdlScore == 0) || (hmc == 0 && nPieces <= 4))
             hasResult = true;
+        else
+            checkABBound = true;
+    }
+    if (checkABBound) {
+        if ((wdlScore > 0) && (beta <= 0)) {
+            ent.setScore(0, ply);
+            ent.setType(TType::T_GE);
+            return true;
+        }
+        if ((wdlScore < 0) && (alpha >= 0)) {
+            ent.setScore(0, ply);
+            ent.setType(TType::T_LE);
+            return true;
+        }
     }
     if (hasResult) {
         ent.setScore(wdlScore, ply);
