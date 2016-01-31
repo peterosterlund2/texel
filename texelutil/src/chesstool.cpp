@@ -1542,19 +1542,28 @@ ChessTool::probeDTZ(const std::string& fen) {
         std::cout << "---";
 
     int score = 0;
-    bool ok = TBProbe::rtbProbeDTZ(pos, 0, score);
+    TranspositionTable::TTEntry ent;
+    bool ok = TBProbe::rtbProbeDTZ(pos, 0, score, ent);
     std::cout << " dtz:";
-    if (ok)
+    if (ok) {
         std::cout << score;
-    else
+        if (score == 0) {
+            std::cout << " (" << ent.getEvalScore() << ")";
+        }
+    } else {
         std::cout << "---";
+    }
 
-    ok = TBProbe::rtbProbeWDL(pos, 0, score);
+    ok = TBProbe::rtbProbeWDL(pos, 0, score, ent);
     std::cout << " wdl:";
-    if (ok)
+    if (ok) {
         std::cout << score;
-    else
+        if (score == 0) {
+            std::cout << " (" << ent.getEvalScore() << ")";
+        }
+    } else {
         std::cout << "---";
+    }
 
     ok = TBProbe::gtbProbeDTM(pos, 0, score);
     std::cout << " dtm:";

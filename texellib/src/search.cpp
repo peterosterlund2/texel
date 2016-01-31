@@ -554,12 +554,13 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             int type = tbEnt.getType();
             int score = tbEnt.getScore(ply);
             bool cutOff = false;
+            const int drawSwindleReduction = 16 * plyScale;
             if (score == 0 && type == TType::T_EXACT) {
-                const int maxSwindle = 50;
-                if (depth < 16 * plyScale) {
+                const int maxSwindle = SearchConst::maxFrustrated;
+                if (depth < drawSwindleReduction) {
                     if (evalScore == UNKNOWN_SCORE)
                         evalScore = eval.evalPos(pos);
-                    score = Evaluate::swindleScore(evalScore);
+                    score = Evaluate::swindleScore(evalScore, tbEnt.getEvalScore());
                     cutOff = true;
                 } else if (alpha >= maxSwindle) {
                     tbEnt.setType(TType::T_LE);
@@ -571,10 +572,18 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     cutOff = true;
                 }
             } else {
-                if ( (type == TType::T_EXACT) ||
-                    ((type == TType::T_GE) && (score >= beta)) ||
-                    ((type == TType::T_LE) && (score <= alpha)))
-                    cutOff = true;
+                bool checkCutOff = true;
+                if (score == 0) { // Draw or frustrated win/loss
+                    if (depth < drawSwindleReduction)
+                        score = Evaluate::swindleScore(0, tbEnt.getEvalScore());
+                    else
+                        checkCutOff = false;
+                }
+                if (checkCutOff)
+                    if ( (type == TType::T_EXACT) ||
+                         ((type == TType::T_GE) && (score >= beta)) ||
+                         ((type == TType::T_LE) && (score <= alpha)))
+                        cutOff = true;
             }
             if (cutOff) {
                 emptyMove.setScore(score);

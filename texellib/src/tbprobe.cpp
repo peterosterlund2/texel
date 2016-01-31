@@ -88,6 +88,29 @@ TBProbe::tbEnabled() {
     return Syzygy::TBLargest > 0 || gtbMaxPieces > 0;
 }
 
+const int maxFrustratedDist = 1000;
+
+static inline void updateEvScore(TranspositionTable::TTEntry& ent,
+                                 int newScore) {
+    int oldScore = ent.getEvalScore();
+    if ((oldScore == 0) || (std::abs(newScore) < std::abs(oldScore)))
+        ent.setEvalScore(newScore);
+}
+
+/**
+ * Return the margin (in number of plies) for a win to turn into a draw
+ * because of the 50 move rule. If the margin is negative the position is
+ * a draw, and ent.evalScore is set to indicate how far away from a win
+ * the position is.
+ */
+static inline int rule50Margin(int dtmScore, int ply, int hmc,
+                               TranspositionTable::TTEntry& ent) {
+    int margin = (100 - hmc) - (SearchConst::MATE0 - 1 - abs(dtmScore) - ply);
+    if (margin < 0)
+        updateEvScore(ent, dtmScore > 0 ? -margin : margin);
+    return margin;
+}
+
 bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                  TranspositionTable& tt, TranspositionTable::TTEntry& ent,
@@ -97,11 +120,13 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
     bool hasDtm = false;
     int dtmScore;
     if (nPieces <= 4 && tt.probeDTM(pos, ply, dtmScore)) {
-        if ((dtmScore == 0) || (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - hmc)) {
+        if ((dtmScore == 0) || (rule50Margin(dtmScore, ply, hmc, ent) >= 0)) {
             ent.setScore(dtmScore, ply);
             ent.setType(TType::T_EXACT);
             return true;
         }
+        ent.setScore(0, ply);
+        ent.setType(dtmScore > 0 ? TType::T_GE : TType::T_LE);
         hasDtm = true;
     }
 
@@ -111,7 +136,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
     bool hasResult = false;
     bool checkABBound = false;
     int wdlScore;
-    if (nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore)) {
+    if (nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore, ent)) {
         if ((wdlScore == 0) || (hmc == 0))
             hasResult = true;
         else
@@ -123,17 +148,18 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
             checkABBound = true;
     }
     if (checkABBound) {
-        if ((wdlScore > 0) && (beta <= 0)) {
+        if ((wdlScore > 0) && (beta <= 0)) { // WDL says win but could be draw due to 50move rule
             ent.setScore(0, ply);
             ent.setType(TType::T_GE);
             return true;
         }
-        if ((wdlScore < 0) && (alpha >= 0)) {
+        if ((wdlScore < 0) && (alpha >= 0)) { // WDL says loss but could be draw due to 50move rule
             ent.setScore(0, ply);
             ent.setType(TType::T_LE);
             return true;
         }
     }
+    bool frustrated = false;
     if (hasResult) {
         ent.setScore(wdlScore, ply);
         if (wdlScore > 0) {
@@ -146,25 +172,39 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                 return true;
         } else {
             ent.setType(TType::T_EXACT);
-            return true;
+            int evScore = ent.getEvalScore();
+            if (evScore == 0) {
+                return true;
+            } else if (evScore > 0) {
+                if (beta <= SearchConst::minFrustrated)
+                    return true;
+                frustrated = true;
+            } else {
+                if (alpha >= -SearchConst::minFrustrated)
+                    return true;
+                frustrated = true;
+            }
         }
     }
 
+    const bool dtmFirst = frustrated || SearchConst::isLoseScore(alpha) || SearchConst::isWinScore(beta);
     // Try GTB DTM probe if searching for fastest mate
-    const bool mateSearch = SearchConst::isLoseScore(alpha) || SearchConst::isWinScore(beta);
-    if (mateSearch && !hasDtm && nPieces <= gtbMaxPieces) {
+    if (dtmFirst && !hasDtm && nPieces <= gtbMaxPieces) {
         if (gtbProbeDTM(pos, ply, dtmScore)) {
-            if ((dtmScore == 0) || (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - hmc)) {
+            if ((dtmScore == 0) || (rule50Margin(dtmScore, ply, hmc, ent) >= 0)) {
                 ent.setScore(dtmScore, ply);
                 ent.setType(TType::T_EXACT);
                 return true;
             }
+            ent.setScore(0, ply);
+            ent.setType(dtmScore > 0 ? TType::T_GE : TType::T_LE);
+            hasDtm = true;
         }
     }
 
     // Try RTB DTZ probe
     int dtzScore;
-    if (nPieces <= Syzygy::TBLargest && rtbProbeDTZ(pos, ply, dtzScore)) {
+    if (nPieces <= Syzygy::TBLargest && rtbProbeDTZ(pos, ply, dtzScore, ent)) {
         hasResult = true;
         ent.setScore(dtzScore, ply);
         if (dtzScore > 0) {
@@ -182,17 +222,20 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
     }
 
     // Try GTB DTM probe if not searching for fastest mate
-    if (!mateSearch && !hasDtm && nPieces <= gtbMaxPieces) {
+    if (!dtmFirst && !hasDtm && nPieces <= gtbMaxPieces) {
         if (gtbProbeDTM(pos, ply, dtmScore)) {
-            if ((dtmScore == 0) || (SearchConst::MATE0 - 1 - abs(dtmScore) - ply <= 100 - hmc)) {
+            if ((dtmScore == 0) || (rule50Margin(dtmScore, ply, hmc, ent) >= 0)) {
                 ent.setScore(dtmScore, ply);
                 ent.setType(TType::T_EXACT);
                 return true;
             }
+            ent.setScore(0, ply);
+            ent.setType(dtmScore > 0 ? TType::T_GE : TType::T_LE);
+            hasDtm = true;
         }
     }
 
-    return hasResult;
+    return hasResult || hasDtm;
 }
 
 bool
@@ -355,7 +398,8 @@ TBProbe::gtbProbeWDL(Position& pos, int ply, int& score) {
 }
 
 bool
-TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score) {
+TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score,
+                     TranspositionTable::TTEntry& ent) {
     const int nPieces = BitBoard::bitCount(pos.occupiedBB());
     if (nPieces > Syzygy::TBLargest)
         return false;
@@ -368,12 +412,15 @@ TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score) {
         return false;
     if (dtz == 0) {
         score = 0;
+        ent.setEvalScore(0);
         return true;
     }
     const int maxHalfMoveClock = std::abs(dtz) + pos.getHalfMoveClock();
+    const int sgn = dtz > 0 ? 1 : -1;
     if (abs(dtz) <= 2) {
         if (maxHalfMoveClock > 101) {
             score = 0;
+            updateEvScore(ent, sgn * (maxHalfMoveClock - 100));
             return true;
         } else if (maxHalfMoveClock == 101)
             return false; // DTZ can be wrong when mate-in-1
@@ -381,6 +428,10 @@ TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score) {
         if ((maxHalfMoveClock > 101) ||
             ((maxHalfMoveClock == 101) && (pos.getHalfMoveClock() == 0))) {
             score = 0;
+            if (std::abs(dtz) < 100)
+                updateEvScore(ent, sgn * (maxHalfMoveClock - 100));
+            else
+                updateEvScore(ent, sgn * maxFrustratedDist);
             return true;
         }
         if ((maxHalfMoveClock >= 100) && (pos.getHalfMoveClock() > 0))
@@ -396,7 +447,8 @@ TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score) {
 }
 
 bool
-TBProbe::rtbProbeWDL(Position& pos, int ply, int& score) {
+TBProbe::rtbProbeWDL(Position& pos, int ply, int& score,
+                     TranspositionTable::TTEntry& ent) {
     if (BitBoard::bitCount(pos.occupiedBB()) > Syzygy::TBLargest)
         return false;
     if (pos.getCastleMask())
@@ -408,8 +460,18 @@ TBProbe::rtbProbeWDL(Position& pos, int ply, int& score) {
         return false;
     int plyToMate;
     switch (wdl) {
-    case 0: case 1: case -1:
+    case 0:
         score = 0;
+        break;
+    case 1:
+        score = 0;
+        if (ent.getEvalScore() == 0)
+            ent.setEvalScore(maxFrustratedDist);
+        break;
+    case -1:
+        score = 0;
+        if (ent.getEvalScore() == 0)
+            ent.setEvalScore(-maxFrustratedDist);
         break;
     case 2:
         plyToMate = getMaxSubMate(pos) + getMaxDTZ(pos.materialId());

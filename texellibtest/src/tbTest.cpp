@@ -69,14 +69,15 @@ static void setupTBFiles(const std::vector<std::string>& tbFiles) {
 /** Probe both DTM and WDL, check consistency and return DTM value. */
 static int probeCompare(const Position& pos, int ply, int& score) {
     int dtm, wdl, wdl2, dtz;
+    TranspositionTable::TTEntry ent;
     Position pos2(pos);
     int resDTM = TBProbe::gtbProbeDTM(pos2, ply, dtm);
     ASSERT(pos.equals(pos2));
     int resWDL = TBProbe::gtbProbeWDL(pos2, ply, wdl);
     ASSERT(pos.equals(pos2));
-    int resWDL2 = TBProbe::rtbProbeWDL(pos2, ply, wdl2);
+    int resWDL2 = TBProbe::rtbProbeWDL(pos2, ply, wdl2, ent);
     ASSERT(pos.equals(pos2));
-    int resDTZ = TBProbe::rtbProbeDTZ(pos2, ply, dtz);
+    int resDTZ = TBProbe::rtbProbeDTZ(pos2, ply, dtz, ent);
     ASSERT(pos.equals(pos2));
 
     ASSERT_EQUAL(resDTM, resWDL);
@@ -247,50 +248,55 @@ void
 TBTest::rtbTest() {
     int ply = 17;
     int wdl, dtm, dtz;
+    TranspositionTable::TTEntry ent;
 
     Position pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3NB3 w - - 0 1");
-    bool resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    bool resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT_EQUAL(true, resWDL);
     ASSERT(SearchConst::isWinScore(wdl));
 
     pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3NB3 b - - 0 1");
-    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT_EQUAL(true, resWDL);
     ASSERT(SearchConst::isLoseScore(wdl));
 
     pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3BB3 b - - 0 1");
-    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT_EQUAL(true, resWDL);
     ASSERT(SearchConst::isLoseScore(wdl));
 
     pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3NN3 b - - 0 1");
-    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ent.clear();
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT_EQUAL(true, resWDL);
     ASSERT_EQUAL(0, wdl);
+    ASSERT_EQUAL(0, ent.getEvalScore());
 
     initTB(gtbDefaultPath, 16, "");
     initTB(gtbDefaultPath, 16, "");
     initTB(gtbDefaultPath, 16, rtbDefaultPath);
 
     pos = TextIO::readFEN("8/8/4k3/8/8/8/4K3/3NN3 b - - 0 1");
-    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ent.clear();
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT_EQUAL(true, resWDL);
     ASSERT_EQUAL(0, wdl);
+    ASSERT_EQUAL(0, ent.getEvalScore());
 
     // Check that DTZ probes do not give too good (incorrect) bounds
     pos = TextIO::readFEN("8/8/8/8/7B/8/3k4/K2B4 w - - 0 1");
     bool resDTM = TBProbe::gtbProbeDTM(pos, ply, dtm);
     ASSERT(resDTM);
-    bool resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
+    bool resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
     ASSERT(resDTZ);
     ASSERT(SearchConst::isWinScore(dtz));
     ASSERT(dtz <= dtm);
 
     pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 0 1");
     probeDTM(pos, ply, dtm);
-    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT(resWDL);
-    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
     ASSERT(resDTZ);
     ASSERT(SearchConst::isLoseScore(wdl));
     ASSERT(SearchConst::isLoseScore(dtz));
@@ -298,36 +304,60 @@ TBTest::rtbTest() {
 
     // Tests where DTZ is close to 100
     pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 0 1");
-    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT(resWDL);
-    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
     ASSERT(resDTZ);
     ASSERT(SearchConst::isLoseScore(wdl));
     ASSERT(SearchConst::isLoseScore(dtz));
     ASSERT(dtz <= wdl);
 
     pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 1 1");
-    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT(resWDL);
-    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
     ASSERT(!resDTZ);
     ASSERT(SearchConst::isLoseScore(wdl)); // WDL probes assume half-move clock is 0
 
     pos = TextIO::readFEN("1R5Q/8/6k1/8/8/8/8/K1q5 w - - 0 1"); // DTZ == 101
-    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ent.clear();
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT(resWDL);
-    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
-    ASSERT(resDTZ);
     ASSERT_EQUAL(0, wdl);
+    ASSERT_EQUAL(1000, ent.getEvalScore());
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(resDTZ);
     ASSERT_EQUAL(0, dtz);
+    ASSERT_EQUAL(1000, ent.getEvalScore());
 
     pos = TextIO::readFEN("1R5Q/8/6k1/8/8/8/2q5/K7 b - - 0 1"); // DTZ == -102
-    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl);
+    ent.clear();
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT(resWDL);
-    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz);
-    ASSERT(resDTZ);
     ASSERT_EQUAL(0, wdl);
+    ASSERT_EQUAL(-1000, ent.getEvalScore());
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(resDTZ);
     ASSERT_EQUAL(0, dtz);
+    ASSERT_EQUAL(-1000, ent.getEvalScore());
+
+    pos = TextIO::readFEN("8/8/8/pk1K4/8/3N1N2/8/8 w - - 0 1"); // DTZ == 22
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
+    ASSERT(resWDL);
+    ASSERT(SearchConst::isWinScore(wdl));
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(resDTZ);
+    ASSERT(SearchConst::isWinScore(dtz));
+
+    pos = TextIO::readFEN("8/8/8/pk1K4/8/3N1N2/8/8 w - - 85 1"); // DTZ == 22
+    ent.clear();
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
+    ASSERT(resWDL);
+    ASSERT(SearchConst::isWinScore(wdl)); // WDL probes ignore halfMoveClock
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(resDTZ);
+    ASSERT_EQUAL(0, dtz);
+    ASSERT_EQUAL(7, ent.getEvalScore());
 
     pos = TextIO::readFEN("6k1/8/5Q2/6K1/6Pp/8/8/7Q b - g3 0 1");
     int success;
@@ -358,7 +388,10 @@ TBTest::tbTest() {
 
     initTB(gtbDefaultPath, gtbDefaultCacheMB, ""); // Disable syzygy tables
     res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
-    ASSERT(!res);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_LE, ent.getType());
+    ASSERT_EQUAL(0, ent.getScore(ply));
+    ASSERT_EQUAL(-14, ent.getEvalScore());
 
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
 
@@ -403,6 +436,33 @@ TBTest::tbTest() {
     res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
     ASSERT(!res || ent.getScore(ply) != 0);
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
+
+    pos = TextIO::readFEN("8/8/3pk3/8/8/3NK3/3N4/8 w - - 70 1"); // DTZ = 38
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_EXACT, ent.getType());
+    ASSERT_EQUAL(0, ent.getScore(ply));
+    ASSERT_EQUAL(8, ent.getEvalScore());
+    ent.clear();
+    res = TBProbe::tbProbe(pos, ply, -15, 15, tt, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_EXACT, ent.getType());
+    ASSERT_EQUAL(0, ent.getScore(ply));
+    ASSERT_EQUAL(8, ent.getEvalScore());
+
+    pos = TextIO::readFEN("8/8/4k1N1/p7/8/8/3N2K1/8 w - - 0 1"); // DTZ = 116
+    ent.clear();
+    res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_EXACT, ent.getType());
+    ASSERT_EQUAL(0, ent.getScore(ply));
+    ASSERT_EQUAL(93, ent.getEvalScore());
+    ent.clear();
+    res = TBProbe::tbProbe(pos, ply, -15, 15, tt, ent);
+    ASSERT(res);
+    ASSERT_EQUAL(TType::T_EXACT, ent.getType());
+    ASSERT_EQUAL(0, ent.getScore(ply));
+    ASSERT_EQUAL(1000, ent.getEvalScore());
 
     {
         pos = TextIO::readFEN("2R5/4k3/Q7/8/8/8/8/K7 w - - 98 1");

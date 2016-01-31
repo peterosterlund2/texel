@@ -507,6 +507,7 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
     auto et = Evaluate::getEvalHashTables();
     Search::SearchTables st(tt, kt, ht, *et);
     TreeLogger treeLog;
+    TranspositionTable::TTEntry ent;
     const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 
     struct ScoreStat { U64 whiteWin = 0, draw = 0, blackWin = 0; };
@@ -542,7 +543,7 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
         ScoreStat& ss = stat[key];
 
         int score;
-        if (!TBProbe::rtbProbeWDL(pos, 0, score))
+        if (!TBProbe::rtbProbeWDL(pos, 0, score, ent))
             throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
         if (!pos.isWhiteMove())
             score = -score;
@@ -596,13 +597,14 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
 void
 PosGenerator::wdlTest(const std::vector<std::string>& tbTypes) {
     ChessTool::setupTB();
+    TranspositionTable::TTEntry ent;
     for (std::string tbType : tbTypes) {
         double t0 = currentTime();
         U64 nPos = 0, nDiff = 0, nDiff50 = 0;
         iteratePositions(tbType, [&](Position& pos) {
             nPos++;
             int rtbScore, gtbScore;
-            if (!TBProbe::rtbProbeWDL(pos, 0, rtbScore))
+            if (!TBProbe::rtbProbeWDL(pos, 0, rtbScore, ent))
                 throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
             if (!TBProbe::gtbProbeWDL(pos, 0, gtbScore))
                 throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
@@ -638,6 +640,7 @@ PosGenerator::wdlTest(const std::vector<std::string>& tbTypes) {
 void
 PosGenerator::dtzTest(const std::vector<std::string>& tbTypes) {
     ChessTool::setupTB();
+    TranspositionTable::TTEntry ent;
     for (std::string tbType : tbTypes) {
         double t0 = currentTime();
         U64 nPos = 0, nDiff = 0, nDiff50 = 0;
@@ -648,11 +651,11 @@ PosGenerator::dtzTest(const std::vector<std::string>& tbTypes) {
         iteratePositions(tbType, [&](Position& pos) {
             nPos++;
             int dtz, dtm, wdl;
-            if (!TBProbe::rtbProbeDTZ(pos, 0, dtz))
+            if (!TBProbe::rtbProbeDTZ(pos, 0, dtz, ent))
                 throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
             if (!TBProbe::gtbProbeDTM(pos, 0, dtm))
                 throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
-            if (!TBProbe::rtbProbeWDL(pos, 0, wdl))
+            if (!TBProbe::rtbProbeWDL(pos, 0, wdl, ent))
                 throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
             bool diff;
             int slack = 0;

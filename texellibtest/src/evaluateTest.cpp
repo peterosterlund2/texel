@@ -1303,14 +1303,41 @@ EvaluateTest::testUciParamTable() {
 void
 EvaluateTest::testSwindleScore() {
     for (int e = 0; e < 3000; e++) {
-        int s1 = Evaluate::swindleScore(e);
+        int s1 = Evaluate::swindleScore(e, 0);
         ASSERT(s1 >= (e?1:0));
         ASSERT(s1 < 50);
         ASSERT(s1 <= e);
-        ASSERT(s1 <= Evaluate::swindleScore(e+1));
-        int s2 = Evaluate::swindleScore(-e);
+        ASSERT(s1 <= Evaluate::swindleScore(e+1, 0));
+        int s2 = Evaluate::swindleScore(-e, 0);
         ASSERT_EQUAL(-s1, s2);
     }
+
+    for (int e = 0; e < 1000; e += 10) {
+        for (int d = 1; d < 35; d++) {
+            int s0 = Evaluate::swindleScore(e, 0);
+            int s1 = Evaluate::swindleScore(e, d);
+            int s2 = Evaluate::swindleScore(e, d+1);
+            ASSERT(0 <= s0);
+            ASSERT(s0 < s2);
+            ASSERT(s2 < s1);
+        }
+        for (int d = 1; d < 35; d++) {
+            int s0 = Evaluate::swindleScore(-e, 0);
+            int s1 = Evaluate::swindleScore(-e, -d);
+            int s2 = Evaluate::swindleScore(-e, -(d+1));
+            ASSERT(0 >= s0);
+            ASSERT(s0 > s2);
+            ASSERT(s2 > s1);
+        }
+    }
+
+    int s0 = Evaluate::swindleScore(5000, 0);
+    int s1 = Evaluate::swindleScore(3, 1000);
+    ASSERT(s1 > s0);
+
+    s0 = Evaluate::swindleScore(-5000, 0);
+    s1 = Evaluate::swindleScore(-3, -1000);
+    ASSERT(s1 < s0);
 }
 
 void

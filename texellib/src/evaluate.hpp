@@ -101,8 +101,12 @@ public:
     int evalPosPrint(const Position& pos);
 
     /** Compute "swindle" score corresponding to an evaluation score when
-     * the position is a known TB draw. */
-    static int swindleScore(int evalScore);
+     * the position is a known TB draw.
+     * @param distToWin For draws that would be a win if the 50-move rule
+     *                  did not exist, this is the number of extra plies
+     *                  past halfMoveClock = 100 that are needed to win.
+     */
+    static int swindleScore(int evalScore, int distToWin);
 
     /**
      * Interpolate between (x1,y1) and (x2,y2).

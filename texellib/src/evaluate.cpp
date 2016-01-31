@@ -25,6 +25,7 @@
 
 #include "evaluate.hpp"
 #include "endGameEval.hpp"
+#include "constants.hpp"
 #include <vector>
 
 int Evaluate::pieceValueOrder[Piece::nPieceTypes] = {
@@ -1404,10 +1405,17 @@ Evaluate::getEvalHashTables() {
 }
 
 int
-Evaluate::swindleScore(int evalScore) {
-    int sgn = evalScore >= 0 ? 1 : -1;
-    int score = std::abs(evalScore) + 4;
-    int lg = floorLog2(score);
-    score = (lg - 3) * 4 + (score >> (lg - 2));
-    return sgn * score;
+Evaluate::swindleScore(int evalScore, int distToWin) {
+    using namespace SearchConst;
+    if (distToWin == 0) {
+        int sgn = evalScore >= 0 ? 1 : -1;
+        int score = std::abs(evalScore) + 4;
+        int lg = floorLog2(score);
+        score = (lg - 3) * 4 + (score >> (lg - 2));
+        score = std::min(score, minFrustrated - 1);
+        return sgn * score;
+    } else {
+        int sgn = distToWin > 0 ? 1 : -1;
+        return sgn * std::max(maxFrustrated + 1 - std::abs(distToWin), minFrustrated);
+    }
 }

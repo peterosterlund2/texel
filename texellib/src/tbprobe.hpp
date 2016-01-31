@@ -53,6 +53,9 @@ public:
     static bool tbEnabled();
 
     /** Probe one or more tablebases to get an exact score or a usable bound.
+     * In case of a draw that would have been a win/loss if the 50-move rule was
+     * ignored, ent.evalScore is set to a non-zero value indicating how many
+     * extra plies would have been required to win.
      * @param pos  The position to probe. The position can be temporarily modified
      *             but is restored to original state before function returns.
      */
@@ -106,8 +109,10 @@ public:
      *              The returned score is either 0 or a mate bound. The bound
      *              is computed by considering the DTZ value and the maximum number
      *              of zeroing moves before mate.
+     * @param ent   For a frustrated win/loss, set ent.evalScore to +/-(maxHmc-100).
      */
-    static bool rtbProbeDTZ(Position& pos, int ply, int& score);
+    static bool rtbProbeDTZ(Position& pos, int ply, int& score,
+                            TranspositionTable::TTEntry& ent);
 
     /**
      * Probe syzygy WDL tablebases.
@@ -116,8 +121,11 @@ public:
      * @param ply  The ply value used to adjust mate scores.
      * @param score The tablebase score. Only modified for tablebase hits.
      *              The returned score is either 0 or a mate bound.
+     * @param ent   For a frustrated win/loss, set ent.evalScore to +/-1000 if it was
+     *              previously 0.
      */
-    static bool rtbProbeWDL(Position& pos, int ply, int& score);
+    static bool rtbProbeWDL(Position& pos, int ply, int& score,
+                            TranspositionTable::TTEntry& ent);
 
 private:
     /** Initialize */
