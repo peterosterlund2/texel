@@ -303,7 +303,7 @@ TBTest::rtbTest() {
     ASSERT(dtz <= wdl);
 
     // Tests where DTZ is close to 100
-    pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 0 1");
+    pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 0 1"); // DTZ = 100
     resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT(resWDL);
     resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
@@ -312,12 +312,84 @@ TBTest::rtbTest() {
     ASSERT(SearchConst::isLoseScore(dtz));
     ASSERT(dtz <= wdl);
 
-    pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 1 1");
+    pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 1 1"); // DTZ = 100
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
+    ASSERT(resWDL);
+    ASSERT(SearchConst::isLoseScore(wdl)); // WDL probes assume half-move clock is 0
+    ent.clear();
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(resDTZ);
+    ASSERT_EQUAL(0, dtz);
+    ASSERT_EQUAL(-1, ent.getEvalScore());
+
+
+    pos = TextIO::readFEN("7q/3N2k1/8/8/8/7Q/8/1K6 w - - 0 1"); // DTZ = 30
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
+    ASSERT(resWDL);
+    ASSERT(SearchConst::isWinScore(wdl));
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(resDTZ);
+    ASSERT(SearchConst::isWinScore(dtz));
+    ASSERT(dtz >= wdl);
+
+    pos = TextIO::readFEN("7q/3N2k1/8/8/8/7Q/8/1K6 w - - 69 1");
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
+    ASSERT(resWDL);
+    ASSERT(SearchConst::isWinScore(wdl));
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(resDTZ);
+    ASSERT(SearchConst::isWinScore(dtz));
+
+    // DTZ = 30, DTZ + hmc = 100. RTB does not know the answer
+    // because the TB class has maxDTZ < 100
+    pos = TextIO::readFEN("7q/3N2k1/8/8/8/7Q/8/1K6 w - - 70 1");
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
+    ASSERT(resWDL);
+    ASSERT(SearchConst::isWinScore(wdl)); // WDL probes assume hmc is 0
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(!resDTZ);
+
+    // DTZ + hmc > 100, draw
+    pos = TextIO::readFEN("7q/3N2k1/8/8/8/7Q/8/1K6 w - - 71 1");
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
+    ASSERT(resWDL);
+    ASSERT(SearchConst::isWinScore(wdl)); // WDL probes assume hmc is 0
+    ent.clear();
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(resDTZ);
+    ASSERT_EQUAL(0, dtz);
+    ASSERT_EQUAL(1, ent.getEvalScore());
+
+
+    pos = TextIO::readFEN("8/1R6/4q3/6k1/8/8/6K1/1Q6 b - - 0 1"); // DTZ = 46
     resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT(resWDL);
     resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
-    ASSERT(!resDTZ);
-    ASSERT(SearchConst::isLoseScore(wdl)); // WDL probes assume half-move clock is 0
+    ASSERT(resDTZ);
+    ASSERT(SearchConst::isLoseScore(wdl));
+    ASSERT(SearchConst::isLoseScore(dtz));
+    ASSERT(dtz <= wdl);
+
+    // DTZ + hmc = 100, but RTB still knows the answer because maxDTZ = 100
+    pos = TextIO::readFEN("8/1R6/4q3/6k1/8/8/6K1/1Q6 b - - 54 1"); // DTZ = 46
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
+    ASSERT(resWDL);
+    ASSERT(SearchConst::isLoseScore(wdl));
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(resDTZ);
+    ASSERT(SearchConst::isLoseScore(dtz));
+
+    // DTZ + hmc = 101, draw
+    pos = TextIO::readFEN("8/1R6/4q3/6k1/8/8/6K1/1Q6 b - - 55 1"); // DTZ = 46
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
+    ASSERT(resWDL);
+    ASSERT(SearchConst::isLoseScore(wdl));
+    ent.clear();
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(resDTZ);
+    ASSERT_EQUAL(0, dtz);
+    ASSERT_EQUAL(-1, ent.getEvalScore());
+
 
     pos = TextIO::readFEN("1R5Q/8/6k1/8/8/8/8/K1q5 w - - 0 1"); // DTZ == 101
     ent.clear();
@@ -325,6 +397,7 @@ TBTest::rtbTest() {
     ASSERT(resWDL);
     ASSERT_EQUAL(0, wdl);
     ASSERT_EQUAL(1000, ent.getEvalScore());
+    ent.clear();
     resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
     ASSERT(resDTZ);
     ASSERT_EQUAL(0, dtz);
@@ -336,6 +409,7 @@ TBTest::rtbTest() {
     ASSERT(resWDL);
     ASSERT_EQUAL(0, wdl);
     ASSERT_EQUAL(-1000, ent.getEvalScore());
+    ent.clear();
     resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
     ASSERT(resDTZ);
     ASSERT_EQUAL(0, dtz);
@@ -354,6 +428,7 @@ TBTest::rtbTest() {
     resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
     ASSERT(resWDL);
     ASSERT(SearchConst::isWinScore(wdl)); // WDL probes ignore halfMoveClock
+    ent.clear();
     resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
     ASSERT(resDTZ);
     ASSERT_EQUAL(0, dtz);

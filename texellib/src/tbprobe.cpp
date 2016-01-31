@@ -425,17 +425,17 @@ TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score,
         } else if (maxHalfMoveClock == 101)
             return false; // DTZ can be wrong when mate-in-1
     } else {
-        if ((maxHalfMoveClock > 101) ||
-            ((maxHalfMoveClock == 101) && (pos.getHalfMoveClock() == 0))) {
+        if ((maxHalfMoveClock == 100) && (pos.getHalfMoveClock() > 0) &&
+            (maxDTZ.find(pos.materialId())->second != 100)) // dtz can be off by one
+            return false;
+        if (maxHalfMoveClock > 100) {
             score = 0;
-            if (std::abs(dtz) < 100)
+            if (std::abs(dtz) <= 100)
                 updateEvScore(ent, sgn * (maxHalfMoveClock - 100));
             else
                 updateEvScore(ent, sgn * maxFrustratedDist);
             return true;
         }
-        if ((maxHalfMoveClock >= 100) && (pos.getHalfMoveClock() > 0))
-            return false;
     }
     int plyToMate = getMaxSubMate(pos) + std::abs(dtz);
     if (dtz > 0) {
