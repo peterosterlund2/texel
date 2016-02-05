@@ -254,6 +254,10 @@ static void init_tb(char *str)
     }
     add_to_hash(entry, key);
     if (key2 != key) add_to_hash(entry, key2);
+
+    fd = open_tb(str, DTZSUFFIX);
+    if (fd == FD_ERR) return;
+    close_tb(fd);
     add_to_dtz_hash(key, key2);
 }
 
