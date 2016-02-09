@@ -91,7 +91,8 @@ private:
         std::ostream& os;
     };
 
-    void startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes);
+    void startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPercentage,
+                     int maxDepth, int maxNodes);
 
     void stopThread();
 
@@ -133,6 +134,7 @@ private:
 
     int minTimeLimit;
     int maxTimeLimit;
+    int earlyStopPercentage;
     int maxDepth;
     int maxNodes;
     std::vector<Move> searchMoves;

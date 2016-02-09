@@ -101,7 +101,7 @@ public:
     /** Set which thread is owning this Search object. */
     void setThreadNo(int tNo);
 
-    void timeLimit(int minTimeLimit, int maxTimeLimit);
+    void timeLimit(int minTimeLimit, int maxTimeLimit, int earlyStopPercent = -1);
 
     void setStrength(int strength, U64 randomSeed);
 
@@ -274,6 +274,7 @@ private:
     S64 tStart;                // Time when search started
     RelaxedShared<S64> minTimeMillis; // Minimum recommended thinking time
     RelaxedShared<S64> maxTimeMillis; // Maximum allowed thinking time
+    int earlyStopPercentage;   // Can stop searching after this many percent of minTimeMillis
     bool searchNeedMoreTime;   // True if negaScout should use up to maxTimeMillis time.
     S64 maxNodes;              // Maximum number of nodes to search (approximately)
     int minProbeDepth;         // Minimum depth to probe endgame tablebases.

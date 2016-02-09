@@ -59,6 +59,7 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     initNodeStats();
     minTimeMillis = -1;
     maxTimeMillis = -1;
+    earlyStopPercentage = minTimeUsage;
     searchNeedMoreTime = false;
     maxNodes = -1;
     minProbeDepth = 0;
@@ -74,9 +75,10 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
 }
 
 void
-Search::timeLimit(int minTimeLimit, int maxTimeLimit) {
+Search::timeLimit(int minTimeLimit, int maxTimeLimit, int earlyStopPercent) {
     minTimeMillis = minTimeLimit;
     maxTimeMillis = maxTimeLimit;
+    earlyStopPercentage = (earlyStopPercent > 0 ? earlyStopPercent : minTimeUsage);
     if ((maxTimeMillis >= 0) && (maxTimeMillis < 1000))
         nodesBetweenTimeCheck = 1000;
     else
@@ -143,7 +145,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
         UndoInfo ui;
         bool needMoreTime = false;
         for (int mi = 0; mi < (int)rootMoves.size(); mi++) {
-            posHashFirstNew = posHashFirstNew0 + ((mi > 0 && maxPV > 1) ? 1 : 0);
+            posHashFirstNew = posHashFirstNew0 + ((maxPV > 1) ? 1 : 0);
             if (mi < maxPV)
                 aspirationDelta = isWinScore(std::abs(rootMoves[mi].score())) ? 3000 : aspirationWindow;
             if (firstIteration)
@@ -264,7 +266,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             std::cout << ss.str() << std::endl;
         }
         if (maxTimeMillis >= 0)
-            if (tNow - tStart > minTimeMillis * 0.01 * minTimeUsage)
+            if (tNow - tStart > minTimeMillis * 0.01 * earlyStopPercentage)
                 break;
         if (depthS >= maxDepth * plyScale)
             break;

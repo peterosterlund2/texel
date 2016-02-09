@@ -122,7 +122,7 @@ EngineControl::startSearch(const Position& pos, const std::vector<Move>& moves, 
     ponder = false;
     infinite = (maxTimeLimit < 0) && (maxDepth < 0) && (maxNodes < 0);
     searchMoves = sPar.searchMoves;
-    startThread(minTimeLimit, maxTimeLimit, maxDepth, maxNodes);
+    startThread(minTimeLimit, maxTimeLimit, earlyStopPercentage, maxDepth, maxNodes);
 }
 
 void
@@ -132,7 +132,7 @@ EngineControl::startPonder(const Position& pos, const std::vector<Move>& moves, 
     computeTimeLimit(sPar);
     ponder = true;
     infinite = false;
-    startThread(-1, -1, -1, -1);
+    startThread(-1, -1, -1, -1, -1);
 }
 
 void
@@ -147,7 +147,7 @@ EngineControl::ponderHit() {
             if (minTimeLimit > 1) minTimeLimit = 1;
             if (maxTimeLimit > 1) maxTimeLimit = 1;
         }
-        mySearch->timeLimit(minTimeLimit, maxTimeLimit);
+        mySearch->timeLimit(minTimeLimit, maxTimeLimit, earlyStopPercentage);
     }
     infinite = (maxTimeLimit < 0) && (maxDepth < 0) && (maxNodes < 0);
     ponder = false;
@@ -172,6 +172,7 @@ void
 EngineControl::computeTimeLimit(const SearchParams& sPar) {
     minTimeLimit = -1;
     maxTimeLimit = -1;
+    earlyStopPercentage = -1;
     maxDepth = -1;
     maxNodes = -1;
     if (sPar.infinite) {
@@ -190,6 +191,7 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 
         if (sPar.moveTime > 0) {
              minTimeLimit = maxTimeLimit = sPar.moveTime;
+             earlyStopPercentage = 100; // Don't stop search early if asked to search a fixed amount of time
         } else if (sPar.wTime || sPar.bTime) {
             int moves = sPar.movesToGo;
             if (moves == 0)
@@ -215,7 +217,8 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 }
 
 void
-EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int maxNodes) {
+EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPercentage,
+                           int maxDepth, int maxNodes) {
     Search::SearchTables st(tt, kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
     sc->setListener(make_unique<SearchListener>(os));
@@ -241,7 +244,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int maxDepth, int
     pd.addRemoveWorkers(UciParams::threads->getIntPar() - 1);
     pd.wq.resetSplitDepth();
     pd.startAll();
-    sc->timeLimit(minTimeLimit, maxTimeLimit);
+    sc->timeLimit(minTimeLimit, maxTimeLimit, earlyStopPercentage);
     bool ownBook = UciParams::ownBook->getBoolPar();
     bool analyseMode = UciParams::analyseMode->getBoolPar();
     int maxPV = (infinite || analyseMode) ? UciParams::multiPV->getIntPar() : 1;
