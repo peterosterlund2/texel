@@ -53,17 +53,17 @@ BookNode::updateScores(const BookData& bookData) {
             return;
         if (updateChildren) {
             for (auto& e : node->children)
-                updateNegaMax(&*e.second, false, true, false);
+                updateNegaMax(e.second, false, true, false);
         }
         bool propagate = node->computeNegaMax(bookData);
         if (propagate)
             for (auto& e : node->children)
-                toUpdate.insert(&*e.second);
+                toUpdate.insert(e.second);
         if (updateParents && propagate) {
             for (auto& e : node->parents) {
-                std::shared_ptr<BookNode> parent = e.parent.lock();
+                BookNode* parent = e.parent;
                 assert(parent);
-                updateNegaMax(&*parent, true, false, true);
+                updateNegaMax(parent, true, false, true);
             }
         }
     };
@@ -74,7 +74,7 @@ BookNode::updateScores(const BookData& bookData) {
         bool modified = node->computePathError(bookData);
         if (modified)
             for (auto& e : node->children)
-                updatePathErrors(&*e.second);
+                updatePathErrors(e.second);
     };
     for (BookNode* n : toUpdate)
         updatePathErrors(n);
@@ -116,7 +116,7 @@ BookNode::computeNegaMax(const BookData& bookData) {
     }
 
     for (const auto& e : children) {
-        std::shared_ptr<BookNode> child = e.second;
+        BookNode* child = e.second;
         if ((expansionCostWhite != INVALID_SCORE) &&
             (child->expansionCostWhite != IGNORE_SCORE)) {
             int cost = getExpansionCost(bookData, child, true);
@@ -137,7 +137,7 @@ BookNode::computeNegaMax(const BookData& bookData) {
 }
 
 int
-BookNode::getExpansionCost(const BookData& bookData, const std::shared_ptr<BookNode>& child,
+BookNode::getExpansionCost(const BookData& bookData, const BookNode* child,
                            bool white) const {
     const int ownCost = bookData.ownPathErrorCost();
     const int otherCost = bookData.otherPathErrorCost();
@@ -178,7 +178,7 @@ BookNode::computePathError(const BookData& bookData) {
     pathErrorWhite = INT_MAX;
     pathErrorBlack = INT_MAX;
     for (auto& e : parents) {
-        std::shared_ptr<BookNode> parent = e.parent.lock();
+        BookNode* parent = e.parent;
         assert(parent);
         int errW = parent->getPathErrorWhite();
         int errB = parent->getPathErrorBlack();
@@ -227,7 +227,7 @@ void
 BookNode::updateDepth() {
     bool updated = false;
     for (auto& e : parents) {
-        std::shared_ptr<BookNode> parent = e.parent.lock();
+        BookNode* parent = e.parent;
         assert(parent);
         if (parent->depth == INT_MAX)
             parent->updateDepth();
@@ -278,14 +278,14 @@ Book::improve(const std::string& bookFile, int searchTime, int numThreads,
         }
 
         bool getNextPosition(Position& pos, Move& move) override {
-            std::shared_ptr<BookNode> ptr = book.getBookNode(startHash);
+            BookNode* ptr = book.getBookNode(startHash);
             while (true) {
                 int cost = whiteBook ? ptr->getExpansionCostWhite() : ptr->getExpansionCostBlack();
                 if (cost == IGNORE_SCORE)
                     return false;
-                std::vector<std::shared_ptr<BookNode>> goodChildren;
+                std::vector<BookNode*> goodChildren;
                 for (const auto& e : ptr->getChildren()) {
-                    std::shared_ptr<BookNode> child = e.second;
+                    BookNode* child = e.second;
                     int childCost = ptr->getExpansionCost(book.bookData, child, whiteBook);
                     if (cost == childCost)
                         goodChildren.push_back(child);
@@ -406,14 +406,14 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
     Position pos;
     std::vector<Move> moveList;
     for (auto& e : bookNodes) {
-        std::shared_ptr<BookNode> node = e.second;
+        const BookNode* node = e.second.get();
         if (!getPosition(node->getHashKey(), pos, moveList))
             assert(false);
         const bool wtm = pos.isWhiteMove();
         BookMoves& bm = pgBook[PolyglotBook::getHashKey(pos)];
         for (auto& c : node->getChildren()) {
             U16 cMove = c.first;
-            std::shared_ptr<BookNode> child = c.second;
+            BookNode* child = c.second;
             if (bookMoveOk(*node, cMove, maxErrSelf)) {
                 Move move;
                 move.setFromCompressed(cMove);
@@ -493,7 +493,7 @@ Book::interactiveQuery(const std::string& bookFile, int maxErrSelf, double errOt
             continue;
         }
         std::vector<Move> childMoves;
-        std::shared_ptr<BookNode> node = getBookNode(pos.bookHash());
+        BookNode* node = getBookNode(pos.bookHash());
         assert(node);
         getOrderedChildMoves(*node, childMoves);
         Move childMove;
@@ -811,7 +811,7 @@ Book::addPosToBook(Position& pos, const Move& move, std::vector<U64>& toSearch) 
         if (p->childHash != childHash)
             continue;
         U64 parentHash = p->parentHash;
-        std::shared_ptr<BookNode> parent = getBookNode(parentHash);
+        BookNode* parent = getBookNode(parentHash);
         assert(parent);
         nParents++;
 
@@ -837,7 +837,7 @@ Book::addPosToBook(Position& pos, const Move& move, std::vector<U64>& toSearch) 
         }
         assert(found);
 
-        parent->addChild(move2.getCompressedMove(), childNode);
+        parent->addChild(move2.getCompressedMove(), childNode.get());
         childNode->addParent(move2.getCompressedMove(), parent);
         toSearch.push_back(parent->getHashKey());
     }
@@ -863,10 +863,10 @@ Book::getPosition(U64 hashKey, Position& pos, std::vector<Move>& moveList) const
         return false;
 
     int bestErr = INT_MAX;
-    std::shared_ptr<BookNode> bestParent;
+    BookNode* bestParent = nullptr;
     Move bestMove;
     for (const auto& p : node->getParents()) {
-        std::shared_ptr<BookNode> parent = p.parent.lock();
+        BookNode* parent = p.parent;
         assert(parent);
         int err = parent->getPathErrorWhite() + parent->getPathErrorBlack();
         if (err < bestErr) {
@@ -887,18 +887,18 @@ Book::getPosition(U64 hashKey, Position& pos, std::vector<Move>& moveList) const
     return true;
 }
 
-std::shared_ptr<BookNode>
+BookNode*
 Book::getBookNode(U64 hashKey) const {
     auto it = bookNodes.find(hashKey);
     if (it == bookNodes.end())
         return nullptr;
-    return it->second;
+    return it->second.get();
 }
 
 void
 Book::initPositions(Position& pos) {
     const U64 hash = pos.bookHash();
-    std::shared_ptr<BookNode> node = getBookNode(hash);
+    BookNode* node = getBookNode(hash);
     if (!node)
         return;
 
@@ -919,7 +919,7 @@ Book::initPositions(Position& pos) {
 void
 Book::setChildRefs(Position& pos) {
     const U64 hash = pos.bookHash();
-    std::shared_ptr<BookNode> node = getBookNode(hash);
+    BookNode* node = getBookNode(hash);
     assert(node);
 
     MoveList moves;
@@ -930,7 +930,7 @@ Book::setChildRefs(Position& pos) {
         pos.makeMove(moves[i], ui);
         U64 childHash = pos.bookHash();
         hashToParent.insert(H2P(childHash, hash));
-        auto child = getBookNode(childHash);
+        BookNode* child = getBookNode(childHash);
         if (child) {
             node->addChild(moves[i].getCompressedMove(), child);
             child->addParent(moves[i].getCompressedMove(), node);
@@ -969,17 +969,17 @@ Book::computeWeights(int maxErrSelf, double errOtherExpConst, WeightInfo& weight
         w[node->getHashKey()] = BookWeight(wW, wB);
 
         for (const auto& p : node->getParents()) {
-            std::shared_ptr<BookNode> parent = p.parent.lock();
+            BookNode* parent = p.parent;
             assert(parent);
             int eW = std::max(errW, parent->getPathErrorWhite());
             int eB = std::max(errB, parent->getPathErrorBlack());
-            propagateWeights(&*parent, w, eW, eB);
+            propagateWeights(parent, w, eW, eB);
         }
     };
 
     WeightInfo w;
     for (const auto& e : bookNodes) {
-        const std::shared_ptr<BookNode>& node = e.second;
+        const BookNode* node = e.second.get();
         auto it = node->getChildren().find(node->getBestNonBookMove().getCompressedMove());
         if ((it != node->getChildren().end()) &&
             (it->second->getNegaMaxScore() != INVALID_SCORE))
@@ -991,7 +991,7 @@ Book::computeWeights(int maxErrSelf, double errOtherExpConst, WeightInfo& weight
             continue;
 
         w.clear();
-        propagateWeights(&*node, w, errW, errB);
+        propagateWeights(node, w, errW, errB);
 
         for (const auto& e2 : w)
             weights[e2.first] += e2.second;
@@ -1075,7 +1075,7 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath,
     std::cout << TextIO::asciiBoard(pos);
     std::cout << TextIO::toFEN(pos) << std::endl;
     std::cout << num2Hex(pos.bookHash()) << std::endl;
-    std::shared_ptr<BookNode> node = getBookNode(pos.bookHash());
+    const BookNode* node = getBookNode(pos.bookHash());
     if (!node) {
         std::cout << "not in book" << std::endl;
         return;
@@ -1124,7 +1124,7 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath,
         const Move& childMove = childMoves[mi];
         auto it = node->getChildren().find(childMove.getCompressedMove());
         assert(it != node->getChildren().end());
-        std::shared_ptr<BookNode> child = it->second;
+        const BookNode* child = it->second;
         int negaMaxScore = child->getNegaMaxScore();
         if (pos.isWhiteMove())
             negaMaxScore = BookNode::negateScore(negaMaxScore);
@@ -1180,7 +1180,7 @@ Book::getOrderedChildMoves(const BookNode& node, std::vector<Move>& moves) const
     for (const auto& e : node.getChildren()) {
         Move childMove;
         childMove.setFromCompressed(e.first);
-        std::shared_ptr<BookNode> child = e.second;
+        const BookNode* child = e.second;
         int score = -BookNode::negateScore(child->getNegaMaxScore());
         childMoves.push_back(std::make_pair(score,
                                             childMove.getCompressedMove()));

@@ -154,7 +154,7 @@ public:
     int getPathErrorBlack() const;
 
     /** Compute expansion cost for a child node, or for this node if child is null. */
-    int getExpansionCost(const BookData& bookData, const std::shared_ptr<BookNode>& child,
+    int getExpansionCost(const BookData& bookData, const BookNode* child,
                          bool white) const;
 
     struct BookSerializeData {
@@ -167,8 +167,8 @@ public:
     void setRootNode();
 
     /** Add a parent/child relationship. */
-    void addChild(U16 move, const std::shared_ptr<BookNode>& child);
-    void addParent(U16 move, const std::shared_ptr<BookNode>& parent);
+    void addChild(U16 move, BookNode* child);
+    void addParent(U16 move, BookNode* parent);
 
     /** Set search result data. */
     void setSearchResult(const BookData& bookData,
@@ -188,21 +188,21 @@ public:
     void updateScores(const BookData& bookData);
 
     /** Get all children. */
-    const std::map<U16, std::shared_ptr<BookNode>>& getChildren() const { return children; }
+    const std::map<U16, BookNode*>& getChildren() const { return children; }
 
     struct ParentInfo {
-        ParentInfo(U16 cMove, const std::weak_ptr<BookNode> p = std::weak_ptr<BookNode>())
+        ParentInfo(U16 cMove, BookNode* p = nullptr)
             : compressedMove(cMove), parent(p) {}
 
         bool operator<(const ParentInfo& other) const {
             if (compressedMove != other.compressedMove)
                 return compressedMove < other.compressedMove;
-            std::owner_less<std::weak_ptr<BookNode>> ol;
+            std::less<BookNode*> ol;
             return ol(parent, other.parent);
         }
 
         U16 compressedMove;
-        std::weak_ptr<BookNode> parent;
+        BookNode* parent;
     };
 
     /** Get all parents. */
@@ -245,8 +245,8 @@ private:
     int pathErrorWhite;     // Smallest path error for white from root to this node
     int pathErrorBlack;     // Smallest path error for black from root to this node
 
-    std::map<U16, std::shared_ptr<BookNode>> children; // Compressed move -> BookNode
-    std::set<ParentInfo> parents;                      // Compressed move -> BookNode
+    std::map<U16, BookNode*> children; // Compressed move -> BookNode
+    std::set<ParentInfo> parents;      // Compressed move -> BookNode
     State state;
 };
 
@@ -328,7 +328,7 @@ private:
 
     /** Get the book node corresponding to a hash key.
      * Return null if there is no matching node in the book. */
-    std::shared_ptr<BookNode> getBookNode(U64 hashKey) const;
+    BookNode* getBookNode(U64 hashKey) const;
 
     /** Initialize parent/child relations in all book nodes
      *  by following legal moves from pos. */
@@ -560,12 +560,12 @@ BookNode::setRootNode() {
 }
 
 inline void
-BookNode::addChild(U16 move, const std::shared_ptr<BookNode>& child) {
+BookNode::addChild(U16 move, BookNode* child) {
     children.insert(std::make_pair(move, child));
 }
 
 inline void
-BookNode::addParent(U16 move, const std::shared_ptr<BookNode>& parent) {
+BookNode::addParent(U16 move, BookNode* parent) {
     parents.insert(ParentInfo(move, parent));
     updateDepth();
 }
