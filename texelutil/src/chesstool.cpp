@@ -114,7 +114,7 @@ ChessTool::readStream(std::istream& is) {
 const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 
 void
-ChessTool::pgnToFen(std::istream& is) {
+ChessTool::pgnToFen(std::istream& is, int everyNth) {
     static std::vector<U64> nullHist(200);
     static TranspositionTable tt(19);
     static ParallelData pd(tt);
@@ -123,6 +123,7 @@ ChessTool::pgnToFen(std::istream& is) {
     static auto et = Evaluate::getEvalHashTables();
     static Search::SearchTables st(tt, kt, ht, *et);
     static TreeLogger treeLog;
+    Random rnd;
 
     Position pos;
     const int mate0 = SearchConst::MATE0;
@@ -164,7 +165,8 @@ ChessTool::pgnToFen(std::istream& is) {
                 commentScore = -commentScore;
             }
 
-            std::cout << fen << " : " << rScore << " : " << commentScore << " : " << score << " : " << gameNo << '\n';
+            if (everyNth <= 1 || rnd.nextInt(everyNth) == 0)
+                std::cout << fen << " : " << rScore << " : " << commentScore << " : " << score << " : " << gameNo << '\n';
         }
     }
     std::cout << std::flush;

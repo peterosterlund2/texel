@@ -87,8 +87,9 @@ public:
     /** Read PGN files. For each position, print: "fen : gameResult : searchScore : qScore".
      * Skip positions where searchScore is a mate score. Also skip positions where corresponding
      * game score is unknown. All scores are from white's perspective. gameResult is 0.0, 0.5 or 1.0,
-     * also from white's perspective. */
-    void pgnToFen(std::istream& is);
+     * also from white's perspective.
+     * If everyNth is larger than one, each position is printed with probability 1/everyNth. */
+    void pgnToFen(std::istream& is, int everyNth);
 
     /** Read file with one FEN position per line. Output PGN file using "FEN" and "SetUp" tags. */
     void fenToPgn(std::istream& is);

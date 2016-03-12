@@ -83,7 +83,7 @@ usage() {
     std::cerr << "cmd is one of:\n";
     std::cerr << " test : Run CUTE tests\n";
     std::cerr << "\n";
-    std::cerr << " p2f      : Convert from PGN to FEN\n";
+    std::cerr << " p2f [n]  : Convert from PGN to FEN, using each position with probability 1/n.\n";
     std::cerr << " f2p      : Convert from FEN to PGN\n";
     std::cerr << " filter type pars : Keep positions that satisfy a condition\n";
     std::cerr << "        score scLimit prLimit : qScore and search score differ less than limits\n";
@@ -249,7 +249,15 @@ main(int argc, char* argv[]) {
         if (cmd == "test") {
             testMode = true;
         } else if (cmd == "p2f") {
-            chessTool.pgnToFen(std::cin);
+            int n = 1;
+            if (n > 3)
+                usage();
+            if (argc > 2)
+                if (!str2Num(argv[2], n))
+                    usage();
+            if (n < 1)
+                usage();
+            chessTool.pgnToFen(std::cin, n);
         } else if (cmd == "f2p") {
             chessTool.fenToPgn(std::cin);
         } else if (cmd == "pawnadv") {
