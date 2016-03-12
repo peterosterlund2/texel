@@ -39,8 +39,6 @@ ComputerPlayer::staticInitialize() {
     std::string name = "Texel 1.06a42";
     if (sizeof(char*) == 4)
         name += " 32-bit";
-    if (sizeof(char*) == 8)
-        name += " 64-bit";
     engineName = name;
 }
 
