@@ -269,7 +269,7 @@ EvaluateTest::testPieceSquareEval() {
     pos.makeMove(TextIO::stringToMove(pos, "Nxc6"), ui);
     int score2 = evalWhite(pos);
     ASSERT(score2 < score);                 // Bishop worth more than knight in this case
-    ASSERT(moveScore(pos, "Qe2") >= -5);    // Queen away from edge is good
+    ASSERT(moveScore(pos, "Qe2") >= -6);    // Queen away from edge is good
 
     pos = TextIO::readFEN("5k2/4nppp/p1n5/1pp1p3/4P3/2P1BN2/PP3PPP/3R2K1 w - - 0 1");
     ASSERT(moveScore(pos, "Rd7") > 0);      // Rook on 7:th rank is good
