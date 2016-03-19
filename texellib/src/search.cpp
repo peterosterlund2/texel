@@ -925,9 +925,9 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 if ((depth >= 2*plyScale) && mayReduce && (extend == 0)) {
                     if (!givesCheck && !passedPawnPush(pos, m)) {
                         lmrCount++;
-                        if ((lmrCount > lmrMoveCountLimit2) && (depth > 5*plyScale) && !isCapture) {
+                        if ((lmrCount > lmrMoveCountLimit2) && (depth >= 5*plyScale) && !isCapture) {
                             lmr = 3*plyScale;
-                        } else if ((lmrCount > lmrMoveCountLimit1) && (depth > 3*plyScale) && !isCapture) {
+                        } else if ((lmrCount > lmrMoveCountLimit1) && (depth >= 3*plyScale) && !isCapture) {
                             lmr = 2*plyScale;
                         } else if (mi >= 2) {
                             lmr = 1*plyScale;
