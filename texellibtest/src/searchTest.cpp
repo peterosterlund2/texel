@@ -556,7 +556,7 @@ SearchTest::testFortress() {
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     Move bestM = idSearch(sc, 10);
     ASSERT(TextIO::moveToUCIString(bestM) == "c2a4");
-    ASSERT(bestM.score() > -500);
+    ASSERT(bestM.score() > -600);
 }
 
 cute::suite
