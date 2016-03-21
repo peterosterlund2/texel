@@ -157,6 +157,9 @@ ChessTool::pgnToFen(std::istream& is, int everyNth) {
             if (!getCommentScore(comment, commentScore))
                 continue;
 
+            if (everyNth > 1 && rnd.nextInt(everyNth) != 0)
+                continue;
+
             sc.init(pos, nullHist, 0);
             sc.q0Eval = UNKNOWN_SCORE;
             int score = sc.quiesce(-mate0, mate0, 0, 0*plyScale, MoveGen::inCheck(pos));
@@ -165,8 +168,7 @@ ChessTool::pgnToFen(std::istream& is, int everyNth) {
                 commentScore = -commentScore;
             }
 
-            if (everyNth <= 1 || rnd.nextInt(everyNth) == 0)
-                std::cout << fen << " : " << rScore << " : " << commentScore << " : " << score << " : " << gameNo << '\n';
+            std::cout << fen << " : " << rScore << " : " << commentScore << " : " << score << " : " << gameNo << '\n';
         }
     }
     std::cout << std::flush;
