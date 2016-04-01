@@ -151,6 +151,12 @@ public:
     /** Get number of TB hits for this thread. */
     S64 getTbHitsThisThread() const;
 
+    /**
+     * Static exchange evaluation function.
+     * @return SEE score for m. Positive value is good for the side that makes the first move.
+     */
+    static int SEE(Position& pos, const Move& m);
+
 private:
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
               int posHashListSize0);
@@ -343,6 +349,11 @@ Search::passedPawnPush(const Position& pos, const Move& m) {
             return false;
         return m.to() <= 23;
     }
+}
+
+inline int
+Search::SEE(const Move& m) {
+    return SEE(pos, m);
 }
 
 inline int

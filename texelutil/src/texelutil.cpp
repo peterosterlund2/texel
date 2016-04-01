@@ -77,9 +77,10 @@ setInitialValues(const std::string& fname) {
 
 void
 usage() {
-    std::cerr << "Usage: texelutil [-iv file] [-e] cmd params\n";
+    std::cerr << "Usage: texelutil [-iv file] [-e] [-moveorder] cmd params\n";
     std::cerr << " -iv file : Set initial parameter values\n";
     std::cerr << " -e : Use cross entropy error function\n";
+    std::cerr << " -moveorder : Optimize static move ordering\n";
     std::cerr << "cmd is one of:\n";
     std::cerr << " test : Run CUTE tests\n";
     std::cerr << "\n";
@@ -229,6 +230,7 @@ main(int argc, char* argv[]) {
     try {
         ComputerPlayer::initEngine();
         bool useEntropyErrorFunction = false;
+        bool optimizeMoveOrdering = false;
         while (true) {
             if ((argc >= 3) && (std::string(argv[1]) == "-iv")) {
                 setInitialValues(argv[2]);
@@ -238,6 +240,10 @@ main(int argc, char* argv[]) {
                 useEntropyErrorFunction = true;
                 argc -= 1;
                 argv += 1;
+            } else if ((argc >= 2) && (std::string(argv[1]) == "-moveorder")) {
+                optimizeMoveOrdering = true;
+                argc -= 1;
+                argv += 1;
             } else
                 break;
         }
@@ -245,12 +251,12 @@ main(int argc, char* argv[]) {
             usage();
 
         std::string cmd = argv[1];
-        ChessTool chessTool(useEntropyErrorFunction);
+        ChessTool chessTool(useEntropyErrorFunction, optimizeMoveOrdering);
         if (cmd == "test") {
             testMode = true;
         } else if (cmd == "p2f") {
             int n = 1;
-            if (n > 3)
+            if (argc > 3)
                 usage();
             if (argc > 2)
                 if (!str2Num(argv[2], n))

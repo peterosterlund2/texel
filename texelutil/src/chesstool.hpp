@@ -32,6 +32,9 @@
 
 #include "armadillo"
 
+class Evaluate;
+class MoveList;
+
 /** Convert evaluation score to win probability using logistic model. */
 class ScoreToProb {
 public:
@@ -39,10 +42,10 @@ public:
     ScoreToProb(double pawnAdvantage = 113);
 
     /** Return win probability corresponding to score. */
-    double getProb(int score);
+    double getProb(int score) const;
 
     /** Return log(getProb(score)). */
-    double getLogProb(int score);
+    double getLogProb(int score) const;
 
 private:
     double computeProb(int score) const;
@@ -72,8 +75,12 @@ public:
 
 class ChessTool {
 public:
-    /** Constructor. */
-    ChessTool(bool useEntropyErrorFunction);
+    /** Constructor.
+     * @param useEntropyErrorFunction  Use entropy error function instead of LSQ
+     *                                 in optimization objective function.
+     * @param optmizeMoveOrdering  If true, optimize static move ordering parameters
+     *                             instead of evaluation function parameters. */
+    ChessTool(bool useEntropyErrorFunction, bool optimizeMoveOrdering);
 
     /** Setup tablebase directory paths. */
     static void setupTB();
@@ -158,10 +165,11 @@ private:
         Position::SerializeData posData;
         double result;   // Game result for white, 0, 0.5 or 1.0
         int searchScore; // Score reported by engine when game was played
-        int qScore;      // q-search computed by this program
+        int qScore;      // q-search score computed by this program
         int gameNo;      // PGN game number this FEN came from
+        U16 cMove;       // Next move in this position
 
-        double getErr(ScoreToProb& sp) const { return sp.getProb(qScore) - result; }
+        double getErr(const ScoreToProb& sp) const { return sp.getProb(qScore) - result; }
     };
 
     void readFENFile(std::istream& is, std::vector<PositionInfo>& data);
@@ -170,10 +178,13 @@ private:
     void writePGN(const Position& pos);
 
     void accumulateATA(std::vector<PositionInfo>& positions, int beg, int end,
-                       ScoreToProb& sp,
+                       const ScoreToProb& sp,
                        std::vector<ParamDomain>& pdVec,
                        arma::mat& aTa, arma::mat& aTb,
                        arma::mat& ePos, arma::mat& eNeg);
+
+    /** Compute the optimization objective function. */
+    double computeObjective(std::vector<PositionInfo>& positions, const ScoreToProb& sp);
 
     /** Recompute all qScore values. */
     void qEval(std::vector<PositionInfo>& positions);
@@ -181,25 +192,26 @@ private:
     void qEval(std::vector<PositionInfo>& positions, const int beg, const int end);
 
     /** Compute average evaluation corresponding to a set of parameter values. */
-    double computeAvgError(std::vector<PositionInfo>& positions, ScoreToProb& sp,
+    double computeAvgError(std::vector<PositionInfo>& positions, const ScoreToProb& sp,
                            const std::vector<ParamDomain>& pdVec, arma::mat& pdVal);
 
     /** Compute average evaluation error. */
-    double computeAvgError(const std::vector<PositionInfo>& positions, ScoreToProb& sp);
+    double computeAvgError(const std::vector<PositionInfo>& positions, const ScoreToProb& sp);
+
+    /** Compute objective function value for move ordering optimization. */
+    double computeMoveOrderObjective(std::vector<PositionInfo>& positions, const ScoreToProb& sp);
+
+    /** Score moves (for move ordering) based on static rules. */
+    void staticScoreMoveListQuiet(Position& pos, Evaluate& eval, MoveList& moves);
 
     bool useEntropyErrorFunction;
+    bool optimizeMoveOrdering;
 };
 
 
 inline
 double ScoreToProb::computeProb(int score) const {
     return 1 / (1 + pow(10, -score * pawnAdvantage / 40000));
-}
-
-inline
-ChessTool::ChessTool(bool useEntropyErr)
-    : useEntropyErrorFunction(useEntropyErr)
-{
 }
 
 #endif /* CHESSTOOL_HPP_ */

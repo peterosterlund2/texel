@@ -37,28 +37,37 @@
 #include <unistd.h>
 
 
+// Static move ordering parameters
+DECLARE_PARAM(moEvalWeight, 96, -128, 128, useUciParam || true);
+DECLARE_PARAM(moHangPenalty1, -1, -128, 128, useUciParam || true);
+DECLARE_PARAM(moHangPenalty2, -30, -128, 128, useUciParam || true);
+DECLARE_PARAM(moSeeBonus, 104, -128, 128, useUciParam || true);
+
+DEFINE_PARAM(moEvalWeight);
+DEFINE_PARAM(moHangPenalty1);
+DEFINE_PARAM(moHangPenalty2);
+DEFINE_PARAM(moSeeBonus);
+
 ScoreToProb::ScoreToProb(double pawnAdvantage0)
     : pawnAdvantage(pawnAdvantage0) {
     for (int i = 0; i < MAXCACHE; i++) {
-        cache[i] = -1;
-        logCacheP[i] = logCacheN[i] = 2;
+        cache[i] = computeProb(i);
+        logCacheP[i] = log(getProb(i));
+        logCacheN[i] = log(getProb(-i));
     }
 }
 
 double
-ScoreToProb::getProb(int score) {
+ScoreToProb::getProb(int score) const {
     bool neg = false;
     if (score < 0) {
         score = -score;
         neg = true;
     }
-    double ret = -1;
-    if (score < MAXCACHE) {
-        if (cache[score] < 0)
-            cache[score] = computeProb(score);
+    double ret;
+    if (score < MAXCACHE)
         ret = cache[score];
-    }
-    if (ret < 0)
+    else
         ret = computeProb(score);
     if (neg)
         ret = 1 - ret;
@@ -66,21 +75,25 @@ ScoreToProb::getProb(int score) {
 }
 
 double
-ScoreToProb::getLogProb(int score) {
-    if ((score >= 0) && (score < MAXCACHE)) {
-        if (logCacheP[score] > 1)
-            logCacheP[score] = log(getProb(score));
+ScoreToProb::getLogProb(int score) const {
+    if ((score >= 0) && (score < MAXCACHE))
         return logCacheP[score];
-    }
-    if ((score < 0) && (score > -MAXCACHE)) {
-        if (logCacheN[-score] > 1)
-            logCacheN[-score] = log(getProb(score));
+    if ((score < 0) && (score > -MAXCACHE))
         return logCacheN[-score];
-    }
     return log(getProb(score));
 }
 
 // --------------------------------------------------------------------------------
+
+ChessTool::ChessTool(bool useEntropyErr, bool optMoveOrder)
+    : useEntropyErrorFunction(useEntropyErr),
+      optimizeMoveOrdering(optMoveOrder) {
+
+    moEvalWeight.registerParam("MoveOrderEvalWeight", Parameters::instance());
+    moHangPenalty1.registerParam("MoveOrderHangPenalty1", Parameters::instance());
+    moHangPenalty2.registerParam("MoveOrderHangPenalty2", Parameters::instance());
+    moSeeBonus.registerParam("MoveOrderSeeBonus", Parameters::instance());
+}
 
 void
 ChessTool::setupTB() {
@@ -151,7 +164,7 @@ ChessTool::pgnToFen(std::istream& is, int everyNth) {
             if (gn.nChildren() == 0)
                 break;
             gn.goForward(0);
-//            std::string move = TextIO::moveToUCIString(gn.getMove());
+            std::string move = TextIO::moveToUCIString(gn.getMove());
             std::string comment = gn.getComment();
             int commentScore;
             if (!getCommentScore(comment, commentScore))
@@ -167,8 +180,8 @@ ChessTool::pgnToFen(std::istream& is, int everyNth) {
                 score = -score;
                 commentScore = -commentScore;
             }
-
-            std::cout << fen << " : " << rScore << " : " << commentScore << " : " << score << " : " << gameNo << '\n';
+            std::cout << fen << " : " << rScore << " : " << commentScore << " : " << score
+                      << " : " << gameNo << " : " << move << '\n';
         }
     }
     std::cout << std::flush;
@@ -447,8 +460,7 @@ ChessTool::paramEvalRange(std::istream& is, ParamDomain& pd) {
     double bestVal = 1e100;
     for (int i = pd.minV; i <= pd.maxV; i += pd.step) {
         Parameters::instance().set(pd.name, num2Str(i));
-        qEval(positions);
-        double avgErr = computeAvgError(positions, sp);
+        double avgErr = computeObjective(positions, sp);
         bool best = avgErr < bestVal;
         bestVal = std::min(bestVal, avgErr);
         std::stringstream ss;
@@ -470,7 +482,7 @@ struct PrioParam {
 
 void
 ChessTool::accumulateATA(std::vector<PositionInfo>& positions, int beg, int end,
-                         ScoreToProb& sp,
+                         const ScoreToProb& sp,
                          std::vector<ParamDomain>& pdVec,
                          arma::mat& aTa, arma::mat& aTb,
                          arma::mat& ePos, arma::mat& eNeg) {
@@ -594,8 +606,7 @@ ChessTool::localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
         queue.push(PrioParam(pd));
 
     ScoreToProb sp;
-    qEval(positions);
-    double bestAvgErr = computeAvgError(positions, sp);
+    double bestAvgErr = computeObjective(positions, sp);
     {
         std::stringstream ss;
         ss << "Initial error: " << std::setprecision(14) << bestAvgErr;
@@ -617,8 +628,7 @@ ChessTool::localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
                     break;
 
                 uciPars.set(pd.name, num2Str(newValue));
-                qEval(positions);
-                double avgErr = computeAvgError(positions, sp);
+                double avgErr = computeObjective(positions, sp);
                 uciPars.set(pd.name, num2Str(pd.value));
 
                 std::stringstream ss;
@@ -684,8 +694,7 @@ ChessTool::localOptimize2(std::istream& is, std::vector<ParamDomain>& pdVec) {
         queue.push(PrioParam(pd));
 
     ScoreToProb sp;
-    qEval(positions);
-    double bestAvgErr = computeAvgError(positions, sp);
+    double bestAvgErr = computeObjective(positions, sp);
     {
         std::stringstream ss;
         ss << "Initial error: " << std::setprecision(14) << bestAvgErr;
@@ -712,8 +721,7 @@ ChessTool::localOptimize2(std::istream& is, std::vector<ParamDomain>& pdVec) {
                     continue;
                 if (funcValues.count(newValue) == 0) {
                     uciPars.set(pd.name, num2Str(newValue));
-                    qEval(positions);
-                    double avgErr = computeAvgError(positions, sp);
+                    double avgErr = computeObjective(positions, sp);
                     funcValues[newValue] = avgErr;
                     uciPars.set(pd.name, num2Str(pd.value));
                     std::stringstream ss;
@@ -731,8 +739,7 @@ ChessTool::localOptimize2(std::istream& is, std::vector<ParamDomain>& pdVec) {
                     if ((estimatedMinValue >= minV) && (estimatedMinValue <= maxV) &&
                         (funcValues.count(estimatedMinValue) == 0)) {
                         uciPars.set(pd.name, num2Str(estimatedMinValue));
-                        qEval(positions);
-                        double avgErr = computeAvgError(positions, sp);
+                        double avgErr = computeObjective(positions, sp);
                         funcValues[estimatedMinValue] = avgErr;
                         uciPars.set(pd.name, num2Str(pd.value));
                         std::stringstream ss;
@@ -1008,6 +1015,11 @@ ChessTool::printParams() {
     os << "oppoBishopHiMtrl    : " << oppoBishopHiMtrl << std::endl;
     os << "knightOutpostLoMtrl : " << knightOutpostLoMtrl << std::endl;
     os << "knightOutpostHiMtrl : " << knightOutpostHiMtrl << std::endl;
+
+    os << "moEvalWeight   : " << moEvalWeight << std::endl;
+    os << "moHangPenalty1 : " << moHangPenalty1 << std::endl;
+    os << "moHangPenalty2 : " << moHangPenalty2 << std::endl;
+    os << "moSeeBonus     : " << moSeeBonus << std::endl;
 }
 
 static bool strContains(const std::string& str, const std::string& sub) {
@@ -1233,6 +1245,11 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(knightOutpostLoMtrl, "knightOutpostLoMtrl", hppFile);
     replaceValue(knightOutpostHiMtrl, "knightOutpostHiMtrl", hppFile);
 
+//    replaceValue(moEvalWeight, "moEvalWeight", hppFile);
+//    replaceValue(moHangPenalty1, "moHangPenalty1", hppFile);
+//    replaceValue(moHangPenalty2, "moHangPenalty2", hppFile);
+//    replaceValue(moSeeBonus, "moSeeBonus", hppFile);
+
     std::ofstream osc(directory + "/parameters.cpp");
     for (const std::string& line : cppFile)
         osc << line << std::endl;
@@ -1251,18 +1268,16 @@ ChessTool::evalStat(std::istream& is, std::vector<ParamDomain>& pdVec) {
     readFENFile(is, positions);
     const int nPos = positions.size();
 
-    qEval(positions);
+    ScoreToProb sp;
+    const double avgErr0 = computeObjective(positions, sp);
     std::vector<int> qScores0;
     for (const PositionInfo& pi : positions)
         qScores0.push_back(pi.qScore);
-    ScoreToProb sp;
-    const double avgErr0 = computeAvgError(positions, sp);
 
     for (ParamDomain& pd : pdVec) {
         int newVal1 = (pd.value - pd.minV) > (pd.maxV - pd.value) ? pd.minV : pd.maxV;
         uciPars.set(pd.name, num2Str(newVal1));
-        qEval(positions);
-        double avgErr = computeAvgError(positions, sp);
+        double avgErr = computeObjective(positions, sp);
         uciPars.set(pd.name, num2Str(pd.value));
 
         double nChanged = 0;
@@ -1283,8 +1298,7 @@ ChessTool::evalStat(std::istream& is, std::vector<ParamDomain>& pdVec) {
         int newVal2 = clamp(0, pd.minV, pd.maxV);
         if (newVal2 != newVal1) {
             uciPars.set(pd.name, num2Str(newVal2));
-            qEval(positions);
-            double avgErr2 = computeAvgError(positions, sp);
+            double avgErr2 = computeObjective(positions, sp);
             uciPars.set(pd.name, num2Str(pd.value));
             errChange2 = avgErr2 - avgErr0;
         } else {
@@ -1404,7 +1418,7 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
         std::vector<std::string> fields;
         splitString(line, " : ", fields);
         bool localError = false;
-        if ((fields.size() < 4) || (fields.size() > 5))
+        if ((fields.size() < 4) || (fields.size() > 6))
             localError = true;
         if (!localError) {
             try {
@@ -1423,9 +1437,14 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
         }
         if (!localError) {
             pi.gameNo = -1;
-            if (fields.size() == 5)
+            if (fields.size() >= 5)
                 if (!str2Num(fields[4], pi.gameNo))
                     localError = true;
+        }
+        if (!localError) {
+            pi.cMove = Move().getCompressedMove();
+            if (fields.size() >= 6)
+                pi.cMove = TextIO::uciStringToMove(fields[5]).getCompressedMove();
         }
         if (!localError)
             data[i] = pi;
@@ -1441,6 +1460,20 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
     }
     if (error)
         throw ChessParseError("Invalid file format");
+
+    if (optimizeMoveOrdering) {
+        std::cout << "positions before: " << data.size() << std::endl;
+        // Only include positions where non-capture moves were played
+        auto remove = [](const PositionInfo& pi) -> bool {
+            Position pos;
+            pos.deSerialize(pi.posData);
+            Move m;
+            m.setFromCompressed(pi.cMove);
+            return m.isEmpty() || pos.getPiece(m.to()) != Piece::EMPTY;
+        };
+        data.erase(std::remove_if(data.begin(), data.end(), remove), data.end());
+        std::cout << "positions after: " << data.size() << std::endl;
+    }
 }
 
 void
@@ -1455,6 +1488,18 @@ ChessTool::writePGN(const Position& pos) {
     std::cout << "[FEN \"" << TextIO::toFEN(pos) << "\"]" << std::endl;
     std::cout << "[SetUp \"1\"]" << std::endl;
     std::cout << "*" << std::endl;
+}
+
+// --------------------------------------------------------------------------------
+
+double
+ChessTool::computeObjective(std::vector<PositionInfo>& positions, const ScoreToProb& sp) {
+    if (optimizeMoveOrdering) {
+        return computeMoveOrderObjective(positions, sp);
+    } else {
+        qEval(positions);
+        return computeAvgError(positions, sp);
+    }
 }
 
 void
@@ -1502,7 +1547,7 @@ ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int 
 }
 
 double
-ChessTool::computeAvgError(std::vector<PositionInfo>& positions, ScoreToProb& sp,
+ChessTool::computeAvgError(std::vector<PositionInfo>& positions, const ScoreToProb& sp,
                            const std::vector<ParamDomain>& pdVec, arma::mat& pdVal) {
     assert(pdVal.n_rows == pdVec.size());
     assert(pdVal.n_cols == 1);
@@ -1515,7 +1560,7 @@ ChessTool::computeAvgError(std::vector<PositionInfo>& positions, ScoreToProb& sp
 }
 
 double
-ChessTool::computeAvgError(const std::vector<PositionInfo>& positions, ScoreToProb& sp) {
+ChessTool::computeAvgError(const std::vector<PositionInfo>& positions, const ScoreToProb& sp) {
     double errSum = 0;
     if (useEntropyErrorFunction) {
         for (const PositionInfo& pi : positions) {
@@ -1532,6 +1577,120 @@ ChessTool::computeAvgError(const std::vector<PositionInfo>& positions, ScoreToPr
         return sqrt(errSum / positions.size());
     }
 }
+
+double
+ChessTool::computeMoveOrderObjective(std::vector<PositionInfo>& positions, const ScoreToProb& sp) {
+    const int beg = 0;
+    const int end = positions.size();
+
+    std::shared_ptr<Evaluate::EvalHashTables> et;
+    Position pos;
+
+    const int chunkSize = 5000;
+
+#pragma omp parallel for default(none) shared(positions,sp) private(et,pos)
+    for (int c = beg; c < end; c += chunkSize) {
+        if (!et)
+            et = Evaluate::getEvalHashTables();
+        Evaluate eval(*et);
+
+        for (int i = 0; i < chunkSize; i++) {
+            if (c + i >= end)
+                break;
+            PositionInfo& pi = positions[c + i];
+            pos.deSerialize(pi.posData);
+
+            MoveList moves;
+            MoveGen::pseudoLegalMoves(pos, moves);
+            MoveGen::removeIllegal(pos, moves);
+
+            staticScoreMoveListQuiet(pos, eval, moves);
+
+            double probSum = 0;
+            for (int mi = 0; mi < moves.size; mi++) {
+                Move& m = moves[mi];
+                if (pos.getPiece(m.to()) != Piece::EMPTY)
+                    continue;
+                probSum += sp.getProb(m.score());
+            }
+            double probFactor = probSum <= 0 ? 1 : 1 / probSum;
+            double errSum = 0;
+            int errCnt = 0;
+            for (int mi = 0; mi < moves.size; mi++) {
+                Move& m = moves[mi];
+                if (pos.getPiece(m.to()) != Piece::EMPTY)
+                    continue;
+                double p = sp.getProb(m.score()) * probFactor;
+                double expectedP = m.getCompressedMove() == pi.cMove ? 1 : 0;
+                double err = p - expectedP;
+                errSum += err * err;
+                errCnt++;
+            }
+            pi.result = errCnt > 0 ? errSum / errCnt : -1;
+        }
+    }
+
+    double errSum = 0;
+    int errCnt = 0;
+    for (int i = beg; i < end; i++) {
+        PositionInfo& pi = positions[i];
+        if (pi.result >= 0) {
+            errSum += pi.result;
+            errCnt++;
+        }
+    }
+
+    return errCnt > 0 ? sqrt(errSum / errCnt) : 0;
+}
+
+void
+ChessTool::staticScoreMoveListQuiet(Position& pos, Evaluate& eval, MoveList& moves) {
+    int score0 = eval.evalPos(pos);
+    bool wtm = pos.isWhiteMove();
+    UndoInfo ui;
+    for (int i = 0; i < moves.size; i++) {
+        Move& m = moves[i];
+        int score = 0;
+
+        int pVal = ::pieceValue[pos.getPiece(m.from())];
+        int prevHang = 0;
+        if (pVal > ::pV) {
+            if (wtm) {
+                if (BitBoard::wPawnAttacks[m.from()] & pos.pieceTypeBB(Piece::BPAWN))
+                    prevHang = pVal;
+            } else {
+                if (BitBoard::bPawnAttacks[m.from()] & pos.pieceTypeBB(Piece::WPAWN))
+                    prevHang = pVal;
+            }
+        }
+        score += prevHang * moHangPenalty1 / 32;
+
+        int seeScore = Search::SEE(pos, m);
+        score += seeScore * moSeeBonus / 32;
+
+        pos.makeMove(m, ui);
+        int score1 = -eval.evalPos(pos);
+        score += (score1 - score0) * moEvalWeight / 32;
+
+        int currHang = 0;
+        if (pVal > ::pV) {
+            if (wtm) {
+                if (BitBoard::wPawnAttacks[m.to()] & pos.pieceTypeBB(Piece::BPAWN))
+                    currHang = pVal;
+            } else {
+                if (BitBoard::bPawnAttacks[m.to()] & pos.pieceTypeBB(Piece::WPAWN))
+                    currHang = pVal;
+            }
+        }
+
+        score -= currHang * moHangPenalty2 / 32;
+
+        m.setScore(score);
+        pos.unMakeMove(m, ui);
+    }
+}
+
+// --------------------------------------------------------------------------------
 
 void
 ChessTool::probeDTZ(const std::string& fen) {
