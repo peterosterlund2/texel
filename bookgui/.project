@@ -4,6 +4,7 @@
 	<comment></comment>
 	<projects>
 		<project>texellib</project>
+		<project>texelutillib</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
