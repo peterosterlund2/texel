@@ -29,6 +29,7 @@
 									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.24005174" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutillib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutil/cute}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/src}&quot;"/>
@@ -40,6 +41,7 @@
 								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.exe.debug.option.optimization.level.1355220776" name="Optimization Level" superClass="gnu.c.compiler.exe.debug.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.exe.debug.option.debugging.level.1512251952" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.594589173" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutillib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1097738619" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -47,9 +49,11 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.1288598823" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.1265568661" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
 								<option id="gnu.cpp.link.option.paths.883735979" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutillib/Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/Debug}&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.libs.1872582772" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="texelutillib"/>
 									<listOptionValue builtIn="false" value="texellib"/>
 									<listOptionValue builtIn="false" value="numa"/>
 									<listOptionValue builtIn="false" value="rt"/>
@@ -64,6 +68,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.238576115" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
 								<option id="gnu.both.asm.option.include.paths.974275439" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutillib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.277593167" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
@@ -82,6 +87,13 @@
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/texellib"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/texellib/Debug"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="texellib" srcPrefixMapping="" srcRootPath=""/>
+					</externalSetting>
+				</externalSettings>
+				<externalSettings containerId="texelutillib;cdt.managedbuild.config.gnu.lib.debug.1627712715" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
+					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/texelutillib"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/texelutillib/Debug"/>
+						<entry flags="RESOLVED" kind="libraryFile" name="texelutillib" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
 			</storageModule>
@@ -115,8 +127,10 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.906930031" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutil/cute}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutillib}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutillib/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutil/cute}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.387773780" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7 -fopenmp" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1546670239" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -125,6 +139,7 @@
 								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.exe.release.option.optimization.level.115785227" name="Optimization Level" superClass="gnu.c.compiler.exe.release.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.exe.release.option.debugging.level.376191283" name="Debug Level" superClass="gnu.c.compiler.exe.release.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.284274601" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutillib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1032455347" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -132,6 +147,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1289989341" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release"/>
 							<tool command="g++" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.774837039" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
 								<option id="gnu.cpp.link.option.libs.1692993584" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="texelutillib"/>
 									<listOptionValue builtIn="false" value="texellib"/>
 									<listOptionValue builtIn="false" value="numa"/>
 									<listOptionValue builtIn="false" value="rt"/>
@@ -139,6 +155,7 @@
 									<listOptionValue builtIn="false" value="gsl"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1566849725" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutillib/Release}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/Release}&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.1098320764" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread -fopenmp" valueType="string"/>
@@ -149,6 +166,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.1575776806" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release">
 								<option id="gnu.both.asm.option.include.paths.1986267437" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texelutillib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.157185215" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
@@ -167,6 +185,13 @@
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/texellib"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/texellib/Release"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="texellib" srcPrefixMapping="" srcRootPath=""/>
+					</externalSetting>
+				</externalSettings>
+				<externalSettings containerId="texelutillib;cdt.managedbuild.config.gnu.lib.release.961673764" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
+					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/texelutillib"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/texelutillib/Release"/>
+						<entry flags="RESOLVED" kind="libraryFile" name="texelutillib" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
 			</storageModule>

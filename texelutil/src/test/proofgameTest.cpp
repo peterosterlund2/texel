@@ -24,7 +24,7 @@
  */
 
 #include "proofgameTest.hpp"
-#include "../proofgame.hpp"
+#include "proofgame.hpp"
 #include "moveGen.hpp"
 #include "textio.hpp"
 #include <climits>

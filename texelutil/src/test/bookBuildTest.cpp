@@ -24,7 +24,7 @@
  */
 
 #include "bookBuildTest.hpp"
-#include "../bookbuild.hpp"
+#include "bookbuild.hpp"
 #include "textio.hpp"
 
 #include "cute.h"
