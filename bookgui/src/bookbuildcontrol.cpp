@@ -40,22 +40,31 @@ BookBuildControl::getChanges(std::vector<Change>& changes) {
 
 void
 BookBuildControl::newBook() {
+    // Create new book
 
+    filename.clear();
 }
 
 void
-BookBuildControl::readFromFile(const std::string& filename) {
+BookBuildControl::readFromFile(const std::string& newFileName) {
+    filename = newFileName;
 
+    // Read in different thread
 }
 
 void
-BookBuildControl::saveToFile(const std::string& filename) {
+BookBuildControl::saveToFile(const std::string& newFileName) {
+    if (!newFileName.empty())
+        filename = newFileName;
 
+    std::cout << "save to file: " << filename << std::endl;
+
+    // Save in different thread
 }
 
 std::string
-BookBuildControl::getBookFile() const {
-    return "";
+BookBuildControl::getBookFileName() const {
+    return filename;
 }
 
 // --------------------------------------------------------------------------------

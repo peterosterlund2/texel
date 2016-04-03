@@ -47,6 +47,19 @@ private:
     /** Called by GUI thread when notify() is called by worker thread. */
     void bookStateChanged();
 
+    void updateBoardAndTree();
+    void updateQueueView();
+    void updatePVView();
+    void updateEnabledState();
+
+    void newBook();
+    void openBookFile();
+    void saveBookFile();
+    bool saveBookFileAs(); // Return true if book was saved
+    void quit();
+    bool deleteEvent(_GdkEventAny* e);
+    bool askSaveIfDirty(); // Return false if user canceled
+
 
     Glib::RefPtr<Gtk::Application> app;
     Glib::RefPtr<Gtk::Builder> builder;
@@ -54,13 +67,22 @@ private:
 
     Glib::Dispatcher dispatcher;
 
+    // Menu items
+    Gtk::MenuItem* newItem = nullptr;
+    Gtk::MenuItem* openItem = nullptr;
+    Gtk::MenuItem* saveItem = nullptr;
+    Gtk::MenuItem* saveAsItem = nullptr;
+    Gtk::MenuItem* quitItem = nullptr;
+
     BookBuildControl bbControl;
     Position pos;            // Position corresponding to chess board and tree view.
     std::vector<Move> moves; // Moves leading to pos.
     GameTree gameTree;       // Game tree corresponding to the PGN view.
     BookBuildControl::Params searchParams; // Search parameters.
-    bool searching;  // True when book building threads are running.
-    bool analysing;  // True when analysis thread is running.
+    bool loadingBook; // True when loading a book file.
+    bool searching;   // True when book building threads are running.
+    bool analysing;   // True when analysis thread is running.
+    bool bookDirty;   // True if book is unsaved.
 };
 
 #endif /* BOOKGUI_HPP_ */

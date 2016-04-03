@@ -48,9 +48,10 @@ public:
 
     /** Changes that requires the GUI to be updated. */
     enum class Change {
-        TREE,  // A book node has been updated after a finished search.
-        QUEUE, // The queue of pending searches has changed.
-        PV     // The analysis principal variation has changed.
+        TREE,            // A book node has been updated after a finished search.
+        QUEUE,           // The queue of pending searches has changed.
+        PV,              // The analysis principal variation has changed.
+        LOADING_COMPLETE // Reading of opening book file is complete.
     };
 
     /** Get state changes since last call to this method. */
@@ -68,7 +69,7 @@ public:
     void saveToFile(const std::string& filename);
 
     /** Get the current book filename. */
-    std::string getBookFile() const;
+    std::string getBookFileName() const;
 
 
     /** Search related parameters. */

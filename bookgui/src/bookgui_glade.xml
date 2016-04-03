@@ -108,6 +108,7 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <accelerator key="n" signal="activate" modifiers="GDK_MOD1_MASK"/>
                       </object>
                     </child>
                     <child>
@@ -117,6 +118,7 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <accelerator key="o" signal="activate" modifiers="GDK_MOD1_MASK"/>
                       </object>
                     </child>
                     <child>
@@ -126,6 +128,7 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <accelerator key="s" signal="activate" modifiers="GDK_MOD1_MASK"/>
                       </object>
                     </child>
                     <child>
@@ -135,6 +138,7 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <accelerator key="s" signal="activate" modifiers="GDK_SHIFT_MASK | GDK_MOD1_MASK"/>
                       </object>
                     </child>
                     <child>
