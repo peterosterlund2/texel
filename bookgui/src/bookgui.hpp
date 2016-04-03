@@ -27,20 +27,40 @@
 #define BOOKGUI_HPP_
 
 #include <gtkmm.h>
+#include "bookbuildcontrol.hpp"
+#include "gametree.hpp"
 
-class BookGui {
+class BookGui : public BookBuildControl::ChangeNotifier {
 public:
     BookGui(Glib::RefPtr<Gtk::Application> app);
+    BookGui(const BookGui& other) = delete;
+    BookGui& operator=(const BookGui& other) = delete;
 
     void run();
 
 private:
     void connectSignals();
 
+    /** Called by book builder worker thread when book state has changed. */
+    void notify();
+
+    /** Called by GUI thread when notify() is called by worker thread. */
+    void bookStateChanged();
+
 
     Glib::RefPtr<Gtk::Application> app;
     Glib::RefPtr<Gtk::Builder> builder;
     Gtk::Window* mainWindow;
+
+    Glib::Dispatcher dispatcher;
+
+    BookBuildControl bbControl;
+    Position pos;            // Position corresponding to chess board and tree view.
+    std::vector<Move> moves; // Moves leading to pos.
+    GameTree gameTree;       // Game tree corresponding to the PGN view.
+    BookBuildControl::Params searchParams; // Search parameters.
+    bool searching;  // True when book building threads are running.
+    bool analysing;  // True when analysis thread is running.
 };
 
 #endif /* BOOKGUI_HPP_ */

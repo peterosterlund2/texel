@@ -33,7 +33,10 @@ int main(int argc, char* argv[]) {
 }
 
 BookGui::BookGui(Glib::RefPtr<Gtk::Application> app0)
-    : app(app0), mainWindow(nullptr) {
+    : app(app0), mainWindow(nullptr),
+      bbControl(*this),
+      gameTree(std::cin), // FIXME!!
+      searching(false), analysing(false) {
     builder = Gtk::Builder::create();
     builder->add_from_resource("/main/bookgui_glade.xml");
 }
@@ -50,4 +53,27 @@ BookGui::connectSignals() {
     Gtk::MenuItem* quitItem;
     builder->get_widget("quitMenuItem", quitItem);
     quitItem->signal_activate().connect([this]{ mainWindow->hide(); });
+
+    dispatcher.connect(sigc::mem_fun(*this, &BookGui::bookStateChanged));
+}
+
+void
+BookGui::notify() {
+    dispatcher.emit();
+}
+
+void
+BookGui::bookStateChanged() {
+    std::vector<BookBuildControl::Change> changes;
+    bbControl.getChanges(changes);
+    for (auto& change : changes) {
+        switch (change) {
+        case BookBuildControl::Change::TREE:
+            break;
+        case BookBuildControl::Change::QUEUE:
+            break;
+        case BookBuildControl::Change::PV:
+            break;
+        }
+    }
 }
