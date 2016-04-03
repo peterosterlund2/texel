@@ -583,6 +583,8 @@ main(int argc, char* argv[]) {
                     usage();
                 BookBuild::Book book("");
                 book.statistics(bookFile);
+            } else {
+                usage();
             }
         } else if (cmd == "proofgame") {
             std::string initFen, goalFen;
