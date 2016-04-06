@@ -37,14 +37,15 @@
  */
 class BookBuildControl {
 public:
-    class ChangeNotifier {
+    class ChangeListener {
     public:
         /** Called when state has changed. */
         virtual void notify() = 0;
     };
 
     /** Constructor. */
-    BookBuildControl(ChangeNotifier& notifier);
+    BookBuildControl(ChangeListener& listener);
+    ~BookBuildControl();
 
     /** Changes that requires the GUI to be updated. */
     enum class Change {
@@ -161,20 +162,25 @@ public:
 
 
     /** Start the analysis search thread. If analysis is already running, it
-     *  is restarted with the provided position. */
-    void startAnalysis(const Position& pos);
+     *  is restarted with the provided position. The position to analyze is
+     *  given by playing "moves" from the starting position. */
+    void startAnalysis(const std::vector<Move>& moves);
 
     /** Stop the analysis search thread. Has no effect if the analysis thread
      *  is not running. */
     void stopAnalysis();
 
-    /** Get the PV for the analysis search thread. */
-    void getPV(int& score, std::string& pv);
+    /** Get information about the principal variation for the analysis search thread. */
+    void getPVInfo(std::string& pv);
 
 
 private:
-    ChangeNotifier& notifier;
-    std::set<Change> changes; // Changes not yet reported to the notifier.
+    /** Add change to set of unreported changes and notify the listener. */
+    void notify(Change change);
+
+    std::mutex mutex;         // Main mutex for providing thread safe API.
+    ChangeListener& listener;
+    std::set<Change> changes; // Changes not yet reported to the listener.
 
     std::unique_ptr<BookBuild::Book> book; // Current book.
     std::string filename; // Current book filename, or empty string.
@@ -182,8 +188,6 @@ private:
 
     // Data used by the analysis thread.
     std::shared_ptr<std::thread> engineThread;
-    std::mutex threadMutex;
-    std::atomic<bool> shouldDetach;
     std::shared_ptr<Search> sc;
     TranspositionTable tt; // FIXME!! Use this also for book building threads
     ParallelData pd;
@@ -193,7 +197,6 @@ private:
     TreeLogger treeLog;
 
     // Analysis result
-    int analysisScore;
     std::string analysisPV;
 };
 

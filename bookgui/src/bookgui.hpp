@@ -30,7 +30,7 @@
 #include "bookbuildcontrol.hpp"
 #include "gametree.hpp"
 
-class BookGui : public BookBuildControl::ChangeNotifier {
+class BookGui : public BookBuildControl::ChangeListener {
 public:
     BookGui(Glib::RefPtr<Gtk::Application> app);
     BookGui(const BookGui& other) = delete;
@@ -43,7 +43,7 @@ private:
     void connectSignals();
 
     /** Called by book builder worker thread when book state has changed. */
-    void notify();
+    void notify() override;
 
     /** Called by GUI thread when notify() is called by worker thread. */
     void bookStateChanged();
@@ -134,8 +134,7 @@ private:
     Gtk::Button* nextGenButton = nullptr;
     Gtk::ToggleButton* analyzeToggle = nullptr;
 
-    Gtk::Entry* analyzeScore = nullptr;
-    Gtk::TextView* pvText = nullptr;
+    Gtk::TextView* pvInfo = nullptr;
 
 
     BookBuildControl bbControl;

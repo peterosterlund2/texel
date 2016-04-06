@@ -55,8 +55,7 @@ BookGui::run() {
 
 void
 BookGui::getWidgets() {
-    builder->get_widget("analyzeScore", analyzeScore);
-    builder->get_widget("pvText", pvText);
+    builder->get_widget("pvInfo", pvInfo);
 }
 
 void
@@ -195,12 +194,10 @@ BookGui::updateQueueView() {
 
 void
 BookGui::updatePVView() {
-    int score = INT_MIN;
     std::string pv;
     if (analysing)
-        bbControl.getPV(score, pv);
-    analyzeScore->set_text(score == INT_MIN ? "" : num2Str(score));
-    pvText->get_buffer()->set_text(pv);
+        bbControl.getPVInfo(pv);
+    pvInfo->get_buffer()->set_text(pv);
 }
 
 void
@@ -269,7 +266,7 @@ BookGui::newBook() {
     bookDirty = false;
     updateBoardAndTree();
     if (analysing)
-        bbControl.startAnalysis(pos);
+        bbControl.startAnalysis(moves);
     updateEnabledState();
 }
 
@@ -601,7 +598,7 @@ BookGui::nextGeneration() {
 void
 BookGui::toggleAnalyzeMode() {
     if (analyzeToggle->get_active()) {
-        bbControl.startAnalysis(pos);
+        bbControl.startAnalysis(moves);
         analysing = true;
     } else {
         bbControl.stopAnalysis();

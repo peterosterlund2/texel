@@ -534,34 +534,6 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="scoreLabel">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="xpad">4</property>
-                            <property name="label" translatable="yes">Score:</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkEntry" id="analyzeScore">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="tooltip_text" translatable="yes">Score from white's point of view</property>
-                            <property name="editable">False</property>
-                            <property name="width_chars">7</property>
-                            <property name="caps_lock_warning">False</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">2</property>
-                          </packing>
-                        </child>
-                        <child>
                           <object class="GtkLabel" id="pvLabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
@@ -572,25 +544,25 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">3</property>
+                            <property name="position">1</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkTextView" id="pvText">
+                          <object class="GtkTextView" id="pvInfo">
                             <property name="height_request">50</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="tooltip_text" translatable="yes">Principal variation</property>
                             <property name="hexpand">True</property>
                             <property name="editable">False</property>
-                            <property name="justification">right</property>
+                            <property name="wrap_mode">word</property>
                             <property name="cursor_visible">False</property>
                             <property name="accepts_tab">False</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">4</property>
+                            <property name="position">2</property>
                           </packing>
                         </child>
                       </object>
