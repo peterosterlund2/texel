@@ -26,7 +26,8 @@
 #include "bookgui.hpp"
 #include <iostream>
 
-int main(int argc, char* argv[]) {
+int
+main(int argc, char* argv[]) {
     auto app = Gtk::Application::create(argc, argv, "org.petero.bookgui");
     app->set_flags(Gio::APPLICATION_NON_UNIQUE);
     BookGui bookGui(app);
@@ -35,7 +36,6 @@ int main(int argc, char* argv[]) {
 
 BookGui::BookGui(Glib::RefPtr<Gtk::Application> app0)
     : app(app0), mainWindow(nullptr), bbControl(*this),
-      gameTree(std::cin), // FIXME!!
       loadingBook(false), searchState(SearchState::STOPPED),
       analysing(false), bookDirty(false) {
     builder = Gtk::Builder::create();
@@ -56,6 +56,7 @@ BookGui::run() {
 void
 BookGui::getWidgets() {
     builder->get_widget("pvInfo", pvInfo);
+    builder->get_widget("pgnTextView", pgnTextView);
 }
 
 void
@@ -123,8 +124,8 @@ BookGui::connectSignals() {
     builder->get_widget("importPgnButton", importPgnButton);
     importPgnButton->signal_clicked().connect([this]{ importPgn(); });
 
-    builder->get_widget("addPgnButton", addPgnButton);
-    addPgnButton->signal_clicked().connect([this]{ addPgn(); });
+    builder->get_widget("addToPgnButton", addToPgnButton);
+    addToPgnButton->signal_clicked().connect([this]{ addToPgn(); });
 
     builder->get_widget("applyPgnButton", applyPgnButton);
     applyPgnButton->signal_clicked().connect([this]{ applyPgn(); });
@@ -202,7 +203,8 @@ BookGui::updatePVView() {
 
 void
 BookGui::updatePGNView() {
-
+    gameTree.getGameTreeString(pgn, pgnPosToNodes);
+    pgnTextView->get_buffer()->set_text(pgn);
 }
 
 void
@@ -237,7 +239,7 @@ BookGui::updateEnabledState() {
 
     // PGN buttons
 //  importPgnButton->set_sensitive(true);
-//  addPgnButton->set_sensitive(true);
+//  addToPgnButton->set_sensitive(true);
 //  applyPgnButton->set_sensitive(true);
 //  clearPgnButton->set_sensitive(true);
 
@@ -533,14 +535,30 @@ BookGui::importPgn() {
 
     pgnImportFilename = dialog.get_filename();
 
-    // FIXME!! Perform import
-
+    int nGames = 0;
+    try {
+        Position startPos = TextIO::readFEN(TextIO::startPosFEN);
+        std::ifstream is(pgnImportFilename);
+        PgnReader reader(is);
+        GameTree gt;
+        while (reader.readPGN(gt)) {
+            nGames++;
+            if (gt.getRootNode().getPos().equals(startPos)) {
+                gameTree.insertTree(gt, pgnImportMaxPly);
+            } else {
+                std::cerr << "Skipping game " << nGames << ". Custom start position." << std::endl;
+            }
+        }
+    } catch (...) {
+        std::cerr << "Error parsing game " << nGames << std::endl;
+        throw;
+    }
     updatePGNView();
 }
 
 void
-BookGui::addPgn() {
-    // FIXME!!
+BookGui::addToPgn() {
+    gameTree.insertMoves(moves);
     updatePGNView();
 }
 
@@ -552,7 +570,7 @@ BookGui::applyPgn() {
 
 void
 BookGui::clearPgn() {
-    // FIXME!!
+    gameTree = GameTree();
     updatePGNView();
 }
 

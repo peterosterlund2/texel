@@ -143,9 +143,10 @@ ChessTool::pgnToFen(std::istream& is, int everyNth) {
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
     const int plyScale = SearchConst::plyScale;
 
-    GameTree gt(is);
+    PgnReader reader(is);
+    GameTree gt;
     int gameNo = 0;
-    while (gt.readPGN()) {
+    while (reader.readPGN(gt)) {
         gameNo++;
         GameTree::Result result = gt.getResult();
         if (result == GameTree::UNKNOWN)

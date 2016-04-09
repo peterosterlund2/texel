@@ -26,6 +26,7 @@
 #include "gametree.hpp"
 #include <stdexcept>
 #include <cassert>
+#include <unordered_map>
 
 // --------------------------------------------------------------------------------
 
@@ -40,7 +41,8 @@ PgnScanner::PgnScanner(std::istream& is0)
       hasReturnedChar(false), returnedChar(0) {
 }
 
-void PgnScanner::putBack(const PgnToken& tok) {
+void
+PgnScanner::putBack(const PgnToken& tok) {
     savedTokens.push_back(tok);
 }
 
@@ -89,7 +91,8 @@ PgnScanner::returnTokenChar(char c) {
     returnedChar = c;
 }
 
-PgnToken PgnScanner::nextToken() {
+PgnToken
+PgnScanner::nextToken() {
     if (savedTokens.size() > 0) {
         int len = savedTokens.size();
         PgnToken ret = savedTokens[len - 1];
@@ -194,7 +197,8 @@ PgnToken PgnScanner::nextToken() {
     return ret;
 }
 
-PgnToken PgnScanner::nextTokenDropComments() {
+PgnToken
+PgnScanner::nextTokenDropComments() {
     while (true) {
         PgnToken tok = nextToken();
         if (tok.type != PgnToken::COMMENT)
@@ -210,7 +214,18 @@ Node::Node(const std::shared_ptr<Node>& parent0, const Move& m, const UndoInfo& 
       postComment(postComment0), parent(parent0) {
 }
 
-void Node::addChild(Position& pos, std::shared_ptr<Node>& node, std::shared_ptr<Node>& child) {
+void
+Node::insertMove(Position& pos, std::shared_ptr<Node>& node, const Move& move) {
+    std::shared_ptr<Node> child(std::make_shared<Node>());
+    child->parent = node;
+    node->children.push_back(child);
+    child->move = move;
+    pos.makeMove(move, child->ui);
+    pos.unMakeMove(move, child->ui);
+}
+
+void
+Node::addChild(Position& pos, std::shared_ptr<Node>& node, std::shared_ptr<Node>& child) {
     child->parent = node;
     node->children.push_back(child);
     node = child;
@@ -218,7 +233,8 @@ void Node::addChild(Position& pos, std::shared_ptr<Node>& node, std::shared_ptr<
     pos.makeMove(node->getMove(), node->ui);
 }
 
-void Node::parsePgn(PgnScanner& scanner, Position pos, std::shared_ptr<Node> node) {
+void
+Node::parsePgn(PgnScanner& scanner, Position pos, std::shared_ptr<Node> node) {
     std::shared_ptr<Node> nodeToAdd(std::make_shared<Node>());
     bool moveAdded = false;
     while (true) {
@@ -319,19 +335,32 @@ void Node::parsePgn(PgnScanner& scanner, Position pos, std::shared_ptr<Node> nod
 
 // --------------------------------------------------------------------------------
 
-GameNode::GameNode(const Position& pos, const std::shared_ptr<Node>& node)
-    : rootNode(node), currPos(pos), currNode(node) {
+GameNode::GameNode(const Position& pos, const std::shared_ptr<Node>& root)
+    : rootNode(root), currPos(pos), currNode(root) {
 }
 
-const Position& GameNode::getPos() const {
+GameNode::GameNode(const Position& pos, const std::shared_ptr<Node>& root,
+                   const std::shared_ptr<Node>& node)
+    : rootNode(root), currPos(pos), currNode(node) {
+}
+
+const Position&
+GameNode::getPos() const {
     return currPos;
 }
 
-const Move& GameNode::getMove() const {
+const std::shared_ptr<Node>&
+GameNode::getNode() const {
+    return currNode;
+}
+
+const Move&
+GameNode::getMove() const {
     return currNode->getMove();
 }
 
-std::string GameNode::getComment() const {
+std::string
+GameNode::getComment() const {
     std::string pre = currNode->getPreComment();
     std::string post = currNode->getPostComment();
     if ((pre.length() > 0) && (post.length() > 0))
@@ -339,7 +368,8 @@ std::string GameNode::getComment() const {
     return pre + post;
 }
 
-bool GameNode::goBack() {
+bool
+GameNode::goBack() {
     std::shared_ptr<Node> parent = currNode->getParent();
     if (!parent)
         return false;
@@ -348,28 +378,224 @@ bool GameNode::goBack() {
     return true;
 }
 
-int GameNode::nChildren() const {
+int
+GameNode::nChildren() const {
     return currNode->getChildren().size();
 }
 
-void GameNode::goForward(int i) {
+void
+GameNode::goForward(int i) {
     std::shared_ptr<Node> next = currNode->getChildren()[i];
     UndoInfo ui;
     currPos.makeMove(next->getMove(), ui);
     currNode = next;
 }
 
+void
+GameNode::insertMove(const Move& move) {
+    Node::insertMove(currPos, currNode, move);
+}
+
 // --------------------------------------------------------------------------------
 
-GameTree::GameTree(std::istream& is)
-    : scanner(is) {
+GameTree::GameTree() {
     setStartPos(TextIO::readFEN(TextIO::startPosFEN));
 }
 
-bool GameTree::readPGN() {
+void
+GameTree::setStartPos(const Position& pos) {
+    event = "?";
+    site = "?";
+    date = "?";
+    round = "?";
+    white = "?";
+    black = "?";
+    result = "?";
+    startPos = pos;
+    tagPairs.clear();
+    rootNode = std::make_shared<Node>();
+}
+
+void
+GameTree::setTagPairs(const std::vector<GameTree::TagPair>& tPairs) {
+    // Store parsed data in GameTree
+    const int nTags = tPairs.size();
+    for (int i = 0; i < nTags; i++) {
+        const std::string& name = tPairs[i].tagName;
+        const std::string& val = tPairs[i].tagValue;
+        if ((name == "FEN") || (name == "Setup")) {
+            // Already handled
+        } else if (name == "Event") {
+            event = val;
+        } else if (name == "Site") {
+            site = val;
+        } else if (name == "Date") {
+            date = val;
+        } else if (name == "Round") {
+            round = val;
+        } else if (name == "White") {
+            white = val;
+        } else if (name == "Black") {
+            black = val;
+        } else if (name == "Result") {
+            result = val;
+        } else {
+            tagPairs.push_back(tPairs[i]);
+        }
+    }
+}
+
+void
+GameTree::setRootNode(const std::shared_ptr<Node>& gameRoot) {
+    rootNode = gameRoot;
+}
+
+void
+GameTree::insertMoves(const std::vector<Move>& moves) {
+    GameNode dstNode = getRootNode();
+    for (const Move& m : moves) {
+        std::unordered_map<U16, int> dstMoves; // Compressed move -> move index
+        for (int i = 0; i < dstNode.nChildren(); i++) {
+            dstNode.goForward(i);
+            dstMoves[dstNode.getMove().getCompressedMove()] = i;
+            dstNode.goBack();
+        }
+        U16 cMove = m.getCompressedMove();
+        if (dstMoves.find(cMove) == dstMoves.end()) {
+            dstMoves[cMove] = dstNode.nChildren();
+            dstNode.insertMove(m);
+        }
+        dstNode.goForward(dstMoves[cMove]);
+    }
+}
+
+void
+GameTree::insertTree(const GameTree& src, int maxPly) {
+    GameNode srcNode = src.getRootNode();
+    GameNode dstNode = getRootNode();
+    std::function<void(int)> iterateTree = [&](int ply) {
+        if (maxPly >= 0 && ply >= maxPly)
+            return;
+        std::unordered_map<U16, int> dstMoves; // Compressed move -> move index
+        for (int i = 0; i < dstNode.nChildren(); i++) {
+            dstNode.goForward(i);
+            dstMoves[dstNode.getMove().getCompressedMove()] = i;
+            dstNode.goBack();
+        }
+        for (int i = 0; i < srcNode.nChildren(); i++) {
+            srcNode.goForward(i);
+            U16 cMove = srcNode.getMove().getCompressedMove();
+            if (dstMoves.find(cMove) == dstMoves.end()) {
+                dstMoves[cMove] = dstNode.nChildren();
+                dstNode.insertMove(srcNode.getMove());
+            }
+            dstNode.goForward(dstMoves[cMove]);
+            iterateTree(ply + 1);
+            srcNode.goBack();
+            dstNode.goBack();
+        }
+    };
+    iterateTree(0);
+}
+
+GameTree::Result
+GameTree::getResult() const {
+    if (result =="1-0")
+        return WHITE_WIN;
+    else if (result == "0-1")
+        return BLACK_WIN;
+    else if (result == "1/2-1/2")
+        return DRAW;
+    else
+        return UNKNOWN;
+}
+
+void
+GameTree::getHeaders(std::map<std::string, std::string>& headers) {
+    headers.insert(std::make_pair("Event", event));
+    headers.insert(std::make_pair("Site",  site));
+    headers.insert(std::make_pair("Date",  date));
+    headers.insert(std::make_pair("Round", round));
+    headers.insert(std::make_pair("White", white));
+    headers.insert(std::make_pair("Black", black));
+    for (size_t i = 0; i < tagPairs.size(); i++) {
+        TagPair tp = tagPairs[i];
+        headers.insert(std::make_pair(tp.tagName, tp.tagValue));
+    }
+}
+
+GameNode
+GameTree::getRootNode() const {
+    return GameNode(startPos, rootNode);
+}
+
+GameNode
+GameTree::getNode(const std::shared_ptr<Node>& node) {
+    std::vector<Move> moves;
+    std::shared_ptr<Node> n = node;
+    while (true) {
+        Move m = n->getMove();
+        if (m.isEmpty())
+            break;
+        moves.push_back(m);
+        n = n->getParent();
+    }
+    std::reverse(moves.begin(), moves.end());
+
+    Position pos = startPos;
+    UndoInfo ui;
+    for (const Move& m : moves)
+        pos.makeMove(m, ui);
+
+    return GameNode(pos, rootNode, node);
+}
+
+void
+GameTree::getGameTreeString(std::string& str, std::set<RangeToNode>& posToNodes) {
+    str.clear();
+    posToNodes.clear();
+    GameNode gn = getRootNode();
+    std::function<void()> iterateTree = [&] {
+        if (gn.nChildren() == 0)
+            return;
+        if (!str.empty())
+            str += ' ';
+        for (int i = 0; i < gn.nChildren(); i++) {
+            gn.goForward(i);
+            if (i > 0)
+                str += " (";
+            Move m = gn.getMove();
+            gn.goBack();
+            int b = str.length();
+            str += TextIO::moveToString(gn.getPos(), m, false);
+            int e = str.length();
+            gn.goForward(i);
+            posToNodes.insert(RangeToNode(b, e, gn.getNode()));
+            if (i > 0) {
+                iterateTree();
+                str += ")";
+            }
+            gn.goBack();
+        }
+        gn.goForward(0);
+        iterateTree();
+        gn.goBack();
+    };
+    iterateTree();
+}
+
+// --------------------------------------------------------------------------------
+
+PgnReader::PgnReader(std::istream& is)
+    : scanner(is) {
+}
+
+bool
+PgnReader::readPGN(GameTree& tree) {
     PgnToken tok = scanner.nextToken();
 
     // Parse tag section
+    using TagPair = GameTree::TagPair;
     std::vector<TagPair> tPairs;
     while (tok.type == PgnToken::LEFT_BRACKET) {
         TagPair tp;
@@ -408,7 +634,8 @@ bool GameTree::readPGN() {
     for (int i = 0; i < nTags; i++)
         if (tPairs[i].tagName == "FEN")
             fen = tPairs[i].tagValue;
-    setStartPos(TextIO::readFEN(fen));
+    Position startPos(TextIO::readFEN(fen));
+    tree.setStartPos(startPos);
 
     // Parse move section
     std::shared_ptr<Node> gameRoot(std::make_shared<Node>());
@@ -417,74 +644,8 @@ bool GameTree::readPGN() {
     if ((tPairs.size() == 0) && (gameRoot->getChildren().size() == 0))
         return false;
 
-    // Store parsed data in GameTree
-
-    for (int i = 0; i < nTags; i++) {
-        const std::string& name = tPairs[i].tagName;
-        const std::string& val = tPairs[i].tagValue;
-        if ((name == "FEN") || (name == "Setup")) {
-            // Already handled
-        } else if (name == "Event") {
-            event = val;
-        } else if (name == "Site") {
-            site = val;
-        } else if (name == "Date") {
-            date = val;
-        } else if (name == "Round") {
-            round = val;
-        } else if (name == "White") {
-            white = val;
-        } else if (name == "Black") {
-            black = val;
-        } else if (name == "Result") {
-            result = val;
-        } else {
-            tagPairs.push_back(tPairs[i]);
-        }
-    }
-
-    rootNode = gameRoot;
+    tree.setTagPairs(tPairs);
+    tree.setRootNode(gameRoot);
 
     return true;
-}
-
-GameTree::Result GameTree::getResult() const {
-    if (result =="1-0")
-        return WHITE_WIN;
-    else if (result == "0-1")
-        return BLACK_WIN;
-    else if (result == "1/2-1/2")
-        return DRAW;
-    else
-        return UNKNOWN;
-}
-
-void GameTree::getHeaders(std::map<std::string, std::string>& headers) {
-    headers.insert(std::make_pair("Event", event));
-    headers.insert(std::make_pair("Site",  site));
-    headers.insert(std::make_pair("Date",  date));
-    headers.insert(std::make_pair("Round", round));
-    headers.insert(std::make_pair("White", white));
-    headers.insert(std::make_pair("Black", black));
-    for (size_t i = 0; i < tagPairs.size(); i++) {
-        TagPair tp = tagPairs[i];
-        headers.insert(std::make_pair(tp.tagName, tp.tagValue));
-    }
-}
-
-GameNode GameTree::getRootNode() const {
-    return GameNode(startPos, rootNode);
-}
-
-void GameTree::setStartPos(const Position& pos) {
-    event = "?";
-    site = "?";
-    date = "?";
-    round = "?";
-    white = "?";
-    black = "?";
-    result = "?";
-    startPos = pos;
-    tagPairs.clear();
-    rootNode = std::make_shared<Node>();
 }

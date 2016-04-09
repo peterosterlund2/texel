@@ -833,7 +833,6 @@ ProofGameTest::testCaptureSquares() {
         ASSERT(hScore(ps, startFen) <= 28);
     }
     {
-        std::cout << "start:" << std::endl;
         ProofGame ps("2b1kqr1/p2p3p/3p4/p2PpP2/PpP2p2/6P1/8/RRB1KQ1N w - - 0 1");
         std::string startFen = "2b1kqr1/p1rp3p/1p1p1b2/3PpPp1/PpP3P1/6P1/4BN2/R1B1KQ1R w Q - 5 1";
         ASSERT_EQUAL(INT_MAX, hScore(ps, startFen));

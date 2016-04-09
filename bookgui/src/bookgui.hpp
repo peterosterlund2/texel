@@ -78,7 +78,7 @@ private:
     void clearFocus();
 
     void importPgn();
-    void addPgn();
+    void addToPgn();
     void applyPgn();
     void clearPgn();
 
@@ -122,7 +122,7 @@ private:
 
     // PGN buttons
     Gtk::Button* importPgnButton = nullptr;
-    Gtk::Button* addPgnButton = nullptr;
+    Gtk::Button* addToPgnButton = nullptr;
     Gtk::Button* applyPgnButton = nullptr;
     Gtk::Button* clearPgnButton = nullptr;
 
@@ -135,13 +135,17 @@ private:
     Gtk::ToggleButton* analyzeToggle = nullptr;
 
     Gtk::TextView* pvInfo = nullptr;
+    Gtk::TextView* pgnTextView = nullptr;
 
 
     BookBuildControl bbControl;
     Position pos;            // Position corresponding to chess board and tree view.
     std::vector<Move> moves; // Moves leading to pos.
     std::vector<Move> nextMoves; // Moves following pos.
+
     GameTree gameTree;       // Game tree corresponding to the PGN view.
+    std::string pgn;
+    std::set<GameTree::RangeToNode> pgnPosToNodes;
 
     std::string pgnImportFilename; // Last filename for PGN import.
     int pgnImportMaxPly = 40;

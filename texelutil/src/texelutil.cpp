@@ -40,6 +40,7 @@
 #include "cute_runner.h"
 #include "test/bookBuildTest.hpp"
 #include "test/proofgameTest.hpp"
+#include "test/gameTreeTest.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -220,6 +221,7 @@ runTests() {
     ComputerPlayer::initEngine();
     runSuite(BookBuildTest());
     runSuite(ProofGameTest());
+    runSuite(GameTreeTest());
 }
 
 int

@@ -31,6 +31,8 @@
 
 #include <map>
 #include <memory>
+#include <vector>
+#include <set>
 
 /** A token in a PGN data stream. Used by the PGN parser. */
 class PgnToken {
@@ -102,6 +104,9 @@ public:
     const std::string& getPreComment() const { return preComment; }
     const std::string& getPostComment() const { return postComment; }
 
+    /** Add a child node given by move. */
+    static void insertMove(Position& pos, std::shared_ptr<Node>& node, const Move& move);
+
     static void parsePgn(PgnScanner& scanner, Position pos, std::shared_ptr<Node> node);
 
 private:
@@ -119,17 +124,23 @@ private:
 };
 
 
+/** A GameNode acts as a tree iterator. */
 class GameNode {
 public:
-    GameNode(const Position& pos, const std::shared_ptr<Node>& node);
+    GameNode(const Position& pos, const std::shared_ptr<Node>& root);
+    GameNode(const Position& pos, const std::shared_ptr<Node>& root,
+             const std::shared_ptr<Node>& node);
 
     /** Get current position. */
     const Position& getPos() const;
 
-    /** Get the i:th move in this position. */
+    /** Get the Node corresponding to the current position. */
+    const std::shared_ptr<Node>& getNode() const;
+
+    /** Get the move leading to this position. */
     const Move& getMove() const;
 
-    /** Get preComment + postComment for move i. */
+    /** Get preComment + postComment move leading to this position. */
     std::string getComment() const;
 
 
@@ -143,6 +154,11 @@ public:
     /** Go to i:th child position. */
     void goForward(int i);
 
+    /** Add a move to the game tree. The move is inserted even if a child
+     *  with the same move is already present. The inserted move is added
+     *  last in the list of moves for this position. */
+    void insertMove(const Move& move);
+
 private:
     std::shared_ptr<Node> rootNode; // To prevent tree from being deleted too early
     Position currPos;
@@ -153,10 +169,7 @@ private:
 class GameTree {
 public:
     /** Creates an empty GameTree starting at the standard start position. */
-    GameTree(std::istream& is);
-
-    /** Read next game. Return false if no more games to read. */
-    bool readPGN();
+    GameTree();
 
     enum Result {
         WHITE_WIN,
@@ -164,6 +177,32 @@ public:
         BLACK_WIN,
         UNKNOWN,
     };
+
+    /** Set start position. Drops the whole game tree. */
+    void setStartPos(const Position& pos);
+
+    struct TagPair {
+        std::string tagName;
+        std::string tagValue;
+    };
+
+    /** Set PGN tag pairs. */
+    void setTagPairs(const std::vector<TagPair>& tPairs);
+
+    /** Set the tree root node. */
+    void setRootNode(const std::shared_ptr<Node>& gameRoot);
+
+    /** Insert a sequence of moves in this tree. Moves already present
+     *  in the three are not duplicated. The first move must correspond
+     *  to the start position of this tree. */
+    void insertMoves(const std::vector<Move>& moves);
+
+    /** Insert all positions from src up to ply maxPly that are not
+     *  already in this tree. The src tree and this tree must have
+     *  the same starting position. If maxPly is negative, no ply
+     *  limit is used. */
+    void insertTree(const GameTree& src, int maxPly);
+
 
     /** Get game result. */
     Result getResult() const;
@@ -174,24 +213,46 @@ public:
     /** Get node corresponding to start position. */
     GameNode getRootNode() const;
 
-private:
-    /** Set start position. Drops the whole game tree. */
-    void setStartPos(const Position& pos);
+    /** Get GameNode with current position set to node. */
+    GameNode getNode(const std::shared_ptr<Node>& node);
 
+    /** Mapping from character range to tree node. */
+    struct RangeToNode {
+        const int begin;
+        const int end;
+        const std::shared_ptr<Node> node;
+
+        RangeToNode(int b, int e, const std::shared_ptr<Node>& n)
+            : begin(b), end(e), node(n) {}
+        bool operator<(const RangeToNode& other) const { return begin < other.begin; }
+    };
+
+    /** Convert the game tree to string representation, using PGN syntax for variations,
+     *  but without line breaks, comments and move numbers. Also returns a mapping
+     *  from positions in the string to corresponding tree nodes. */
+    void getGameTreeString(std::string& str, std::set<RangeToNode>& posToNodes);
+
+private:
     // Data from the seven tag roster (STR) part of the PGN standard
     std::string event, site, date, round, white, black, result;
 
-    PgnScanner scanner;
-
     // Non-standard tags
-    struct TagPair {
-        std::string tagName;
-        std::string tagValue;
-    };
     std::vector<TagPair> tagPairs;
 
     Position startPos;
     std::shared_ptr<Node> rootNode;
+};
+
+
+class PgnReader {
+public:
+    PgnReader(std::istream& is);
+
+    /** Read next game. Return false if no more games to read. */
+    bool readPGN(GameTree& tree);
+
+private:
+    PgnScanner scanner;
 };
 
 #endif /* GAMETREE_HPP_ */

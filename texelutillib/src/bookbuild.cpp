@@ -324,11 +324,12 @@ Book::importPGN(const std::string& bookFile, const std::string& pgnFile,
 
     // Create book nodes for all positions in the PGN file
     std::ifstream is(pgnFile);
-    GameTree gt(is);
+    PgnReader reader(is);
+    GameTree gt;
     int nGames = 0;
     int nAdded = 0;
     try {
-        while (gt.readPGN()) {
+        while (reader.readPGN(gt)) {
             nGames++;
             GameNode gn = gt.getRootNode();
             std::function<void(int)> addToBook = [&](int ply) {
