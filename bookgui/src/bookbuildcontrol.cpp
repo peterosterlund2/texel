@@ -145,9 +145,10 @@ BookBuildControl::setFocus(const Position& pos) {
 
 }
 
-void
-BookBuildControl::getFocus(Position& pos) {
-
+bool
+BookBuildControl::getFocus(Position& pos, std::vector<Move>& movesBefore,
+                           std::vector<Move>& movesAfter) {
+    return false;
 }
 
 // --------------------------------------------------------------------------------

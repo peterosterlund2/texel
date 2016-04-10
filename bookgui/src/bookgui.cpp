@@ -47,7 +47,9 @@ BookGui::run() {
     builder->get_widget("mainWindow", mainWindow);
     connectSignals();
     getWidgets();
+    createChessBoard();
     updateEnabledState();
+    setPosition(TextIO::readFEN(TextIO::startPosFEN), {}, {});
     app->run(*mainWindow);
 }
 
@@ -60,6 +62,13 @@ BookGui::getWidgets() {
     pgnCurrMoveTag = Gtk::TextBuffer::Tag::create("currMove");
     pgnCurrMoveTag->property_background() = "rgb(192,192,255)";
     pgnTextView->get_buffer()->get_tag_table()->add(pgnCurrMoveTag);
+}
+
+void
+BookGui::createChessBoard() {
+    Gtk::DrawingArea* chessBoardArea;
+    builder->get_widget("chessBoard", chessBoardArea);
+    chessBoard = make_unique<ChessBoard>(pos, chessBoardArea);
 }
 
 void
@@ -83,6 +92,12 @@ BookGui::connectSignals() {
     builder->get_widget("quitMenuItem", quitItem);
     quitItem->signal_activate().connect([this]{ quit(); });
     mainWindow->signal_delete_event().connect(sigc::mem_fun(*this, &BookGui::deleteEvent));
+
+    // Chess board
+    builder->get_widget("hashEntry", hashEntry);
+    hashEntry->signal_activate().connect([this]{ hashEntryChanged();});
+    builder->get_widget("fenEntry", fenEntry);
+    fenEntry->signal_activate().connect([this]{ fenEntryChanged();});
 
     // Settings
     builder->get_widget("threads", threads);
@@ -193,24 +208,19 @@ BookGui::bookStateChanged() {
 
 void
 BookGui::updateBoardAndTree() {
-
+    chessBoard->queueDraw();
+    // FIXME!!
 }
 
 void
-BookGui::setPosition(const Position& newPos, const std::vector<Move>& movesBefore,
-                     const std::vector<Move>& movesAfter) {
-    moves = movesBefore;
-    nextMoves = movesAfter;
-    if (!newPos.equals(pos)) {
-        pos = newPos;
-        if (analysing)
-            bbControl.startAnalysis(moves);
-    }
+BookGui::updateHashFenEntry() {
+    hashEntry->set_text(num2Hex(pos.bookHash()));
+    fenEntry->set_text(TextIO::toFEN(pos));
 }
 
 void
 BookGui::updateQueueView() {
-
+    // FIXME!!
 }
 
 void
@@ -267,7 +277,8 @@ BookGui::updatePGNSelection() {
 void
 BookGui::updateEnabledState() {
     // Menu items
-    bool builderIdle = searchState == SearchState::STOPPED &&
+    bool searchStopped = searchState == SearchState::STOPPED;
+    bool builderIdle = searchStopped &&
                        bbControl.nRunningThreads() == 0 && !loadingBook;
     newItem->set_sensitive(builderIdle);
     openItem->set_sensitive(builderIdle);
@@ -276,18 +287,17 @@ BookGui::updateEnabledState() {
 //  quitItem->set_sensitive(true);
 
     // Settings widgets
-    bool searchStopped = searchState == SearchState::STOPPED;
     threads->set_sensitive(searchStopped);
 //  compTime->set_sensitive(true);
     depthCost->set_sensitive(searchStopped);
-    ownPathErrCost->set_sensitive(searchState == SearchState::STOPPED);
-    otherPathErrCost->set_sensitive(searchState == SearchState::STOPPED);
+    ownPathErrCost->set_sensitive(searchStopped);
+    otherPathErrCost->set_sensitive(searchStopped);
 //  pgnMaxPly->set_sensitive(true);
 
     // Start/stop buttons
-    startButton->set_sensitive(searchState == SearchState::STOPPED);
+    startButton->set_sensitive(searchStopped);
     softStopButton->set_sensitive(searchState == SearchState::RUNNING);
-    hardStopButton->set_sensitive(searchState != SearchState::STOPPED);
+    hardStopButton->set_sensitive(!searchStopped);
 
     // Focus buttons
 //  setFocusButton->set_sensitive(true);
@@ -307,6 +317,32 @@ BookGui::updateEnabledState() {
     // Analyze buttons
 //  nextGenButton->set_sensitive(true);
 //  analyzeToggle->set_sensitive(true);
+}
+
+// --------------------------------------------------------------------------------
+
+void
+BookGui::
+hashEntryChanged() {
+
+}
+
+void
+BookGui::fenEntryChanged() {
+
+}
+
+void
+BookGui::setPosition(const Position& newPos, const std::vector<Move>& movesBefore,
+                     const std::vector<Move>& movesAfter) {
+    moves = movesBefore;
+    nextMoves = movesAfter;
+    if (!newPos.equals(pos)) {
+        pos = newPos;
+        if (analysing)
+            bbControl.startAnalysis(moves);
+        updateHashFenEntry();
+    }
 }
 
 // --------------------------------------------------------------------------------
@@ -548,9 +584,9 @@ BookGui::setFocus() {
 void
 BookGui::getFocus() {
     Position newPos;
-    bbControl.getFocus(newPos);
-    std::vector<Move> movesBefore; // FIXME!! Compute reasonable move path
-    std::vector<Move> movesAfter;  // FIXME!! Compute reasonable move path by following "book PV"
+    std::vector<Move> movesBefore, movesAfter;
+    if (!bbControl.getFocus(newPos, movesBefore, movesAfter))
+        return;
     setPosition(newPos, movesBefore, movesAfter);
     updateBoardAndTree();
     updatePGNSelection();

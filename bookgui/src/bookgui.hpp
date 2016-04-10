@@ -28,6 +28,7 @@
 
 #include <gtkmm.h>
 #include "bookbuildcontrol.hpp"
+#include "chessboard.hpp"
 #include "gametree.hpp"
 
 class BookGui : public BookBuildControl::ChangeListener {
@@ -40,6 +41,7 @@ public:
 
 private:
     void getWidgets();
+    void createChessBoard();
     void connectSignals();
 
     /** Called by book builder worker thread when book state has changed. */
@@ -49,13 +51,17 @@ private:
     void bookStateChanged();
 
     void updateBoardAndTree();
-    void setPosition(const Position& newPos, const std::vector<Move>& movesBefore,
-                     const std::vector<Move>& movesAfter);
+    void updateHashFenEntry();
     void updateQueueView();
     void updatePVView();
     void updatePGNView();
     void updatePGNSelection();
     void updateEnabledState();
+
+    void hashEntryChanged();
+    void fenEntryChanged();
+    void setPosition(const Position& newPos, const std::vector<Move>& movesBefore,
+                     const std::vector<Move>& movesAfter);
 
     void newBook();
     void openBookFile();
@@ -105,6 +111,11 @@ private:
     Gtk::MenuItem* saveItem = nullptr;
     Gtk::MenuItem* saveAsItem = nullptr;
     Gtk::MenuItem* quitItem = nullptr;
+
+    // Chess board
+    Gtk::Entry* hashEntry = nullptr;
+    Gtk::Entry* fenEntry = nullptr;
+    std::unique_ptr<ChessBoard> chessBoard;
 
     // Settings widgets
     Gtk::SpinButton* threads = nullptr;

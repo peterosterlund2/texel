@@ -152,8 +152,9 @@ public:
     /** When selecting a position to expand, do not consider positions before "pos".  */
     void setFocus(const Position& pos);
 
-    /** Get the focus position. */
-    void getFocus(Position& pos);
+    /** Get the focus position. Return false if no position is focused. */
+    bool getFocus(Position& pos, std::vector<Move>& movesBefore,
+                  std::vector<Move>& movesAfter);
 
 
     /** Add all positions up to depth "maxPly" to the book.

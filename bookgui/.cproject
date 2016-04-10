@@ -137,6 +137,7 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="texelutillib"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="numa"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="freetype"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1722017716" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -370,6 +371,7 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="texelutillib"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="numa"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="freetype"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1334770162" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
