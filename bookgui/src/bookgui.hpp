@@ -49,9 +49,12 @@ private:
     void bookStateChanged();
 
     void updateBoardAndTree();
+    void setPosition(const Position& newPos, const std::vector<Move>& movesBefore,
+                     const std::vector<Move>& movesAfter);
     void updateQueueView();
     void updatePVView();
     void updatePGNView();
+    void updatePGNSelection();
     void updateEnabledState();
 
     void newBook();
@@ -81,6 +84,7 @@ private:
     void addToPgn();
     void applyPgn();
     void clearPgn();
+    bool pgnButtonPressed(GdkEventButton* event);
 
     void posGoBack();
     void posGoForward();
@@ -136,6 +140,7 @@ private:
 
     Gtk::TextView* pvInfo = nullptr;
     Gtk::TextView* pgnTextView = nullptr;
+    Glib::RefPtr<Gtk::TextBuffer::Tag> pgnCurrMoveTag;
 
 
     BookBuildControl bbControl;

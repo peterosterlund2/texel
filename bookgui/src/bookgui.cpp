@@ -56,7 +56,10 @@ BookGui::run() {
 void
 BookGui::getWidgets() {
     builder->get_widget("pvInfo", pvInfo);
-    builder->get_widget("pgnTextView", pgnTextView);
+
+    pgnCurrMoveTag = Gtk::TextBuffer::Tag::create("currMove");
+    pgnCurrMoveTag->property_background() = "rgb(192,192,255)";
+    pgnTextView->get_buffer()->get_tag_table()->add(pgnCurrMoveTag);
 }
 
 void
@@ -146,6 +149,11 @@ BookGui::connectSignals() {
 
     builder->get_widget("analyzeToggle", analyzeToggle);
     analyzeToggle->signal_clicked().connect([this]{ toggleAnalyzeMode(); });
+
+    // PGN view
+    builder->get_widget("pgnTextView", pgnTextView);
+    pgnTextView->signal_button_press_event().connect(sigc::mem_fun(*this, &BookGui::pgnButtonPressed), false);
+    pgnTextView->set_events(Gdk::BUTTON_PRESS_MASK);
 }
 
 void
@@ -189,6 +197,18 @@ BookGui::updateBoardAndTree() {
 }
 
 void
+BookGui::setPosition(const Position& newPos, const std::vector<Move>& movesBefore,
+                     const std::vector<Move>& movesAfter) {
+    moves = movesBefore;
+    nextMoves = movesAfter;
+    if (!newPos.equals(pos)) {
+        pos = newPos;
+        if (analysing)
+            bbControl.startAnalysis(moves);
+    }
+}
+
+void
 BookGui::updateQueueView() {
 
 }
@@ -205,6 +225,43 @@ void
 BookGui::updatePGNView() {
     gameTree.getGameTreeString(pgn, pgnPosToNodes);
     pgnTextView->get_buffer()->set_text(pgn);
+    updatePGNSelection();
+}
+
+void
+BookGui::updatePGNSelection() {
+    GameNode gn = gameTree.getRootNode();
+    bool found = true;
+    for (const Move& m : moves) {
+        found = false;
+        int n = gn.nChildren();
+        for (int i = 0; i < n; i++) {
+            gn.goForward(i);
+            if (m.equals(gn.getMove())) {
+                found = true;
+                break;
+            }
+            gn.goBack();
+        }
+        if (!found)
+            break;
+    }
+
+    auto buf = pgnTextView->get_buffer();
+    buf->remove_tag(pgnCurrMoveTag, buf->begin(), buf->end());
+    if (found) {
+        std::shared_ptr<Node> node = gn.getNode();
+        for (const auto& rtn : pgnPosToNodes) {
+            if (rtn.node == node) {
+                auto bi = buf->begin();
+                bi.set_offset(rtn.begin);
+                auto ei = buf->begin();
+                ei.set_offset(rtn.end);
+                buf->apply_tag(pgnCurrMoveTag, bi, ei);
+                break;
+            }
+        }
+    }
 }
 
 void
@@ -262,13 +319,10 @@ BookGui::newBook() {
         return;
 
     bbControl.newBook();
-    pos = TextIO::readFEN(TextIO::startPosFEN);
-    moves.clear();
-    nextMoves.clear();
+    setPosition(TextIO::readFEN(TextIO::startPosFEN), {}, {});
     bookDirty = false;
     updateBoardAndTree();
-    if (analysing)
-        bbControl.startAnalysis(moves);
+    updatePGNSelection();
     updateEnabledState();
 }
 
@@ -493,10 +547,13 @@ BookGui::setFocus() {
 
 void
 BookGui::getFocus() {
-    bbControl.getFocus(pos);
-    moves.clear(); // FIXME!! Compute reasonable move path
-    nextMoves.clear(); // FIXME!! Compute reasonable move path by following "book PV"
+    Position newPos;
+    bbControl.getFocus(newPos);
+    std::vector<Move> movesBefore; // FIXME!! Compute reasonable move path
+    std::vector<Move> movesAfter;  // FIXME!! Compute reasonable move path by following "book PV"
+    setPosition(newPos, movesBefore, movesAfter);
     updateBoardAndTree();
+    updatePGNSelection();
 }
 
 void
@@ -574,6 +631,46 @@ BookGui::clearPgn() {
     updatePGNView();
 }
 
+bool
+BookGui::pgnButtonPressed(GdkEventButton* event) {
+    int bx, by;
+    pgnTextView->window_to_buffer_coords(Gtk::TEXT_WINDOW_TEXT, (int)rint(event->x),
+                                         (int)rint(event->y), bx, by);
+    Gtk::TextBuffer::iterator bufIter;
+    int trailing;
+    pgnTextView->get_iter_at_position(bufIter, trailing, bx, by);
+    int offs = bufIter.get_offset();
+
+    std::shared_ptr<Node> node;
+    auto iter = pgnPosToNodes.upper_bound(GameTree::RangeToNode(offs, 0, nullptr));
+    if (iter != pgnPosToNodes.begin()) {
+        --iter;
+        if (iter->begin <= offs && offs < iter->end)
+            node = iter->node;
+    }
+    if (node) {
+        GameNode gn = gameTree.getNode(node);
+        Position newPos = gn.getPos();
+        std::vector<Move> movesBefore, movesAfter;
+        while (!gn.getMove().isEmpty()) {
+            movesBefore.push_back(gn.getMove());
+            gn.goBack();
+        }
+        std::reverse(movesBefore.begin(), movesBefore.end());
+        gn = gameTree.getNode(node);
+        while (gn.nChildren() > 0) {
+            gn.goForward(0);
+            movesAfter.push_back(gn.getMove());
+        }
+        setPosition(newPos, movesBefore, movesAfter);
+        updateBoardAndTree();
+        updatePGNSelection();
+        updateEnabledState();
+    }
+
+    return true;
+}
+
 // --------------------------------------------------------------------------------
 
 void
@@ -581,16 +678,19 @@ BookGui::posGoBack() {
     if (moves.empty())
         return;
 
-    pos = TextIO::readFEN(TextIO::startPosFEN);
+    Position newPos = TextIO::readFEN(TextIO::startPosFEN);
     UndoInfo ui;
     int N = moves.size();
     for (int i = 0; i < N - 1; i++)
-        pos.makeMove(moves[i], ui);
+        newPos.makeMove(moves[i], ui);
 
     nextMoves.insert(nextMoves.begin(), moves[N-1]);
     moves.pop_back();
 
+    setPosition(newPos, moves, nextMoves);
     updateBoardAndTree();
+    updatePGNSelection();
+    updateEnabledState();
 }
 
 void
@@ -599,11 +699,15 @@ BookGui::posGoForward() {
         return;
 
     moves.push_back(nextMoves[0]);
+    Position newPos = pos;
     UndoInfo ui;
-    pos.makeMove(nextMoves[0], ui);
+    newPos.makeMove(nextMoves[0], ui);
     nextMoves.erase(nextMoves.begin());
 
+    setPosition(newPos, moves, nextMoves);
     updateBoardAndTree();
+    updatePGNSelection();
+    updateEnabledState();
 }
 
 // --------------------------------------------------------------------------------
