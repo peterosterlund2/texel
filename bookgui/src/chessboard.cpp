@@ -24,10 +24,15 @@
  */
 
 #include "chessboard.hpp"
+#include "textio.hpp"
 
 ChessBoard::ChessBoard(const Position& pos0, Gtk::DrawingArea* area)
     : pos(pos0), drawArea(area) {
     drawArea->signal_draw().connect(sigc::mem_fun(*this, &ChessBoard::draw));
+    drawArea->signal_button_press_event().connect(sigc::mem_fun(*this, &ChessBoard::mouseDown), false);
+    drawArea->signal_button_release_event().connect(sigc::mem_fun(*this, &ChessBoard::mouseUp), false);
+    drawArea->signal_motion_notify_event().connect(sigc::mem_fun(*this, &ChessBoard::mouseMove), false);
+    drawArea->add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::BUTTON1_MOTION_MASK);
 
     FT_Init_FreeType(&ftLib);
     GBytes *fontBytes = g_resources_lookup_data("/font/ChessCases.ttf",
@@ -48,20 +53,33 @@ ChessBoard::queueDraw() {
     drawArea->queue_draw();
 }
 
-bool
-ChessBoard::draw(const Cairo::RefPtr<Cairo::Context>& ctx) {
+double
+ChessBoard::getSquareSize() const {
     int w = drawArea->get_allocated_width();
     int h = drawArea->get_allocated_height();
-    double sqSize = std::min(w, h) / 8.0;
+    return std::min(w, h) / 8.0;
+}
 
+int
+ChessBoard::getSquare(double xCrd, double yCrd) const {
+    double sqSize = getSquareSize();
+    int x = (int)floor(xCrd / sqSize);
+    int y = 7 - (int)floor(yCrd / sqSize);
+    if ((x < 0) || (x > 7) || (y < 0) || (y > 7))
+        return -1;
+    return Position::getSquare(x, y);
+}
+
+bool
+ChessBoard::draw(const Cairo::RefPtr<Cairo::Context>& ctx) {
+    double sqSize = getSquareSize();
     ctx->set_line_width(1.0);
     ctx->set_font_face(fontFace);
     ctx->set_font_size(sqSize);
 
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            bool dark = Position::darkSquare(x, y);
-            if (dark)
+            if (Position::darkSquare(x, y))
                 ctx->set_source_rgb(0.514, 0.647, 0.824);
             else
                 ctx->set_source_rgb(1.0, 1.0, 1.0);
@@ -69,10 +87,15 @@ ChessBoard::draw(const Cairo::RefPtr<Cairo::Context>& ctx) {
             double yCrd = (7-y) * sqSize;
             ctx->rectangle(xCrd, yCrd, sqSize, sqSize);
             ctx->fill();
-            int piece = pos.getPiece(Position::getSquare(x, y));
-            drawPiece(ctx, xCrd, yCrd, sqSize, piece);
+            int sq = Position::getSquare(x, y);
+            int piece = pos.getPiece(sq);
+            if (sq != dragSquare)
+                drawPiece(ctx, xCrd, yCrd, sqSize, piece);
         }
     }
+    if (dragSquare >= 0)
+        drawPiece(ctx, dragX - sqSize / 2, dragY - sqSize / 2, sqSize,
+                  pos.getPiece(dragSquare));
 
     return false;
 }
@@ -109,3 +132,41 @@ ChessBoard::drawPiece(const Cairo::RefPtr<Cairo::Context>& ctx,
     }
 }
 
+bool
+ChessBoard::mouseDown(GdkEventButton* event) {
+    if (event->button == 1) {
+        dragSquare = getSquare(event->x, event->y);
+        if (dragSquare >= 0) {
+            int piece = pos.getPiece(dragSquare);
+            if (Piece::isWhite(piece) == pos.isWhiteMove()) {
+                dragX = event->x;
+                dragY = event->y;
+                queueDraw();
+            } else {
+                dragSquare = -1;
+            }
+        }
+    }
+    return true;
+}
+
+bool
+ChessBoard::mouseUp(GdkEventButton* event) {
+    if (event->button == 1 && dragSquare >= 0) {
+        int fromSq = dragSquare;
+        int toSq = getSquare(event->x, event->y);
+        dragSquare = -1;
+        if (toSq >= 0)
+            signal_move_made.emit(Move(fromSq, toSq, Piece::EMPTY));
+        queueDraw();
+    }
+    return true;
+}
+
+bool
+ChessBoard::mouseMove(GdkEventMotion* event) {
+    dragX = event->x;
+    dragY = event->y;
+    queueDraw();
+    return true;
+}

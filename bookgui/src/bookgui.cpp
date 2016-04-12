@@ -24,6 +24,8 @@
  */
 
 #include "bookgui.hpp"
+#include "moveGen.hpp"
+#include "textio.hpp"
 #include <iostream>
 
 int
@@ -69,6 +71,7 @@ BookGui::createChessBoard() {
     Gtk::DrawingArea* chessBoardArea;
     builder->get_widget("chessBoard", chessBoardArea);
     chessBoard = make_unique<ChessBoard>(pos, chessBoardArea);
+    chessBoard->signal_move_made.connect(sigc::mem_fun(*this, &BookGui::chessBoardMoveMade));
 }
 
 void
@@ -744,6 +747,32 @@ BookGui::posGoForward() {
     updateBoardAndTree();
     updatePGNSelection();
     updateEnabledState();
+}
+
+void
+BookGui::chessBoardMoveMade(const Move& move) {
+    MoveList moveList;
+    MoveGen::pseudoLegalMoves(pos, moveList);
+    MoveGen::removeIllegal(pos, moveList);
+    for (int i = 0; i < moveList.size; i++) {
+        if (moveList[i] == move) {
+            Position newPos = pos;
+            UndoInfo ui;
+            newPos.makeMove(move, ui);
+            moves.push_back(move);
+            if (!nextMoves.empty()) {
+                if (nextMoves[0] == move)
+                    nextMoves.erase(nextMoves.begin());
+                else
+                    nextMoves.clear();
+            }
+            setPosition(newPos, moves, nextMoves);
+            updateBoardAndTree();
+            updatePGNSelection();
+            updateEnabledState();
+            return;
+        }
+    }
 }
 
 // --------------------------------------------------------------------------------

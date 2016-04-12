@@ -94,6 +94,7 @@ private:
 
     void posGoBack();
     void posGoForward();
+    void chessBoardMoveMade(const Move& move);
 
     void nextGeneration();
     void toggleAnalyzeMode();

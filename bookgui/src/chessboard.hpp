@@ -44,13 +44,27 @@ public:
     /** Redraw the chess board. */
     void queueDraw();
 
+    /** Signal emitted when the user makes a move on the board. */
+    sigc::signal<void, const Move&> signal_move_made;
+
 private:
+    /** Get size of a chess square in pixels. */
+    double getSquareSize() const;
+
+    /** Get the square number corresponding to x/y coordinate,
+     *  or -1 if no square at that coordinate. */
+    int getSquare(double xCrd, double yCrd) const;
+
     /** Draw chess board and pieces. */
     bool draw(const Cairo::RefPtr<Cairo::Context>& ctx);
 
     void drawPiece(const Cairo::RefPtr<Cairo::Context>& ctx,
                    double xCrd, double yCrd, double sqSize,
                    int piece);
+
+    bool mouseDown(GdkEventButton* event);
+    bool mouseUp(GdkEventButton* event);
+    bool mouseMove(GdkEventMotion* event);
 
 
     const Position& pos;
@@ -59,6 +73,10 @@ private:
     FT_Library ftLib;
     FT_Face ftFace;
     Cairo::RefPtr<Cairo::FtFontFace> fontFace;
+
+    int dragSquare = -1; // The square currently being dragged
+    double dragX = 0;
+    double dragY = 0;
 };
 
 #endif /* CHESSBOARD_HPP_ */
