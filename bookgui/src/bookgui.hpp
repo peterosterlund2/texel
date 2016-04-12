@@ -95,6 +95,7 @@ private:
     void posGoBack();
     void posGoForward();
     void chessBoardMoveMade(const Move& move);
+    int getPromotePiece();
 
     void nextGeneration();
     void toggleAnalyzeMode();

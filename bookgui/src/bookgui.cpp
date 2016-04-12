@@ -479,9 +479,9 @@ BookGui::askSaveIfDirty() {
     Gtk::MessageDialog dialog(*mainWindow, "Save book before closing?", false,
                               Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_NONE, true);
     dialog.set_secondary_text("If you don't save, changes to the book will be lost.");
-    const int NOSAVE = 0;
     const int SAVE = 1;
-    const int CANCEL = 2;
+    const int NOSAVE = 2;
+    const int CANCEL = 3;
     dialog.add_button(hasFilename ? "_Save" : "Save _As", SAVE);
     dialog.add_button("Close without saving", NOSAVE);
     dialog.add_button("_Cancel", CANCEL);
@@ -754,24 +754,69 @@ BookGui::chessBoardMoveMade(const Move& move) {
     MoveList moveList;
     MoveGen::pseudoLegalMoves(pos, moveList);
     MoveGen::removeIllegal(pos, moveList);
-    for (int i = 0; i < moveList.size; i++) {
-        if (moveList[i] == move) {
-            Position newPos = pos;
-            UndoInfo ui;
-            newPos.makeMove(move, ui);
-            moves.push_back(move);
-            if (!nextMoves.empty()) {
-                if (nextMoves[0] == move)
-                    nextMoves.erase(nextMoves.begin());
-                else
-                    nextMoves.clear();
-            }
-            setPosition(newPos, moves, nextMoves);
-            updateBoardAndTree();
-            updatePGNSelection();
-            updateEnabledState();
-            return;
+    auto performMove = [this](const Move& move){
+        Position newPos = pos;
+        UndoInfo ui;
+        newPos.makeMove(move, ui);
+        moves.push_back(move);
+        if (!nextMoves.empty()) {
+            if (nextMoves[0] == move)
+                nextMoves.erase(nextMoves.begin());
+            else
+                nextMoves.clear();
         }
+        setPosition(newPos, moves, nextMoves);
+        updateBoardAndTree();
+        updatePGNSelection();
+        updateEnabledState();
+    };
+    bool canPromote = false;
+    for (int i = 0; i < moveList.size; i++) {
+        const Move& m = moveList[i];
+        if (m == move) {
+            performMove(m);
+            return;
+        } else {
+            Move moveNoPromote(m.from(), m.to(), Piece::EMPTY);
+            if (moveNoPromote == move)
+                canPromote = true;
+        }
+    }
+    if (canPromote) {
+        int prom = getPromotePiece();
+        if (prom != Piece::EMPTY) {
+            Move m(move.from(), move.to(), prom);
+            performMove(m);
+        }
+    }
+}
+
+int
+BookGui::getPromotePiece() {
+    Gtk::MessageDialog dialog(*mainWindow, "Promote to?", false,
+                              Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_NONE, true);
+    const int QUEEN = 1;
+    const int ROOK = 2;
+    const int BISHOP = 3;
+    const int KNIGHT = 4;
+    dialog.add_button("Queen", QUEEN);
+    dialog.add_button("Rook", ROOK);
+    dialog.add_button("Bishop", BISHOP);
+    dialog.add_button("Knight", KNIGHT);
+
+    int result = dialog.run();
+    bool wtm = pos.isWhiteMove();
+    switch (result) {
+    case QUEEN:
+        return wtm ? Piece::WQUEEN : Piece::BQUEEN;
+    case ROOK:
+        return wtm ? Piece::WROOK : Piece::BROOK;
+    case BISHOP:
+        return wtm ? Piece::WBISHOP : Piece::BBISHOP;
+    case KNIGHT:
+        return wtm ? Piece::WKNIGHT : Piece::BKNIGHT;
+    default:
+        return Piece::EMPTY;
     }
 }
 

@@ -156,9 +156,9 @@ ChessBoard::mouseUp(GdkEventButton* event) {
         int fromSq = dragSquare;
         int toSq = getSquare(event->x, event->y);
         dragSquare = -1;
+        queueDraw();
         if (toSq >= 0)
             signal_move_made.emit(Move(fromSq, toSq, Piece::EMPTY));
-        queueDraw();
     }
     return true;
 }
