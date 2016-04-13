@@ -88,7 +88,7 @@ private:
  * - A value returned by iterative deepening search. This value can be MATE0 or 0 if
  *   the game is over (lost or draw), or a mate or heuristic search score.
  *   The iterative deepening search must include at least all legal moves that don't
- *   correspond to a child node or corresponds to a child not with INVALID_SCORE.
+ *   correspond to a child node or corresponds to a child node with INVALID_SCORE.
  *   Mate scores are always correct in the sense that they identify the side that wins
  *   assuming optimal play, but the search is not guaranteed to have found the fastest
  *   possible mate.
