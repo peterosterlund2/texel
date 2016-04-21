@@ -283,15 +283,16 @@ public:
     /** Compute and print statistics about the book. */
     void statistics(const std::string& bookFile);
 
-private:
-    /** Add root node if not already present. */
-    void addRootNode();
 
     /** Read opening book from file. */
     void readFromFile(const std::string& filename);
 
     /** Write opening book to file. */
     void writeToFile(const std::string& filename);
+
+private:
+    /** Add root node if not already present. */
+    void addRootNode();
 
     class PositionSelector {
     public:

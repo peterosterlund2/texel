@@ -169,7 +169,7 @@ private:
     int pgnImportMaxPly = 40;
 
 
-    bool loadingBook; // True when loading a book file.
+    bool processingBook; // True when processing an opening book.
 
     enum class SearchState {
         RUNNING,      // Threads are running, new jobs are scheduled

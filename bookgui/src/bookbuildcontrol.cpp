@@ -33,6 +33,7 @@ BookBuildControl::BookBuildControl(ChangeListener& listener0)
     : listener(listener0), tt(27), pd(tt) {
     ComputerPlayer::initEngine();
     et = Evaluate::getEvalHashTables();
+    newBook();
 }
 
 BookBuildControl::~BookBuildControl() {
@@ -60,26 +61,41 @@ BookBuildControl::notify(Change change) {
 
 void
 BookBuildControl::newBook() {
-    // Create new book
-
     filename.clear();
+    book = make_unique<BookBuild::Book>("emptybook.log", params.bookDepthCost,
+                                        params.ownPathErrorCost,
+                                        params.otherPathErrorCost);
 }
 
 void
 BookBuildControl::readFromFile(const std::string& newFileName) {
+    std::lock_guard<std::mutex> L(mutex);
     filename = newFileName;
-
-    // Read in different thread
+    book = make_unique<BookBuild::Book>(filename + ".log", params.bookDepthCost,
+                                        params.ownPathErrorCost,
+                                        params.otherPathErrorCost);
+    auto f = [this]() {
+        book->readFromFile(filename);
+        bgThread->detach();
+        bgThread.reset();
+        notify(BookBuildControl::Change::PROCESSING_COMPLETE);
+    };
+    bgThread = std::make_shared<std::thread>(f);
 }
 
 void
 BookBuildControl::saveToFile(const std::string& newFileName) {
+    std::lock_guard<std::mutex> L(mutex);
     if (!newFileName.empty())
         filename = newFileName;
 
-    std::cout << "save to file: " << filename << std::endl;
-
-    // Save in different thread
+    auto f = [this]() {
+        book->writeToFile(filename);
+        bgThread->detach();
+        bgThread.reset();
+        notify(BookBuildControl::Change::PROCESSING_COMPLETE);
+    };
+    bgThread = std::make_shared<std::thread>(f);
 }
 
 std::string
@@ -91,12 +107,13 @@ BookBuildControl::getBookFileName() const {
 
 void
 BookBuildControl::setParams(const Params& params) {
-
+    std::lock_guard<std::mutex> L(mutex);
+    this->params = params;
 }
 
 void
 BookBuildControl::getParams(Params& params) {
-
+    params = this->params;
 }
 
 // --------------------------------------------------------------------------------

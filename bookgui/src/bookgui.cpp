@@ -38,7 +38,7 @@ main(int argc, char* argv[]) {
 
 BookGui::BookGui(Glib::RefPtr<Gtk::Application> app0)
     : app(app0), mainWindow(nullptr), bbControl(*this),
-      loadingBook(false), searchState(SearchState::STOPPED),
+      processingBook(false), searchState(SearchState::STOPPED),
       analysing(false), bookDirty(false) {
     builder = Gtk::Builder::create();
     builder->add_from_resource("/main/bookgui_glade.xml");
@@ -199,9 +199,9 @@ BookGui::bookStateChanged() {
         case BookBuildControl::Change::PV:
             updatePVView();
             break;
-        case BookBuildControl::Change::LOADING_COMPLETE:
+        case BookBuildControl::Change::PROCESSING_COMPLETE:
             updateEnabled = true;
-            loadingBook = false;
+            processingBook = false;
             break;
         }
     }
@@ -282,12 +282,12 @@ BookGui::updateEnabledState() {
     // Menu items
     bool searchStopped = searchState == SearchState::STOPPED;
     bool builderIdle = searchStopped &&
-                       bbControl.nRunningThreads() == 0 && !loadingBook;
+                       bbControl.nRunningThreads() == 0 && !processingBook;
     newItem->set_sensitive(builderIdle);
     openItem->set_sensitive(builderIdle);
-    saveItem->set_sensitive(!bbControl.getBookFileName().empty() && !loadingBook);
-    saveAsItem->set_sensitive(!loadingBook);
-//  quitItem->set_sensitive(true);
+    saveItem->set_sensitive(!bbControl.getBookFileName().empty() && !processingBook);
+    saveAsItem->set_sensitive(!processingBook);
+    quitItem->set_sensitive(!processingBook);
 
     // Settings widgets
     threads->set_sensitive(searchStopped);
@@ -303,14 +303,14 @@ BookGui::updateEnabledState() {
     hardStopButton->set_sensitive(!searchStopped);
 
     // Focus buttons
-//  setFocusButton->set_sensitive(true);
-//  getFocusButton->set_sensitive(true);
-//  clearFocusButton->set_sensitive(true);
+    setFocusButton->set_sensitive(!processingBook);
+    getFocusButton->set_sensitive(!processingBook);
+    clearFocusButton->set_sensitive(!processingBook);
 
     // PGN buttons
 //  importPgnButton->set_sensitive(true);
 //  addToPgnButton->set_sensitive(true);
-//  applyPgnButton->set_sensitive(true);
+    applyPgnButton->set_sensitive(!processingBook);
 //  clearPgnButton->set_sensitive(true);
 
     // Navigate buttons
@@ -352,7 +352,7 @@ BookGui::setPosition(const Position& newPos, const std::vector<Move>& movesBefor
 
 void
 BookGui::newBook() {
-    if (searchState != SearchState::STOPPED || bbControl.nRunningThreads() > 0 || loadingBook)
+    if (searchState != SearchState::STOPPED || bbControl.nRunningThreads() > 0 || processingBook)
         return;
     if (!askSaveIfDirty())
         return;
@@ -367,7 +367,7 @@ BookGui::newBook() {
 
 void
 BookGui::openBookFile() {
-    if (searchState != SearchState::STOPPED || bbControl.nRunningThreads() > 0 || loadingBook)
+    if (searchState != SearchState::STOPPED || bbControl.nRunningThreads() > 0 || processingBook)
         return;
     if (!askSaveIfDirty())
         return;
@@ -398,22 +398,23 @@ BookGui::openBookFile() {
         return;
 
     filename = dialog.get_filename();
+    processingBook = true;
     bbControl.readFromFile(filename);
-    loadingBook = true;
     updateEnabledState();
 }
 
 void
 BookGui::saveBookFile() {
-    if (bbControl.getBookFileName().empty() || loadingBook)
+    if (bbControl.getBookFileName().empty() || processingBook)
         return;
+    processingBook = true;
     bbControl.saveToFile("");
     bookDirty = false;
 }
 
 bool
 BookGui::saveBookFileAs() {
-    if (loadingBook)
+    if (processingBook)
         return false;
 
     Gtk::FileChooserDialog dialog("Save As", Gtk::FILE_CHOOSER_ACTION_SAVE);
@@ -448,6 +449,7 @@ BookGui::saveBookFileAs() {
     if (file->get_basename().find('.') == std::string::npos)
         filename = filename + ".tbin";
 
+    processingBook = true;
     bbControl.saveToFile(filename);
     bookDirty = false;
     updateEnabledState();

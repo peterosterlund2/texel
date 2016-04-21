@@ -49,10 +49,10 @@ public:
 
     /** Changes that requires the GUI to be updated. */
     enum class Change {
-        TREE,            // A book node has been updated after a finished search.
-        QUEUE,           // The queue of pending searches has changed.
-        PV,              // The analysis principal variation has changed.
-        LOADING_COMPLETE // Reading of opening book file is complete.
+        TREE,               // A book node has been updated after a finished search.
+        QUEUE,              // The queue of pending searches has changed.
+        PV,                 // The analysis principal variation has changed.
+        PROCESSING_COMPLETE // Processing (reading, writing) of opening book is complete.
     };
 
     /** Get state changes since last call to this method. */
@@ -63,7 +63,7 @@ public:
     void newBook();
 
     /** Load book from file. */
-    void readFromFile(const std::string& filename);
+    void readFromFile(const std::string& newFileName);
 
     /** Save book to file. Use empty filename to save to current file.
      *  Throws exception if trying to save to current file when there is no current file. */
@@ -76,7 +76,7 @@ public:
     /** Search related parameters. */
     struct Params {
         int computationTime = 100000;  // Computation time in milliseconds.
-        int nThreads = 15;             // Maximum number of search threads to use.
+        int nThreads = 23;             // Maximum number of search threads to use.
         int bookDepthCost = 100;
         int ownPathErrorCost = 200;
         int otherPathErrorCost = 50;
@@ -186,6 +186,9 @@ private:
     std::unique_ptr<BookBuild::Book> book; // Current book.
     std::string filename; // Current book filename, or empty string.
     Params params;        // Search parameters.
+
+    /** Background worker thread for book processing operations. */
+    std::shared_ptr<std::thread> bgThread;
 
     // Data used by the analysis thread.
     std::shared_ptr<std::thread> engineThread;
