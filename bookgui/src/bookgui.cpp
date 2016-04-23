@@ -50,10 +50,10 @@ BookGui::run() {
     connectSignals();
     getWidgets();
     createChessBoard();
-    updateEnabledState();
     setPosition(TextIO::readFEN(TextIO::startPosFEN), {}, {});
     clearFocus();
     initParams();
+    updateEnabledState();
     app->run(*mainWindow);
 }
 
@@ -308,7 +308,9 @@ BookGui::updateEnabledState() {
     // Focus buttons
     setFocusButton->set_sensitive(!processingBook);
     getFocusButton->set_sensitive(!processingBook);
-    clearFocusButton->set_sensitive(!processingBook);
+    static U64 startPosHash = TextIO::readFEN(TextIO::startPosFEN).bookHash();
+    clearFocusButton->set_sensitive(!processingBook &&
+                                    bbControl.getFocusHash() != startPosHash);
 
     // PGN buttons
 //  importPgnButton->set_sensitive(true);
@@ -600,6 +602,7 @@ BookGui::hardStopSearch() {
 void
 BookGui::setFocus() {
     bbControl.setFocus(pos);
+    updateEnabledState();
 }
 
 void
@@ -617,6 +620,7 @@ void
 BookGui::clearFocus() {
     Position startPos = TextIO::readFEN(TextIO::startPosFEN);
     bbControl.setFocus(startPos);
+    updateEnabledState();
 }
 
 // --------------------------------------------------------------------------------

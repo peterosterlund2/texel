@@ -158,6 +158,9 @@ public:
     bool getFocus(Position& pos, std::vector<Move>& movesBefore,
                   std::vector<Move>& movesAfter);
 
+    /** Get the book hash code for the focus position. */
+    U64 getFocusHash() const;
+
 
     /** Add all positions up to depth "maxPly" to the book.
      *  This method must not be called when search threads are running. */

@@ -210,6 +210,11 @@ BookBuildControl::getFocus(Position& pos, std::vector<Move>& movesBefore,
     return false;
 }
 
+U64
+BookBuildControl::getFocusHash() const {
+   return focusHash.load();
+}
+
 // --------------------------------------------------------------------------------
 
 void
