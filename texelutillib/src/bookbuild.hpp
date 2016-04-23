@@ -31,6 +31,7 @@
 #include "treeLogger.hpp" // Serializer namespace
 
 #include <memory>
+#include <atomic>
 #include <vector>
 #include <deque>
 #include <unordered_set>
@@ -264,18 +265,31 @@ public:
     Book(const Book& other) = delete;
     Book& operator=(const Book& other) = delete;
 
+    class Listener {
+    public:
+        virtual ~Listener() {}
+        virtual void queueChanged(int nPendingBookTasks) = 0;
+    };
+    void setListener(std::unique_ptr<Listener> listener);
+
     /** Improve the opening book. If startMoves is a non-empty string, only improve the part
      * of the book rooted at the position obtained after playing those moves.
      * This function does not return until no more book moves can be added, which in
-     * practice never happens. */
+     * practice never happens unless startMoves leads to a position not in the book. */
     void improve(const std::string& bookFile, int searchTime, int numThreads,
                  const std::string& startMoves);
+
+    /** Improve the opening book. It is possible to dynamically change which
+     * subtree of the book to improve. */
+    void interactiveExtendBook(int searchTime, int numThreads,
+                               const std::atomic<U64>& startHash,
+                               const std::atomic<int>& stopFlag);
 
     /** Add moves from a PGN file to the book. */
     void importPGN(const std::string& bookFile, const std::string& pgnFile, int maxPly);
 
     /** Add all moves in a game tree up to ply maxPly to the book. */
-    void addToBook(int ply, int maxPly, GameNode& gn, int& nAdded);
+    void addToBook(int maxPly, GameNode& gn, int& nAdded);
 
     /** Convert the book to polyglot format. */
     void exportPolyglot(const std::string& bookFile, const std::string& polyglotFile,
@@ -294,10 +308,6 @@ public:
     /** Write opening book to file. */
     void writeToFile(const std::string& filename);
 
-private:
-    /** Add root node if not already present. */
-    void addRootNode();
-
     class PositionSelector {
     public:
         virtual ~PositionSelector() {}
@@ -306,6 +316,11 @@ private:
          * Return true if a position was retrieved, false otherwise. */
         virtual bool getNextPosition(Position& pos, Move& move) = 0;
     };
+    friend class DropoutSelector;
+
+private:
+    /** Add root node if not already present. */
+    void addRootNode();
 
     /** Extend book using positions provided by the selector. */
     void extendBook(PositionSelector& selector, int searchTime, int numThreads);
@@ -406,6 +421,12 @@ private:
     std::unordered_set<H2P, H2P::HashFun> hashToParent;
 
     BookData bookData;
+
+    /** Protect concurrent read/write access to the book. */
+    std::mutex mutex;
+
+    /** Handle notifications when book is changed. */
+    std::unique_ptr<Listener> listener;
 };
 
 /** Calls Search::iterativeDeepening() to analyze a position. */
@@ -600,6 +621,11 @@ BookNode::getSearchTime() const {
     return searchTime;
 }
 
+
+inline void
+Book::setListener(std::unique_ptr<Listener> listener0) {
+    listener = std::move(listener0);
+}
 
 } // Namespace BookBuild
 

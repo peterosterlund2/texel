@@ -101,8 +101,8 @@ public:
     /** Increase the transposition table generation counter. */
     void nextGeneration();
 
-    /** Return number of running search threads. */
-    int nRunningThreads() const;
+    /** Return number of unfinished book tasks. */
+    int numPendingBookTasks() const;
 
 
     struct TreeData {
@@ -176,12 +176,11 @@ public:
     /** Get information about the principal variation for the analysis search thread. */
     void getPVInfo(std::string& pv);
 
-
 private:
     /** Add change to set of unreported changes and notify the listener. */
     void notify(Change change);
 
-    std::mutex mutex;         // Main mutex for providing thread safe API.
+    mutable std::mutex mutex; // Main mutex for providing thread safe API.
     ChangeListener& listener;
     std::set<Change> changes; // Changes not yet reported to the listener.
 
@@ -191,6 +190,11 @@ private:
 
     /** Background worker thread for book processing operations. */
     std::shared_ptr<std::thread> bgThread;
+
+    /** Book hash code for the current focus position. */
+    std::atomic<U64> focusHash;
+    std::atomic<int> stopFlag; // 0: Continue, 1: Don't start new jobs, 2: stop immediately
+    int nPendingBookTasks;
 
     // Data used by the analysis thread.
     std::shared_ptr<std::thread> engineThread;

@@ -52,6 +52,8 @@ BookGui::run() {
     createChessBoard();
     updateEnabledState();
     setPosition(TextIO::readFEN(TextIO::startPosFEN), {}, {});
+    clearFocus();
+    initParams();
     app->run(*mainWindow);
 }
 
@@ -193,7 +195,7 @@ BookGui::bookStateChanged() {
         case BookBuildControl::Change::QUEUE:
             updateEnabled = true;
             updateQueueView();
-            if (bbControl.nRunningThreads() == 0)
+            if (bbControl.numPendingBookTasks() == 0)
                 searchState = SearchState::STOPPED;
             break;
         case BookBuildControl::Change::PV:
@@ -224,6 +226,7 @@ BookGui::updateHashFenEntry() {
 void
 BookGui::updateQueueView() {
     // FIXME!!
+    std::cout << "queue:" << bbControl.numPendingBookTasks() << std::endl;
 }
 
 void
@@ -282,7 +285,7 @@ BookGui::updateEnabledState() {
     // Menu items
     bool searchStopped = searchState == SearchState::STOPPED;
     bool builderIdle = searchStopped &&
-                       bbControl.nRunningThreads() == 0 && !processingBook;
+                       bbControl.numPendingBookTasks() == 0 && !processingBook;
     newItem->set_sensitive(builderIdle);
     openItem->set_sensitive(builderIdle);
     saveItem->set_sensitive(!bbControl.getBookFileName().empty() && !processingBook);
@@ -291,7 +294,7 @@ BookGui::updateEnabledState() {
 
     // Settings widgets
     threads->set_sensitive(searchStopped);
-//  compTime->set_sensitive(true);
+    compTime->set_sensitive(searchStopped);
     depthCost->set_sensitive(searchStopped);
     ownPathErrCost->set_sensitive(searchStopped);
     otherPathErrCost->set_sensitive(searchStopped);
@@ -352,7 +355,7 @@ BookGui::setPosition(const Position& newPos, const std::vector<Move>& movesBefor
 
 void
 BookGui::newBook() {
-    if (searchState != SearchState::STOPPED || bbControl.nRunningThreads() > 0 || processingBook)
+    if (searchState != SearchState::STOPPED || bbControl.numPendingBookTasks() > 0 || processingBook)
         return;
     if (!askSaveIfDirty())
         return;
@@ -367,7 +370,7 @@ BookGui::newBook() {
 
 void
 BookGui::openBookFile() {
-    if (searchState != SearchState::STOPPED || bbControl.nRunningThreads() > 0 || processingBook)
+    if (searchState != SearchState::STOPPED || bbControl.numPendingBookTasks() > 0 || processingBook)
         return;
     if (!askSaveIfDirty())
         return;
@@ -409,6 +412,7 @@ BookGui::saveBookFile() {
         return;
     processingBook = true;
     bbControl.saveToFile("");
+    updateEnabledState();
     bookDirty = false;
 }
 
@@ -505,6 +509,18 @@ BookGui::askSaveIfDirty() {
 // --------------------------------------------------------------------------------
 
 void
+BookGui::initParams() {
+    BookBuildControl::Params params;
+    bbControl.getParams(params);
+    threads->set_value(params.nThreads);
+    compTime->set_value(params.computationTime / 1000.0);
+    depthCost->set_value(params.bookDepthCost);
+    ownPathErrCost->set_value(params.ownPathErrorCost);
+    otherPathErrCost->set_value(params.otherPathErrorCost);
+    pgnMaxPly->set_value(pgnImportMaxPly);
+}
+
+void
 BookGui::threadsValueChanged() {
     BookBuildControl::Params params;
     bbControl.getParams(params);
@@ -516,7 +532,7 @@ void
 BookGui::compTimeChanged() {
     BookBuildControl::Params params;
     bbControl.getParams(params);
-    params.computationTime = compTime->get_value_as_int();
+    params.computationTime = (int)(compTime->get_value() * 1000 + 0.5);
     bbControl.setParams(params);
 }
 
@@ -662,7 +678,9 @@ BookGui::addToPgn() {
 
 void
 BookGui::applyPgn() {
+    processingBook = true;
     bbControl.importPGN(gameTree, pgnImportMaxPly);
+    updateEnabledState();
 }
 
 void

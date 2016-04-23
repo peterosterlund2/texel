@@ -75,6 +75,7 @@ private:
     void softStopSearch();
     void hardStopSearch();
 
+    void initParams();
     void threadsValueChanged();
     void compTimeChanged();
     void depthCostChanged();

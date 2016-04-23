@@ -31,7 +31,7 @@
 
 
 BookBuildControl::BookBuildControl(ChangeListener& listener0)
-    : listener(listener0), tt(27), pd(tt) {
+    : listener(listener0), nPendingBookTasks(0), tt(27), pd(tt) {
     ComputerPlayer::initEngine();
     et = Evaluate::getEvalHashTables();
     newBook();
@@ -77,9 +77,13 @@ BookBuildControl::readFromFile(const std::string& newFileName) {
                                         params.otherPathErrorCost);
     auto f = [this]() {
         book->readFromFile(filename);
-        bgThread->detach();
-        bgThread.reset();
+        {
+            std::lock_guard<std::mutex> L(mutex);
+            bgThread->detach();
+            bgThread.reset();
+        }
         notify(BookBuildControl::Change::PROCESSING_COMPLETE);
+        notify(BookBuildControl::Change::TREE);
     };
     bgThread = std::make_shared<std::thread>(f);
 }
@@ -92,8 +96,11 @@ BookBuildControl::saveToFile(const std::string& newFileName) {
 
     auto f = [this]() {
         book->writeToFile(filename);
-        bgThread->detach();
-        bgThread.reset();
+        {
+            std::lock_guard<std::mutex> L(mutex);
+            bgThread->detach();
+            bgThread.reset();
+        }
         notify(BookBuildControl::Change::PROCESSING_COMPLETE);
     };
     bgThread = std::make_shared<std::thread>(f);
@@ -114,6 +121,7 @@ BookBuildControl::setParams(const Params& params) {
 
 void
 BookBuildControl::getParams(Params& params) {
+    std::lock_guard<std::mutex> L(mutex);
     params = this->params;
 }
 
@@ -121,12 +129,44 @@ BookBuildControl::getParams(Params& params) {
 
 void
 BookBuildControl::startSearch() {
+    std::lock_guard<std::mutex> L(mutex);
+    class BookListener : public BookBuild::Book::Listener {
+    public:
+        BookListener(BookBuildControl& bbc0) : bbc(bbc0) {}
+        void queueChanged(int nPendingBookTasks) override {
+            {
+                std::lock_guard<std::mutex> L(bbc.mutex);
+                bbc.nPendingBookTasks = nPendingBookTasks;
+            }
+            bbc.notify(BookBuildControl::Change::QUEUE);
+            bbc.notify(BookBuildControl::Change::TREE);
+        }
+    private:
+        BookBuildControl& bbc;
+    };
+    book->setListener(make_unique<BookListener>(*this));
+    stopFlag.store(0);
+    nPendingBookTasks = 1;
 
+    auto f = [this]() {
+        book->interactiveExtendBook(params.computationTime,
+                                    params.nThreads,
+                                    focusHash, stopFlag);
+        book->setListener(nullptr);
+        {
+            std::lock_guard<std::mutex> L(mutex);
+            bgThread->detach();
+            bgThread.reset();
+        }
+        notify(BookBuildControl::Change::QUEUE);
+        notify(BookBuildControl::Change::TREE);
+    };
+    bgThread = std::make_shared<std::thread>(f);
 }
 
 void
 BookBuildControl::stopSearch(bool immediate) {
-
+    stopFlag.store(immediate ? 2 : 1);
 }
 
 void
@@ -135,8 +175,9 @@ BookBuildControl::nextGeneration() {
 }
 
 int
-BookBuildControl::nRunningThreads() const {
-    return 0;
+BookBuildControl::numPendingBookTasks() const {
+    std::lock_guard<std::mutex> L(mutex);
+    return nPendingBookTasks;
 }
 
 // --------------------------------------------------------------------------------
@@ -160,7 +201,7 @@ BookBuildControl::getQueueData(QueueData& queueData) const {
 
 void
 BookBuildControl::setFocus(const Position& pos) {
-
+    focusHash.store(pos.bookHash());
 }
 
 bool
@@ -174,13 +215,16 @@ BookBuildControl::getFocus(Position& pos, std::vector<Move>& movesBefore,
 void
 BookBuildControl::importPGN(const GameTree& gt, int maxPly) {
     std::lock_guard<std::mutex> L(mutex);
-    // FIXME!! Make sure book builder thread is not modifying book at the same time
     auto f = [this, gt, maxPly]() {
         int nAdded = 0;
         GameNode gn = gt.getRootNode();
-        book->addToBook(0, maxPly, gn, nAdded);
-        bgThread->detach();
-        bgThread.reset();
+        book->addToBook(maxPly, gn, nAdded);
+        {
+            std::lock_guard<std::mutex> L(mutex);
+            bgThread->detach();
+            bgThread.reset();
+        }
+        notify(BookBuildControl::Change::PROCESSING_COMPLETE);
         notify(BookBuildControl::Change::TREE);
     };
     bgThread = std::make_shared<std::thread>(f);

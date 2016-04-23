@@ -257,6 +257,55 @@ Book::Book(const std::string& backupFile0, int bookDepthCost,
         writeToFile(backupFile);
 }
 
+class DropoutSelector : public Book::PositionSelector {
+public:
+    DropoutSelector(Book& b, std::mutex& mutex0,
+                    const std::atomic<U64>& startPosHash,
+                    const std::atomic<int>& stopFlag0) :
+        book(b), mutex(mutex0), startHash(startPosHash),
+        stopFlag(stopFlag0), whiteBook(true) {
+    }
+
+    bool getNextPosition(Position& pos, Move& move) override {
+        std::lock_guard<std::mutex> L(mutex);
+        if (stopFlag.load())
+            return false;
+        BookNode* ptr = book.getBookNode(startHash.load());
+        if (!ptr)
+            return false;
+        while (true) {
+            int cost = whiteBook ? ptr->getExpansionCostWhite() : ptr->getExpansionCostBlack();
+            if (cost == IGNORE_SCORE)
+                return false;
+            std::vector<BookNode*> goodChildren;
+            for (const auto& e : ptr->getChildren()) {
+                BookNode* child = e.second;
+                int childCost = ptr->getExpansionCost(book.bookData, child, whiteBook);
+                if (cost == childCost)
+                    goodChildren.push_back(child);
+            }
+            if (goodChildren.empty())
+                break;
+            std::random_shuffle(goodChildren.begin(), goodChildren.end());
+            ptr = goodChildren[0];
+        }
+        move = ptr->getBestNonBookMove();
+        if (ptr->getChildren().find(move.getCompressedMove()) != ptr->getChildren().end())
+            move = Move();
+        std::vector<Move> moveList;
+        book.getPosition(ptr->getHashKey(), pos, moveList);
+        whiteBook = !whiteBook;
+        return true;
+    }
+
+private:
+    Book& book;
+    std::mutex& mutex;
+    const std::atomic<U64>& startHash;
+    const std::atomic<int>& stopFlag;
+    bool whiteBook;
+};
+
 void
 Book::improve(const std::string& bookFile, int searchTime, int numThreads,
               const std::string& startMoves) {
@@ -271,50 +320,18 @@ Book::improve(const std::string& bookFile, int searchTime, int numThreads,
         startPos.makeMove(m, ui);
     }
 
-    class DropoutSelector : public PositionSelector {
-    public:
-        DropoutSelector(Book& b, U64 startPosHash) :
-            book(b), startHash(startPosHash), whiteBook(true) {
-        }
-
-        bool getNextPosition(Position& pos, Move& move) override {
-            BookNode* ptr = book.getBookNode(startHash);
-            while (true) {
-                int cost = whiteBook ? ptr->getExpansionCostWhite() : ptr->getExpansionCostBlack();
-                if (cost == IGNORE_SCORE)
-                    return false;
-                std::vector<BookNode*> goodChildren;
-                for (const auto& e : ptr->getChildren()) {
-                    BookNode* child = e.second;
-                    int childCost = ptr->getExpansionCost(book.bookData, child, whiteBook);
-                    if (cost == childCost)
-                        goodChildren.push_back(child);
-                }
-                if (!goodChildren.empty()) {
-                    std::random_shuffle(goodChildren.begin(), goodChildren.end());
-                    ptr = goodChildren[0];
-                } else
-                    break;
-            }
-            move = ptr->getBestNonBookMove();
-            if (ptr->getChildren().find(move.getCompressedMove()) != ptr->getChildren().end())
-                move = Move();
-            std::vector<Move> moveList;
-            book.getPosition(ptr->getHashKey(), pos, moveList);
-            whiteBook = !whiteBook;
-            return true;
-        }
-
-    private:
-        Book& book;
-        U64 startHash;
-        bool whiteBook;
-    };
-
-    DropoutSelector selector(*this, startPos.bookHash());
+    std::atomic<U64> startHash(startPos.bookHash());
+    std::atomic<int> stopFlag(0);
+    DropoutSelector selector(*this, mutex, startHash, stopFlag);
     extendBook(selector, searchTime, numThreads);
+}
 
-    writeToFile(bookFile + ".out");
+void
+Book::interactiveExtendBook(int searchTime, int numThreads,
+                            const std::atomic<U64>& startHash,
+                            const std::atomic<int>& stopFlag) {
+    DropoutSelector selector(*this, mutex, startHash, stopFlag);
+    extendBook(selector, searchTime, numThreads);
 }
 
 void
@@ -332,7 +349,7 @@ Book::importPGN(const std::string& bookFile, const std::string& pgnFile,
         while (reader.readPGN(gt)) {
             nGames++;
             GameNode gn = gt.getRootNode();
-            addToBook(0, maxPly, gn, nAdded);
+            addToBook(maxPly, gn, nAdded);
         }
     } catch (...) {
         std::cerr << "Error parsing game " << nGames << std::endl;
@@ -342,21 +359,26 @@ Book::importPGN(const std::string& bookFile, const std::string& pgnFile,
 }
 
 void
-Book::addToBook(int ply, int maxPly, GameNode& gn, int& nAdded) {
-    if (ply >= maxPly)
-        return;
-    Position base = gn.getPos();
-    for (int i = 0; i < gn.nChildren(); i++) {
-        gn.goForward(i);
-        if (!getBookNode(gn.getPos().bookHash())) {
-            assert(!gn.getMove().isEmpty());
-            std::vector<U64> toSearch;
-            addPosToBook(base, gn.getMove(), toSearch);
-            nAdded++;
+Book::addToBook(int maxPly, GameNode& gn, int& nAdded) {
+    std::lock_guard<std::mutex> L(mutex);
+    std::function<void(int)> addToBookInternal =
+            [&addToBookInternal, this, maxPly, &gn, &nAdded](int ply) {
+        if (ply >= maxPly)
+            return;
+        Position base = gn.getPos();
+        for (int i = 0; i < gn.nChildren(); i++) {
+            gn.goForward(i);
+            if (!getBookNode(gn.getPos().bookHash())) {
+                assert(!gn.getMove().isEmpty());
+                std::vector<U64> toSearch;
+                addPosToBook(base, gn.getMove(), toSearch);
+                nAdded++;
+            }
+            addToBookInternal(ply+1);
+            gn.goBack();
         }
-        addToBook(ply+1, maxPly, gn, nAdded);
-        gn.goBack();
-    }
+    };
+    addToBookInternal(0);
 }
 
 void
@@ -704,6 +726,7 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads) {
             Position pos;
             Move move;
             if (selector.getNextPosition(pos, move)) {
+                std::lock_guard<std::mutex> L(mutex);
                 assert(getBookNode(pos.bookHash()));
                 std::vector<U64> toSearch;
                 if (move.isEmpty()) {
@@ -730,15 +753,20 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads) {
         }
         if (!workAdded && (numPending == 0))
             break;
+        if (workAdded && listener)
+            listener->queueChanged(numPending);
         if (!workAdded || (numPending >= desiredQueueLen)) {
             SearchScheduler::WorkUnit wu;
             scheduler.getResult(wu);
             completed.insert(wu);
+            bool workRemoved = false;
             while (!completed.empty() && completed.begin()->id == commitId) {
+                std::lock_guard<std::mutex> L(mutex);
                 wu = *completed.begin();
                 completed.erase(completed.begin());
                 numPending--;
                 commitId++;
+                workRemoved = true;
                 removePending(wu.hashKey);
                 auto bn = getBookNode(wu.hashKey);
                 assert(bn);
@@ -747,8 +775,12 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads) {
                 writeBackup(*bn);
                 scheduler.reportResult(wu);
             }
+            if (workRemoved && listener && numPending > 0)
+                listener->queueChanged(numPending);
         }
     }
+    if (listener)
+        listener->queueChanged(0);
 }
 
 std::vector<Move>
