@@ -193,6 +193,7 @@ private:
 
     /** Background worker thread for book processing operations. */
     std::shared_ptr<std::thread> bgThread;
+    std::shared_ptr<std::thread> bgThread2;
 
     /** Book hash code for the current focus position. */
     std::atomic<U64> focusHash;

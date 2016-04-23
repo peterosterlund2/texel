@@ -226,13 +226,13 @@ BookBuildControl::importPGN(const GameTree& gt, int maxPly) {
         book->addToBook(maxPly, gn, nAdded);
         {
             std::lock_guard<std::mutex> L(mutex);
-            bgThread->detach();
-            bgThread.reset();
+            bgThread2->detach();
+            bgThread2.reset();
         }
         notify(BookBuildControl::Change::PROCESSING_COMPLETE);
         notify(BookBuildControl::Change::TREE);
     };
-    bgThread = std::make_shared<std::thread>(f);
+    bgThread2 = std::make_shared<std::thread>(f);
 }
 
 // --------------------------------------------------------------------------------
