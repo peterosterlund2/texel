@@ -27,6 +27,7 @@
 #include "textio.hpp"
 #include "search.hpp"
 #include "computerPlayer.hpp"
+#include "gametree.hpp"
 
 
 BookBuildControl::BookBuildControl(ChangeListener& listener0)
@@ -171,8 +172,18 @@ BookBuildControl::getFocus(Position& pos, std::vector<Move>& movesBefore,
 // --------------------------------------------------------------------------------
 
 void
-BookBuildControl::importPGN(const std::string pgn, int maxPly) {
-
+BookBuildControl::importPGN(const GameTree& gt, int maxPly) {
+    std::lock_guard<std::mutex> L(mutex);
+    // FIXME!! Make sure book builder thread is not modifying book at the same time
+    auto f = [this, gt, maxPly]() {
+        int nAdded = 0;
+        GameNode gn = gt.getRootNode();
+        book->addToBook(0, maxPly, gn, nAdded);
+        bgThread->detach();
+        bgThread.reset();
+        notify(BookBuildControl::Change::TREE);
+    };
+    bgThread = std::make_shared<std::thread>(f);
 }
 
 // --------------------------------------------------------------------------------

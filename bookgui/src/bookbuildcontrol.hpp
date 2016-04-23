@@ -31,6 +31,8 @@
 #include <set>
 #include <memory>
 
+class GameTree;
+
 /** Provides an asynchronous interface to control the book building process.
  * All time consuming work is performed in separate worker threads.
  * All methods are thread safe.
@@ -159,7 +161,7 @@ public:
 
     /** Add all positions up to depth "maxPly" to the book.
      *  This method must not be called when search threads are running. */
-    void importPGN(const std::string pgn, int maxPly);
+    void importPGN(const GameTree& gt, int maxPly);
 
 
     /** Start the analysis search thread. If analysis is already running, it

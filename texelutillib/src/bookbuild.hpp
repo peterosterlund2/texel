@@ -39,6 +39,7 @@
 #include <climits>
 
 class BookBuildTest;
+class GameNode;
 
 
 namespace BookBuild {
@@ -272,6 +273,9 @@ public:
 
     /** Add moves from a PGN file to the book. */
     void importPGN(const std::string& bookFile, const std::string& pgnFile, int maxPly);
+
+    /** Add all moves in a game tree up to ply maxPly to the book. */
+    void addToBook(int ply, int maxPly, GameNode& gn, int& nAdded);
 
     /** Convert the book to polyglot format. */
     void exportPolyglot(const std::string& bookFile, const std::string& polyglotFile,

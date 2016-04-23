@@ -662,8 +662,7 @@ BookGui::addToPgn() {
 
 void
 BookGui::applyPgn() {
-    // FIXME!!
-    updatePGNView();
+    bbControl.importPGN(gameTree, pgnImportMaxPly);
 }
 
 void
