@@ -571,6 +571,7 @@ BookBuildTest::testAddPosToBookConnectToChild() {
 
 void
 BookBuildTest::testSelector() {
+    TranspositionTable tt(27);
     auto system = [](const std::string& cmd) { ::system(cmd.c_str()); };
     std::string tmpDir = "/tmp/booktest";
     system("mkdir -p " + tmpDir);
@@ -593,7 +594,7 @@ BookBuildTest::testSelector() {
         TestSelector selector(book);
         int searchTime = 10;
         int nThreads = 1;
-        book.extendBook(selector, searchTime, nThreads);
+        book.extendBook(selector, searchTime, nThreads, tt);
         ASSERT_EQUAL(1, selector.nCalls);
         ASSERT_EQUAL(1, book.bookNodes.size());
 
@@ -630,7 +631,7 @@ BookBuildTest::testSelector() {
         TestSelector selector(book);
         int searchTime = 10;
         int nThreads = 1;
-        book.extendBook(selector, searchTime, nThreads);
+        book.extendBook(selector, searchTime, nThreads, tt);
         ASSERT(selector.nCalls >= 9);
         ASSERT_EQUAL(9, book.bookNodes.size());
     }

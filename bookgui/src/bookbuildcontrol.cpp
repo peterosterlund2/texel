@@ -39,6 +39,7 @@ BookBuildControl::BookBuildControl(ChangeListener& listener0)
 
 BookBuildControl::~BookBuildControl() {
     stopAnalysis();
+    // FIXME!! Crashes if book builder is running
 }
 
 void
@@ -150,7 +151,7 @@ BookBuildControl::startSearch() {
 
     auto f = [this]() {
         book->interactiveExtendBook(params.computationTime,
-                                    params.nThreads,
+                                    params.nThreads, tt,
                                     focusHash, stopFlag);
         book->setListener(nullptr);
         {
@@ -171,7 +172,7 @@ BookBuildControl::stopSearch(bool immediate) {
 
 void
 BookBuildControl::nextGeneration() {
-
+    tt.nextGeneration();
 }
 
 int
@@ -224,6 +225,7 @@ BookBuildControl::importPGN(const GameTree& gt, int maxPly) {
         int nAdded = 0;
         GameNode gn = gt.getRootNode();
         book->addToBook(maxPly, gn, nAdded);
+        // FIXME!! Newly imported nodes are not searched as soon as they should be.
         {
             std::lock_guard<std::mutex> L(mutex);
             bgThread2->detach();

@@ -282,6 +282,7 @@ public:
     /** Improve the opening book. It is possible to dynamically change which
      * subtree of the book to improve. */
     void interactiveExtendBook(int searchTime, int numThreads,
+                               TranspositionTable& tt,
                                const std::atomic<U64>& startHash,
                                const std::atomic<int>& stopFlag);
 
@@ -323,7 +324,8 @@ private:
     void addRootNode();
 
     /** Extend book using positions provided by the selector. */
-    void extendBook(PositionSelector& selector, int searchTime, int numThreads);
+    void extendBook(PositionSelector& selector, int searchTime, int numThreads,
+                    TranspositionTable& tt);
 
     /** Get the list of legal moves to include in the search. */
     std::vector<Move> getMovesToSearch(Position& pos);

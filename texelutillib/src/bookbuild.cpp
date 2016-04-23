@@ -323,15 +323,17 @@ Book::improve(const std::string& bookFile, int searchTime, int numThreads,
     std::atomic<U64> startHash(startPos.bookHash());
     std::atomic<int> stopFlag(0);
     DropoutSelector selector(*this, mutex, startHash, stopFlag);
-    extendBook(selector, searchTime, numThreads);
+    TranspositionTable tt(27);
+    extendBook(selector, searchTime, numThreads, tt);
 }
 
 void
 Book::interactiveExtendBook(int searchTime, int numThreads,
+                            TranspositionTable& tt,
                             const std::atomic<U64>& startHash,
                             const std::atomic<int>& stopFlag) {
     DropoutSelector selector(*this, mutex, startHash, stopFlag);
-    extendBook(selector, searchTime, numThreads);
+    extendBook(selector, searchTime, numThreads, tt);
 }
 
 void
@@ -705,9 +707,8 @@ Book::writeToFile(const std::string& filename) {
 }
 
 void
-Book::extendBook(PositionSelector& selector, int searchTime, int numThreads) {
-    TranspositionTable tt(27);
-
+Book::extendBook(PositionSelector& selector, int searchTime, int numThreads,
+                 TranspositionTable& tt) {
     SearchScheduler scheduler;
     for (int i = 0; i < numThreads; i++) {
         auto sr = make_unique<SearchRunner>(i, tt);

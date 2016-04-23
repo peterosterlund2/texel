@@ -203,7 +203,7 @@ private:
     // Data used by the analysis thread.
     std::shared_ptr<std::thread> engineThread;
     std::shared_ptr<Search> sc;
-    TranspositionTable tt; // FIXME!! Use this also for book building threads
+    TranspositionTable tt;
     ParallelData pd;
     KillerTable kt;
     History ht;
