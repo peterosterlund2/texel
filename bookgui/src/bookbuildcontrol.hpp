@@ -197,6 +197,8 @@ private:
 
     /** Book hash code for the current focus position. */
     std::atomic<U64> focusHash;
+
+    std::condition_variable bgThreadCv;
     std::atomic<bool> stopFlag;
     int nPendingBookTasks;
 
