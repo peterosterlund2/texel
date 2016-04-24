@@ -146,7 +146,7 @@ BookBuildControl::startSearch() {
         BookBuildControl& bbc;
     };
     book->setListener(make_unique<BookListener>(*this));
-    stopFlag.store(0);
+    stopFlag.store(false);
     nPendingBookTasks = 1;
 
     auto f = [this]() {
@@ -167,7 +167,8 @@ BookBuildControl::startSearch() {
 
 void
 BookBuildControl::stopSearch(bool immediate) {
-    stopFlag.store(immediate ? 2 : 1);
+    stopFlag.store(true);
+    // FIXME!! Handle "immediate"
 }
 
 void

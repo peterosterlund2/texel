@@ -284,7 +284,7 @@ public:
     void interactiveExtendBook(int searchTime, int numThreads,
                                TranspositionTable& tt,
                                const std::atomic<U64>& startHash,
-                               const std::atomic<int>& stopFlag);
+                               const std::atomic<bool>& stopFlag);
 
     /** Add moves from a PGN file to the book. */
     void importPGN(const std::string& bookFile, const std::string& pgnFile, int maxPly);
@@ -453,7 +453,9 @@ private:
     KillerTable kt;
     History ht;
     TranspositionTable& tt;
+    ParallelData pd;
     TreeLogger treeLog;
+    std::weak_ptr<Search> search;
 };
 
 /** Handles work distribution to the search threads. */

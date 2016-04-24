@@ -197,7 +197,7 @@ private:
 
     /** Book hash code for the current focus position. */
     std::atomic<U64> focusHash;
-    std::atomic<int> stopFlag; // 0: Continue, 1: Don't start new jobs, 2: stop immediately
+    std::atomic<bool> stopFlag;
     int nPendingBookTasks;
 
     // Data used by the analysis thread.

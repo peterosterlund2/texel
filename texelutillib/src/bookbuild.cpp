@@ -261,7 +261,7 @@ class DropoutSelector : public Book::PositionSelector {
 public:
     DropoutSelector(Book& b, std::mutex& mutex0,
                     const std::atomic<U64>& startPosHash,
-                    const std::atomic<int>& stopFlag0) :
+                    const std::atomic<bool>& stopFlag0) :
         book(b), mutex(mutex0), startHash(startPosHash),
         stopFlag(stopFlag0), whiteBook(true) {
     }
@@ -302,7 +302,7 @@ private:
     Book& book;
     std::mutex& mutex;
     const std::atomic<U64>& startHash;
-    const std::atomic<int>& stopFlag;
+    const std::atomic<bool>& stopFlag;
     bool whiteBook;
 };
 
@@ -321,7 +321,7 @@ Book::improve(const std::string& bookFile, int searchTime, int numThreads,
     }
 
     std::atomic<U64> startHash(startPos.bookHash());
-    std::atomic<int> stopFlag(0);
+    std::atomic<bool> stopFlag(false);
     DropoutSelector selector(*this, mutex, startHash, stopFlag);
     TranspositionTable tt(27);
     extendBook(selector, searchTime, numThreads, tt);
@@ -331,7 +331,7 @@ void
 Book::interactiveExtendBook(int searchTime, int numThreads,
                             TranspositionTable& tt,
                             const std::atomic<U64>& startHash,
-                            const std::atomic<int>& stopFlag) {
+                            const std::atomic<bool>& stopFlag) {
     DropoutSelector selector(*this, mutex, startHash, stopFlag);
     extendBook(selector, searchTime, numThreads, tt);
 }
@@ -1233,7 +1233,7 @@ Book::getOrderedChildMoves(const BookNode& node, std::vector<Move>& moves) const
 // ----------------------------------------------------------------------------
 
 SearchRunner::SearchRunner(int instanceNo0, TranspositionTable& tt0)
-    : instanceNo(instanceNo0), tt(tt0) {
+    : instanceNo(instanceNo0), tt(tt0), pd(tt) {
 }
 
 Move
@@ -1270,12 +1270,13 @@ SearchRunner::analyze(const std::vector<Move>& gameMoves,
     kt.clear();
     ht.init();
     Search::SearchTables st(tt, kt, ht, et);
-    ParallelData pd(tt);
-    Search sc(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
+    std::shared_ptr<Search> sc =
+            std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
+    search = sc;
 
     int minTimeLimit = searchTime;
     int maxTimeLimit = searchTime;
-    sc.timeLimit(minTimeLimit, maxTimeLimit);
+    sc->timeLimit(minTimeLimit, maxTimeLimit);
 
     MoveList moveList;
     for (const Move& m : movesToSearch)
@@ -1287,8 +1288,8 @@ SearchRunner::analyze(const std::vector<Move>& gameMoves,
     int maxPV = 1;
     bool onlyExact = true;
     int minProbeDepth = 1;
-    Move bestMove = sc.iterativeDeepening(moveList, maxDepth, maxNodes, verbose, maxPV,
-                                          onlyExact, minProbeDepth);
+    Move bestMove = sc->iterativeDeepening(moveList, maxDepth, maxNodes, verbose, maxPV,
+                                           onlyExact, minProbeDepth);
     return bestMove;
 }
 
