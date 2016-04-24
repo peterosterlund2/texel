@@ -216,7 +216,7 @@ BookBuildControl::setFocus(const Position& pos) {
 bool
 BookBuildControl::getFocus(Position& pos, std::vector<Move>& movesBefore,
                            std::vector<Move>& movesAfter) {
-    return false;
+    return book->getBookPV(focusHash.load(), pos, movesBefore, movesAfter);
 }
 
 U64

@@ -938,6 +938,35 @@ Book::getPosition(U64 hashKey, Position& pos, std::vector<Move>& moveList) const
     return true;
 }
 
+bool
+Book::getBookPV(U64 hashKey, Position& pos,
+                std::vector<Move>& movesBefore,
+                std::vector<Move>& movesAfter) const {
+    std::lock_guard<std::mutex> L(mutex);
+    if (!getPosition(hashKey, pos, movesBefore))
+        return false;
+    BookNode* node = getBookNode(hashKey);
+    assert(node);
+    Position tmpPos(pos);
+    UndoInfo ui;
+    while (node && (node->getNegaMaxScore() != INVALID_SCORE)) {
+        std::vector<Move> childMoves;
+        getOrderedChildMoves(*node, childMoves);
+        if (childMoves.empty())
+            break;
+        int s1 = node->getNegaMaxScore();
+        const Move& m = childMoves[0];
+        tmpPos.makeMove(m, ui);
+        node = getBookNode(tmpPos.bookHash());
+        int s2 = node->negateScore(node->getNegaMaxScore());
+        if ((s2 == INVALID_SCORE) || (s2 < s1))
+            break;
+        movesAfter.push_back(m);
+    }
+    return true;
+}
+
+
 BookNode*
 Book::getBookNode(U64 hashKey) const {
     auto it = bookNodes.find(hashKey);

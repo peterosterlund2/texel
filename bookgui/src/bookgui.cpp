@@ -301,7 +301,7 @@ BookGui::updateEnabledState() {
 //  pgnMaxPly->set_sensitive(true);
 
     // Start/stop buttons
-    startButton->set_sensitive(searchStopped);
+    startButton->set_sensitive(builderIdle);
     softStopButton->set_sensitive(searchState == SearchState::RUNNING);
     hardStopButton->set_sensitive(!searchStopped);
 
@@ -614,6 +614,7 @@ BookGui::getFocus() {
     setPosition(newPos, movesBefore, movesAfter);
     updateBoardAndTree();
     updatePGNSelection();
+    updateEnabledState();
 }
 
 void

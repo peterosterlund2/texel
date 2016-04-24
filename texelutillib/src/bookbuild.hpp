@@ -314,6 +314,14 @@ public:
     /** Write opening book to file. */
     void writeToFile(const std::string& filename);
 
+
+    /** Given a hash key, retrieve the corresponding book position,
+     * the best moves leading to the position, and the best continuation
+     * from the position. Return false if hashKey is not a book position. */
+    bool getBookPV(U64 hashKey, Position& pos,
+                   std::vector<Move>& movesBefore,
+                   std::vector<Move>& movesAfter) const;
+
     class PositionSelector {
     public:
         virtual ~PositionSelector() {}
@@ -430,7 +438,7 @@ private:
     BookData bookData;
 
     /** Protect concurrent read/write access to the book. */
-    std::mutex mutex;
+    mutable std::mutex mutex;
 
     std::weak_ptr<SearchScheduler> searchScheduler;
 
