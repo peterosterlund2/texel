@@ -45,6 +45,8 @@ class GameNode;
 
 namespace BookBuild {
 
+class SearchScheduler;
+
 // Node is temporarily ignored because it is currently being searched
 const int IGNORE_SCORE = SearchConst::UNKNOWN_SCORE + 1;
 
@@ -286,6 +288,9 @@ public:
                                const std::atomic<U64>& startHash,
                                const std::atomic<bool>& stopFlag);
 
+    /** Stop improving the opening book as soon as possible. */
+    void abortExtendBook();
+
     /** Add moves from a PGN file to the book. */
     void importPGN(const std::string& bookFile, const std::string& pgnFile, int maxPly);
 
@@ -427,6 +432,8 @@ private:
     /** Protect concurrent read/write access to the book. */
     std::mutex mutex;
 
+    std::weak_ptr<SearchScheduler> searchScheduler;
+
     /** Handle notifications when book is changed. */
     std::unique_ptr<Listener> listener;
 };
@@ -445,6 +452,9 @@ public:
                  const std::vector<Move>& movesToSearch,
                  int searchTime);
 
+    /** Stop search as soon as possible. */
+    void abort();
+
     int instNo() const { return instanceNo; }
 
 private:
@@ -456,6 +466,9 @@ private:
     ParallelData pd;
     TreeLogger treeLog;
     std::weak_ptr<Search> search;
+
+    std::mutex mutex;
+    bool aborted;
 };
 
 /** Handles work distribution to the search threads. */
@@ -473,8 +486,11 @@ public:
     /** Start the worker threads. Creates one thread for each SearchRunner object. */
     void startWorkers();
 
-    /** Wait for currently running WorkUnits to finish and then stops all threads. */
-    void stopWorkers();
+    /** Stop worker threads as soon as possible. */
+    void abort();
+
+    /** Return true if worker threads are being aborted. */
+    bool isAborting() const;
 
     struct WorkUnit {
         // Input
@@ -504,8 +520,11 @@ private:
     /** Worker thread main loop. */
     void workerLoop(SearchRunner& sr);
 
+    /** Wait for all WorkUnits to finish and then stops all threads. */
+    void waitWorkers();
+
     bool stopped;
-    std::mutex mutex;
+    mutable std::mutex mutex;
 
     std::vector<std::unique_ptr<SearchRunner>> workers;
     std::vector<std::unique_ptr<std::thread>> threads;

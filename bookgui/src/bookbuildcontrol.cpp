@@ -168,7 +168,8 @@ BookBuildControl::startSearch() {
 void
 BookBuildControl::stopSearch(bool immediate) {
     stopFlag.store(true);
-    // FIXME!! Handle "immediate"
+    if (immediate)
+        book->abortExtendBook();
 }
 
 void

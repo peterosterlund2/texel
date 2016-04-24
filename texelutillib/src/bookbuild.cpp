@@ -337,6 +337,14 @@ Book::interactiveExtendBook(int searchTime, int numThreads,
 }
 
 void
+Book::abortExtendBook() {
+    std::lock_guard<std::mutex> L(mutex);
+    std::shared_ptr<SearchScheduler> sched = searchScheduler.lock();
+    if (sched)
+        sched->abort();
+}
+
+void
 Book::importPGN(const std::string& bookFile, const std::string& pgnFile,
                 int maxPly) {
     readFromFile(bookFile);
@@ -709,12 +717,17 @@ Book::writeToFile(const std::string& filename) {
 void
 Book::extendBook(PositionSelector& selector, int searchTime, int numThreads,
                  TranspositionTable& tt) {
-    SearchScheduler scheduler;
-    for (int i = 0; i < numThreads; i++) {
-        auto sr = make_unique<SearchRunner>(i, tt);
-        scheduler.addWorker(std::move(sr));
+    std::shared_ptr<SearchScheduler> scheduler;
+    {
+        std::lock_guard<std::mutex> L(mutex);
+        scheduler = std::make_shared<SearchScheduler>();
+        searchScheduler = scheduler;
+        for (int i = 0; i < numThreads; i++) {
+            auto sr = make_unique<SearchRunner>(i, tt);
+            scheduler->addWorker(std::move(sr));
+        }
     }
-    scheduler.startWorkers();
+    scheduler->startWorkers();
 
     int numPending = 0;
     const int desiredQueueLen = numThreads + 1;
@@ -745,7 +758,7 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads,
                     wu.gameMoves = moveList;
                     wu.movesToSearch = getMovesToSearch(pos2);
                     wu.searchTime = searchTime;
-                    scheduler.addWorkUnit(wu);
+                    scheduler->addWorkUnit(wu);
                     numPending++;
                     addPending(hKey);
                     workAdded = true;
@@ -758,7 +771,7 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads,
             listener->queueChanged(numPending);
         if (!workAdded || (numPending >= desiredQueueLen)) {
             SearchScheduler::WorkUnit wu;
-            scheduler.getResult(wu);
+            scheduler->getResult(wu);
             completed.insert(wu);
             bool workRemoved = false;
             while (!completed.empty() && completed.begin()->id == commitId) {
@@ -769,12 +782,14 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads,
                 commitId++;
                 workRemoved = true;
                 removePending(wu.hashKey);
-                auto bn = getBookNode(wu.hashKey);
-                assert(bn);
-                bn->setSearchResult(bookData,
-                                    wu.bestMove, wu.bestMove.score(), wu.searchTime);
-                writeBackup(*bn);
-                scheduler.reportResult(wu);
+                if (!scheduler->isAborting()) {
+                    auto bn = getBookNode(wu.hashKey);
+                    assert(bn);
+                    bn->setSearchResult(bookData,
+                                        wu.bestMove, wu.bestMove.score(), wu.searchTime);
+                    writeBackup(*bn);
+                    scheduler->reportResult(wu);
+                }
             }
             if (workRemoved && listener && numPending > 0)
                 listener->queueChanged(numPending);
@@ -1233,7 +1248,7 @@ Book::getOrderedChildMoves(const BookNode& node, std::vector<Move>& moves) const
 // ----------------------------------------------------------------------------
 
 SearchRunner::SearchRunner(int instanceNo0, TranspositionTable& tt0)
-    : instanceNo(instanceNo0), tt(tt0), pd(tt) {
+    : instanceNo(instanceNo0), tt(tt0), pd(tt), aborted(false) {
 }
 
 Move
@@ -1270,13 +1285,15 @@ SearchRunner::analyze(const std::vector<Move>& gameMoves,
     kt.clear();
     ht.init();
     Search::SearchTables st(tt, kt, ht, et);
-    std::shared_ptr<Search> sc =
-            std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
-    search = sc;
-
-    int minTimeLimit = searchTime;
-    int maxTimeLimit = searchTime;
-    sc->timeLimit(minTimeLimit, maxTimeLimit);
+    std::shared_ptr<Search> sc;
+    {
+        std::lock_guard<std::mutex> L(mutex);
+        sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
+        search = sc;
+        int minTimeLimit = aborted ? 0 : searchTime;
+        int maxTimeLimit = aborted ? 0 : searchTime;
+        sc->timeLimit(minTimeLimit, maxTimeLimit);
+    }
 
     MoveList moveList;
     for (const Move& m : movesToSearch)
@@ -1293,12 +1310,22 @@ SearchRunner::analyze(const std::vector<Move>& gameMoves,
     return bestMove;
 }
 
+void
+SearchRunner::abort() {
+    std::lock_guard<std::mutex> L(mutex);
+    aborted = true;
+    std::shared_ptr<Search> sc = search.lock();
+    if (sc)
+        sc->timeLimit(0, 0);
+}
+
 SearchScheduler::SearchScheduler()
     : stopped(false) {
 }
 
 SearchScheduler::~SearchScheduler() {
-    stopWorkers();
+    abort();
+    waitWorkers();
 }
 
 void
@@ -1318,12 +1345,22 @@ SearchScheduler::startWorkers() {
 }
 
 void
-SearchScheduler::stopWorkers() {
-    {
-        std::lock_guard<std::mutex> L(mutex);
-        stopped = true;
-        pendingCv.notify_all();
-    }
+SearchScheduler::abort() {
+    std::lock_guard<std::mutex> L(mutex);
+    stopped = true;
+    for (auto& w : workers)
+        w->abort();
+    pendingCv.notify_all();
+}
+
+bool
+SearchScheduler::isAborting() const {
+    std::lock_guard<std::mutex> L(mutex);
+    return stopped;
+}
+
+void
+SearchScheduler::waitWorkers() {
     for (auto& t : threads) {
         t->join();
         t.reset();
@@ -1400,7 +1437,7 @@ SearchScheduler::workerLoop(SearchRunner& sr) {
             std::unique_lock<std::mutex> L(mutex);
             while (!stopped && pending.empty())
                 pendingCv.wait(L);
-            if (stopped)
+            if (stopped && pending.empty())
                 return;
             wu = pending.front();
             pending.pop_front();
