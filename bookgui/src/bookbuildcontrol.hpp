@@ -54,7 +54,7 @@ public:
         TREE,                // A book node has been updated after a finished search.
         QUEUE,               // The queue of pending searches has changed.
         PV,                  // The analysis principal variation has changed.
-        PROCESSING_COMPLETE, // Processing of opening book is complete.
+        PROCESSING_COMPLETE, // PGN import or book save complete.
         OPEN_COMPLETE        // Reading opening book is complete.
     };
 

@@ -95,6 +95,8 @@ BookBuildControl::readFromFile(const std::string& newFileName) {
 void
 BookBuildControl::saveToFile(const std::string& newFileName) {
     std::lock_guard<std::mutex> L(mutex);
+    if (bgThread2)
+        return;
     if (!newFileName.empty())
         filename = newFileName;
 
@@ -102,13 +104,13 @@ BookBuildControl::saveToFile(const std::string& newFileName) {
         book->writeToFile(filename);
         {
             std::lock_guard<std::mutex> L(mutex);
-            bgThread->detach();
-            bgThread.reset();
+            bgThread2->detach();
+            bgThread2.reset();
             bgThreadCv.notify_all();
         }
         notify(BookBuildControl::Change::PROCESSING_COMPLETE);
     };
-    bgThread = std::make_shared<std::thread>(f);
+    bgThread2 = std::make_shared<std::thread>(f);
 }
 
 std::string
@@ -236,6 +238,8 @@ BookBuildControl::getBookPV(const Position& pos, std::vector<Move>& movesBefore,
 void
 BookBuildControl::importPGN(const GameTree& gt, int maxPly) {
     std::lock_guard<std::mutex> L(mutex);
+    if (bgThread2)
+        return;
     auto f = [this, gt, maxPly]() {
         int nAdded = 0;
         GameNode gn = gt.getRootNode();
