@@ -701,6 +701,7 @@ Book::readFromFile(const std::string& filename) {
 
 void
 Book::writeToFile(const std::string& filename) {
+    std::lock_guard<std::mutex> L(mutex);
     std::ofstream os;
     os.open(filename.c_str(), std::ios_base::out |
                               std::ios_base::binary |
