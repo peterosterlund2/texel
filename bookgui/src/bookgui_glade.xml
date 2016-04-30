@@ -37,46 +37,12 @@
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
-  <object class="GtkListStore" id="queueTabStore">
-    <columns>
-      <!-- column-name no -->
-      <column type="gint"/>
-      <!-- column-name fen -->
-      <column type="gchararray"/>
-      <!-- column-name time -->
-      <column type="gint"/>
-    </columns>
-  </object>
   <object class="GtkAdjustment" id="threadsAdj">
     <property name="lower">1</property>
     <property name="upper">64</property>
     <property name="value">1</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
-  </object>
-  <object class="GtkTreeStore" id="treeTabStore">
-    <columns>
-      <!-- column-name moveNo -->
-      <column type="gint"/>
-      <!-- column-name move -->
-      <column type="gchararray"/>
-      <!-- column-name score -->
-      <column type="gint"/>
-      <!-- column-name pathErrW -->
-      <column type="gint"/>
-      <!-- column-name pathErrB -->
-      <column type="gint"/>
-      <!-- column-name expandCostW -->
-      <column type="gint"/>
-      <!-- column-name expandCostB -->
-      <column type="gint"/>
-      <!-- column-name weightW -->
-      <column type="gdouble"/>
-      <!-- column-name weightB -->
-      <column type="gdouble"/>
-      <!-- column-name searchTime -->
-      <column type="gint"/>
-    </columns>
   </object>
   <object class="GtkWindow" id="mainWindow">
     <property name="visible">True</property>
@@ -585,7 +551,7 @@
                       <object class="GtkTreeView" id="treeTreeView">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="model">treeTabStore</property>
+                        <property name="headers_visible">False</property>
                         <property name="search_column">0</property>
                         <child internal-child="selection">
                           <object class="GtkTreeSelection" id="treeview-selection"/>
@@ -614,7 +580,7 @@
                       <object class="GtkTreeView" id="queueTreeView">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="model">queueTabStore</property>
+                        <property name="headers_visible">False</property>
                         <property name="search_column">0</property>
                         <child internal-child="selection">
                           <object class="GtkTreeSelection" id="treeview-selection3"/>

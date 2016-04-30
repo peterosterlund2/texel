@@ -67,7 +67,7 @@ BookBuildControl::notify(Change change) {
 void
 BookBuildControl::newBook() {
     filename.clear();
-    book = make_unique<BookBuild::Book>("emptybook.log", params.bookDepthCost,
+    book = make_unique<BookBuild::Book>("emptybook.tbin.log", params.bookDepthCost,
                                         params.ownPathErrorCost,
                                         params.otherPathErrorCost);
 }
@@ -87,8 +87,7 @@ BookBuildControl::readFromFile(const std::string& newFileName) {
             bgThread.reset();
             bgThreadCv.notify_all();
         }
-        notify(BookBuildControl::Change::PROCESSING_COMPLETE);
-        notify(BookBuildControl::Change::TREE);
+        notify(BookBuildControl::Change::OPEN_COMPLETE);
     };
     bgThread = std::make_shared<std::thread>(f);
 }
@@ -191,9 +190,10 @@ BookBuildControl::numPendingBookTasks() const {
 
 // --------------------------------------------------------------------------------
 
-void
-BookBuildControl::getTreeData(const Position& pos, TreeData& treeData) const {
-
+bool
+BookBuildControl::getTreeData(const Position& pos,
+                              BookBuild::Book::TreeData& treeData) const {
+    return book->getTreeData(pos, treeData);
 }
 
 void
@@ -222,6 +222,13 @@ BookBuildControl::getFocus(Position& pos, std::vector<Move>& movesBefore,
 U64
 BookBuildControl::getFocusHash() const {
    return focusHash.load();
+}
+
+bool
+BookBuildControl::getBookPV(const Position& pos, std::vector<Move>& movesBefore,
+                            std::vector<Move>& movesAfter) const {
+    Position tmpPos;
+    return book->getBookPV(pos.bookHash(), tmpPos, movesBefore, movesAfter);
 }
 
 // --------------------------------------------------------------------------------

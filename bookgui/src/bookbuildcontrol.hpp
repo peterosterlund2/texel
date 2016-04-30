@@ -51,10 +51,11 @@ public:
 
     /** Changes that requires the GUI to be updated. */
     enum class Change {
-        TREE,               // A book node has been updated after a finished search.
-        QUEUE,              // The queue of pending searches has changed.
-        PV,                 // The analysis principal variation has changed.
-        PROCESSING_COMPLETE // Processing (reading, writing) of opening book is complete.
+        TREE,                // A book node has been updated after a finished search.
+        QUEUE,               // The queue of pending searches has changed.
+        PV,                  // The analysis principal variation has changed.
+        PROCESSING_COMPLETE, // Processing of opening book is complete.
+        OPEN_COMPLETE        // Reading opening book is complete.
     };
 
     /** Get state changes since last call to this method. */
@@ -105,29 +106,8 @@ public:
     int numPendingBookTasks() const;
 
 
-    struct TreeData {
-        struct Parent {
-            std::string fen;  // Parent position
-            std::string move; // Move from parent position leading to current position
-        };
-        std::vector<Parent> parents;
-
-        struct Child {
-            std::string move;  // Book move
-            int score;         // Negamax score from white's point of view
-            int pathErrW;      // Accumulated white path error
-            int pathErrB;      // Accumulated black path error
-            int expandCostW;   // Expansion cost when building book for white
-            int expandCostB;   // Expansion cost when building book for black
-            double weightW;    // Book move weight for white
-            double weightB;    // Book move weight for black
-        };
-        std::vector<Child> children; // Child moves, including the dropout move
-        int searchTime;        // Search time in ms for the dropout move
-    };
-
     /** Get information about the book node given by "pos". */
-    void getTreeData(const Position& pos, TreeData& treeData) const;
+    bool getTreeData(const Position& pos, BookBuild::Book::TreeData& treeData) const;
 
     struct BookData {
         int nNodes;
@@ -161,6 +141,9 @@ public:
     /** Get the book hash code for the focus position. */
     U64 getFocusHash() const;
 
+    /** Get the best book line passing through pos. */
+    bool getBookPV(const Position& pos, std::vector<Move>& movesBefore,
+                   std::vector<Move>& movesAfter) const;
 
     /** Add all positions up to depth "maxPly" to the book.
      *  This method must not be called when search threads are running. */

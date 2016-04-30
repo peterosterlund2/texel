@@ -442,6 +442,7 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
     std::vector<Move> moveList;
     for (auto& e : bookNodes) {
         const BookNode* node = e.second.get();
+        moveList.clear();
         if (!getPosition(node->getHashKey(), pos, moveList))
             assert(false);
         const bool wtm = pos.isWhiteMove();
@@ -1252,6 +1253,75 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath,
     std::cout << std::setw(10) << d2Str(wW) << ' '
               << std::setw(10) << d2Str(wB) << ' '
               << std::setw(8) << node->getSearchTime() << std::endl;
+}
+
+bool
+Book::getTreeData(const Position& pos, TreeData& treeData) const {
+    std::lock_guard<std::mutex> L(mutex);
+
+    treeData.parents.clear();
+    treeData.children.clear();
+
+    const BookNode* node = getBookNode(pos.bookHash());
+    if (!node)
+        return false;
+
+    for (const auto& p : node->getParents()) {
+        BookNode* parent = p.parent;
+        assert(parent);
+        Position parentPos;
+        std::vector<Move> moveList;
+        if (getPosition(parent->getHashKey(), parentPos, moveList)) {
+            TreeData::Parent parentData;
+            parentData.fen = TextIO::toFEN(parentPos);
+            Move move; move.setFromCompressed(p.compressedMove);
+            parentData.move = TextIO::moveToString(parentPos, move, true);
+            treeData.parents.push_back(parentData);
+        }
+    }
+
+    std::vector<Move> childMoves;
+    getOrderedChildMoves(*node, childMoves);
+    for (size_t mi = 0; mi < childMoves.size(); mi++) {
+        const Move& childMove = childMoves[mi];
+        auto it = node->getChildren().find(childMove.getCompressedMove());
+        assert(it != node->getChildren().end());
+        const BookNode* child = it->second;
+        int negaMaxScore = child->getNegaMaxScore();
+        if (pos.isWhiteMove())
+            negaMaxScore = BookNode::negateScore(negaMaxScore);
+
+        TreeData::Child childData;
+        childData.move = TextIO::moveToString(pos, childMove, false);
+        childData.score = negaMaxScore;
+        childData.pathErrW = child->getPathErrorWhite();
+        childData.pathErrB = child->getPathErrorBlack();
+        childData.expandCostW = node->getExpansionCost(bookData, child, true);
+        childData.expandCostB = node->getExpansionCost(bookData, child, false);
+
+        treeData.children.push_back(childData);
+    }
+
+    int errW, errB;
+    getDropoutPathErrors(*node, errW, errB);
+
+    int expCostW = node->getExpansionCost(bookData, nullptr, true);
+    int expCostB = node->getExpansionCost(bookData, nullptr, false);
+    if (node->getSearchScore() == IGNORE_SCORE)
+        expCostW = expCostB = INT_MAX;
+
+    TreeData::Child dropoutData;
+    dropoutData.move = node->getBestNonBookMove().isEmpty() ? "--" :
+                       TextIO::moveToString(pos, node->getBestNonBookMove(), false);
+    dropoutData.score = node->getSearchScore() * (pos.isWhiteMove() ? 1 : -1);
+    dropoutData.pathErrW = errW;
+    dropoutData.pathErrB = errB;
+    dropoutData.expandCostW = expCostW;
+    dropoutData.expandCostB = expCostB;
+    treeData.children.push_back(dropoutData);
+
+    treeData.searchTime = node->getSearchTime();
+    return true;
 }
 
 void

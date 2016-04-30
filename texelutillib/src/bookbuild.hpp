@@ -332,6 +332,28 @@ public:
     };
     friend class DropoutSelector;
 
+    struct TreeData {
+        struct Parent {
+            std::string fen;  // Parent position
+            std::string move; // Move from parent position leading to current position
+        };
+        std::vector<Parent> parents;
+
+        struct Child {
+            std::string move;  // Book move
+            int score;         // Negamax score from white's point of view
+            int pathErrW;      // Accumulated white path error
+            int pathErrB;      // Accumulated black path error
+            int expandCostW;   // Expansion cost when building book for white
+            int expandCostB;   // Expansion cost when building book for black
+        };
+        std::vector<Child> children; // Child moves, including the dropout move
+        int searchTime;        // Search time in ms for the dropout move
+    };
+
+    /** Get information about the book node given by "pos". */
+    bool getTreeData(const Position& pos, TreeData& treeData) const;
+
 private:
     /** Add root node if not already present. */
     void addRootNode();

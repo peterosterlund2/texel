@@ -170,6 +170,25 @@ BookGui::connectSignals() {
     builder->get_widget("analyzeToggle", analyzeToggle);
     analyzeToggle->signal_clicked().connect([this]{ toggleAnalyzeMode(); });
 
+    // Tree view
+    builder->get_widget("treeTreeView", treeView);
+    treeListStore = Gtk::ListStore::create(treeColumn);
+    treeView->set_model(treeListStore);
+    treeView->append_column("", treeColumn.column);
+    Gtk::TreeViewColumn* col0 = treeView->get_column(0);
+    Gtk::CellRendererText* rend = dynamic_cast<Gtk::CellRendererText*>(col0->get_first_cell());
+    rend->set_property("font-desc", Pango::FontDescription("monospace"));
+    treeView->signal_row_activated().connect(sigc::mem_fun(*this, &BookGui::treeRowActivated));
+
+    // Queue view
+    builder->get_widget("queueTreeView", queueView);
+    queueListStore = Gtk::ListStore::create(queueColumn);
+    queueView->set_model(queueListStore);
+    queueView->append_column("", queueColumn.column);
+    col0 = queueView->get_column(0);
+    rend = dynamic_cast<Gtk::CellRendererText*>(col0->get_first_cell());
+    rend->set_property("font-desc", Pango::FontDescription("monospace"));
+
     // PGN view
     builder->get_widget("pgnTextView", pgnTextView);
     pgnTextView->signal_button_press_event().connect(sigc::mem_fun(*this, &BookGui::pgnButtonPressed), false);
@@ -205,6 +224,12 @@ BookGui::bookStateChanged() {
             updateEnabled = true;
             processingBook = false;
             break;
+        case BookBuildControl::Change::OPEN_COMPLETE:
+            bookDirty = false;
+            updateEnabled = true;
+            processingBook = false;
+            updateBoardAndTree();
+            break;
         }
     }
     if (updateEnabled)
@@ -214,7 +239,90 @@ BookGui::bookStateChanged() {
 void
 BookGui::updateBoardAndTree() {
     chessBoard->queueDraw();
-    // FIXME!!
+
+    // Get current selection
+    bool oldSelection = false;
+    bool oldWasParent = false;
+    std::string oldMove;
+    Gtk::TreeModel::iterator iter = treeView->get_selection()->get_selected();
+    if (iter) {
+        Gtk::TreeModel::Path path = treeListStore->get_path(iter);
+        int idx = path[0];
+        int nParents = treeData.parents.size();
+        if (idx < nParents) {
+            oldSelection = true;
+            oldWasParent = true;
+            oldMove = treeData.parents[idx].move;
+        } else {
+            idx -= nParents;
+            if (idx < (int)treeData.children.size()) {
+                oldSelection = true;
+                oldWasParent = false;
+                oldMove = treeData.children[idx].move;
+            }
+        }
+    }
+
+    bool foundOld = false;
+    Gtk::TreeModel::Row rowToSelect;
+
+    // Update list
+    treeListStore->clear();
+    if (bbControl.getTreeData(pos, treeData)) {
+        int nParent = treeData.parents.size();
+        for (int pi = 0; pi < nParent; pi++) {
+            const auto& parent = treeData.parents[pi];
+            Position parentPos = TextIO::readFEN(parent.fen);
+            std::stringstream ss;
+            ss << parent.move << " : ";
+            ss << "hmc=" << parentPos.getHalfMoveClock();
+
+            Gtk::TreeModel::Row row = *treeListStore->append();
+            row[treeColumn.column] = ss.str();
+
+            if (!foundOld && oldSelection && oldWasParent && oldMove == parent.move) {
+                rowToSelect = row;
+                foundOld = true;
+            }
+        }
+
+        int nChild = treeData.children.size();
+        for (int mi = 0; mi < nChild; mi++) {
+            const auto& child = treeData.children[mi];
+            bool dropout = mi == nChild - 1;
+
+            std::stringstream ss;
+            if (dropout)
+                ss << std::setw(2) << "--" << ' ';
+            else
+                ss << std::setw(2) << mi << ' ';
+            ss << std::setw(6) << child.move << ' '
+               << std::setw(6) << child.score << ' '
+               << std::setw(6) << child.pathErrW << ' '
+               << std::setw(6) << child.pathErrB << ' ';
+            if (child.expandCostW == INT_MAX) {
+                ss << std::setw(6) << "--" << ' '
+                   << std::setw(6) << "--";
+            } else {
+                ss << std::setw(6) << child.expandCostW << ' '
+                   << std::setw(6) << child.expandCostB;
+            }
+            if (dropout)
+                ss << ' ' << treeData.searchTime;
+
+            Gtk::TreeModel::Row row = *treeListStore->append();
+            row[treeColumn.column] = ss.str();
+
+            if (!foundOld && oldSelection && !oldWasParent && oldMove == child.move) {
+                rowToSelect = row;
+                foundOld = true;
+            }
+        }
+    }
+
+    // Restore selection
+    if (foundOld)
+        treeView->get_selection()->select(rowToSelect);
 }
 
 void
@@ -768,6 +876,38 @@ BookGui::posGoForward() {
     nextMoves.erase(nextMoves.begin());
 
     setPosition(newPos, moves, nextMoves);
+    updateBoardAndTree();
+    updatePGNSelection();
+    updateEnabledState();
+}
+
+void
+BookGui::treeRowActivated(const Gtk::TreeModel::Path& path,
+                          Gtk::TreeViewColumn* column) {
+    int idx = path[0];
+    if (idx < 0)
+        return;
+
+    Position newPos;
+
+    if (idx < (int)treeData.parents.size()) {
+        const auto& parent = treeData.parents[idx];
+        newPos = TextIO::readFEN(parent.fen);
+    } else {
+        idx -= treeData.parents.size();
+        if (idx < (int)treeData.children.size()) {
+            Move move = TextIO::stringToMove(pos, treeData.children[idx].move);
+            UndoInfo ui;
+            newPos = pos;
+            newPos.makeMove(move, ui);
+        } else
+            return;
+    }
+    std::vector<Move> movesBefore, movesAfter;
+    if (!bbControl.getBookPV(newPos, movesBefore, movesAfter))
+        return;
+
+    setPosition(newPos, movesBefore, movesAfter);
     updateBoardAndTree();
     updatePGNSelection();
     updateEnabledState();

@@ -101,6 +101,8 @@ private:
     void nextGeneration();
     void toggleAnalyzeMode();
 
+    void treeRowActivated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
+
 
     Glib::RefPtr<Gtk::Application> app;
     Glib::RefPtr<Gtk::Builder> builder;
@@ -152,6 +154,27 @@ private:
     Gtk::Button* nextGenButton = nullptr;
     Gtk::ToggleButton* analyzeToggle = nullptr;
 
+    /** Tree model column definition for a single string column. */
+    class ListSingleColumn : public Gtk::TreeModel::ColumnRecord {
+    public:
+        ListSingleColumn() {
+            add(column);
+        }
+        Gtk::TreeModelColumn<Glib::ustring> column;
+    };
+
+    // Tree view
+    Gtk::TreeView* treeView = nullptr;
+    ListSingleColumn treeColumn;
+    Glib::RefPtr<Gtk::ListStore> treeListStore;
+    BookBuild::Book::TreeData treeData;
+
+    // Queue view
+    Gtk::TreeView* queueView = nullptr;
+    ListSingleColumn queueColumn;
+    Glib::RefPtr<Gtk::ListStore> queueListStore;
+
+    // PGN view
     Gtk::TextView* pvInfo = nullptr;
     Gtk::TextView* pgnTextView = nullptr;
     Glib::RefPtr<Gtk::TextBuffer::Tag> pgnCurrMoveTag;
