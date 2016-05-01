@@ -255,7 +255,6 @@ BookBuildControl::importPGN(const GameTree& gt, int maxPly) {
         int nAdded = 0;
         GameNode gn = gt.getRootNode();
         book->addToBook(maxPly, gn, nAdded);
-        // FIXME!! Newly imported nodes are not searched as soon as they should be.
         {
             std::lock_guard<std::mutex> L(mutex);
             bgThread2->detach();

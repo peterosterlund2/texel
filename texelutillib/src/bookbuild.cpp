@@ -44,11 +44,11 @@ BookNode::updateScores(const BookData& bookData) {
     std::set<BookNode*,Compare> toUpdate;
     toUpdate.insert(this);
 
+    BookNode* startNode = this;
+
     std::function<void(BookNode*,bool,bool,bool)> updateNegaMax =
-        [&updateNegaMax,&bookData,&toUpdate](BookNode* node,
-                                             bool updateThis,
-                                             bool updateChildren,
-                                             bool updateParents) {
+        [&updateNegaMax,&bookData,&toUpdate,startNode]
+         (BookNode* node, bool updateThis, bool updateChildren, bool updateParents) {
         if (!updateThis && (node->negaMaxScore != INVALID_SCORE))
             return;
         if (updateChildren) {
@@ -59,7 +59,7 @@ BookNode::updateScores(const BookData& bookData) {
         if (propagate)
             for (auto& e : node->children)
                 toUpdate.insert(e.second);
-        if (updateParents && propagate) {
+        if (updateParents && (propagate || node == startNode)) {
             for (auto& e : node->parents) {
                 BookNode* parent = e.parent;
                 assert(parent);
@@ -142,6 +142,8 @@ BookNode::getExpansionCost(const BookData& bookData, const BookNode* child,
     const int ownCost = bookData.ownPathErrorCost();
     const int otherCost = bookData.otherPathErrorCost();
     if (child) {
+        if (child->negaMaxScore == INVALID_SCORE)
+            return INVALID_SCORE;
         int moveError = (negaMaxScore == INVALID_SCORE) ? 1000 :
                         negaMaxScore - negateScore(child->negaMaxScore);
         assert(moveError >= 0);

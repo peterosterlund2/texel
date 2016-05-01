@@ -53,6 +53,7 @@ BookGui::run() {
     setPosition(TextIO::readFEN(TextIO::startPosFEN), {}, {});
     clearFocus();
     initParams();
+    updateBoardAndTree();
     updateEnabledState();
     app->run(*mainWindow);
 }
@@ -170,6 +171,9 @@ BookGui::connectSignals() {
     builder->get_widget("analyzeToggle", analyzeToggle);
     analyzeToggle->signal_clicked().connect([this]{ toggleAnalyzeMode(); });
 
+    // Status bar
+    builder->get_widget("statusbar", statusBar);
+
     // Tree view
     builder->get_widget("treeTreeView", treeView);
     treeListStore = Gtk::ListStore::create(treeColumn);
@@ -193,6 +197,12 @@ BookGui::connectSignals() {
     builder->get_widget("pgnTextView", pgnTextView);
     pgnTextView->signal_button_press_event().connect(sigc::mem_fun(*this, &BookGui::pgnButtonPressed), false);
     pgnTextView->set_events(Gdk::BUTTON_PRESS_MASK);
+}
+
+void
+BookGui::setStatusMsg(const std::string& msg) {
+    statusBar->remove_all_messages(0);
+    statusBar->push(msg, 0);
 }
 
 void
@@ -228,6 +238,7 @@ BookGui::bookStateChanged() {
             bookDirty = false;
             updateEnabled = true;
             processingBook = false;
+            setStatusMsg("");
             updateBoardAndTree();
             break;
         }
@@ -266,6 +277,20 @@ BookGui::updateBoardAndTree() {
     bool foundOld = false;
     Gtk::TreeModel::Row rowToSelect;
 
+    auto scoreStr = [](int score) -> std::string {
+        if (score == BookBuild::INVALID_SCORE)
+            return "INV";
+        else if (score == BookBuild::IGNORE_SCORE) {
+            return "IGN";
+        } else if (score == INT_MAX) {
+            return "--";
+        } else {
+            std::stringstream ss;
+            ss << score;
+            return ss.str();
+        }
+    };
+
     // Update list
     treeListStore->clear();
     if (bbControl.getTreeData(pos, treeData)) {
@@ -297,16 +322,11 @@ BookGui::updateBoardAndTree() {
             else
                 ss << std::setw(2) << mi << ' ';
             ss << std::setw(6) << child.move << ' '
-               << std::setw(6) << child.score << ' '
-               << std::setw(6) << child.pathErrW << ' '
-               << std::setw(6) << child.pathErrB << ' ';
-            if (child.expandCostW == INT_MAX) {
-                ss << std::setw(6) << "--" << ' '
-                   << std::setw(6) << "--";
-            } else {
-                ss << std::setw(6) << child.expandCostW << ' '
-                   << std::setw(6) << child.expandCostB;
-            }
+               << std::setw(6) << scoreStr(child.score) << ' '
+               << std::setw(6) << scoreStr(child.pathErrW) << ' '
+               << std::setw(6) << scoreStr(child.pathErrB) << ' ';
+            ss << std::setw(6) << scoreStr(child.expandCostW) << ' '
+               << std::setw(6) << scoreStr(child.expandCostB);
             if (dropout)
                 ss << ' ' << treeData.searchTime;
 
@@ -512,6 +532,7 @@ BookGui::openBookFile() {
 
     filename = dialog.get_filename();
     processingBook = true;
+    setStatusMsg("Reading opening book file: " + filename + " ...");
     bbControl.readFromFile(filename);
     updateEnabledState();
 }

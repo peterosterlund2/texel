@@ -44,6 +44,9 @@ private:
     void createChessBoard();
     void connectSignals();
 
+    /** Set the status bar message. */
+    void setStatusMsg(const std::string& msg);
+
     /** Called by book builder worker thread when book state has changed. */
     void notify() override;
 
@@ -153,6 +156,9 @@ private:
     // Analyze buttons
     Gtk::Button* nextGenButton = nullptr;
     Gtk::ToggleButton* analyzeToggle = nullptr;
+
+    // Status bar
+    Gtk::Statusbar* statusBar = nullptr;
 
     /** Tree model column definition for a single string column. */
     class ListSingleColumn : public Gtk::TreeModel::ColumnRecord {
