@@ -1241,9 +1241,12 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath,
         wW = errW <= maxErrSelf ? exp(-errB / errOtherExpConst) : 0.0;
         wB = errB <= maxErrSelf ? exp(-errW / errOtherExpConst) : 0.0;
     }
+    int searchScore = node->getSearchScore();
+    if (!pos.isWhiteMove())
+        searchScore = BookNode::negateScore(searchScore);
     std::cout << "-- "
               << std::setw(6) << moveS << ' '
-              << std::setw(6) << node->getSearchScore() * (pos.isWhiteMove() ? 1 : -1) << ' '
+              << std::setw(6) << searchScore << ' '
               << std::setw(6) << errW << ' '
               << std::setw(6) << errB << ' ';
     if (node->getSearchScore() == IGNORE_SCORE) {
@@ -1313,10 +1316,14 @@ Book::getTreeData(const Position& pos, TreeData& treeData) const {
     if (node->getSearchScore() == IGNORE_SCORE)
         expCostW = expCostB = INT_MAX;
 
+    int searchScore = node->getSearchScore();
+    if (!pos.isWhiteMove())
+        searchScore = BookNode::negateScore(searchScore);
+
     TreeData::Child dropoutData;
     dropoutData.move = node->getBestNonBookMove().isEmpty() ? "--" :
                        TextIO::moveToString(pos, node->getBestNonBookMove(), false);
-    dropoutData.score = node->getSearchScore() * (pos.isWhiteMove() ? 1 : -1);
+    dropoutData.score = searchScore;
     dropoutData.pathErrW = errW;
     dropoutData.pathErrB = errB;
     dropoutData.expandCostW = expCostW;
