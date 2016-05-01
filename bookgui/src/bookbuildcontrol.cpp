@@ -33,6 +33,7 @@
 BookBuildControl::BookBuildControl(ChangeListener& listener0)
     : listener(listener0), nPendingBookTasks(0), tt(27), pd(tt) {
     ComputerPlayer::initEngine();
+    setupTB();
     et = Evaluate::getEvalHashTables();
     newBook();
 }
@@ -43,6 +44,16 @@ BookBuildControl::~BookBuildControl() {
     std::unique_lock<std::mutex> L(mutex);
     while (bgThread || bgThread2)
         bgThreadCv.wait(L);
+}
+
+void
+BookBuildControl::setupTB() {
+    UciParams::gtbPath->set("/home/petero/chess/gtb");
+    UciParams::gtbCache->set("2047");
+    UciParams::rtbPath->set("/home/petero/chess/rtb/wdl:"
+                            "/home/petero/chess/rtb/dtz:"
+                            "/home/petero/chess/rtb/6wdl:"
+                            "/home/petero/chess/rtb/6dtz");
 }
 
 void
