@@ -142,8 +142,6 @@ BookNode::getExpansionCost(const BookData& bookData, const BookNode* child,
     const int ownCost = bookData.ownPathErrorCost();
     const int otherCost = bookData.otherPathErrorCost();
     if (child) {
-        if (child->negaMaxScore == INVALID_SCORE)
-            return INVALID_SCORE;
         int moveError = (negaMaxScore == INVALID_SCORE) ? 1000 :
                         negaMaxScore - negateScore(child->negaMaxScore);
         assert(moveError >= 0);
