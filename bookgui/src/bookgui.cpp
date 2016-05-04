@@ -101,9 +101,13 @@ BookGui::connectSignals() {
 
     // Chess board
     builder->get_widget("hashEntry", hashEntry);
-    hashEntry->signal_activate().connect([this]{ hashEntryChanged();});
+    hashEntry->signal_activate().connect([this]{ hashEntryChanged(nullptr); });
+    hashEntry->signal_focus_out_event().connect(sigc::mem_fun(*this, &BookGui::hashEntryChanged));
+    hashEntry->set_events(Gdk::FOCUS_CHANGE_MASK);
     builder->get_widget("fenEntry", fenEntry);
-    fenEntry->signal_activate().connect([this]{ fenEntryChanged();});
+    fenEntry->signal_activate().connect([this]{ fenEntryChanged(nullptr); });
+    fenEntry->signal_focus_out_event().connect(sigc::mem_fun(*this, &BookGui::fenEntryChanged));
+    fenEntry->set_events(Gdk::FOCUS_CHANGE_MASK);
 
     // Settings
     builder->get_widget("threads", threads);
@@ -457,15 +461,36 @@ BookGui::updateEnabledState() {
 
 // --------------------------------------------------------------------------------
 
-void
-BookGui::
-hashEntryChanged() {
+bool
+BookGui::hashEntryChanged(GdkEventFocus* e) {
+    std::string s = hashEntry->get_text();
+    U64 hashKey;
+    if (hexStr2Num(s, hashKey))
+        setPositionFromBookHash(hashKey);
+    return true;
+}
 
+bool
+BookGui::fenEntryChanged(GdkEventFocus* e) {
+    try {
+        Position pos = TextIO::readFEN(fenEntry->get_text());
+        setPositionFromBookHash(pos.bookHash());
+    } catch (const ChessParseError& e) {
+    }
+    return true;
 }
 
 void
-BookGui::fenEntryChanged() {
+BookGui::setPositionFromBookHash(U64 hash) {
+    std::vector<Move> movesBefore, movesAfter;
+    Position newPos;
+    if (!bbControl.getBookPV(hash, newPos, movesBefore, movesAfter))
+        return;
 
+    setPosition(newPos, movesBefore, movesAfter);
+    updateBoardAndTree();
+    updatePGNSelection();
+    updateEnabledState();
 }
 
 void
@@ -925,7 +950,7 @@ BookGui::treeRowActivated(const Gtk::TreeModel::Path& path,
             return;
     }
     std::vector<Move> movesBefore, movesAfter;
-    if (!bbControl.getBookPV(newPos, movesBefore, movesAfter))
+    if (!bbControl.getBookPV(newPos.bookHash(), newPos, movesBefore, movesAfter))
         return;
 
     setPosition(newPos, movesBefore, movesAfter);

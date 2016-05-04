@@ -61,8 +61,9 @@ private:
     void updatePGNSelection();
     void updateEnabledState();
 
-    void hashEntryChanged();
-    void fenEntryChanged();
+    bool hashEntryChanged(GdkEventFocus* e);
+    bool fenEntryChanged(GdkEventFocus* e);
+    void setPositionFromBookHash(U64 hash);
     void setPosition(const Position& newPos, const std::vector<Move>& movesBefore,
                      const std::vector<Move>& movesAfter);
 

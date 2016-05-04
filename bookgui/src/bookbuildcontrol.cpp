@@ -238,10 +238,9 @@ BookBuildControl::getFocusHash() const {
 }
 
 bool
-BookBuildControl::getBookPV(const Position& pos, std::vector<Move>& movesBefore,
+BookBuildControl::getBookPV(U64 bookHash, Position& pos, std::vector<Move>& movesBefore,
                             std::vector<Move>& movesAfter) const {
-    Position tmpPos;
-    return book->getBookPV(pos.bookHash(), tmpPos, movesBefore, movesAfter);
+    return book->getBookPV(bookHash, pos, movesBefore, movesAfter);
 }
 
 // --------------------------------------------------------------------------------

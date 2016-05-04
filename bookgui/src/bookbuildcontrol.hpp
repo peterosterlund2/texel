@@ -141,8 +141,8 @@ public:
     /** Get the book hash code for the focus position. */
     U64 getFocusHash() const;
 
-    /** Get the best book line passing through pos. */
-    bool getBookPV(const Position& pos, std::vector<Move>& movesBefore,
+    /** Get the best book line passing through pos, where pos is specified by hash code. */
+    bool getBookPV(U64 bookHash, Position& pos, std::vector<Move>& movesBefore,
                    std::vector<Move>& movesAfter) const;
 
     /** Add all positions up to depth "maxPly" to the book.
