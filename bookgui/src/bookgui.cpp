@@ -103,11 +103,9 @@ BookGui::connectSignals() {
     builder->get_widget("hashEntry", hashEntry);
     hashEntry->signal_activate().connect([this]{ hashEntryChanged(nullptr); });
     hashEntry->signal_focus_out_event().connect(sigc::mem_fun(*this, &BookGui::hashEntryChanged));
-    hashEntry->set_events(Gdk::FOCUS_CHANGE_MASK);
     builder->get_widget("fenEntry", fenEntry);
     fenEntry->signal_activate().connect([this]{ fenEntryChanged(nullptr); });
     fenEntry->signal_focus_out_event().connect(sigc::mem_fun(*this, &BookGui::fenEntryChanged));
-    fenEntry->set_events(Gdk::FOCUS_CHANGE_MASK);
 
     // Settings
     builder->get_widget("threads", threads);
