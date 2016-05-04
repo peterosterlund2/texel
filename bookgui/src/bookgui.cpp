@@ -279,13 +279,22 @@ BookGui::updateBoardAndTree() {
     bool foundOld = false;
     Gtk::TreeModel::Row rowToSelect;
 
-    auto scoreStr = [](int score) -> std::string {
+    auto scoreStr = [](int score, bool handleMate = false) -> std::string {
+        using namespace SearchConst;
         if (score == BookBuild::INVALID_SCORE)
             return "INV";
         else if (score == BookBuild::IGNORE_SCORE) {
             return "IGN";
         } else if (score == INT_MAX) {
             return "--";
+        } else if (handleMate && isWinScore(score)) {
+            std::stringstream ss;
+            ss << "M" << (MATE0 - score) / 2;
+            return ss.str();
+        } else if (handleMate && isLoseScore(score)) {
+            std::stringstream ss;
+            ss << "-M" << ((MATE0 + score - 1) / 2);
+            return ss.str();
         } else {
             std::stringstream ss;
             ss << score;
@@ -324,7 +333,7 @@ BookGui::updateBoardAndTree() {
             else
                 ss << std::setw(2) << mi << ' ';
             ss << std::setw(6) << child.move << ' '
-               << std::setw(6) << scoreStr(child.score) << ' '
+               << std::setw(6) << scoreStr(child.score, true) << ' '
                << std::setw(6) << scoreStr(child.pathErrW) << ' '
                << std::setw(6) << scoreStr(child.pathErrB) << ' ';
             ss << std::setw(6) << scoreStr(child.expandCostW) << ' '
