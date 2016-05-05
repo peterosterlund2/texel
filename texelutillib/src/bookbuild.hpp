@@ -38,6 +38,7 @@
 #include <unordered_map>
 #include <map>
 #include <climits>
+#include <chrono>
 
 class BookBuildTest;
 class GameNode;
@@ -354,6 +355,20 @@ public:
     /** Get information about the book node given by "pos". */
     bool getTreeData(const Position& pos, TreeData& treeData) const;
 
+    struct QueueData {
+        struct Item {
+            using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
+            U64 hashKey;           // Hash key for root position of search
+            TimePoint startTime;   // Time (in ms since epoch) when search started
+            bool completed;        // True if search is completed
+        };
+        std::vector<Item> items;
+    };
+
+    /** Get information about the currently running search jobs,
+     *  and the last N completed jobs. */
+    void getQueueData(QueueData& queueData) const;
+
 private:
     /** Add root node if not already present. */
     void addRootNode();
@@ -546,6 +561,10 @@ public:
     /** Report finished WorkUnit information to cout. */
     void reportResult(const WorkUnit& wu) const;
 
+    /** Get information about the currently running search jobs,
+     *  and the last N completed jobs. */
+    void getQueueData(Book::QueueData& queueData) const;
+
 private:
     /** Worker thread main loop. */
     void workerLoop(SearchRunner& sr);
@@ -564,6 +583,11 @@ private:
 
     std::deque<WorkUnit> complete;
     std::condition_variable completeCv;
+
+    // Information about current search jobs
+    using QueueItem = Book::QueueData::Item;
+    std::map<int, QueueItem> runningItems;
+    std::deque<QueueItem> finishedItems;
 };
 
 // ----------------------------------------------------------------------------

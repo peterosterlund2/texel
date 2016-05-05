@@ -117,18 +117,9 @@ public:
     /** Get book statistics. */
     void getBookData(BookData& bookData) const;
 
-    struct QueueData {
-        struct Item {
-            std::string fen;  // Root position of search
-            int searchTime;   // Time in ms since search started
-            bool completed;   // True if search is completed.
-        };
-        std::vector<Item> items;
-    };
-
     /** Get information about the currently running search jobs,
      *  and the last N completed jobs. */
-    void getQueueData(QueueData& queueData) const;
+    void getQueueData(BookBuild::Book::QueueData& queueData) const;
 
 
     /** When selecting a position to expand, do not consider positions before "pos".  */

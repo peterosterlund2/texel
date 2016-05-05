@@ -215,8 +215,8 @@ BookBuildControl::getBookData(BookData& bookData) const {
 }
 
 void
-BookBuildControl::getQueueData(QueueData& queueData) const {
-
+BookBuildControl::getQueueData(BookBuild::Book::QueueData& queueData) const {
+    book->getQueueData(queueData);
 }
 
 // --------------------------------------------------------------------------------

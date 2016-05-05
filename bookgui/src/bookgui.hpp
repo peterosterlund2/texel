@@ -106,6 +106,7 @@ private:
     void toggleAnalyzeMode();
 
     void treeRowActivated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
+    void queueRowActivated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
 
 
     Glib::RefPtr<Gtk::Application> app;
@@ -180,6 +181,7 @@ private:
     Gtk::TreeView* queueView = nullptr;
     ListSingleColumn queueColumn;
     Glib::RefPtr<Gtk::ListStore> queueListStore;
+    BookBuild::Book::QueueData queueData;
 
     // PGN view
     Gtk::TextView* pvInfo = nullptr;

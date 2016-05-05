@@ -194,6 +194,7 @@ BookGui::connectSignals() {
     col0 = queueView->get_column(0);
     rend = dynamic_cast<Gtk::CellRendererText*>(col0->get_first_cell());
     rend->set_property("font-desc", Pango::FontDescription("monospace"));
+    queueView->signal_row_activated().connect(sigc::mem_fun(*this, &BookGui::queueRowActivated));
 
     // PGN view
     builder->get_widget("pgnTextView", pgnTextView);
@@ -276,9 +277,6 @@ BookGui::updateBoardAndTree() {
         }
     }
 
-    bool foundOld = false;
-    Gtk::TreeModel::Row rowToSelect;
-
     auto scoreStr = [](int score, bool handleMate = false) -> std::string {
         using namespace SearchConst;
         if (score == BookBuild::INVALID_SCORE)
@@ -316,10 +314,8 @@ BookGui::updateBoardAndTree() {
             Gtk::TreeModel::Row row = *treeListStore->append();
             row[treeColumn.column] = ss.str();
 
-            if (!foundOld && oldSelection && oldWasParent && oldMove == parent.move) {
-                rowToSelect = row;
-                foundOld = true;
-            }
+            if (oldSelection && oldWasParent && oldMove == parent.move)
+                treeView->get_selection()->select(row);
         }
 
         int nChild = treeData.children.size();
@@ -344,16 +340,10 @@ BookGui::updateBoardAndTree() {
             Gtk::TreeModel::Row row = *treeListStore->append();
             row[treeColumn.column] = ss.str();
 
-            if (!foundOld && oldSelection && !oldWasParent && oldMove == child.move) {
-                rowToSelect = row;
-                foundOld = true;
-            }
+            if (oldSelection && !oldWasParent && oldMove == child.move)
+                treeView->get_selection()->select(row);
         }
     }
-
-    // Restore selection
-    if (foundOld)
-        treeView->get_selection()->select(rowToSelect);
 }
 
 void
@@ -364,8 +354,45 @@ BookGui::updateHashFenEntry() {
 
 void
 BookGui::updateQueueView() {
-    // FIXME!!
-    std::cout << "queue:" << bbControl.numPendingBookTasks() << std::endl;
+    // Get current selection
+    bool oldSelection = false;
+    U64 oldHashKey = 0;
+    BookBuild::Book::QueueData::Item::TimePoint oldStartTime;
+    Gtk::TreeModel::iterator iter = queueView->get_selection()->get_selected();
+    if (iter) {
+        Gtk::TreeModel::Path path = queueListStore->get_path(iter);
+        int idx = path[0];
+        if (idx < (int)queueData.items.size()) {
+            oldSelection = true;
+            oldHashKey = queueData.items[idx].hashKey;
+            oldStartTime = queueData.items[idx].startTime;
+        }
+    }
+
+    // Update list
+    queueListStore->clear();
+    bbControl.getQueueData(queueData);
+    for (const auto& item : queueData.items) {
+        using namespace std::chrono;
+        milliseconds ms0 = duration_cast<milliseconds>(item.startTime.time_since_epoch());
+        seconds sec = duration_cast<seconds>(ms0);
+        std::time_t tt = sec.count();
+        int ms = ms0.count() % 1000;
+        std::tm* tm = std::localtime(&tt);
+
+        std::stringstream ss;
+        ss << (item.completed ? 1 : 0) << std::setfill('0')
+           << ' ' << std::setw(2) << tm->tm_hour
+           << ':' << std::setw(2) << tm->tm_min
+           << ':' << std::setw(2) << tm->tm_sec
+           << '.' << std::setw(3) << ms
+           << ' ' << num2Hex(item.hashKey);
+        Gtk::TreeModel::Row row = *queueListStore->append();
+        row[queueColumn.column] = ss.str();
+
+        if (oldSelection && oldHashKey == item.hashKey && oldStartTime == item.startTime)
+            queueView->get_selection()->select(row);
+    }
 }
 
 void
@@ -958,6 +985,25 @@ BookGui::treeRowActivated(const Gtk::TreeModel::Path& path,
     }
     std::vector<Move> movesBefore, movesAfter;
     if (!bbControl.getBookPV(newPos.bookHash(), newPos, movesBefore, movesAfter))
+        return;
+
+    setPosition(newPos, movesBefore, movesAfter);
+    updateBoardAndTree();
+    updatePGNSelection();
+    updateEnabledState();
+}
+
+void
+BookGui::queueRowActivated(const Gtk::TreeModel::Path& path,
+                           Gtk::TreeViewColumn* column) {
+    int idx = path[0];
+    if ((idx < 0) || (idx >= (int)queueData.items.size()))
+        return;
+
+    const auto& item = queueData.items[idx];
+    Position newPos;
+    std::vector<Move> movesBefore, movesAfter;
+    if (!bbControl.getBookPV(item.hashKey, newPos, movesBefore, movesAfter))
         return;
 
     setPosition(newPos, movesBefore, movesAfter);

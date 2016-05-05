@@ -1352,6 +1352,14 @@ Book::getOrderedChildMoves(const BookNode& node, std::vector<Move>& moves) const
     }
 }
 
+void
+Book::getQueueData(QueueData& queueData) const {
+    queueData.items.clear();
+    std::shared_ptr<SearchScheduler> sched = searchScheduler.lock();
+    if (sched)
+        sched->getQueueData(queueData);
+}
+
 // ----------------------------------------------------------------------------
 
 SearchRunner::SearchRunner(int instanceNo0, TranspositionTable& tt0)
@@ -1540,6 +1548,7 @@ void
 SearchScheduler::workerLoop(SearchRunner& sr) {
     while (true) {
         WorkUnit wu;
+        QueueItem item;
         {
             std::unique_lock<std::mutex> L(mutex);
             while (!stopped && pending.empty())
@@ -1548,6 +1557,11 @@ SearchScheduler::workerLoop(SearchRunner& sr) {
                 return;
             wu = pending.front();
             pending.pop_front();
+
+            item.hashKey = wu.hashKey;
+            item.startTime = std::chrono::system_clock::now();
+            item.completed = false;
+            runningItems[sr.instNo()] = item;
         }
         wu.bestMove = sr.analyze(wu.gameMoves, wu.movesToSearch, wu.searchTime);
         wu.instNo = sr.instNo();
@@ -1557,8 +1571,24 @@ SearchScheduler::workerLoop(SearchRunner& sr) {
             complete.push_back(wu);
             if (empty)
                 completeCv.notify_all();
+
+            runningItems.erase(sr.instNo());
+            item.completed = true;
+            finishedItems.push_back(item);
+            while (finishedItems.size() > 10)
+                finishedItems.pop_front();
         }
     }
+}
+
+void
+SearchScheduler::getQueueData(Book::QueueData& queueData) const {
+    std::lock_guard<std::mutex> L(mutex);
+    for (auto& e : runningItems)
+        queueData.items.push_back(e.second);
+    std::sort(queueData.items.begin(), queueData.items.end(),
+              [](const QueueItem& a, const QueueItem& b) { return a.startTime < b.startTime; });
+    queueData.items.insert(queueData.items.begin(), finishedItems.begin(), finishedItems.end());
 }
 
 } // Namespace BookBuild
