@@ -910,8 +910,11 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 score = futilityScore;
             } else {
 #ifdef HAS_PREFETCH
-                if (pass == 1)
-                    tt.prefetch(pos.hashAfterMove(m));
+                if (pass == 1) {
+                    U64 nextHash = pos.hashAfterMove(m);
+                    tt.prefetch(nextHash);
+                    eval.prefetch(nextHash);
+                }
 #endif
                 if ((mi == 0) && m.equals(sti.singularMove))
                     continue;

@@ -161,6 +161,7 @@ Evaluate::Evaluate(EvalHashTables& et)
     : pawnHash(et.pawnHash),
       materialHash(et.materialHash),
       kingSafetyHash(et.kingSafetyHash),
+      evalHash(et.evalHash),
       wKingZone(0), bKingZone(0),
       wKingAttacks(0), bKingAttacks(0),
       wAttacksBB(0), bAttacksBB(0),
@@ -180,6 +181,15 @@ Evaluate::evalPosPrint(const Position& pos) {
 template <bool print>
 inline int
 Evaluate::evalPos(const Position& pos) {
+    const bool useHashTable = !print;
+    EvalHashData* ehd = nullptr;
+    U64 key = pos.zobristHash();
+    if (useHashTable) {
+        ehd = &getEvalHashEntry(evalHash, key);
+        if ((ehd->data ^ key) < (1 << 16))
+            return (ehd->data & 0xffff) - (1 << 15);
+    }
+
     int score = materialScore(pos, print);
 
     wKingAttacks = bKingAttacks = 0;
@@ -230,6 +240,10 @@ Evaluate::evalPos(const Position& pos) {
 
     if (!pos.isWhiteMove())
         score = -score;
+
+    if (useHashTable)
+        ehd->data = (key & 0xffffffffffff0000ULL) + (score + (1 << 15));
+
     return score;
 }
 

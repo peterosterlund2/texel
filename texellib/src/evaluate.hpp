@@ -72,12 +72,20 @@ private:
         S16 current;        // For hash replacement policy
     };
 
+    struct EvalHashData {
+        EvalHashData();
+        U64 data;    // 0-15: Score, 16-63 hash key
+    };
+
 public:
     struct EvalHashTables {
         EvalHashTables();
         std::vector<PawnHashData> pawnHash;
         std::vector<MaterialHashData> materialHash;
         vector_aligned<KingSafetyHashData> kingSafetyHash;
+
+        using EvalHashType = std::array<EvalHashData,(1<<16)>;
+        EvalHashType evalHash;
     };
 
     /** Constructor. */
@@ -90,6 +98,9 @@ public:
 
     /** Get evaluation hash tables. */
     static std::unique_ptr<EvalHashTables> getEvalHashTables();
+
+    /** Prefetch hash table cache lines. */
+    void prefetch(U64 key);
 
     /**
      * Static evaluation of a position.
@@ -124,6 +135,8 @@ public:
 
 private:
     template <bool print> int evalPos(const Position& pos);
+
+    EvalHashData& getEvalHashEntry(EvalHashTables::EvalHashType& evalHash, U64 key);
 
     /** Compute score based on piece square tables. Positive values are good for white. */
     int pieceSquareEval(const Position& pos);
@@ -185,6 +198,7 @@ private:
     const MaterialHashData* mhd;
 
     vector_aligned<KingSafetyHashData>& kingSafetyHash;
+    EvalHashTables::EvalHashType& evalHash;
 
      // King safety variables
     U64 wKingZone, bKingZone;       // Squares close to king that are worth attacking
@@ -217,10 +231,22 @@ Evaluate::KingSafetyHashData::KingSafetyHashData()
 }
 
 inline
+Evaluate::EvalHashData::EvalHashData()
+    : data(0xffffffffffff0000ULL) {
+}
+
+inline
 Evaluate::EvalHashTables::EvalHashTables() {
-    pawnHash.resize(1<<16);
+    pawnHash.resize(1 << 16);
     kingSafetyHash.resize(1 << 15);
     materialHash.resize(1 << 14);
+}
+
+inline void
+Evaluate::prefetch(U64 key) {
+#ifdef HAS_PREFETCH
+    __builtin_prefetch(&getEvalHashEntry(evalHash, key));
+#endif
 }
 
 inline int
@@ -273,6 +299,12 @@ Evaluate::getPawnHashEntry(std::vector<Evaluate::PawnHashData>& pawnHash, U64 ke
         pawnHash[e1].current = 0;
         return pawnHash[e0];
     }
+}
+
+inline Evaluate::EvalHashData&
+Evaluate::getEvalHashEntry(EvalHashTables::EvalHashType& evalHash, U64 key) {
+    int e0 = (int)key & (evalHash.size() - 1);
+    return evalHash[e0];
 }
 
 inline Evaluate::KingSafetyHashData&
