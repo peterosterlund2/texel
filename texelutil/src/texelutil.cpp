@@ -28,7 +28,7 @@
 #include "spsa.hpp"
 #include "bookbuild.hpp"
 #include "proofgame.hpp"
-
+#include "matchbookcreator.hpp"
 #include "tbgen.hpp"
 #include "parameters.hpp"
 #include "chessParseError.hpp"
@@ -136,6 +136,8 @@ usage() {
     std::cerr << "                                            : Export as polyglot book\n";
     std::cerr << " book query bookFile maxErrSelf errOtherExpConst : Interactive query mode\n";
     std::cerr << " book stats bookFile                        : Print book statistics\n";
+    std::cerr << "\n";
+    std::cerr << " creatematchbook depth searchTime\n";
     std::cerr << "\n";
     std::cerr << " proofgame [-w a:b] [-i \"initFen\"] \"goalFen\"\n";
     std::cerr << std::flush;
@@ -588,6 +590,15 @@ main(int argc, char* argv[]) {
             } else {
                 usage();
             }
+        } else if (cmd == "creatematchbook") {
+            if (argc != 4)
+                usage();
+            int depth, searchTime;
+            if (!str2Num(argv[2], depth) || (depth < 0) ||
+                !str2Num(argv[3], searchTime) || (searchTime <= 0))
+                usage();
+            MatchBookCreator mbc;
+            mbc.createBook(depth, searchTime, std::cout);
         } else if (cmd == "proofgame") {
             std::string initFen, goalFen;
             int a = 1, b = 1;
