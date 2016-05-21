@@ -45,6 +45,12 @@ public:
      * is computed for each position by searching for "searchTime"
      * milliseconds. */
     void createBook(int depth, int searchTime, std::ostream& os);
+
+    /** Count number of unique positions in pgnFile at depth <= d
+     *  for all d up to the longest game in pgnFile.
+     *  PGN variations are ignored. */
+    void countUniq(const std::string& pgnFile, std::ostream& os);
+
 private:
     struct BookLine {
         BookLine() = default;

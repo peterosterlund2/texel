@@ -137,7 +137,8 @@ usage() {
     std::cerr << " book query bookFile maxErrSelf errOtherExpConst : Interactive query mode\n";
     std::cerr << " book stats bookFile                        : Print book statistics\n";
     std::cerr << "\n";
-    std::cerr << " creatematchbook depth searchTime\n";
+    std::cerr << " creatematchbook depth searchTime : Analyze  positions in perft(depth)\n";
+    std::cerr << " countuniq pgnFile : Count number of unique positions as function of depth\n";
     std::cerr << "\n";
     std::cerr << " proofgame [-w a:b] [-i \"initFen\"] \"goalFen\"\n";
     std::cerr << std::flush;
@@ -599,6 +600,12 @@ main(int argc, char* argv[]) {
                 usage();
             MatchBookCreator mbc;
             mbc.createBook(depth, searchTime, std::cout);
+        } else if (cmd == "countuniq") {
+            if (argc != 3)
+                usage();
+            std::string pgnFile = argv[2];
+            MatchBookCreator mbc;
+            mbc.countUniq(pgnFile, std::cout);
         } else if (cmd == "proofgame") {
             std::string initFen, goalFen;
             int a = 1, b = 1;
