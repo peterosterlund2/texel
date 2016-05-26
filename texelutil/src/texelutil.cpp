@@ -139,6 +139,8 @@ usage() {
     std::cerr << "\n";
     std::cerr << " creatematchbook depth searchTime : Analyze  positions in perft(depth)\n";
     std::cerr << " countuniq pgnFile : Count number of unique positions as function of depth\n";
+    std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file.\n";
+    std::cerr << "           -p : Consider game pairs when computing standard deviation.\n";
     std::cerr << "\n";
     std::cerr << " proofgame [-w a:b] [-i \"initFen\"] \"goalFen\"\n";
     std::cerr << std::flush;
@@ -606,6 +608,19 @@ main(int argc, char* argv[]) {
             std::string pgnFile = argv[2];
             MatchBookCreator mbc;
             mbc.countUniq(pgnFile, std::cout);
+        } else if (cmd == "pgnstat") {
+            if (argc < 3 || argc > 4)
+                usage();
+            bool pairMode = false;
+            if (argc == 4) {
+                if (argv[3] == std::string("-p"))
+                    pairMode = true;
+                else
+                    usage();
+            }
+            std::string pgnFile = argv[2];
+            MatchBookCreator mbc;
+            mbc.pgnStat(pgnFile, pairMode, std::cout);
         } else if (cmd == "proofgame") {
             std::string initFen, goalFen;
             int a = 1, b = 1;

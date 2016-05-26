@@ -51,6 +51,9 @@ public:
      *  PGN variations are ignored. */
     void countUniq(const std::string& pgnFile, std::ostream& os);
 
+    /** Print statistics about all games in pgnFile. */
+    void pgnStat(const std::string& pgnFile, bool pairMode, std::ostream& os);
+
 private:
     struct BookLine {
         BookLine() = default;
