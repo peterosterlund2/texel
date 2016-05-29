@@ -323,7 +323,7 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
             }
             os << pi.getName() << " : WDL: " << win << " - " << draw << " - " << loss
                       << " m: " << mean << " sDev: " << sDev;
-            if (mean > 0.5 && sDev > 0) {
+            if (sDev > 0) {
                 std::stringstream ss;
                 ss.precision(2);
                 ss << std::fixed << (mean - 0.5) / sDev;
