@@ -1241,7 +1241,8 @@ Book::printBookInfo(Position& pos, const std::vector<Move>& movePath,
     }
     int searchScore = node->getSearchScore();
     if (!pos.isWhiteMove())
-        searchScore = BookNode::negateScore(searchScore);
+        if (searchScore != IGNORE_SCORE && searchScore != INVALID_SCORE)
+            searchScore = -searchScore;
     std::cout << "-- "
               << std::setw(6) << moveS << ' '
               << std::setw(6) << searchScore << ' '
@@ -1316,7 +1317,8 @@ Book::getTreeData(const Position& pos, TreeData& treeData) const {
 
     int searchScore = node->getSearchScore();
     if (!pos.isWhiteMove())
-        searchScore = BookNode::negateScore(searchScore);
+        if (searchScore != IGNORE_SCORE && searchScore != INVALID_SCORE)
+            searchScore = -searchScore;
 
     TreeData::Child dropoutData;
     dropoutData.move = node->getBestNonBookMove().isEmpty() ? "--" :
@@ -1389,7 +1391,7 @@ SearchRunner::analyze(const std::vector<Move>& gameMoves,
         int bestScore = IGNORE_SCORE;
         if (legalMoves.size == 0) {
             if (MoveGen::inCheck(pos))
-                bestScore = -SearchConst::MATE0;
+                bestScore = -SearchConst::MATE0 + 1;
             else
                 bestScore = 0; // stalemate
         }
