@@ -183,7 +183,7 @@ inline int
 Evaluate::evalPos(const Position& pos) {
     const bool useHashTable = !print;
     EvalHashData* ehd = nullptr;
-    U64 key = pos.zobristHash();
+    U64 key = pos.historyHash();
     if (useHashTable) {
         ehd = &getEvalHashEntry(evalHash, key);
         if ((ehd->data ^ key) < (1 << 16))
