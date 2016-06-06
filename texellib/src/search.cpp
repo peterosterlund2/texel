@@ -199,7 +199,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             int betaRetryDelta = aspirationDelta;
             int alphaRetryDelta = aspirationDelta;
             while ((score >= beta) || ((mi < maxPV) && (score <= alpha))) {
-                if (!knownLoss && !rootMoves[mi].knownLoss && isLoseScore(score))
+                if (!knownLoss && !rootMoves[mi].knownLoss && isLoseScore(score) && (score <= alpha))
                     break;
                 nodesThisMove -= totalNodes;
                 posHashList[posHashListSize++] = pos.zobristHash();
