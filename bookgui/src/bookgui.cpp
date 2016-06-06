@@ -236,6 +236,7 @@ BookGui::bookStateChanged() {
         case BookBuildControl::Change::PROCESSING_COMPLETE:
             updateEnabled = true;
             processingBook = false;
+            updateBoardAndTree();
             break;
         case BookBuildControl::Change::OPEN_COMPLETE:
             bookDirty = false;
@@ -253,6 +254,9 @@ BookGui::bookStateChanged() {
 void
 BookGui::updateBoardAndTree() {
     chessBoard->queueDraw();
+
+    if (processingBook)
+        return;
 
     // Get current selection
     bool oldSelection = false;
