@@ -439,6 +439,11 @@ TBTest::rtbTest() {
     dtz = Syzygy::probe_dtz(pos, &success);
     ASSERT_EQUAL(1, success);
     ASSERT_EQUAL(-2, dtz);
+
+    pos = TextIO::readFEN("3K4/8/3k4/8/4p3/4B3/5P2/8 w - - 0 5");
+    dtz = Syzygy::probe_dtz(pos, &success);
+    ASSERT_EQUAL(1, success);
+    ASSERT_EQUAL(15, dtz);
 }
 
 /** Test TBProbe::tbProbe() function. */
