@@ -204,6 +204,14 @@ public:
         scoreSum2 += score * score;
     }
 
+    /** Add average search depth information for this player and the opponent player. */
+    void addDepth(int myMoveSum, int myDepthSum, int oppoMoveSum, int oppoDepthSum) {
+        this->myMoveSum += myMoveSum;
+        this->myDepthSum += myDepthSum;
+        this->oppoMoveSum += oppoMoveSum;
+        this->oppoDepthSum += oppoDepthSum;
+    }
+
     void getWDLInfo(int& w, int& d, int& l) const {
         w = nWin;
         d = nDraw;
@@ -221,6 +229,12 @@ public:
         return sDev / sqrt(N);
     }
 
+    /** Get average search depth for this player and the opponent player. */
+    void getAvgDepth(double& myDepth, double& oppoDepth) const {
+        myDepth = myDepthSum / (double)myMoveSum;
+        oppoDepth = oppoDepthSum / (double)oppoMoveSum;
+    }
+
 private:
     const std::string name; // Player name
     int nWin = 0;           // Number of won games
@@ -230,12 +244,21 @@ private:
     double nScores = 0;     // Number of scores
     double scoreSum = 0;    // Sum of scores
     double scoreSum2 = 0;   // Sum of squared scores
+
+    int myMoveSum = 0;      // Number of moves with depth information for this player
+    int myDepthSum = 0;     // Sum of search depth for this player
+    int oppoMoveSum = 0;    // Number of moves with depth information for opponent player
+    int oppoDepthSum = 0;   // Sum of search depth for opponent player
 };
 
 struct GameInfo {
     int pw;
     int pb;
     double score; // Score for white player
+    int wMoveSum;
+    int wDepthSum;
+    int bMoveSum;
+    int bDepthSum;
 };
 }
 
@@ -263,11 +286,24 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
         while (reader.readPGN(gt)) {
             nGames++;
             GameNode gn = gt.getRootNode();
+            int wMoveSum = 0, wDepthSum = 0;
+            int bMoveSum = 0, bDepthSum = 0;
             int ply = 0;
             while (true) {
                 if (gn.nChildren() == 0)
                     break;
+                bool wtm = gn.getPos().isWhiteMove();
                 gn.goForward(0);
+                int depth;
+                if (getCommentDepth(gn.getComment(), depth)) {
+                    if (wtm) {
+                        wDepthSum += depth;
+                        wMoveSum++;
+                    } else {
+                        bDepthSum += depth;
+                        bMoveSum++;
+                    }
+                }
                 ply++;
                 nMoves++;
             }
@@ -283,7 +319,7 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
             case GameTree::BLACK_WIN: score = 0;   break;
             default:                 throw ChessParseError("Unknown result");
             }
-            games.push_back(GameInfo{pw, pb, score});
+            games.push_back(GameInfo{pw, pb, score, wMoveSum, wDepthSum, bMoveSum, bDepthSum});
         }
 
         std::stringstream ss;
@@ -310,6 +346,8 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
                 players[gi.pw].addScore(gi.score);
                 players[gi.pb].addScore(1-gi.score);
             }
+            players[gi.pw].addDepth(gi.wMoveSum, gi.wDepthSum, gi.bMoveSum, gi.bDepthSum);
+            players[gi.pb].addDepth(gi.bMoveSum, gi.bDepthSum, gi.wMoveSum, gi.wDepthSum);
         }
 
         for (const PlayerInfo& pi : players) {
@@ -337,6 +375,10 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
             ss << "            elo: " << std::fixed << elo;
             ss.precision(4);
             ss << " draw: " << std::fixed << drawRate;
+            double myDepth, oppoDepth;
+            pi.getAvgDepth(myDepth, oppoDepth);
+            ss.precision(2);
+            ss << " depth: " << std::fixed << myDepth << " - " << std::fixed << oppoDepth;
             os << ss.str() << std::endl;
             if (pairMode)
                 break;
@@ -345,4 +387,14 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
         std::cerr << "Error parsing game " << nGames << std::endl;
         throw;
     }
+}
+
+bool
+MatchBookCreator::getCommentDepth(const std::string& comment, int& depth) {
+    if (startsWith(comment, "+M") || startsWith(comment, "-M"))
+        return false;
+    auto n = comment.find('/');
+    if (n == std::string::npos)
+        return false;
+    return str2Num(comment.substr(n+1), depth);
 }

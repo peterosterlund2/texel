@@ -159,7 +159,7 @@ public:
 private:
     /** Read score from a PGN comment, assuming cutechess-cli comment format.
      * Does not handle mate scores. */
-    bool getCommentScore(const std::string& comment, int& score);
+    static bool getCommentScore(const std::string& comment, int& score);
 
     struct PositionInfo {
         Position::SerializeData posData;
