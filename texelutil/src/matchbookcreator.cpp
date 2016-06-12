@@ -368,7 +368,7 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
                 os << " c: " << ss.str();
             }
             os << std::endl;
-            double elo = -400 * log10(1/mean-1);
+            double elo = 400 * log10(mean/(1-mean));
             double drawRate = draw / (double)(win + draw + loss);
             std::stringstream ss;
             ss.precision(1);
