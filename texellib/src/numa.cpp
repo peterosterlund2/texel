@@ -51,14 +51,20 @@ Numa::instance() {
 Numa::Numa() {
 #ifdef NUMA
 #ifdef _WIN32
-    SYSTEM_LOGICAL_PROCESSOR_INFORMATION* buffer = nullptr;
+    int threads = 0;
+    int nodes = 0;
+    int cores = 0;
     DWORD returnLength = 0;
+    DWORD byteOffset = 0;
+
+#if _WIN32_WINNT >= 0x0601
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX* buffer = nullptr;
     while (true) {
-        if (GetLogicalProcessorInformation(buffer, &returnLength))
+        if (GetLogicalProcessorInformationEx(RelationAll, buffer, &returnLength))
             break;
         if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
             free(buffer);
-            buffer = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION)malloc(returnLength);
+            buffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)malloc(returnLength);
             if (!buffer)
                 return;
         } else {
@@ -66,11 +72,38 @@ Numa::Numa() {
             return;
         }
     }
-
-    int threads = 0;
-    int nodes = 0;
-    int cores = 0;
-    DWORD byteOffset = 0;
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX* ptr = buffer;
+    while (byteOffset + sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX) <= returnLength) {
+        int size = ptr->Size;
+        switch (ptr->Relationship) {
+        case RelationNumaNode:
+            nodes++;
+            break;
+        case RelationProcessorCore:
+            cores++;
+            threads += (ptr->Processor.Flags == LTP_PC_SMT) ? 2 : 1;
+            break;
+        default:
+            break;
+        }
+        byteOffset += size;
+        ptr = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(((char*)ptr) + size);
+    }
+#else
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION* buffer = nullptr;
+    while (true) {
+        if (GetLogicalProcessorInformation(buffer, &returnLength))
+            break;
+        if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+            free(buffer);
+            buffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION*)malloc(returnLength);
+            if (!buffer)
+                return;
+        } else {
+            free(buffer);
+            return;
+        }
+    }
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION* ptr = buffer;
     while (byteOffset + sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION) <= returnLength) {
         switch (ptr->Relationship) {
@@ -87,6 +120,7 @@ Numa::Numa() {
         byteOffset += sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
         ptr++;
     }
+#endif
     free(buffer);
 
     for (int n = 0; n < nodes; n++)
@@ -207,9 +241,15 @@ Numa::bindThread(int threadNo) const {
         return;
 //    Logger::log([&](std::ostream& os){os << "threadNo:" << threadNo << " node:" << node;});
 #ifdef _WIN32
+#if _WIN32_WINNT >= 0x0601
+    GROUP_AFFINITY mask;
+    if (GetNumaNodeProcessorMaskEx(node, &mask))
+        SetThreadGroupAffinity(GetCurrentThread(), &mask, NULL);
+#else
     ULONGLONG mask;
     if (GetNumaNodeProcessorMask(node, &mask))
         SetThreadAffinityMask(GetCurrentThread(), mask);
+#endif
 #else
     numa_run_on_node(node);
     numa_set_preferred(node);
