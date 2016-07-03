@@ -73,8 +73,7 @@ Numa::Numa() {
         }
     }
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX* ptr = buffer;
-    while (byteOffset + sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX) <= returnLength) {
-        int size = ptr->Size;
+    while ((ptr->Size > 0) && (byteOffset + ptr->Size <= returnLength)) {
         switch (ptr->Relationship) {
         case RelationNumaNode:
             nodes++;
@@ -86,8 +85,8 @@ Numa::Numa() {
         default:
             break;
         }
-        byteOffset += size;
-        ptr = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(((char*)ptr) + size);
+        byteOffset += ptr->Size;
+        ptr = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(((char*)ptr) + ptr->Size);
     }
 #else
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION* buffer = nullptr;
