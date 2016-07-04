@@ -937,7 +937,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         }
                     }
                 }
-                bool negSEECheck = (depth > 3*plyScale) && givesCheck && negSEE(m);
+                bool negSEECheck = givesCheck && (((lmr > 0) && (depth - lmr >= 2*plyScale)) ||
+                                                  ((depth > 3*plyScale) && negSEE(m)));
                 int newDepth = depth - plyScale + extend - lmr - (negSEECheck ? plyScale : 0);
                 if (isCapture && (givesCheck || (depth + extend) > plyScale)) {
                     // Compute recapture target square, but only if we are not going
