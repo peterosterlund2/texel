@@ -141,7 +141,6 @@ ChessTool::pgnToFen(std::istream& is, int everyNth) {
     Position pos;
     const int mate0 = SearchConst::MATE0;
     Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
-    const int plyScale = SearchConst::plyScale;
 
     PgnReader reader(is);
     GameTree gt;
@@ -176,7 +175,7 @@ ChessTool::pgnToFen(std::istream& is, int everyNth) {
 
             sc.init(pos, nullHist, 0);
             sc.q0Eval = UNKNOWN_SCORE;
-            int score = sc.quiesce(-mate0, mate0, 0, 0*plyScale, MoveGen::inCheck(pos));
+            int score = sc.quiesce(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
             if (!pos.isWhiteMove()) {
                 score = -score;
                 commentScore = -commentScore;
@@ -1530,7 +1529,6 @@ ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int 
 
         const int mate0 = SearchConst::MATE0;
         Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
-        const int plyScale = SearchConst::plyScale;
 
         for (int i = 0; i < chunkSize; i++) {
             if (c + i >= end)
@@ -1539,7 +1537,7 @@ ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int 
             pos.deSerialize(pi.posData);
             sc.init(pos, nullHist, 0);
             sc.q0Eval = UNKNOWN_SCORE;
-            int score = sc.quiesce(-mate0, mate0, 0, 0*plyScale, MoveGen::inCheck(pos));
+            int score = sc.quiesce(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
             if (!pos.isWhiteMove())
                 score = -score;
             pi.qScore = score;

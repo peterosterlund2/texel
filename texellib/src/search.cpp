@@ -114,7 +114,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
 //    pd.wq.resetStat();
     const bool smp = pd.numHelperThreads() > 0;
     maxNodes = initialMaxNodes;
-    this->minProbeDepth = (TBProbe::tbEnabled() ? minProbeDepth : MAX_SEARCH_DEPTH) * plyScale;
+    this->minProbeDepth = TBProbe::tbEnabled() ? minProbeDepth : MAX_SEARCH_DEPTH;
     if ((maxDepth < 0) && (maxNodes < 0) && !TBProbe::tbEnabled())
         if (tt.updateTB(pos, maxTimeMillis))
             this->minProbeDepth = 1; // In-memory on-demand tables can be probed aggressively
@@ -137,9 +137,9 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     int posHashFirstNew0 = posHashFirstNew;
     bool knownLoss = false; // True if at least one of the first maxPV moves is a known loss
     try {
-    for (int depthS = plyScale; ; depthS += plyScale, firstIteration = false) {
+    for (int depth = 1; ; depth++, firstIteration = false) {
         initNodeStats();
-        if (listener) listener->notifyDepth(depthS/plyScale);
+        if (listener) listener->notifyDepth(depth);
         int aspirationDelta = 0;
         int alpha = 0;
         UndoInfo ui;
@@ -174,9 +174,9 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             int lmrS = 0;
             bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
             bool isPromotion = (m.promoteTo() != Piece::EMPTY);
-            if ((depthS >= 3*plyScale) && !isCapture && !isPromotion &&
+            if ((depth >= 3) && !isCapture && !isPromotion &&
                 !givesCheck && !passedPawnPush(pos, m) && (mi >= rootLMRMoveCount + maxPV)) {
-                lmrS = plyScale;
+                lmrS = 1;
             }
             pos.makeMove(m, ui);
             totalNodes++;
@@ -185,15 +185,15 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             sti.currentMoveNo = mi;
             sti.lmr = lmrS;
             sti.nodeIdx = rootNodeIdx;
-            int score = -negaScout(smp, true, -beta, -alpha, 1, depthS - lmrS - plyScale, -1, givesCheck);
+            int score = -negaScout(smp, true, -beta, -alpha, 1, depth - lmrS - 1, -1, givesCheck);
             if ((lmrS > 0) && (score > alpha)) {
                 sti.lmr = 0;
-                score = -negaScout(smp, true, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
+                score = -negaScout(smp, true, -beta, -alpha, 1, depth - 1, -1, givesCheck);
             }
             nodesThisMove += totalNodes;
             posHashListSize--;
             pos.unMakeMove(m, ui);
-            storeSearchResult(rootMoves, mi, depthS, alpha, beta, score);
+            storeSearchResult(rootMoves, mi, depth, alpha, beta, score);
             if ((verbose && firstIteration) || (mi < maxPV) || (score > rootMoves[maxPV-1].score()))
                 notifyPV(rootMoves, mi, maxPV);
             int betaRetryDelta = aspirationDelta;
@@ -221,11 +221,11 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
                 }
                 pos.makeMove(m, ui);
                 totalNodes++;
-                score = -negaScout(smp, true, -beta, -alpha, 1, depthS - plyScale, -1, givesCheck);
+                score = -negaScout(smp, true, -beta, -alpha, 1, depth - 1, -1, givesCheck);
                 nodesThisMove += totalNodes;
                 posHashListSize--;
                 pos.unMakeMove(m, ui);
-                storeSearchResult(rootMoves, mi, depthS, alpha, beta, score);
+                storeSearchResult(rootMoves, mi, depth, alpha, beta, score);
                 notifyPV(rootMoves, mi, maxPV);
             }
             rootMoves[mi].nodes += nodesThisMove;
@@ -261,14 +261,14 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             ss.precision(3);
             ss << std::fixed << "Time: " << ((tNow - tStart) * .001);
             ss.precision(2);
-            ss << " depth:" << (depthS/(double)plyScale)
+            ss << " depth:" << depth
                << " nps:" << ((int)(getTotalNodes() / ((tNow - tStart) * .001)));
             std::cout << ss.str() << std::endl;
         }
         if (maxTimeMillis >= 0)
             if (tNow - tStart > minTimeMillis * 0.01 * earlyStopPercentage)
                 break;
-        if (depthS >= maxDepth * plyScale)
+        if (depth >= maxDepth)
             break;
         if (maxNodes >= 0)
             if (getTotalNodes() >= maxNodes)
@@ -276,7 +276,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
         bool enoughDepth = true;
         for (int i = 0; i < maxPV; i++) {
             int plyToMate = MATE0 - std::abs(rootMoves[i].score());
-            if (depthS < plyToMate * plyScale)
+            if (depth < plyToMate)
                 enoughDepth = false;
         }
         if (enoughDepth)
@@ -290,14 +290,14 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             std::stable_sort(rootMoves.begin()+maxPV, rootMoves.end(), MoveInfo::SortByNodes());
         }
         if (!knownLoss && rootMoves[maxPV - 1].knownLoss) {
-            depthS = std::max(0, depthS - 1 * plyScale);
+            depth = std::max(0, depth - 1);
             knownLoss = true;
         }
-//        std::cout << "fhInfo depth:" << depthS / plyScale << std::endl;
+//        std::cout << "fhInfo depth:" << depth << std::endl;
 //        pd.fhInfo.print(std::cout);
-//        std::cout << "wqStats depth:" << depthS / plyScale << std::endl;
+//        std::cout << "wqStats depth:" << depth << std::endl;
 //        pd.wq.printStats(std::cout, pd.numHelperThreads() + 1);
-//        log([&](std::ostream& os){pd.npsInfo.print(os, depthS / plyScale);});
+//        log([&](std::ostream& os){pd.npsInfo.print(os, depth);});
     }
     } catch (const StopSearch&) {
         pos = origPos;
@@ -311,7 +311,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
 void
 Search::storeSearchResult(std::vector<MoveInfo>& scMoves, int mi, int depth,
                           int alpha, int beta, int score) {
-//    std::cout << "d:" << depth/plyScale << " mi:" << mi << " a:" << alpha
+//    std::cout << "d:" << depth << " mi:" << mi << " a:" << alpha
 //              << " b:" << beta << " s:" << score << std::endl;
     scMoves[mi].depth = depth;
     scMoves[mi].alpha = alpha;
@@ -351,7 +351,7 @@ Search::notifyPV(const std::vector<MoveInfo>& moveInfo, int mi, int maxPV) {
         }
     }
     if (listener && (moveInfo[mi].depth != lastReportedDepth))
-        listener->notifyDepth(moveInfo[mi].depth/plyScale);
+        listener->notifyDepth(moveInfo[mi].depth);
 }
 
 void
@@ -395,7 +395,7 @@ Search::notifyPV(const MoveInfo& info, int multiPVIndex) {
     S64 totNodes = getTotalNodes();
     S64 tbHits = getTbHits();
     int nps = (time > 0) ? (int)(totNodes / (time / 1000.0)) : 0;
-    listener->notifyPV(info.depth/plyScale, score, time, totNodes, nps, isMate,
+    listener->notifyPV(info.depth, score, time, totNodes, nps, isMate,
                        uBound, lBound, info.pv, multiPVIndex, tbHits);
     tLastStats = tNow;
 }
@@ -489,7 +489,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     // Collect statistics
     if (verbose) {
         nodesByPly.add(ply);
-        nodesByDepth.add(depth/plyScale);
+        nodesByDepth.add(depth);
     }
     const U64 hKey = pos.historyHash();
     SearchTreeInfo& sti = searchTreeInfo[ply];
@@ -522,7 +522,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     TranspositionTable::TTEntry ent;
     ent.clear();
     const bool singularSearch = !sti.singularMove.isEmpty();
-    const bool useTT = (mainNumaNode || (depth >= 1 * plyScale)) && // To reduce memory bandwidth
+    const bool useTT = (mainNumaNode || (depth >= 1)) && // To reduce memory bandwidth
                        !singularSearch;
     if (useTT) tt.probe(hKey, ent);
     Move hashMove;
@@ -530,7 +530,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         int score = ent.getScore(ply);
         evalScore = ent.getEvalScore();
         ent.getMove(hashMove);
-        if (((beta == alpha + 1) || (depth <= ply*plyScale)) && ent.isCutOff(alpha, beta, ply, depth)) {
+        if (((beta == alpha + 1) || (depth <= ply)) && ent.isCutOff(alpha, beta, ply, depth)) {
             if (score >= beta) {
                 if (!hashMove.isEmpty())
                     if (pos.getPiece(hashMove.to()) == Piece::EMPTY)
@@ -556,7 +556,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             int type = tbEnt.getType();
             int score = tbEnt.getScore(ply);
             bool cutOff = false;
-            const int drawSwindleReduction = 16 * plyScale;
+            const int drawSwindleReduction = 16;
             if (score == 0 && type == TType::T_EXACT) {
                 const int maxSwindle = SearchConst::maxFrustrated;
                 if (depth < drawSwindleReduction) {
@@ -600,7 +600,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
     }
 
-    int posExtend = inCheck ? plyScale : 0; // Check extension
+    int posExtend = inCheck ? 1 : 0; // Check extension
 
     // If out of depth, perform quiescence search
     if (depth + posExtend <= 0) {
@@ -621,11 +621,11 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     // Razoring
     const bool normalBound = !isLoseScore(alpha) && !isWinScore(beta);
-    if (normalBound && (depth < 4*plyScale) && (beta == alpha + 1) && !singularSearch) {
+    if (normalBound && (depth < 4) && (beta == alpha + 1) && !singularSearch) {
         if (evalScore == UNKNOWN_SCORE) {
             evalScore = eval.evalPos(pos);
         }
-        const int razorMargin = (depth <= plyScale) ? razorMargin1 : razorMargin2;
+        const int razorMargin = (depth <= 1) ? razorMargin1 : razorMargin2;
         if (evalScore < beta - razorMargin) {
             q0Eval = evalScore;
             int score = quiesce(alpha-razorMargin, beta-razorMargin, ply, 0, inCheck);
@@ -639,7 +639,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Reverse futility pruning
-    if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) && normalBound && !singularSearch) {
+    if (!inCheck && (depth < 5) && (posExtend == 0) && normalBound && !singularSearch) {
         bool mtrlOk;
         if (pos.isWhiteMove()) {
             mtrlOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
@@ -648,10 +648,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
         if (mtrlOk) {
             int margin;
-            if (depth <= plyScale)        margin = reverseFutilityMargin1;
-            else if (depth <= 2*plyScale) margin = reverseFutilityMargin2;
-            else if (depth <= 3*plyScale) margin = reverseFutilityMargin3;
-            else                          margin = reverseFutilityMargin4;
+            if (depth <= 1)      margin = reverseFutilityMargin1;
+            else if (depth <= 2) margin = reverseFutilityMargin2;
+            else if (depth <= 3) margin = reverseFutilityMargin3;
+            else                 margin = reverseFutilityMargin4;
             if (evalScore == UNKNOWN_SCORE)
                 evalScore = eval.evalPos(pos);
             if (evalScore - margin >= beta) {
@@ -664,14 +664,14 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Null-move pruning
-    if ((depth >= 3*plyScale) && !inCheck && sti.allowNullMove && !isWinScore(beta) && !singularSearch) {
+    if ((depth >= 3) && !inCheck && sti.allowNullMove && !isWinScore(beta) && !singularSearch) {
         bool nullOk;
         if (pos.isWhiteMove()) {
             nullOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
         } else {
             nullOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
         }
-        const int R = std::min(depth, 4*plyScale);
+        const int R = std::min(depth, 4);
         if (nullOk) {
             if (((ent.getType() == TType::T_EXACT) || (ent.getType() == TType::T_LE)) &&
                 (ent.getDepth() >= depth - R) && (ent.getScore(ply) < beta))
@@ -691,7 +691,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     sph.setSp(std::make_shared<SplitPoint>(threadNo, spVec.back(),
                                                            searchTreeInfo[ply-1].currentMoveNo,
                                                            pos, posHashList, posHashListSize,
-                                                           sti, kt, ht, alpha, beta, ply, depth / plyScale));
+                                                           sti, kt, ht, alpha, beta, ply, depth));
                     sph.addMove(0, SplitPointMove(Move(), 0, 0, -1, false));
                     sph.addToQueue();
                     sph.setOwnerCurrMove(0, alpha);
@@ -709,7 +709,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 pos.setWhiteMove(!pos.isWhiteMove());
             }
             bool storeInHash = true;
-            if ((score >= beta) && (depth >= 10 * plyScale)) {
+            if ((score >= beta) && (depth >= 10)) {
                 // Null-move verification search
                 SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
                 SearchTreeInfo& sti3 = searchTreeInfo[ply+1];
@@ -732,7 +732,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 score = negaScout(smp, tb, beta - 1, beta, ply, depth - R, recaptureSquare, inCheck);
                 storeInHash = false;
             }
-            if (smp && (depth - R >= MIN_SMP_DEPTH * plyScale))
+            if (smp && (depth - R >= MIN_SMP_DEPTH))
                 pd.fhInfo.addData(-1, searchTreeInfo[ply+1].currentMoveNo, score < beta, false);
             if (score >= beta) {
                 if (isWinScore(score))
@@ -748,12 +748,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     bool futilityPrune = false;
     int futilityScore = alpha;
-    if (!inCheck && (depth < 5*plyScale) && (posExtend == 0) && normalBound && !singularSearch) {
+    if (!inCheck && (depth < 5) && (posExtend == 0) && normalBound && !singularSearch) {
         int margin;
-        if (depth <= plyScale)        margin = futilityMargin1;
-        else if (depth <= 2*plyScale) margin = futilityMargin2;
-        else if (depth <= 3*plyScale) margin = futilityMargin3;
-        else                          margin = futilityMargin4;
+        if (depth <= 1)      margin = futilityMargin1;
+        else if (depth <= 2) margin = futilityMargin2;
+        else if (depth <= 3) margin = futilityMargin3;
+        else                 margin = futilityMargin4;
         if (evalScore == UNKNOWN_SCORE)
             evalScore = eval.evalPos(pos);
         futilityScore = evalScore + margin;
@@ -762,9 +762,9 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Internal iterative deepening
-    if ((depth > 4*plyScale) && hashMove.isEmpty()) {
+    if ((depth > 4) && hashMove.isEmpty()) {
         bool isPv = beta > alpha + 1;
-        if (isPv || (depth > 8 * plyScale)) {
+        if (isPv || (depth > 8)) {
             SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
             const Move savedMove = sti2.currentMove;
             const int savedMoveNo = sti2.currentMoveNo;
@@ -779,7 +779,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 sti2.currentMoveNo = savedMoveNo;
                 sti2.nodeIdx = savedNodeIdx2;
             });
-            int newDepth = isPv ? depth  - 2 * plyScale : depth * 3 / 8;
+            int newDepth = isPv ? depth  - 2 : depth * 3 / 8;
             negaScout(smp, tb, alpha, beta, ply, newDepth, -1, inCheck);
             tt.probe(hKey, ent);
             if (ent.getType() != TType::T_EMPTY)
@@ -803,13 +803,13 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     // Handle singular extension
     bool singularExtend = false;
-    if ((depth > 6 * plyScale) && (posExtend == 0) &&
+    if ((depth > 6) && (posExtend == 0) &&
             hashMoveSelected && !singularSearch &&
             (ent.getType() != TType::T_LE) &&
-            (ent.getDepth() >= depth - 3 * plyScale) &&
+            (ent.getDepth() >= depth - 3) &&
             (!isWinScore(std::abs(ent.getScore(ply))) || !normalBound) &&
             (getMoveExtend(hashMove, recaptureSquare) <= 0) &&
-            (ply + depth / plyScale < MAX_SEARCH_DEPTH) &&
+            (ply + depth < MAX_SEARCH_DEPTH) &&
             MoveGen::isLegal(pos, hashMove, inCheck)) {
         SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
         const Move savedMove = sti2.currentMove;
@@ -840,7 +840,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         sph.setSp(std::make_shared<SplitPoint>(threadNo, spVec.back(),
                                                searchTreeInfo[ply-1].currentMoveNo,
                                                pos, posHashList, posHashListSize,
-                                               sti, kt, ht, alpha, beta, ply, depth/plyScale));
+                                               sti, kt, ht, alpha, beta, ply, depth));
         for (int mi = 0; mi < moves.size; mi++) {
             if ((mi == 1) && !seeDone) {
                 scoreMoveList(moves, ply, 1);
@@ -860,10 +860,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         else
             lmpOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
         if (lmpOk) {
-            if (depth <= plyScale)          lmpMoveCountLimit = lmpMoveCountLimit1;
-            else if (depth <= 2 * plyScale) lmpMoveCountLimit = lmpMoveCountLimit2;
-            else if (depth <= 3 * plyScale) lmpMoveCountLimit = lmpMoveCountLimit3;
-            else if (depth <= 4 * plyScale) lmpMoveCountLimit = lmpMoveCountLimit4;
+            if (depth <= 1)      lmpMoveCountLimit = lmpMoveCountLimit1;
+            else if (depth <= 2) lmpMoveCountLimit = lmpMoveCountLimit2;
+            else if (depth <= 3) lmpMoveCountLimit = lmpMoveCountLimit3;
+            else if (depth <= 4) lmpMoveCountLimit = lmpMoveCountLimit4;
         }
     }
 
@@ -923,24 +923,24 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 int moveExtend = (posExtend > 0) ? 0 : getMoveExtend(m, recaptureSquare);
                 int extend = std::max(posExtend, moveExtend);
                 if (singularExtend && (mi == 0))
-                    extend = 1*plyScale;
+                    extend = 1;
                 int lmr = 0;
-                if ((depth >= 2*plyScale) && mayReduce && (extend == 0)) {
+                if ((depth >= 2) && mayReduce && (extend == 0)) {
                     if (!givesCheck && !passedPawnPush(pos, m)) {
                         lmrCount++;
-                        if ((lmrCount > lmrMoveCountLimit2) && (depth >= 5*plyScale) && !isCapture) {
-                            lmr = 3*plyScale;
-                        } else if ((lmrCount > lmrMoveCountLimit1) && (depth >= 3*plyScale) && !isCapture) {
-                            lmr = 2*plyScale;
+                        if ((lmrCount > lmrMoveCountLimit2) && (depth >= 5) && !isCapture) {
+                            lmr = 3;
+                        } else if ((lmrCount > lmrMoveCountLimit1) && (depth >= 3) && !isCapture) {
+                            lmr = 2;
                         } else if (mi >= 2) {
-                            lmr = 1*plyScale;
+                            lmr = 1;
                         }
                     }
                 }
-                bool negSEECheck = givesCheck && (((lmr > 0) && (depth - lmr >= 2*plyScale)) ||
-                                                  ((depth > 3*plyScale) && negSEE(m)));
-                int newDepth = depth - plyScale + extend - lmr - (negSEECheck ? plyScale : 0);
-                if (isCapture && (givesCheck || (depth + extend) > plyScale)) {
+                bool negSEECheck = givesCheck && (((lmr > 0) && (depth - lmr >= 2)) ||
+                                                  ((depth > 3) && negSEE(m)));
+                int newDepth = depth - 1 + extend - lmr - (negSEECheck ? 1 : 0);
+                if (isCapture && (givesCheck || (depth + extend) > 1)) {
                     // Compute recapture target square, but only if we are not going
                     // into q-search at the next ply.
                     int fVal = ::pieceValue[pos.getPiece(m.from())];
@@ -981,7 +981,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 //                        if (sph.hasHelperThread())
 //                            log([&](std::ostream& os){os << "main seqNo:" << sph.getSeqNo() << " ply:" << ply << " m:" << mi
 //                                                         << " a:" << alpha << " b:" << beta << " s:" << score
-//                                                         << " d:" << nomDepth/plyScale << " n:" << (totalNodes-n1);});
+//                                                         << " d:" << nomDepth << " n:" << (totalNodes-n1);});
                         if (beta > alpha + 1) {
                             pd.fhInfo.addPvData(mi, score > alpha);
                         } else {
@@ -1010,11 +1010,11 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 if (alpha >= beta) {
                     if (pos.getPiece(m.to()) == Piece::EMPTY) {
                         kt.addKiller(ply, m);
-                        ht.addSuccess(pos, m, depth/plyScale);
+                        ht.addSuccess(pos, m, depth);
                         for (int mi2 = mi - 1; mi2 >= 0; mi2--) {
                             Move m2 = moves[mi2];
                             if (pos.getPiece(m2.to()) == Piece::EMPTY)
-                                ht.addFail(pos, m2, depth/plyScale);
+                                ht.addFail(pos, m2, depth);
                         }
                     }
                     if (((ent.getType() == TType::T_EXACT || ent.getType() == TType::T_LE)) &&
@@ -1096,7 +1096,7 @@ Search::getMoveExtend(const Move& m, int recaptureSquare) {
         int sVal = SEE(m);
         int tVal = ::pieceValue[pos.getPiece(m.to())];
         if (sVal > tVal - pV / 2)
-            return plyScale;
+            return 1;
     }
     bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
     if (isCapture && (pos.wMtrlPawns() + pos.bMtrlPawns() > pV)) {
@@ -1104,10 +1104,10 @@ Search::getMoveExtend(const Move& m, int recaptureSquare) {
         int capVal = ::pieceValue[pos.getPiece(m.to())];
         if (pos.isWhiteMove()) {
             if ((pos.wMtrl() == pos.wMtrlPawns()) && (pos.bMtrl() - pos.bMtrlPawns() == capVal))
-                return plyScale;
+                return 1;
         } else {
             if ((pos.bMtrl() == pos.bMtrlPawns()) && (pos.wMtrl() - pos.wMtrlPawns() == capVal))
-                return plyScale;
+                return 1;
         }
     }
     return 0;

@@ -313,7 +313,7 @@ TranspositionTable::TTEntry::isCutOff(int alpha, int beta, int ply, int depth) c
     const int plyToMate = MATE0 - std::abs(getScore(0));
     const int eDepth = getDepth();
     const int eType = getType();
-    if ((eDepth >= depth) || (eDepth >= plyToMate*plyScale)) {
+    if ((eDepth >= depth) || (eDepth >= plyToMate)) {
         if ( (eType == TType::T_EXACT) ||
             ((eType == TType::T_GE) && (score >= beta)) ||
             ((eType == TType::T_LE) && (score <= alpha)))

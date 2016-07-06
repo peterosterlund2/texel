@@ -557,8 +557,7 @@ ParallelTest::testWorkerThread() {
                                                pos, posHashList, posHashListSize,
                                                sti, kt, ht, 10, 11, 1, 1);
         sph.setSp(sp);
-        const int plyScale = SearchConst::plyScale;
-        int depth = 10 * plyScale;
+        int depth = 10;
         sph.addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, depth, -1, false));
         sph.addMove(1, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, depth, -1, false));
         sph.addMove(2, SplitPointMove(TextIO::uciStringToMove("f2f4"), 0, depth, -1, false));
@@ -576,10 +575,10 @@ ParallelTest::testWorkerThread() {
 
         probeTT(pos, TextIO::uciStringToMove("c2c4"), tt, ent);
         ASSERT(ent.getType() != TType::T_EMPTY);
-        ASSERT(ent.getDepth() >= 6 * plyScale);
+        ASSERT(ent.getDepth() >= 6);
         probeTT(pos, TextIO::uciStringToMove("f2f4"), tt, ent);
         ASSERT(ent.getType() != TType::T_EMPTY);
-        ASSERT(ent.getDepth() >= 5 * plyScale);
+        ASSERT(ent.getDepth() >= 5);
     }
 
     UciParams::minProbeDepth->set(num2Str(minProbeDepth));

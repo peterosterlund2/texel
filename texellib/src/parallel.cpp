@@ -212,7 +212,7 @@ WorkerThread::mainLoop(int minProbeDepth) {
 //            log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
 //                                         << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
 //                                         << " a:" << alpha << " b:" << beta
-//                                         << " d:" << depth/SearchConst::plyScale
+//                                         << " d:" << depth
 //                                         << " p:" << sp->getPMoveUseful(pd.fhInfo, moveNo) << " start";});
 //            uTimer.setPUseful(pUseful);
             const bool smp = pd.numHelperThreads() > 1;
@@ -229,7 +229,7 @@ WorkerThread::mainLoop(int minProbeDepth) {
 //            log([&](std::ostream& os){os << "th:" << threadNo << " seqNo:" << sp->getSeqNo() << " ply:" << ply
 //                                         << " c:" << sp->getCurrMoveNo() << " m:" << moveNo
 //                                         << " a:" << alpha << " b:" << beta << " s:" << score
-//                                         << " d:" << depth/SearchConst::plyScale << " n:" << sc.getTotalNodesThisThread();});
+//                                         << " d:" << depth << " n:" << sc.getTotalNodesThisThread();});
             pd.wq.moveFinished(sp, moveNo, cancelRemaining, score);
             if (cancelRemaining)
                 pd.setHelperFailHigh(sp->owningThread(), true);

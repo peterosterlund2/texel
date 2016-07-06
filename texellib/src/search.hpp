@@ -341,13 +341,13 @@ Search::passedPawnPush(const Position& pos, const Move& m) {
             return false;
         if ((BitBoard::wPawnBlockerMask[m.to()] & pos.pieceTypeBB(Piece::BPAWN)) != 0)
             return false;
-        return m.to() >= 40;
+        return m.to() >= A6;
     } else {
         if (p != Piece::BPAWN)
             return false;
         if ((BitBoard::bPawnBlockerMask[m.to()] & pos.pieceTypeBB(Piece::WPAWN)) != 0)
             return false;
-        return m.to() <= 23;
+        return m.to() <= H3;
     }
 }
 
@@ -413,9 +413,9 @@ Search::negaScout(bool smp, bool tb,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
     using namespace SearchConst;
-    int minDepth = pd.wq.getMinSplitDepth() * plyScale;
+    int minDepth = pd.wq.getMinSplitDepth();
     if (threadNo == 0)
-        minDepth = (minDepth + MIN_SMP_DEPTH * plyScale) / 2;
+        minDepth = (minDepth + MIN_SMP_DEPTH) / 2;
     if (smp && (depth >= minDepth) &&
                ((int)spVec.size() < MAX_SP_PER_THREAD)) {
         bool tb2 = tb && depth >= minProbeDepth;
@@ -465,7 +465,7 @@ Search::getTbHitsThisThread() const {
 
 inline void
 Search::setMinProbeDepth(int depth) {
-    minProbeDepth = depth * SearchConst::plyScale;
+    minProbeDepth = depth;
 }
 
 #endif /* SEARCH_HPP_ */
