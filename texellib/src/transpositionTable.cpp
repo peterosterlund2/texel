@@ -45,14 +45,14 @@ TranspositionTable::reSize(int log2Size) {
     table.resize(numEntries);
     generation = 0;
 
-    hashMask = table.size() - 1;
+    setHashMask(table.size());
     tbGen.reset();
     notUsedCnt = 0;
 }
 
 void
 TranspositionTable::clear() {
-    hashMask = table.size() - 1;
+    setHashMask(table.size());
     tbGen.reset();
     notUsedCnt = 0;
     TTEntry ent;
@@ -66,40 +66,43 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
     if (depth < 0) depth = 0;
     size_t idx0 = getIndex(key);
     U64 key2 = getStoredKey(key);
-    TTEntry ent0, ent1;
-    ent0.load(table[idx0]);
+    TTEntry ent, tmp;
+    ent.clear();
     size_t idx = idx0;
-    TTEntry* ent = &ent0;
-    if (ent0.getKey() != key2) {
-        size_t idx1 = idx0 ^ 1;
-        ent1.load(table[idx1]);
-        idx = idx1;
-        ent = &ent1;
-        if (ent1.getKey() != key2)
-            if (ent1.betterThan(ent0, generation)) {
-                idx = idx0;
-                ent = &ent0;
-            }
+    for (int i = 0; i < 4; i++) {
+        size_t idx1 = idx0 + i;
+        tmp.load(table[idx1]);
+        if (tmp.getKey() == key2) {
+            ent = tmp;
+            idx = idx1;
+            break;
+        } else if (i == 0) {
+            ent = tmp;
+            idx = idx1;
+        } else if (ent.betterThan(tmp, generation)) {
+            ent = tmp;
+            idx = idx1;
+        }
     }
     bool doStore = true;
-    if ((ent->getKey() == key2) && (ent->getDepth() > depth) && (ent->getType() == type)) {
+    if ((ent.getKey() == key2) && (ent.getDepth() > depth) && (ent.getType() == type)) {
         if (type == TType::T_EXACT)
             doStore = false;
-        else if ((type == TType::T_GE) && (sm.score() <= ent->getScore(ply)))
+        else if ((type == TType::T_GE) && (sm.score() <= ent.getScore(ply)))
             doStore = false;
-        else if ((type == TType::T_LE) && (sm.score() >= ent->getScore(ply)))
+        else if ((type == TType::T_LE) && (sm.score() >= ent.getScore(ply)))
             doStore = false;
     }
     if (doStore) {
-        if ((ent->getKey() != key2) || (sm.from() != sm.to()))
-            ent->setMove(sm);
-        ent->setKey(key2);
-        ent->setScore(sm.score(), ply);
-        ent->setDepth(depth);
-        ent->setGeneration((S8)generation);
-        ent->setType(type);
-        ent->setEvalScore(evalScore);
-        ent->store(table[idx]);
+        if ((ent.getKey() != key2) || (sm.from() != sm.to()))
+            ent.setMove(sm);
+        ent.setKey(key2);
+        ent.setScore(sm.score(), ply);
+        ent.setDepth(depth);
+        ent.setGeneration((S8)generation);
+        ent.setType(type);
+        ent.setEvalScore(evalScore);
+        ent.store(table[idx]);
     }
 }
 
@@ -228,7 +231,7 @@ TranspositionTable::updateTB(const Position& pos, RelaxedShared<S64>& maxTimeMil
         pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) { // pos not suitable for TB generation
         if (tbGen && notUsedCnt++ > 3) {
             tbGen.reset();
-            hashMask = table.size() - 1;
+            setHashMask(table.size());
             notUsedCnt = 0;
         }
         return tbGen != nullptr;
@@ -267,6 +270,7 @@ TranspositionTable::updateTB(const Position& pos, RelaxedShared<S64>& maxTimeMil
         return false;
     }
     int shift = (ttSize < 16 * 1024 * 1024) ? 2 : 1;
+    setHashMask(table.size() >> shift);
     hashMask = (table.size() - 1) >> shift;
     notUsedCnt = 0;
     return true;

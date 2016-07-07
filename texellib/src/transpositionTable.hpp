@@ -181,6 +181,9 @@ public:
     U64 byteSize() const;
 
 private:
+    /** Set hashMask from hash table size. */
+    void setHashMask(size_t s);
+
     /** Get position in hash table given zobrist key. */
     size_t getIndex(U64 key) const;
 
@@ -381,6 +384,12 @@ TranspositionTable::TTEntry::getBits(int first, int size) const {
 }
 
 
+inline void
+TranspositionTable::setHashMask(size_t s) {
+    hashMask = table.size() - 1;
+    hashMask &= ~((size_t)3);
+}
+
 inline size_t
 TranspositionTable::getIndex(U64 key) const {
     return (size_t)(key & hashMask);
@@ -396,24 +405,16 @@ TranspositionTable::probe(U64 key, TTEntry& result) {
     size_t idx0 = getIndex(key);
     U64 key2 = getStoredKey(key);
     TTEntry ent;
-    ent.load(table[idx0]);
-    if (ent.getKey() == key2) {
-        if (ent.getGeneration() != generation) {
-            ent.setGeneration(generation);
-            ent.store(table[idx0]);
+    for (int i = 0; i < 4; i++) {
+        ent.load(table[idx0 + i]);
+        if (ent.getKey() == key2) {
+            if (ent.getGeneration() != generation) {
+                ent.setGeneration(generation);
+                ent.store(table[idx0 + i]);
+            }
+            result = ent;
+            return;
         }
-        result = ent;
-        return;
-    }
-    size_t idx1 = idx0 ^ 1;
-    ent.load(table[idx1]);
-    if (ent.getKey() == key2) {
-        if (ent.getGeneration() != generation) {
-            ent.setGeneration(generation);
-            ent.store(table[idx1]);
-        }
-        result = ent;
-        return;
     }
     result.setType(TType::T_EMPTY);
 }
