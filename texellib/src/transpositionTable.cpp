@@ -185,12 +185,10 @@ TranspositionTable::extractPV(const Position& posIn) {
 }
 
 void
-TranspositionTable::printStats() const {
+TranspositionTable::printStats(int rootDepth) const {
     int unused = 0;
     int thisGen = 0;
     std::vector<int> depHist;
-    const int maxDepth = 20*8;
-    depHist.resize(maxDepth);
     for (size_t i = 0; i < table.size(); i++) {
         TTEntry ent;
         ent.load(table[i]);
@@ -199,18 +197,20 @@ TranspositionTable::printStats() const {
         } else {
             if (ent.getGeneration() == generation)
                 thisGen++;
-            if (ent.getDepth() < maxDepth)
-                depHist[ent.getDepth()]++;
+            int d = ent.getDepth();
+            while ((int)depHist.size() <= d)
+                depHist.push_back(0);
+            depHist[d]++;
         }
     }
     double w = 100.0 / table.size();
     std::stringstream ss;
     ss.precision(2);
-    ss << std::fixed << "hstat: size:" << table.size()
+    ss << std::fixed << "hstat: d:" << rootDepth << " size:" << table.size()
        << " unused:" << unused << " (" << (unused*w) << "%)"
        << " thisGen:" << thisGen << " (" << (thisGen*w) << "%)" << std::endl;
     cout << ss.str();
-    for (int i = 0; i < maxDepth; i++) {
+    for (size_t i = 0; i < depHist.size(); i++) {
         int c = depHist[i];
         if (c > 0) {
             std::stringstream ss;

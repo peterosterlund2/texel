@@ -155,7 +155,7 @@ public:
     std::string extractPV(const Position& posIn);
 
     /** Print hash table statistics. */
-    void printStats() const;
+    void printStats(int rootDepth) const;
 
 
     // Methods to handle tablebase generation and probing
