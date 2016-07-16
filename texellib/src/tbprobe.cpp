@@ -417,6 +417,9 @@ TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score,
     }
     const int maxHalfMoveClock = std::abs(dtz) + pos.getHalfMoveClock();
     const int sgn = dtz > 0 ? 1 : -1;
+    if ((maxHalfMoveClock == 100) && (pos.getHalfMoveClock() > 0) &&
+        (maxDTZ.find(pos.materialId())->second != 100)) // dtz can be off by one
+        return false;
     if (abs(dtz) <= 2) {
         if (maxHalfMoveClock > 101) {
             score = 0;
@@ -425,9 +428,6 @@ TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score,
         } else if (maxHalfMoveClock == 101)
             return false; // DTZ can be wrong when mate-in-1
     } else {
-        if ((maxHalfMoveClock == 100) && (pos.getHalfMoveClock() > 0) &&
-            (maxDTZ.find(pos.materialId())->second != 100)) // dtz can be off by one
-            return false;
         if (maxHalfMoveClock > 100) {
             score = 0;
             if (std::abs(dtz) <= 100)

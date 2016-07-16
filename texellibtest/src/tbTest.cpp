@@ -349,6 +349,15 @@ TBTest::rtbTest() {
     resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
     ASSERT(!resDTZ);
 
+    // DTZ = 2, DTZ + hmc = 100. RTB does not know the answer
+    // because the TB class has maxDTZ < 100
+    pos = TextIO::readFEN("6kq/8/4N3/7Q/8/8/8/1K6 w - - 98 15");
+    resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
+    ASSERT(resWDL);
+    ASSERT(SearchConst::isWinScore(wdl)); // WDL probes assume hmc is 0
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    ASSERT(!resDTZ);
+
     // DTZ + hmc > 100, draw
     pos = TextIO::readFEN("7q/3N2k1/8/8/8/7Q/8/1K6 w - - 71 1");
     resWDL = TBProbe::rtbProbeWDL(pos, ply, wdl, ent);
@@ -514,6 +523,7 @@ TBTest::tbTest() {
     // Same position, no GTB tables available
     initTB("/no/such/dir", gtbDefaultCacheMB, rtbDefaultPath);
     res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
+    std::cout << "res:" << ((int)res) << " score:" << ent.getScore(ply) << std::endl;
     ASSERT(!res || ent.getScore(ply) != 0);
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
 
