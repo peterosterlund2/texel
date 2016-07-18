@@ -63,7 +63,7 @@ Book::getBookMove(Position& pos, Move& out) {
                 contains = true;
                 break;
             }
-        if  (!contains) {
+        if (!contains) {
             // If an illegal move was found, it means there was a hash collision.
             return;
         }
