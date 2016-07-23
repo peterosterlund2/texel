@@ -702,6 +702,7 @@ CtgBook::getBookMove(Position& pos, Move& out) {
     }
     // Should never get here
     assert(false);
+    return false;
 }
 
 void
