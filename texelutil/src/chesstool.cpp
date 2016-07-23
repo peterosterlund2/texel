@@ -1703,35 +1703,36 @@ ChessTool::probeDTZ(const std::string& fen) {
     else
         std::cout << "---";
 
+    auto printScore = [](bool ok, const TranspositionTable::TTEntry& ent, int score) {
+        if (ok) {
+            std::cout << score;
+            if (score == 0) {
+                std::cout << " (" << ent.getEvalScore() << ")";
+            } else {
+                using namespace SearchConst;
+                if (isWinScore(score)) {
+                    std::cout << " (M" << (MATE0 - score) / 2 << ")";
+                } else if (isLoseScore(score)) {
+                    std::cout << " (-M" << ((MATE0 + score - 1) / 2) << ")";
+                }
+            }
+        } else {
+            std::cout << "---";
+        }
+    };
+
     int score = 0;
     TranspositionTable::TTEntry ent;
     bool ok = TBProbe::rtbProbeDTZ(pos, 0, score, ent);
     std::cout << " dtz:";
-    if (ok) {
-        std::cout << score;
-        if (score == 0) {
-            std::cout << " (" << ent.getEvalScore() << ")";
-        }
-    } else {
-        std::cout << "---";
-    }
+    printScore(ok, ent, score);
 
     ok = TBProbe::rtbProbeWDL(pos, 0, score, ent);
     std::cout << " wdl:";
-    if (ok) {
-        std::cout << score;
-        if (score == 0) {
-            std::cout << " (" << ent.getEvalScore() << ")";
-        }
-    } else {
-        std::cout << "---";
-    }
+    printScore(ok, ent, score);
 
     ok = TBProbe::gtbProbeDTM(pos, 0, score);
     std::cout << " dtm:";
-    if (ok)
-        std::cout << score;
-    else
-        std::cout << "---";
+    printScore(ok, ent, score);
     std::cout << std::endl;
 }
