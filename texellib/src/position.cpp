@@ -70,7 +70,6 @@ Position::Position() {
     halfMoveClock = 0;
     fullMoveCounter = 1;
     computeZobristHash();
-    wKingSq_ = bKingSq_ = -1;
     wMtrl_ = bMtrl_ = -::kV;
     wMtrlPawns_ = bMtrlPawns_ = 0;
 }
@@ -121,8 +120,6 @@ Position::setPiece(int square, int piece) {
                 wMtrlPawns_ += pVal;
                 pHashKey ^= psHashKeys[Piece::WPAWN][square];
             }
-            if (piece == Piece::WKING)
-                wKingSq_ = square;
         } else {
             bMtrl_ += pVal;
             blackBB_ |= sqMask;
@@ -130,8 +127,6 @@ Position::setPiece(int square, int piece) {
                 bMtrlPawns_ += pVal;
                 pHashKey ^= psHashKeys[Piece::BPAWN][square];
             }
-            if (piece == Piece::BKING)
-                bKingSq_ = square;
         }
     }
 
@@ -327,13 +322,9 @@ Position::movePieceNotPawn(int from, int to) {
     if (Piece::isWhite(piece)) {
         whiteBB_ &= ~sqMaskF;
         whiteBB_ |= sqMaskT;
-        if (piece == Piece::WKING)
-            wKingSq_ = to;
     } else {
         blackBB_ &= ~sqMaskF;
         blackBB_ |= sqMaskT;
-        if (piece == Piece::BKING)
-            bKingSq_ = to;
     }
 
     psScore1_[piece] += Evaluate::psTab1[piece][to] - Evaluate::psTab1[piece][from];
@@ -395,8 +386,6 @@ Position::deSerialize(const SerializeData& data) {
                         wMtrlPawns_ += pVal;
                         pHashKey ^= key;
                     }
-                    if (piece == Piece::WKING)
-                        wKingSq_ = square;
                 } else {
                     bMtrl_ += pVal;
                     blackBB_ |= sqMask;
@@ -404,8 +393,6 @@ Position::deSerialize(const SerializeData& data) {
                         bMtrlPawns_ += pVal;
                         pHashKey ^= key;
                     }
-                    if (piece == Piece::BKING)
-                        bKingSq_ = square;
                 }
             }
             psScore1_[piece] += Evaluate::psTab1[piece][square];

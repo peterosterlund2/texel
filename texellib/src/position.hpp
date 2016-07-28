@@ -225,7 +225,6 @@ private:
     static U64 getRandomHashVal(int rndNo);
 
 
-    int wKingSq_, bKingSq_;  // Cached king positions
     int wMtrl_;              // Total value of all white pieces and pawns
     int bMtrl_;              // Total value of all black pieces and pawns
     int wMtrlPawns_;         // Total value of all white pawns
@@ -532,12 +531,8 @@ Position::setPieceB(int square, int piece) {
     if (piece != Piece::EMPTY) {
         if (Piece::isWhite(piece)) {
             whiteBB_ |= sqMask;
-            if (piece == Piece::WKING)
-                wKingSq_ = square;
         } else {
             blackBB_ |= sqMask;
-            if (piece == Piece::BKING)
-                bKingSq_ = square;
         }
     }
 }
@@ -556,13 +551,9 @@ Position::movePieceNotPawnB(int from, int to) {
     if (Piece::isWhite(piece)) {
         whiteBB_ &= ~sqMaskF;
         whiteBB_ |= sqMaskT;
-        if (piece == Piece::WKING)
-            wKingSq_ = to;
     } else {
         blackBB_ &= ~sqMaskF;
         blackBB_ |= sqMaskT;
-        if (piece == Piece::BKING)
-            bKingSq_ = to;
     }
 }
 
@@ -694,11 +685,11 @@ inline U64 Position::occupiedBB() const {
 }
 
 inline int Position::wKingSq() const {
-    return wKingSq_;
+    return BitBoard::firstSquare(pieceTypeBB_[Piece::WKING]);
 }
 
 inline int Position::bKingSq() const {
-    return bKingSq_;
+    return BitBoard::firstSquare(pieceTypeBB_[Piece::BKING]);
 }
 
 inline int Position::wMtrl() const {
