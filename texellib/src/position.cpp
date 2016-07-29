@@ -30,6 +30,8 @@
 #include <iostream>
 #include <cassert>
 
+U8 Position::castleSqMask[64];
+
 U64 Position::psHashKeys[Piece::nPieceTypes][64];
 U64 Position::whiteHashKey;
 U64 Position::castleHashKeys[16];
@@ -52,6 +54,16 @@ Position::staticInitialize() {
         epHashKeys[f] = getRandomHashVal(rndNo++);
     for (size_t mc = 0; mc < COUNT_OF(moveCntKeys); mc++)
         moveCntKeys[mc] = getRandomHashVal(rndNo++);
+
+    for (int i = 0; i < 64; i++)
+        castleSqMask[i] = ((1 << A1_CASTLE) | (1 << H1_CASTLE) |
+                           (1 << A8_CASTLE) | (1 << H8_CASTLE));
+    castleSqMask[A1] &= ~(1 << A1_CASTLE);
+    castleSqMask[E1] &= ~((1 << A1_CASTLE) | (1 << H1_CASTLE));
+    castleSqMask[H1] &= ~(1 << H1_CASTLE);
+    castleSqMask[A8] &= ~(1 << A8_CASTLE);
+    castleSqMask[E8] &= ~((1 << A8_CASTLE) | (1 << H8_CASTLE));
+    castleSqMask[H8] &= ~(1 << H8_CASTLE);
 }
 
 
@@ -192,16 +204,6 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
             }
         }
 
-        if ((pieceTypeBB(Piece::WKING, Piece::BKING) & fromMask) != 0) {
-            if (wtm) {
-                setCastleMask(castleMask & ~(1 << A1_CASTLE));
-                setCastleMask(castleMask & ~(1 << H1_CASTLE));
-            } else {
-                setCastleMask(castleMask & ~(1 << A8_CASTLE));
-                setCastleMask(castleMask & ~(1 << H8_CASTLE));
-            }
-        }
-
         // Perform move
         setPiece(move.from(), Piece::EMPTY);
         // Handle promotion
@@ -221,41 +223,16 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
             } else if (move.to() == k0 - 2) { // O-O-O
                 movePieceNotPawn(k0 - 4, k0 - 1);
             }
-            if (wtm) {
-                setCastleMask(castleMask & ~(1 << A1_CASTLE));
-                setCastleMask(castleMask & ~(1 << H1_CASTLE));
-            } else {
-                setCastleMask(castleMask & ~(1 << A8_CASTLE));
-                setCastleMask(castleMask & ~(1 << H8_CASTLE));
-            }
         }
 
         // Perform move
         movePieceNotPawn(move.from(), move.to());
     }
-    if (wtm) {
-        // Update castling rights when rook moves
-        if ((BitBoard::maskCorners & fromMask) != 0) {
-            if (p == Piece::WROOK)
-                removeCastleRights(move.from());
-        }
-        if ((BitBoard::maskCorners & (1ULL << move.to())) != 0) {
-            if (capP == Piece::BROOK)
-                removeCastleRights(move.to());
-        }
-    } else {
-        fullMoveCounter++;
-        // Update castling rights when rook moves
-        if ((BitBoard::maskCorners & fromMask) != 0) {
-            if (p == Piece::BROOK)
-                removeCastleRights(move.from());
-        }
-        if ((BitBoard::maskCorners & (1ULL << move.to())) != 0) {
-            if (capP == Piece::WROOK)
-                removeCastleRights(move.to());
-        }
-    }
 
+    setCastleMask(getCastleMask() & castleSqMask[move.from()] & castleSqMask[move.to()]);
+
+    if (!wtm)
+        fullMoveCounter++;
     whiteMove = !wtm;
 }
 

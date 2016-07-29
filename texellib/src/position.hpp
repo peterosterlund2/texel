@@ -220,8 +220,6 @@ private:
     void movePieceNotPawn(int from, int to);
     void movePieceNotPawnB(int from, int to);
 
-    void removeCastleRights(int square);
-
     static U64 getRandomHashVal(int rndNo);
 
 
@@ -254,6 +252,8 @@ private:
     U64 hashKey;           // Cached Zobrist hash key
     U64 pHashKey;          // Cached Zobrist pawn hash key
     MatId matId;           // Cached material identifier
+
+    static U8 castleSqMask[64]; // Castle masks retained for each square
 
     static U64 psHashKeys[Piece::nPieceTypes][64];    // [piece][square]
 
@@ -416,9 +416,11 @@ Position::getCastleMask() const {
 
 inline void
 Position::setCastleMask(int castleMask) {
-    hashKey ^= castleHashKeys[this->castleMask];
-    hashKey ^= castleHashKeys[castleMask];
-    this->castleMask = castleMask;
+    if (castleMask != this->castleMask) {
+        hashKey ^= castleHashKeys[this->castleMask];
+        hashKey ^= castleHashKeys[castleMask];
+        this->castleMask = castleMask;
+    }
 }
 
 inline int
@@ -620,19 +622,6 @@ Position::mirrorY(int square) {
 inline bool
 Position::darkSquare(int x, int y) {
     return (x & 1) == (y & 1);
-}
-
-inline void
-Position::removeCastleRights(int square) {
-    if (square == getSquare(0, 0)) {
-        setCastleMask(castleMask & ~(1 << A1_CASTLE));
-    } else if (square == getSquare(7, 0)) {
-        setCastleMask(castleMask & ~(1 << H1_CASTLE));
-    } else if (square == getSquare(0, 7)) {
-        setCastleMask(castleMask & ~(1 << A8_CASTLE));
-    } else if (square == getSquare(7, 7)) {
-        setCastleMask(castleMask & ~(1 << H8_CASTLE));
-    }
 }
 
 inline int Position::getFullMoveCounter() const {
