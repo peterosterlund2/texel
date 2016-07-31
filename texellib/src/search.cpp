@@ -141,19 +141,23 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
         initNodeStats();
         if (listener) listener->notifyDepth(depth);
         int aspirationDelta = 0;
-        int alpha = 0;
         UndoInfo ui;
         bool needMoreTime = false;
         for (int mi = 0; mi < (int)rootMoves.size(); mi++) {
             posHashFirstNew = posHashFirstNew0 + ((maxPV > 1) ? 1 : 0);
             if (mi < maxPV)
                 aspirationDelta = isWinScore(std::abs(rootMoves[mi].score())) ? 3000 : aspirationWindow;
-            if (firstIteration)
+            int alpha, beta;
+            if (firstIteration) {
                 alpha = -MATE0;
-            else if (mi < maxPV)
+                beta = MATE0;
+            } else if (mi < maxPV) {
                 alpha = std::max(rootMoves[mi].score() - aspirationDelta, -MATE0);
-            else
+                beta  = std::min(rootMoves[mi].score() + aspirationDelta, MATE0);
+            } else {
                 alpha = rootMoves[maxPV-1].score();
+                beta = alpha + 1;
+            }
 
             searchNeedMoreTime = (mi > 0);
             Move& m = rootMoves[mi].move;
@@ -163,13 +167,6 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             S64 nodesThisMove = -totalNodes;
             posHashList[posHashListSize++] = pos.zobristHash();
             bool givesCheck = MoveGen::givesCheck(pos, m);
-            int beta;
-            if (firstIteration)
-                beta = MATE0;
-            else if (mi < maxPV)
-                beta = std::min(rootMoves[mi].score() + aspirationDelta, MATE0);
-            else
-                beta = alpha + 1;
 
             int lmrS = 0;
             bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
