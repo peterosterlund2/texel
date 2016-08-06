@@ -523,7 +523,6 @@ TBTest::tbTest() {
     // Same position, no GTB tables available
     initTB("/no/such/dir", gtbDefaultCacheMB, rtbDefaultPath);
     res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
-    std::cout << "res:" << ((int)res) << " score:" << ent.getScore(ply) << std::endl;
     ASSERT(!res || ent.getScore(ply) != 0);
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
 
