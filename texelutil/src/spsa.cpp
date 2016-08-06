@@ -109,7 +109,7 @@ Spsa::tourneySimulation(int nSimul, int nRounds, const std::vector<double>& elo)
     for (int i = 0; i < N; i++) {
         std::vector<ResultSimulation> tmp;
         for (int j = 0; j < N; j++) {
-            double eloDiff = abs(elo[i] - elo[j]);
+            double eloDiff = fabs(elo[i] - elo[j]);
 #if 0
             double mean = ResultSimulation::eloToResult(elo[i] - elo[j]);
             double drawProb = std::min(mean, 1 - mean) * 0.8;
