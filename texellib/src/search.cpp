@@ -661,7 +661,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Null-move pruning
-    if ((depth >= 3) && !inCheck && sti.allowNullMove && !isWinScore(beta) && !singularSearch) {
+    if ((depth >= 3) && !inCheck && sti.allowNullMove && !isWinScore(beta) &&
+            !singularSearch && (beta == alpha + 1)) {
         bool nullOk;
         if (pos.isWhiteMove()) {
             nullOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
@@ -698,14 +699,16 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 pos.setEpSquare(-1);
                 searchTreeInfo[ply+1].allowNullMove = false;
                 searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
-                auto guard = finally([this,ply]() {
+                int hmc = pos.getHalfMoveClock();
+                pos.setHalfMoveClock(0);
+                auto guard = finally([this,ply,hmc]() {
                     searchTreeInfo[ply+1].allowNullMove = true;
+                    pos.setHalfMoveClock(hmc);
                 });
                 score = -negaScout(smp, tb, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
                 pos.setEpSquare(epSquare);
                 pos.setWhiteMove(!pos.isWhiteMove());
             }
-            bool storeInHash = true;
             if ((score >= beta) && (depth >= 10)) {
                 // Null-move verification search
                 SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
@@ -727,7 +730,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     sti3.bestMove.setMove(0,0,0,0);
                 });
                 score = negaScout(smp, tb, beta - 1, beta, ply, depth - R, recaptureSquare, inCheck);
-                storeInHash = false;
             }
             if (smp && (depth - R >= MIN_SMP_DEPTH))
                 pd.fhInfo.addData(-1, searchTreeInfo[ply+1].currentMoveNo, score < beta, false);
@@ -735,8 +737,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 if (isWinScore(score))
                     score = beta;
                 emptyMove.setScore(score);
-                if (storeInHash)
-                    if (useTT) tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
+                if (useTT) tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, score, TType::T_GE, evalScore, hKey);
                 return score;
             }
