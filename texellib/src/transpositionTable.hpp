@@ -157,6 +157,10 @@ public:
     /** Print hash table statistics. */
     void printStats(int rootDepth) const;
 
+    /** Return how full the hash table is, measured in "per mill".
+     *  Only an approximate value is returned. */
+    int getHashFull() const;
+
 
     // Methods to handle tablebase generation and probing
 

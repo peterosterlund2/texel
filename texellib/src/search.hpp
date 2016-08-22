@@ -81,7 +81,7 @@ public:
                               bool isMate, bool upperBound, bool lowerBound,
                               const std::vector<Move>& pv, int multiPVIndex,
                               U64 tbHits) = 0;
-        virtual void notifyStats(U64 nodes, int nps, U64 tbHits, int time) = 0;
+        virtual void notifyStats(U64 nodes, int nps, int hashFull, U64 tbHits, int time) = 0;
     };
 
     void setListener(std::unique_ptr<Listener> listener);

@@ -320,7 +320,7 @@ BookBuildControl::startAnalysis(const std::vector<Move>& moves) {
             }
             bbc.notify(BookBuildControl::Change::PV);
         }
-        void notifyStats(U64 nodes, int nps, U64 tbHits, int time) override {}
+        void notifyStats(U64 nodes, int nps, int hashFull, U64 tbHits, int time) override {}
     private:
         BookBuildControl& bbc;
         Position pos0;

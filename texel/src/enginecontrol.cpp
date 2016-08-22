@@ -84,8 +84,8 @@ EngineControl::SearchListener::notifyPV(int depth, int score, int time, U64 node
 }
 
 void
-EngineControl::SearchListener::notifyStats(U64 nodes, int nps, U64 tbHits, int time) {
-    os << "info nodes " << nodes << " nps " << nps;
+EngineControl::SearchListener::notifyStats(U64 nodes, int nps, int hashFull, U64 tbHits, int time) {
+    os << "info nodes " << nodes << " nps " << nps << " hashfull " << hashFull;
     if (tbHits > 0)
         os << " tbhits " << tbHits;
     os << " time " << time << std::endl;

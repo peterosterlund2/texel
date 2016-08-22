@@ -405,7 +405,8 @@ Search::notifyStats() {
         S64 totNodes = getTotalNodes();
         int nps = (time > 0) ? (int)(totNodes / (time / 1000.0)) : 0;
         S64 tbHits = getTbHits();
-        listener->notifyStats(totNodes, nps, tbHits, time);
+        int hashFull = tt.getHashFull();
+        listener->notifyStats(totNodes, nps, hashFull, tbHits, time);
     }
     tLastStats = tNow;
 }

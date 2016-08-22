@@ -223,6 +223,21 @@ TranspositionTable::printStats(int rootDepth) const {
     }
 }
 
+int
+TranspositionTable::getHashFull() const {
+    if (table.size() < 1000)
+        return 0;
+    int hashFull = 0;
+    for (int i = 0; i < 1000; i++) {
+        TTEntry ent;
+        ent.load(table[i]);
+        if ((ent.getType() != TType::T_EMPTY) &&
+            (ent.getGeneration() == generation))
+            hashFull++;
+    }
+    return hashFull;
+}
+
 // --------------------------------------------------------------------------------
 
 bool
