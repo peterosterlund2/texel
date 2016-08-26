@@ -32,9 +32,7 @@
 
 #include <memory>
 
-/**
- * Texel chess engine main function.
- */
+/** Texel chess engine main function. */
 int main(int argc, char* argv[]) {
     ComputerPlayer::initEngine();
     if ((argc == 2) && (std::string(argv[1]) == "txt")) {
