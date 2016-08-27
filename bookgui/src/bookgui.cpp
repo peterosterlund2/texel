@@ -520,6 +520,8 @@ BookGui::fenEntryChanged(GdkEventFocus* e) {
 
 void
 BookGui::setPositionFromBookHash(U64 hash) {
+    if (processingBook)
+        return;
     std::vector<Move> movesBefore, movesAfter;
     Position newPos;
     if (!bbControl.getBookPV(hash, newPos, movesBefore, movesAfter))
