@@ -477,7 +477,8 @@ BookGui::updateEnabledState() {
 
     // Focus buttons
     setFocusButton->set_sensitive(!processingBook);
-    getFocusButton->set_sensitive(!processingBook);
+    getFocusButton->set_sensitive(!processingBook &&
+                                  bbControl.getFocusHash() != pos.bookHash());
     static U64 startPosHash = TextIO::readFEN(TextIO::startPosFEN).bookHash();
     clearFocusButton->set_sensitive(!processingBook &&
                                     bbControl.getFocusHash() != startPosHash);
