@@ -404,7 +404,7 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
         void addMove(U16 m, double w) {
             assert(w >= 0.0);
             if (w == 0.0)
-                w = 1.0; // Happens when best move has path error > maxErrSelf
+                w = 1e-30; // Happens when best move has path error > maxErrSelf
             for (size_t i = 0; i < vec.size(); i++)
                 if (vec[i].move == m) {
                     vec[i].weight += w;
