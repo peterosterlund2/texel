@@ -49,7 +49,7 @@ static std::unordered_map<int,int> maxDTM; // MatId -> Max DTM value in GTB TB
 static std::unordered_map<int,int> maxDTZ; // MatId -> Max DTZ value in RTB TB
 struct IIPairHash {
     size_t operator()(const std::pair<int,int>& p) const {
-        return p.first * 0x714d3559 + p.second;
+        return ((U64)p.first) * 0x714d3559 + (U64)p.second;
     }
 };
 // (MatId,maxPawnMoves) -> Max DTM in sub TBs
