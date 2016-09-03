@@ -39,9 +39,6 @@ public:
      *  test games simultaneously on NUMA hardware. */
     void disable();
 
-    /** Preferred node for a given search thread. */
-    int nodeForThread(int threadNo) const;
-
     /** Bind current thread to NUMA node determined by nodeForThread(). */
     void bindThread(int threadNo) const;
 
@@ -51,20 +48,11 @@ public:
 private:
     Numa();
 
+    /** Preferred node for a given search thread. */
+    int nodeForThread(int threadNo) const;
+
     /** Thread number to node number. */
     std::vector<int> threadToNode;
-
-    struct NodeInfo {
-        explicit NodeInfo(int n = 0, int c = 0, int t = 0);
-        int node;
-        int numCores;
-        int numThreads;
-    };
 };
-
-inline
-Numa::NodeInfo::NodeInfo(int n, int c, int t)
-    : node(n), numCores(c), numThreads(t) {
-}
 
 #endif /* NUMA_HPP_ */

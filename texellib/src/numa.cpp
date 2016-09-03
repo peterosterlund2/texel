@@ -142,6 +142,12 @@ Numa::Numa() {
         if (numa_bitmask_isbitset(runNodes, i))
             nodesToUse.insert(i);
 
+    struct NodeInfo {
+        int node = 0;
+        int numCores = 0;
+        int numThreads = 0;
+    };
+
     std::map<int, NodeInfo> nodeInfo;
     std::string baseDir("/sys/devices/system/cpu");
     for (int i = 0; ; i++) {
