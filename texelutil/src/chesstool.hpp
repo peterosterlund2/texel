@@ -101,6 +101,11 @@ public:
     /** Read file with one FEN position per line. Output PGN file using "FEN" and "SetUp" tags. */
     void fenToPgn(std::istream& is);
 
+    /** Read lines from is and for each line, replace a sequence of moves with the resulting FEN
+     * after executing those moves from the initial position. Any remaining words on the line
+     * are copied unmodified to standard output. */
+    void movesToFen(std::istream& is);
+
     /** Compute average evaluation error for different pawn advantage values. */
     void pawnAdvTable(std::istream& is);
 

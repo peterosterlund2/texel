@@ -87,6 +87,7 @@ usage() {
     std::cerr << "\n";
     std::cerr << " p2f [n]  : Convert from PGN to FEN, using each position with probability 1/n.\n";
     std::cerr << " f2p      : Convert from FEN to PGN\n";
+    std::cerr << " m2f      : For each line, convert sequence of moves to fen\n";
     std::cerr << " filter type pars : Keep positions that satisfy a condition\n";
     std::cerr << "        score scLimit prLimit : qScore and search score differ less than limits\n";
     std::cerr << "        mtrldiff [-m] dQ dR dB [dN] dP : material difference satisfies pattern\n";
@@ -273,6 +274,8 @@ main(int argc, char* argv[]) {
             chessTool.pgnToFen(std::cin, n);
         } else if (cmd == "f2p") {
             chessTool.fenToPgn(std::cin);
+        } else if (cmd == "m2f") {
+            chessTool.movesToFen(std::cin);
         } else if (cmd == "pawnadv") {
             chessTool.pawnAdvTable(std::cin);
         } else if (cmd == "filter") {

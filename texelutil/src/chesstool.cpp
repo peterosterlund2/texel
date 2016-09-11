@@ -197,6 +197,39 @@ ChessTool::fenToPgn(std::istream& is) {
 }
 
 void
+ChessTool::movesToFen(std::istream& is) {
+    std::vector<std::string> lines = readStream(is);
+    Position startPos(TextIO::readFEN(TextIO::startPosFEN));
+    std::vector<std::string> words;
+    for (const std::string& line : lines) {
+        Position pos(startPos);
+        UndoInfo ui;
+        words.clear();
+        splitString(line, words);
+        bool inSequence = true;
+        bool fenPrinted = false;
+        for (const std::string& word : words) {
+            if (inSequence) {
+                Move move = TextIO::stringToMove(pos, word);
+                if (move.isEmpty()) {
+                    inSequence = false;
+                    std::cout << TextIO::toFEN(pos);
+                    fenPrinted = true;
+                } else {
+                    pos.makeMove(move, ui);
+                }
+            }
+            if (!inSequence) {
+                std::cout << ' ' << word;
+            }
+        }
+        if (!fenPrinted)
+            std::cout << TextIO::toFEN(pos);
+        std::cout << std::endl;
+    }
+}
+
+void
 ChessTool::pawnAdvTable(std::istream& is) {
     std::vector<PositionInfo> positions;
     readFENFile(is, positions);
