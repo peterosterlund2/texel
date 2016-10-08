@@ -237,11 +237,71 @@ testMateDepth() {
     ASSERT( ent.isCutOff(-(mate0 - 60), -(mate0 - 70), ply, 3));
 }
 
+static void
+testHashFuncBackComp() {
+    U64 hash1 = 0;
+    U64 hash2 = 0;
+    auto addToHash = [&](const Position& pos) {
+        U64 k1 = 0x9F98351204FE0025ULL;
+        U64 k2 = 0x4E7123A3F8FDA837ULL;
+        hash1 = (hash1 * k1) ^ pos.historyHash();
+        hash2 = (hash2 * k2) ^ pos.bookHash();
+    };
+    auto addFenToHash = [&](const std::string& fen) {
+        addToHash(TextIO::readFEN(fen));
+    };
+
+    for (int p = Piece::EMPTY; p <= Piece::BPAWN; p++) {
+        for (int sq = 0; sq < 64; sq++) {
+            Position pos;
+            pos.setPiece(sq, p);
+            addToHash(pos);
+        }
+    }
+    ASSERT_EQUAL(0x5BBFE2B3AFB006C2ULL, hash1);
+    ASSERT_EQUAL(0xAD4B1EC702331510ULL, hash2);
+
+    addFenToHash("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1");
+    ASSERT_EQUAL(0x75822BCC01D378C6ULL, hash1);
+    ASSERT_EQUAL(0x1673E04BA881DF7EULL, hash2);
+
+    for (int i = 0; i < 16; i++) {
+        Position pos = TextIO::readFEN(TextIO::startPosFEN);
+        pos.setCastleMask(i);
+        addToHash(pos);
+    }
+    ASSERT_EQUAL(0x3701B8575EB511B2ULL, hash1);
+    ASSERT_EQUAL(0xE966E3BD5C3A5538ULL, hash2);
+
+    for (int i = 0; i < 110; i++) {
+        Position pos = TextIO::readFEN(TextIO::startPosFEN);
+        pos.setHalfMoveClock(i);
+        addToHash(pos);
+        pos = TextIO::readFEN("8/3k4/8/8/8/8/8/3KR3 w - - 0 1");
+        pos.setHalfMoveClock(i);
+        addToHash(pos);
+    }
+    ASSERT_EQUAL(0x557086EB66B28115ULL, hash1);
+    ASSERT_EQUAL(0xB7D0875484983968ULL, hash2);
+
+    addFenToHash("rnbqkbnr/p1pppppp/8/8/Pp6/8/1PPPPPPP/RNBQKBNR b KQkq a3 0 2");
+    addFenToHash("rnbqkbnr/pp1ppppp/8/8/1Pp5/8/P1PPPPPP/RNBQKBNR b KQkq b3 0 1");
+    addFenToHash("rnbqkbnr/ppp1pppp/8/8/2Pp4/8/PP1PPPPP/RNBQKBNR b KQkq c3 0 1");
+    addFenToHash("rnbqkbnr/pp1ppppp/8/8/2pP4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1");
+    addFenToHash("rnbqkbnr/ppppp1pp/8/8/4Pp2/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
+    addFenToHash("rnbqkbnr/pppp1ppp/8/8/4pP2/8/PPPPP1PP/RNBQKBNR b KQkq f3 0 1");
+    addFenToHash("rnbqkbnr/ppppp1pp/8/8/5pP1/8/PPPPPP1P/RNBQKBNR b KQkq g3 0 1");
+    addFenToHash("rnbqkbnr/pppppp1p/8/8/6pP/8/PPPPPPP1/RNBQKBNR b KQkq h3 0 1");
+    ASSERT_EQUAL(0xFE05FCA83AC9EF47ULL, hash1);
+    ASSERT_EQUAL(0x9CCCE083C803D732ULL, hash2);
+}
+
 cute::suite
 TranspositionTableTest::getSuite() const {
     cute::suite s;
     s.push_back(CUTE(testTTEntry));
     s.push_back(CUTE(testInsert));
     s.push_back(CUTE(testMateDepth));
+    s.push_back(CUTE(testHashFuncBackComp));
     return s;
 }
