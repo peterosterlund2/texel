@@ -34,7 +34,7 @@
 
 std::shared_ptr<void>
 LargePageAlloc::allocBytes(size_t numBytes) {
-#ifdef  USE_LARGE_PAGES
+#ifdef USE_LARGE_PAGES
 #ifdef _WIN32
 #else
     auto deleter = [numBytes](void* mem) {
