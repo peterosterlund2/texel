@@ -41,8 +41,7 @@
 
 
 EngineControl::SearchListener::SearchListener(std::ostream& os0)
-    : os(os0)
-{
+    : os(os0) {
 }
 
 void
@@ -96,8 +95,7 @@ EngineControl::EngineControl(std::ostream& o)
       shouldDetach(true),
       tt(8),
       pd(tt),
-      randomSeed(0)
-{
+      randomSeed(0) {
     Numa::instance().bindThread(0);
     hashParListenerId = UciParams::hash->addListener([this]() {
         setupTT();

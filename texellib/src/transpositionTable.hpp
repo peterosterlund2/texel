@@ -59,7 +59,7 @@ private:
  * Implements the main transposition table using Cuckoo hashing.
  */
 class TranspositionTable {
-public:
+private:
     /** In-memory representation of TT entry. Uses std::atomic for thread safety,
      * but accessed using memory_order_relaxed for maximum performance. */
     struct TTEntryStorage {
@@ -70,6 +70,7 @@ public:
     };
     static_assert(sizeof(TTEntryStorage) == 16, "TTEntryStorage size wrong");
 
+public:
     /** A local copy of a transposition table entry. */
     class TTEntry {
     public:
@@ -195,7 +196,11 @@ private:
     static U64 getStoredKey(U64 key);
 
 
-    vector_aligned<TTEntryStorage> table;
+    TTEntryStorage* table; // Points to either tableV or tableLP
+    size_t tableSize;      // Number of entries
+    vector_aligned<TTEntryStorage> tableV;
+    std::shared_ptr<TTEntryStorage> tableLP; // Large page allocation if used
+
     U64 hashMask; // Mask to convert zobrist key to table index
     U8 generation;
 
@@ -390,7 +395,7 @@ TranspositionTable::TTEntry::getBits(int first, int size) const {
 
 inline void
 TranspositionTable::setHashMask(size_t s) {
-    hashMask = table.size() - 1;
+    hashMask = tableSize - 1;
     hashMask &= ~((size_t)3);
 }
 
@@ -466,7 +471,7 @@ TranspositionTable::putByte(U64 idx, U8 value) {
 
 inline U64
 TranspositionTable::byteSize() const {
-    return table.size() * 16;
+    return tableSize * sizeof(TTEntryStorage);
 }
 
 

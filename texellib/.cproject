@@ -31,6 +31,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1579469936" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7 -Wno-misleading-indentation" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.202156022" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAS_CTZ"/>
+									<listOptionValue builtIn="false" value="USE_LARGE_PAGES"/>
 									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 									<listOptionValue builtIn="false" value="HAS_RT"/>
@@ -51,7 +52,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/compression}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/compression/lzma}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.38824828" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.38824828" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.72861913" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1249350592" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
@@ -100,6 +101,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1014915444" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7 -Wno-misleading-indentation" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.820704211" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAS_CTZ"/>
+									<listOptionValue builtIn="false" value="USE_LARGE_PAGES"/>
 									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 									<listOptionValue builtIn="false" value="HAS_RT"/>
@@ -121,7 +123,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/compression}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/compression/lzma}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.577735493" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.577735493" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1790594162" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.380419687" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
@@ -164,6 +166,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.981462985" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7 -Wno-misleading-indentation" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.2075864462" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAS_CTZ"/>
+									<listOptionValue builtIn="false" value="USE_LARGE_PAGES"/>
 									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 									<listOptionValue builtIn="false" value="HAS_RT"/>
@@ -236,6 +239,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.171135254" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7 -Wno-misleading-indentation" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.161202354" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAS_CTZ"/>
+									<listOptionValue builtIn="false" value="USE_LARGE_PAGES"/>
 									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 									<listOptionValue builtIn="false" value="HAS_RT"/>
@@ -257,7 +261,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/compression}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/compression/lzma}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.168275591" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.168275591" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.856825276" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1932719255" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
@@ -306,6 +310,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1698201238" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7 -Wno-misleading-indentation" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1303082642" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAS_CTZ"/>
+									<listOptionValue builtIn="false" value="USE_LARGE_PAGES"/>
 									<listOptionValue builtIn="false" value="HAS_PREFETCH"/>
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 									<listOptionValue builtIn="false" value="HAS_RT"/>
@@ -327,7 +332,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/compression}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/compression/lzma}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.719918449" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.719918449" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1822124769" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1034384836" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
