@@ -254,6 +254,8 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
         ss.precision(2);
         ss << std::fixed << (evScore / 100.0);
         os << "info string Eval: " << ss.str() << std::endl;
+        if (UciParams::analysisAgeHash->getBoolPar())
+            tt.nextGeneration();
     } else {
         tt.nextGeneration();
     }
