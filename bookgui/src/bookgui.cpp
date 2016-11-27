@@ -225,11 +225,21 @@ BookGui::bookStateChanged() {
             updateBoardAndTree();
             break;
         case BookBuildControl::Change::QUEUE:
-            updateEnabled = true;
             updateQueueView();
-            if (bbControl.numPendingBookTasks() == 0)
-                searchState = SearchState::STOPPED;
             break;
+        case BookBuildControl::Change::QUEUE_SIZE: {
+            updateEnabled = true;
+            int nPending = bbControl.numPendingBookTasks();
+            if (nPending == 0) {
+                searchState = SearchState::STOPPED;
+                setStatusMsg("");
+            } else {
+                std::stringstream ss;
+                ss << "Queue size: " << nPending;
+                setStatusMsg(ss.str());
+            }
+            break;
+        }
         case BookBuildControl::Change::PV:
             updatePVView();
             break;
@@ -402,8 +412,7 @@ BookGui::updateQueueView() {
 void
 BookGui::updatePVView() {
     std::string pv;
-    if (analysing)
-        bbControl.getPVInfo(pv);
+    bbControl.getPVInfo(pv);
     pvInfo->get_buffer()->set_text(pv);
 }
 

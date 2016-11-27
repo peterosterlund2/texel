@@ -729,7 +729,7 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads,
             scheduler->addWorker(std::move(sr));
         }
     }
-    scheduler->startWorkers();
+    scheduler->startWorkers(listener.get());
 
     int numPending = 0;
     const int desiredQueueLen = numThreads + 1;
@@ -769,8 +769,10 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads,
         }
         if (!workAdded && (numPending == 0))
             break;
-        if (workAdded && listener)
-            listener->queueChanged(numPending);
+        if (workAdded && listener) {
+            listener->queueSizeChanged(numPending);
+            listener->treeChanged();
+        }
         if (!workAdded || (numPending >= desiredQueueLen)) {
             SearchScheduler::WorkUnit wu;
             scheduler->getResult(wu);
@@ -793,12 +795,14 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads,
                     scheduler->reportResult(wu);
                 }
             }
-            if (workRemoved && listener && numPending > 0)
-                listener->queueChanged(numPending);
+            if (workRemoved && listener && numPending > 0) {
+                listener->queueSizeChanged(numPending);
+                listener->treeChanged();
+            }
         }
     }
     if (listener)
-        listener->queueChanged(0);
+        listener->queueSizeChanged(0);
 }
 
 std::vector<Move>
@@ -1451,11 +1455,11 @@ SearchScheduler::addWorker(std::unique_ptr<SearchRunner> sr) {
 }
 
 void
-SearchScheduler::startWorkers() {
+SearchScheduler::startWorkers(Book::Listener* listener) {
     for (auto& w : workers) {
         SearchRunner& sr = *w;
-        auto thread = make_unique<std::thread>([this,&sr]() {
-            workerLoop(sr);
+        auto thread = make_unique<std::thread>([this,&sr,listener]() {
+            workerLoop(sr, listener);
         });
         threads.push_back(std::move(thread));
     }
@@ -1547,7 +1551,7 @@ SearchScheduler::reportResult(const WorkUnit& wu) const {
 }
 
 void
-SearchScheduler::workerLoop(SearchRunner& sr) {
+SearchScheduler::workerLoop(SearchRunner& sr, Book::Listener* listener) {
     while (true) {
         WorkUnit wu;
         QueueItem item;
@@ -1564,6 +1568,8 @@ SearchScheduler::workerLoop(SearchRunner& sr) {
             item.startTime = std::chrono::system_clock::now();
             item.completed = false;
             runningItems[sr.instNo()] = item;
+            if (listener)
+                listener->queueChanged();
         }
         wu.bestMove = sr.analyze(wu.gameMoves, wu.movesToSearch, wu.searchTime);
         wu.instNo = sr.instNo();
@@ -1575,6 +1581,8 @@ SearchScheduler::workerLoop(SearchRunner& sr) {
                 completeCv.notify_all();
 
             runningItems.erase(sr.instNo());
+            if (listener)
+                listener->queueChanged();
             item.completed = true;
             finishedItems.push_back(item);
             while (finishedItems.size() > 10)

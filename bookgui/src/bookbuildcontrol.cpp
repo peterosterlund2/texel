@@ -151,12 +151,17 @@ BookBuildControl::startSearch() {
     class BookListener : public BookBuild::Book::Listener {
     public:
         BookListener(BookBuildControl& bbc0) : bbc(bbc0) {}
-        void queueChanged(int nPendingBookTasks) override {
+        void queueSizeChanged(int nPendingBookTasks) override {
             {
                 std::lock_guard<std::mutex> L(bbc.mutex);
                 bbc.nPendingBookTasks = nPendingBookTasks;
             }
+            bbc.notify(BookBuildControl::Change::QUEUE_SIZE);
+        }
+        void queueChanged() override {
             bbc.notify(BookBuildControl::Change::QUEUE);
+        }
+        void treeChanged() override {
             bbc.notify(BookBuildControl::Change::TREE);
         }
     private:

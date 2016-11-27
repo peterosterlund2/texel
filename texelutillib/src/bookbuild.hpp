@@ -271,7 +271,9 @@ public:
     class Listener {
     public:
         virtual ~Listener() {}
-        virtual void queueChanged(int nPendingBookTasks) = 0;
+        virtual void queueSizeChanged(int nPendingBookTasks) = 0;
+        virtual void queueChanged() = 0;
+        virtual void treeChanged() = 0;
     };
     void setListener(std::unique_ptr<Listener> listener);
 
@@ -529,7 +531,7 @@ public:
     void addWorker(std::unique_ptr<SearchRunner> sr);
 
     /** Start the worker threads. Creates one thread for each SearchRunner object. */
-    void startWorkers();
+    void startWorkers(Book::Listener* listener);
 
     /** Stop worker threads as soon as possible. */
     void abort();
@@ -567,7 +569,7 @@ public:
 
 private:
     /** Worker thread main loop. */
-    void workerLoop(SearchRunner& sr);
+    void workerLoop(SearchRunner& sr, Book::Listener* listener);
 
     /** Wait for all WorkUnits to finish and then stops all threads. */
     void waitWorkers();
