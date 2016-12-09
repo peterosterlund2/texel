@@ -123,8 +123,7 @@ ThreadStopHandler::shouldStop() {
         nextProbCheck = counter + 1 + counter / 4;
         int bestPrio = pd.wq.getBestPrio();
 //        log([&](std::ostream& os){os << "shouldStop, th:" << wt.getThreadNo() << " myP:" << myPrio << " bestP:" << bestPrio;});
-        if ((bestPrio > myPrio + 20) && (bestPrio >= (myPrio + (1000 - myPrio) * 0.25)) &&
-            (sp.owningThread() != wt.getThreadNo()))
+        if ((bestPrio > myPrio + 20) && (bestPrio >= (myPrio + (1000 - myPrio) * 0.25)))
             return true;
         reportNodes(false);
     }
@@ -709,17 +708,6 @@ SplitPoint::hasHelperThread() const {
 }
 
 bool
-SplitPoint::isAncestorTo(const SplitPoint& sp) const {
-    const SplitPoint* tmp = &sp;
-    while (tmp) {
-        if (tmp == this)
-            return true;
-        tmp = &*(tmp->parent);
-    }
-    return false;
-}
-
-bool
 SplitPoint::isAllNode() const {
     int nFirst = 0;
     const SplitPoint* tmp = this;
@@ -728,7 +716,7 @@ SplitPoint::isAllNode() const {
             nFirst++;
         else
             break;
-        tmp = &*(tmp->parent);
+        tmp = tmp->parent.get();
     }
     return (nFirst % 2) != 0;
 }

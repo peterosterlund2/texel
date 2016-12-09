@@ -450,9 +450,6 @@ public:
     /** Return true if there are moves that have not been finished (canceled) yet. */
     bool hasUnFinishedMove() const;
 
-    /** Return true if this SplitPoint is an ancestor to "sp". */
-    bool isAncestorTo(const SplitPoint& sp) const;
-
     /** Return true if some other thread is helping the SplitPoint owner. */
     bool hasHelperThread() const;
 

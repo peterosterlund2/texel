@@ -320,7 +320,6 @@ ParallelTest::testWorkQueueParentChild() {
     sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
     sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
     wq.addWork(sp1);
-    ASSERT(sp1->isAncestorTo(*sp1));
 
     pos.makeMove(TextIO::uciStringToMove("e2e4"), ui);
     posHashList[posHashListSize++] = pos.zobristHash();
@@ -330,8 +329,6 @@ ParallelTest::testWorkQueueParentChild() {
     sp2->addMove(0, SplitPointMove(TextIO::uciStringToMove("e7e5"), 0, 4, -1, false));
     sp2->addMove(1, SplitPointMove(TextIO::uciStringToMove("c7c5"), 0, 4, -1, false));
     wq.addWork(sp2);
-    ASSERT( sp1->isAncestorTo(*sp2));
-    ASSERT(!sp2->isAncestorTo(*sp1));
 
     pos.makeMove(TextIO::uciStringToMove("e7e5"), ui);
     posHashList[posHashListSize++] = pos.zobristHash();
@@ -342,10 +339,6 @@ ParallelTest::testWorkQueueParentChild() {
     sp3->addMove(1, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
     sp3->addMove(2, SplitPointMove(TextIO::uciStringToMove("c2c3"), 0, 4, -1, false));
     wq.addWork(sp3);
-    ASSERT( sp1->isAncestorTo(*sp3));
-    ASSERT( sp2->isAncestorTo(*sp3));
-    ASSERT(!sp3->isAncestorTo(*sp1));
-    ASSERT(!sp3->isAncestorTo(*sp2));
 
     pos = TextIO::readFEN(TextIO::startPosFEN);
     posHashListSize = 1;
@@ -357,12 +350,6 @@ ParallelTest::testWorkQueueParentChild() {
     sp4->addMove(0, SplitPointMove(TextIO::uciStringToMove("d7d5"), 0, 4, -1, false));
     sp4->addMove(1, SplitPointMove(TextIO::uciStringToMove("g8f6"), 0, 4, -1, false));
     wq.addWork(sp4);
-    ASSERT( sp1->isAncestorTo(*sp4));
-    ASSERT(!sp2->isAncestorTo(*sp4));
-    ASSERT(!sp3->isAncestorTo(*sp4));
-    ASSERT(!sp4->isAncestorTo(*sp1));
-    ASSERT(!sp4->isAncestorTo(*sp2));
-    ASSERT(!sp4->isAncestorTo(*sp3));
 
     ASSERT_EQUAL(4, wq.queue.size());
     ASSERT_EQUAL(2, sp1->getChildren().size());
