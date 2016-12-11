@@ -78,15 +78,15 @@ class Finally {
 public:
     Finally(Func func) : f(func) {}
     ~Finally() { f(); }
+    Finally(const Finally&) = delete;
+    Finally& operator=(const Finally&) = delete;
 private:
     Func f;
 };
 
-/** Run code when a variable goes out of scope. */
-template <typename Func>
-Finally<Func> finally(Func f) {
-    return Finally<Func>(f);
-}
+#define finally(f) \
+    auto finally_lambda = f; \
+    Finally<decltype(finally_lambda)> finally_guard(finally_lambda)
 
 template <typename T>
 T clamp(T val, T min, T max) {

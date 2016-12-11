@@ -702,10 +702,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
                 int hmc = pos.getHalfMoveClock();
                 pos.setHalfMoveClock(0);
-                auto guard = finally([this,ply,hmc]() {
+                finally(([this,ply,hmc]{
                     searchTreeInfo[ply+1].allowNullMove = true;
                     pos.setHalfMoveClock(hmc);
-                });
+                }));
                 score = -negaScout(smp, tb, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
                 pos.setEpSquare(epSquare);
                 pos.setWhiteMove(!pos.isWhiteMove());
@@ -722,14 +722,14 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 sti2.nodeIdx = sti.nodeIdx;
                 const S64 savedNodeIdx = sti.nodeIdx;
                 sti.allowNullMove = false;
-                auto guard = finally([&]() {
+                finally(([&]{
                     sti.allowNullMove = true;
                     sti.nodeIdx = savedNodeIdx;
                     sti2.currentMove = savedMove;
                     sti2.currentMoveNo = savedMoveNo;
                     sti2.nodeIdx = savedNodeIdx2;
                     sti3.bestMove.setMove(0,0,0,0);
-                });
+                }));
                 score = negaScout(smp, tb, beta - 1, beta, ply, depth - R, recaptureSquare, inCheck);
             }
             if (smp && (depth - R >= MIN_SMP_DEPTH))
@@ -772,12 +772,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             sti2.currentMoveNo = -1;
             sti2.nodeIdx = sti.nodeIdx;
             const S64 savedNodeIdx = sti.nodeIdx;
-            auto guard = finally([&]() {
+            finally(([&]{
                 sti.nodeIdx = savedNodeIdx;
                 sti2.currentMove = savedMove;
                 sti2.currentMoveNo = savedMoveNo;
                 sti2.nodeIdx = savedNodeIdx2;
-            });
+            }));
             int newDepth = isPv ? depth  - 2 : depth * 3 / 8;
             negaScout(smp, tb, alpha, beta, ply, newDepth, -1, inCheck);
             tt.probe(hKey, ent);
@@ -819,13 +819,13 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         sti2.nodeIdx = sti.nodeIdx;
         const S64 savedNodeIdx = sti.nodeIdx;
         sti.singularMove = hashMove;
-        auto guard = finally([&](){
+        finally(([&]{
             sti.singularMove.setMove(0,0,0,0);
             sti.nodeIdx = savedNodeIdx;
             sti2.currentMove = savedMove;
             sti2.currentMoveNo = savedMoveNo;
             sti2.nodeIdx = savedNodeIdx2;
-        });
+        }));
         int newDepth = depth / 2;
         int newBeta = ent.getScore(ply) - 25;
         int singScore = negaScout(smp, tb, newBeta-1, newBeta, ply, newDepth,
