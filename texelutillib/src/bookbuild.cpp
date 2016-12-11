@@ -29,6 +29,7 @@
 #include "moveGen.hpp"
 #include "search.hpp"
 #include "textio.hpp"
+#include <random>
 
 namespace BookBuild {
 
@@ -263,7 +264,7 @@ public:
                     const std::atomic<U64>& startPosHash,
                     const std::atomic<bool>& stopFlag0) :
         book(b), mutex(mutex0), startHash(startPosHash),
-        stopFlag(stopFlag0), whiteBook(true) {
+        stopFlag(stopFlag0), whiteBook(true), rndGen(std::random_device()()) {
     }
 
     bool getNextPosition(Position& pos, Move& move) override {
@@ -286,7 +287,7 @@ public:
             }
             if (goodChildren.empty())
                 break;
-            std::random_shuffle(goodChildren.begin(), goodChildren.end());
+            std::shuffle(goodChildren.begin(), goodChildren.end(), rndGen);
             ptr = goodChildren[0];
         }
         move = ptr->getBestNonBookMove();
@@ -304,6 +305,7 @@ private:
     const std::atomic<U64>& startHash;
     const std::atomic<bool>& stopFlag;
     bool whiteBook;
+    std::mt19937 rndGen;
 };
 
 void

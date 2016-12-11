@@ -30,6 +30,7 @@
 #include "textio.hpp"
 #include "gametree.hpp"
 #include <unordered_set>
+#include <random>
 
 MatchBookCreator::MatchBookCreator() {
 
@@ -42,7 +43,9 @@ MatchBookCreator::createBook(int depth, int searchTime, std::ostream& os) {
     std::vector<BookLine> lines;
     for (const auto& bl : bookLines)
         lines.push_back(bl.second);
-    std::random_shuffle(lines.begin(), lines.end());
+    auto r = std::random_device()();
+    std::mt19937 rndGen(r);
+    std::shuffle(lines.begin(), lines.end(), rndGen);
     evaluateBookLines(lines, searchTime, os);
 }
 
