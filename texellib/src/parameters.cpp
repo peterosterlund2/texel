@@ -607,7 +607,7 @@ ParamTable<9> stalePawnFactor { 0, 192, useUciParam,
 
 Parameters::Parameters() {
     std::string about = ComputerPlayer::engineName +
-                        " by Peter Osterlund, see http://web.comhem.se/petero2home/javachess/index.html#texel";
+                        " by Peter Osterlund, see http://hem.bredband.net/petero2b/javachess/index.html#texel";
     addPar(std::make_shared<StringParam>("UCI_EngineAbout", about));
 
     addPar(UciParams::hash);
