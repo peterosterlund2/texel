@@ -152,7 +152,7 @@ WorkerThread::mainLoop(int minProbeDepth) {
         }
         Search::SearchTables st(tt, *kt, *ht, *et);
         sp->getPos(pos);
-        const U64 rootNodeIdx = logFile.logPosition(pos, sp->getSearchTreeInfo().nodeIdx, moveNo);
+        const U64 rootNodeIdx = logFile.logPosition(pos);
         UndoInfo ui;
         pos.makeMove(spMove.getMove(), ui);
         std::vector<U64> posHashList;

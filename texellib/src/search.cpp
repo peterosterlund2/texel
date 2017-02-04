@@ -104,7 +104,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
         return Move(); // No moves to search
 
     logFile.open("/home/petero/treelog.dmp", threadNo);
-    const U64 rootNodeIdx = logFile.logPosition(pos, 0, 0, 0);
+    const U64 rootNodeIdx = logFile.logPosition(pos);
 
     kt.clear();
     maxNodes = initialMaxNodes;

@@ -120,46 +120,43 @@ protected:
 
     static const U32 endMark = 0xffffffff;
 
-    struct Position0 {
-        U32 nextIndex;     // Index of next position, or endMark for last position.
+    struct Position0 { // 12
+        U32 nextIndex;      // Index of next position, or endMark for last position.
         U64 word0;
+
+        template <int N> U8* serialize(U8 buffer[N]) const {
+            return Serializer::serialize<N>(buffer, nextIndex, word0);
+        }
+        template <int N> void deSerialize(const U8 buffer[N]) {
+            Serializer::deSerialize<N>(buffer, nextIndex, word0);
+        }
+    };
+
+    struct Position1 { // 16
         U64 word1;
-
-        template <int N> U8* serialize(U8 buffer[N]) const {
-            return Serializer::serialize<N>(buffer, nextIndex, word0, word1);
-        }
-        template <int N> void deSerialize(const U8 buffer[N]) {
-            Serializer::deSerialize<N>(buffer, nextIndex, word0, word1);
-        }
-    };
-
-    struct Position1 {
         U64 word2;
+
+        template <int N> U8* serialize(U8 buffer[N]) const {
+            return Serializer::serialize<N>(buffer, word1, word2);
+        }
+        template <int N> void deSerialize(const U8 buffer[N]) {
+            Serializer::deSerialize<N>(buffer, word1, word2);
+        }
+    };
+
+    struct Position2 { // 16
         U64 word3;
-
-        template <int N> U8* serialize(U8 buffer[N]) const {
-            return Serializer::serialize<N>(buffer, word2, word3);
-        }
-        template <int N> void deSerialize(const U8 buffer[N]) {
-            Serializer::deSerialize<N>(buffer, word2, word3);
-        }
-    };
-
-    struct Position2 {
         U64 word4;
-        U8 owningThread;
-        U8 moveNo;
-        U32 parentIndex;    // Index in owning threads tree log
 
         template <int N> U8* serialize(U8 buffer[N]) const {
-            return Serializer::serialize<N>(buffer, word4, owningThread, moveNo, parentIndex);
+            return Serializer::serialize<N>(buffer, word3, word4);
         }
         template <int N> void deSerialize(const U8 buffer[N]) {
-            Serializer::deSerialize<N>(buffer, word4, owningThread, moveNo, parentIndex);
+            Serializer::deSerialize<N>(buffer, word3, word4);
         }
     };
 
-    struct StartEntry {
+    struct StartEntry { // 17
         U32 endIndex;
         U32 parentIndex;    // Points to NODE_START or POSITION_PART0 node.
         U16 move;
@@ -184,7 +181,7 @@ protected:
         }
     };
 
-    struct EndEntry {
+    struct EndEntry { // 17
         U32 startIndex;
         S16 score;
         U8 scoreType;
@@ -211,7 +208,7 @@ protected:
             EndEntry ee;
         };
 
-        static const int bufSize = 22;
+        static const int bufSize = 18;
         using Buffer = U8[bufSize];
 
         void serialize(U8 buffer[bufSize]) const {
@@ -272,7 +269,7 @@ public:
 
     /** Log information for new position to search.
      * Return index of position entry. */
-    U64 logPosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo);
+    U64 logPosition(const Position& pos);
 
     /**
      * Log information when entering a search node.
@@ -298,7 +295,7 @@ public:
 
 private:
     /** Write position entries to end of file. */
-    void writePosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo);
+    void writePosition(const Position& pos);
 
     /** Write entry to end of file. Uses internal buffering, flushed in close(). */
     void appendEntry(const Entry& entry);
@@ -322,7 +319,7 @@ public:
     void open(const std::string& filename, int threadNo) { }
     void close() { }
     bool isOpened() const { return false; }
-    U64 logPosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo) { return 0; }
+    U64 logPosition(const Position& pos) { return 0; }
     U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) { return 0; }
     U64 logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey) { return 0; }
 };
@@ -349,8 +346,6 @@ private:
 
     /** Get root node information. */
     void getRootNode(U64 index, Position& pos);
-    void getRootNode(U64 index, Position& pos, int& owningThread,
-                     U64& parentIndex, int& moveNo);
 
     /** Read an entry. */
     void readEntry(U64 index, Entry& entry);
@@ -427,9 +422,9 @@ TreeLoggerWriter::isOpened() const {
 }
 
 inline U64
-TreeLoggerWriter::logPosition(const Position& pos, int owningThread, U64 parentIndex, int moveNo) {
+TreeLoggerWriter::logPosition(const Position& pos) {
     U64 ret = nextIndex;
-    writePosition(pos, owningThread, parentIndex, moveNo);
+    writePosition(pos);
     return ret;
 }
 
@@ -461,14 +456,6 @@ TreeLoggerWriter::logNodeEnd(U64 startIndex, int score, int scoreType, int evalS
     entry.ee.hashKey = hashKey;
     appendEntry(entry);
     return nextIndex++;
-}
-
-inline void
-TreeLoggerReader::getRootNode(U64 index, Position& pos) {
-    int owningThread;
-    U64 parentIndex;
-    int moveNo;
-    getRootNode(index, pos, owningThread, parentIndex, moveNo);
 }
 
 #endif /* TREELOGGER_HPP_ */
