@@ -35,7 +35,6 @@
 #include "treeLogger.hpp"
 #include "moveGen.hpp"
 #include "searchUtil.hpp"
-#include "parallel.hpp"
 #include "util/histogram.hpp"
 
 #include <limits>
@@ -46,7 +45,7 @@ class SearchTest;
 class ChessTool;
 class PosGenerator;
 
-/** Implements the nega-scout search algorithm. */
+/** Implements the NegaScout search algorithm. */
 class Search {
     friend class SearchTest;
     friend class ChessTool;
@@ -64,9 +63,7 @@ public:
 
     /** Constructor. */
     Search(const Position& pos, const std::vector<U64>& posHashList,
-           int posHashListSize, SearchTables& st,
-           ParallelData& pd, const std::shared_ptr<SplitPoint>& rootSp,
-           TreeLogger& logFile);
+           int posHashListSize, SearchTables& st, TreeLogger& logFile);
 
     Search(const Search& other) = delete;
     Search& operator=(const Search& other) = delete;
@@ -117,10 +114,10 @@ public:
      * Main recursive search algorithm.
      * @return Score for the side to make a move, in position given by "pos".
      */
-    template <bool smp, bool tb>
+    template <bool tb>
     int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
-    int negaScout(bool smp, bool tb,
+    int negaScout(bool tb,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
     int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
@@ -250,9 +247,6 @@ private:
     /** Return true if the search should be stopped immediately. */
     bool shouldStop();
 
-    /** Throw a FailHighException if a helper thread has failed high. */
-    void checkHelperFailHigh() const;
-
 
     Position pos;
     Evaluate eval;
@@ -262,9 +256,6 @@ private:
     int posHashListSize;          // Number of used entries in posHashList
     int posHashFirstNew;          // First entry in posHashList that has not been played OTB.
     TranspositionTable& tt;
-    ParallelData& pd;
-    std::vector<std::shared_ptr<SplitPoint>> spVec;
-    std::vector<std::shared_ptr<SplitPoint>> pending;
     int threadNo;
     bool mainNumaNode; // True if this thread runs on the NUMA node holding the transposition table
     TreeLogger& logFile;
@@ -409,33 +400,20 @@ Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti, const Move& currMo
 }
 
 inline int
-Search::negaScout(bool smp, bool tb,
+Search::negaScout(bool tb,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
-    using namespace SearchConst;
-    int minDepth = pd.wq.getMinSplitDepth();
-    if (threadNo == 0)
-        minDepth = (minDepth + MIN_SMP_DEPTH) / 2;
-    if (smp && (depth >= minDepth) &&
-               ((int)spVec.size() < MAX_SP_PER_THREAD)) {
-        bool tb2 = tb && depth >= minProbeDepth;
-        if (tb2)
-            return negaScout<true,true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
-        else
-            return negaScout<true,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
-    } else {
-        bool tb2 = tb && depth >= minProbeDepth;
-        if (tb2)
-            return negaScout<false,true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
-        else
-            return negaScout<false,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
-    }
+    bool tb2 = tb && depth >= minProbeDepth;
+    if (tb2)
+        return negaScout<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+    else
+        return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
 }
 
 inline int
 Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
-    return negaScout<false,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+    return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
 }
 
 inline bool
@@ -445,7 +423,7 @@ Search::canClaimDraw50(const Position& pos) {
 
 inline S64
 Search::getTotalNodes() const {
-    return totalNodes + pd.getNumSearchedNodes();
+    return totalNodes /*+ pd.getNumSearchedNodes() */;
 }
 
 inline S64
@@ -455,7 +433,7 @@ Search::getTotalNodesThisThread() const {
 
 inline S64
 Search::getTbHits() const {
-    return tbHits + pd.getTbHits();
+    return tbHits /*+ pd.getTbHits() */;
 }
 
 inline S64

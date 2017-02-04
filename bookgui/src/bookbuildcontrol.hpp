@@ -184,7 +184,6 @@ private:
     std::shared_ptr<std::thread> engineThread;
     std::shared_ptr<Search> sc;
     TranspositionTable tt;
-    ParallelData pd;
     KillerTable kt;
     History ht;
     std::unique_ptr<Evaluate::EvalHashTables> et;

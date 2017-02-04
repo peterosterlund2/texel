@@ -43,7 +43,6 @@ public:
 
     static std::vector<U64> nullHist;
     static TranspositionTable tt;
-    static ParallelData pd;
     static Search::SearchTables st;
     static TreeLogger treeLog;
 

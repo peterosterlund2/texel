@@ -100,7 +100,6 @@ TreeLoggerTest::testLoggerData() {
     {
         TB::Entry e;
         e.type = TB::EntryType::POSITION_PART1;
-        e.p1.t0Index = 337289123;
         e.p1.word2 = 0xfedc1234435432ffULL;
         e.p1.word3 = 0x1324123434534ULL;
         U8 buffer[TB::Entry::bufSize];
@@ -109,7 +108,6 @@ TreeLoggerTest::testLoggerData() {
         TB::Entry e2;
         e2.deSerialize(buffer);
         ASSERT_EQUAL(e.type, e2.type);
-        ASSERT_EQUAL(e.p1.t0Index, e2.p1.t0Index);
         ASSERT_EQUAL(e.p1.word2,   e2.p1.word2);
         ASSERT_EQUAL(e.p1.word3,   e2.p1.word3);
     }

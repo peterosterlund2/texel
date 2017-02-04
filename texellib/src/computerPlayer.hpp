@@ -30,6 +30,7 @@
 #include "transpositionTable.hpp"
 #include "book.hpp"
 #include "search.hpp"
+#include "parallel.hpp"
 
 #include <string>
 #include <memory>

@@ -130,7 +130,6 @@ void
 ChessTool::pgnToFen(std::istream& is, int everyNth) {
     static std::vector<U64> nullHist(200);
     static TranspositionTable tt(19);
-    static ParallelData pd(tt);
     static KillerTable kt;
     static History ht;
     static auto et = Evaluate::getEvalHashTables();
@@ -140,7 +139,7 @@ ChessTool::pgnToFen(std::istream& is, int everyNth) {
 
     Position pos;
     const int mate0 = SearchConst::MATE0;
-    Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+    Search sc(pos, nullHist, 0, st, treeLog);
 
     PgnReader reader(is);
     GameTree gt;
@@ -1543,7 +1542,6 @@ ChessTool::qEval(std::vector<PositionInfo>& positions) {
 void
 ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int end) {
     TranspositionTable tt(19);
-    ParallelData pd(tt);
 
     std::vector<U64> nullHist(200);
     KillerTable kt;
@@ -1554,14 +1552,14 @@ ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int 
 
     const int chunkSize = 5000;
 
-#pragma omp parallel for default(none) shared(positions,tt,pd) private(kt,ht,et,treeLog,pos) firstprivate(nullHist)
+#pragma omp parallel for default(none) shared(positions,tt) private(kt,ht,et,treeLog,pos) firstprivate(nullHist)
     for (int c = beg; c < end; c += chunkSize) {
         if (!et)
             et = Evaluate::getEvalHashTables();
         Search::SearchTables st(tt, kt, ht, *et);
 
         const int mate0 = SearchConst::MATE0;
-        Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+        Search sc(pos, nullHist, 0, st, treeLog);
 
         for (int i = 0; i < chunkSize; i++) {
             if (c + i >= end)

@@ -36,7 +36,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.07a8";
+    std::string name = "Texel 1.07lazy1";
     if (sizeof(char*) == 4)
         name += " 32-bit";
     engineName = name;
@@ -94,7 +94,7 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
     History ht;
     Search::SearchTables st(tt, kt, ht, *et);
     TreeLogger treeLog;
-    Search sc(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
+    Search sc(pos, posHashList, posHashListSize, st, treeLog);
 
     // Determine all legal moves
     MoveList moves;
@@ -180,7 +180,7 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     History ht;
     Search::SearchTables st(tt, kt, ht, *et);
     TreeLogger treeLog;
-    Search sc(pos, posHashList, 0, st, pd, nullptr, treeLog);
+    Search sc(pos, posHashList, 0, st, treeLog);
 
     // Determine all legal moves
     MoveList moves;

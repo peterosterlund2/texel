@@ -30,8 +30,8 @@
 #include "gametree.hpp"
 
 
-BookBuildControl::BookBuildControl(ChangeListener& listener0)
-    : listener(listener0), nPendingBookTasks(0), tt(27), pd(tt) {
+BookBuildControl::BookBuildControl(ChangeListener& listener)
+    : listener(listener), nPendingBookTasks(0), tt(27) {
     ComputerPlayer::initEngine();
     setupTB();
     et = Evaluate::getEvalHashTables();
@@ -332,14 +332,11 @@ BookBuildControl::startAnalysis(const std::vector<Move>& moves) {
     };
 
     Search::SearchTables st(tt, kt, ht, *et);
-    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
+    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, treeLog);
     sc->setListener(make_unique<SearchListener>(*this, pos));
     std::shared_ptr<MoveList> moveList(std::make_shared<MoveList>());
     MoveGen::pseudoLegalMoves(pos, *moveList);
     MoveGen::removeIllegal(pos, *moveList);
-    pd.addRemoveWorkers(0);
-    pd.wq.resetSplitDepth();
-    pd.startAll();
     sc->timeLimit(-1, -1);
     int minProbeDepth = UciParams::minProbeDepth->getIntPar();
     auto f = [this,moveList,minProbeDepth]() {
@@ -355,7 +352,6 @@ BookBuildControl::stopAnalysis() {
         engineThread->join();
         engineThread.reset();
         sc.reset();
-        pd.stopAll();
     }
 }
 

@@ -30,6 +30,7 @@
 #include "transpositionTable.hpp"
 #include "position.hpp"
 #include "move.hpp"
+#include "parallel.hpp"
 
 #include <vector>
 #include <iosfwd>

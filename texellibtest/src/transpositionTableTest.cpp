@@ -158,8 +158,7 @@ static void
 testMateDepth() {
     TranspositionTable& tt(SearchTest::tt);
     Position pos = TextIO::readFEN("rnbqkbnr/pppp1ppp/8/4p3/8/5P1P/PPPPP1P1/RNBQKBNR b KQkq - 0 2");
-    Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::pd,
-              nullptr, SearchTest::treeLog);
+    Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::treeLog);
     Move m = SearchTest::idSearch(sc, 2, 100);
     ASSERT_EQUAL("d8h4", TextIO::moveToUCIString(m));
     UndoInfo ui;

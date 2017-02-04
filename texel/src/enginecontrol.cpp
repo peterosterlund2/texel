@@ -218,7 +218,7 @@ void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPercentage,
                            int maxDepth, int maxNodes) {
     Search::SearchTables st(tt, kt, ht, *et);
-    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
+    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, treeLog);
     sc->setListener(make_unique<SearchListener>(os));
     sc->setStrength(UciParams::strength->getIntPar(), randomSeed);
     std::shared_ptr<MoveList> moves(std::make_shared<MoveList>());
@@ -240,7 +240,6 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
         }
     }
     pd.addRemoveWorkers(UciParams::threads->getIntPar() - 1);
-    pd.wq.resetSplitDepth();
     pd.startAll();
     sc->timeLimit(minTimeLimit, maxTimeLimit, earlyStopPercentage);
     bool ownBook = UciParams::ownBook->getBoolPar();
@@ -282,7 +281,6 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
         if (shouldDetach) {
             engineThread->detach();
             pd.stopAll();
-            pd.fhInfo.reScale();
         }
         engineThread.reset();
         sc.reset();
@@ -313,7 +311,6 @@ EngineControl::stopThread() {
     if (myThread)
         myThread->join();
     pd.stopAll();
-    pd.fhInfo.reScale();
 }
 
 void

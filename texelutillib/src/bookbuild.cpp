@@ -1371,7 +1371,7 @@ Book::getQueueData(QueueData& queueData) const {
 // ----------------------------------------------------------------------------
 
 SearchRunner::SearchRunner(int instanceNo0, TranspositionTable& tt0)
-    : instanceNo(instanceNo0), tt(tt0), pd(tt), aborted(false) {
+    : instanceNo(instanceNo0), tt(tt0), aborted(false) {
 }
 
 Move
@@ -1411,7 +1411,7 @@ SearchRunner::analyze(const std::vector<Move>& gameMoves,
     std::shared_ptr<Search> sc;
     {
         std::lock_guard<std::mutex> L(mutex);
-        sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
+        sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, treeLog);
         search = sc;
         int minTimeLimit = aborted ? 0 : searchTime;
         int maxTimeLimit = aborted ? 0 : searchTime;
