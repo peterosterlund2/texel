@@ -333,7 +333,8 @@ BookBuildControl::startAnalysis(const std::vector<Move>& moves) {
 
     Search::SearchTables st(tt, kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, treeLog);
-    sc->setListener(make_unique<SearchListener>(*this, pos));
+    scListener = make_unique<SearchListener>(*this, pos);
+    sc->setListener(*scListener);
     std::shared_ptr<MoveList> moveList(std::make_shared<MoveList>());
     MoveGen::pseudoLegalMoves(pos, *moveList);
     MoveGen::removeIllegal(pos, *moveList);

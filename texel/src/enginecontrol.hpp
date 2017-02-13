@@ -40,14 +40,64 @@
 #include <atomic>
 
 class SearchParams;
+class SearchListener;
+class EngineControl;
 
+/** State needed by the main engine search thread. */
+class EngineMainThread {
+public:
+    EngineMainThread(SearchListener& listener);
+
+    /** Called by the main search thread. Waits for and acts upon start and quit
+     *  calls from another thread. */
+    void mainLoop();
+
+    /** Tells the main loop to terminate. */
+    void quit();
+
+    /** Tell the search thread to start searching. */
+    void startSearch(EngineControl* engineControl,
+                     std::shared_ptr<Search>& sc, const Position& pos,
+                     std::shared_ptr<MoveList>& moves,
+                     bool ownBook, bool analyseMode,
+                     int maxDepth, int maxNodes,
+                     int maxPV, int minProbeDepth,
+                     std::atomic<bool>& ponder, std::atomic<bool>& infinite);
+
+    /** Wait for the search thread to stop searching. */
+    void waitStop();
+
+private:
+    void doSearch();
+
+    SearchListener& listener;
+
+    std::mutex mutex;
+    std::condition_variable newCommand;
+    std::condition_variable searchStopped;
+    bool search = false;
+    bool quitFlag = false;
+
+    EngineControl* engineControl = nullptr;
+    std::shared_ptr<Search> sc;
+    Position pos;
+    std::shared_ptr<MoveList> moves;
+    bool ownBook = false;
+    bool analyseMode = false;
+    int maxDepth = -1;
+    int maxNodes = -1;
+    int maxPV = 1;
+    int minProbeDepth = 0;
+    std::atomic<bool>* ponder = nullptr;
+    std::atomic<bool>* infinite = nullptr;
+};
 
 /**
  * Control the search thread.
  */
 class EngineControl {
 public:
-    EngineControl(std::ostream& o);
+    EngineControl(std::ostream& o, EngineMainThread& engineThread, SearchListener& listener);
     ~EngineControl();
 
     void startSearch(const Position& pos, const std::vector<Move>& moves, const SearchParams& sPar);
@@ -60,37 +110,18 @@ public:
 
     void newGame();
 
-    /**
-     * Compute thinking time for current search.
-     */
-    void computeTimeLimit(const SearchParams& sPar);
-
     static void printOptions(std::ostream& os);
 
     void setOption(const std::string& optionName, const std::string& optionValue,
                    bool deferIfBusy);
 
+    void finishSearch(Position& pos, const Move& bestMove);
+
 private:
     /**
-     * This class is responsible for sending "info" strings during search.
+     * Compute thinking time for current search.
      */
-    class SearchListener : public Search::Listener {
-    public:
-        SearchListener(std::ostream& os0);
-
-        void notifyDepth(int depth) override;
-
-        void notifyCurrMove(const Move& m, int moveNr) override;
-
-        void notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
-                      bool upperBound, bool lowerBound, const std::vector<Move>& pv,
-                      int multiPVIndex, U64 tbHits) override;
-
-        void notifyStats(U64 nodes, int nps, int hashFull, U64 tbHits, int time) override;
-
-    private:
-        std::ostream& os;
-    };
+    void computeTimeLimit(const SearchParams& sPar);
 
     void startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPercentage,
                      int maxDepth, int maxNodes);
@@ -106,18 +137,18 @@ private:
      */
     Move getPonderMove(Position pos, const Move& m);
 
-    static std::string moveToString(const Move& m);
-
 
     std::ostream& os;
 
     int hashParListenerId;
     int clearHashParListenerId;
+
+    std::mutex searchingMutex;
+    bool isSearching = false;
     std::map<std::string, std::string> pendingOptions;
 
-    std::shared_ptr<std::thread> engineThread;
-    std::mutex threadMutex;
-    std::atomic<bool> shouldDetach;
+    EngineMainThread& engineThread;
+    SearchListener& listener;
     std::shared_ptr<Search> sc;
     TranspositionTable tt;
     ParallelData pd;

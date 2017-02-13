@@ -27,6 +27,7 @@
 #define BOOKBUILDCONTROL_HPP_
 
 #include "bookbuild.hpp"
+#include "search.hpp"
 #include <vector>
 #include <set>
 #include <memory>
@@ -183,6 +184,7 @@ private:
     // Data used by the analysis thread.
     std::shared_ptr<std::thread> engineThread;
     std::shared_ptr<Search> sc;
+    std::unique_ptr<Search::Listener> scListener;
     TranspositionTable tt;
     KillerTable kt;
     History ht;
