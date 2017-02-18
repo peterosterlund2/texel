@@ -93,9 +93,11 @@ MatchBookCreator::evaluateBookLines(std::vector<BookLine>& lines, int searchTime
                                     std::ostream& os) {
     const int nLines = lines.size();
     TranspositionTable tt(28);
+    Notifier notifier;
+    ThreadCommunicator comm(nullptr, notifier);
     std::shared_ptr<Evaluate::EvalHashTables> et;
 
-#pragma omp parallel for schedule(dynamic) default(none) shared(lines,tt,searchTime,os) private(et)
+#pragma omp parallel for schedule(dynamic) default(none) shared(lines,tt,comm,searchTime,os) private(et)
     for (int i = 0; i < nLines; i++) {
         BookLine& bl = lines[i];
 
@@ -121,7 +123,7 @@ MatchBookCreator::evaluateBookLines(std::vector<BookLine>& lines, int searchTime
         MoveGen::removeIllegal(pos, legalMoves);
 
         Search::SearchTables st(tt, kt, ht, *et);
-        Search sc(pos, posHashList, posHashListSize, st, treeLog);
+        Search sc(pos, posHashList, posHashListSize, st, comm, treeLog);
         sc.timeLimit(searchTime, searchTime);
 
         int maxDepth = -1;

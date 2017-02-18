@@ -24,6 +24,8 @@
  */
 
 #include "computerPlayer.hpp"
+#include "search.hpp"
+#include "parallel.hpp"
 #include "textio.hpp"
 #include "tbprobe.hpp"
 
@@ -67,8 +69,7 @@ ComputerPlayer::initEngine() {
 }
 
 ComputerPlayer::ComputerPlayer()
-    : tt(15), pd(tt),
-      book(false)
+    : tt(15), book(false)
 {
     initEngine();
     et = Evaluate::getEvalHashTables();
@@ -94,7 +95,9 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
     History ht;
     Search::SearchTables st(tt, kt, ht, *et);
     TreeLogger treeLog;
-    Search sc(pos, posHashList, posHashListSize, st, treeLog);
+    Notifier notifier;
+    ThreadCommunicator comm(nullptr, notifier);
+    Search sc(pos, posHashList, posHashListSize, st, comm, treeLog);
 
     // Determine all legal moves
     MoveList moves;
@@ -180,7 +183,9 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     History ht;
     Search::SearchTables st(tt, kt, ht, *et);
     TreeLogger treeLog;
-    Search sc(pos, posHashList, 0, st, treeLog);
+    Notifier notifier;
+    ThreadCommunicator comm(nullptr, notifier);
+    Search sc(pos, posHashList, 0, st, comm, treeLog);
 
     // Determine all legal moves
     MoveList moves;

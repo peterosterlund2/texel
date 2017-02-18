@@ -36,6 +36,7 @@
 
 #include <memory>
 #include <vector>
+#include <deque>
 #include <set>
 #include <thread>
 #include <mutex>
@@ -43,13 +44,144 @@
 #include <atomic>
 
 
-class ParallelData;
+class Notifier {
+public:
+    /** Set the condition. This method can be called by multiple threads. */
+    void notify();
+
+    /** Wait until notify has been called at least once since the last call
+     *  to this method. The method should only be called by one thread. */
+    void wait();
+
+private:
+    std::mutex mutex;
+    std::condition_variable cv;
+    bool notified = false;
+};
 
 
+/** Handles communication with parent and child threads. */
+class Communicator {
+public:
+    Communicator(Communicator* parent);
+    Communicator(const Communicator&) = delete;
+    Communicator& operator=(const Communicator&) = delete;
+    virtual ~Communicator();
+
+    /** Add/remove a child communicator. */
+    void addChild(Communicator* child);
+    void removeChild(Communicator* child);
+
+
+    // Parent to child commands
+
+    void sendInitSearch(History& ht);
+
+    void sendStartSearch(int jobId, const Position& pos, int alpha, int beta,
+                         int depth, KillerTable& kt);
+
+    void sendStopSearch(int jobId);
+
+
+    // Child to parent commands
+
+    void sendReportResult(int jobId, int score);
+
+    void sendReportStats(S64 nodesSearched, S64 tbHits);
+
+
+    /** Handler invoked when commands are received. */
+    class CommandHandler {
+    public:
+        virtual void initSearch(History& ht) = 0;
+        virtual void startSearch(int jobId, const Position& pos, int alpha, int beta,
+                                 int depth, KillerTable& kt) = 0;
+        virtual void stopSearch(int jobId) = 0;
+
+        virtual void reportResult(int jobId, int score) = 0;
+    };
+
+    /** Check if a command has been received. */
+    void poll(CommandHandler& handler);
+
+
+    /** Get number of of searched nodes/tbhits for all helper threads. */
+    S64 getNumSearchedNodes() const;
+    S64 getTbHits() const;
+
+protected:
+    virtual void doSendInitSearch(History& ht) = 0;
+    virtual void doSendStartSearch(int jobId, const Position& pos, int alpha, int beta,
+                                   int depth, KillerTable& kt) = 0;
+    virtual void doSendStopSearch(int jobId) = 0;
+
+    virtual void doSendReportResult(int jobId, int score) = 0;
+    virtual void doSendReportStats(S64 nodesSearched, S64 tbHits) = 0;
+    virtual void retrieveStats(S64& nodesSearched, S64& tbHits) = 0;
+
+    virtual void doPoll() = 0;
+
+
+    Communicator* const parent;
+    std::vector<Communicator*> children;
+
+    enum CommandType {
+        INIT_SEARCH,
+        START_SEARCH,
+        STOP_SEARCH,
+        REPORT_RESULT
+    };
+    struct Command {
+        CommandType type;
+        int jobId;
+        int alpha;
+        int beta;
+        int depth;
+    };
+    std::deque<Command> cmdQueue;
+    std::mutex mutex;
+
+    Position::SerializeData posData;
+    History* ht = nullptr;
+    KillerTable kt;
+
+    int jobId = -1;
+    bool hasResult = false;
+    int resultScore = 0;
+
+    S64 nodesSearched = 0;
+    S64 tbHits = 0;
+};
+
+
+/** Handles communication between search threads within the same process. */
+class ThreadCommunicator : public Communicator {
+public:
+    ThreadCommunicator(Communicator* parent, Notifier& notifier);
+
+protected:
+    void doSendInitSearch(History& ht) override;
+    void doSendStartSearch(int jobId, const Position& pos, int alpha, int beta,
+                           int depth, KillerTable& kt) override;
+    void doSendStopSearch(int jobId) override;
+
+    void doSendReportResult(int jobId, int score) override;
+    void doSendReportStats(S64 nodesSearched, S64 tbHits) override;
+    void retrieveStats(S64& nodesSearched, S64& tbHits) override;
+
+    void doPoll() override {}
+
+private:
+    Notifier& notifier;
+};
+
+
+/** Handles communication between search threads. */
 class WorkerThread {
 public:
-    /** Constructor. Does not start new thread. */
-    WorkerThread(int threadNo, ParallelData& pd, TranspositionTable& tt);
+    /** Constructor. */
+    WorkerThread(int threadNo, Communicator* parentComm, int numWorkers,
+                 TranspositionTable& tt);
 
     /** Destructor. Waits for thread to terminate. */
     ~WorkerThread();
@@ -57,25 +189,42 @@ public:
     WorkerThread(const WorkerThread&) = delete;
     WorkerThread& operator=(const WorkerThread&) = delete;
 
-    /** Start thread. */
-    void start();
+    /** Create numWorkers WorkerThread objects, arranged in a tree structure.
+     *  parentComm is the Communicator corresponding to the already existing
+     *  root node in that tree structure. The children to the root node are
+     *  returned in the "children" variable. */
+    static void createWorkers(int firstThreadNo, Communicator* parentComm,
+                              int numWorkers, TranspositionTable& tt,
+                              std::vector<std::shared_ptr<WorkerThread>>& children);
 
-    /** Wait for thread to stop. */
-    void join();
+    /** Wait until all child workers have been initialized. */
+    void waitInitialized();
 
-    /** Return true if thread is running. */
-    bool threadRunning() const;
+    /** Send node counters to parent. */
+    void sendReportStats(S64 nodesSearched, S64 tbHits);
 
     /** Return thread number. The first worker thread is number 1. */
     int getThreadNo() const;
 
+    /** Get number of worker threads in the tree rooted at this worker. */
+    int getNumWorkers() const;
+
+    /** */
+    bool isStopped() const { return false; } // FIXME!!
+
 private:
     /** Thread main loop. */
-    void mainLoop(int minProbeDepth);
+    void mainLoop(Communicator* parentComm);
 
     int threadNo;
-    ParallelData& pd;
+    std::unique_ptr<ThreadCommunicator> comm;
     std::unique_ptr<std::thread> thread;
+    Notifier threadNotifier;
+    std::vector<std::shared_ptr<WorkerThread>> children;
+    const int numWorkers; // Number of worker threads including all child threads
+
+    Notifier initialized;
+    std::atomic<bool> terminate;
 
     std::unique_ptr<Evaluate::EvalHashTables> et;
     std::unique_ptr<KillerTable> kt;
@@ -83,55 +232,15 @@ private:
     TranspositionTable& tt;
 };
 
-/** Top-level parallel search data structure. */
-class ParallelData {
-public:
-    /** Constructor. */
-    ParallelData(TranspositionTable& tt);
 
-    /** Create/delete worker threads so that there are numWorkers in total. */
-    void addRemoveWorkers(int numWorkers);
+inline S64
+Communicator::getNumSearchedNodes() const {
+    return nodesSearched;
+}
 
-    /** Start all worker threads. */
-    void startAll();
-
-    /** Stop all worker threads. */
-    void stopAll();
-
-    /** Get stopped flag. */
-    bool isStopped() const;
-
-
-    /** Return number of helper threads in use. */
-    int numHelperThreads() const;
-
-    /** Get number of nodes searched by all helper threads. */
-    S64 getNumSearchedNodes() const;
-
-    /** Get number of TB hits for all helper threads. */
-    S64 getTbHits() const;
-
-    /** Add nNodes to total number of searched nodes. */
-    void addSearchedNodes(S64 nNodes);
-
-    /** Add nTbHits to number of TB hits. */
-    void addTbHits(S64 nTbHits);
-
-private:
-    /** Vector of helper threads. Master thread not included. */
-    std::vector<std::unique_ptr<WorkerThread>> threads;
-    std::atomic<bool> stopped;
-
-    TranspositionTable& tt;
-
-    std::atomic<S64> totalHelperNodes; // Number of nodes searched by all helper threads
-    std::atomic<S64> helperTbHits;     // Number of TB hits for all helper threads
-};
-
-
-inline bool
-WorkerThread::threadRunning() const {
-    return thread != nullptr;
+inline S64
+Communicator::getTbHits() const {
+    return tbHits;
 }
 
 inline int
@@ -139,34 +248,10 @@ WorkerThread::getThreadNo() const {
     return threadNo;
 }
 
-inline ParallelData::ParallelData(TranspositionTable& tt0)
-    : tt(tt0), totalHelperNodes(0), helperTbHits(0) {
-    addRemoveWorkers(0);
-}
-
 inline int
-ParallelData::numHelperThreads() const {
-    return (int)threads.size();
+WorkerThread::getNumWorkers() const {
+    return numWorkers;
 }
 
-inline S64
-ParallelData::getNumSearchedNodes() const {
-    return totalHelperNodes;
-}
-
-inline S64
-ParallelData::getTbHits() const {
-    return helperTbHits;
-}
-
-inline void
-ParallelData::addSearchedNodes(S64 nNodes) {
-    totalHelperNodes += nNodes;
-}
-
-inline void
-ParallelData::addTbHits(S64 nTbHits) {
-    helperTbHits += nTbHits;
-}
 
 #endif /* PARALLEL_HPP_ */

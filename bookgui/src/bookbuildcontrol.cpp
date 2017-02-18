@@ -31,7 +31,8 @@
 
 
 BookBuildControl::BookBuildControl(ChangeListener& listener)
-    : listener(listener), nPendingBookTasks(0), tt(27) {
+    : listener(listener), nPendingBookTasks(0), tt(27),
+      comm(nullptr, notifier) {
     ComputerPlayer::initEngine();
     setupTB();
     et = Evaluate::getEvalHashTables();
@@ -332,7 +333,7 @@ BookBuildControl::startAnalysis(const std::vector<Move>& moves) {
     };
 
     Search::SearchTables st(tt, kt, ht, *et);
-    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, treeLog);
+    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, comm, treeLog);
     scListener = make_unique<SearchListener>(*this, pos);
     sc->setListener(*scListener);
     std::shared_ptr<MoveList> moveList(std::make_shared<MoveList>());

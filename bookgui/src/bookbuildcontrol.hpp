@@ -186,6 +186,8 @@ private:
     std::shared_ptr<Search> sc;
     std::unique_ptr<Search::Listener> scListener;
     TranspositionTable tt;
+    Notifier notifier;
+    ThreadCommunicator comm;
     KillerTable kt;
     History ht;
     std::unique_ptr<Evaluate::EvalHashTables> et;

@@ -34,6 +34,7 @@
 #include "killerTable.hpp"
 #include "history.hpp"
 #include "evaluate.hpp"
+#include "parallel.hpp"
 
 #include <memory>
 #include <atomic>
@@ -519,6 +520,8 @@ private:
     KillerTable kt;
     History ht;
     TranspositionTable& tt;
+    Notifier notifier;
+    ThreadCommunicator comm;
     TreeLogger treeLog;
     std::weak_ptr<Search> search;
 

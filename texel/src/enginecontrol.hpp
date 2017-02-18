@@ -46,7 +46,9 @@ class EngineControl;
 /** State needed by the main engine search thread. */
 class EngineMainThread {
 public:
-    EngineMainThread(SearchListener& listener);
+    EngineMainThread();
+    EngineMainThread(const EngineMainThread&) = delete;
+    EngineMainThread& operator=(const EngineMainThread&) = delete;
 
     /** Called by the main search thread. Waits for and acts upon start and quit
      *  calls from another thread. */
@@ -58,6 +60,7 @@ public:
     /** Tell the search thread to start searching. */
     void startSearch(EngineControl* engineControl,
                      std::shared_ptr<Search>& sc, const Position& pos,
+                     TranspositionTable& tt,
                      std::shared_ptr<MoveList>& moves,
                      bool ownBook, bool analyseMode,
                      int maxDepth, int maxNodes,
@@ -67,10 +70,14 @@ public:
     /** Wait for the search thread to stop searching. */
     void waitStop();
 
+    Communicator* getCommunicator() const;
+
 private:
     void doSearch();
 
-    SearchListener& listener;
+    Notifier notifier;
+    std::unique_ptr<Communicator> comm;
+    std::vector<std::shared_ptr<WorkerThread>> children;
 
     std::mutex mutex;
     std::condition_variable newCommand;
@@ -151,7 +158,6 @@ private:
     SearchListener& listener;
     std::shared_ptr<Search> sc;
     TranspositionTable tt;
-    ParallelData pd;
     KillerTable kt;
     History ht;
     std::unique_ptr<Evaluate::EvalHashTables> et;
@@ -175,5 +181,9 @@ private:
     U64 randomSeed;
 };
 
+inline Communicator*
+EngineMainThread::getCommunicator() const {
+    return comm.get();
+}
 
 #endif /* ENGINECONTROL_HPP_ */

@@ -39,8 +39,9 @@ using namespace SearchConst;
 using namespace Logger;
 
 Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
-               int posHashListSize0, SearchTables& st, TreeLogger& logFile)
-    : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), threadNo(0),
+               int posHashListSize0, SearchTables& st, Communicator& comm,
+               TreeLogger& logFile)
+    : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), comm(comm), threadNo(0),
       mainNumaNode(true), logFile(logFile) {
     stopHandler = make_unique<DefaultStopHandler>(*this);
     init(pos0, posHashList0, posHashListSize0);

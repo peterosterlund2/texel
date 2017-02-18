@@ -500,6 +500,8 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
     }
 
     TranspositionTable tt(19);
+    Notifier notifier;
+    ThreadCommunicator comm(nullptr, notifier);
     std::vector<U64> nullHist(200);
     KillerTable kt;
     History ht;
@@ -519,7 +521,7 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
         int evScore, qScore;
         {
             const int mate0 = SearchConst::MATE0;
-            Search sc(pos, nullHist, 0, st, treeLog);
+            Search sc(pos, nullHist, 0, st, comm, treeLog);
             sc.init(pos, nullHist, 0);
             sc.q0Eval = UNKNOWN_SCORE;
             qScore = sc.quiesce(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));

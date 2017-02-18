@@ -41,8 +41,8 @@
 #include <chrono>
 
 
-EngineMainThread::EngineMainThread(SearchListener& listener)
-    : listener(listener) {
+EngineMainThread::EngineMainThread() {
+    comm = make_unique<ThreadCommunicator>(nullptr, notifier);
 }
 
 void
@@ -75,11 +75,16 @@ EngineMainThread::quit() {
 void
 EngineMainThread::startSearch(EngineControl* engineControl,
                               std::shared_ptr<Search>& sc, const Position& pos,
+                              TranspositionTable& tt,
                               std::shared_ptr<MoveList>& moves,
                               bool ownBook, bool analyseMode,
                               int maxDepth, int maxNodes,
                               int maxPV, int minProbeDepth,
                               std::atomic<bool>& ponder, std::atomic<bool>& infinite) {
+    WorkerThread::createWorkers(1, comm.get(),
+                                UciParams::threads->getIntPar() - 1,
+                                tt, children);
+
     std::unique_lock<std::mutex> L(mutex);
     this->engineControl = engineControl;
     this->sc = sc;
@@ -112,11 +117,12 @@ EngineMainThread::doSearch() {
         Book book(false);
         book.getBookMove(pos, m);
     }
+    // FIXME!! Custom stop handler
     if (m.isEmpty())
         m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, false, maxPV, false, minProbeDepth);
     while (*ponder || *infinite) {
-        // We should not respond until told to do so. Just wait until
-        // we are allowed to respond.
+        // We should not respond until told to do so.
+        // Just wait until we are allowed to respond.
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
@@ -128,7 +134,7 @@ EngineMainThread::doSearch() {
 EngineControl::EngineControl(std::ostream& o, EngineMainThread& engineThread,
                              SearchListener& listener)
     : os(o), engineThread(engineThread), listener(listener),
-      tt(8), pd(tt), randomSeed(0) {
+      tt(8), randomSeed(0) {
     Numa::instance().bindThread(0);
     hashParListenerId = UciParams::hash->addListener([this]() {
         setupTT();
@@ -246,7 +252,8 @@ void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPercentage,
                            int maxDepth, int maxNodes) {
     Search::SearchTables st(tt, kt, ht, *et);
-    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, treeLog);
+    Communicator* comm = engineThread.getCommunicator();
+    sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, *comm, treeLog);
     sc->setListener(listener);
     sc->setStrength(UciParams::strength->getIntPar(), randomSeed);
     std::shared_ptr<MoveList> moves(std::make_shared<MoveList>());
@@ -267,8 +274,6 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
             }
         }
     }
-    pd.addRemoveWorkers(UciParams::threads->getIntPar() - 1);
-    pd.startAll();
     sc->timeLimit(minTimeLimit, maxTimeLimit, earlyStopPercentage);
     bool ownBook = UciParams::ownBook->getBoolPar();
     bool analyseMode = UciParams::analyseMode->getBoolPar();
@@ -287,7 +292,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
         tt.nextGeneration();
     }
     isSearching = true;
-    engineThread.startSearch(this, sc, pos, moves, ownBook, analyseMode, maxDepth,
+    engineThread.startSearch(this, sc, pos, tt, moves, ownBook, analyseMode, maxDepth,
                              maxNodes, maxPV, minProbeDepth, ponder, infinite);
 }
 

@@ -35,6 +35,7 @@
 #include "treeLogger.hpp"
 #include "moveGen.hpp"
 #include "searchUtil.hpp"
+#include "parallel.hpp"
 #include "util/histogram.hpp"
 
 #include <limits>
@@ -63,7 +64,8 @@ public:
 
     /** Constructor. */
     Search(const Position& pos, const std::vector<U64>& posHashList,
-           int posHashListSize, SearchTables& st, TreeLogger& logFile);
+           int posHashListSize, SearchTables& st, Communicator& comm,
+           TreeLogger& logFile);
 
     Search(const Search& other) = delete;
     Search& operator=(const Search& other) = delete;
@@ -256,6 +258,7 @@ private:
     int posHashListSize;          // Number of used entries in posHashList
     int posHashFirstNew;          // First entry in posHashList that has not been played OTB.
     TranspositionTable& tt;
+    Communicator& comm;
     int threadNo;
     bool mainNumaNode; // True if this thread runs on the NUMA node holding the transposition table
     TreeLogger& logFile;
@@ -423,7 +426,7 @@ Search::canClaimDraw50(const Position& pos) {
 
 inline S64
 Search::getTotalNodes() const {
-    return totalNodes /*+ pd.getNumSearchedNodes() */;
+    return totalNodes + comm.getNumSearchedNodes();
 }
 
 inline S64
@@ -433,7 +436,7 @@ Search::getTotalNodesThisThread() const {
 
 inline S64
 Search::getTbHits() const {
-    return tbHits /*+ pd.getTbHits() */;
+    return tbHits + comm.getTbHits();
 }
 
 inline S64

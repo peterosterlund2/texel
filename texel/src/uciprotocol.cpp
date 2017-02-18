@@ -133,7 +133,7 @@ UCIProtocol::main(bool autoStart) {
 
 UCIProtocol::UCIProtocol(std::istream& is, std::ostream& os)
     : is(is), os(os), pos(TextIO::readFEN(TextIO::startPosFEN)),
-      searchListener(os), engineThread(searchListener), quit(false) {
+      searchListener(os), quit(false) {
 }
 
 void

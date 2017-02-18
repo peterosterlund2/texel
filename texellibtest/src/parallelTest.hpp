@@ -35,6 +35,7 @@ public:
     cute::suite getSuite() const override;
 
 private:
+    static void testCommunicator();
 };
 
 #endif /* PARALLELTEST_HPP_ */
