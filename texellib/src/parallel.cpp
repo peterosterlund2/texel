@@ -78,25 +78,24 @@ Communicator::removeChild(Communicator* child) {
 }
 
 void
-Communicator::sendInitSearch(History& ht) {
+Communicator::sendInitSearch(const Position& pos, const SearchTreeInfo& sti,
+                             const std::vector<U64>& posHashList, int posHashListSize) {
     nodesSearched = 0;
     tbHits = 0;
     for (auto& c : children)
-        c->doSendInitSearch(ht);
+        c->doSendInitSearch(pos, sti, posHashList, posHashListSize);
 }
 
 void
-Communicator::sendStartSearch(int jobId, const Position& pos, int alpha, int beta,
-                              int depth, KillerTable& kt) {
-    this->jobId = jobId;
+Communicator::sendStartSearch(int jobId, int alpha, int beta, int depth) {
     for (auto& c : children)
-        c->doSendStartSearch(jobId, pos, alpha, beta, depth, kt);
+        c->doSendStartSearch(jobId, alpha, beta, depth);
 }
 
 void
-Communicator::sendStopSearch(int jobId) {
+Communicator::sendStopSearch() {
     for (auto& c : children)
-        c->doSendStopSearch(jobId);
+        c->doSendStopSearch();
 }
 
 
@@ -132,32 +131,28 @@ Communicator::poll(CommandHandler& handler) {
         L.unlock();
 
         switch (cmd.type) {
-        case CommandType::INIT_SEARCH:
-            handler.initSearch(*ht);
-            break;
-        case CommandType::START_SEARCH: {
+        case CommandType::INIT_SEARCH: {
             Position pos;
+            SearchTreeInfo sti;
+            std::vector<U64> posHashList;
+            int posHashListSize;
             L.lock();
             pos.deSerialize(posData);
-            KillerTable kt(this->kt);
-            this->hasResult = false;
+            sti = this->sti;
+            posHashList = this->posHashList;
+            posHashListSize = this->posHashListSize;
             L.unlock();
-            jobId = cmd.jobId;
-            handler.startSearch(cmd.jobId, pos, cmd.alpha, cmd.beta, cmd.depth, kt);
+            handler.initSearch(pos, sti, posHashList, posHashListSize);
             break;
         }
+        case CommandType::START_SEARCH:
+            handler.startSearch(cmd.jobId, cmd.alpha, cmd.beta, cmd.depth);
+            break;
         case CommandType::STOP_SEARCH:
-            handler.stopSearch(cmd.jobId);
+            handler.stopSearch();
             break;
         case CommandType::REPORT_RESULT: {
-            if (jobId == cmd.jobId) {
-                L.lock();
-                bool hasResult = this->hasResult;
-                int resultScore = this->resultScore;
-                L.unlock();
-                if (hasResult)
-                    handler.reportResult(cmd.jobId, resultScore);
-            }
+            handler.reportResult(cmd.jobId, cmd.resultScore);
             break;
         }
         }
@@ -171,32 +166,20 @@ ThreadCommunicator::ThreadCommunicator(Communicator* parent, Notifier& notifier)
 }
 
 void
-ThreadCommunicator::doSendInitSearch(History& ht) {
+ThreadCommunicator::doSendInitSearch(const Position& pos, const SearchTreeInfo& sti,
+                                     const std::vector<U64>& posHashList, int posHashListSize) {
     std::unique_lock<std::mutex> L(mutex);
-    this->ht = &ht;
-    cmdQueue.push_back(Command{CommandType::INIT_SEARCH, -1, -1, -1, -1});
-    notifier.notify();
-}
-
-void
-ThreadCommunicator::doSendStartSearch(int jobId, const Position& pos, int alpha, int beta,
-                                      int depth, KillerTable& kt) {
-    std::unique_lock<std::mutex> L(mutex);
-    cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
-                                  [](const Command& cmd) {
-                                      return cmd.type == CommandType::START_SEARCH ||
-                                             cmd.type == CommandType::STOP_SEARCH ||
-                                             cmd.type == CommandType::REPORT_RESULT;
-                                  }),
-                   cmdQueue.end());
     pos.serialize(posData);
-    this->kt = kt;
-    cmdQueue.push_back(Command{CommandType::START_SEARCH, jobId, alpha, beta, depth});
+    this->sti = sti;
+    this->posHashList = posHashList;
+    this->posHashListSize = posHashListSize;
+    cmdQueue.clear();
+    cmdQueue.push_back(Command{CommandType::INIT_SEARCH, -1, -1, -1, -1, -1});
     notifier.notify();
 }
 
 void
-ThreadCommunicator::doSendStopSearch(int jobId) {
+ThreadCommunicator::doSendStartSearch(int jobId, int alpha, int beta, int depth) {
     std::unique_lock<std::mutex> L(mutex);
     cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
                                   [](const Command& cmd) {
@@ -205,18 +188,28 @@ ThreadCommunicator::doSendStopSearch(int jobId) {
                                              cmd.type == CommandType::REPORT_RESULT;
                                   }),
                    cmdQueue.end());
-    cmdQueue.push_back(Command{CommandType::STOP_SEARCH, jobId, -1, -1, -1});
+    cmdQueue.push_back(Command{CommandType::START_SEARCH, jobId, alpha, beta, depth, -1});
+    notifier.notify();
+}
+
+void
+ThreadCommunicator::doSendStopSearch() {
+    std::unique_lock<std::mutex> L(mutex);
+    cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
+                                  [](const Command& cmd) {
+                                      return cmd.type == CommandType::START_SEARCH ||
+                                             cmd.type == CommandType::STOP_SEARCH ||
+                                             cmd.type == CommandType::REPORT_RESULT;
+                                  }),
+                   cmdQueue.end());
+    cmdQueue.push_back(Command{CommandType::STOP_SEARCH, -1, -1, -1, -1, -1});
     notifier.notify();
 }
 
 void
 ThreadCommunicator::doSendReportResult(int jobId, int score) {
     std::unique_lock<std::mutex> L(mutex);
-    if (hasResult)
-        return;
-    hasResult = true;
-    resultScore = score;
-    cmdQueue.push_back(Command{CommandType::REPORT_RESULT, jobId, -1, -1, -1});
+    cmdQueue.push_back(Command{CommandType::REPORT_RESULT, jobId, -1, -1, -1, score});
     notifier.notify();
 }
 
@@ -293,37 +286,57 @@ WorkerThread::mainLoop(Communicator* parentComm) {
 
     initialized.notify();
 
-    class Handler : public Communicator::CommandHandler {
-    public:
-        Handler(WorkerThread& wt) : wt(wt) {}
-
-        void initSearch(History& ht) override {
-            wt.comm->sendInitSearch(ht);
-            // FIXME!!
-        }
-        void startSearch(int jobId, const Position& pos, int alpha, int beta,
-                         int depth, KillerTable& kt) override {
-            wt.comm->sendStartSearch(jobId, pos, alpha, beta, depth, kt);
-            // FIXME!!
-        }
-        void stopSearch(int jobId) override {
-            wt.comm->sendStopSearch(jobId);
-            // FIXME!!
-        }
-        void reportResult(int jobId, int score) override {
-            wt.comm->sendReportResult(jobId, score);
-            // FIXME!!
-        }
-    private:
-        WorkerThread& wt;
-    };
-    Handler handler(*this);
+    CommHandler handler(*this);
 
     while (true) {
         threadNotifier.wait();
         if (terminate)
             break;
         comm->poll(handler);
+        if (jobId != -1)
+            doSearch(handler);
+    }
+}
+
+void
+WorkerThread::CommHandler::initSearch(const Position& pos, const SearchTreeInfo& sti,
+                                      const std::vector<U64>& posHashList, int posHashListSize) {
+    wt.comm->sendInitSearch(pos, sti, posHashList, posHashListSize);
+    wt.pos = pos;
+    wt.sti = sti;
+    wt.posHashList = posHashList;
+    wt.posHashListSize = posHashListSize;
+    wt.jobId = -1;
+    wt.logFile = make_unique<TreeLogger>();
+    wt.logFile->open("/home/petero/treelog.dmp", wt.threadNo);
+}
+
+void
+WorkerThread::CommHandler::startSearch(int jobId, int alpha, int beta, int depth) {
+    wt.comm->sendStartSearch(jobId, alpha, beta, depth);
+    wt.jobId = jobId;
+    wt.alpha = alpha;
+    wt.beta = beta;
+    wt.depth = depth;
+    wt.hasResult = false;
+}
+
+void
+WorkerThread::CommHandler::stopSearch() {
+    wt.comm->sendStopSearch();
+    wt.jobId = -1;
+}
+
+void
+WorkerThread::CommHandler::reportResult(int jobId, int score) {
+    wt.sendReportResult(jobId, score);
+}
+
+void
+WorkerThread::sendReportResult(int jobId, int score) {
+    if (!hasResult && (this->jobId == jobId)) {
+        comm->sendReportResult(jobId, score);
+        hasResult = true;
     }
 }
 
@@ -334,7 +347,8 @@ WorkerThread::sendReportStats(S64 nodesSearched, S64 tbHits) {
 
 class ThreadStopHandler : public Search::StopHandler {
 public:
-    ThreadStopHandler(WorkerThread& wt, const Search& sc);
+    ThreadStopHandler(WorkerThread& wt, int jobId, const Search& sc,
+                      Communicator::CommandHandler& commHandler);
 
     /** Destructor. Report searched nodes to ParallelData object. */
     ~ThreadStopHandler();
@@ -349,14 +363,17 @@ private:
     void reportNodes();
 
     WorkerThread& wt;
+    const int jobId;
     const Search& sc;
+    Communicator::CommandHandler& commHandler;
     int counter;             // Counts number of calls to shouldStop
     S64 lastReportedNodes;
     S64 lastReportedTbHits;
 };
 
-ThreadStopHandler::ThreadStopHandler(WorkerThread& wt, const Search& sc)
-    : wt(wt), sc(sc), counter(0),
+ThreadStopHandler::ThreadStopHandler(WorkerThread& wt, int jobId, const Search& sc,
+                                     Communicator::CommandHandler& commHandler)
+    : wt(wt), jobId(jobId), sc(sc), commHandler(commHandler), counter(0),
       lastReportedNodes(0), lastReportedTbHits(0) {
 }
 
@@ -366,7 +383,8 @@ ThreadStopHandler::~ThreadStopHandler() {
 
 bool
 ThreadStopHandler::shouldStop() {
-    if (wt.isStopped())
+    wt.poll(commHandler);
+    if (wt.shouldStop(jobId))
         return true;
 
     counter++;
@@ -391,13 +409,8 @@ ThreadStopHandler::reportNodes() {
     wt.sendReportStats(nodes, tbHits);
 }
 
-#if 0
 void
-WorkerThread::mainLoop() {
-//    const int minProbeDepth = TBProbe::tbEnabled() ? UciParams::minProbeDepth->getIntPar() : 100;
-
-    //    log([&](std::ostream& os){os << "mainLoop, th:" << threadNo;});
-    Numa::instance().bindThread(threadNo);
+WorkerThread::doSearch(CommHandler& commHandler) {
     if (!et)
         et = Evaluate::getEvalHashTables();
     if (!kt)
@@ -405,61 +418,28 @@ WorkerThread::mainLoop() {
     if (!ht)
         ht = make_unique<History>();
 
-    TreeLogger logFile;
-    logFile.open("/home/petero/treelog.dmp", threadNo);
+    Search::SearchTables st(tt, *kt, *ht, *et);
+    UndoInfo ui;
+    Position pos(this->pos);
+    pos.makeMove(sti.currentMove, ui);
+    const U64 rootNodeIdx = logFile->logPosition(pos);
 
-    Position pos;
-    for (int iter = 0; ; iter++) {
-        if (isStopped())
-            break;
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    Search sc(pos, posHashList, posHashListSize, st, *comm, *logFile);
+    sc.setThreadNo(threadNo);
+    const int minProbeDepth = TBProbe::tbEnabled() ? UciParams::minProbeDepth->getIntPar() : 100;
+    sc.setMinProbeDepth(minProbeDepth);
 
-        const int depth = spMove.getDepth();
-        if (sp != newSp) {
-            sp = newSp;
-            *ht = sp->getHistory();
-            *kt = sp->getKillerTable();
-        }
-        Search::SearchTables st(tt, *kt, *ht, *et);
-        sp->getPos(pos);
-        const U64 rootNodeIdx = logFile.logPosition(pos);
-        UndoInfo ui;
-        pos.makeMove(spMove.getMove(), ui);
-        std::vector<U64> posHashList;
-        int posHashListSize;
-        sp->getPosHashList(pos, posHashList, posHashListSize);
-        Search sc(pos, posHashList, posHashListSize, st, pd, sp, logFile);
-        sc.setThreadNo(threadNo);
-        sc.setMinProbeDepth(minProbeDepth);
-        const int alpha = sp->getAlpha();
-        const int beta = sp->getBeta();
-        const S64 nodes0 = pd.getNumSearchedNodes();
-        auto stopHandler = make_unique<ThreadStopHandler>(*this, pd, *sp, spMove,
-                                                          sc, alpha, nodes0, prio);
-        sc.setStopHandler(std::move(stopHandler));
-        const int ply = sp->getPly();
-        const int lmr = spMove.getLMR();
-        const int captSquare = spMove.getRecaptureSquare();
-        const bool inCheck = spMove.getInCheck();
-        sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo, lmr, rootNodeIdx);
-        try {
-            const bool smp = pd.numHelperThreads() > 1;
-            int score = -sc.negaScout(smp, true, -(alpha+1), -alpha, ply+1,
-                                      depth, captSquare, inCheck);
-            if (((lmr > 0) && (score > alpha)) ||
-                    ((score > alpha) && (score < beta))) {
-                sc.setSearchTreeInfo(ply, sp->getSearchTreeInfo(), spMove.getMove(), moveNo, 0, rootNodeIdx);
-                score = -sc.negaScout(smp, true, -beta, -alpha, ply+1,
-                                      depth + lmr, captSquare, inCheck);
-            }
-            bool cancelRemaining = score >= beta;
-            pd.wq.moveFinished(sp, moveNo, cancelRemaining, score);
-            if (cancelRemaining)
-                pd.setHelperFailHigh(sp->owningThread(), true);
-        } catch (const Search::StopSearch&) {
-            if (!spMove.isCanceled() && !pd.wq.isStopped())
-                pd.wq.returnMove(sp, moveNo);
-        }
+    auto stopHandler = make_unique<ThreadStopHandler>(*this, jobId, sc, commHandler);
+    sc.setStopHandler(std::move(stopHandler));
+
+    int ply = 1;
+    sc.setSearchTreeInfo(ply, sti, rootNodeIdx);
+    int captSquare = -1;
+    bool inCheck = MoveGen::inCheck(pos);
+    try {
+        int score = sc.negaScout(true, alpha, beta, ply, depth, captSquare, inCheck);
+        sendReportResult(jobId, score);
+        // FIXME!! Search again with more depth
+    } catch (const Search::StopSearch&) {
     }
 }
-#endif

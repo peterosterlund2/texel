@@ -141,7 +141,6 @@ public:
 
     /** Set search tree information for a given ply. */
     void setSearchTreeInfo(int ply, const SearchTreeInfo& sti,
-                           const Move& currMove, int currMoveNo, int lmr,
                            U64 rootNodeIdx);
 
     /** Get total number of nodes searched by this thread. */
@@ -393,12 +392,9 @@ Search::selectBest(MoveList& moves, int startIdx) {
 }
 
 inline void
-Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti, const Move& currMove,
-                          int currMoveNo, int lmr, U64 rootNodeIdx) {
+Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti,
+                          U64 rootNodeIdx) {
     searchTreeInfo[ply] = sti;
-    searchTreeInfo[ply].currentMove = currMove;
-    searchTreeInfo[ply].currentMoveNo = currMoveNo;
-    searchTreeInfo[ply].lmr = lmr;
     searchTreeInfo[ply].nodeIdx = rootNodeIdx;
 }
 

@@ -137,11 +137,11 @@ EngineControl::EngineControl(std::ostream& o, EngineMainThread& engineThread,
       tt(8), randomSeed(0) {
     Numa::instance().bindThread(0);
     hashParListenerId = UciParams::hash->addListener([this]() {
-        setupTT();
+        setupTT(); // FIXME!! Make sure helper threads are idle first
     });
     clearHashParListenerId = UciParams::clearHash->addListener([this]() {
         tt.clear();
-        ht.init();
+        ht.init(); // FIXME!! Also for helper threads
     }, false);
     et = Evaluate::getEvalHashTables();
 }

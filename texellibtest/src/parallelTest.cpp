@@ -110,8 +110,11 @@ ParallelTest::testCommunicator() {
     ASSERT_EQUAL(0, c2.getCount());
     ASSERT_EQUAL(0, c3.getCount());
 
-    History ht;
-    root.sendInitSearch(ht);
+    Position pos;
+    SearchTreeInfo sti;
+    std::vector<U64> posHashList(200);
+    int posHashListSize = 0;
+    root.sendInitSearch(pos, sti, posHashList, posHashListSize);
     ASSERT_EQUAL(0, getCount(c0, 0));
     ASSERT_EQUAL(1, getCount(c1, 1));
     ASSERT_EQUAL(1, getCount(c2, 1));
@@ -121,17 +124,17 @@ ParallelTest::testCommunicator() {
     public:
         Handler(Communicator& comm) : comm(comm) {}
 
-        void initSearch(History& ht) override {
-            comm.sendInitSearch(ht);
+        void initSearch(const Position& pos, const SearchTreeInfo& sti,
+                        const std::vector<U64>& posHashList, int posHashListSize) override {
+            comm.sendInitSearch(pos, sti, posHashList, posHashListSize);
             nInit++;
         }
-        void startSearch(int jobId, const Position& pos, int alpha, int beta,
-                         int depth, KillerTable& kt) override {
-            comm.sendStartSearch(jobId, pos, alpha, beta, depth, kt);
+        void startSearch(int jobId, int alpha, int beta, int depth) override {
+            comm.sendStartSearch(jobId, alpha, beta, depth);
             nStart++;
         }
-        void stopSearch(int jobId) override {
-            comm.sendStopSearch(jobId);
+        void stopSearch() override {
+            comm.sendStopSearch();
             nStop++;
         }
         void reportResult(int jobId, int score) override {
@@ -172,10 +175,8 @@ ParallelTest::testCommunicator() {
     ASSERT_EQUAL(1, h1.getNInit());
     ASSERT_EQUAL(1, h2.getNInit());
 
-    KillerTable kt;
-    Position pos;
     int jobId = 1;
-    root.sendStartSearch(jobId, pos, -100, 100, 3, kt);
+    root.sendStartSearch(jobId, -100, 100, 3);
     ASSERT_EQUAL(2, getCount(c1, 2));
     ASSERT_EQUAL(2, getCount(c2, 2));
     child2.poll(h2);

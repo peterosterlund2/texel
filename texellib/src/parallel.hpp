@@ -33,6 +33,7 @@
 #include "searchUtil.hpp"
 #include "constants.hpp"
 #include "util/timeUtil.hpp"
+#include "treeLogger.hpp"
 
 #include <memory>
 #include <vector>
@@ -75,12 +76,12 @@ public:
 
     // Parent to child commands
 
-    void sendInitSearch(History& ht);
+    void sendInitSearch(const Position& pos, const SearchTreeInfo& sti,
+                        const std::vector<U64>& posHashList, int posHashListSize);
 
-    void sendStartSearch(int jobId, const Position& pos, int alpha, int beta,
-                         int depth, KillerTable& kt);
+    void sendStartSearch(int jobId, int alpha, int beta, int depth);
 
-    void sendStopSearch(int jobId);
+    void sendStopSearch();
 
 
     // Child to parent commands
@@ -93,10 +94,10 @@ public:
     /** Handler invoked when commands are received. */
     class CommandHandler {
     public:
-        virtual void initSearch(History& ht) = 0;
-        virtual void startSearch(int jobId, const Position& pos, int alpha, int beta,
-                                 int depth, KillerTable& kt) = 0;
-        virtual void stopSearch(int jobId) = 0;
+        virtual void initSearch(const Position& pos, const SearchTreeInfo& sti,
+                                const std::vector<U64>& posHashList, int posHashListSize) = 0;
+        virtual void startSearch(int jobId, int alpha, int beta, int depth) = 0;
+        virtual void stopSearch() = 0;
 
         virtual void reportResult(int jobId, int score) = 0;
     };
@@ -110,10 +111,10 @@ public:
     S64 getTbHits() const;
 
 protected:
-    virtual void doSendInitSearch(History& ht) = 0;
-    virtual void doSendStartSearch(int jobId, const Position& pos, int alpha, int beta,
-                                   int depth, KillerTable& kt) = 0;
-    virtual void doSendStopSearch(int jobId) = 0;
+    virtual void doSendInitSearch(const Position& pos, const SearchTreeInfo& sti,
+                                  const std::vector<U64>& posHashList, int posHashListSize) = 0;
+    virtual void doSendStartSearch(int jobId,int alpha, int beta, int depth) = 0;
+    virtual void doSendStopSearch() = 0;
 
     virtual void doSendReportResult(int jobId, int score) = 0;
     virtual void doSendReportStats(S64 nodesSearched, S64 tbHits) = 0;
@@ -137,20 +138,18 @@ protected:
         int alpha;
         int beta;
         int depth;
+        int resultScore;
     };
     std::deque<Command> cmdQueue;
     std::mutex mutex;
 
     Position::SerializeData posData;
-    History* ht = nullptr;
-    KillerTable kt;
+    SearchTreeInfo sti;
+    std::vector<U64> posHashList;
+    int posHashListSize = 0;
 
-    int jobId = -1;
-    bool hasResult = false;
-    int resultScore = 0;
-
-    S64 nodesSearched = 0;
-    S64 tbHits = 0;
+    std::atomic<S64> nodesSearched{0};
+    std::atomic<S64> tbHits{0};
 };
 
 
@@ -160,10 +159,10 @@ public:
     ThreadCommunicator(Communicator* parent, Notifier& notifier);
 
 protected:
-    void doSendInitSearch(History& ht) override;
-    void doSendStartSearch(int jobId, const Position& pos, int alpha, int beta,
-                           int depth, KillerTable& kt) override;
-    void doSendStopSearch(int jobId) override;
+    void doSendInitSearch(const Position& pos, const SearchTreeInfo& sti,
+                          const std::vector<U64>& posHashList, int posHashListSize) override;
+    void doSendStartSearch(int jobId, int alpha, int beta, int depth) override;
+    void doSendStopSearch() override;
 
     void doSendReportResult(int jobId, int score) override;
     void doSendReportStats(S64 nodesSearched, S64 tbHits) override;
@@ -200,6 +199,9 @@ public:
     /** Wait until all child workers have been initialized. */
     void waitInitialized();
 
+    /** Send search result to parent. */
+    void sendReportResult(int jobId, int score);
+
     /** Send node counters to parent. */
     void sendReportStats(S64 nodesSearched, S64 tbHits);
 
@@ -209,12 +211,31 @@ public:
     /** Get number of worker threads in the tree rooted at this worker. */
     int getNumWorkers() const;
 
-    /** */
-    bool isStopped() const { return false; } // FIXME!!
+    /** Return true if the worker thread should not be searching. */
+    bool shouldStop(int jobId) const;
+
+    /** Handle commands received from other Communicator objects. */
+    void poll(Communicator::CommandHandler& handler);
 
 private:
     /** Thread main loop. */
     void mainLoop(Communicator* parentComm);
+
+    class CommHandler : public Communicator::CommandHandler {
+    public:
+        CommHandler(WorkerThread& wt);
+        void initSearch(const Position& pos, const SearchTreeInfo& sti,
+                        const std::vector<U64>& posHashList, int posHashListSize) override;
+        void startSearch(int jobId, int alpha, int beta, int depth) override;
+        void stopSearch() override;
+        void reportResult(int jobId, int score) override;
+    private:
+        WorkerThread& wt;
+    };
+
+    /** Run a search for the current search parameters. */
+    void doSearch(CommHandler& commHandler);
+
 
     int threadNo;
     std::unique_ptr<ThreadCommunicator> comm;
@@ -230,6 +251,18 @@ private:
     std::unique_ptr<KillerTable> kt;
     std::unique_ptr<History> ht;
     TranspositionTable& tt;
+
+    std::unique_ptr<TreeLogger> logFile;
+    Position pos;
+    SearchTreeInfo sti;
+    std::vector<U64> posHashList;
+    int posHashListSize;
+    int jobId = -1; // job ID or -1 when no active search job
+    int alpha = 0;
+    int beta = 0;
+    int depth = -1;
+
+    bool hasResult = false;
 };
 
 
@@ -253,5 +286,19 @@ WorkerThread::getNumWorkers() const {
     return numWorkers;
 }
 
+inline bool
+WorkerThread::shouldStop(int jobId) const {
+    return (this->jobId != jobId) || terminate;
+}
+
+inline void
+WorkerThread::poll(Communicator::CommandHandler& handler) {
+    comm->poll(handler);
+}
+
+inline
+WorkerThread::CommHandler::CommHandler(WorkerThread& wt)
+    : wt(wt) {
+}
 
 #endif /* PARALLEL_HPP_ */
