@@ -35,6 +35,8 @@ namespace SearchConst {
 
     const int minFrustrated = 35; // Minimum score for frustrated win
     const int maxFrustrated = 70; // Maximum score for frustrated win
+
+    const int MAX_SEARCH_DEPTH = 100;
 }
 
 namespace TType {

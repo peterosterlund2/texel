@@ -418,28 +418,36 @@ WorkerThread::doSearch(CommHandler& commHandler) {
     if (!ht)
         ht = make_unique<History>();
 
-    Search::SearchTables st(tt, *kt, *ht, *et);
-    UndoInfo ui;
-    Position pos(this->pos);
-    pos.makeMove(sti.currentMove, ui);
-    const U64 rootNodeIdx = logFile->logPosition(pos);
+    using namespace SearchConst;
+    for (int extraDepth = 0; ; extraDepth++) {
+        Search::SearchTables st(tt, *kt, *ht, *et);
+        UndoInfo ui;
+        Position pos(this->pos);
+        pos.makeMove(sti.currentMove, ui);
+        const U64 rootNodeIdx = logFile->logPosition(pos);
 
-    Search sc(pos, posHashList, posHashListSize, st, *comm, *logFile);
-    sc.setThreadNo(threadNo);
-    const int minProbeDepth = TBProbe::tbEnabled() ? UciParams::minProbeDepth->getIntPar() : 100;
-    sc.setMinProbeDepth(minProbeDepth);
+        Search sc(pos, posHashList, posHashListSize, st, *comm, *logFile);
+        sc.setThreadNo(threadNo);
+        const int minProbeDepth = TBProbe::tbEnabled() ? UciParams::minProbeDepth->getIntPar() : MAX_SEARCH_DEPTH;
+        sc.setMinProbeDepth(minProbeDepth);
 
-    auto stopHandler = make_unique<ThreadStopHandler>(*this, jobId, sc, commHandler);
-    sc.setStopHandler(std::move(stopHandler));
+        auto stopHandler = make_unique<ThreadStopHandler>(*this, jobId, sc, commHandler);
+        sc.setStopHandler(std::move(stopHandler));
 
-    int ply = 1;
-    sc.setSearchTreeInfo(ply, sti, rootNodeIdx);
-    int captSquare = -1;
-    bool inCheck = MoveGen::inCheck(pos);
-    try {
-        int score = sc.negaScout(true, alpha, beta, ply, depth, captSquare, inCheck);
-        sendReportResult(jobId, score);
-        // FIXME!! Search again with more depth
-    } catch (const Search::StopSearch&) {
+        int ply = 1;
+        sc.setSearchTreeInfo(ply, sti, rootNodeIdx);
+        int captSquare = -1;
+        bool inCheck = MoveGen::inCheck(pos);
+        try {
+            int searchDepth = std::min(depth + extraDepth, MAX_SEARCH_DEPTH);
+            int score = sc.negaScout(true, alpha, beta, ply, searchDepth, captSquare, inCheck);
+            sendReportResult(jobId, score);
+            if (searchDepth >= MAX_SEARCH_DEPTH) {
+                jobId = -1;
+                break;
+            }
+        } catch (const Search::StopSearch&) {
+            break;
+        }
     }
 }

@@ -266,8 +266,7 @@ private:
     std::unique_ptr<StopHandler> stopHandler;
     Move emptyMove;
 
-    static const int MAX_SEARCH_DEPTH = 100;
-    SearchTreeInfo searchTreeInfo[MAX_SEARCH_DEPTH * 2];
+    SearchTreeInfo searchTreeInfo[SearchConst::MAX_SEARCH_DEPTH * 2];
 
     // Time management
     S64 tStart;                // Time when search started

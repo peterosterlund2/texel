@@ -112,7 +112,7 @@ ParallelTest::testCommunicator() {
 
     Position pos;
     SearchTreeInfo sti;
-    std::vector<U64> posHashList(200);
+    std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2);
     int posHashListSize = 0;
     root.sendInitSearch(pos, sti, posHashList, posHashListSize);
     ASSERT_EQUAL(0, getCount(c0, 0));

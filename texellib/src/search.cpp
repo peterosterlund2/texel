@@ -303,7 +303,7 @@ Search::storeSearchResult(std::vector<MoveInfo>& scMoves, int mi, int depth,
     scMoves[mi].move.setScore(score);
     scMoves[mi].pv.clear();
     tt.extractPVMoves(pos, scMoves[mi].move, scMoves[mi].pv);
-    if ((maxTimeMillis < 0) && SearchConst::isWinScore(std::abs(score)))
+    if ((maxTimeMillis < 0) && isWinScore(std::abs(score)))
         TBProbe::extendPV(pos, scMoves[mi].pv, tt);
 }
 
@@ -502,7 +502,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             bool cutOff = false;
             const int drawSwindleReduction = 16;
             if (score == 0 && type == TType::T_EXACT) {
-                const int maxSwindle = SearchConst::maxFrustrated;
+                const int maxSwindle = maxFrustrated;
                 if (depth < drawSwindleReduction) {
                     if (evalScore == UNKNOWN_SCORE)
                         evalScore = eval.evalPos(pos);

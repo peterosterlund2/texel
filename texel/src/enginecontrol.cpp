@@ -331,7 +331,7 @@ EngineControl::setupTT() {
 void
 EngineControl::setupPosition(Position pos, const std::vector<Move>& moves) {
     UndoInfo ui;
-    posHashList.resize(200 + moves.size());
+    posHashList.resize(SearchConst::MAX_SEARCH_DEPTH * 2 + moves.size());
     posHashListSize = 0;
     for (size_t i = 0; i < moves.size(); i++) {
         const Move& m = moves[i];

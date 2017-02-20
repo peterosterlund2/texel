@@ -1380,7 +1380,7 @@ SearchRunner::analyze(const std::vector<Move>& gameMoves,
                       int searchTime) {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     UndoInfo ui;
-    std::vector<U64> posHashList(200 + gameMoves.size());
+    std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2 + gameMoves.size());
     int posHashListSize = 0;
     for (const Move& m : gameMoves) {
         posHashList[posHashListSize++] = pos.zobristHash();

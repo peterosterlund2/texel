@@ -502,7 +502,7 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
     TranspositionTable tt(19);
     Notifier notifier;
     ThreadCommunicator comm(nullptr, notifier);
-    std::vector<U64> nullHist(200);
+    std::vector<U64> nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
     KillerTable kt;
     History ht;
     auto et = Evaluate::getEvalHashTables();

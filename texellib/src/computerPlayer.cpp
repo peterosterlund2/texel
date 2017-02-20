@@ -85,7 +85,7 @@ ComputerPlayer::ComputerPlayer()
 std::string
 ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vector<Position>& history) {
     // Create a search object
-    std::vector<U64> posHashList(200 + history.size());
+    std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2 + history.size());
     int posHashListSize = 0;
     for (size_t i = 0; i < history.size(); i++)
         posHashList[posHashListSize++] = history[i].zobristHash();
@@ -177,7 +177,7 @@ ComputerPlayer::timeLimit(int minTimeLimit, int maxTimeLimit) {
 std::pair<Move, std::string>
 ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     // Create a search object
-    std::vector<U64> posHashList(200);
+    std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2);
     tt.nextGeneration();
     KillerTable kt;
     History ht;

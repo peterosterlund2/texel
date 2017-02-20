@@ -38,7 +38,7 @@
 
 #include "cute.h"
 
-std::vector<U64> SearchTest::nullHist(200);
+std::vector<U64> SearchTest::nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
 TranspositionTable SearchTest::tt(19);
 static Notifier notifier;
 ThreadCommunicator SearchTest::comm(nullptr, notifier);

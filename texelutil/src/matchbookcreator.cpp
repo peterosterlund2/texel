@@ -109,7 +109,7 @@ MatchBookCreator::evaluateBookLines(std::vector<BookLine>& lines, int searchTime
 
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
         UndoInfo ui;
-        std::vector<U64> posHashList(200 + bl.moves.size());
+        std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2 + bl.moves.size());
         int posHashListSize = 0;
         for (const Move& m : bl.moves) {
             posHashList[posHashListSize++] = pos.zobristHash();
