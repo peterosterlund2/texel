@@ -128,7 +128,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
         searchTreeInfo[i].allowNullMove = UciParams::useNullMove->getBoolPar();
         searchTreeInfo[i].singularMove.setMove(0,0,0,0);
     }
-    ht.reScale(); // FIXME!! Also in helper threads
+    ht.reScale();
     int posHashFirstNew0 = posHashFirstNew;
     bool knownLoss = false; // True if at least one of the first maxPV moves is a known loss
     try {

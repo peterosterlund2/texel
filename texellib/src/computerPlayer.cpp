@@ -69,8 +69,7 @@ ComputerPlayer::initEngine() {
 }
 
 ComputerPlayer::ComputerPlayer()
-    : tt(15), book(false)
-{
+    : tt(15), book(false) {
     initEngine();
     et = Evaluate::getEvalHashTables();
     minTimeMillis = 10000;

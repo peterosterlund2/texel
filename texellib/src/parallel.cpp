@@ -307,8 +307,11 @@ WorkerThread::CommHandler::initSearch(const Position& pos, const SearchTreeInfo&
     wt.posHashList = posHashList;
     wt.posHashListSize = posHashListSize;
     wt.jobId = -1;
+
     wt.logFile = make_unique<TreeLogger>();
     wt.logFile->open("/home/petero/treelog.dmp", wt.threadNo);
+    if (wt.ht)
+        wt.ht->reScale();
 }
 
 void
