@@ -97,8 +97,8 @@ BookBuildControl::readFromFile(const std::string& newFileName) {
             std::lock_guard<std::mutex> L(mutex);
             bgThread->detach();
             bgThread.reset();
-            bgThreadCv.notify_all();
         }
+        bgThreadCv.notify_all();
         notify(BookBuildControl::Change::OPEN_COMPLETE);
     };
     bgThread = std::make_shared<std::thread>(f);
@@ -118,8 +118,8 @@ BookBuildControl::saveToFile(const std::string& newFileName) {
             std::lock_guard<std::mutex> L(mutex);
             bgThread2->detach();
             bgThread2.reset();
-            bgThreadCv.notify_all();
         }
+        bgThreadCv.notify_all();
         notify(BookBuildControl::Change::PROCESSING_COMPLETE);
     };
     bgThread2 = std::make_shared<std::thread>(f);
@@ -181,8 +181,8 @@ BookBuildControl::startSearch() {
             std::lock_guard<std::mutex> L(mutex);
             bgThread->detach();
             bgThread.reset();
-            bgThreadCv.notify_all();
         }
+        bgThreadCv.notify_all();
         notify(BookBuildControl::Change::QUEUE);
         notify(BookBuildControl::Change::TREE);
     };
@@ -264,8 +264,8 @@ BookBuildControl::importPGN(const GameTree& gt, int maxPly) {
             std::lock_guard<std::mutex> L(mutex);
             bgThread2->detach();
             bgThread2.reset();
-            bgThreadCv.notify_all();
         }
+        bgThreadCv.notify_all();
         notify(BookBuildControl::Change::PROCESSING_COMPLETE);
         notify(BookBuildControl::Change::TREE);
     };

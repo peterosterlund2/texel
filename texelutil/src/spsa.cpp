@@ -441,8 +441,8 @@ GameScheduler::stopWorkers() {
     {
         std::lock_guard<std::mutex> L(mutex);
         stopped = true;
-        pendingCv.notify_all();
     }
+    pendingCv.notify_all();
     for (auto& t : threads) {
         t->join();
         t.reset();
