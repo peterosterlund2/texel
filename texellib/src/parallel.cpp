@@ -38,7 +38,7 @@ using namespace Logger;
 
 void
 Notifier::notify() {
-    std::unique_lock<std::mutex> L(mutex);
+    std::lock_guard<std::mutex> L(mutex);
     notified = true;
     cv.notify_all();
 }
@@ -66,13 +66,13 @@ Communicator::~Communicator() {
 
 void
 Communicator::addChild(Communicator* child) {
-    std::unique_lock<std::mutex> L(mutex);
+    std::lock_guard<std::mutex> L(mutex);
     children.push_back(child);
 }
 
 void
 Communicator::removeChild(Communicator* child) {
-    std::unique_lock<std::mutex> L(mutex);
+    std::lock_guard<std::mutex> L(mutex);
     children.erase(std::remove(children.begin(), children.end(), child),
                    children.end());
 }
@@ -168,7 +168,7 @@ ThreadCommunicator::ThreadCommunicator(Communicator* parent, Notifier& notifier)
 void
 ThreadCommunicator::doSendInitSearch(const Position& pos, const SearchTreeInfo& sti,
                                      const std::vector<U64>& posHashList, int posHashListSize) {
-    std::unique_lock<std::mutex> L(mutex);
+    std::lock_guard<std::mutex> L(mutex);
     pos.serialize(posData);
     this->sti = sti;
     this->posHashList = posHashList;
@@ -180,7 +180,7 @@ ThreadCommunicator::doSendInitSearch(const Position& pos, const SearchTreeInfo& 
 
 void
 ThreadCommunicator::doSendStartSearch(int jobId, int alpha, int beta, int depth) {
-    std::unique_lock<std::mutex> L(mutex);
+    std::lock_guard<std::mutex> L(mutex);
     cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
                                   [](const Command& cmd) {
                                       return cmd.type == CommandType::START_SEARCH ||
@@ -194,7 +194,7 @@ ThreadCommunicator::doSendStartSearch(int jobId, int alpha, int beta, int depth)
 
 void
 ThreadCommunicator::doSendStopSearch() {
-    std::unique_lock<std::mutex> L(mutex);
+    std::lock_guard<std::mutex> L(mutex);
     cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
                                   [](const Command& cmd) {
                                       return cmd.type == CommandType::START_SEARCH ||
@@ -208,21 +208,21 @@ ThreadCommunicator::doSendStopSearch() {
 
 void
 ThreadCommunicator::doSendReportResult(int jobId, int score) {
-    std::unique_lock<std::mutex> L(mutex);
+    std::lock_guard<std::mutex> L(mutex);
     cmdQueue.push_back(Command{CommandType::REPORT_RESULT, jobId, -1, -1, -1, score});
     notifier.notify();
 }
 
 void
 ThreadCommunicator::doSendReportStats(S64 nodesSearched, S64 tbHits) {
-    std::unique_lock<std::mutex> L(mutex);
+    std::lock_guard<std::mutex> L(mutex);
     this->nodesSearched += nodesSearched;
     this->tbHits += tbHits;
 }
 
 void
 ThreadCommunicator::retrieveStats(S64& nodesSearched, S64& tbHits) {
-    std::unique_lock<std::mutex> L(mutex);
+    std::lock_guard<std::mutex> L(mutex);
     nodesSearched += this->nodesSearched;
     tbHits += this->tbHits;
     this->nodesSearched = 0;

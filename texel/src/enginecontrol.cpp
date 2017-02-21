@@ -67,7 +67,7 @@ EngineMainThread::mainLoop() {
 
 void
 EngineMainThread::quit() {
-    std::unique_lock<std::mutex> L(mutex);
+    std::lock_guard<std::mutex> L(mutex);
     quitFlag = true;
     newCommand.notify_all();
 }
@@ -85,7 +85,7 @@ EngineMainThread::startSearch(EngineControl* engineControl,
                                 UciParams::threads->getIntPar() - 1,
                                 tt, children);
 
-    std::unique_lock<std::mutex> L(mutex);
+    std::lock_guard<std::mutex> L(mutex);
     this->engineControl = engineControl;
     this->sc = sc;
     this->pos = pos;

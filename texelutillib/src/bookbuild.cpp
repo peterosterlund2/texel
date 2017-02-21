@@ -1576,7 +1576,7 @@ SearchScheduler::workerLoop(SearchRunner& sr, Book::Listener* listener) {
         wu.bestMove = sr.analyze(wu.gameMoves, wu.movesToSearch, wu.searchTime);
         wu.instNo = sr.instNo();
         {
-            std::unique_lock<std::mutex> L(mutex);
+            std::lock_guard<std::mutex> L(mutex);
             bool empty = complete.empty();
             complete.push_back(wu);
             if (empty)
