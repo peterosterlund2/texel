@@ -190,7 +190,7 @@ UCIProtocol::handleCommand(const std::string& cmdLine, std::ostream& os) {
                         optionValue += ' ';
                     }
                 }
-                engine->setOption(trim(optionName), trim(optionValue), true);
+                engine->setOption(trim(optionName), trim(optionValue));
             }
         } else if (cmd == "ucinewgame") {
             if (engine)

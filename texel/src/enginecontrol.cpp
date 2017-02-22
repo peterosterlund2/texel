@@ -50,17 +50,16 @@ EngineMainThread::mainLoop() {
     Numa::instance().bindThread(0);
 
     while (true) {
-        std::unique_lock<std::mutex> L(mutex);
-        while (!quitFlag && !search)
-            newCommand.wait(L);
+        notifier.wait();
         if (quitFlag)
             break;
-        L.unlock();
+        setOptions();
         if (search) {
             doSearch();
-            L.lock();
-            search = false;
-            L.unlock();
+            {
+                std::lock_guard<std::mutex> L(mutex);
+                search = false;
+            }
             searchStopped.notify_all();
         }
     }
@@ -70,7 +69,7 @@ void
 EngineMainThread::quit() {
     std::lock_guard<std::mutex> L(mutex);
     quitFlag = true;
-    newCommand.notify_all();
+    notifier.notify();
 }
 
 void
@@ -81,7 +80,8 @@ EngineMainThread::startSearch(EngineControl* engineControl,
                               bool ownBook, bool analyseMode,
                               int maxDepth, int maxNodes,
                               int maxPV, int minProbeDepth,
-                              std::atomic<bool>& ponder, std::atomic<bool>& infinite) {
+                              std::atomic<bool>& ponder, std::atomic<bool>& infinite,
+                              bool clearHistory) {
     WorkerThread::createWorkers(1, comm.get(),
                                 UciParams::threads->getIntPar() - 1,
                                 tt, children);
@@ -99,9 +99,10 @@ EngineMainThread::startSearch(EngineControl* engineControl,
         this->minProbeDepth = minProbeDepth;
         this->ponder = &ponder;
         this->infinite = &infinite;
+        this->clearHistory = clearHistory;
         search = true;
     }
-    newCommand.notify_all();
+    notifier.notify();
 }
 
 void
@@ -113,7 +114,20 @@ EngineMainThread::waitStop() {
 }
 
 void
+EngineMainThread::setOptionWhenIdle(const std::string& optionName,
+                                    const std::string& optionValue) {
+    {
+        std::lock_guard<std::mutex> L(mutex);
+        Parameters& params = Parameters::instance();
+        if (params.getParam(optionName))
+            pendingOptions[optionName] = optionValue;
+    }
+    notifier.notify();
+}
+
+void
 EngineMainThread::doSearch() {
+    // FIXME!! Send clearHistory to helper threads
     Move m;
     if (ownBook && !analyseMode) {
         Book book(false);
@@ -129,6 +143,30 @@ EngineMainThread::doSearch() {
     }
 
     engineControl->finishSearch(pos, m);
+
+    // FIXME!! Make sure helper threads are idle first
+    setOptions();
+}
+
+void
+EngineMainThread::setOptions() {
+    std::map<std::string, std::string> options;
+    {
+        std::lock_guard<std::mutex> L(mutex);
+        options.swap(pendingOptions);
+    }
+
+    Parameters& params = Parameters::instance();
+    for (auto& p : options) {
+        const std::string& optionName = p.first;
+        const std::string& optionValue = p.second;
+        std::shared_ptr<Parameters::ParamBase> par = params.getParam(optionName);
+        if (par && par->type == Parameters::STRING && optionValue == "<empty>")
+            params.set(optionName, "");
+        else
+            params.set(optionName, optionValue);
+    }
+    pendingOptions.clear();
 }
 
 // ----------------------------------------------------------------------------
@@ -139,11 +177,12 @@ EngineControl::EngineControl(std::ostream& o, EngineMainThread& engineThread,
       tt(8), randomSeed(0) {
     Numa::instance().bindThread(0);
     hashParListenerId = UciParams::hash->addListener([this]() {
-        setupTT(); // FIXME!! Make sure helper threads are idle first
+        setupTT();
     });
     clearHashParListenerId = UciParams::clearHash->addListener([this]() {
         tt.clear();
-        ht.init(); // FIXME!! Also for helper threads
+        ht.init();
+        htPendingClear = true;
     }, false);
     et = Evaluate::getEvalHashTables();
 }
@@ -293,9 +332,9 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
     } else {
         tt.nextGeneration();
     }
-    isSearching = true;
     engineThread.startSearch(this, sc, pos, tt, moves, ownBook, analyseMode, maxDepth,
-                             maxNodes, maxPV, minProbeDepth, ponder, infinite);
+                             maxNodes, maxPV, minProbeDepth, ponder, infinite, htPendingClear);
+    htPendingClear = false;
 }
 
 void
@@ -418,32 +457,12 @@ EngineControl::printOptions(std::ostream& os) {
 }
 
 void
-EngineControl::setOption(const std::string& optionName, const std::string& optionValue,
-                         bool deferIfBusy) {
-    Parameters& params = Parameters::instance();
-    if (deferIfBusy) {
-        std::lock_guard<std::mutex> L(searchingMutex);
-        if (isSearching) {
-            if (params.getParam(optionName))
-                pendingOptions[optionName] = optionValue;
-            return;
-        }
-    }
-    std::shared_ptr<Parameters::ParamBase> par = params.getParam(optionName);
-    if (par && par->type == Parameters::STRING && optionValue == "<empty>")
-        params.set(optionName, "");
-    else
-        params.set(optionName, optionValue);
+EngineControl::setOption(const std::string& optionName, const std::string& optionValue) {
+    engineThread.setOptionWhenIdle(optionName, optionValue);
 }
 
 void
 EngineControl::finishSearch(Position& pos, const Move& bestMove) {
     Move ponderMove = getPonderMove(pos, bestMove);
     listener.notifyPlayedMove(bestMove, ponderMove);
-
-    std::lock_guard<std::mutex> L(searchingMutex);
-    for (auto& p : pendingOptions)
-        setOption(p.first, p.second, false);
-    pendingOptions.clear();
-    isSearching = false;
 }

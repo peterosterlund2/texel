@@ -65,25 +65,30 @@ public:
                      bool ownBook, bool analyseMode,
                      int maxDepth, int maxNodes,
                      int maxPV, int minProbeDepth,
-                     std::atomic<bool>& ponder, std::atomic<bool>& infinite);
+                     std::atomic<bool>& ponder, std::atomic<bool>& infinite,
+                     bool clearHistory);
 
     /** Wait for the search thread to stop searching. */
     void waitStop();
+
+    /** Set UCI option as soon as search threads are idle. */
+    void setOptionWhenIdle(const std::string& optionName,
+                           const std::string& optionValue);
 
     Communicator* getCommunicator() const;
 
 private:
     void doSearch();
+    void setOptions();
 
     Notifier notifier;
     std::unique_ptr<Communicator> comm;
     std::vector<std::shared_ptr<WorkerThread>> children;
 
     std::mutex mutex;
-    std::condition_variable newCommand;
     std::condition_variable searchStopped;
-    bool search = false;
-    bool quitFlag = false;
+    std::atomic<bool> search { false };
+    std::atomic<bool> quitFlag { false };
 
     EngineControl* engineControl = nullptr;
     std::shared_ptr<Search> sc;
@@ -97,6 +102,9 @@ private:
     int minProbeDepth = 0;
     std::atomic<bool>* ponder = nullptr;
     std::atomic<bool>* infinite = nullptr;
+    bool clearHistory = false;
+
+    std::map<std::string, std::string> pendingOptions;
 };
 
 /**
@@ -119,8 +127,7 @@ public:
 
     static void printOptions(std::ostream& os);
 
-    void setOption(const std::string& optionName, const std::string& optionValue,
-                   bool deferIfBusy);
+    void setOption(const std::string& optionName, const std::string& optionValue);
 
     void finishSearch(Position& pos, const Move& bestMove);
 
@@ -150,10 +157,6 @@ private:
     int hashParListenerId;
     int clearHashParListenerId;
 
-    std::mutex searchingMutex;
-    bool isSearching = false;
-    std::map<std::string, std::string> pendingOptions;
-
     EngineMainThread& engineThread;
     SearchListener& listener;
     std::shared_ptr<Search> sc;
@@ -176,6 +179,7 @@ private:
     int maxDepth;
     int maxNodes;
     std::vector<Move> searchMoves;
+    bool htPendingClear = false;
 
     // Random seed for reduced strength
     U64 randomSeed;

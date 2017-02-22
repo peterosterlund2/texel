@@ -176,10 +176,10 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             sti.currentMoveNo = mi;
             sti.lmr = lmrS;
             sti.nodeIdx = rootNodeIdx;
-            int score = -negaScout(true, -beta, -alpha, 1, depth - lmrS - 1, -1, givesCheck);
+            int score = -negaScoutRoot(true, -beta, -alpha, 1, depth - lmrS - 1, -1, givesCheck);
             if ((lmrS > 0) && (score > alpha)) {
                 sti.lmr = 0;
-                score = -negaScout(true, -beta, -alpha, 1, depth - 1, -1, givesCheck);
+                score = -negaScoutRoot(true, -beta, -alpha, 1, depth - 1, -1, givesCheck);
             }
             nodesThisMove += totalNodes;
             posHashListSize--;
@@ -212,7 +212,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
                 }
                 pos.makeMove(m, ui);
                 totalNodes++;
-                score = -negaScout(true, -beta, -alpha, 1, depth - 1, -1, givesCheck);
+                score = -negaScoutRoot(true, -beta, -alpha, 1, depth - 1, -1, givesCheck);
                 nodesThisMove += totalNodes;
                 posHashListSize--;
                 pos.unMakeMove(m, ui);
@@ -290,6 +290,14 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
 
     logFile.close();
     return onlyExact ? bestExactMove : bestMove;
+}
+
+int
+Search::negaScoutRoot(bool tb,
+                      int alpha, int beta, int ply, int depth, int recaptureSquare,
+                      const bool inCheck) {
+    // FIXME!! Talk to helper threads
+    return negaScout(tb, alpha, beta, ply, depth, recaptureSquare, inCheck);
 }
 
 void

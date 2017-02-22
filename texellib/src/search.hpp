@@ -122,8 +122,6 @@ public:
     int negaScout(bool tb,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
-    int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
-                  const bool inCheck);
 
     /** Compute extension depth for a move. */
     int getMoveExtend(const Move& m, int recaptureSquare);
@@ -158,6 +156,10 @@ public:
 private:
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
               int posHashListSize0);
+
+    int negaScoutRoot(bool tb,
+                      int alpha, int beta, int ply, int depth, int recaptureSquare,
+                      const bool inCheck);
 
     /** Information used for move ordering at root and for PV reporting. */
     struct MoveInfo {
@@ -406,12 +408,6 @@ Search::negaScout(bool tb,
         return negaScout<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
     else
         return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
-}
-
-inline int
-Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
-                  const bool inCheck) {
-    return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
 }
 
 inline bool
