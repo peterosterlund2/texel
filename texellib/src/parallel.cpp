@@ -38,8 +38,10 @@ using namespace Logger;
 
 void
 Notifier::notify() {
-    std::lock_guard<std::mutex> L(mutex);
-    notified = true;
+    {
+        std::lock_guard<std::mutex> L(mutex);
+        notified = true;
+    }
     cv.notify_all();
 }
 
@@ -310,6 +312,8 @@ WorkerThread::CommHandler::initSearch(const Position& pos, const SearchTreeInfo&
 
     wt.logFile = make_unique<TreeLogger>();
     wt.logFile->open("/home/petero/treelog.dmp", wt.threadNo);
+    if (wt.kt)
+        wt.kt->clear();
     if (wt.ht)
         wt.ht->reScale();
 }

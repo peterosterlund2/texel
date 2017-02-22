@@ -60,6 +60,7 @@ EngineMainThread::mainLoop() {
             doSearch();
             L.lock();
             search = false;
+            L.unlock();
             searchStopped.notify_all();
         }
     }
@@ -84,21 +85,22 @@ EngineMainThread::startSearch(EngineControl* engineControl,
     WorkerThread::createWorkers(1, comm.get(),
                                 UciParams::threads->getIntPar() - 1,
                                 tt, children);
-
-    std::lock_guard<std::mutex> L(mutex);
-    this->engineControl = engineControl;
-    this->sc = sc;
-    this->pos = pos;
-    this->moves = moves;
-    this->ownBook = ownBook;
-    this->analyseMode = analyseMode;
-    this->maxDepth = maxDepth;
-    this->maxNodes = maxNodes;
-    this->maxPV = maxPV;
-    this->minProbeDepth = minProbeDepth;
-    this->ponder = &ponder;
-    this->infinite = &infinite;
-    search = true;
+    {
+        std::lock_guard<std::mutex> L(mutex);
+        this->engineControl = engineControl;
+        this->sc = sc;
+        this->pos = pos;
+        this->moves = moves;
+        this->ownBook = ownBook;
+        this->analyseMode = analyseMode;
+        this->maxDepth = maxDepth;
+        this->maxNodes = maxNodes;
+        this->maxPV = maxPV;
+        this->minProbeDepth = minProbeDepth;
+        this->ponder = &ponder;
+        this->infinite = &infinite;
+        search = true;
+    }
     newCommand.notify_all();
 }
 
