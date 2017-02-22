@@ -65,8 +65,7 @@ public:
                      bool ownBook, bool analyseMode,
                      int maxDepth, int maxNodes,
                      int maxPV, int minProbeDepth,
-                     std::atomic<bool>& ponder, std::atomic<bool>& infinite,
-                     bool clearHistory);
+                     std::atomic<bool>& ponder, std::atomic<bool>& infinite);
 
     /** Wait for the search thread to stop searching. */
     void waitStop();
@@ -76,6 +75,9 @@ public:
                            const std::string& optionValue);
 
     Communicator* getCommunicator() const;
+
+    /** Clear history tables in all helper threads when starting next search. */
+    void setClearHistory();
 
 private:
     void doSearch();
@@ -179,7 +181,6 @@ private:
     int maxDepth;
     int maxNodes;
     std::vector<Move> searchMoves;
-    bool htPendingClear = false;
 
     // Random seed for reduced strength
     U64 randomSeed;
@@ -188,6 +189,11 @@ private:
 inline Communicator*
 EngineMainThread::getCommunicator() const {
     return comm.get();
+}
+
+inline void
+EngineMainThread::setClearHistory() {
+    clearHistory = true;
 }
 
 #endif /* ENGINECONTROL_HPP_ */

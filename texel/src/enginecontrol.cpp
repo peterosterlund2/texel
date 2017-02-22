@@ -80,8 +80,7 @@ EngineMainThread::startSearch(EngineControl* engineControl,
                               bool ownBook, bool analyseMode,
                               int maxDepth, int maxNodes,
                               int maxPV, int minProbeDepth,
-                              std::atomic<bool>& ponder, std::atomic<bool>& infinite,
-                              bool clearHistory) {
+                              std::atomic<bool>& ponder, std::atomic<bool>& infinite) {
     WorkerThread::createWorkers(1, comm.get(),
                                 UciParams::threads->getIntPar() - 1,
                                 tt, children);
@@ -99,7 +98,6 @@ EngineMainThread::startSearch(EngineControl* engineControl,
         this->minProbeDepth = minProbeDepth;
         this->ponder = &ponder;
         this->infinite = &infinite;
-        this->clearHistory = clearHistory;
         search = true;
     }
     notifier.notify();
@@ -127,7 +125,6 @@ EngineMainThread::setOptionWhenIdle(const std::string& optionName,
 
 void
 EngineMainThread::doSearch() {
-    // FIXME!! Send clearHistory to helper threads
     Move m;
     if (ownBook && !analyseMode) {
         Book book(false);
@@ -135,7 +132,9 @@ EngineMainThread::doSearch() {
     }
     // FIXME!! Custom stop handler
     if (m.isEmpty())
-        m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, false, maxPV, false, minProbeDepth);
+        m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, false, maxPV, false,
+                                   minProbeDepth, clearHistory);
+    clearHistory = false;
     while (*ponder || *infinite) {
         // We should not respond until told to do so.
         // Just wait until we are allowed to respond.
@@ -171,9 +170,9 @@ EngineMainThread::setOptions() {
 
 // ----------------------------------------------------------------------------
 
-EngineControl::EngineControl(std::ostream& o, EngineMainThread& engineThread,
+EngineControl::EngineControl(std::ostream& o, EngineMainThread& engineThread0,
                              SearchListener& listener)
-    : os(o), engineThread(engineThread), listener(listener),
+    : os(o), engineThread(engineThread0), listener(listener),
       tt(8), randomSeed(0) {
     Numa::instance().bindThread(0);
     hashParListenerId = UciParams::hash->addListener([this]() {
@@ -182,7 +181,7 @@ EngineControl::EngineControl(std::ostream& o, EngineMainThread& engineThread,
     clearHashParListenerId = UciParams::clearHash->addListener([this]() {
         tt.clear();
         ht.init();
-        htPendingClear = true;
+        engineThread.setClearHistory();
     }, false);
     et = Evaluate::getEvalHashTables();
 }
@@ -333,8 +332,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
         tt.nextGeneration();
     }
     engineThread.startSearch(this, sc, pos, tt, moves, ownBook, analyseMode, maxDepth,
-                             maxNodes, maxPV, minProbeDepth, ponder, infinite, htPendingClear);
-    htPendingClear = false;
+                             maxNodes, maxPV, minProbeDepth, ponder, infinite);
 }
 
 void

@@ -96,7 +96,8 @@ Move
 Search::iterativeDeepening(const MoveList& scMovesIn,
                            int maxDepth, S64 initialMaxNodes,
                            bool verbose, int maxPV, bool onlyExact,
-                           int minProbeDepth) {
+                           int minProbeDepth, bool clearHistory) {
+    // FIXME!! Send clearHistory to helper threads
     tStart = currentTimeMillis();
     totalNodes = 0;
     tbHits = 0;

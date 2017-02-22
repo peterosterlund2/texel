@@ -110,7 +110,7 @@ public:
     Move iterativeDeepening(const MoveList& scMovesIn,
                             int maxDepth, S64 initialMaxNodes, bool verbose,
                             int maxPV = 1, bool onlyExact = false,
-                            int minProbeDepth = 0);
+                            int minProbeDepth = 0, bool clearHistory = false);
 
     /**
      * Main recursive search algorithm.
