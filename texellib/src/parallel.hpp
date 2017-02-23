@@ -97,17 +97,19 @@ public:
     class CommandHandler {
     public:
         virtual void initSearch(const Position& pos, const SearchTreeInfo& sti,
-                                const std::vector<U64>& posHashList, int posHashListSize) = 0;
-        virtual void startSearch(int jobId, int alpha, int beta, int depth) = 0;
-        virtual void stopSearch() = 0;
+                                const std::vector<U64>& posHashList, int posHashListSize) {}
+        virtual void startSearch(int jobId, int alpha, int beta, int depth) {}
+        virtual void stopSearch() {}
 
-        virtual void reportResult(int jobId, int score) = 0;
-        virtual void stopAck() = 0;
+        virtual void reportResult(int jobId, int score) {}
+        virtual void stopAck() {}
     };
 
     /** Check if a command has been received. */
     void poll(CommandHandler& handler);
 
+    /** Return true if all child threads have acknowledged the stop command. */
+    bool hasStopAck() const;
 
     /** Get number of of searched nodes/tbhits for all helper threads. */
     S64 getNumSearchedNodes() const;
@@ -276,6 +278,11 @@ private:
     bool hasResult = false;
 };
 
+
+inline bool
+Communicator::hasStopAck() const {
+    return stopAckWaitChildren == 0 && !stopAckWaitSelf;
+}
 
 inline S64
 Communicator::getNumSearchedNodes() const {

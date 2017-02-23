@@ -96,11 +96,8 @@ Communicator::sendStartSearch(int jobId, int alpha, int beta, int depth) {
 
 void
 Communicator::sendStopSearch() {
-    {
-        std::lock_guard<std::mutex> L(mutex);
-        stopAckWaitSelf = true;
-        stopAckWaitChildren = children.size();
-    }
+    stopAckWaitSelf = true;
+    stopAckWaitChildren = children.size();
     notifyThread();
     for (auto& c : children)
         c->doSendStopSearch();
@@ -125,22 +122,15 @@ Communicator::sendReportStats(S64 nodesSearched, S64 tbHits) {
 
 void
 Communicator::sendStopAck(bool child) {
-    bool done;
-    {
-        std::lock_guard<std::mutex> L(mutex);
-        if (child) {
-            stopAckWaitChildren--;
-        } else {
-            if (!stopAckWaitSelf)
-                return;
-            stopAckWaitSelf = false;
-        }
-        done = stopAckWaitChildren == 0 && !stopAckWaitSelf;
+    if (child) {
+        stopAckWaitChildren--;
+    } else {
+        if (!stopAckWaitSelf)
+            return;
+        stopAckWaitSelf = false;
     }
-    if (done) {
-        if (parent)
-            parent->doSendStopAck();
-    }
+    if (hasStopAck() && parent)
+        parent->doSendStopAck();
 }
 
 void

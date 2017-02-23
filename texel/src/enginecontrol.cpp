@@ -40,6 +40,8 @@
 #include <memory>
 #include <chrono>
 
+using namespace Logger;
+
 
 EngineMainThread::EngineMainThread() {
     comm = make_unique<ThreadCommunicator>(nullptr, notifier);
@@ -57,7 +59,6 @@ EngineMainThread::mainLoop() {
         if (search) {
             doSearch();
 
-            // FIXME!! Make sure helper threads are idle first
             setOptions();
 
             {
@@ -134,10 +135,14 @@ EngineMainThread::doSearch() {
         Book book(false);
         book.getBookMove(pos, m);
     }
-    // FIXME!! Custom stop handler
-    if (m.isEmpty())
+
+    bool waitForStop = false;
+    if (m.isEmpty()) {
+        // FIXME!! Custom stop handler
         m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, false, maxPV, false,
                                    minProbeDepth, clearHistory);
+        waitForStop = true;
+    }
     clearHistory = false;
     while (*ponder || *infinite) {
         // We should not respond until told to do so.
@@ -146,6 +151,26 @@ EngineMainThread::doSearch() {
     }
 
     engineControl->finishSearch(pos, m);
+
+    if (waitForStop) {
+        comm->sendStopSearch();
+        class Handler : public Communicator::CommandHandler {
+        public:
+            Handler(Communicator* comm) : comm(comm) {}
+            void stopAck() override { comm->sendStopAck(true); }
+        private:
+            Communicator* comm;
+        };
+        Handler handler(comm.get());
+        comm->sendStopAck(false);
+        while (true) {
+            comm->poll(handler);
+            if (comm->hasStopAck())
+                break;
+            notifier.wait();
+        }
+        notifier.notify();
+    }
 }
 
 void
