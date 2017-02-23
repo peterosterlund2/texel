@@ -30,6 +30,7 @@
 #include "position.hpp"
 #include "textio.hpp"
 #include "searchUtil.hpp"
+#include "util/logger.hpp"
 
 #include <vector>
 #include <memory>
@@ -39,17 +40,22 @@
 #include "cute.h"
 
 using namespace SearchConst;
+using namespace Logger;
 
 class NotifyCounter {
 public:
     NotifyCounter(Notifier& notifier);
     ~NotifyCounter();
 
+    void setCommunicator(Communicator& comm) { this->comm = &comm; }
+
     int getCount() const { return cnt; }
+    void resetCount() { cnt = 0; }
 
 private:
     void mainLoop();
 
+    Communicator* comm = nullptr;
     std::unique_ptr<std::thread> thread;
     Notifier& notifier;
     std::atomic<int> cnt { 0 };
@@ -72,6 +78,7 @@ NotifyCounter::mainLoop() {
     while (!quit) {
         notifier.wait();
         cnt++;
+        comm->sendStopAck(false);
     }
 }
 
@@ -92,18 +99,22 @@ ParallelTest::testCommunicator() {
     Notifier notifier0;
     NotifyCounter c0(notifier0);
     ThreadCommunicator root(nullptr, notifier0);
+    c0.setCommunicator(root);
 
     Notifier notifier1;
     NotifyCounter c1(notifier1);
     ThreadCommunicator child1(&root, notifier1);
+    c1.setCommunicator(child1);
 
     Notifier notifier2;
     NotifyCounter c2(notifier2);
     ThreadCommunicator child2(&root, notifier2);
+    c2.setCommunicator(child2);
 
     Notifier notifier3;
     NotifyCounter c3(notifier3);
     ThreadCommunicator child3(&child2, notifier3);
+    c3.setCommunicator(child3);
 
     ASSERT_EQUAL(0, c0.getCount());
     ASSERT_EQUAL(0, c1.getCount());
@@ -141,11 +152,16 @@ ParallelTest::testCommunicator() {
             comm.sendReportResult(jobId, score);
             nReport++;
         }
+        void stopAck() override {
+            comm.sendStopAck(true);
+            nStopAck++;
+        }
 
         int getNInit() const { return nInit; }
         int getNStart() const { return nStart; }
         int getNStop() const { return nStop; }
-        int getNReport() const { return nReport; };
+        int getNReport() const { return nReport; }
+        int getNStopAck() const { return nStopAck; }
 
     private:
         Communicator& comm;
@@ -153,11 +169,13 @@ ParallelTest::testCommunicator() {
         int nStart = 0;
         int nStop = 0;
         int nReport = 0;
+        int nStopAck = 0;
     };
 
     Handler h0(root);
     Handler h1(child1);
     Handler h2(child2);
+    Handler h3(child3);
 
     child1.poll(h1);
     ASSERT_EQUAL(0, getCount(c0, 0));
@@ -235,6 +253,49 @@ ParallelTest::testCommunicator() {
     ASSERT_EQUAL(0, child2.getTbHits());
     ASSERT_EQUAL(3, getCount(c2, 3));
     ASSERT_EQUAL(2, getCount(c3, 2));
+
+    // Stop ack
+    c0.resetCount();
+    c1.resetCount();
+    c2.resetCount();
+    c3.resetCount();
+    root.sendStopSearch();
+    ASSERT_EQUAL(1, getCount(c0, 1));
+    ASSERT_EQUAL(1, getCount(c1, 1));
+    ASSERT_EQUAL(1, getCount(c2, 1));
+    ASSERT_EQUAL(0, getCount(c3, 0));
+
+    child2.poll(h2);
+    ASSERT_EQUAL(1, h2.getNStop());
+    ASSERT_EQUAL(0, h2.getNStopAck());
+    ASSERT_EQUAL(1, getCount(c3, 1));
+    ASSERT_EQUAL(2, getCount(c2, 2));
+    ASSERT_EQUAL(1, getCount(c0, 1));
+
+    child1.poll(h1);
+    ASSERT_EQUAL(1, h1.getNStop());
+    ASSERT_EQUAL(0, h1.getNStopAck());
+    ASSERT_EQUAL(2, getCount(c0, 2));
+    ASSERT_EQUAL(0, h0.getNStopAck());
+
+    root.poll(h0);
+    ASSERT_EQUAL(1, h0.getNStopAck());
+    ASSERT_EQUAL(2, getCount(c0, 2));
+
+    child3.poll(h3);
+    ASSERT_EQUAL(1, h3.getNStop());
+    ASSERT_EQUAL(0, h3.getNStopAck());
+    ASSERT_EQUAL(3, getCount(c2, 3));
+    ASSERT_EQUAL(0, h2.getNStopAck());
+    ASSERT_EQUAL(1, h0.getNStopAck());
+
+    child2.poll(h2);
+    ASSERT_EQUAL(1, h0.getNStopAck());
+    ASSERT_EQUAL(1, h2.getNStopAck());
+    ASSERT_EQUAL(3, getCount(c0, 3));
+
+    root.poll(h0);
+    ASSERT_EQUAL(2, h0.getNStopAck());
 }
 
 cute::suite

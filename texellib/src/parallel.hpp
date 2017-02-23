@@ -90,6 +90,8 @@ public:
 
     void sendReportStats(S64 nodesSearched, S64 tbHits);
 
+    void sendStopAck(bool child);
+
 
     /** Handler invoked when commands are received. */
     class CommandHandler {
@@ -100,6 +102,7 @@ public:
         virtual void stopSearch() = 0;
 
         virtual void reportResult(int jobId, int score) = 0;
+        virtual void stopAck() = 0;
     };
 
     /** Check if a command has been received. */
@@ -119,9 +122,11 @@ protected:
     virtual void doSendReportResult(int jobId, int score) = 0;
     virtual void doSendReportStats(S64 nodesSearched, S64 tbHits) = 0;
     virtual void retrieveStats(S64& nodesSearched, S64& tbHits) = 0;
+    virtual void doSendStopAck() = 0;
 
     virtual void doPoll() = 0;
-
+    /** Notify corresponding search thread that something has happened. */
+    virtual void notifyThread() = 0;
 
     Communicator* const parent;
     std::vector<Communicator*> children;
@@ -130,7 +135,8 @@ protected:
         INIT_SEARCH,
         START_SEARCH,
         STOP_SEARCH,
-        REPORT_RESULT
+        REPORT_RESULT,
+        STOP_ACK
     };
     struct Command {
         CommandType type;
@@ -142,6 +148,8 @@ protected:
     };
     std::deque<Command> cmdQueue;
     std::mutex mutex;
+    bool stopAckWaitSelf = false;
+    int stopAckWaitChildren = 0;
 
     Position::SerializeData posData;
     SearchTreeInfo sti;
@@ -167,8 +175,10 @@ protected:
     void doSendReportResult(int jobId, int score) override;
     void doSendReportStats(S64 nodesSearched, S64 tbHits) override;
     void retrieveStats(S64& nodesSearched, S64& tbHits) override;
+    void doSendStopAck() override;
 
     void doPoll() override {}
+    void notifyThread() override;
 
 private:
     Notifier& notifier;
@@ -229,6 +239,7 @@ private:
         void startSearch(int jobId, int alpha, int beta, int depth) override;
         void stopSearch() override;
         void reportResult(int jobId, int score) override;
+        void stopAck() override;
     private:
         WorkerThread& wt;
     };

@@ -96,6 +96,12 @@ Communicator::sendStartSearch(int jobId, int alpha, int beta, int depth) {
 
 void
 Communicator::sendStopSearch() {
+    {
+        std::lock_guard<std::mutex> L(mutex);
+        stopAckWaitSelf = true;
+        stopAckWaitChildren = children.size();
+    }
+    notifyThread();
     for (auto& c : children)
         c->doSendStopSearch();
 }
@@ -114,6 +120,26 @@ Communicator::sendReportStats(S64 nodesSearched, S64 tbHits) {
         parent->doSendReportStats(nodesSearched, tbHits);
     } else {
         doSendReportStats(nodesSearched, tbHits);
+    }
+}
+
+void
+Communicator::sendStopAck(bool child) {
+    bool done;
+    {
+        std::lock_guard<std::mutex> L(mutex);
+        if (child) {
+            stopAckWaitChildren--;
+        } else {
+            if (!stopAckWaitSelf)
+                return;
+            stopAckWaitSelf = false;
+        }
+        done = stopAckWaitChildren == 0 && !stopAckWaitSelf;
+    }
+    if (done) {
+        if (parent)
+            parent->doSendStopAck();
     }
 }
 
@@ -155,6 +181,9 @@ Communicator::poll(CommandHandler& handler) {
             break;
         case CommandType::REPORT_RESULT: {
             handler.reportResult(cmd.jobId, cmd.resultScore);
+            break;
+        case CommandType::STOP_ACK:
+            handler.stopAck();
             break;
         }
         }
@@ -231,6 +260,19 @@ ThreadCommunicator::retrieveStats(S64& nodesSearched, S64& tbHits) {
     this->tbHits = 0;
 }
 
+void
+ThreadCommunicator::doSendStopAck() {
+    std::lock_guard<std::mutex> L(mutex);
+    cmdQueue.push_back(Command{CommandType::STOP_ACK, -1, -1, -1, -1, -1});
+    notifier.notify();
+}
+
+void
+ThreadCommunicator::notifyThread() {
+    notifier.notify();
+}
+
+
 // ----------------------------------------------------------------------------
 
 WorkerThread::WorkerThread(int threadNo, Communicator* parentComm,
@@ -297,6 +339,7 @@ WorkerThread::mainLoop(Communicator* parentComm) {
         comm->poll(handler);
         if (jobId != -1)
             doSearch(handler);
+        comm->sendStopAck(false);
     }
 }
 
@@ -337,6 +380,11 @@ WorkerThread::CommHandler::stopSearch() {
 void
 WorkerThread::CommHandler::reportResult(int jobId, int score) {
     wt.sendReportResult(jobId, score);
+}
+
+void
+WorkerThread::CommHandler::stopAck() {
+    wt.comm->sendStopAck(true);
 }
 
 void

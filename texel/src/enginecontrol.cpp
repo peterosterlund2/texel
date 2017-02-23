@@ -56,6 +56,10 @@ EngineMainThread::mainLoop() {
         setOptions();
         if (search) {
             doSearch();
+
+            // FIXME!! Make sure helper threads are idle first
+            setOptions();
+
             {
                 std::lock_guard<std::mutex> L(mutex);
                 search = false;
@@ -142,9 +146,6 @@ EngineMainThread::doSearch() {
     }
 
     engineControl->finishSearch(pos, m);
-
-    // FIXME!! Make sure helper threads are idle first
-    setOptions();
 }
 
 void
