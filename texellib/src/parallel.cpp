@@ -33,8 +33,6 @@
 #include <cmath>
 #include <cassert>
 
-using namespace Logger;
-
 
 void
 Notifier::notify() {

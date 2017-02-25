@@ -36,7 +36,7 @@
 #include <limits>
 
 using namespace SearchConst;
-using namespace Logger;
+
 
 Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                int posHashListSize0, SearchTables& st, Communicator& comm,

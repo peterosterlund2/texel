@@ -55,4 +55,6 @@ namespace Logger {
     }
 };
 
+#define LOG(x) Logger::log([&](std::ostream& os) { os << x; })
+
 #endif /* LOGGER_HPP_ */

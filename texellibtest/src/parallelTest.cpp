@@ -40,7 +40,7 @@
 #include "cute.h"
 
 using namespace SearchConst;
-using namespace Logger;
+
 
 class NotifyCounter {
 public:

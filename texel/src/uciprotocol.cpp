@@ -31,8 +31,6 @@
 
 #include <iostream>
 
-using namespace Logger;
-
 
 SearchListener::SearchListener(std::ostream& os)
     : os(os) {

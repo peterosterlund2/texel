@@ -40,8 +40,6 @@
 #include <memory>
 #include <chrono>
 
-using namespace Logger;
-
 
 EngineMainThread::EngineMainThread() {
     comm = make_unique<ThreadCommunicator>(nullptr, notifier);
@@ -58,9 +56,7 @@ EngineMainThread::mainLoop() {
         setOptions();
         if (search) {
             doSearch();
-
             setOptions();
-
             {
                 std::lock_guard<std::mutex> L(mutex);
                 search = false;
@@ -87,7 +83,7 @@ EngineMainThread::startSearch(EngineControl* engineControl,
                               int maxPV, int minProbeDepth,
                               std::atomic<bool>& ponder, std::atomic<bool>& infinite) {
     WorkerThread::createWorkers(1, comm.get(),
-                                UciParams::threads->getIntPar() - 1,
+                                UciParams::threads->getIntPar() - 1, // FIXME!! Race with search thread that sets options
                                 tt, children);
     {
         std::lock_guard<std::mutex> L(mutex);
