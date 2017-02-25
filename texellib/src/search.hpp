@@ -157,8 +157,7 @@ private:
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
               int posHashListSize0);
 
-    int negaScoutRoot(bool tb,
-                      int alpha, int beta, int ply, int depth, int recaptureSquare,
+    int negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
                       const bool inCheck);
 
     /** Information used for move ordering at root and for PV reporting. */
@@ -260,6 +259,7 @@ private:
     int posHashFirstNew;          // First entry in posHashList that has not been played OTB.
     TranspositionTable& tt;
     Communicator& comm;
+    int jobId = 0;
     int threadNo;
     bool mainNumaNode; // True if this thread runs on the NUMA node holding the transposition table
     TreeLogger& logFile;

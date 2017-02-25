@@ -97,7 +97,6 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
                            int maxDepth, S64 initialMaxNodes,
                            bool verbose, int maxPV, bool onlyExact,
                            int minProbeDepth, bool clearHistory) {
-    // FIXME!! Send clearHistory to helper threads
     tStart = currentTimeMillis();
     totalNodes = 0;
     tbHits = 0;
@@ -130,6 +129,8 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
         searchTreeInfo[i].singularMove.setMove(0,0,0,0);
     }
     ht.reScale();
+    comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory);
+
     int posHashFirstNew0 = posHashFirstNew;
     bool knownLoss = false; // True if at least one of the first maxPV moves is a known loss
     try {
@@ -177,10 +178,10 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             sti.currentMoveNo = mi;
             sti.lmr = lmrS;
             sti.nodeIdx = rootNodeIdx;
-            int score = -negaScoutRoot(true, -beta, -alpha, 1, depth - lmrS - 1, -1, givesCheck);
+            int score = -negaScoutRoot(true, -beta, -alpha, 1, depth - lmrS - 1, givesCheck);
             if ((lmrS > 0) && (score > alpha)) {
                 sti.lmr = 0;
-                score = -negaScoutRoot(true, -beta, -alpha, 1, depth - 1, -1, givesCheck);
+                score = -negaScoutRoot(true, -beta, -alpha, 1, depth - 1, givesCheck);
             }
             nodesThisMove += totalNodes;
             posHashListSize--;
@@ -213,7 +214,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
                 }
                 pos.makeMove(m, ui);
                 totalNodes++;
-                score = -negaScoutRoot(true, -beta, -alpha, 1, depth - 1, -1, givesCheck);
+                score = -negaScoutRoot(true, -beta, -alpha, 1, depth - 1, givesCheck);
                 nodesThisMove += totalNodes;
                 posHashListSize--;
                 pos.unMakeMove(m, ui);
@@ -294,11 +295,12 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
 }
 
 int
-Search::negaScoutRoot(bool tb,
-                      int alpha, int beta, int ply, int depth, int recaptureSquare,
+Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
                       const bool inCheck) {
+    const SearchTreeInfo& sti = searchTreeInfo[ply-1];
+    comm.sendStartSearch(jobId++, sti, alpha, beta, depth);
     // FIXME!! Talk to helper threads
-    return negaScout(tb, alpha, beta, ply, depth, recaptureSquare, inCheck);
+    return negaScout(tb, alpha, beta, ply, depth, -1, inCheck);
 }
 
 void

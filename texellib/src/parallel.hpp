@@ -76,10 +76,12 @@ public:
 
     // Parent to child commands
 
-    void sendInitSearch(const Position& pos, const SearchTreeInfo& sti,
-                        const std::vector<U64>& posHashList, int posHashListSize);
+    void sendInitSearch(const Position& pos,
+                        const std::vector<U64>& posHashList, int posHashListSize,
+                        bool clearHistory);
 
-    void sendStartSearch(int jobId, int alpha, int beta, int depth);
+    void sendStartSearch(int jobId, const SearchTreeInfo& sti,
+                         int alpha, int beta, int depth);
 
     void sendStopSearch();
 
@@ -96,9 +98,11 @@ public:
     /** Handler invoked when commands are received. */
     class CommandHandler {
     public:
-        virtual void initSearch(const Position& pos, const SearchTreeInfo& sti,
-                                const std::vector<U64>& posHashList, int posHashListSize) {}
-        virtual void startSearch(int jobId, int alpha, int beta, int depth) {}
+        virtual void initSearch(const Position& pos,
+                                const std::vector<U64>& posHashList, int posHashListSize,
+                                bool clearHistory) {}
+        virtual void startSearch(int jobId, const SearchTreeInfo& sti,
+                                 int alpha, int beta, int depth) {}
         virtual void stopSearch() {}
 
         virtual void reportResult(int jobId, int score) {}
@@ -116,9 +120,11 @@ public:
     S64 getTbHits() const;
 
 protected:
-    virtual void doSendInitSearch(const Position& pos, const SearchTreeInfo& sti,
-                                  const std::vector<U64>& posHashList, int posHashListSize) = 0;
-    virtual void doSendStartSearch(int jobId,int alpha, int beta, int depth) = 0;
+    virtual void doSendInitSearch(const Position& pos,
+                                  const std::vector<U64>& posHashList, int posHashListSize,
+                                  bool clearHistory) = 0;
+    virtual void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
+                                   int alpha, int beta, int depth) = 0;
     virtual void doSendStopSearch() = 0;
 
     virtual void doSendReportResult(int jobId, int score) = 0;
@@ -147,6 +153,7 @@ protected:
         int beta;
         int depth;
         int resultScore;
+        bool clearHistory;
     };
     std::deque<Command> cmdQueue;
     std::mutex mutex;
@@ -169,9 +176,11 @@ public:
     ThreadCommunicator(Communicator* parent, Notifier& notifier);
 
 protected:
-    void doSendInitSearch(const Position& pos, const SearchTreeInfo& sti,
-                          const std::vector<U64>& posHashList, int posHashListSize) override;
-    void doSendStartSearch(int jobId, int alpha, int beta, int depth) override;
+    void doSendInitSearch(const Position& pos,
+                          const std::vector<U64>& posHashList, int posHashListSize,
+                          bool clearHistory) override;
+    void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
+                           int alpha, int beta, int depth) override;
     void doSendStopSearch() override;
 
     void doSendReportResult(int jobId, int score) override;
@@ -236,9 +245,11 @@ private:
     class CommHandler : public Communicator::CommandHandler {
     public:
         CommHandler(WorkerThread& wt);
-        void initSearch(const Position& pos, const SearchTreeInfo& sti,
-                        const std::vector<U64>& posHashList, int posHashListSize) override;
-        void startSearch(int jobId, int alpha, int beta, int depth) override;
+        void initSearch(const Position& pos,
+                        const std::vector<U64>& posHashList, int posHashListSize,
+                        bool clearHistory) override;
+        void startSearch(int jobId, const SearchTreeInfo& sti,
+                         int alpha, int beta, int depth) override;
         void stopSearch() override;
         void reportResult(int jobId, int score) override;
         void stopAck() override;

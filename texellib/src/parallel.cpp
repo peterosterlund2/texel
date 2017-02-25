@@ -80,18 +80,20 @@ Communicator::removeChild(Communicator* child) {
 }
 
 void
-Communicator::sendInitSearch(const Position& pos, const SearchTreeInfo& sti,
-                             const std::vector<U64>& posHashList, int posHashListSize) {
+Communicator::sendInitSearch(const Position& pos,
+                             const std::vector<U64>& posHashList, int posHashListSize,
+                             bool clearHistory) {
     nodesSearched = 0;
     tbHits = 0;
     for (auto& c : children)
-        c->doSendInitSearch(pos, sti, posHashList, posHashListSize);
+        c->doSendInitSearch(pos, posHashList, posHashListSize, clearHistory);
 }
 
 void
-Communicator::sendStartSearch(int jobId, int alpha, int beta, int depth) {
+Communicator::sendStartSearch(int jobId, const SearchTreeInfo& sti,
+                              int alpha, int beta, int depth) {
     for (auto& c : children)
-        c->doSendStartSearch(jobId, alpha, beta, depth);
+        c->doSendStartSearch(jobId, sti, alpha, beta, depth);
 }
 
 void
@@ -151,21 +153,24 @@ Communicator::poll(CommandHandler& handler) {
         switch (cmd.type) {
         case CommandType::INIT_SEARCH: {
             Position pos;
-            SearchTreeInfo sti;
             std::vector<U64> posHashList;
             int posHashListSize;
             L.lock();
             pos.deSerialize(posData);
-            sti = this->sti;
             posHashList = this->posHashList;
             posHashListSize = this->posHashListSize;
             L.unlock();
-            handler.initSearch(pos, sti, posHashList, posHashListSize);
+            handler.initSearch(pos, posHashList, posHashListSize, cmd.clearHistory);
             break;
         }
-        case CommandType::START_SEARCH:
-            handler.startSearch(cmd.jobId, cmd.alpha, cmd.beta, cmd.depth);
+        case CommandType::START_SEARCH: {
+            SearchTreeInfo sti;
+            L.lock();
+            sti = this->sti;
+            L.unlock();
+            handler.startSearch(cmd.jobId, sti, cmd.alpha, cmd.beta, cmd.depth);
             break;
+        }
         case CommandType::STOP_SEARCH:
             handler.stopSearch();
             break;
@@ -187,21 +192,23 @@ ThreadCommunicator::ThreadCommunicator(Communicator* parent, Notifier& notifier)
 }
 
 void
-ThreadCommunicator::doSendInitSearch(const Position& pos, const SearchTreeInfo& sti,
-                                     const std::vector<U64>& posHashList, int posHashListSize) {
+ThreadCommunicator::doSendInitSearch(const Position& pos,
+                                     const std::vector<U64>& posHashList, int posHashListSize,
+                                     bool clearHistory) {
     std::lock_guard<std::mutex> L(mutex);
     pos.serialize(posData);
-    this->sti = sti;
     this->posHashList = posHashList;
     this->posHashListSize = posHashListSize;
     cmdQueue.clear();
-    cmdQueue.push_back(Command{CommandType::INIT_SEARCH, -1, -1, -1, -1, -1});
+    cmdQueue.push_back(Command{CommandType::INIT_SEARCH, -1, -1, -1, -1, -1, clearHistory});
     notifier.notify();
 }
 
 void
-ThreadCommunicator::doSendStartSearch(int jobId, int alpha, int beta, int depth) {
+ThreadCommunicator::doSendStartSearch(int jobId, const SearchTreeInfo& sti,
+                                      int alpha, int beta, int depth) {
     std::lock_guard<std::mutex> L(mutex);
+    this->sti = sti;
     cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
                                   [](const Command& cmd) {
                                       return cmd.type == CommandType::START_SEARCH ||
@@ -209,7 +216,7 @@ ThreadCommunicator::doSendStartSearch(int jobId, int alpha, int beta, int depth)
                                              cmd.type == CommandType::REPORT_RESULT;
                                   }),
                    cmdQueue.end());
-    cmdQueue.push_back(Command{CommandType::START_SEARCH, jobId, alpha, beta, depth, -1});
+    cmdQueue.push_back(Command{CommandType::START_SEARCH, jobId, alpha, beta, depth, -1, false});
     notifier.notify();
 }
 
@@ -223,14 +230,14 @@ ThreadCommunicator::doSendStopSearch() {
                                              cmd.type == CommandType::REPORT_RESULT;
                                   }),
                    cmdQueue.end());
-    cmdQueue.push_back(Command{CommandType::STOP_SEARCH, -1, -1, -1, -1, -1});
+    cmdQueue.push_back(Command{CommandType::STOP_SEARCH, -1, -1, -1, -1, -1, false});
     notifier.notify();
 }
 
 void
 ThreadCommunicator::doSendReportResult(int jobId, int score) {
     std::lock_guard<std::mutex> L(mutex);
-    cmdQueue.push_back(Command{CommandType::REPORT_RESULT, jobId, -1, -1, -1, score});
+    cmdQueue.push_back(Command{CommandType::REPORT_RESULT, jobId, -1, -1, -1, score, false});
     notifier.notify();
 }
 
@@ -253,7 +260,7 @@ ThreadCommunicator::retrieveStats(S64& nodesSearched, S64& tbHits) {
 void
 ThreadCommunicator::doSendStopAck() {
     std::lock_guard<std::mutex> L(mutex);
-    cmdQueue.push_back(Command{CommandType::STOP_ACK, -1, -1, -1, -1, -1});
+    cmdQueue.push_back(Command{CommandType::STOP_ACK, -1, -1, -1, -1, -1, false});
     notifier.notify();
 }
 
@@ -292,17 +299,20 @@ WorkerThread::createWorkers(int firstThreadNo, Communicator* parentComm,
 
     const int maxChildren = 4;
     int numChildren = std::min(numWorkers, maxChildren);
+    std::vector<int> newChildren;
     children.resize(numChildren);
     for (int i = 0; i < numChildren; i++) {
         int n = (numWorkers + numChildren - i - 1) / (numChildren - i);
         if (!children[i] || children[i]->getThreadNo() != firstThreadNo ||
-                children[i]->getNumWorkers() != n)
+                children[i]->getNumWorkers() != n) {
             children[i] = std::make_shared<WorkerThread>(firstThreadNo, parentComm, n, tt);
+            newChildren.push_back(i);
+        }
         firstThreadNo += n;
         numWorkers -= n;
     }
 
-    for (int i = 0; i < numChildren; i++)
+    for (int i : newChildren)
         children[i]->waitInitialized();
 }
 
@@ -334,11 +344,11 @@ WorkerThread::mainLoop(Communicator* parentComm) {
 }
 
 void
-WorkerThread::CommHandler::initSearch(const Position& pos, const SearchTreeInfo& sti,
-                                      const std::vector<U64>& posHashList, int posHashListSize) {
-    wt.comm->sendInitSearch(pos, sti, posHashList, posHashListSize);
+WorkerThread::CommHandler::initSearch(const Position& pos,
+                                      const std::vector<U64>& posHashList, int posHashListSize,
+                                      bool clearHistory) {
+    wt.comm->sendInitSearch(pos, posHashList, posHashListSize, clearHistory);
     wt.pos = pos;
-    wt.sti = sti;
     wt.posHashList = posHashList;
     wt.posHashListSize = posHashListSize;
     wt.jobId = -1;
@@ -347,13 +357,19 @@ WorkerThread::CommHandler::initSearch(const Position& pos, const SearchTreeInfo&
     wt.logFile->open("/home/petero/treelog.dmp", wt.threadNo);
     if (wt.kt)
         wt.kt->clear();
-    if (wt.ht)
-        wt.ht->reScale();
+    if (wt.ht) {
+        if (clearHistory)
+            wt.ht->init();
+        else
+            wt.ht->reScale();
+    }
 }
 
 void
-WorkerThread::CommHandler::startSearch(int jobId, int alpha, int beta, int depth) {
-    wt.comm->sendStartSearch(jobId, alpha, beta, depth);
+WorkerThread::CommHandler::startSearch(int jobId, const SearchTreeInfo& sti,
+                                       int alpha, int beta, int depth) {
+    wt.comm->sendStartSearch(jobId, sti, alpha, beta, depth);
+    wt.sti = sti;
     wt.jobId = jobId;
     wt.alpha = alpha;
     wt.beta = beta;

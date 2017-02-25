@@ -27,8 +27,11 @@
 #include "searchparams.hpp"
 #include "computerPlayer.hpp"
 #include "textio.hpp"
+#include "util/logger.hpp"
 
 #include <iostream>
+
+using namespace Logger;
 
 
 SearchListener::SearchListener(std::ostream& os)

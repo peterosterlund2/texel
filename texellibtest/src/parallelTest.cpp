@@ -125,7 +125,7 @@ ParallelTest::testCommunicator() {
     SearchTreeInfo sti;
     std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2);
     int posHashListSize = 0;
-    root.sendInitSearch(pos, sti, posHashList, posHashListSize);
+    root.sendInitSearch(pos, posHashList, posHashListSize, false);
     ASSERT_EQUAL(0, getCount(c0, 0));
     ASSERT_EQUAL(1, getCount(c1, 1));
     ASSERT_EQUAL(1, getCount(c2, 1));
@@ -135,13 +135,15 @@ ParallelTest::testCommunicator() {
     public:
         Handler(Communicator& comm) : comm(comm) {}
 
-        void initSearch(const Position& pos, const SearchTreeInfo& sti,
-                        const std::vector<U64>& posHashList, int posHashListSize) override {
-            comm.sendInitSearch(pos, sti, posHashList, posHashListSize);
+        void initSearch(const Position& pos,
+                        const std::vector<U64>& posHashList, int posHashListSize,
+                        bool clearHistory) override {
+            comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory);
             nInit++;
         }
-        void startSearch(int jobId, int alpha, int beta, int depth) override {
-            comm.sendStartSearch(jobId, alpha, beta, depth);
+        void startSearch(int jobId, const SearchTreeInfo& sti,
+                         int alpha, int beta, int depth) override {
+            comm.sendStartSearch(jobId, sti, alpha, beta, depth);
             nStart++;
         }
         void stopSearch() override {
@@ -194,7 +196,7 @@ ParallelTest::testCommunicator() {
     ASSERT_EQUAL(1, h2.getNInit());
 
     int jobId = 1;
-    root.sendStartSearch(jobId, -100, 100, 3);
+    root.sendStartSearch(jobId, sti, -100, 100, 3);
     ASSERT_EQUAL(2, getCount(c1, 2));
     ASSERT_EQUAL(2, getCount(c2, 2));
     child2.poll(h2);
