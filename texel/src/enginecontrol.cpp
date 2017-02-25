@@ -186,7 +186,6 @@ EngineMainThread::setOptions() {
         else
             params.set(optionName, optionValue);
     }
-    pendingOptions.clear();
 }
 
 // ----------------------------------------------------------------------------
