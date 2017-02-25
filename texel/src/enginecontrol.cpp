@@ -138,7 +138,6 @@ EngineMainThread::doSearch() {
 
     bool waitForStop = false;
     if (m.isEmpty()) {
-        // FIXME!! Custom stop handler
         m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, false, maxPV, false,
                                    minProbeDepth, clearHistory);
         waitForStop = true;

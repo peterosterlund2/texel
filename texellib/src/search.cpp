@@ -294,13 +294,29 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     return onlyExact ? bestExactMove : bestMove;
 }
 
+class HelperThreadResult : public std::exception {
+public:
+    HelperThreadResult(int score) : score(score) {}
+    int getScore() const { return score; }
+private:
+    int score;
+};
+
 int
 Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
                       const bool inCheck) {
     const SearchTreeInfo& sti = searchTreeInfo[ply-1];
-    comm.sendStartSearch(jobId++, sti, alpha, beta, depth);
-    // FIXME!! Talk to helper threads
-    return negaScout(tb, alpha, beta, ply, depth, -1, inCheck);
+    jobId++;
+    comm.sendStartSearch(jobId, sti, alpha, beta, depth);
+    Position pos0(pos);
+    int posHashListSize0 = posHashListSize;
+    try {
+        return negaScout(tb, alpha, beta, ply, depth, -1, inCheck);
+    } catch (const HelperThreadResult& res) {
+        pos = pos0;
+        posHashListSize = posHashListSize0;
+        return res.getScore();
+    }
 }
 
 void
@@ -411,6 +427,19 @@ Search::notifyStats() {
 
 bool
 Search::shouldStop() {
+    class Handler : public Communicator::CommandHandler {
+    public:
+        Handler(int jobId) : jobId(jobId) {}
+        void reportResult(int jobId, int score) override {
+            if (jobId == this->jobId)
+                throw HelperThreadResult(score);
+        }
+    private:
+        int jobId;
+    };
+    Handler handler(jobId);
+    comm.poll(handler);
+
     S64 tNow = currentTimeMillis();
     S64 timeLimit = searchNeedMoreTime ? maxTimeMillis : minTimeMillis;
     if (    ((timeLimit >= 0) && (tNow - tStart >= timeLimit)) ||
