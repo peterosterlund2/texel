@@ -313,6 +313,11 @@ Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
     try {
         return negaScout(tb, alpha, beta, ply, depth, -1, inCheck);
     } catch (const HelperThreadResult& res) {
+        bool useNullMove = UciParams::useNullMove->getBoolPar();
+        for (size_t i = 0; i < COUNT_OF(searchTreeInfo); i++) {
+            searchTreeInfo[i].allowNullMove = useNullMove;
+            searchTreeInfo[i].singularMove.setMove(0,0,0,0);
+        }
         searchTreeInfo[ply-1] = sti;
         pos = pos0;
         posHashListSize = posHashListSize0;
