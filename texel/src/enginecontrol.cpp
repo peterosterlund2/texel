@@ -83,7 +83,7 @@ EngineMainThread::startSearch(EngineControl* engineControl,
                               int maxPV, int minProbeDepth,
                               std::atomic<bool>& ponder, std::atomic<bool>& infinite) {
     WorkerThread::createWorkers(1, comm.get(),
-                                UciParams::threads->getIntPar() - 1, // FIXME!! Race with search thread that sets options
+                                UciParams::threads->getIntPar() - 1,
                                 tt, children);
     {
         std::lock_guard<std::mutex> L(mutex);
@@ -266,8 +266,7 @@ EngineControl::stopSearch() {
 void
 EngineControl::newGame() {
     randomSeed = Random().nextU64();
-    tt.clear();
-    ht.init();
+    setOption("Clear Hash", "");
 }
 
 /**
