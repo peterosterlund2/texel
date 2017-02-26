@@ -125,6 +125,13 @@ EngineMainThread::setOptionWhenIdle(const std::string& optionName,
 }
 
 void
+EngineMainThread::waitOptionsSet() {
+    std::unique_lock<std::mutex> L(mutex);
+    while (!pendingOptions.empty())
+        optionsSet.wait(L);
+}
+
+void
 EngineMainThread::doSearch() {
     Move m;
     if (ownBook && !analyseMode) {
@@ -170,21 +177,27 @@ EngineMainThread::doSearch() {
 
 void
 EngineMainThread::setOptions() {
-    std::map<std::string, std::string> options;
-    {
-        std::lock_guard<std::mutex> L(mutex);
-        options.swap(pendingOptions);
-    }
+    while (true) {
+        std::map<std::string, std::string> options;
+        {
+            std::lock_guard<std::mutex> L(mutex);
+            options.swap(pendingOptions);
+            if (options.empty()) {
+                optionsSet.notify_all();
+                return;
+            }
+        }
 
-    Parameters& params = Parameters::instance();
-    for (auto& p : options) {
-        const std::string& optionName = p.first;
-        const std::string& optionValue = p.second;
-        std::shared_ptr<Parameters::ParamBase> par = params.getParam(optionName);
-        if (par && par->type == Parameters::STRING && optionValue == "<empty>")
-            params.set(optionName, "");
-        else
-            params.set(optionName, optionValue);
+        Parameters& params = Parameters::instance();
+        for (auto& p : options) {
+            const std::string& optionName = p.first;
+            const std::string& optionValue = p.second;
+            std::shared_ptr<Parameters::ParamBase> par = params.getParam(optionName);
+            if (par && par->type == Parameters::STRING && optionValue == "<empty>")
+                params.set(optionName, "");
+            else
+                params.set(optionName, optionValue);
+        }
     }
 }
 
@@ -362,6 +375,7 @@ EngineControl::stopThread() {
     infinite = false;
     ponder = false;
     engineThread.waitStop();
+    engineThread.waitOptionsSet();
 }
 
 void

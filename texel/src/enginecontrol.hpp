@@ -74,6 +74,9 @@ public:
     void setOptionWhenIdle(const std::string& optionName,
                            const std::string& optionValue);
 
+    /** Wait until all changes requested by setOptionWhenIdle() have been made. */
+    void waitOptionsSet();
+
     Communicator* getCommunicator() const;
 
     /** Clear history tables in all helper threads when starting next search. */
@@ -89,6 +92,7 @@ private:
 
     std::mutex mutex;
     std::condition_variable searchStopped;
+    std::condition_variable optionsSet;    // To wait for UCI options to be set
     std::atomic<bool> search { false };
     std::atomic<bool> quitFlag { false };
 
