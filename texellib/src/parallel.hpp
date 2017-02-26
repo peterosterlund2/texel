@@ -147,23 +147,40 @@ protected:
         STOP_ACK
     };
     struct Command {
+        Command(CommandType type, int jobId = -1, int resultScore = 0, bool clearHistory = false)
+            : type(type), jobId(jobId),
+              resultScore(resultScore), clearHistory(clearHistory) {}
         CommandType type;
         int jobId;
-        int alpha;
-        int beta;
-        int depth;
         int resultScore;
         bool clearHistory;
     };
-    std::deque<Command> cmdQueue;
+    struct InitSearchCommand : public Command {
+        InitSearchCommand(const Position& pos,const std::vector<U64>& posHashList,
+                          int posHashListSize, bool clearHistory)
+            : Command(INIT_SEARCH, -1, 0, clearHistory),
+              posHashList(posHashList), posHashListSize(posHashListSize) {
+            pos.serialize(posData);
+        }
+        Position::SerializeData posData;
+        std::vector<U64> posHashList;
+        int posHashListSize;
+    };
+    struct StartSearchCommand : public Command {
+        StartSearchCommand(int jobId, const SearchTreeInfo& sti,
+                           int alpha, int beta, int depth)
+            : Command(START_SEARCH, jobId),
+              sti(sti), alpha(alpha), beta(beta), depth(depth) {}
+        SearchTreeInfo sti;
+        int alpha;
+        int beta;
+        int depth;
+    };
+    std::deque<std::shared_ptr<Command>> cmdQueue;
+
     std::mutex mutex;
     bool stopAckWaitSelf = false;
     int stopAckWaitChildren = 0;
-
-    Position::SerializeData posData;
-    SearchTreeInfo sti;
-    std::vector<U64> posHashList;
-    int posHashListSize = 0;
 
     std::atomic<S64> nodesSearched{0};
     std::atomic<S64> tbHits{0};
