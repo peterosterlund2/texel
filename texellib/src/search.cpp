@@ -305,7 +305,7 @@ private:
 int
 Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
                       const bool inCheck) {
-    const SearchTreeInfo& sti = searchTreeInfo[ply-1];
+    SearchTreeInfo sti = searchTreeInfo[ply-1];
     jobId++;
     comm.sendStartSearch(jobId, sti, alpha, beta, depth);
     Position pos0(pos);
@@ -313,6 +313,7 @@ Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
     try {
         return negaScout(tb, alpha, beta, ply, depth, -1, inCheck);
     } catch (const HelperThreadResult& res) {
+        searchTreeInfo[ply-1] = sti;
         pos = pos0;
         posHashListSize = posHashListSize0;
         return res.getScore();
@@ -427,18 +428,20 @@ Search::notifyStats() {
 
 bool
 Search::shouldStop() {
-    class Handler : public Communicator::CommandHandler {
-    public:
-        Handler(int jobId) : jobId(jobId) {}
-        void reportResult(int jobId, int score) override {
-            if (jobId == this->jobId)
-                throw HelperThreadResult(score);
-        }
-    private:
-        int jobId;
-    };
-    Handler handler(jobId);
-    comm.poll(handler);
+    if (true) {
+        class Handler : public Communicator::CommandHandler {
+        public:
+            Handler(int jobId) : jobId(jobId) {}
+            void reportResult(int jobId, int score) override {
+                if (jobId == this->jobId)
+                    throw HelperThreadResult(score);
+            }
+        private:
+            int jobId;
+        };
+        Handler handler(jobId);
+        comm.poll(handler);
+    }
 
     S64 tNow = currentTimeMillis();
     S64 timeLimit = searchNeedMoreTime ? maxTimeMillis : minTimeMillis;
@@ -686,7 +689,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             }
             if ((score >= beta) && (depth >= 10)) {
                 // Null-move verification search
-                SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
+                SearchTreeInfo& sti2 = searchTreeInfo[ply-1]; // FIXME!! Not thread safe
                 SearchTreeInfo& sti3 = searchTreeInfo[ply+1];
                 const Move savedMove = sti2.currentMove;
                 const int savedMoveNo = sti2.currentMoveNo;
@@ -734,7 +737,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     if ((depth > 4) && hashMove.isEmpty()) {
         bool isPv = beta > alpha + 1;
         if (isPv || (depth > 8)) {
-            SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
+            SearchTreeInfo& sti2 = searchTreeInfo[ply-1]; // FIXME!! Not thread safe
             const Move savedMove = sti2.currentMove;
             const int savedMoveNo = sti2.currentMoveNo;
             const S64 savedNodeIdx2 = sti2.nodeIdx;
@@ -778,7 +781,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             (getMoveExtend(hashMove, recaptureSquare) <= 0) &&
             (ply + depth < MAX_SEARCH_DEPTH) &&
             MoveGen::isLegal(pos, hashMove, inCheck)) {
-        SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
+        SearchTreeInfo& sti2 = searchTreeInfo[ply-1]; // FIXME!! Not thread safe
         const Move savedMove = sti2.currentMove;
         const int savedMoveNo = sti2.currentMoveNo;
         const S64 savedNodeIdx2 = sti2.nodeIdx;
