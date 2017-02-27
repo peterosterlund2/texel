@@ -467,10 +467,11 @@ WorkerThread::doSearch(CommHandler& commHandler) {
     using namespace SearchConst;
     for (int extraDepth = 0; ; extraDepth++) {
         Search::SearchTables st(tt, *kt, *ht, *et);
-        UndoInfo ui;
         Position pos(this->pos);
-        pos.makeMove(sti.currentMove, ui);
         const U64 rootNodeIdx = logFile->logPosition(pos);
+
+        UndoInfo ui;
+        pos.makeMove(sti.currentMove, ui);
 
         posHashList[posHashListSize++] = pos.zobristHash();
         Search sc(pos, posHashList, posHashListSize, st, *comm, *logFile);
@@ -483,7 +484,7 @@ WorkerThread::doSearch(CommHandler& commHandler) {
         sc.setStopHandler(std::move(stopHandler));
 
         int ply = 1;
-        sc.setSearchTreeInfo(ply, sti, rootNodeIdx);
+        sc.setSearchTreeInfo(ply-1, sti, rootNodeIdx);
         int captSquare = -1;
         bool inCheck = MoveGen::inCheck(pos);
         try {

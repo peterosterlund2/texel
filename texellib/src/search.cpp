@@ -321,7 +321,13 @@ Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
         searchTreeInfo[ply-1] = sti;
         pos = pos0;
         posHashListSize = posHashListSize0;
-        return res.getScore();
+
+        const U64 hKey = pos.historyHash();
+        int score = res.getScore();
+        int evalScore = UNKNOWN_SCORE;
+        int type = score <= alpha ? TType::T_LE : score >= beta ? TType::T_GE : TType::T_EXACT;
+        logFile.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, type, evalScore, hKey);
+        return score;
     }
 }
 
