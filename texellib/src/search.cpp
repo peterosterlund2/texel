@@ -92,6 +92,15 @@ Search::setStrength(int strength, U64 randomSeed) {
     this->randomSeed = randomSeed;
 }
 
+void
+Search::initSearchTreeInfo() {
+    bool useNullMove = UciParams::useNullMove->getBoolPar();
+    for (size_t i = 0; i < COUNT_OF(searchTreeInfo); i++) {
+        searchTreeInfo[i].allowNullMove = useNullMove;
+        searchTreeInfo[i].singularMove.setMove(0,0,0,0);
+    }
+}
+
 Move
 Search::iterativeDeepening(const MoveList& scMovesIn,
                            int maxDepth, S64 initialMaxNodes,
@@ -124,10 +133,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     if ((maxDepth < 0) || (maxDepth > MAX_SEARCH_DEPTH))
         maxDepth = MAX_SEARCH_DEPTH;
     maxPV = std::min(maxPV, (int)rootMoves.size());
-    for (size_t i = 0; i < COUNT_OF(searchTreeInfo); i++) {
-        searchTreeInfo[i].allowNullMove = UciParams::useNullMove->getBoolPar();
-        searchTreeInfo[i].singularMove.setMove(0,0,0,0);
-    }
+    initSearchTreeInfo();
     ht.reScale();
     comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory);
 
@@ -313,11 +319,7 @@ Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
     try {
         return negaScout(tb, alpha, beta, ply, depth, -1, inCheck);
     } catch (const HelperThreadResult& res) {
-        bool useNullMove = UciParams::useNullMove->getBoolPar();
-        for (size_t i = 0; i < COUNT_OF(searchTreeInfo); i++) {
-            searchTreeInfo[i].allowNullMove = useNullMove;
-            searchTreeInfo[i].singularMove.setMove(0,0,0,0);
-        }
+        initSearchTreeInfo();
         searchTreeInfo[ply-1] = sti;
         pos = pos0;
         posHashListSize = posHashListSize0;

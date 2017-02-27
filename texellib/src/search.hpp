@@ -70,6 +70,9 @@ public:
     Search(const Search& other) = delete;
     Search& operator=(const Search& other) = delete;
 
+    /** Initializes the searchTreeInfo array. */
+    void initSearchTreeInfo();
+
     /** Interface for reporting search information during search. */
     class Listener {
     public:

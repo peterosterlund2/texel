@@ -477,6 +477,7 @@ WorkerThread::doSearch(CommHandler& commHandler) {
         Search sc(pos, posHashList, posHashListSize, st, *comm, *logFile);
         posHashListSize--;
         sc.setThreadNo(threadNo);
+        sc.initSearchTreeInfo();
         const int minProbeDepth = TBProbe::tbEnabled() ? UciParams::minProbeDepth->getIntPar() : MAX_SEARCH_DEPTH;
         sc.setMinProbeDepth(minProbeDepth);
 
