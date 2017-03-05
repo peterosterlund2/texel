@@ -465,7 +465,8 @@ WorkerThread::doSearch(CommHandler& commHandler) {
         ht = make_unique<History>();
 
     using namespace SearchConst;
-    for (int extraDepth = 0; ; extraDepth++) {
+    int initExtraDepth = threadNo & 1;
+    for (int extraDepth = initExtraDepth; ; extraDepth++) {
         Search::SearchTables st(tt, *kt, *ht, *et);
         Position pos(this->pos);
         const U64 rootNodeIdx = logFile->logPosition(pos);
