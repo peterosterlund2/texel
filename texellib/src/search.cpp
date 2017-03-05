@@ -861,8 +861,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         if (mayReduce && haveLegalMoves && !givesCheck && !passedPawnPush(pos, m)) {
             if (normalBound && !isLoseScore(bestScore) && (mi >= lmpMoveCountLimit))
                 continue; // Late move pruning
-                if (futilityPrune)
-                    doFutility = true;
+            if (futilityPrune)
+                doFutility = true;
         }
         int score = illegalScore;
         if (doFutility) {
