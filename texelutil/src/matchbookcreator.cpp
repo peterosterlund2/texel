@@ -229,7 +229,7 @@ public:
     /** Return standard deviation of the mean score. */
     double getStdDevScore() const {
         double N = nScores;
-        double sDev = ::sqrt(1/(N - 1) * (scoreSum2 - scoreSum * scoreSum / N));
+        double sDev = sqrt(1/(N - 1) * (scoreSum2 - scoreSum * scoreSum / N));
         return sDev / sqrt(N);
     }
 
