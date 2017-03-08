@@ -111,6 +111,7 @@ private:
     bool clearHistory = false;
 
     std::map<std::string, std::string> pendingOptions;
+    bool optionsSetFinished = true;
 };
 
 /**

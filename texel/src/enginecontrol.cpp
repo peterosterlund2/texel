@@ -118,8 +118,10 @@ EngineMainThread::setOptionWhenIdle(const std::string& optionName,
     {
         std::lock_guard<std::mutex> L(mutex);
         Parameters& params = Parameters::instance();
-        if (params.getParam(optionName))
+        if (params.getParam(optionName)) {
             pendingOptions[optionName] = optionValue;
+            optionsSetFinished = false;
+        }
     }
     notifier.notify();
 }
@@ -127,7 +129,7 @@ EngineMainThread::setOptionWhenIdle(const std::string& optionName,
 void
 EngineMainThread::waitOptionsSet() {
     std::unique_lock<std::mutex> L(mutex);
-    while (!pendingOptions.empty())
+    while (!optionsSetFinished)
         optionsSet.wait(L);
 }
 
@@ -183,6 +185,7 @@ EngineMainThread::setOptions() {
             std::lock_guard<std::mutex> L(mutex);
             options.swap(pendingOptions);
             if (options.empty()) {
+                optionsSetFinished = true;
                 optionsSet.notify_all();
                 return;
             }
