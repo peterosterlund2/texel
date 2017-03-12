@@ -49,7 +49,7 @@
 								<option id="gnu.c.compiler.option.include.paths.2089055672" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.1740327334" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.1740327334" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.816206918" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1028225045" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
@@ -103,7 +103,7 @@
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.lib.release.1844827874" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.lib.release"/>
 							<builder buildPath="${workspace_loc:/texelutillib}/Release" id="cdt.managedbuild.target.gnu.builder.lib.release.1615925080" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.lib.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.lib.release.1030223593" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.lib.release"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.lib.release.165259978" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.lib.release">
+							<tool command="mpic++" id="cdt.managedbuild.tool.gnu.cpp.compiler.lib.release.165259978" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.lib.release">
 								<option id="gnu.cpp.compiler.lib.release.option.optimization.level.721202965" name="Optimization Level" superClass="gnu.cpp.compiler.lib.release.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.lib.release.option.debugging.level.1414734224" name="Debug Level" superClass="gnu.cpp.compiler.lib.release.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.46116320" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
@@ -121,13 +121,13 @@
 								<option id="gnu.cpp.compiler.option.other.other.147144693" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -pthread -march=corei7 -Wno-misleading-indentation" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.29243962" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.lib.release.528972395" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.lib.release">
+							<tool command="mpicc" id="cdt.managedbuild.tool.gnu.c.compiler.lib.release.528972395" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.lib.release">
 								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.lib.release.option.optimization.level.236310968" name="Optimization Level" superClass="gnu.c.compiler.lib.release.option.optimization.level" useByScannerDiscovery="false" valueType="enumerated"/>
 								<option id="gnu.c.compiler.lib.release.option.debugging.level.751562511" name="Debug Level" superClass="gnu.c.compiler.lib.release.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1681107706" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.1011791736" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.1011791736" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-misleading-indentation" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.319439179" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1429092086" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
