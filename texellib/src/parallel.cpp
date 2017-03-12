@@ -455,6 +455,19 @@ ThreadStopHandler::reportNodes() {
     wt.sendReportStats(nodes, tbHits);
 }
 
+/*
+static int getExtraDepth(int threadNo) {
+    int t = threadNo;
+    int x = t + 1;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;c
+    return BitBoard::bitCount(x - t - 1);
+}
+*/
+
 void
 WorkerThread::doSearch(CommHandler& commHandler) {
     if (!et)
@@ -466,6 +479,7 @@ WorkerThread::doSearch(CommHandler& commHandler) {
 
     using namespace SearchConst;
     int initExtraDepth = threadNo & 1;
+//    int initExtraDepth = getExtraDepth(threadNo);
     for (int extraDepth = initExtraDepth; ; extraDepth++) {
         Search::SearchTables st(tt, *kt, *ht, *et);
         Position pos(this->pos);
