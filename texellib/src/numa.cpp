@@ -264,7 +264,5 @@ Numa::bindThread(int threadNo) const {
 
 bool
 Numa::isMainNode(int threadNo) const {
-    if (threadToNode.empty())
-        return true; // Not NUMA hardware
-    return nodeForThread(threadNo) == threadToNode[0];
+    return nodeForThread(threadNo) == nodeForThread(0);
 }
