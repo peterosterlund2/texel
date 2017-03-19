@@ -36,6 +36,7 @@
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 									<listOptionValue builtIn="false" value="HAS_RT"/>
 									<listOptionValue builtIn="false" value="NUMA"/>
+									<listOptionValue builtIn="false" value="CLUSTER"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.2059162012" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/sysport}&quot;"/>
@@ -106,6 +107,7 @@
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 									<listOptionValue builtIn="false" value="HAS_RT"/>
 									<listOptionValue builtIn="false" value="NUMA"/>
+									<listOptionValue builtIn="false" value="CLUSTER"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.293849430" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/sysport}&quot;"/>
@@ -172,6 +174,7 @@
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 									<listOptionValue builtIn="false" value="HAS_RT"/>
 									<listOptionValue builtIn="false" value="NUMA"/>
+									<listOptionValue builtIn="false" value="CLUSTER"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1576366635" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/sysport}&quot;"/>
@@ -245,6 +248,7 @@
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 									<listOptionValue builtIn="false" value="HAS_RT"/>
 									<listOptionValue builtIn="false" value="NUMA"/>
+									<listOptionValue builtIn="false" value="CLUSTER"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1544754863" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/sysport}&quot;"/>
@@ -316,6 +320,7 @@
 									<listOptionValue builtIn="false" value="HAS_POPCNT"/>
 									<listOptionValue builtIn="false" value="HAS_RT"/>
 									<listOptionValue builtIn="false" value="NUMA"/>
+									<listOptionValue builtIn="false" value="CLUSTER"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.998335523" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/gtb/sysport}&quot;"/>
