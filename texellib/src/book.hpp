@@ -42,7 +42,7 @@ class Position;
 class Book {
 public:
     /** Constructor. */
-    Book(bool verbose0);
+    explicit Book(bool verbose0);
 
     /** Return a random book move for a position, or empty move if out of book. */
     void getBookMove(Position& pos, Move& out);

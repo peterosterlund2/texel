@@ -302,7 +302,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
 
 class HelperThreadResult : public std::exception {
 public:
-    HelperThreadResult(int score) : score(score) {}
+    explicit HelperThreadResult(int score) : score(score) {}
     int getScore() const { return score; }
 private:
     int score;
@@ -443,7 +443,7 @@ bool
 Search::shouldStop() {
     class Handler : public Communicator::CommandHandler {
     public:
-        Handler(int jobId) : jobId(jobId) {}
+        explicit Handler(int jobId) : jobId(jobId) {}
         void reportResult(int jobId, int score) override {
             if (jobId == this->jobId)
                 throw HelperThreadResult(score);
@@ -851,7 +851,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             if ((mi > 0) || !hashMoveSelected)
                 selectBest(moves, mi);
         Move& m = moves[mi];
-        int newCaptureSquare = -1;
         bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
         bool isPromotion = (m.promoteTo() != Piece::EMPTY);
         int sVal = std::numeric_limits<int>::min();
@@ -897,6 +896,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             bool negSEECheck = givesCheck && (((lmr > 0) && (depth - lmr >= 2)) ||
                     ((depth > 3) && negSEE(m)));
             int newDepth = depth - 1 + extend - lmr - (negSEECheck ? 1 : 0);
+            int newCaptureSquare = -1;
             if (isCapture && (givesCheck || (depth + extend) > 1)) {
                 // Compute recapture target square, but only if we are not going
                 // into q-search at the next ply.

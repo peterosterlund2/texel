@@ -330,7 +330,7 @@ public:
 class TreeLoggerReader : public TreeLoggerBase {
 public:
     /** Constructor. */
-    TreeLoggerReader(const std::string& filename);
+    explicit TreeLoggerReader(const std::string& filename);
 
     void close();
 

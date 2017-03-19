@@ -204,7 +204,7 @@ private:
 class TBPosition {
     friend class TBGenTest;
 public:
-    TBPosition(const PieceCount& pc);
+    explicit TBPosition(const PieceCount& pc);
 
     /** Return the number of possible positions. Not all positions have to be valid. */
     U32 nPositions() const;

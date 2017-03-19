@@ -160,7 +160,7 @@ EngineMainThread::doSearch() {
         comm->sendStopSearch();
         class Handler : public Communicator::CommandHandler {
         public:
-            Handler(Communicator* comm) : comm(comm) {}
+            explicit Handler(Communicator* comm) : comm(comm) {}
             void stopAck() override { comm->sendStopAck(true); }
         private:
             Communicator* comm;

@@ -43,8 +43,8 @@ class GameTest;
 class Game {
     friend class GameTest;
 public:
-    Game(std::unique_ptr<Player> whitePlayer,
-         std::unique_ptr<Player> blackPlayer);
+    Game(std::unique_ptr<Player>&& whitePlayer,
+         std::unique_ptr<Player>&& blackPlayer);
     virtual ~Game();
     Game(const Game& other) = delete;
     Game& operator=(const Game& other) = delete;

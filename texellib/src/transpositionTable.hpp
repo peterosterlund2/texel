@@ -42,7 +42,7 @@ class TranspositionTable;
 /** TB storage type that uses part of a transposition table. */
 class TTStorage {
 public:
-    TTStorage(TranspositionTable& tt);
+    explicit TTStorage(TranspositionTable& tt);
 
     void resize(U32 size);
 
@@ -125,7 +125,7 @@ public:
     };
 
     /** Constructor. Creates an empty transposition table with numEntries slots. */
-    TranspositionTable(int log2Size);
+    explicit TranspositionTable(int log2Size);
     TranspositionTable(const TranspositionTable& other) = delete;
     TranspositionTable operator=(const TranspositionTable& other) = delete;
 

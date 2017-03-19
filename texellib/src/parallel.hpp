@@ -64,7 +64,7 @@ private:
 /** Handles communication with parent and child threads. */
 class Communicator {
 public:
-    Communicator(Communicator* parent);
+    explicit Communicator(Communicator* parent);
     Communicator(const Communicator&) = delete;
     Communicator& operator=(const Communicator&) = delete;
     virtual ~Communicator();
@@ -261,7 +261,7 @@ private:
 
     class CommHandler : public Communicator::CommandHandler {
     public:
-        CommHandler(WorkerThread& wt);
+        explicit CommHandler(WorkerThread& wt);
         void initSearch(const Position& pos,
                         const std::vector<U64>& posHashList, int posHashListSize,
                         bool clearHistory) override;
@@ -297,7 +297,7 @@ private:
     Position pos;
     SearchTreeInfo sti;
     std::vector<U64> posHashList;
-    int posHashListSize;
+    int posHashListSize = 0;
     int jobId = -1; // job ID or -1 when no active search job
     int alpha = 0;
     int beta = 0;

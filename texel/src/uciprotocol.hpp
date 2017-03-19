@@ -38,7 +38,7 @@
  */
 class SearchListener : public Search::Listener {
 public:
-    SearchListener(std::ostream& os);
+    explicit SearchListener(std::ostream& os);
 
     void notifyDepth(int depth) override;
 

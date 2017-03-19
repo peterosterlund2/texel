@@ -243,7 +243,7 @@ private:
 
     class DefaultStopHandler : public StopHandler {
     public:
-        DefaultStopHandler(Search& sc0) : sc(sc0) { }
+        explicit DefaultStopHandler(Search& sc0) : sc(sc0) { }
         bool shouldStop() override { return sc.shouldStop(); }
     private:
         Search& sc;

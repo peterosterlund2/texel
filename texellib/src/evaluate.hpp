@@ -89,7 +89,7 @@ public:
     };
 
     /** Constructor. */
-    Evaluate(EvalHashTables& et);
+    explicit Evaluate(EvalHashTables& et);
 
     static int pieceValueOrder[Piece::nPieceTypes];
 
