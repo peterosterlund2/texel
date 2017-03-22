@@ -51,11 +51,9 @@ public:
     /** Return child node numbers. */
     const std::vector<int>& getChildNodes() const;
 
-    /** Get numbers of cores/threads for this node. */
-    void getConcurrency(int& cores, int& threads);
-
-    /** Get number of cores/threads for a child node and all its children recursively. */
-    void getChildConcurrency(int childNo, int& cores, int& threads);
+    /** Assign numThreads threads to this node and child nodes so that
+     *  available cores and hardware threads are utilized in a good way. */
+    void assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& threadsChildren);
 
 private:
     Cluster();
@@ -70,8 +68,9 @@ private:
     void computeConcurrency();
 
     struct Concurrency {
-        int cores = 1;
-        int threads = 1;
+        Concurrency(int c = 1, int t = 1) : cores(c), threads(t) {}
+        int cores;    // Number of available cores
+        int threads;  // Number of available hardware threads
     };
 
     /** Compute hardware concurrency for this node. */
@@ -85,7 +84,7 @@ private:
     std::vector<int> children;
 
     Concurrency thisConcurrency;
-    std::vector<Concurrency> childConcurrency;
+    std::vector<std::vector<Concurrency>> childConcurrency;  // [childNo][level]
 };
 
 inline int
@@ -106,18 +105,6 @@ Cluster::getParentNode() const {
 inline const std::vector<int>&
 Cluster::getChildNodes() const {
     return children;
-}
-
-inline void
-Cluster::getConcurrency(int& cores, int& threads) {
-    cores = thisConcurrency.cores;
-    threads = thisConcurrency.threads;
-}
-
-inline void
-Cluster::getChildConcurrency(int childNo, int& cores, int& threads) {
-    cores = childConcurrency[childNo].cores;
-    threads = childConcurrency[childNo].threads;
 }
 
 #endif /* CLUSTER_HPP_ */

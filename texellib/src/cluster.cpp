@@ -108,27 +108,40 @@ void
 Cluster::computeConcurrency() {
 #ifdef CLUSTER
     computeThisConcurrency(thisConcurrency);
-    int nCores = thisConcurrency.cores;
-    int nThreads = thisConcurrency.threads;
-    std::cout << "rank:" << rank << " nCores:" << nCores << " nThreads:" << nThreads << std::endl;
 
     const int nChild = children.size();
-    childConcurrency.resize(nChild);
-    for (int i = 0; i < nChild; i++) {
-        int buf[2];
+    int nChildLevels = 0;
+    for (int c = 0; c < nChild; c++) {
         MPI_Status status;
-        MPI_Recv(buf, 2, MPI_INT, children[i], 0, MPI_COMM_WORLD, &status);
-        childConcurrency[i].cores = buf[0];
-        childConcurrency[i].threads = buf[1];
-        nCores += buf[0];
-        nThreads += buf[1];
+        MPI_Probe(children[c], 0, MPI_COMM_WORLD, &status);
+        int count;
+        MPI_Get_count(&status, MPI_INT, &count);
+        std::vector<int> buf(count);
+        MPI_Recv(&buf[0], count, MPI_INT, children[c], 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        std::vector<Concurrency> childConcur;
+        int nLev = count / 2;
+        for (int i = 0; i < nLev; i++)
+            childConcur.emplace_back(buf[2*i], buf[2*i+1]);
+        childConcurrency.push_back(std::move(childConcur));
+        nChildLevels = std::max(nChildLevels, nLev);
     }
-    std::cout << "rank:" << rank << " nCoresT:" << nCores << " nThreadsT:" << nThreads << std::endl;
     if (parent != -1) {
-        int buf[2];
-        buf[0] = nCores;
-        buf[1] = nThreads;
-        MPI_Send(buf, 2, MPI_INT, parent, 0, MPI_COMM_WORLD);
+        int count = (nChildLevels + 1) * 2;
+        std::vector<int> buf(count);
+        buf[0] = thisConcurrency.cores;
+        buf[1] = thisConcurrency.threads;
+        for (int lev = 0; lev < nChildLevels; lev++) {
+            int nc = 0, nt = 0;
+            for (int c = 0; c < nChild; c++) {
+                if (lev < (int)childConcurrency[c].size()) {
+                    nc += childConcurrency[c][lev].cores;
+                    nt += childConcurrency[c][lev].threads;
+                }
+            }
+            buf[2*lev+2] = nc;
+            buf[2*lev+3] = nt;
+        }
+        MPI_Send(&buf[0], count, MPI_INT, parent, 0, MPI_COMM_WORLD);
     }
 #endif
 }
@@ -137,4 +150,76 @@ void
 Cluster::computeThisConcurrency(Concurrency& concurrency) {
     int nodes;
     Numa::instance().getConcurrency(nodes, concurrency.cores, concurrency.threads);
+}
+
+void
+Cluster::assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& threadsChildren) {
+#ifdef CLUSTER
+    int nTotalCores = thisConcurrency.cores;
+    int nTotalThreads = thisConcurrency.threads;
+    const int nChild = childConcurrency.size();
+    threadsThisNode = 0;
+    threadsChildren.assign(nChild, 0);
+    int numChildLevels = 0;
+    std::vector<int> htChildren(nChild, 0);
+    for (int c = 0; c < nChild; c++) {
+        const std::vector<Concurrency>& childConcur = childConcurrency[c];
+        int nLev = childConcur.size();
+        for (int lev = 0; lev < nLev; lev++) {
+            int nc = childConcur[lev].cores;
+            int nt = childConcur[lev].threads;
+            nTotalCores += nc;
+            nTotalThreads += nt;
+            htChildren[c] += nt - nc;
+        }
+        numChildLevels = std::max(numChildLevels, nLev);
+    }
+
+    const int nOverCommit = numThreads / nTotalThreads;
+    numThreads %= nTotalThreads;
+
+    // Assign threads to cores using breadth first
+    if (numThreads > 0) {
+        int t = std::min(thisConcurrency.cores, numThreads);
+        threadsThisNode += t;
+        numThreads -= t;
+    }
+    for (int lev = 0; lev < numChildLevels && numThreads > 0; lev++) {
+        for (int c = 0; c < nChild && numThreads > 0; c++) {
+            if (lev < (int)childConcurrency[c].size()) {
+                int t = std::min(childConcurrency[c][lev].cores, numThreads);
+                threadsChildren[c] += t;
+                numThreads -= t;
+            }
+        }
+    }
+
+    // Assign threads to hardware threads proportionally
+    int htThisNode = thisConcurrency.threads - thisConcurrency.cores;
+    int htRemain = htThisNode;
+    for (int c = 0; c < nChild; c++)
+        htRemain += htChildren[c];
+
+    if (numThreads > 0) {
+        int t = (numThreads * htThisNode + htRemain - 1) / htRemain;
+        threadsThisNode += t;
+        numThreads -= t;
+        htRemain -= htThisNode;
+    }
+    for (int c = 0; c < nChild && numThreads > 0; c++) {
+        int t = (numThreads * htChildren[c] + htRemain - 1) / htRemain;
+        threadsChildren[c] += t;
+        numThreads -= t;
+        htRemain -= htChildren[c];
+    }
+
+    // Assign over-committed threads
+    threadsThisNode += nOverCommit * thisConcurrency.threads;
+    for (int c = 0; c < nChild; c++) {
+        int concur = 0;
+        for (auto& e : childConcurrency[c])
+            concur += e.threads;
+        threadsChildren[c] += nOverCommit * concur;
+    }
+#endif
 }
