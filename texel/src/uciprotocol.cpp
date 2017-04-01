@@ -28,6 +28,7 @@
 #include "computerPlayer.hpp"
 #include "textio.hpp"
 #include "util/logger.hpp"
+#include "cluster.hpp"
 
 #include <iostream>
 
@@ -139,6 +140,8 @@ UCIProtocol::UCIProtocol(std::istream& is, std::ostream& os)
 
 void
 UCIProtocol::mainLoop(bool autoStart) {
+    if (!Cluster::instance().isMasterNode())
+        return;
     if (autoStart)
         handleCommand("uci", os);
     std::string line;

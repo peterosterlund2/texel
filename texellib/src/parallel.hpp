@@ -51,8 +51,9 @@ public:
     void notify();
 
     /** Wait until notify has been called at least once since the last call
-     *  to this method. The method should only be called by one thread. */
-    void wait();
+     *  to this method. The method should only be called by one thread.
+     *  @param timeOutMs Maximum amount of time to wait, or -1 to wait indefinitely */
+    void wait(int timeOutMs = -1);
 
 private:
     std::mutex mutex;
@@ -90,10 +91,11 @@ public:
 
     void sendReportResult(int jobId, int score);
 
-    void sendReportStats(S64 nodesSearched, S64 tbHits);
+    void sendReportStats(S64 nodesSearched, S64 tbHits, bool propagate);
 
     void sendStopAck(bool child);
-
+    /** Forward stop ack from cluster child. */
+    void forwardStopAck();
 
     /** Handler invoked when commands are received. */
     class CommandHandler {
@@ -144,37 +146,64 @@ protected:
         START_SEARCH,
         STOP_SEARCH,
         REPORT_RESULT,
-        STOP_ACK
+        STOP_ACK,
+
+        // Only used for cluster communication
+        REPORT_STATS
     };
     struct Command {
+        Command() {}
         Command(CommandType type, int jobId = -1, int resultScore = 0, bool clearHistory = false)
             : type(type), jobId(jobId),
               resultScore(resultScore), clearHistory(clearHistory) {}
+        virtual U8* toByteBuf(U8* buffer) const;
+        virtual const U8* fromByteBuf(const U8* buffer);
+        static std::unique_ptr<Command> createFromByteBuf(const U8* buffer);
+
         CommandType type;
         int jobId;
         int resultScore;
         bool clearHistory;
     };
     struct InitSearchCommand : public Command {
+        InitSearchCommand() {}
         InitSearchCommand(const Position& pos,const std::vector<U64>& posHashList,
                           int posHashListSize, bool clearHistory)
             : Command(INIT_SEARCH, -1, 0, clearHistory),
               posHashList(posHashList), posHashListSize(posHashListSize) {
             pos.serialize(posData);
         }
+        U8* toByteBuf(U8* buffer) const override;
+        const U8* fromByteBuf(const U8* buffer) override;
+
         Position::SerializeData posData;
         std::vector<U64> posHashList;
         int posHashListSize;
     };
     struct StartSearchCommand : public Command {
+        StartSearchCommand() {}
         StartSearchCommand(int jobId, const SearchTreeInfo& sti,
                            int alpha, int beta, int depth)
             : Command(START_SEARCH, jobId),
               sti(sti), alpha(alpha), beta(beta), depth(depth) {}
+        U8* toByteBuf(U8* buffer) const override;
+        const U8* fromByteBuf(const U8* buffer) override;
+
         SearchTreeInfo sti;
         int alpha;
         int beta;
         int depth;
+    };
+    struct ReportStatsCommand : public Command {
+        ReportStatsCommand() {}
+        ReportStatsCommand(S64 nodesSearched, S64 tbHits)
+            : Command(REPORT_STATS), nodesSearched(nodesSearched), tbHits(tbHits) {
+        }
+        U8* toByteBuf(U8* buffer) const override;
+        const U8* fromByteBuf(const U8* buffer) override;
+
+        S64 nodesSearched;
+        S64 tbHits;
     };
     std::deque<std::shared_ptr<Command>> cmdQueue;
 
@@ -255,9 +284,12 @@ public:
     /** Handle commands received from other Communicator objects. */
     void poll(Communicator::CommandHandler& handler);
 
+    /** Main loop for thread 0 on non-master cluster nodes. */
+    void mainLoopCluster(std::unique_ptr<ThreadCommunicator>&& comm);
+
 private:
     /** Thread main loop. */
-    void mainLoop(Communicator* parentComm);
+    void mainLoop(Communicator* parentComm, bool cluster);
 
     class CommHandler : public Communicator::CommandHandler {
     public:

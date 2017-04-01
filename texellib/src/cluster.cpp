@@ -25,9 +25,6 @@
 
 #include "cluster.hpp"
 #include "numa.hpp"
-#ifdef CLUSTER
-#include <mpi.h>
-#endif
 #include <thread>
 #include <iostream>
 
@@ -38,12 +35,14 @@ Cluster::instance() {
     return inst;
 }
 
+
+#ifdef CLUSTER
+
 Cluster::Cluster() {
 }
 
 void
 Cluster::init(int* argc, char*** argv) {
-#ifdef CLUSTER
     int provided;
     MPI_Init_thread(argc, argv, MPI_THREAD_FUNNELED, &provided);
     if (provided < MPI_THREAD_FUNNELED)
@@ -55,19 +54,15 @@ Cluster::init(int* argc, char*** argv) {
     checkIO();
     computeNeighbors();
     computeConcurrency();
-#endif
 }
 
 void
 Cluster::finalize() {
-#ifdef CLUSTER
     MPI_Finalize();
-#endif
 }
 
 void
 Cluster::checkIO() {
-#ifdef CLUSTER
     int* ioPtr;
     int flag;
     MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_IO, &ioPtr, &flag);
@@ -88,7 +83,6 @@ Cluster::checkIO() {
             std::cerr << "Node 0 does not support standard IO" << std::endl;
         exit(2);
     }
-#endif
 }
 
 void
@@ -106,7 +100,6 @@ Cluster::computeNeighbors() {
 
 void
 Cluster::computeConcurrency() {
-#ifdef CLUSTER
     computeThisConcurrency(thisConcurrency);
 
     const int nChild = children.size();
@@ -143,18 +136,32 @@ Cluster::computeConcurrency() {
         }
         MPI_Send(&buf[0], count, MPI_INT, parent, 0, MPI_COMM_WORLD);
     }
-#endif
 }
 
 void
-Cluster::computeThisConcurrency(Concurrency& concurrency) {
+Cluster::computeThisConcurrency(Concurrency& concurrency) const {
     int nodes;
     Numa::instance().getConcurrency(nodes, concurrency.cores, concurrency.threads);
 }
 
+std::unique_ptr<Communicator>
+Cluster::createParentCommunicator() const {
+    if (getParentNode() == -1)
+        return nullptr;
+    return make_unique<MPICommunicator>(nullptr, getNodeNumber(), getParentNode());
+}
+
+void
+Cluster::createChildCommunicators(Communicator* mainThreadComm,
+                                  std::vector<std::unique_ptr<Communicator>>& children) const {
+    for (int c : getChildNodes()) {
+        auto comm = make_unique<MPICommunicator>(mainThreadComm, getNodeNumber(), c);
+        children.push_back(std::move(comm));
+    }
+}
+
 void
 Cluster::assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& threadsChildren) {
-#ifdef CLUSTER
     int nTotalCores = thisConcurrency.cores;
     int nTotalThreads = thisConcurrency.threads;
     const int nChild = childConcurrency.size();
@@ -221,5 +228,155 @@ Cluster::assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& t
             concur += e.threads;
         threadsChildren[c] += nOverCommit * concur;
     }
-#endif
 }
+
+// ----------------------------------------------------------------------------
+
+MPICommunicator::MPICommunicator(Communicator* parent, int myRank, int peerRank)
+    : Communicator(parent), myRank(myRank), peerRank(peerRank) {
+}
+
+void
+MPICommunicator::doSendInitSearch(const Position& pos,
+                                  const std::vector<U64>& posHashList, int posHashListSize,
+                                  bool clearHistory) {
+    cmdQueue.push_back(std::make_shared<InitSearchCommand>(pos, posHashList, posHashListSize, clearHistory));
+    mpiSend();
+}
+
+void
+MPICommunicator::doSendStartSearch(int jobId, const SearchTreeInfo& sti,
+                                   int alpha, int beta, int depth) {
+    cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
+                                  [](const std::shared_ptr<Command>& cmd) {
+                                      return cmd->type == CommandType::START_SEARCH ||
+                                             cmd->type == CommandType::STOP_SEARCH ||
+                                             cmd->type == CommandType::REPORT_RESULT;
+                                  }),
+                   cmdQueue.end());
+    cmdQueue.push_back(std::make_shared<StartSearchCommand>(jobId, sti, alpha, beta, depth));
+    mpiSend();
+}
+
+void
+MPICommunicator::doSendStopSearch() {
+    cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
+                                  [](const std::shared_ptr<Command>& cmd) {
+                                      return cmd->type == CommandType::START_SEARCH ||
+                                             cmd->type == CommandType::STOP_SEARCH ||
+                                             cmd->type == CommandType::REPORT_RESULT;
+                                  }),
+                   cmdQueue.end());
+    cmdQueue.push_back(std::make_shared<Command>(CommandType::STOP_SEARCH));
+    mpiSend();
+}
+
+void
+MPICommunicator::doSendReportResult(int jobId, int score) {
+    cmdQueue.push_back(std::make_shared<Command>(CommandType::REPORT_RESULT, jobId, score));
+    mpiSend();
+}
+
+void
+MPICommunicator::doSendReportStats(S64 nodesSearched, S64 tbHits) {
+    bool done = false;
+    for (std::shared_ptr<Command>& c : cmdQueue) {
+        if (c->type == CommandType::REPORT_STATS) {
+            ReportStatsCommand* rCmd = static_cast<ReportStatsCommand*>(c.get());
+            rCmd->nodesSearched += nodesSearched;
+            rCmd->tbHits += tbHits;
+            done = true;
+            break;
+        }
+    }
+    if (!done)
+        cmdQueue.push_back(std::make_shared<ReportStatsCommand>(nodesSearched, tbHits));
+    mpiSend();
+}
+
+void
+MPICommunicator::retrieveStats(S64& nodesSearched, S64& tbHits) {
+    assert(false); // Not used
+}
+
+void
+MPICommunicator::doSendStopAck() {
+    cmdQueue.push_back(std::make_shared<Command>(CommandType::STOP_ACK));
+    mpiSend();
+}
+
+void
+MPICommunicator::mpiSend() {
+    for (int loop = 0; loop < 100; loop++) {
+        if (sendBusy) {
+            int flag;
+            MPI_Test(&sendReq, &flag, MPI_STATUS_IGNORE);
+            if (!flag)
+                break;
+            sendBusy = false;
+        }
+        if (cmdQueue.empty())
+            break;
+        std::shared_ptr<Command> cmd = cmdQueue.front();
+        cmdQueue.pop_front();
+        U8* buf = cmd->toByteBuf(&sendBuf[0]);
+        int count = (int)(buf - &sendBuf[0]);
+        MPI_Isend(&sendBuf[0], count, MPI_BYTE, peerRank, 0, MPI_COMM_WORLD, &sendReq);
+        sendBusy = true;
+    }
+}
+
+void
+MPICommunicator::doPoll() {
+    mpiSend();
+    for (int loop = 0; loop < 100; loop++) {
+        if (recvBusy) {
+            int flag;
+            MPI_Test(&recvReq, &flag, MPI_STATUSES_IGNORE);
+            if (flag) {
+                std::unique_ptr<Command> cmd = Command::createFromByteBuf(&recvBuf[0]);
+                switch (cmd->type) {
+                case CommandType::INIT_SEARCH: {
+                    const InitSearchCommand* iCmd = static_cast<const InitSearchCommand*>(cmd.get());
+                    Position pos;
+                    pos.deSerialize(iCmd->posData);
+                    sendInitSearch(pos, iCmd->posHashList, iCmd->posHashListSize, iCmd->clearHistory);
+                    break;
+                }
+                case CommandType::START_SEARCH: {
+                    const StartSearchCommand*  sCmd = static_cast<const StartSearchCommand*>(cmd.get());
+                    sendStartSearch(sCmd->jobId, sCmd->sti, sCmd->alpha, sCmd->beta, sCmd->depth);
+                    break;
+                }
+                case CommandType::STOP_SEARCH:
+                    sendStopSearch();
+                    break;
+                case CommandType::REPORT_RESULT:
+                    sendReportResult(cmd->jobId, cmd->resultScore);
+                    break;
+                case CommandType::STOP_ACK:
+                    forwardStopAck();
+                    break;
+                case CommandType::REPORT_STATS: {
+                    const ReportStatsCommand* rCmd = static_cast<const ReportStatsCommand*>(cmd.get());
+                    parent->sendReportStats(rCmd->nodesSearched, rCmd->tbHits, false);
+                    break;
+                }
+                }
+                recvBusy = false;
+            }
+        }
+        if (recvBusy)
+            break;
+        if (!recvBusy) { // FIXME! Handle quit command
+            MPI_Irecv(&recvBuf[0], MAX_BUF_SIZE, MPI_BYTE, peerRank, 0, MPI_COMM_WORLD, &recvReq);
+            recvBusy = true;
+        }
+    }
+}
+
+void
+MPICommunicator::notifyThread() {
+}
+
+#endif // CLUSTER

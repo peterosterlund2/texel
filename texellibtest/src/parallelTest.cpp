@@ -226,7 +226,7 @@ ParallelTest::testCommunicator() {
     ASSERT_EQUAL(0, child2.getTbHits());
     ASSERT_EQUAL(0, child3.getTbHits());
 
-    child3.sendReportStats(100, 10);
+    child3.sendReportStats(100, 10, true);
     ASSERT_EQUAL(0, root.getNumSearchedNodes());
     ASSERT_EQUAL(100, child2.getNumSearchedNodes());
     ASSERT_EQUAL(0, child3.getNumSearchedNodes());
@@ -246,7 +246,7 @@ ParallelTest::testCommunicator() {
     ASSERT_EQUAL(3, getCount(c2, 3));
     ASSERT_EQUAL(2, getCount(c3, 2));
 
-    child2.sendReportStats(200, 30);
+    child2.sendReportStats(200, 30, true);
     ASSERT_EQUAL(300, root.getNumSearchedNodes());
     ASSERT_EQUAL(0, child3.getNumSearchedNodes());
     ASSERT_EQUAL(0, child2.getNumSearchedNodes());

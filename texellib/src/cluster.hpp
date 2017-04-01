@@ -26,8 +26,14 @@
 #ifndef CLUSTER_HPP_
 #define CLUSTER_HPP_
 
+#include "parallel.hpp"
+#ifdef CLUSTER
+#include <mpi.h>
+#endif
+
 #include <vector>
 
+#ifdef CLUSTER
 class Cluster {
 public:
     /** Get the singleton instance. */
@@ -38,6 +44,26 @@ public:
 
     /** Terminate cluster processes. */
     void finalize();
+
+    /** Return true if this is the master cluster node. (rank 0) */
+    bool isMasterNode() const;
+
+    /** Return true if there is more than one cluster node. */
+    bool isEnabled() const;
+
+    /** Create Communicator to communicate with cluster parent node. */
+    std::unique_ptr<Communicator> createParentCommunicator() const;
+
+    /** Create Communicators to communicate with cluster child nodes. */
+    void createChildCommunicators(Communicator* mainThreadComm,
+                                  std::vector<std::unique_ptr<Communicator>>& children) const;
+
+    /** Assign numThreads threads to this node and child nodes so that
+     *  available cores and hardware threads are utilized in a good way. */
+    void assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& threadsChildren);
+
+private:
+    Cluster();
 
     /** Return callers node number within the cluster. */
     int getNodeNumber() const;
@@ -50,13 +76,6 @@ public:
 
     /** Return child node numbers. */
     const std::vector<int>& getChildNodes() const;
-
-    /** Assign numThreads threads to this node and child nodes so that
-     *  available cores and hardware threads are utilized in a good way. */
-    void assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& threadsChildren);
-
-private:
-    Cluster();
 
     /** Check that node 0 can perform IO. */
     void checkIO();
@@ -74,7 +93,7 @@ private:
     };
 
     /** Compute hardware concurrency for this node. */
-    void computeThisConcurrency(Concurrency& concurrency);
+    void computeThisConcurrency(Concurrency& concurrency) const;
 
 
     int rank = 0;
@@ -86,6 +105,52 @@ private:
     Concurrency thisConcurrency;
     std::vector<std::vector<Concurrency>> childConcurrency;  // [childNo][level]
 };
+
+class MPICommunicator : public Communicator {
+public:
+    MPICommunicator(Communicator* parent, int myRank, int peerRank);
+
+    void doSendInitSearch(const Position& pos,
+                          const std::vector<U64>& posHashList, int posHashListSize,
+                          bool clearHistory) override;
+    void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
+                           int alpha, int beta, int depth) override;
+    void doSendStopSearch() override;
+
+    void doSendReportResult(int jobId, int score) override;
+    void doSendReportStats(S64 nodesSearched, S64 tbHits) override;
+    void retrieveStats(S64& nodesSearched, S64& tbHits) override;
+    void doSendStopAck() override;
+
+    void mpiSend();
+
+    void doPoll() override;
+
+    void notifyThread() override;
+
+private:
+    int myRank;
+    int peerRank;
+    static constexpr int MAX_BUF_SIZE = 4096;
+
+    bool sendBusy = false;
+    std::array<U8,MAX_BUF_SIZE> sendBuf;
+    MPI_Request sendReq;
+
+    bool recvBusy = false;
+    std::array<U8,MAX_BUF_SIZE> recvBuf;
+    MPI_Request recvReq;
+};
+
+inline bool
+Cluster::isMasterNode() const {
+    return getNodeNumber() == 0;
+}
+
+inline bool
+Cluster::isEnabled() const {
+    return getNumberOfNodes() > 1;
+}
 
 inline int
 Cluster::getNodeNumber() const {
@@ -106,5 +171,21 @@ inline const std::vector<int>&
 Cluster::getChildNodes() const {
     return children;
 }
+
+#else
+class Cluster {
+public:
+    static Cluster& instance();
+    void init(int* argc, char*** argv) {}
+    void finalize() {}
+    bool isMasterNode() const { return true; }
+    bool isEnabled() const { return false; }
+    std::unique_ptr<Communicator> createParentCommunicator() const { return nullptr; }
+    void createChildCommunicators(Communicator* mainThreadComm,
+                                  std::vector<std::unique_ptr<Communicator>>& children) const {}
+    void assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& threadsChildren) {}
+};
+#endif
+
 
 #endif /* CLUSTER_HPP_ */

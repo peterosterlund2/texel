@@ -25,9 +25,11 @@
 
 #include "parallel.hpp"
 #include "numa.hpp"
+#include "cluster.hpp"
 #include "search.hpp"
 #include "tbprobe.hpp"
 #include "textio.hpp"
+#include "treeLogger.hpp"
 #include "util/logger.hpp"
 
 #include <cmath>
@@ -44,10 +46,15 @@ Notifier::notify() {
 }
 
 void
-Notifier::wait() {
+Notifier::wait(int timeOutMs) {
     std::unique_lock<std::mutex> L(mutex);
-    while (!notified)
-        cv.wait(L);
+    if (timeOutMs == -1) {
+        while (!notified)
+            cv.wait(L);
+    } else {
+        if (!notified)
+            cv.wait_for(L, std::chrono::milliseconds(timeOutMs));
+    }
     notified = false;
 }
 
@@ -111,8 +118,8 @@ Communicator::sendReportResult(int jobId, int score) {
 }
 
 void
-Communicator::sendReportStats(S64 nodesSearched, S64 tbHits) {
-    if (parent) {
+Communicator::sendReportStats(S64 nodesSearched, S64 tbHits, bool propagate) {
+    if (parent && propagate) {
         retrieveStats(nodesSearched, tbHits);
         parent->doSendReportStats(nodesSearched, tbHits);
     } else {
@@ -130,6 +137,12 @@ Communicator::sendStopAck(bool child) {
         stopAckWaitSelf = false;
     }
     if (hasStopAck() && parent)
+        parent->doSendStopAck();
+}
+
+void
+Communicator::forwardStopAck() {
+    if (parent)
         parent->doSendStopAck();
 }
 
@@ -164,15 +177,120 @@ Communicator::poll(CommandHandler& handler) {
         case CommandType::STOP_SEARCH:
             handler.stopSearch();
             break;
-        case CommandType::REPORT_RESULT: {
+        case CommandType::REPORT_RESULT:
             handler.reportResult(cmd->jobId, cmd->resultScore);
             break;
         case CommandType::STOP_ACK:
             handler.stopAck();
             break;
-        }
+        case CommandType::REPORT_STATS:
+            break;
         }
     }
+}
+
+// ----------------------------------------------------------------------------
+
+using Serializer::putBytes;
+using Serializer::getBytes;
+
+U8*
+Communicator::Command::toByteBuf(U8* buffer) const {
+    return Serializer::serialize<4096>(buffer, (int)type, jobId,
+                                       resultScore, clearHistory);
+}
+
+const U8*
+Communicator::Command::fromByteBuf(const U8* buffer) {
+    int tmpType;
+    buffer = Serializer::deSerialize<4096>(buffer, tmpType, jobId,
+                                           resultScore, clearHistory);
+    type = (CommandType)tmpType;
+    return buffer;
+}
+
+U8*
+Communicator::InitSearchCommand::toByteBuf(U8* buffer) const {
+    buffer = Command::toByteBuf(buffer);
+    for (int i = 0; i < (int)COUNT_OF(posData.v); i++)
+        buffer = putBytes(buffer, posData.v[i]);
+    int len = posHashList.size();
+    buffer = putBytes(buffer, len);
+    for (int i = 0; i < len; i++)
+        buffer = putBytes(buffer, posHashList[i]);
+    buffer = putBytes(buffer, posHashListSize);
+    return buffer;
+}
+
+const U8*
+Communicator::InitSearchCommand::fromByteBuf(const U8* buffer) {
+    buffer = Command::fromByteBuf(buffer);
+    for (int i = 0; i < (int)COUNT_OF(posData.v); i++)
+        buffer = getBytes(buffer, posData.v[i]);
+    int len;
+    buffer = getBytes(buffer, len);
+    posHashList.resize(len);
+    for (int i = 0; i < len; i++)
+        buffer = getBytes(buffer, posHashList[i]);
+    buffer = getBytes(buffer, posHashListSize);
+    return buffer;
+}
+
+U8*
+Communicator::StartSearchCommand::toByteBuf(U8* buffer) const {
+    buffer = Command::toByteBuf(buffer);
+    buffer = sti.serialize(buffer);
+    buffer = Serializer::serialize<4096>(buffer, alpha, beta, depth);
+    return buffer;
+}
+
+const U8*
+Communicator::StartSearchCommand::fromByteBuf(const U8* buffer) {
+    buffer = Command::fromByteBuf(buffer);
+    buffer = sti.deSerialize(buffer);
+    buffer = Serializer::deSerialize<4096>(buffer, alpha, beta, depth);
+    return buffer;
+}
+
+U8*
+Communicator::ReportStatsCommand::toByteBuf(U8* buffer) const {
+    buffer = Command::toByteBuf(buffer);
+    buffer = Serializer::serialize<4096>(buffer, nodesSearched, tbHits);
+    return buffer;
+}
+
+const U8*
+Communicator::ReportStatsCommand::fromByteBuf(const U8* buffer) {
+    buffer = Command::fromByteBuf(buffer);
+    buffer = Serializer::deSerialize<4096>(buffer, nodesSearched, tbHits);
+    return buffer;
+}
+
+std::unique_ptr<Communicator::Command>
+Communicator::Command::createFromByteBuf(const U8* buffer) {
+    std::unique_ptr<Command> cmd;
+    int tmpType;
+    getBytes(buffer, tmpType);
+    CommandType type = (CommandType)tmpType;
+    switch (type) {
+    case INIT_SEARCH:
+        cmd = make_unique<InitSearchCommand>();
+        break;
+    case START_SEARCH:
+        cmd = make_unique<StartSearchCommand>();
+        break;
+    case STOP_SEARCH:
+    case REPORT_RESULT:
+    case STOP_ACK:
+        cmd = make_unique<Command>();
+        break;
+    case REPORT_STATS:
+        cmd = make_unique<ReportStatsCommand>();
+        break;
+    }
+
+    cmd->fromByteBuf(buffer);
+    return std::move(cmd);
 }
 
 // ----------------------------------------------------------------------------
@@ -260,10 +378,12 @@ ThreadCommunicator::notifyThread() {
 WorkerThread::WorkerThread(int threadNo, Communicator* parentComm,
                            int numWorkers, TranspositionTable& tt)
     : threadNo(threadNo), numWorkers(numWorkers), terminate(false), tt(tt) {
-    auto f = [this,parentComm]() {
-        mainLoop(parentComm);
-    };
-    thread = make_unique<std::thread>(f);
+    if (parentComm) {
+        auto f = [this,parentComm]() {
+            mainLoop(parentComm, false);
+        };
+        thread = make_unique<std::thread>(f);
+    }
 }
 
 WorkerThread::~WorkerThread() {
@@ -307,10 +427,16 @@ WorkerThread::waitInitialized() {
 }
 
 void
-WorkerThread::mainLoop(Communicator* parentComm) {
-    Numa::instance().bindThread(threadNo);
+WorkerThread::mainLoopCluster(std::unique_ptr<ThreadCommunicator>&& comm) {
+    this->comm = std::move(comm);
+    mainLoop(nullptr, true);
+}
 
-    comm = make_unique<ThreadCommunicator>(parentComm, threadNotifier);
+void
+WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
+    Numa::instance().bindThread(threadNo);
+    if (!cluster)
+        comm = make_unique<ThreadCommunicator>(parentComm, threadNotifier);
     createWorkers(threadNo + 1, comm.get(), numWorkers - 1, tt, children);
 
     initialized.notify();
@@ -318,7 +444,10 @@ WorkerThread::mainLoop(Communicator* parentComm) {
     CommHandler handler(*this);
 
     while (true) {
-        threadNotifier.wait();
+        if (Cluster::instance().isEnabled())
+            threadNotifier.wait(10);
+        else
+            threadNotifier.wait();
         if (terminate)
             break;
         comm->poll(handler);
@@ -388,7 +517,7 @@ WorkerThread::sendReportResult(int jobId, int score) {
 
 void
 WorkerThread::sendReportStats(S64 nodesSearched, S64 tbHits) {
-    comm->sendReportStats(nodesSearched, tbHits);
+    comm->sendReportStats(nodesSearched, tbHits, true);
 }
 
 class ThreadStopHandler : public Search::StopHandler {

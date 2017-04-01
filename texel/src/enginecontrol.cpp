@@ -35,6 +35,7 @@
 #include "moveGen.hpp"
 #include "util/logger.hpp"
 #include "numa.hpp"
+#include "cluster.hpp"
 
 #include <iostream>
 #include <memory>
@@ -42,28 +43,43 @@
 
 
 EngineMainThread::EngineMainThread() {
-    comm = make_unique<ThreadCommunicator>(nullptr, notifier);
+    clusterParent = Cluster::instance().createParentCommunicator();
+    comm = make_unique<ThreadCommunicator>(clusterParent.get(), notifier);
+    Cluster::instance().createChildCommunicators(comm.get(), clusterChildren);
 }
 
 void
 EngineMainThread::mainLoop() {
     Numa::instance().bindThread(0);
-
-    while (true) {
-        notifier.wait();
-        if (quitFlag)
-            break;
-        setOptions();
-        if (search) {
-            doSearch();
+    if (Cluster::instance().isEnabled() && clusterParent) {
+        TranspositionTable tt(8);
+        WorkerThread worker(0, nullptr, 1, tt);
+        worker.mainLoopCluster(std::move(comm));
+    } else {
+        while (true) {
+            notifierWait();
+            if (quitFlag)
+                break;
             setOptions();
-            {
-                std::lock_guard<std::mutex> L(mutex);
-                search = false;
+            if (search) {
+                doSearch();
+                setOptions();
+                {
+                    std::lock_guard<std::mutex> L(mutex);
+                    search = false;
+                }
+                searchStopped.notify_all();
             }
-            searchStopped.notify_all();
         }
     }
+}
+
+void
+EngineMainThread::notifierWait() {
+    if (Cluster::instance().isEnabled())
+        notifier.wait(10);
+    else
+        notifier.wait();
 }
 
 void
@@ -171,7 +187,7 @@ EngineMainThread::doSearch() {
             comm->poll(handler);
             if (comm->hasStopAck())
                 break;
-            notifier.wait();
+            notifierWait();
         }
         notifier.notify();
     }
@@ -211,7 +227,7 @@ EngineControl::EngineControl(std::ostream& o, EngineMainThread& engineThread0,
     : os(o), engineThread(engineThread0), listener(listener),
       tt(8), randomSeed(0) {
     Numa::instance().bindThread(0);
-    hashParListenerId = UciParams::hash->addListener([this]() {
+    hashParListenerId = UciParams::hash->addListener([this]() { // FIXME!! Not called for rank > 0
         setupTT();
     });
     clearHashParListenerId = UciParams::clearHash->addListener([this]() {

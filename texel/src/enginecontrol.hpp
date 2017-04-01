@@ -86,8 +86,15 @@ private:
     void doSearch();
     void setOptions();
 
+    /** Wait for notifier. If cluster is enabled, only wait a short period of time
+     *  since MPI communication needs polling. */
+    void notifierWait();
+
+    std::unique_ptr<Communicator> clusterParent;
+    std::vector<std::unique_ptr<Communicator>> clusterChildren;
+
     Notifier notifier;
-    std::unique_ptr<Communicator> comm;
+    std::unique_ptr<ThreadCommunicator> comm;
     std::vector<std::shared_ptr<WorkerThread>> children;
 
     std::mutex mutex;
