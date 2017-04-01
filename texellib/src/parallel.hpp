@@ -160,13 +160,13 @@ protected:
         INIT_SEARCH,
         START_SEARCH,
         STOP_SEARCH,
+        QUIT,
         REPORT_RESULT,
         STOP_ACK,
+        QUIT_ACK,
 
         // Only used for cluster communication
-        REPORT_STATS,
-        QUIT,
-        QUIT_ACK
+        REPORT_STATS
     };
     struct Command {
         Command() {}
