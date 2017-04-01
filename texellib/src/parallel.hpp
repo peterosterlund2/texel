@@ -86,6 +86,9 @@ public:
 
     void sendStopSearch();
 
+    /** Tell child cluster nodes to exit the program. */
+    void sendQuit();
+
 
     // Child to parent commands
 
@@ -97,6 +100,11 @@ public:
     /** Forward stop ack from cluster child. */
     void forwardStopAck();
 
+    /** Tell parent cluster node that program is about to exit. */
+    void sendQuitAck();
+    /** Forward quit ack from cluster child. */
+    void forwardQuitAck();
+
     /** Handler invoked when commands are received. */
     class CommandHandler {
     public:
@@ -106,9 +114,11 @@ public:
         virtual void startSearch(int jobId, const SearchTreeInfo& sti,
                                  int alpha, int beta, int depth) {}
         virtual void stopSearch() {}
+        virtual void quit() {}
 
         virtual void reportResult(int jobId, int score) {}
         virtual void stopAck() {}
+        virtual void quitAck() {}
     };
 
     /** Check if a command has been received. */
@@ -116,6 +126,9 @@ public:
 
     /** Return true if all child threads have acknowledged the stop command. */
     bool hasStopAck() const;
+
+    /** Return true if all child threads have acknowledged the quit command. */
+    bool hasQuitAck() const;
 
     /** Get number of of searched nodes/tbhits for all helper threads. */
     S64 getNumSearchedNodes() const;
@@ -128,11 +141,13 @@ protected:
     virtual void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                                    int alpha, int beta, int depth) = 0;
     virtual void doSendStopSearch() = 0;
+    virtual void doSendQuit() = 0;
 
     virtual void doSendReportResult(int jobId, int score) = 0;
     virtual void doSendReportStats(S64 nodesSearched, S64 tbHits) = 0;
     virtual void retrieveStats(S64& nodesSearched, S64& tbHits) = 0;
     virtual void doSendStopAck() = 0;
+    virtual void doSendQuitAck() = 0;
 
     virtual void doPoll() = 0;
     /** Notify corresponding search thread that something has happened. */
@@ -149,7 +164,9 @@ protected:
         STOP_ACK,
 
         // Only used for cluster communication
-        REPORT_STATS
+        REPORT_STATS,
+        QUIT,
+        QUIT_ACK
     };
     struct Command {
         Command() {}
@@ -210,6 +227,7 @@ protected:
     std::mutex mutex;
     bool stopAckWaitSelf = false;
     int stopAckWaitChildren = 0;
+    int quitAckWaitChildren = -1;
 
     std::atomic<S64> nodesSearched{0};
     std::atomic<S64> tbHits{0};
@@ -228,11 +246,13 @@ protected:
     void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                            int alpha, int beta, int depth) override;
     void doSendStopSearch() override;
+    void doSendQuit() override;
 
     void doSendReportResult(int jobId, int score) override;
     void doSendReportStats(S64 nodesSearched, S64 tbHits) override;
     void retrieveStats(S64& nodesSearched, S64& tbHits) override;
     void doSendStopAck() override;
+    void doSendQuitAck() override;
 
     void doPoll() override {}
     void notifyThread() override;
@@ -300,8 +320,10 @@ private:
         void startSearch(int jobId, const SearchTreeInfo& sti,
                          int alpha, int beta, int depth) override;
         void stopSearch() override;
+        void quit() override;
         void reportResult(int jobId, int score) override;
         void stopAck() override;
+        void quitAck() override;
     private:
         WorkerThread& wt;
     };
@@ -342,6 +364,11 @@ private:
 inline bool
 Communicator::hasStopAck() const {
     return stopAckWaitChildren == 0 && !stopAckWaitSelf;
+}
+
+inline bool
+Communicator::hasQuitAck() const {
+    return quitAckWaitChildren == 0;
 }
 
 inline S64

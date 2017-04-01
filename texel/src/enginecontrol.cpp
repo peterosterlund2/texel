@@ -71,6 +71,21 @@ EngineMainThread::mainLoop() {
                 searchStopped.notify_all();
             }
         }
+        comm->sendQuit();
+        class Handler : public Communicator::CommandHandler {
+        public:
+            explicit Handler(Communicator* comm) : comm(comm) {}
+            void quitAck() override { comm->sendQuitAck(); }
+        private:
+            Communicator* comm;
+        };
+        Handler handler(comm.get());
+        while (true) {
+            comm->poll(handler);
+            if (comm->hasQuitAck())
+                break;
+            notifierWait();
+        }
     }
 }
 

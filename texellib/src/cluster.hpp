@@ -116,11 +116,13 @@ public:
     void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                            int alpha, int beta, int depth) override;
     void doSendStopSearch() override;
+    void doSendQuit() override;
 
     void doSendReportResult(int jobId, int score) override;
     void doSendReportStats(S64 nodesSearched, S64 tbHits) override;
     void retrieveStats(S64& nodesSearched, S64& tbHits) override;
     void doSendStopAck() override;
+    void doSendQuitAck() override;
 
     void mpiSend();
 
@@ -140,6 +142,8 @@ private:
     bool recvBusy = false;
     std::array<U8,MAX_BUF_SIZE> recvBuf;
     MPI_Request recvReq;
+
+    bool quitFlag = false;
 };
 
 inline bool

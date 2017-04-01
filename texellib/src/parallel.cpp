@@ -110,6 +110,18 @@ Communicator::sendStopSearch() {
         c->doSendStopSearch();
 }
 
+void
+Communicator::sendQuit() {
+    quitAckWaitChildren = children.size();
+    if (quitAckWaitChildren > 0) {
+        for (auto& c : children)
+            c->doSendQuit();
+    } else {
+        quitAckWaitChildren = 1;
+        sendQuitAck();
+    }
+}
+
 
 void
 Communicator::sendReportResult(int jobId, int score) {
@@ -147,6 +159,23 @@ Communicator::forwardStopAck() {
 }
 
 void
+Communicator::sendQuitAck() {
+    quitAckWaitChildren--;
+    if (hasQuitAck()) {
+        if (parent)
+            parent->doSendQuitAck();
+        else
+            notifyThread();
+    }
+}
+
+void
+Communicator::forwardQuitAck() {
+    if (parent)
+        parent->doSendQuitAck();
+}
+
+void
 Communicator::poll(CommandHandler& handler) {
     if (parent)
         parent->doPoll();
@@ -177,11 +206,17 @@ Communicator::poll(CommandHandler& handler) {
         case CommandType::STOP_SEARCH:
             handler.stopSearch();
             break;
+        case CommandType::QUIT:
+            handler.quit();
+            break;
         case CommandType::REPORT_RESULT:
             handler.reportResult(cmd->jobId, cmd->resultScore);
             break;
         case CommandType::STOP_ACK:
             handler.stopAck();
+            break;
+        case CommandType::QUIT_ACK:
+            handler.quitAck();
             break;
         case CommandType::REPORT_STATS:
             break;
@@ -280,8 +315,10 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
         cmd = make_unique<StartSearchCommand>();
         break;
     case STOP_SEARCH:
+    case QUIT:
     case REPORT_RESULT:
     case STOP_ACK:
+    case QUIT_ACK:
         cmd = make_unique<Command>();
         break;
     case REPORT_STATS:
@@ -338,6 +375,13 @@ ThreadCommunicator::doSendStopSearch() {
 }
 
 void
+ThreadCommunicator::doSendQuit() {
+    std::lock_guard<std::mutex> L(mutex);
+    cmdQueue.push_back(std::make_shared<Command>(CommandType::QUIT));
+    notifier.notify();
+}
+
+void
 ThreadCommunicator::doSendReportResult(int jobId, int score) {
     std::lock_guard<std::mutex> L(mutex);
     cmdQueue.push_back(std::make_shared<Command>(CommandType::REPORT_RESULT, jobId, score));
@@ -368,6 +412,13 @@ ThreadCommunicator::doSendStopAck() {
 }
 
 void
+ThreadCommunicator::doSendQuitAck() {
+    std::lock_guard<std::mutex> L(mutex);
+    cmdQueue.push_back(std::make_shared<Command>(CommandType::QUIT_ACK));
+    notifier.notify();
+}
+
+void
 ThreadCommunicator::notifyThread() {
     notifier.notify();
 }
@@ -390,7 +441,8 @@ WorkerThread::~WorkerThread() {
     children.clear();
     terminate = true;
     threadNotifier.notify();
-    thread->join();
+    if (thread)
+        thread->join();
 }
 
 void
@@ -451,6 +503,8 @@ WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
         if (terminate)
             break;
         comm->poll(handler);
+        if (comm->hasQuitAck())
+            break;
         if (jobId != -1)
             doSearch(handler);
         comm->sendStopAck(false);
@@ -498,6 +552,11 @@ WorkerThread::CommHandler::stopSearch() {
 }
 
 void
+WorkerThread::CommHandler::quit() {
+    wt.comm->sendQuit();
+}
+
+void
 WorkerThread::CommHandler::reportResult(int jobId, int score) {
     wt.sendReportResult(jobId, score);
 }
@@ -505,6 +564,11 @@ WorkerThread::CommHandler::reportResult(int jobId, int score) {
 void
 WorkerThread::CommHandler::stopAck() {
     wt.comm->sendStopAck(true);
+}
+
+void
+WorkerThread::CommHandler::quitAck() {
+    wt.comm->sendQuitAck();
 }
 
 void

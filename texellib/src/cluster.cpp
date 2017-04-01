@@ -272,6 +272,12 @@ MPICommunicator::doSendStopSearch() {
 }
 
 void
+MPICommunicator::doSendQuit() {
+    cmdQueue.push_back(std::make_shared<Command>(CommandType::QUIT));
+    mpiSend();
+}
+
+void
 MPICommunicator::doSendReportResult(int jobId, int score) {
     cmdQueue.push_back(std::make_shared<Command>(CommandType::REPORT_RESULT, jobId, score));
     mpiSend();
@@ -302,6 +308,12 @@ MPICommunicator::retrieveStats(S64& nodesSearched, S64& tbHits) {
 void
 MPICommunicator::doSendStopAck() {
     cmdQueue.push_back(std::make_shared<Command>(CommandType::STOP_ACK));
+    mpiSend();
+}
+
+void
+MPICommunicator::doSendQuitAck() {
+    cmdQueue.push_back(std::make_shared<Command>(CommandType::QUIT_ACK));
     mpiSend();
 }
 
@@ -351,11 +363,19 @@ MPICommunicator::doPoll() {
                 case CommandType::STOP_SEARCH:
                     sendStopSearch();
                     break;
+                case CommandType::QUIT:
+                    sendQuit();
+                    quitFlag = true;
+                    break;
                 case CommandType::REPORT_RESULT:
                     sendReportResult(cmd->jobId, cmd->resultScore);
                     break;
                 case CommandType::STOP_ACK:
                     forwardStopAck();
+                    break;
+                case CommandType::QUIT_ACK:
+                    forwardQuitAck();
+                    quitFlag = true;
                     break;
                 case CommandType::REPORT_STATS: {
                     const ReportStatsCommand* rCmd = static_cast<const ReportStatsCommand*>(cmd.get());
@@ -366,9 +386,9 @@ MPICommunicator::doPoll() {
                 recvBusy = false;
             }
         }
-        if (recvBusy)
+        if (recvBusy || quitFlag)
             break;
-        if (!recvBusy) { // FIXME! Handle quit command
+        if (!recvBusy) {
             MPI_Irecv(&recvBuf[0], MAX_BUF_SIZE, MPI_BYTE, peerRank, 0, MPI_COMM_WORLD, &recvReq);
             recvBusy = true;
         }
