@@ -86,6 +86,8 @@ public:
 
     void sendStopSearch();
 
+    void sendSetParam(const std::string& name, const std::string& value);
+
     /** Tell child cluster nodes to exit the program. */
     void sendQuit();
 
@@ -114,6 +116,7 @@ public:
         virtual void startSearch(int jobId, const SearchTreeInfo& sti,
                                  int alpha, int beta, int depth) {}
         virtual void stopSearch() {}
+        virtual void setParam(const std::string& name, const std::string& value) {}
         virtual void quit() {}
 
         virtual void reportResult(int jobId, int score) {}
@@ -141,6 +144,7 @@ protected:
     virtual void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                                    int alpha, int beta, int depth) = 0;
     virtual void doSendStopSearch() = 0;
+    virtual void doSendSetParam(const std::string& name, const std::string& value) = 0;
     virtual void doSendQuit() = 0;
 
     virtual void doSendReportResult(int jobId, int score) = 0;
@@ -160,7 +164,9 @@ protected:
         INIT_SEARCH,
         START_SEARCH,
         STOP_SEARCH,
+        SET_PARAM,
         QUIT,
+
         REPORT_RESULT,
         STOP_ACK,
         QUIT_ACK,
@@ -177,10 +183,10 @@ protected:
         virtual const U8* fromByteBuf(const U8* buffer);
         static std::unique_ptr<Command> createFromByteBuf(const U8* buffer);
 
-        CommandType type;
-        int jobId;
-        int resultScore;
-        bool clearHistory;
+        CommandType type { QUIT };
+        int jobId = 0;
+        int resultScore = 0;
+        bool clearHistory = false;
     };
     struct InitSearchCommand : public Command {
         InitSearchCommand() {}
@@ -195,7 +201,7 @@ protected:
 
         Position::SerializeData posData;
         std::vector<U64> posHashList;
-        int posHashListSize;
+        int posHashListSize = 0;
     };
     struct StartSearchCommand : public Command {
         StartSearchCommand() {}
@@ -207,9 +213,19 @@ protected:
         const U8* fromByteBuf(const U8* buffer) override;
 
         SearchTreeInfo sti;
-        int alpha;
-        int beta;
-        int depth;
+        int alpha = 0;
+        int beta = 0;
+        int depth = 0;
+    };
+    struct SetParamCommand : public Command {
+        SetParamCommand() {}
+        SetParamCommand(const std::string& name, const std::string& value)
+            : Command(SET_PARAM), name(name), value(value) {}
+        U8* toByteBuf(U8* buffer) const override;
+        const U8* fromByteBuf(const U8* buffer) override;
+
+        std::string name;
+        std::string value;
     };
     struct ReportStatsCommand : public Command {
         ReportStatsCommand() {}
@@ -219,8 +235,8 @@ protected:
         U8* toByteBuf(U8* buffer) const override;
         const U8* fromByteBuf(const U8* buffer) override;
 
-        S64 nodesSearched;
-        S64 tbHits;
+        S64 nodesSearched = 0;
+        S64 tbHits = 0;
     };
     std::deque<std::shared_ptr<Command>> cmdQueue;
 
@@ -246,6 +262,7 @@ protected:
     void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                            int alpha, int beta, int depth) override;
     void doSendStopSearch() override;
+    void doSendSetParam(const std::string& name, const std::string& value) override;
     void doSendQuit() override;
 
     void doSendReportResult(int jobId, int score) override;
@@ -320,6 +337,7 @@ private:
         void startSearch(int jobId, const SearchTreeInfo& sti,
                          int alpha, int beta, int depth) override;
         void stopSearch() override;
+        void setParam(const std::string& name, const std::string& value) override;
         void quit() override;
         void reportResult(int jobId, int score) override;
         void stopAck() override;

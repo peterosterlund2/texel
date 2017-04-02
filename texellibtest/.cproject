@@ -44,7 +44,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellibtest/cute}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/src}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.1942189854" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -fno-PIC" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.1942189854" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fno-PIC" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1398220994" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool command="mpic++" id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.1869128477" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug">
@@ -141,8 +141,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellibtest/cute}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/src}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.dialect.std.1550451236" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
-								<option id="gnu.c.compiler.option.misc.other.255204028" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fno-PIC" valueType="string"/>
+								<option id="gnu.c.compiler.option.dialect.std.1550451236" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.misc.other.255204028" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fno-PIC" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1982101317" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool command="mpic++" id="cdt.managedbuild.tool.gnu.c.linker.exe.release.923679574" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release">
@@ -240,7 +240,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellibtest/cute}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/src}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.171197219" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -fno-PIC" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.171197219" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fno-PIC" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.770256487" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool command="mpic++" id="cdt.managedbuild.tool.gnu.c.linker.exe.release.809997257" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release">
@@ -338,7 +338,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellibtest/cute}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/texellib/src}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.1073550158" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -fno-PIC" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.1073550158" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fno-PIC" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.239430388" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool command="mpic++" id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.1027102705" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug">

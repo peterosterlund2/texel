@@ -53,6 +53,12 @@ EngineMainThread::mainLoop() {
     Numa::instance().bindThread(0);
     if (Cluster::instance().isEnabled() && clusterParent) {
         TranspositionTable tt(8);
+        UciParams::hash->addListener([&tt]() {
+            EngineControl::setupTT(tt);
+        });
+        UciParams::clearHash->addListener([&tt]() {
+            tt.clear();
+        }, false);
         WorkerThread worker(0, nullptr, 1, tt);
         worker.mainLoopCluster(std::move(comm));
     } else {
@@ -225,12 +231,12 @@ EngineMainThread::setOptions() {
         Parameters& params = Parameters::instance();
         for (auto& p : options) {
             const std::string& optionName = p.first;
-            const std::string& optionValue = p.second;
+            std::string optionValue = p.second;
             std::shared_ptr<Parameters::ParamBase> par = params.getParam(optionName);
             if (par && par->type == Parameters::STRING && optionValue == "<empty>")
-                params.set(optionName, "");
-            else
-                params.set(optionName, optionValue);
+                optionValue.clear();
+            params.set(optionName, optionValue);
+            comm->sendSetParam(optionName, optionValue);
         }
     }
 }
@@ -242,8 +248,8 @@ EngineControl::EngineControl(std::ostream& o, EngineMainThread& engineThread0,
     : os(o), engineThread(engineThread0), listener(listener),
       tt(8), randomSeed(0) {
     Numa::instance().bindThread(0);
-    hashParListenerId = UciParams::hash->addListener([this]() { // FIXME!! Not called for rank > 0
-        setupTT();
+    hashParListenerId = UciParams::hash->addListener([this]() {
+        setupTT(tt);
     });
     clearHashParListenerId = UciParams::clearHash->addListener([this]() {
         tt.clear();
@@ -412,7 +418,7 @@ EngineControl::stopThread() {
 }
 
 void
-EngineControl::setupTT() {
+EngineControl::setupTT(TranspositionTable& tt) {
     int hashSizeMB = UciParams::hash->getIntPar();
     U64 nEntries = hashSizeMB > 0 ? ((U64)hashSizeMB) * (1 << 20) / sizeof(TranspositionTable::TTEntry)
 	                          : (U64)1024;

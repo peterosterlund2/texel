@@ -273,6 +273,15 @@ MPICommunicator::doSendStopSearch() {
 }
 
 void
+MPICommunicator::doSendSetParam(const std::string& name, const std::string& value) {
+    int s = name.length() + value.length() + 2 * sizeof(int);
+    if (s + sizeof(Communicator::Command) < SearchConst::MAX_CLUSTER_BUF_SIZE) {
+        cmdQueue.push_back(std::make_shared<SetParamCommand>(name, value));
+        mpiSend();
+    }
+}
+
+void
 MPICommunicator::doSendQuit() {
     cmdQueue.push_back(std::make_shared<Command>(CommandType::QUIT));
     mpiSend();
@@ -364,6 +373,11 @@ MPICommunicator::doPoll() {
                 case CommandType::STOP_SEARCH:
                     sendStopSearch();
                     break;
+                case CommandType::SET_PARAM: {
+                    const SetParamCommand* spCmd = static_cast<const SetParamCommand*>(cmd.get());
+                    sendSetParam(spCmd->name, spCmd->value);
+                    break;
+                }
                 case CommandType::QUIT:
                     sendQuit();
                     quitFlag = true;

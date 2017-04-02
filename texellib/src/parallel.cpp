@@ -111,6 +111,12 @@ Communicator::sendStopSearch() {
 }
 
 void
+Communicator::sendSetParam(const std::string& name, const std::string& value) {
+    for (auto& c : children)
+        c->doSendSetParam(name, value);
+}
+
+void
 Communicator::sendQuit() {
     quitAckWaitChildren = children.size();
     if (quitAckWaitChildren > 0) {
@@ -206,6 +212,11 @@ Communicator::poll(CommandHandler& handler) {
         case CommandType::STOP_SEARCH:
             handler.stopSearch();
             break;
+        case CommandType::SET_PARAM: {
+            const SetParamCommand* spCmd = static_cast<const SetParamCommand*>(cmd.get());
+            handler.setParam(spCmd->name, spCmd->value);
+            break;
+        }
         case CommandType::QUIT:
             handler.quit();
             break;
@@ -288,6 +299,33 @@ Communicator::StartSearchCommand::fromByteBuf(const U8* buffer) {
 }
 
 U8*
+Communicator::SetParamCommand::toByteBuf(U8* buffer) const {
+    buffer = Command::toByteBuf(buffer);
+    int len1 = name.length();
+    int len2 = value.length();
+    buffer = Serializer::serialize<64>(buffer, len1, len2);
+    for (int i = 0; i < len1; i++)
+        buffer = putBytes(buffer, name[i]);
+    for (int i = 0; i < len2; i++)
+        buffer = putBytes(buffer, value[i]);
+    return buffer;
+}
+
+const U8*
+Communicator::SetParamCommand::fromByteBuf(const U8* buffer) {
+    buffer = Command::fromByteBuf(buffer);
+    int len1, len2;
+    buffer = Serializer::deSerialize<64>(buffer, len1, len2);
+    name.resize(len1);
+    for (int i = 0; i < len1; i++)
+        buffer = getBytes(buffer, name[i]);
+    value.resize(len2);
+    for (int i = 0; i < len2; i++)
+        buffer = getBytes(buffer, value[i]);
+    return buffer;
+}
+
+U8*
 Communicator::ReportStatsCommand::toByteBuf(U8* buffer) const {
     buffer = Command::toByteBuf(buffer);
     buffer = Serializer::serialize<64>(buffer, nodesSearched, tbHits);
@@ -320,6 +358,9 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
     case STOP_ACK:
     case QUIT_ACK:
         cmd = make_unique<Command>();
+        break;
+    case SET_PARAM:
+        cmd = make_unique<SetParamCommand>();
         break;
     case REPORT_STATS:
         cmd = make_unique<ReportStatsCommand>();
@@ -371,6 +412,13 @@ ThreadCommunicator::doSendStopSearch() {
                                   }),
                    cmdQueue.end());
     cmdQueue.push_back(std::make_shared<Command>(CommandType::STOP_SEARCH));
+    notifier.notify();
+}
+
+void
+ThreadCommunicator::doSendSetParam(const std::string& name, const std::string& value) {
+    std::lock_guard<std::mutex> L(mutex);
+    cmdQueue.push_back(std::make_shared<SetParamCommand>(name, value));
     notifier.notify();
 }
 
@@ -549,6 +597,14 @@ void
 WorkerThread::CommHandler::stopSearch() {
     wt.comm->sendStopSearch();
     wt.jobId = -1;
+}
+
+void
+WorkerThread::CommHandler::setParam(const std::string& name, const std::string& value) {
+    if (wt.getThreadNo() == 0) {
+        wt.comm->sendSetParam(name, value);
+        Parameters::instance().set(name, value);
+    }
 }
 
 void

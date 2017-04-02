@@ -145,6 +145,8 @@ public:
 
     void finishSearch(Position& pos, const Move& bestMove);
 
+    static void setupTT(TranspositionTable& tt);
+
 private:
     /**
      * Compute thinking time for current search.
@@ -155,8 +157,6 @@ private:
                      int maxDepth, int maxNodes);
 
     void stopThread();
-
-    void setupTT();
 
     void setupPosition(Position pos, const std::vector<Move>& moves);
 

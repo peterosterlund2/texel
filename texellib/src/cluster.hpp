@@ -116,6 +116,7 @@ public:
     void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                            int alpha, int beta, int depth) override;
     void doSendStopSearch() override;
+    void doSendSetParam(const std::string& name, const std::string& value) override;
     void doSendQuit() override;
 
     void doSendReportResult(int jobId, int score) override;
