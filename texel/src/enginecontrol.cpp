@@ -437,15 +437,21 @@ EngineControl::setupTT() {
 void
 EngineControl::setupPosition(Position pos, const std::vector<Move>& moves) {
     UndoInfo ui;
-    posHashList.resize(SearchConst::MAX_SEARCH_DEPTH * 2 + moves.size());
-    posHashListSize = 0;
-    for (size_t i = 0; i < moves.size(); i++) {
-        const Move& m = moves[i];
-        posHashList[posHashListSize++] = pos.zobristHash();
+    posHashList.clear();
+    for (const Move& m : moves) {
+        posHashList.push_back(pos.zobristHash());
         pos.makeMove(m, ui);
         if (pos.getHalfMoveClock() == 0)
-            posHashListSize = 0;
+            posHashList.clear();
     }
+    if (posHashList.size() > 100) {
+        // If more than 100 reversible moves have been played, a draw by the 50 move
+        // rule can be claimed, so posHashList is not needed, since it is only used
+        // to claim three-fold repetition draws.
+        posHashList.clear();
+    }
+    posHashListSize = posHashList.size();
+    posHashList.resize(posHashListSize + SearchConst::MAX_SEARCH_DEPTH * 2);
     this->pos = pos;
 }
 

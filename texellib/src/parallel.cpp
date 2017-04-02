@@ -246,13 +246,10 @@ Communicator::Command::fromByteBuf(const U8* buffer) {
 
 U8*
 Communicator::InitSearchCommand::toByteBuf(U8* buffer) const {
-    U8* buf0 = buffer;
-    const int bufSize = SearchConst::MAX_CLUSTER_BUF_SIZE;
     buffer = Command::toByteBuf(buffer);
     for (int i = 0; i < (int)COUNT_OF(posData.v); i++)
         buffer = putBytes(buffer, posData.v[i]);
     int len = posHashList.size();
-    len = std::min(len, bufSize / 8 - (int)((buffer - buf0) + 2 * sizeof(int)));
     buffer = putBytes(buffer, len);
     for (int i = 0; i < len; i++)
         buffer = putBytes(buffer, posHashList[i]);
