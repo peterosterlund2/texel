@@ -133,17 +133,17 @@ public:
 private:
     int myRank;
     int peerRank;
-    static constexpr int MAX_BUF_SIZE = 4096;
 
     bool sendBusy = false;
-    std::array<U8,MAX_BUF_SIZE> sendBuf;
     MPI_Request sendReq;
 
     bool recvBusy = false;
-    std::array<U8,MAX_BUF_SIZE> recvBuf;
     MPI_Request recvReq;
 
     bool quitFlag = false;
+
+    std::array<U8,SearchConst::MAX_CLUSTER_BUF_SIZE> sendBuf;
+    std::array<U8,SearchConst::MAX_CLUSTER_BUF_SIZE> recvBuf;
 };
 
 inline bool

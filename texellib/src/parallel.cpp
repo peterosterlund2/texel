@@ -231,25 +231,28 @@ using Serializer::getBytes;
 
 U8*
 Communicator::Command::toByteBuf(U8* buffer) const {
-    return Serializer::serialize<4096>(buffer, (int)type, jobId,
-                                       resultScore, clearHistory);
+    return Serializer::serialize<64>(buffer, (int)type, jobId,
+                                     resultScore, clearHistory);
 }
 
 const U8*
 Communicator::Command::fromByteBuf(const U8* buffer) {
     int tmpType;
-    buffer = Serializer::deSerialize<4096>(buffer, tmpType, jobId,
-                                           resultScore, clearHistory);
+    buffer = Serializer::deSerialize<64>(buffer, tmpType, jobId,
+                                         resultScore, clearHistory);
     type = (CommandType)tmpType;
     return buffer;
 }
 
 U8*
 Communicator::InitSearchCommand::toByteBuf(U8* buffer) const {
+    U8* buf0 = buffer;
+    const int bufSize = SearchConst::MAX_CLUSTER_BUF_SIZE;
     buffer = Command::toByteBuf(buffer);
     for (int i = 0; i < (int)COUNT_OF(posData.v); i++)
         buffer = putBytes(buffer, posData.v[i]);
     int len = posHashList.size();
+    len = std::min(len, bufSize / 8 - (int)((buffer - buf0) + 2 * sizeof(int)));
     buffer = putBytes(buffer, len);
     for (int i = 0; i < len; i++)
         buffer = putBytes(buffer, posHashList[i]);
@@ -275,7 +278,7 @@ U8*
 Communicator::StartSearchCommand::toByteBuf(U8* buffer) const {
     buffer = Command::toByteBuf(buffer);
     buffer = sti.serialize(buffer);
-    buffer = Serializer::serialize<4096>(buffer, alpha, beta, depth);
+    buffer = Serializer::serialize<64>(buffer, alpha, beta, depth);
     return buffer;
 }
 
@@ -283,21 +286,21 @@ const U8*
 Communicator::StartSearchCommand::fromByteBuf(const U8* buffer) {
     buffer = Command::fromByteBuf(buffer);
     buffer = sti.deSerialize(buffer);
-    buffer = Serializer::deSerialize<4096>(buffer, alpha, beta, depth);
+    buffer = Serializer::deSerialize<64>(buffer, alpha, beta, depth);
     return buffer;
 }
 
 U8*
 Communicator::ReportStatsCommand::toByteBuf(U8* buffer) const {
     buffer = Command::toByteBuf(buffer);
-    buffer = Serializer::serialize<4096>(buffer, nodesSearched, tbHits);
+    buffer = Serializer::serialize<64>(buffer, nodesSearched, tbHits);
     return buffer;
 }
 
 const U8*
 Communicator::ReportStatsCommand::fromByteBuf(const U8* buffer) {
     buffer = Command::fromByteBuf(buffer);
-    buffer = Serializer::deSerialize<4096>(buffer, nodesSearched, tbHits);
+    buffer = Serializer::deSerialize<64>(buffer, nodesSearched, tbHits);
     return buffer;
 }
 

@@ -37,6 +37,8 @@ namespace SearchConst {
     const int maxFrustrated = 70; // Maximum score for frustrated win
 
     const int MAX_SEARCH_DEPTH = 100;
+
+    const int MAX_CLUSTER_BUF_SIZE = 4096; // Max size of cluster message
 }
 
 namespace TType {

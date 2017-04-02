@@ -240,7 +240,8 @@ void
 MPICommunicator::doSendInitSearch(const Position& pos,
                                   const std::vector<U64>& posHashList, int posHashListSize,
                                   bool clearHistory) {
-    cmdQueue.push_back(std::make_shared<InitSearchCommand>(pos, posHashList, posHashListSize, clearHistory));
+    cmdQueue.push_back(std::make_shared<InitSearchCommand>(pos, posHashList,
+                                                           posHashListSize, clearHistory));
     mpiSend();
 }
 
@@ -389,7 +390,8 @@ MPICommunicator::doPoll() {
         if (recvBusy || quitFlag)
             break;
         if (!recvBusy) {
-            MPI_Irecv(&recvBuf[0], MAX_BUF_SIZE, MPI_BYTE, peerRank, 0, MPI_COMM_WORLD, &recvReq);
+            MPI_Irecv(&recvBuf[0], SearchConst::MAX_CLUSTER_BUF_SIZE,
+                      MPI_BYTE, peerRank, 0, MPI_COMM_WORLD, &recvReq);
             recvBusy = true;
         }
     }
