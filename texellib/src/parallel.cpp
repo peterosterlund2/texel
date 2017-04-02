@@ -553,7 +553,11 @@ WorkerThread::CommHandler::stopSearch() {
 
 void
 WorkerThread::CommHandler::quit() {
-    wt.comm->sendQuit();
+    if (wt.getThreadNo() == 0)
+        wt.comm->sendQuit();
+    else {
+        wt.comm->forwardQuitAck();
+    }
 }
 
 void
