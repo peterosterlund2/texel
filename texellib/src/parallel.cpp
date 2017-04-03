@@ -111,9 +111,10 @@ Communicator::sendStopSearch() {
 }
 
 void
-Communicator::sendSetParam(const std::string& name, const std::string& value) {
+Communicator::sendSetParam(const std::string& name, const std::string& value, bool toAll) {
     for (auto& c : children)
-        c->doSendSetParam(name, value);
+        if (toAll || c->clusterChildNo() >= 0)
+            c->doSendSetParam(name, value);
 }
 
 void
@@ -601,10 +602,8 @@ WorkerThread::CommHandler::stopSearch() {
 
 void
 WorkerThread::CommHandler::setParam(const std::string& name, const std::string& value) {
-    if (wt.getThreadNo() == 0) {
-        wt.comm->sendSetParam(name, value);
-        Parameters::instance().set(name, value);
-    }
+    wt.comm->sendSetParam(name, value);
+    Parameters::instance().set(name, value);
 }
 
 void

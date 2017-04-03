@@ -108,7 +108,9 @@ private:
 
 class MPICommunicator : public Communicator {
 public:
-    MPICommunicator(Communicator* parent, int myRank, int peerRank);
+    MPICommunicator(Communicator* parent, int myRank, int peerRank, int childNo);
+
+    int clusterChildNo() const override;
 
     void doSendInitSearch(const Position& pos,
                           const std::vector<U64>& posHashList, int posHashListSize,
@@ -132,8 +134,9 @@ public:
     void notifyThread() override;
 
 private:
-    int myRank;
-    int peerRank;
+    const int myRank;
+    const int peerRank;
+    const int childNo;
 
     bool sendBusy = false;
     MPI_Request sendReq;
@@ -175,6 +178,11 @@ Cluster::getParentNode() const {
 inline const std::vector<int>&
 Cluster::getChildNodes() const {
     return children;
+}
+
+inline int
+MPICommunicator::clusterChildNo() const {
+    return childNo;
 }
 
 #else

@@ -25,6 +25,7 @@
 
 #include "cluster.hpp"
 #include "numa.hpp"
+#include "util/logger.hpp"
 #include <thread>
 #include <iostream>
 
@@ -148,14 +149,17 @@ std::unique_ptr<Communicator>
 Cluster::createParentCommunicator() const {
     if (getParentNode() == -1)
         return nullptr;
-    return make_unique<MPICommunicator>(nullptr, getNodeNumber(), getParentNode());
+    return make_unique<MPICommunicator>(nullptr, getNodeNumber(), getParentNode(), -1);
 }
 
 void
 Cluster::createChildCommunicators(Communicator* mainThreadComm,
                                   std::vector<std::unique_ptr<Communicator>>& children) const {
-    for (int c : getChildNodes()) {
-        auto comm = make_unique<MPICommunicator>(mainThreadComm, getNodeNumber(), c);
+    std::vector<int> childRanks = getChildNodes();
+    int n = childRanks.size();
+    for (int i = 0; i < n; i++) {
+        int peerRank = childRanks[i];
+        auto comm = make_unique<MPICommunicator>(mainThreadComm, getNodeNumber(), peerRank, i);
         children.push_back(std::move(comm));
     }
 }
@@ -232,8 +236,9 @@ Cluster::assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& t
 
 // ----------------------------------------------------------------------------
 
-MPICommunicator::MPICommunicator(Communicator* parent, int myRank, int peerRank)
-    : Communicator(parent), myRank(myRank), peerRank(peerRank) {
+MPICommunicator::MPICommunicator(Communicator* parent, int myRank, int peerRank,
+                                 int childNo)
+    : Communicator(parent), myRank(myRank), peerRank(peerRank), childNo(childNo) {
 }
 
 void
@@ -375,7 +380,7 @@ MPICommunicator::doPoll() {
                     break;
                 case CommandType::SET_PARAM: {
                     const SetParamCommand* spCmd = static_cast<const SetParamCommand*>(cmd.get());
-                    sendSetParam(spCmd->name, spCmd->value);
+                    sendSetParam(spCmd->name, spCmd->value, true);
                     break;
                 }
                 case CommandType::QUIT:

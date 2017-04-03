@@ -74,6 +74,11 @@ public:
     void addChild(Communicator* child);
     void removeChild(Communicator* child);
 
+    /** Return which cluster child this communicator represents.
+     * @return A number between 0 and N-1 where N is the number of cluster children
+     *         this node's parent has.
+     *         Return -1 if this communicator does not represent a cluster child. */
+    virtual int clusterChildNo() const = 0;
 
     // Parent to child commands
 
@@ -86,7 +91,7 @@ public:
 
     void sendStopSearch();
 
-    void sendSetParam(const std::string& name, const std::string& value);
+    void sendSetParam(const std::string& name, const std::string& value, bool toAll = false);
 
     /** Tell child cluster nodes to exit the program. */
     void sendQuit();
@@ -255,6 +260,8 @@ class ThreadCommunicator : public Communicator {
 public:
     ThreadCommunicator(Communicator* parent, Notifier& notifier);
 
+    int clusterChildNo() const override;
+
 protected:
     void doSendInitSearch(const Position& pos,
                           const std::vector<U64>& posHashList, int posHashListSize,
@@ -397,6 +404,11 @@ Communicator::getNumSearchedNodes() const {
 inline S64
 Communicator::getTbHits() const {
     return tbHits;
+}
+
+inline int
+ThreadCommunicator::clusterChildNo() const {
+    return -1;
 }
 
 inline int
