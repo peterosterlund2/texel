@@ -85,6 +85,26 @@ Communicator::removeChild(Communicator* child) {
 }
 
 void
+Communicator::sendAssignThreads(int nThreadsThisNode,
+                                const std::vector<int>& nThreadsChildren) {
+    int threadOffs = Cluster::instance().getGlobalThreadOffset() + nThreadsThisNode;
+    for (auto& c : children) {
+        int childNo = c->clusterChildNo();
+        if (childNo >= 0) {
+            int nt = nThreadsChildren[childNo];
+            c->doSendAssignThreads(nt, threadOffs);
+            threadOffs += nt;
+        }
+    }
+}
+
+void
+Communicator::forwardAssignThreads(int nThreads, int firstThreadNo) {
+    for (auto& c : children)
+        c->doSendAssignThreads(nThreads, firstThreadNo);
+}
+
+void
 Communicator::sendInitSearch(const Position& pos,
                              const std::vector<U64>& posHashList, int posHashListSize,
                              bool clearHistory) {
@@ -198,6 +218,11 @@ Communicator::poll(CommandHandler& handler) {
         L.unlock();
 
         switch (cmd->type) {
+        case CommandType::ASSIGN_THREADS: {
+            const AssignThreadsCommand* aCmd = static_cast<const AssignThreadsCommand*>(cmd.get());
+            handler.assignThreads(aCmd->nThreads, aCmd->firstThreadNo);
+            break;
+        }
         case CommandType::INIT_SEARCH: {
             const InitSearchCommand* iCmd = static_cast<const InitSearchCommand*>(cmd.get());
             Position pos;
@@ -253,6 +278,20 @@ Communicator::Command::fromByteBuf(const U8* buffer) {
     buffer = Serializer::deSerialize<64>(buffer, tmpType, jobId,
                                          resultScore, clearHistory);
     type = (CommandType)tmpType;
+    return buffer;
+}
+
+U8*
+Communicator::AssignThreadsCommand::toByteBuf(U8* buffer) const {
+    buffer = Command::toByteBuf(buffer);
+    return Serializer::serialize<64>(buffer, nThreads, firstThreadNo);
+    return buffer;
+}
+
+const U8*
+Communicator::AssignThreadsCommand::fromByteBuf(const U8* buffer) {
+    buffer = Command::fromByteBuf(buffer);
+    buffer = Serializer::deSerialize<64>(buffer, nThreads, firstThreadNo);
     return buffer;
 }
 
@@ -347,6 +386,9 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
     getBytes(buffer, tmpType);
     CommandType type = (CommandType)tmpType;
     switch (type) {
+    case ASSIGN_THREADS:
+        cmd = make_unique<AssignThreadsCommand>();
+        break;
     case INIT_SEARCH:
         cmd = make_unique<InitSearchCommand>();
         break;
@@ -376,6 +418,13 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
 
 ThreadCommunicator::ThreadCommunicator(Communicator* parent, Notifier& notifier)
     : Communicator(parent), notifier(notifier) {
+}
+
+void
+ThreadCommunicator::doSendAssignThreads(int nThreads, int firstThreadNo) {
+    std::lock_guard<std::mutex> L(mutex);
+    cmdQueue.push_back(std::make_shared<AssignThreadsCommand>(nThreads, firstThreadNo));
+    notifier.notify();
 }
 
 void
@@ -536,9 +585,10 @@ WorkerThread::mainLoopCluster(std::unique_ptr<ThreadCommunicator>&& comm) {
 void
 WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
     Numa::instance().bindThread(threadNo);
-    if (!cluster)
+    if (!cluster) {
         comm = make_unique<ThreadCommunicator>(parentComm, threadNotifier);
-    createWorkers(threadNo + 1, comm.get(), numWorkers - 1, tt, children);
+        createWorkers(threadNo + 1, comm.get(), numWorkers - 1, tt, children);
+    }
 
     initialized.notify();
 
@@ -558,6 +608,17 @@ WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
             doSearch(handler);
         comm->sendStopAck(false);
     }
+}
+
+void
+WorkerThread::CommHandler::assignThreads(int nThreads, int firstThreadNo) {
+    Cluster::instance().setGlobalThreadOffset(firstThreadNo);
+    int nThreadsThisNode;
+    std::vector<int> nThreadsChildren;
+    Cluster::instance().assignThreads(nThreads, nThreadsThisNode, nThreadsChildren);
+    wt.comm->sendAssignThreads(nThreadsThisNode, nThreadsChildren);
+    wt.disabled = nThreadsThisNode < 1;
+    WorkerThread::createWorkers(1, wt.comm.get(), nThreadsThisNode - 1, wt.tt, wt.children);
 }
 
 void
@@ -585,6 +646,8 @@ WorkerThread::CommHandler::initSearch(const Position& pos,
 void
 WorkerThread::CommHandler::startSearch(int jobId, const SearchTreeInfo& sti,
                                        int alpha, int beta, int depth) {
+    if (wt.disabled)
+        return;
     wt.comm->sendStartSearch(jobId, sti, alpha, beta, depth);
     wt.sti = sti;
     wt.jobId = jobId;
@@ -715,7 +778,7 @@ static int getExtraDepth(int threadNo) {
     x |= x >> 2;
     x |= x >> 4;
     x |= x >> 8;
-    x |= x >> 16;c
+    x |= x >> 16;
     return BitBoard::bitCount(x - t - 1);
 }
 */
@@ -730,8 +793,9 @@ WorkerThread::doSearch(CommHandler& commHandler) {
         ht = make_unique<History>();
 
     using namespace SearchConst;
-    int initExtraDepth = threadNo & 1;
-//    int initExtraDepth = getExtraDepth(threadNo);
+    int globalThreadNo = Cluster::instance().getGlobalThreadOffset() + threadNo;
+    int initExtraDepth = globalThreadNo & 1;
+//    int initExtraDepth = getExtraDepth(globalThreadNo);
     for (int extraDepth = initExtraDepth; ; extraDepth++) {
         Search::SearchTables st(tt, *kt, *ht, *et);
         Position pos(this->pos);

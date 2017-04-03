@@ -119,9 +119,13 @@ EngineMainThread::startSearch(EngineControl* engineControl,
                               int maxDepth, int maxNodes,
                               int maxPV, int minProbeDepth,
                               std::atomic<bool>& ponder, std::atomic<bool>& infinite) {
-    WorkerThread::createWorkers(1, comm.get(),
-                                UciParams::threads->getIntPar() - 1,
-                                tt, children);
+    int nThreads = UciParams::threads->getIntPar();
+    int nThreadsThisNode;
+    std::vector<int> nThreadsChildren;
+    Cluster::instance().assignThreads(nThreads, nThreadsThisNode, nThreadsChildren);
+    comm->sendAssignThreads(nThreadsThisNode, nThreadsChildren);
+    WorkerThread::createWorkers(1, comm.get(), nThreadsThisNode - 1, tt, children);
+
     {
         std::lock_guard<std::mutex> L(mutex);
         this->engineControl = engineControl;

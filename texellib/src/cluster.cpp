@@ -137,6 +137,17 @@ Cluster::computeConcurrency() {
         }
         MPI_Send(&buf[0], count, MPI_INT, parent, 0, MPI_COMM_WORLD);
     }
+    if (getNodeNumber() == 0) {
+        int nc = thisConcurrency.cores;
+        int nt = thisConcurrency.threads;
+        for (auto& cc : childConcurrency) {
+            for (auto& c : cc) {
+                nc += c.cores;
+                nt += c.threads;
+            }
+        }
+        std::cout << "info string cores:" << nc << " threads:" << nt << std::endl;
+    }
 }
 
 void
@@ -239,6 +250,12 @@ Cluster::assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& t
 MPICommunicator::MPICommunicator(Communicator* parent, int myRank, int peerRank,
                                  int childNo)
     : Communicator(parent), myRank(myRank), peerRank(peerRank), childNo(childNo) {
+}
+
+void
+MPICommunicator::doSendAssignThreads(int nThreads, int firstThreadNo) {
+    cmdQueue.push_back(std::make_shared<AssignThreadsCommand>(nThreads, firstThreadNo));
+    mpiSend();
 }
 
 void
@@ -363,6 +380,11 @@ MPICommunicator::doPoll() {
             if (flag) {
                 std::unique_ptr<Command> cmd = Command::createFromByteBuf(&recvBuf[0]);
                 switch (cmd->type) {
+                case CommandType::ASSIGN_THREADS: {
+                    const AssignThreadsCommand* aCmd = static_cast<const AssignThreadsCommand*>(cmd.get());
+                    forwardAssignThreads(aCmd->nThreads, aCmd->firstThreadNo);
+                    break;
+                }
                 case CommandType::INIT_SEARCH: {
                     const InitSearchCommand* iCmd = static_cast<const InitSearchCommand*>(cmd.get());
                     Position pos;

@@ -62,6 +62,11 @@ public:
      *  available cores and hardware threads are utilized in a good way. */
     void assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& threadsChildren);
 
+    /** Get/set the offset between node local thread number and global thread number.
+     *  globalThreadNo = globalThreadOffset + locaThreadNo */
+    int getGlobalThreadOffset() const;
+    void setGlobalThreadOffset(int offs);
+
 private:
     Cluster();
 
@@ -98,6 +103,7 @@ private:
 
     int rank = 0;
     int size = 1;
+    int globalThreadOffs = 0;
 
     int parent = -1;
     std::vector<int> children;
@@ -112,6 +118,7 @@ public:
 
     int clusterChildNo() const override;
 
+    void doSendAssignThreads(int nThreads, int firstThreadNo) override;
     void doSendInitSearch(const Position& pos,
                           const std::vector<U64>& posHashList, int posHashListSize,
                           bool clearHistory) override;
@@ -161,6 +168,16 @@ Cluster::isEnabled() const {
 }
 
 inline int
+Cluster::getGlobalThreadOffset() const {
+    return globalThreadOffs;
+}
+
+inline void
+Cluster::setGlobalThreadOffset(int offs) {
+    globalThreadOffs = offs;
+}
+
+inline int
 Cluster::getNodeNumber() const {
     return rank;
 }
@@ -196,7 +213,12 @@ public:
     std::unique_ptr<Communicator> createParentCommunicator() const { return nullptr; }
     void createChildCommunicators(Communicator* mainThreadComm,
                                   std::vector<std::unique_ptr<Communicator>>& children) const {}
-    void assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& threadsChildren) {}
+    void assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& threadsChildren) {
+        threadsThisNode = numThreads;
+        threadsChildren.clear();
+    }
+    int getGlobalThreadOffset() const { return 0;}
+    void setGlobalThreadOffset(int offs) {}
 };
 #endif
 

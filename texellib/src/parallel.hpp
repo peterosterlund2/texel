@@ -82,6 +82,9 @@ public:
 
     // Parent to child commands
 
+    void sendAssignThreads(int nThreadsThisNode, const std::vector<int>& nThreadsChildren);
+    void forwardAssignThreads(int nThreads, int firstThreadNo);
+
     void sendInitSearch(const Position& pos,
                         const std::vector<U64>& posHashList, int posHashListSize,
                         bool clearHistory);
@@ -115,6 +118,7 @@ public:
     /** Handler invoked when commands are received. */
     class CommandHandler {
     public:
+        virtual void assignThreads(int nThreads, int firstThreadNo) {}
         virtual void initSearch(const Position& pos,
                                 const std::vector<U64>& posHashList, int posHashListSize,
                                 bool clearHistory) {}
@@ -143,6 +147,7 @@ public:
     S64 getTbHits() const;
 
 protected:
+    virtual void doSendAssignThreads(int nThreads, int firstThreadNo) = 0;
     virtual void doSendInitSearch(const Position& pos,
                                   const std::vector<U64>& posHashList, int posHashListSize,
                                   bool clearHistory) = 0;
@@ -166,6 +171,7 @@ protected:
     std::vector<Communicator*> children;
 
     enum CommandType {
+        ASSIGN_THREADS,
         INIT_SEARCH,
         START_SEARCH,
         STOP_SEARCH,
@@ -192,6 +198,17 @@ protected:
         int jobId = 0;
         int resultScore = 0;
         bool clearHistory = false;
+    };
+    struct AssignThreadsCommand : public Command {
+        AssignThreadsCommand() {}
+        AssignThreadsCommand(int nThreads, int firstThreadNo)
+            : Command(ASSIGN_THREADS), nThreads(nThreads), firstThreadNo(firstThreadNo) {
+        }
+        U8* toByteBuf(U8* buffer) const override;
+        const U8* fromByteBuf(const U8* buffer) override;
+
+        int nThreads = 0;
+        int firstThreadNo = 0;
     };
     struct InitSearchCommand : public Command {
         InitSearchCommand() {}
@@ -263,6 +280,7 @@ public:
     int clusterChildNo() const override;
 
 protected:
+    void doSendAssignThreads(int nThreads, int firstThreadNo) override;
     void doSendInitSearch(const Position& pos,
                           const std::vector<U64>& posHashList, int posHashListSize,
                           bool clearHistory) override;
@@ -338,6 +356,7 @@ private:
     class CommHandler : public Communicator::CommandHandler {
     public:
         explicit CommHandler(WorkerThread& wt);
+        void assignThreads(int nThreads, int firstThreadNo) override;
         void initSearch(const Position& pos,
                         const std::vector<U64>& posHashList, int posHashListSize,
                         bool clearHistory) override;
@@ -358,6 +377,7 @@ private:
 
 
     int threadNo;
+    bool disabled = false; // True for not used cluster node
     std::unique_ptr<ThreadCommunicator> comm;
     std::unique_ptr<std::thread> thread;
     Notifier threadNotifier;
