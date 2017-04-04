@@ -98,7 +98,7 @@ EngineMainThread::mainLoop() {
 void
 EngineMainThread::notifierWait() {
     if (Cluster::instance().isEnabled())
-        notifier.wait(10);
+        notifier.wait(1);
     else
         notifier.wait();
 }

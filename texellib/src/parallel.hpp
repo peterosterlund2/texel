@@ -277,6 +277,8 @@ class ThreadCommunicator : public Communicator {
 public:
     ThreadCommunicator(Communicator* parent, Notifier& notifier);
 
+    void setNotifier(Notifier& notifier);
+
     int clusterChildNo() const override;
 
 protected:
@@ -300,7 +302,7 @@ protected:
     void notifyThread() override;
 
 private:
-    Notifier& notifier;
+    Notifier* notifier;
 };
 
 

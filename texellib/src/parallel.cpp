@@ -417,14 +417,19 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
 // ----------------------------------------------------------------------------
 
 ThreadCommunicator::ThreadCommunicator(Communicator* parent, Notifier& notifier)
-    : Communicator(parent), notifier(notifier) {
+    : Communicator(parent), notifier(&notifier) {
+}
+
+void
+ThreadCommunicator::setNotifier(Notifier& notifier) {
+    this->notifier = &notifier;
 }
 
 void
 ThreadCommunicator::doSendAssignThreads(int nThreads, int firstThreadNo) {
     std::lock_guard<std::mutex> L(mutex);
     cmdQueue.push_back(std::make_shared<AssignThreadsCommand>(nThreads, firstThreadNo));
-    notifier.notify();
+    notifier->notify();
 }
 
 void
@@ -433,7 +438,7 @@ ThreadCommunicator::doSendInitSearch(const Position& pos,
                                      bool clearHistory) {
     std::lock_guard<std::mutex> L(mutex);
     cmdQueue.push_back(std::make_shared<InitSearchCommand>(pos, posHashList, posHashListSize, clearHistory));
-    notifier.notify();
+    notifier->notify();
 }
 
 void
@@ -448,7 +453,7 @@ ThreadCommunicator::doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                                   }),
                    cmdQueue.end());
     cmdQueue.push_back(std::make_shared<StartSearchCommand>(jobId, sti, alpha, beta, depth));
-    notifier.notify();
+    notifier->notify();
 }
 
 void
@@ -462,28 +467,28 @@ ThreadCommunicator::doSendStopSearch() {
                                   }),
                    cmdQueue.end());
     cmdQueue.push_back(std::make_shared<Command>(CommandType::STOP_SEARCH));
-    notifier.notify();
+    notifier->notify();
 }
 
 void
 ThreadCommunicator::doSendSetParam(const std::string& name, const std::string& value) {
     std::lock_guard<std::mutex> L(mutex);
     cmdQueue.push_back(std::make_shared<SetParamCommand>(name, value));
-    notifier.notify();
+    notifier->notify();
 }
 
 void
 ThreadCommunicator::doSendQuit() {
     std::lock_guard<std::mutex> L(mutex);
     cmdQueue.push_back(std::make_shared<Command>(CommandType::QUIT));
-    notifier.notify();
+    notifier->notify();
 }
 
 void
 ThreadCommunicator::doSendReportResult(int jobId, int score) {
     std::lock_guard<std::mutex> L(mutex);
     cmdQueue.push_back(std::make_shared<Command>(CommandType::REPORT_RESULT, jobId, score));
-    notifier.notify();
+    notifier->notify();
 }
 
 void
@@ -506,19 +511,19 @@ void
 ThreadCommunicator::doSendStopAck() {
     std::lock_guard<std::mutex> L(mutex);
     cmdQueue.push_back(std::make_shared<Command>(CommandType::STOP_ACK));
-    notifier.notify();
+    notifier->notify();
 }
 
 void
 ThreadCommunicator::doSendQuitAck() {
     std::lock_guard<std::mutex> L(mutex);
     cmdQueue.push_back(std::make_shared<Command>(CommandType::QUIT_ACK));
-    notifier.notify();
+    notifier->notify();
 }
 
 void
 ThreadCommunicator::notifyThread() {
-    notifier.notify();
+    notifier->notify();
 }
 
 
@@ -588,7 +593,8 @@ WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
     if (!cluster) {
         comm = make_unique<ThreadCommunicator>(parentComm, threadNotifier);
         createWorkers(threadNo + 1, comm.get(), numWorkers - 1, tt, children);
-    }
+    } else
+        comm->setNotifier(threadNotifier);
 
     initialized.notify();
 
@@ -596,7 +602,7 @@ WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
 
     while (true) {
         if (Cluster::instance().isEnabled())
-            threadNotifier.wait(10);
+            threadNotifier.wait(1);
         else
             threadNotifier.wait();
         if (terminate)

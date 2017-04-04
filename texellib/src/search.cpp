@@ -25,6 +25,7 @@
 
 #include "search.hpp"
 #include "numa.hpp"
+#include "cluster.hpp"
 #include "tbprobe.hpp"
 #include "treeLogger.hpp"
 #include "textio.hpp"
@@ -1357,7 +1358,7 @@ Search::initNodeStats() {
 void
 Search::setThreadNo(int tNo) {
     threadNo = tNo;
-    if (threadNo > 0)
+    if (threadNo > 0 || !Cluster::instance().isMasterNode())
         nodesBetweenTimeCheck = 1000;
     mainNumaNode = Numa::instance().isMainNode(threadNo);
 }
