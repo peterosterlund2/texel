@@ -62,7 +62,7 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     searchNeedMoreTime = false;
     maxNodes = -1;
     minProbeDepth = 0;
-    nodesBetweenTimeCheck = 10000;
+    nodesBetweenTimeCheck = 1000;
     strength = 1000;
     weak = false;
     randomSeed = 0;
@@ -78,10 +78,6 @@ Search::timeLimit(int minTimeLimit, int maxTimeLimit, int earlyStopPercent) {
     minTimeMillis = minTimeLimit;
     maxTimeMillis = maxTimeLimit;
     earlyStopPercentage = (earlyStopPercent > 0 ? earlyStopPercent : minTimeUsage);
-    if ((maxTimeMillis >= 0) && (maxTimeMillis < 1000))
-        nodesBetweenTimeCheck = 1000;
-    else
-        nodesBetweenTimeCheck = 10000;
 }
 
 void
@@ -551,7 +547,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         tbEnt.clear();
         if (TBProbe::tbProbe(pos, ply, alpha, beta, tt, tbEnt)) {
             tbHits++;
-            nodesToGo -= 1000;
+            nodesToGo -= 100;
             int type = tbEnt.getType();
             int score = tbEnt.getScore(ply);
             bool cutOff = false;
@@ -1358,7 +1354,5 @@ Search::initNodeStats() {
 void
 Search::setThreadNo(int tNo) {
     threadNo = tNo;
-    if (threadNo > 0 || !Cluster::instance().isMasterNode())
-        nodesBetweenTimeCheck = 1000;
     mainNumaNode = Numa::instance().isMainNode(threadNo);
 }
