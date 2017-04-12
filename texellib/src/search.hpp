@@ -28,14 +28,11 @@
 
 #include "constants.hpp"
 #include "position.hpp"
-#include "killerTable.hpp"
-#include "history.hpp"
-#include "transpositionTable.hpp"
 #include "evaluate.hpp"
-#include "treeLogger.hpp"
 #include "moveGen.hpp"
 #include "searchUtil.hpp"
 #include "parallel.hpp"
+#include "parameters.hpp"
 #include "util/histogram.hpp"
 
 #include <limits>
@@ -45,6 +42,10 @@
 class SearchTest;
 class ChessTool;
 class PosGenerator;
+class TranspositionTable;
+class History;
+class KillerTable;
+
 
 /** Implements the NegaScout search algorithm. */
 class Search {

@@ -27,6 +27,9 @@
 #include "position.hpp"
 #include "moveGen.hpp"
 #include "search.hpp"
+#include "transpositionTable.hpp"
+#include "history.hpp"
+#include "killerTable.hpp"
 #include "textio.hpp"
 #include "gametree.hpp"
 #include <unordered_set>

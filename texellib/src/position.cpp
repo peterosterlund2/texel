@@ -26,6 +26,7 @@
 #include "position.hpp"
 #include "evaluate.hpp"
 #include "textio.hpp"
+#include "parameters.hpp"
 
 #include <iostream>
 #include <cassert>

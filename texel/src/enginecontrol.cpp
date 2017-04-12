@@ -29,6 +29,7 @@
 #include "uciprotocol.hpp"
 #include "util/random.hpp"
 #include "searchparams.hpp"
+#include "search.hpp"
 #include "book.hpp"
 #include "textio.hpp"
 #include "parameters.hpp"

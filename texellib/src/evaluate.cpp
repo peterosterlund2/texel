@@ -26,6 +26,7 @@
 #include "evaluate.hpp"
 #include "endGameEval.hpp"
 #include "constants.hpp"
+#include "parameters.hpp"
 #include <vector>
 
 int Evaluate::pieceValueOrder[Piece::nPieceTypes] = {

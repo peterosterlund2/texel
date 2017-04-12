@@ -26,14 +26,10 @@
 #ifndef PARALLEL_HPP_
 #define PARALLEL_HPP_
 
-#include "killerTable.hpp"
-#include "history.hpp"
-#include "transpositionTable.hpp"
 #include "evaluate.hpp"
 #include "searchUtil.hpp"
 #include "constants.hpp"
 #include "util/timeUtil.hpp"
-#include "treeLogger.hpp"
 
 #include <memory>
 #include <vector>
@@ -43,6 +39,11 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+
+
+class History;
+class KillerTable;
+class TranspositionTable;
 
 
 class Notifier {

@@ -28,6 +28,8 @@
 #include "moveGen.hpp"
 #include "tbprobe.hpp"
 #include "search.hpp"
+#include "history.hpp"
+#include "killerTable.hpp"
 #include "syzygy/rtb-probe.hpp"
 #include "parameters.hpp"
 #include "util/timeUtil.hpp"

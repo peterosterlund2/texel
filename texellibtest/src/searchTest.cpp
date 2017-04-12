@@ -31,6 +31,8 @@
 #include "position.hpp"
 #include "moveGen.hpp"
 #include "move.hpp"
+#include "history.hpp"
+#include "killerTable.hpp"
 #include "textio.hpp"
 
 #include <vector>

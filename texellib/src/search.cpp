@@ -24,6 +24,8 @@
  */
 
 #include "search.hpp"
+#include "history.hpp"
+#include "killerTable.hpp"
 #include "numa.hpp"
 #include "cluster.hpp"
 #include "tbprobe.hpp"

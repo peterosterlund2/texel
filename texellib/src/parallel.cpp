@@ -28,6 +28,8 @@
 #include "cluster.hpp"
 #include "search.hpp"
 #include "tbprobe.hpp"
+#include "history.hpp"
+#include "killerTable.hpp"
 #include "textio.hpp"
 #include "treeLogger.hpp"
 #include "util/logger.hpp"

@@ -25,6 +25,8 @@
 
 #include "computerPlayer.hpp"
 #include "search.hpp"
+#include "history.hpp"
+#include "killerTable.hpp"
 #include "parallel.hpp"
 #include "textio.hpp"
 #include "tbprobe.hpp"

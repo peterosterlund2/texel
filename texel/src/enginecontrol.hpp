@@ -26,19 +26,23 @@
 #ifndef ENGINECONTROL_HPP_
 #define ENGINECONTROL_HPP_
 
-#include "search.hpp"
 #include "transpositionTable.hpp"
 #include "position.hpp"
 #include "move.hpp"
 #include "parallel.hpp"
+#include "history.hpp"
+#include "killerTable.hpp"
 
 #include <vector>
+#include <map>
 #include <iosfwd>
 #include <thread>
 #include <mutex>
 #include <memory>
 #include <atomic>
 
+class MoveList;
+class Search;
 class SearchParams;
 class SearchListener;
 class EngineControl;

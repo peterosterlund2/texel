@@ -25,6 +25,8 @@
 
 #include "chesstool.hpp"
 #include "search.hpp"
+#include "history.hpp"
+#include "killerTable.hpp"
 #include "textio.hpp"
 #include "gametree.hpp"
 #include "computerPlayer.hpp"

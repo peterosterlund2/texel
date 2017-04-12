@@ -28,6 +28,7 @@
 
 #include "position.hpp"
 #include "enginecontrol.hpp"
+#include "search.hpp"
 
 #include <vector>
 #include <string>
