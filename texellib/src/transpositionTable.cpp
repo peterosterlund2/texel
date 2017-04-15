@@ -306,6 +306,6 @@ TranspositionTable::updateTB(const Position& pos, RelaxedShared<S64>& maxTimeMil
 }
 
 bool
-TranspositionTable::probeDTM(const Position& pos, int ply, int& score) {
+TranspositionTable::probeDTM(const Position& pos, int ply, int& score) const {
     return tbGen && tbGen->probeDTM(pos, ply, score);
 }

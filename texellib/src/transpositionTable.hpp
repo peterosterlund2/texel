@@ -74,6 +74,9 @@ public:
     /** A local copy of a transposition table entry. */
     class TTEntry {
     public:
+        TTEntry() {}
+        TTEntry(U64 key, U64 data) : key(key), data(data) {}
+
         /** Set type to T_EMPTY. */
         void clear();
 
@@ -88,6 +91,8 @@ public:
 
         U64 getKey() const;
         void setKey(U64 k);
+
+        U64 getData() const;
 
         void getMove(Move& m) const;
 
@@ -178,7 +183,7 @@ public:
      * @param score The tablebase score. Only modified for tablebase hits.
      * @return True if pos was found in the tablebase, false otherwise.
      */
-    bool probeDTM(const Position& pos, int ply, int& score);
+    bool probeDTM(const Position& pos, int ply, int& score) const;
 
     /** Low-level methods to read/write a single byte in the table. Used by TB generator code. */
     U8 getByte(U64 idx);
@@ -285,6 +290,11 @@ TranspositionTable::TTEntry::getKey() const {
 inline void
 TranspositionTable::TTEntry::setKey(U64 k) {
     key = k;
+}
+
+inline U64
+TranspositionTable::TTEntry::getData() const {
+    return data;
 }
 
 inline void

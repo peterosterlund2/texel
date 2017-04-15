@@ -38,7 +38,7 @@ namespace SearchConst {
 
     const int MAX_SEARCH_DEPTH = 100;
 
-    const int MAX_CLUSTER_BUF_SIZE = 4096; // Max size of cluster message
+    const int MAX_CLUSTER_BUF_SIZE = 8192; // Max size of cluster message
 }
 
 namespace TType {

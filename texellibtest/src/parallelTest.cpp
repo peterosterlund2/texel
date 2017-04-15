@@ -26,7 +26,9 @@
 #define _GLIBCXX_USE_NANOSLEEP
 
 #include "parallelTest.hpp"
+#include "searchTest.hpp"
 #include "parallel.hpp"
+#include "clustertt.hpp"
 #include "position.hpp"
 #include "textio.hpp"
 #include "searchUtil.hpp"
@@ -98,22 +100,23 @@ void
 ParallelTest::testCommunicator() {
     Notifier notifier0;
     NotifyCounter c0(notifier0);
-    ThreadCommunicator root(nullptr, notifier0);
+    TranspositionTable& tt = SearchTest::tt;
+    ThreadCommunicator root(nullptr, tt, notifier0, false);
     c0.setCommunicator(root);
 
     Notifier notifier1;
     NotifyCounter c1(notifier1);
-    ThreadCommunicator child1(&root, notifier1);
+    ThreadCommunicator child1(&root, tt, notifier1, false);
     c1.setCommunicator(child1);
 
     Notifier notifier2;
     NotifyCounter c2(notifier2);
-    ThreadCommunicator child2(&root, notifier2);
+    ThreadCommunicator child2(&root, tt, notifier2, false);
     c2.setCommunicator(child2);
 
     Notifier notifier3;
     NotifyCounter c3(notifier3);
-    ThreadCommunicator child3(&child2, notifier3);
+    ThreadCommunicator child3(&child2, tt, notifier3, false);
     c3.setCommunicator(child3);
 
     ASSERT_EQUAL(0, c0.getCount());

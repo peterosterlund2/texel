@@ -24,6 +24,7 @@
  */
 
 #include "cluster.hpp"
+#include "clustertt.hpp"
 #include "numa.hpp"
 #include "util/logger.hpp"
 #include <thread>
@@ -34,6 +35,15 @@ Cluster&
 Cluster::instance() {
     static Cluster inst;
     return inst;
+}
+
+std::unique_ptr<TTReceiver>
+Cluster::createLocalTTReceiver(TranspositionTable& tt) {
+#ifdef CLUSTER
+    return make_unique<LocalTTReceiver>(tt);
+#else
+    return nullptr;
+#endif
 }
 
 
@@ -156,23 +166,60 @@ Cluster::computeThisConcurrency(Concurrency& concurrency) const {
     Numa::instance().getConcurrency(nodes, concurrency.cores, concurrency.threads);
 }
 
-std::unique_ptr<Communicator>
-Cluster::createParentCommunicator() const {
+Communicator*
+Cluster::createParentCommunicator(TranspositionTable& tt) {
     if (getParentNode() == -1)
         return nullptr;
-    return make_unique<MPICommunicator>(nullptr, getNodeNumber(), getParentNode(), -1);
+    clusterParent = make_unique<MPICommunicator>(nullptr, tt, getNodeNumber(), getParentNode(), -1);
+    return clusterParent.get();
 }
 
 void
-Cluster::createChildCommunicators(Communicator* mainThreadComm,
-                                  std::vector<std::unique_ptr<Communicator>>& children) const {
+Cluster::createChildCommunicators(Communicator* mainThreadComm, TranspositionTable& tt) {
     std::vector<int> childRanks = getChildNodes();
     int n = childRanks.size();
     for (int i = 0; i < n; i++) {
         int peerRank = childRanks[i];
-        auto comm = make_unique<MPICommunicator>(mainThreadComm, getNodeNumber(), peerRank, i);
-        children.push_back(std::move(comm));
+        auto comm = make_unique<MPICommunicator>(mainThreadComm, tt, getNodeNumber(), peerRank, i);
+        clusterChildren.push_back(std::move(comm));
     }
+}
+
+void
+Cluster::connectAllReceivers(Communicator* comm) {
+    connectClusterReceivers(comm);
+
+    auto connectLocalReceiver = [comm](Communicator* src) {
+        if (src)
+            src->getCTT().addReceiver(comm->getTTReceiver());
+    };
+    connectLocalReceiver(clusterParent.get());
+    for (auto& c : clusterChildren)
+        connectLocalReceiver(c.get());
+
+    auto connectOtherClusterReceivers = [this](Communicator* src) {
+        auto connectReceiver = [](Communicator* src, Communicator* dst) {
+            if (src && dst && src != dst)
+                src->getCTT().addReceiver(dst->getTTReceiver());
+        };
+        connectReceiver(src, clusterParent.get());
+        for (auto& c : clusterChildren)
+            connectReceiver(src, c.get());
+    };
+    connectOtherClusterReceivers(clusterParent.get());
+    for (auto& c : clusterChildren)
+        connectOtherClusterReceivers(c.get());
+}
+
+void
+Cluster::connectClusterReceivers(Communicator* comm) {
+    auto connectReceiver = [comm](Communicator* dest) {
+        if (dest)
+            comm->getCTT().addReceiver(dest->getTTReceiver());
+    };
+    connectReceiver(clusterParent.get());
+    for (auto& c : clusterChildren)
+        connectReceiver(c.get());
 }
 
 void
@@ -247,9 +294,15 @@ Cluster::assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& t
 
 // ----------------------------------------------------------------------------
 
-MPICommunicator::MPICommunicator(Communicator* parent, int myRank, int peerRank,
-                                 int childNo)
-    : Communicator(parent), myRank(myRank), peerRank(peerRank), childNo(childNo) {
+MPICommunicator::MPICommunicator(Communicator* parent, TranspositionTable& tt,
+                                 int myRank, int peerRank, int childNo)
+    : Communicator(parent, tt), myRank(myRank), peerRank(peerRank), childNo(childNo) {
+    ttReceiver = make_unique<ClusterTTReceiver>(CommandType::TT_DATA, peerRank, *ctt);
+}
+
+TTReceiver*
+MPICommunicator::getTTReceiver() {
+    return ttReceiver.get();
 }
 
 void
@@ -368,21 +421,35 @@ MPICommunicator::mpiSend() {
         MPI_Isend(&sendBuf[0], count, MPI_BYTE, peerRank, 0, MPI_COMM_WORLD, &sendReq);
         sendBusy = true;
     }
+
+    if (!sendBusy) {
+        if (ttReceiver->sendBuffer(sendReq))
+            sendBusy = true;
+    }
 }
 
 void
-MPICommunicator::doPoll() {
-    mpiSend();
+MPICommunicator::doPoll(int pass) {
+    if (pass == 0)
+        mpiRecv();
+    if (pass == 1)
+        mpiSend();
+}
+
+void
+MPICommunicator::mpiRecv() {
     for (int loop = 0; loop < 100; loop++) {
         if (recvBusy) {
             int flag;
-            MPI_Test(&recvReq, &flag, MPI_STATUSES_IGNORE);
+            MPI_Status status;
+            MPI_Test(&recvReq, &flag, &status);
             if (flag) {
                 std::unique_ptr<Command> cmd = Command::createFromByteBuf(&recvBuf[0]);
                 switch (cmd->type) {
                 case CommandType::ASSIGN_THREADS: {
                     const AssignThreadsCommand* aCmd = static_cast<const AssignThreadsCommand*>(cmd.get());
                     forwardAssignThreads(aCmd->nThreads, aCmd->firstThreadNo);
+                    ttReceiver->setDisabled(aCmd->nThreads == 0);
                     break;
                 }
                 case CommandType::INIT_SEARCH: {
@@ -422,6 +489,12 @@ MPICommunicator::doPoll() {
                 case CommandType::REPORT_STATS: {
                     const ReportStatsCommand* rCmd = static_cast<const ReportStatsCommand*>(cmd.get());
                     parent->sendReportStats(rCmd->nodesSearched, rCmd->tbHits, false);
+                    break;
+                }
+                case CommandType::TT_DATA: {
+                    int count;
+                    MPI_Get_count(&status, MPI_BYTE, &count);
+                    ttReceiver->receiveBuffer(&recvBuf[0], count);
                     break;
                 }
                 }

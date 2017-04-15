@@ -28,6 +28,7 @@
 #include "moveGen.hpp"
 #include "tbprobe.hpp"
 #include "search.hpp"
+#include "clustertt.hpp"
 #include "history.hpp"
 #include "killerTable.hpp"
 #include "syzygy/rtb-probe.hpp"
@@ -503,12 +504,12 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
 
     TranspositionTable tt(19);
     Notifier notifier;
-    ThreadCommunicator comm(nullptr, notifier);
+    ThreadCommunicator comm(nullptr, tt, notifier, false);
     std::vector<U64> nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
     KillerTable kt;
     History ht;
     auto et = Evaluate::getEvalHashTables();
-    Search::SearchTables st(tt, kt, ht, *et);
+    Search::SearchTables st(comm.getCTT(), kt, ht, *et);
     TreeLogger treeLog;
     TranspositionTable::TTEntry ent;
     const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score

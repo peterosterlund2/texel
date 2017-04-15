@@ -37,27 +37,32 @@
 #include "util/logger.hpp"
 #include "numa.hpp"
 #include "cluster.hpp"
+#include "clustertt.hpp"
 
 #include <iostream>
 #include <memory>
 #include <chrono>
 
 
-EngineMainThread::EngineMainThread() {
-    clusterParent = Cluster::instance().createParentCommunicator();
-    comm = make_unique<ThreadCommunicator>(clusterParent.get(), notifier);
-    Cluster::instance().createChildCommunicators(comm.get(), clusterChildren);
+EngineMainThread::EngineMainThread()
+    : tt(8) {
+    Communicator* clusterParent = Cluster::instance().createParentCommunicator(tt);
+    comm = make_unique<ThreadCommunicator>(clusterParent, tt, notifier, true);
+    Cluster::instance().createChildCommunicators(comm.get(), tt);
+    Cluster::instance().connectAllReceivers(comm.get());
+}
+
+EngineMainThread::~EngineMainThread() {
 }
 
 void
 EngineMainThread::mainLoop() {
     Numa::instance().bindThread(0);
-    if (Cluster::instance().isEnabled() && clusterParent) {
-        TranspositionTable tt(8);
-        UciParams::hash->addListener([&tt]() {
-            EngineControl::setupTT(tt);
+    if (!Cluster::instance().isMasterNode()) {
+        UciParams::hash->addListener([this]() {
+            setupTT();
         });
-        UciParams::clearHash->addListener([&tt]() {
+        UciParams::clearHash->addListener([this]() {
             tt.clear();
         }, false);
         WorkerThread worker(0, nullptr, 1, tt);
@@ -112,9 +117,31 @@ EngineMainThread::quit() {
 }
 
 void
+EngineMainThread::setupTT() {
+    int hashSizeMB = UciParams::hash->getIntPar();
+    U64 nEntries = hashSizeMB > 0 ? ((U64)hashSizeMB) * (1 << 20) / sizeof(TranspositionTable::TTEntry)
+                                  : (U64)1024;
+    int logSize = 0;
+    while (nEntries > 1) {
+        logSize++;
+        nEntries /= 2;
+    }
+    logSize++;
+    while (true) {
+        try {
+            logSize--;
+            if (logSize <= 0)
+                break;
+            tt.reSize(logSize);
+            break;
+        } catch (const std::bad_alloc& ex) {
+        }
+    }
+}
+
+void
 EngineMainThread::startSearch(EngineControl* engineControl,
                               std::shared_ptr<Search>& sc, const Position& pos,
-                              TranspositionTable& tt,
                               std::shared_ptr<MoveList>& moves,
                               bool ownBook, bool analyseMode,
                               int maxDepth, int maxNodes,
@@ -250,14 +277,13 @@ EngineMainThread::setOptions() {
 
 EngineControl::EngineControl(std::ostream& o, EngineMainThread& engineThread0,
                              SearchListener& listener)
-    : os(o), engineThread(engineThread0), listener(listener),
-      tt(8), randomSeed(0) {
+    : os(o), engineThread(engineThread0), listener(listener), randomSeed(0) {
     Numa::instance().bindThread(0);
     hashParListenerId = UciParams::hash->addListener([this]() {
-        setupTT(tt);
+        engineThread.setupTT();
     });
     clearHashParListenerId = UciParams::clearHash->addListener([this]() {
-        tt.clear();
+        engineThread.getTT().clear();
         ht.init();
         engineThread.setClearHistory();
     }, false);
@@ -368,8 +394,8 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPercentage,
                            int maxDepth, int maxNodes) {
-    Search::SearchTables st(tt, kt, ht, *et);
     Communicator* comm = engineThread.getCommunicator();
+    Search::SearchTables st(comm->getCTT(), kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, *comm, treeLog);
     sc->setListener(listener);
     sc->setStrength(UciParams::strength->getIntPar(), randomSeed);
@@ -404,11 +430,11 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
         ss << std::fixed << (evScore / 100.0);
         os << "info string Eval: " << ss.str() << std::endl;
         if (UciParams::analysisAgeHash->getBoolPar())
-            tt.nextGeneration();
+            engineThread.getTT().nextGeneration();
     } else {
-        tt.nextGeneration();
+        engineThread.getTT().nextGeneration();
     }
-    engineThread.startSearch(this, sc, pos, tt, moves, ownBook, analyseMode, maxDepth,
+    engineThread.startSearch(this, sc, pos, moves, ownBook, analyseMode, maxDepth,
                              maxNodes, maxPV, minProbeDepth, ponder, infinite);
 }
 
@@ -420,29 +446,6 @@ EngineControl::stopThread() {
     ponder = false;
     engineThread.waitStop();
     engineThread.waitOptionsSet();
-}
-
-void
-EngineControl::setupTT(TranspositionTable& tt) {
-    int hashSizeMB = UciParams::hash->getIntPar();
-    U64 nEntries = hashSizeMB > 0 ? ((U64)hashSizeMB) * (1 << 20) / sizeof(TranspositionTable::TTEntry)
-	                          : (U64)1024;
-    int logSize = 0;
-    while (nEntries > 1) {
-        logSize++;
-        nEntries /= 2;
-    }
-    logSize++;
-    while (true) {
-        try {
-            logSize--;
-            if (logSize <= 0)
-                break;
-            tt.reSize(logSize);
-            break;
-        } catch (const std::bad_alloc& ex) {
-        }
-    }
 }
 
 void
@@ -478,7 +481,7 @@ EngineControl::getPonderMove(Position pos, const Move& m) {
     pos.makeMove(m, ui);
     TranspositionTable::TTEntry ent;
     ent.clear();
-    tt.probe(pos.historyHash(), ent);
+    engineThread.getTT().probe(pos.historyHash(), ent);
     if (ent.getType() != TType::T_EMPTY) {
         ent.getMove(ret);
         MoveList moves;

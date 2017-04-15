@@ -26,13 +26,14 @@
 #include "bookbuildcontrol.hpp"
 #include "textio.hpp"
 #include "search.hpp"
+#include "clustertt.hpp"
 #include "computerPlayer.hpp"
 #include "gametree.hpp"
 
 
 BookBuildControl::BookBuildControl(ChangeListener& listener)
     : listener(listener), nPendingBookTasks(0), tt(27),
-      comm(nullptr, notifier) {
+      comm(nullptr, tt, notifier, false) {
     ComputerPlayer::initEngine();
     setupTB();
     et = Evaluate::getEvalHashTables();
@@ -332,7 +333,7 @@ BookBuildControl::startAnalysis(const std::vector<Move>& moves) {
         Position pos0;
     };
 
-    Search::SearchTables st(tt, kt, ht, *et);
+    Search::SearchTables st(comm.getCTT(), kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, comm, treeLog);
     scListener = make_unique<SearchListener>(*this, pos);
     sc->setListener(*scListener);

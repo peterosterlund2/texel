@@ -33,6 +33,7 @@
 #include "move.hpp"
 #include "history.hpp"
 #include "killerTable.hpp"
+#include "clustertt.hpp"
 #include "textio.hpp"
 
 #include <vector>
@@ -43,11 +44,11 @@
 std::vector<U64> SearchTest::nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
 TranspositionTable SearchTest::tt(19);
 static Notifier notifier;
-ThreadCommunicator SearchTest::comm(nullptr, notifier);
+ThreadCommunicator SearchTest::comm(nullptr, SearchTest::tt, notifier, false);
 static KillerTable kt;
 static History ht;
 static auto et = Evaluate::getEvalHashTables();
-Search::SearchTables SearchTest::st(tt, kt, ht, *et);
+Search::SearchTables SearchTest::st(SearchTest::comm.getCTT(), kt, ht, *et);
 TreeLogger SearchTest::treeLog;
 
 Move

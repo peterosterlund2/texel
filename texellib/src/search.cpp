@@ -28,6 +28,7 @@
 #include "killerTable.hpp"
 #include "numa.hpp"
 #include "cluster.hpp"
+#include "clustertt.hpp"
 #include "tbprobe.hpp"
 #include "treeLogger.hpp"
 #include "textio.hpp"
@@ -344,7 +345,7 @@ Search::storeSearchResult(std::vector<MoveInfo>& scMoves, int mi, int depth,
     scMoves[mi].pv.clear();
     tt.extractPVMoves(pos, scMoves[mi].move, scMoves[mi].pv);
     if ((maxTimeMillis < 0) && isWinScore(std::abs(score)))
-        TBProbe::extendPV(pos, scMoves[mi].pv, tt);
+        TBProbe::extendPV(pos, scMoves[mi].pv, tt.getTT());
 }
 
 void
@@ -547,7 +548,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     if (tb && depth >= minProbeDepth && !singularSearch) {
         TranspositionTable::TTEntry tbEnt;
         tbEnt.clear();
-        if (TBProbe::tbProbe(pos, ply, alpha, beta, tt, tbEnt)) {
+        if (TBProbe::tbProbe(pos, ply, alpha, beta, tt.getTT(), tbEnt)) {
             tbHits++;
             nodesToGo -= 100;
             int type = tbEnt.getType();
@@ -1036,7 +1037,7 @@ Search::getRootMoves(const MoveList& rootMovesIn,
         if (rootMoves.size == legalMoves.size) {
             // Game mode, handle missing TBs
             std::vector<Move> movesToSearch;
-            if (TBProbe::getSearchMoves(pos, legalMoves, movesToSearch, tt))
+            if (TBProbe::getSearchMoves(pos, legalMoves, movesToSearch, tt.getTT()))
                 rootMoves.filter(movesToSearch);
         }
     }

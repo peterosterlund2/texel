@@ -1371,7 +1371,8 @@ Book::getQueueData(QueueData& queueData) const {
 // ----------------------------------------------------------------------------
 
 SearchRunner::SearchRunner(int instanceNo0, TranspositionTable& tt0)
-    : instanceNo(instanceNo0), tt(tt0), comm(nullptr, notifier), aborted(false) {
+    : instanceNo(instanceNo0), tt(tt0),
+      comm(nullptr, tt, notifier, false), aborted(false) {
 }
 
 Move
@@ -1407,7 +1408,7 @@ SearchRunner::analyze(const std::vector<Move>& gameMoves,
 
     kt.clear();
     ht.init();
-    Search::SearchTables st(tt, kt, ht, et);
+    Search::SearchTables st(comm.getCTT(), kt, ht, et);
     std::shared_ptr<Search> sc;
     {
         std::lock_guard<std::mutex> L(mutex);

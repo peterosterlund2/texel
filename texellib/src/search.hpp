@@ -42,7 +42,7 @@
 class SearchTest;
 class ChessTool;
 class PosGenerator;
-class TranspositionTable;
+class ClusterTT;
 class History;
 class KillerTable;
 
@@ -55,9 +55,9 @@ class Search {
 public:
     /** Help tables used by the search. */
     struct SearchTables {
-        SearchTables(TranspositionTable& tt0, KillerTable& kt0, History& ht0,
+        SearchTables(ClusterTT& tt0, KillerTable& kt0, History& ht0,
                      Evaluate::EvalHashTables& et0);
-        TranspositionTable& tt;
+        ClusterTT& tt;
         KillerTable& kt;
         History& ht;
         Evaluate::EvalHashTables& et;
@@ -261,7 +261,7 @@ private:
     std::vector<U64> posHashList; // List of hashes for previous positions up to the last "zeroing" move.
     int posHashListSize;          // Number of used entries in posHashList
     int posHashFirstNew;          // First entry in posHashList that has not been played OTB.
-    TranspositionTable& tt;
+    ClusterTT& tt;
     Communicator& comm;
     int jobId = 0;
     int threadNo;
@@ -301,7 +301,7 @@ private:
 };
 
 inline
-Search::SearchTables::SearchTables(TranspositionTable& tt0, KillerTable& kt0, History& ht0,
+Search::SearchTables::SearchTables(ClusterTT& tt0, KillerTable& kt0, History& ht0,
                                    Evaluate::EvalHashTables& et0)
     : tt(tt0), kt(kt0), ht(ht0), et(et0) {
 }

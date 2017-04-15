@@ -33,7 +33,12 @@
 
 #include <vector>
 
+
 #ifdef CLUSTER
+
+class TTReceiver;
+class ClusterTTReceiver;
+
 class Cluster {
 public:
     /** Get the singleton instance. */
@@ -51,12 +56,17 @@ public:
     /** Return true if there is more than one cluster node. */
     bool isEnabled() const;
 
+    /** Create a LocalTTReceiver object. */
+    std::unique_ptr<TTReceiver> createLocalTTReceiver(TranspositionTable& tt);
+
     /** Create Communicator to communicate with cluster parent node. */
-    std::unique_ptr<Communicator> createParentCommunicator() const;
+    Communicator* createParentCommunicator(TranspositionTable& tt);
 
     /** Create Communicators to communicate with cluster child nodes. */
-    void createChildCommunicators(Communicator* mainThreadComm,
-                                  std::vector<std::unique_ptr<Communicator>>& children) const;
+    void createChildCommunicators(Communicator* mainThreadComm, TranspositionTable& tt);
+
+    void connectAllReceivers(Communicator* comm);
+    void connectClusterReceivers(Communicator* comm);
 
     /** Assign numThreads threads to this node and child nodes so that
      *  available cores and hardware threads are utilized in a good way. */
@@ -67,11 +77,11 @@ public:
     int getGlobalThreadOffset() const;
     void setGlobalThreadOffset(int offs);
 
-private:
-    Cluster();
-
     /** Return callers node number within the cluster. */
     int getNodeNumber() const;
+
+private:
+    Cluster();
 
     /** Return number of nodes in the cluster. */
     int getNumberOfNodes() const;
@@ -108,13 +118,19 @@ private:
     int parent = -1;
     std::vector<int> children;
 
+    std::unique_ptr<Communicator> clusterParent;
+    std::vector<std::unique_ptr<Communicator>> clusterChildren;
+
     Concurrency thisConcurrency;
     std::vector<std::vector<Concurrency>> childConcurrency;  // [childNo][level]
 };
 
 class MPICommunicator : public Communicator {
 public:
-    MPICommunicator(Communicator* parent, int myRank, int peerRank, int childNo);
+    MPICommunicator(Communicator* parent, TranspositionTable& tt,
+                    int myRank, int peerRank, int childNo);
+
+    TTReceiver* getTTReceiver() override;
 
     int clusterChildNo() const override;
 
@@ -136,11 +152,13 @@ public:
 
     void mpiSend();
 
-    void doPoll() override;
+    void doPoll(int pass) override;
 
     void notifyThread() override;
 
 private:
+    void mpiRecv();
+
     const int myRank;
     const int peerRank;
     const int childNo;
@@ -150,6 +168,8 @@ private:
 
     bool recvBusy = false;
     MPI_Request recvReq;
+
+    std::unique_ptr<ClusterTTReceiver> ttReceiver;
 
     bool quitFlag = false;
 
@@ -210,14 +230,16 @@ public:
     void finalize() {}
     bool isMasterNode() const { return true; }
     bool isEnabled() const { return false; }
-    std::unique_ptr<Communicator> createParentCommunicator() const { return nullptr; }
-    void createChildCommunicators(Communicator* mainThreadComm,
-                                  std::vector<std::unique_ptr<Communicator>>& children) const {}
+    std::unique_ptr<TTReceiver> createLocalTTReceiver(TranspositionTable& tt);
+    Communicator* createParentCommunicator(TranspositionTable& tt) { return nullptr; }
+    void createChildCommunicators(Communicator* mainThreadComm, TranspositionTable& tt) {}
+    void connectAllReceivers(Communicator* comm) {}
+    void connectClusterReceivers(Communicator* comm) {}
     void assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& threadsChildren) {
         threadsThisNode = numThreads;
         threadsChildren.clear();
     }
-    int getGlobalThreadOffset() const { return 0;}
+    int getGlobalThreadOffset() const { return 0; }
     void setGlobalThreadOffset(int offs) {}
 };
 #endif

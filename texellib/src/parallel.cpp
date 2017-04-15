@@ -26,6 +26,7 @@
 #include "parallel.hpp"
 #include "numa.hpp"
 #include "cluster.hpp"
+#include "clustertt.hpp"
 #include "search.hpp"
 #include "tbprobe.hpp"
 #include "history.hpp"
@@ -62,8 +63,9 @@ Notifier::wait(int timeOutMs) {
 
 // ----------------------------------------------------------------------------
 
-Communicator::Communicator(Communicator* parent)
+Communicator::Communicator(Communicator* parent, TranspositionTable& tt)
     : parent(parent) {
+    ctt = make_unique<ClusterTT>(tt);
     if (parent)
         parent->addChild(this);
 }
@@ -71,6 +73,11 @@ Communicator::Communicator(Communicator* parent)
 Communicator::~Communicator() {
     if (parent)
         parent->removeChild(this);
+}
+
+ClusterTT&
+Communicator::getCTT() {
+    return *ctt;
 }
 
 void
@@ -206,10 +213,12 @@ Communicator::forwardQuitAck() {
 
 void
 Communicator::poll(CommandHandler& handler) {
-    if (parent)
-        parent->doPoll();
-    for (auto& c : children)
-        c->doPoll();
+    for (int pass = 0; pass < 2; pass++) {
+        if (parent)
+            parent->doPoll(pass);
+        for (auto& c : children)
+            c->doPoll(pass);
+    }
 
     while (true) {
         std::unique_lock<std::mutex> L(mutex);
@@ -259,6 +268,8 @@ Communicator::poll(CommandHandler& handler) {
             break;
         case CommandType::REPORT_STATS:
             break;
+        case CommandType::TT_DATA:
+            assert(false);
         }
     }
 }
@@ -410,6 +421,9 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
     case REPORT_STATS:
         cmd = make_unique<ReportStatsCommand>();
         break;
+    case TT_DATA:
+        cmd = make_unique<Command>(TT_DATA);
+        break;
     }
 
     cmd->fromByteBuf(buffer);
@@ -418,8 +432,19 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
 
 // ----------------------------------------------------------------------------
 
-ThreadCommunicator::ThreadCommunicator(Communicator* parent, Notifier& notifier)
-    : Communicator(parent), notifier(&notifier) {
+ThreadCommunicator::ThreadCommunicator(Communicator* parent, TranspositionTable& tt,
+                                       Notifier& notifier, bool createTTReceiver)
+    : Communicator(parent, tt), notifier(&notifier) {
+    if (createTTReceiver)
+        ttReceiver = Cluster::instance().createLocalTTReceiver(tt);
+}
+
+ThreadCommunicator::~ThreadCommunicator() {
+}
+
+TTReceiver*
+ThreadCommunicator::getTTReceiver() {
+    return ttReceiver.get();
 }
 
 void
@@ -593,7 +618,8 @@ void
 WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
     Numa::instance().bindThread(threadNo);
     if (!cluster) {
-        comm = make_unique<ThreadCommunicator>(parentComm, threadNotifier);
+        comm = make_unique<ThreadCommunicator>(parentComm, tt, threadNotifier, threadNo == 0);
+        Cluster::instance().connectClusterReceivers(comm.get());
         createWorkers(threadNo + 1, comm.get(), numWorkers - 1, tt, children);
     } else
         comm->setNotifier(threadNotifier);
@@ -603,10 +629,7 @@ WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
     CommHandler handler(*this);
 
     while (true) {
-        if (Cluster::instance().isEnabled())
-            threadNotifier.wait(1);
-        else
-            threadNotifier.wait();
+        threadNotifier.wait(Cluster::instance().isEnabled() ? 1 : -1);
         if (terminate)
             break;
         comm->poll(handler);
@@ -805,7 +828,7 @@ WorkerThread::doSearch(CommHandler& commHandler) {
     int initExtraDepth = globalThreadNo & 1;
 //    int initExtraDepth = getExtraDepth(globalThreadNo);
     for (int extraDepth = initExtraDepth; ; extraDepth++) {
-        Search::SearchTables st(tt, *kt, *ht, *et);
+        Search::SearchTables st(comm->getCTT(), *kt, *ht, *et);
         Position pos(this->pos);
         const U64 rootNodeIdx = logFile->logPosition(pos);
 

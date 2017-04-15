@@ -32,6 +32,7 @@
 #include "killerTable.hpp"
 #include "textio.hpp"
 #include "gametree.hpp"
+#include "clustertt.hpp"
 #include <unordered_set>
 #include <random>
 
@@ -97,7 +98,7 @@ MatchBookCreator::evaluateBookLines(std::vector<BookLine>& lines, int searchTime
     const int nLines = lines.size();
     TranspositionTable tt(28);
     Notifier notifier;
-    ThreadCommunicator comm(nullptr, notifier);
+    ThreadCommunicator comm(nullptr, tt, notifier, false);
     std::shared_ptr<Evaluate::EvalHashTables> et;
 
 #pragma omp parallel for schedule(dynamic) default(none) shared(lines,tt,comm,searchTime,os) private(et)
@@ -125,7 +126,7 @@ MatchBookCreator::evaluateBookLines(std::vector<BookLine>& lines, int searchTime
         MoveGen::pseudoLegalMoves(pos, legalMoves);
         MoveGen::removeIllegal(pos, legalMoves);
 
-        Search::SearchTables st(tt, kt, ht, *et);
+        Search::SearchTables st(comm.getCTT(), kt, ht, *et);
         Search sc(pos, posHashList, posHashListSize, st, comm, treeLog);
         sc.timeLimit(searchTime, searchTime);
 

@@ -281,7 +281,7 @@ public:
      * @param score The tablebase score. Only modified for tablebase hits.
      * @return True if pos was found in the tablebases, false otherwise.
      */
-    bool probeDTM(const Position& pos, int ply, int& score);
+    bool probeDTM(const Position& pos, int ply, int& score) const;
 
 private:
     /** Get the TB PositionValue as an integer for the current position. */

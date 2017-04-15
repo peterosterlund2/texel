@@ -44,6 +44,8 @@
 class History;
 class KillerTable;
 class TranspositionTable;
+class ClusterTT;
+class TTReceiver;
 
 
 class Notifier {
@@ -66,10 +68,13 @@ private:
 /** Handles communication with parent and child threads. */
 class Communicator {
 public:
-    explicit Communicator(Communicator* parent);
+    explicit Communicator(Communicator* parent, TranspositionTable& tt);
     Communicator(const Communicator&) = delete;
     Communicator& operator=(const Communicator&) = delete;
     virtual ~Communicator();
+
+    ClusterTT& getCTT();
+    virtual TTReceiver* getTTReceiver() = 0;
 
     /** Add/remove a child communicator. */
     void addChild(Communicator* child);
@@ -164,12 +169,13 @@ protected:
     virtual void doSendStopAck() = 0;
     virtual void doSendQuitAck() = 0;
 
-    virtual void doPoll() = 0;
+    virtual void doPoll(int pass) = 0;
     /** Notify corresponding search thread that something has happened. */
     virtual void notifyThread() = 0;
 
     Communicator* const parent;
     std::vector<Communicator*> children;
+    std::unique_ptr<ClusterTT> ctt;
 
     enum CommandType {
         ASSIGN_THREADS,
@@ -184,7 +190,8 @@ protected:
         QUIT_ACK,
 
         // Only used for cluster communication
-        REPORT_STATS
+        REPORT_STATS,
+        TT_DATA       // Transposition table data
     };
     struct Command {
         Command() {}
@@ -276,7 +283,11 @@ protected:
 /** Handles communication between search threads within the same process. */
 class ThreadCommunicator : public Communicator {
 public:
-    ThreadCommunicator(Communicator* parent, Notifier& notifier);
+    ThreadCommunicator(Communicator* parent, TranspositionTable& tt,
+                       Notifier& notifier, bool createTTReceiver);
+    ~ThreadCommunicator();
+
+    TTReceiver* getTTReceiver() override;
 
     void setNotifier(Notifier& notifier);
 
@@ -299,11 +310,12 @@ protected:
     void doSendStopAck() override;
     void doSendQuitAck() override;
 
-    void doPoll() override {}
+    void doPoll(int pass) override {}
     void notifyThread() override;
 
 private:
     Notifier* notifier;
+    std::unique_ptr<TTReceiver> ttReceiver;
 };
 
 

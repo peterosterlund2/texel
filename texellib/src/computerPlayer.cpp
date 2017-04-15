@@ -28,6 +28,7 @@
 #include "history.hpp"
 #include "killerTable.hpp"
 #include "parallel.hpp"
+#include "clustertt.hpp"
 #include "textio.hpp"
 #include "tbprobe.hpp"
 
@@ -94,10 +95,10 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
     Position pos(posIn);
     KillerTable kt;
     History ht;
-    Search::SearchTables st(tt, kt, ht, *et);
     TreeLogger treeLog;
     Notifier notifier;
-    ThreadCommunicator comm(nullptr, notifier);
+    ThreadCommunicator comm(nullptr, tt, notifier, false);
+    Search::SearchTables st(comm.getCTT(), kt, ht, *et);
     Search sc(pos, posHashList, posHashListSize, st, comm, treeLog);
 
     // Determine all legal moves
@@ -182,10 +183,10 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     tt.nextGeneration();
     KillerTable kt;
     History ht;
-    Search::SearchTables st(tt, kt, ht, *et);
     TreeLogger treeLog;
     Notifier notifier;
-    ThreadCommunicator comm(nullptr, notifier);
+    ThreadCommunicator comm(nullptr, tt, notifier, false);
+    Search::SearchTables st(comm.getCTT(), kt, ht, *et);
     Search sc(pos, posHashList, 0, st, comm, treeLog);
 
     // Determine all legal moves

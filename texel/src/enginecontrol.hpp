@@ -51,6 +51,7 @@ class EngineControl;
 class EngineMainThread {
 public:
     EngineMainThread();
+    ~EngineMainThread();
     EngineMainThread(const EngineMainThread&) = delete;
     EngineMainThread& operator=(const EngineMainThread&) = delete;
 
@@ -61,10 +62,12 @@ public:
     /** Tells the main loop to terminate. */
     void quit();
 
+    void setupTT();
+    TranspositionTable& getTT();
+
     /** Tell the search thread to start searching. */
     void startSearch(EngineControl* engineControl,
                      std::shared_ptr<Search>& sc, const Position& pos,
-                     TranspositionTable& tt,
                      std::shared_ptr<MoveList>& moves,
                      bool ownBook, bool analyseMode,
                      int maxDepth, int maxNodes,
@@ -94,10 +97,8 @@ private:
      *  since MPI communication needs polling. */
     void notifierWait();
 
-    std::unique_ptr<Communicator> clusterParent;
-    std::vector<std::unique_ptr<Communicator>> clusterChildren;
-
     Notifier notifier;
+    TranspositionTable tt;
     std::unique_ptr<ThreadCommunicator> comm;
     std::vector<std::shared_ptr<WorkerThread>> children;
 
@@ -149,8 +150,6 @@ public:
 
     void finishSearch(Position& pos, const Move& bestMove);
 
-    static void setupTT(TranspositionTable& tt);
-
 private:
     /**
      * Compute thinking time for current search.
@@ -178,7 +177,6 @@ private:
     EngineMainThread& engineThread;
     SearchListener& listener;
     std::shared_ptr<Search> sc;
-    TranspositionTable tt;
     KillerTable kt;
     History ht;
     std::unique_ptr<Evaluate::EvalHashTables> et;
@@ -201,6 +199,11 @@ private:
     // Random seed for reduced strength
     U64 randomSeed;
 };
+
+inline TranspositionTable&
+EngineMainThread::getTT() {
+    return tt;
+}
 
 inline Communicator*
 EngineMainThread::getCommunicator() const {
