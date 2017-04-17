@@ -269,6 +269,7 @@ Communicator::poll(CommandHandler& handler) {
         case CommandType::REPORT_STATS:
             break;
         case CommandType::TT_DATA:
+        case CommandType::TT_ACK:
             assert(false);
         }
     }
@@ -413,6 +414,8 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
     case REPORT_RESULT:
     case STOP_ACK:
     case QUIT_ACK:
+    case TT_DATA:
+    case TT_ACK:
         cmd = make_unique<Command>();
         break;
     case SET_PARAM:
@@ -420,9 +423,6 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
         break;
     case REPORT_STATS:
         cmd = make_unique<ReportStatsCommand>();
-        break;
-    case TT_DATA:
-        cmd = make_unique<Command>(TT_DATA);
         break;
     }
 

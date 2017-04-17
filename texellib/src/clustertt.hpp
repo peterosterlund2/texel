@@ -112,6 +112,9 @@ public:
     /** Process received data. */
     void receiveBuffer(const U8* buf, int len);
 
+    /** Process TT data ack. */
+    void ttAck(int nAcks);
+
 private:
     void initBuf();
 
@@ -123,6 +126,7 @@ private:
     int minDepth = 0;
     bool full = false;
     bool disabled = false;
+    int nSendSlots = 16; // Number of TT data packets allowed to be "in flight"
     struct Buffer {
         int size = 0;
         std::array<U8, SearchConst::MAX_CLUSTER_BUF_SIZE> data;

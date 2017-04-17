@@ -156,8 +156,10 @@ ClusterTTReceiver::initBuf() {
 
 bool
 ClusterTTReceiver::sendBuffer(MPI_Request& sendReq) {
-    std::lock_guard<std::mutex> L(mutex);
+    if (nSendSlots <= 0)
+        return false;
 
+    std::lock_guard<std::mutex> L(mutex);
     Buffer* sendBuf = currBuf;
     currBuf = currBuf == &buffer[0] ? &buffer[1] : &buffer[0];
     initBuf();
@@ -171,6 +173,7 @@ ClusterTTReceiver::sendBuffer(MPI_Request& sendReq) {
         return false;
 
     MPI_Isend(&sendBuf->data[0], count, MPI_BYTE, peerRank, 0, MPI_COMM_WORLD, &sendReq);
+    nSendSlots--;
     return true;
 }
 
@@ -185,6 +188,11 @@ ClusterTTReceiver::receiveBuffer(const U8* buf, int len) {
         ctt.insert(TranspositionTable::TTEntry(key, data));
     }
     ctt.flush();
+}
+
+void
+ClusterTTReceiver::ttAck(int nAcks) {
+    nSendSlots += nAcks;
 }
 
 #endif

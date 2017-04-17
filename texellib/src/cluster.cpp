@@ -307,6 +307,7 @@ MPICommunicator::getTTReceiver() {
 
 void
 MPICommunicator::doSendAssignThreads(int nThreads, int firstThreadNo) {
+    ttReceiver->setDisabled(nThreads == 0);
     cmdQueue.push_back(std::make_shared<AssignThreadsCommand>(nThreads, firstThreadNo));
     mpiSend();
 }
@@ -438,6 +439,7 @@ MPICommunicator::doPoll(int pass) {
 
 void
 MPICommunicator::mpiRecv() {
+    int nTTReceives = 0;
     for (int loop = 0; loop < 100; loop++) {
         if (recvBusy) {
             int flag;
@@ -449,7 +451,6 @@ MPICommunicator::mpiRecv() {
                 case CommandType::ASSIGN_THREADS: {
                     const AssignThreadsCommand* aCmd = static_cast<const AssignThreadsCommand*>(cmd.get());
                     forwardAssignThreads(aCmd->nThreads, aCmd->firstThreadNo);
-                    ttReceiver->setDisabled(aCmd->nThreads == 0);
                     break;
                 }
                 case CommandType::INIT_SEARCH: {
@@ -495,8 +496,12 @@ MPICommunicator::mpiRecv() {
                     int count;
                     MPI_Get_count(&status, MPI_BYTE, &count);
                     ttReceiver->receiveBuffer(&recvBuf[0], count);
+                    nTTReceives++;
                     break;
                 }
+                case CommandType::TT_ACK:
+                    ttReceiver->ttAck(cmd->resultScore);
+                    break;
                 }
                 recvBusy = false;
             }
@@ -509,6 +514,8 @@ MPICommunicator::mpiRecv() {
             recvBusy = true;
         }
     }
+    if (nTTReceives > 0)
+        cmdQueue.push_back(std::make_shared<Command>(CommandType::TT_ACK, -1, nTTReceives));
 }
 
 void

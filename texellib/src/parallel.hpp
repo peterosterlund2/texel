@@ -191,7 +191,8 @@ protected:
 
         // Only used for cluster communication
         REPORT_STATS,
-        TT_DATA       // Transposition table data
+        TT_DATA,      // Transposition table data
+        TT_ACK        // Acknowledge one or more TT_DATA messages
     };
     struct Command {
         Command() {}
