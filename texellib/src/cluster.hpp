@@ -92,9 +92,6 @@ private:
     /** Return child node numbers. */
     const std::vector<int>& getChildNodes() const;
 
-    /** Check that node 0 can perform IO. */
-    void checkIO();
-
     /** Compute parent and child nodes. */
     void computeNeighbors();
 

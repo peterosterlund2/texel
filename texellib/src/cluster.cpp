@@ -62,7 +62,6 @@ Cluster::init(int* argc, char*** argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    checkIO();
     computeNeighbors();
     computeConcurrency();
 }
@@ -70,30 +69,6 @@ Cluster::init(int* argc, char*** argv) {
 void
 Cluster::finalize() {
     MPI_Finalize();
-}
-
-void
-Cluster::checkIO() {
-    int* ioPtr;
-    int flag;
-    MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_IO, &ioPtr, &flag);
-    int ioRank;
-    if (flag == 0) {
-        ioRank = -1;
-    } else if (*ioPtr == MPI_ANY_SOURCE) {
-        ioRank = 0;
-    } else if (*ioPtr == MPI_PROC_NULL) {
-        ioRank = -1;
-    } else {
-        ioRank = *ioPtr;
-    }
-    int ioMinRank;
-    MPI_Allreduce(&ioRank, &ioMinRank, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
-    if (ioMinRank != 0) {
-        if (rank == 0)
-            std::cerr << "Node 0 does not support standard IO" << std::endl;
-        exit(2);
-    }
 }
 
 void
