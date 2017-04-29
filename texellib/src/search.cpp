@@ -847,7 +847,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             scoreMoveList(moves, ply, 1);
             seeDone = true;
         }
-        if ((mi < lmpMoveCountLimit) || (lmrCount <= lmrMoveCountLimit1))
+        if ((mi < lmpMoveCountLimit) || (depth >= 2 && lmrCount <= lmrMoveCountLimit1))
             if ((mi > 0) || !hashMoveSelected)
                 selectBest(moves, mi);
         Move& m = moves[mi];
