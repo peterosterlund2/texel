@@ -415,11 +415,11 @@ Search::notifyPV(const MoveInfo& info, int multiPVIndex) {
         isMate = true;
         score = -((MATE0 + score - 1) / 2);
     }
-    U64 tNow = currentTimeMillis();
-    int time = (int) (tNow - tStart);
+    S64 tNow = currentTimeMillis();
+    S64 time = tNow - tStart;
     S64 totNodes = getTotalNodes();
     S64 tbHits = getTbHits();
-    int nps = (time > 0) ? (int)(totNodes / (time / 1000.0)) : 0;
+    S64 nps = (time > 0) ? (S64)(totNodes / (time / 1000.0)) : 0;
     listener->notifyPV(info.depth, score, time, totNodes, nps, isMate,
                        uBound, lBound, info.pv, multiPVIndex, tbHits);
     tLastStats = tNow;
@@ -429,9 +429,9 @@ void
 Search::notifyStats() {
     S64 tNow = currentTimeMillis();
     if (listener) {
-        int time = (int) (tNow - tStart);
+        S64 time = tNow - tStart;
         S64 totNodes = getTotalNodes();
-        int nps = (time > 0) ? (int)(totNodes / (time / 1000.0)) : 0;
+        S64 nps = (time > 0) ? (S64)(totNodes / (time / 1000.0)) : 0;
         S64 tbHits = getTbHits();
         int hashFull = tt.getHashFull();
         listener->notifyStats(totNodes, nps, hashFull, tbHits, time);

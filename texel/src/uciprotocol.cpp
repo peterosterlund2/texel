@@ -50,9 +50,9 @@ SearchListener::notifyCurrMove(const Move& m, int moveNr) {
 }
 
 void
-SearchListener::notifyPV(int depth, int score, int time, U64 nodes, int nps, bool isMate,
-                                      bool upperBound, bool lowerBound, const std::vector<Move>& pv,
-                                      int multiPVIndex, U64 tbHits) {
+SearchListener::notifyPV(int depth, int score, S64 time, S64 nodes, S64 nps, bool isMate,
+                         bool upperBound, bool lowerBound, const std::vector<Move>& pv,
+                         int multiPVIndex, S64 tbHits) {
 //    std::lock_guard<std::mutex> L(Logger::getLogMutex());
     std::string pvBuf;
     for (size_t i = 0; i < pv.size(); i++) {
@@ -76,7 +76,7 @@ SearchListener::notifyPV(int depth, int score, int time, U64 nodes, int nps, boo
 }
 
 void
-SearchListener::notifyStats(U64 nodes, int nps, int hashFull, U64 tbHits, int time) {
+SearchListener::notifyStats(S64 nodes, S64 nps, int hashFull, S64 tbHits, S64 time) {
     os << "info nodes " << nodes << " nps " << nps << " hashfull " << hashFull;
     if (tbHits > 0)
         os << " tbhits " << tbHits;

@@ -80,11 +80,11 @@ public:
         virtual ~Listener() {}
         virtual void notifyDepth(int depth) = 0;
         virtual void notifyCurrMove(const Move& m, int moveNr) = 0;
-        virtual void notifyPV(int depth, int score, int time, U64 nodes, int nps,
+        virtual void notifyPV(int depth, int score, S64 time, S64 nodes, S64 nps,
                               bool isMate, bool upperBound, bool lowerBound,
                               const std::vector<Move>& pv, int multiPVIndex,
-                              U64 tbHits) = 0;
-        virtual void notifyStats(U64 nodes, int nps, int hashFull, U64 tbHits, int time) = 0;
+                              S64 tbHits) = 0;
+        virtual void notifyStats(S64 nodes, S64 nps, int hashFull, S64 tbHits, S64 time) = 0;
     };
 
     void setListener(Listener& listener);
