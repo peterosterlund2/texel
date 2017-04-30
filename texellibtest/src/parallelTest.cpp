@@ -26,10 +26,13 @@
 #define _GLIBCXX_USE_NANOSLEEP
 
 #include "parallelTest.hpp"
+#include "searchTest.hpp"
 #include "parallel.hpp"
+#include "clustertt.hpp"
 #include "position.hpp"
 #include "textio.hpp"
 #include "searchUtil.hpp"
+#include "util/logger.hpp"
 
 #include <vector>
 #include <memory>
@@ -41,544 +44,268 @@
 using namespace SearchConst;
 
 
-void
-ParallelTest::testFailHighInfo() {
-    const double eps = 1e-8;
-    FailHighInfo fhi;
+class NotifyCounter {
+public:
+    NotifyCounter(Notifier& notifier);
+    ~NotifyCounter();
 
-    // Probability 0.5 when no data available
-    for (int i = 0; i < 20; i++) {
-        for (int j = 0; i < 20; i++) {
-            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(0, i, j, true), eps);
-            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(1, i, j, true), eps);
-        }
-    }
+    void setCommunicator(Communicator& comm) { this->comm = &comm; }
 
-    for (int i = 0; i < 15; i++)
-        fhi.addData(0, i, true, true);
-    for (int curr = 0; curr < 15; curr++) {
-        for (int m = curr; m < 15; m++) {
-            double e = (15 - m) / (double)(15 - curr);
-            ASSERT_EQUAL_DELTA(e, fhi.getMoveNeededProbability(0, curr, m, true), eps);
-            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(1, curr, m, true), eps);
-        }
-    }
-    for (int i = 0; i < 15; i++)
-        fhi.addData(0, i, false, true);
-    for (int curr = 0; curr < 15; curr++) {
-        for (int m = curr; m < 15; m++) {
-            double e = (15 - m + 15) / (double)(15 - curr + 15);
-            ASSERT_EQUAL_DELTA(e, fhi.getMoveNeededProbability(0, curr, m, true), eps);
-            ASSERT_EQUAL_DELTA(0.5, fhi.getMoveNeededProbability(1, curr, m, true), eps);
-        }
-    }
+    int getCount() const { return cnt; }
+    void resetCount() { cnt = 0; }
 
-    for (int i = -1; i < 10; i++)
-        for (int j = 0; j < (1<<(10-i)); j++)
-            fhi.addPvData(i, true);
-    for (int curr = 0; curr < 10; curr++) {
-        double prob = 1.0;
-        for (int m = curr; m < 10; m++) {
-            ASSERT_EQUAL_DELTA(prob, fhi.getMoveNeededProbabilityPv(curr, m), eps);
-            prob *= 1.0 - (1<<(10-m)) / (double)(1<<11);
-        }
-    }
+private:
+    void mainLoop();
+
+    Communicator* comm = nullptr;
+    std::unique_ptr<std::thread> thread;
+    Notifier& notifier;
+    std::atomic<int> cnt { 0 };
+    std::atomic<bool> quit { false };
+};
+
+NotifyCounter::NotifyCounter(Notifier& notifier)
+    : notifier(notifier) {
+    thread = make_unique<std::thread>([this](){ mainLoop(); });
+}
+
+NotifyCounter::~NotifyCounter() {
+    quit = true;
+    notifier.notify();
+    thread->join();
 }
 
 void
-ParallelTest::testNpsInfo() {
-    DepthNpsInfo npsInfo;
-    const double eps = 1e-8;
-    const int nSmooth = 500;
-    const int maxDepth = DepthNpsInfo::maxDepth;
-    for (int i = 0; i < maxDepth * 2; i++)
-        ASSERT_EQUAL_DELTA(1.0, npsInfo.efficiency(i), eps);
-    npsInfo.setBaseNps(1000);
-    for (int i = 0; i < maxDepth; i++)
-        ASSERT_EQUAL_DELTA(1.0, npsInfo.efficiency(i), eps);
-    npsInfo.addData(0, 100, 0, 1);
-    ASSERT_EQUAL_DELTA((0.1 + nSmooth) / (1 + nSmooth), npsInfo.efficiency(0), eps);
-    npsInfo.addData(0, 100, 0, 0.1);
-    ASSERT_EQUAL_DELTA((200/1.1/1000 * 2 + nSmooth) / (2 + nSmooth), npsInfo.efficiency(0), eps);
+NotifyCounter::mainLoop() {
+    while (!quit) {
+        notifier.wait();
+        cnt++;
+        comm->sendStopAck(false);
+    }
+}
 
-    npsInfo.addData(1, 100, 0, 0.5);
-    ASSERT_EQUAL_DELTA((200/1.1/1000 * 2 + nSmooth) / (2 + nSmooth), npsInfo.efficiency(0), eps);
-    ASSERT_EQUAL_DELTA((200.0/1000 + nSmooth) / (1 + nSmooth), npsInfo.efficiency(1), eps);
-
-    npsInfo.setBaseNps(190);
-    ASSERT_EQUAL_DELTA((200/1.1/190 * 2 + nSmooth) / (2 + nSmooth), npsInfo.efficiency(0), eps);
-    ASSERT_EQUAL_DELTA(1.0, npsInfo.efficiency(1), eps);
-
-    npsInfo.reset();
-    for (int i = 0; i < maxDepth; i++)
-        ASSERT_EQUAL_DELTA(1.0, npsInfo.efficiency(i), eps);
-
-    npsInfo.setBaseNps(1000);
-    npsInfo.addData(0, 100, 0.5, 0.5);
-    npsInfo.addData(1, 200, 0.3, 1.0);
-    ASSERT_EQUAL_DELTA((100/(0.5+(0.5+0.3)/2)/1000 + nSmooth) / (1 + nSmooth), npsInfo.efficiency(0), eps);
-    ASSERT_EQUAL_DELTA((200/(1.0+(0.5+0.3)/2)/1000 + nSmooth) / (1 + nSmooth), npsInfo.efficiency(1), eps);
-    npsInfo.addData(0, 100, 0.5, 0.5);
-    ASSERT_EQUAL_DELTA((200/(1.0+(0.5*2+0.3)/3*2)/1000 * 2 + nSmooth) / (2 + nSmooth), npsInfo.efficiency(0), eps);
+static int
+getCount(NotifyCounter& nc, int expected) {
+    int c = -1;
+    for (int i = 0; i < 50; i++) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        c = nc.getCount();
+        if (c == expected)
+            break;
+    }
+    return c;
 }
 
 void
-ParallelTest::testWorkQueue() {
-    const double eps = 1e-8;
-    TranspositionTable tt(10);
-    ParallelData pd(tt);
-    WorkQueue& wq = pd.wq;
-    FailHighInfo& fhi = pd.fhInfo;
-    int moveNo = -1;
-    double prob = wq.getBestProbability();
-    ASSERT_EQUAL_DELTA(0.0, prob, eps);
-    ASSERT_EQUAL(0, wq.queue.size());
+ParallelTest::testCommunicator() {
+    Notifier notifier0;
+    NotifyCounter c0(notifier0);
+    TranspositionTable& tt = SearchTest::tt;
+    ThreadCommunicator root(nullptr, tt, notifier0, false);
+    c0.setCommunicator(root);
 
-    for (int m = 0; m < 2; m++) {
-        for (int i = 0; i < 10; i++) {
-            for (int cnt = 0; cnt < (1<<(9-i)); cnt++) {
-                fhi.addData(m, i, true, true);
-                if (m > 0)
-                    fhi.addData(m, i, false, true);
-            }
-        }
-    }
+    Notifier notifier1;
+    NotifyCounter c1(notifier1);
+    ThreadCommunicator child1(&root, tt, notifier1, false);
+    c1.setCommunicator(child1);
 
-    std::shared_ptr<SplitPoint> nullRoot;
-    Position pos = TextIO::readFEN(TextIO::startPosFEN);
-    std::vector<U64> posHashList(200);
-    posHashList[0] = pos.zobristHash();
-    int posHashListSize = 1;
+    Notifier notifier2;
+    NotifyCounter c2(notifier2);
+    ThreadCommunicator child2(&root, tt, notifier2, false);
+    c2.setCommunicator(child2);
+
+    Notifier notifier3;
+    NotifyCounter c3(notifier3);
+    ThreadCommunicator child3(&child2, tt, notifier3, false);
+    c3.setCommunicator(child3);
+
+    ASSERT_EQUAL(0, c0.getCount());
+    ASSERT_EQUAL(0, c1.getCount());
+    ASSERT_EQUAL(0, c2.getCount());
+    ASSERT_EQUAL(0, c3.getCount());
+
+    Position pos;
     SearchTreeInfo sti;
-    KillerTable kt;
-    History ht;
+    std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2);
+    int posHashListSize = 0;
+    root.sendInitSearch(pos, posHashList, posHashListSize, false);
+    ASSERT_EQUAL(0, getCount(c0, 0));
+    ASSERT_EQUAL(1, getCount(c1, 1));
+    ASSERT_EQUAL(1, getCount(c2, 1));
+    ASSERT_EQUAL(0, getCount(c3, 0));
 
-    auto sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
-                                            pos, posHashList, posHashListSize,
-                                            sti, kt, ht, 10, 11, 1, 1);
-    ASSERT_EQUAL(-1, sp1->getNextMove(fhi));
-    sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
-    sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
-    sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("g1f3"), 0, 4, -1, false));
-    ASSERT_EQUAL(10, sp1->getAlpha());
-    ASSERT_EQUAL(11, sp1->getBeta());
-    ASSERT_EQUAL(1, sp1->getPly());
-    ASSERT_EQUAL(0, sp1->getChildren().size());
-    ASSERT_EQUAL(3, sp1->spMoves.size());
-    ASSERT(pos.equals(sp1->pos));
+    class Handler : public Communicator::CommandHandler {
+    public:
+        Handler(Communicator& comm) : comm(comm) {}
 
-    wq.addWork(sp1);
-    ASSERT_EQUAL(1, sp1->findNextMove(fhi));
-    ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL_DELTA(511 / 1023.0, wq.getBestProbability(), eps);
-
-    std::shared_ptr<SplitPoint> sp = wq.getWork(moveNo, pd, 0);
-    ASSERT_EQUAL(1, moveNo);
-    ASSERT_EQUAL(sp1, sp);
-    ASSERT_EQUAL(2, sp1->findNextMove(fhi));
-    ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL_DELTA(255 / 1023.0, wq.getBestProbability(), eps);
-
-    int score = wq.setOwnerCurrMove(sp1, 1, 10);
-    ASSERT_EQUAL(2, sp1->findNextMove(fhi));
-    ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL_DELTA(255 / 511.0, wq.getBestProbability(), eps);
-    ASSERT_EQUAL(UNKNOWN_SCORE, score);
-
-    sp = wq.getWork(moveNo, pd, 0);
-    ASSERT_EQUAL(2, moveNo);
-    ASSERT_EQUAL(sp1, sp);
-    ASSERT_EQUAL(-1, sp1->findNextMove(fhi));
-    ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
-
-    wq.returnMove(sp, 2);
-    ASSERT_EQUAL(2, sp1->findNextMove(fhi));
-    ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL_DELTA(255 / 511.0, wq.getBestProbability(), eps);
-
-    sp = wq.getWork(moveNo, pd, 0);
-    ASSERT_EQUAL(2, moveNo);
-    ASSERT_EQUAL(sp1, sp);
-    ASSERT_EQUAL(-1, sp1->findNextMove(fhi));
-    ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
-
-    wq.moveFinished(sp1, 2, false, 17);
-    ASSERT_EQUAL(-1, sp1->findNextMove(fhi));
-    ASSERT_EQUAL(0, wq.queue.size());
-    ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
-
-    score = wq.setOwnerCurrMove(sp1, 2, 5);
-    ASSERT_EQUAL(17, score);
-
-    // Split point contains no moves, should not be added to queue/waiting
-    sp.reset();
-    sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
-                                       pos, posHashList, posHashListSize,
-                                       sti, kt, ht, 10, 11, 1, 1);
-    wq.addWork(sp1);
-    ASSERT_EQUAL(0, wq.queue.size());
-
-    // Split point contains only one move, should not be added to queue/waiting
-    sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
-                                       pos, posHashList, posHashListSize,
-                                       sti, kt, ht, 10, 11, 1, 1);
-    sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("f2f4"), 0, 4, -1, false));
-    wq.addWork(sp1);
-    ASSERT_EQUAL(0, wq.queue.size());
-
-
-    // Test return non-last currently searched move
-    sp1 = std::make_shared<SplitPoint>(0, nullRoot, 1,
-                                       pos, posHashList, posHashListSize,
-                                       sti, kt, ht, 10, 11, 1, 1);
-    sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("a2a4"), 0, 4, -1, false));
-    sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("b2b4"), 0, 4, -1, false));
-    sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
-    sp1->addMove(3, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
-    wq.addWork(sp1);
-    ASSERT_EQUAL(1, wq.queue.size());
-    sp = wq.getWork(moveNo, pd, 0);
-    sp = wq.getWork(moveNo, pd, 0);
-    ASSERT_EQUAL(2, moveNo);
-    ASSERT_EQUAL(sp1, sp);
-    ASSERT_EQUAL(3, sp1->findNextMove(fhi));
-    ASSERT_EQUAL_DELTA((127 + 1023) / (1023.0*2), wq.getBestProbability(), eps);
-    wq.returnMove(sp, 1);
-    ASSERT_EQUAL(1, sp1->findNextMove(fhi));
-    ASSERT_EQUAL_DELTA((511 + 1023) / (1023.0*2), wq.getBestProbability(), eps);
-    sp = wq.getWork(moveNo, pd, 0);
-    ASSERT_EQUAL(1, moveNo);
-    ASSERT_EQUAL(3, sp1->findNextMove(fhi));
-    ASSERT_EQUAL_DELTA((127 + 1023) / (1023.0*2), wq.getBestProbability(), eps);
-    wq.moveFinished(sp1, 2, true, -123);
-    ASSERT_EQUAL(1, wq.queue.size());
-    ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
-    wq.moveFinished(sp1, 1, true, 4321);
-    ASSERT_EQUAL(0, wq.queue.size());
-    ASSERT_EQUAL_DELTA(0.0, wq.getBestProbability(), eps);
-
-    score = wq.setOwnerCurrMove(sp, 1, 5);
-    ASSERT_EQUAL(4321, score);
-    score = wq.setOwnerCurrMove(sp, 2, 5);
-    ASSERT_EQUAL(-123, score);
-}
-
-static std::vector<std::shared_ptr<SplitPoint>>
-extractQueue(Heap<SplitPoint>& heap) {
-    std::vector<std::shared_ptr<SplitPoint>> ret;
-    std::vector<int> prio;
-    while (!heap.empty()) {
-        auto e = heap.front();
-        ret.push_back(e);
-        prio.push_back(e->getPrio());
-        heap.remove(e);
-    }
-    for (int i = 0; i < (int)ret.size(); i++)
-        heap.insert(ret[i], prio[i]);
-    return ret;
-}
-
-void
-ParallelTest::testWorkQueueParentChild() {
-    const double eps = 1e-8;
-    TranspositionTable tt(10);
-    ParallelData pd(tt);
-    WorkQueue& wq = pd.wq;
-    FailHighInfo& fhi = pd.fhInfo;
-
-    for (int m = -1; m < 2; m++) {
-        for (int i = 0; i < 10; i++) {
-            for (int cnt = 0; cnt < (1<<(9-i)); cnt++) {
-                fhi.addData(m, i, true, true);
-                if (m <= 0) {
-                    fhi.addData(m, i, false, false);
-                    if (m == 0) {
-                        fhi.addData(m, i, false, true);
-                        fhi.addData(m, i, true, false);
-                    }
-                }
-            }
+        void initSearch(const Position& pos,
+                        const std::vector<U64>& posHashList, int posHashListSize,
+                        bool clearHistory) override {
+            comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory);
+            nInit++;
         }
-    }
-
-    std::shared_ptr<SplitPoint> nullRoot;
-    Position pos = TextIO::readFEN(TextIO::startPosFEN);
-    UndoInfo ui;
-    std::vector<U64> posHashList(200);
-    posHashList[0] = pos.zobristHash();
-    int posHashListSize = 1;
-    SearchTreeInfo sti;
-    KillerTable kt;
-    History ht;
-
-    auto sp1 = std::make_shared<SplitPoint>(0, nullRoot, 0,
-                                            pos, posHashList, posHashListSize,
-                                            sti, kt, ht, 10, 11, 1, 1);
-    sp1->addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
-    sp1->addMove(1, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
-    sp1->addMove(2, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
-    wq.addWork(sp1);
-
-    pos.makeMove(TextIO::uciStringToMove("e2e4"), ui);
-    posHashList[posHashListSize++] = pos.zobristHash();
-    auto sp2 = std::make_shared<SplitPoint>(0, sp1, 0,
-                                            pos, posHashList, posHashListSize,
-                                            sti, kt, ht, 10, 11, 1, 1);
-    sp2->addMove(0, SplitPointMove(TextIO::uciStringToMove("e7e5"), 0, 4, -1, false));
-    sp2->addMove(1, SplitPointMove(TextIO::uciStringToMove("c7c5"), 0, 4, -1, false));
-    wq.addWork(sp2);
-
-    pos.makeMove(TextIO::uciStringToMove("e7e5"), ui);
-    posHashList[posHashListSize++] = pos.zobristHash();
-    auto sp3 = std::make_shared<SplitPoint>(0, sp2, 0,
-                                            pos, posHashList, posHashListSize,
-                                            sti, kt, ht, 10, 11, 1, 1);
-    sp3->addMove(0, SplitPointMove(TextIO::uciStringToMove("g1f3"), 0, 4, -1, false));
-    sp3->addMove(1, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
-    sp3->addMove(2, SplitPointMove(TextIO::uciStringToMove("c2c3"), 0, 4, -1, false));
-    wq.addWork(sp3);
-
-    pos = TextIO::readFEN(TextIO::startPosFEN);
-    posHashListSize = 1;
-    pos.makeMove(TextIO::uciStringToMove("d2d4"), ui);
-    posHashList[posHashListSize++] = pos.zobristHash();
-    auto sp4 = std::make_shared<SplitPoint>(0, sp1, 2,
-                                            pos, posHashList, posHashListSize,
-                                            sti, kt, ht, 10, 11, 1, 1);
-    sp4->addMove(0, SplitPointMove(TextIO::uciStringToMove("d7d5"), 0, 4, -1, false));
-    sp4->addMove(1, SplitPointMove(TextIO::uciStringToMove("g8f6"), 0, 4, -1, false));
-    wq.addWork(sp4);
-
-    ASSERT_EQUAL(4, wq.queue.size());
-    ASSERT_EQUAL(2, sp1->getChildren().size());
-    ASSERT_EQUAL(1, sp2->getChildren().size());
-    ASSERT_EQUAL(0, sp3->getChildren().size());
-    ASSERT_EQUAL(0, sp4->getChildren().size());
-//    sp1->print(std::cout, 0, fhi);
-//    std::cout << std::endl;
-    ASSERT_EQUAL_DELTA(1.0, sp1->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((511+1023)/(1023.0*2), sp1->getPNextMoveUseful(), eps);
-    ASSERT_EQUAL_DELTA(1.0, sp2->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((511+1023)/(1023.0*2), sp2->getPNextMoveUseful(), eps);
-    ASSERT_EQUAL_DELTA(1.0, sp3->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((511+1023)/(1023.0*2), sp3->getPNextMoveUseful(), eps);
-    ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2), sp4->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2)*511/1023, sp4->getPNextMoveUseful(), eps);
-
-    std::vector<std::shared_ptr<SplitPoint>> q = extractQueue(wq.queue);
-    ASSERT_EQUAL(sp1, q[0]);
-    ASSERT(q[1] == sp2 || q[1] == sp3);
-    ASSERT(q[2] == sp2 || q[2] == sp3);
-    ASSERT(q[1] != q[2]);
-    ASSERT_EQUAL(sp4, q[3]);
-
-    int score = wq.setOwnerCurrMove(sp3, 1, 10);
-    ASSERT_EQUAL(4, wq.queue.size());
-//    sp1->print(std::cout, 0, fhi);
-//    std::cout << std::endl;
-    ASSERT_EQUAL_DELTA(1.0, sp1->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((511+1023)/(1023.0*2), sp1->getPNextMoveUseful(), eps);
-    ASSERT_EQUAL_DELTA(1.0, sp2->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((511+1023)/(1023.0*2), sp2->getPNextMoveUseful(), eps);
-    ASSERT_EQUAL_DELTA(1.0, sp3->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((255+1023)/(511+1023.0), sp3->getPNextMoveUseful(), eps);
-    ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2), sp4->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2)*511/1023, sp4->getPNextMoveUseful(), eps);
-    ASSERT_EQUAL(UNKNOWN_SCORE, score);
-
-    std::vector<std::shared_ptr<SplitPoint>> q2 = extractQueue(wq.queue);
-    ASSERT_EQUAL(sp3, q2[0]);
-    ASSERT(q2[1] == sp1 || q2[1] == sp2);
-    ASSERT(q2[2] == sp1 || q2[2] == sp2);
-    ASSERT(q2[1] != q2[2]);
-    ASSERT_EQUAL(sp4, q2[3]);
-
-    wq.cancel(sp2);
-//    sp1->print(std::cout, 0, fhi);
-//    std::cout << std::endl;
-    ASSERT_EQUAL(2, wq.queue.size());
-
-    std::vector<std::shared_ptr<SplitPoint>> q3 = extractQueue(wq.queue);
-    ASSERT_EQUAL(sp1, q3[0]);
-    ASSERT_EQUAL(sp4, q3[1]);
-    ASSERT_EQUAL_DELTA(1.0, sp1->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((511+1023)/(1023.0*2), sp1->getPNextMoveUseful(), eps);
-    ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2), sp4->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((255+1023)/(1023.0*2)*511/1023, sp4->getPNextMoveUseful(), eps);
-
-    score = wq.setOwnerCurrMove(sp1, 1, 10);
-//    sp1->print(std::cout, 0, fhi);
-//    std::cout << std::endl;
-    ASSERT_EQUAL(2, wq.queue.size());
-    ASSERT_EQUAL(UNKNOWN_SCORE, score);
-
-    std::vector<std::shared_ptr<SplitPoint>> q4 = extractQueue(wq.queue);
-    ASSERT_EQUAL(sp1, q4[0]);
-    ASSERT_EQUAL(sp4, q4[1]);
-    ASSERT_EQUAL_DELTA(1.0, sp1->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((255+1023)/(511+1023.0), sp1->getPNextMoveUseful(), eps);
-    ASSERT_EQUAL_DELTA((255+1023)/(511+1023.0), sp4->getPSpUseful(), eps);
-    ASSERT_EQUAL_DELTA((255+1023)/(511+1023.0)*511/1023, sp4->getPNextMoveUseful(), eps);
-}
-
-void
-ParallelTest::testSplitPointHolder() {
-    TranspositionTable tt(10);
-    ParallelData pd(tt);
-    WorkQueue& wq = pd.wq;
-    FailHighInfo& fhi = pd.fhInfo;
-    std::vector<std::shared_ptr<SplitPoint>> spVec, pending;
-
-    for (int m = 0; m < 2; m++) {
-        for (int i = 0; i < 10; i++) {
-            for (int cnt = 0; cnt < (1<<(9-i)); cnt++) {
-                fhi.addData(m, i, true, true);
-                if (m == 0)
-                    fhi.addData(m, i, false, true);
-            }
+        void startSearch(int jobId, const SearchTreeInfo& sti,
+                         int alpha, int beta, int depth) override {
+            comm.sendStartSearch(jobId, sti, alpha, beta, depth);
+            nStart++;
         }
-    }
-
-    std::shared_ptr<SplitPoint> nullRoot;
-    Position pos = TextIO::readFEN(TextIO::startPosFEN);
-    std::vector<U64> posHashList(200);
-    posHashList[0] = pos.zobristHash();
-    int posHashListSize = 1;
-    SearchTreeInfo sti;
-    KillerTable kt;
-    History ht;
-
-    {
-        SplitPointHolder sph(pd, spVec, pending);
-        ASSERT_EQUAL(0, wq.queue.size());
-        ASSERT_EQUAL(0, spVec.size());
-        sph.setSp(std::make_shared<SplitPoint>(0, nullRoot, 0,
-                                               pos, posHashList, posHashListSize,
-                                               sti, kt, ht, 10, 11, 1, 1));
-        ASSERT_EQUAL(0, wq.queue.size());
-        ASSERT_EQUAL(0, spVec.size());
-        sph.addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, 4, -1, false));
-        sph.addMove(1, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, 4, -1, false));
-        sph.addMove(2, SplitPointMove(TextIO::uciStringToMove("d2d4"), 0, 4, -1, false));
-        ASSERT_EQUAL(0, wq.queue.size());
-        ASSERT_EQUAL(0, spVec.size());
-        sph.addToQueue();
-        ASSERT_EQUAL(1, wq.queue.size());
-        ASSERT_EQUAL(1, spVec.size());
-        {
-            SplitPointHolder sph2(pd, spVec, pending);
-            ASSERT_EQUAL(1, wq.queue.size());
-            ASSERT_EQUAL(1, spVec.size());
+        void stopSearch() override {
+            comm.sendStopSearch();
+            nStop++;
         }
-        ASSERT_EQUAL(1, wq.queue.size());
-        ASSERT_EQUAL(1, spVec.size());
-        {
-            SplitPointHolder sph2(pd, spVec, pending);
-            ASSERT_EQUAL(1, wq.queue.size());
-            ASSERT_EQUAL(1, spVec.size());
-            sph2.setSp(std::make_shared<SplitPoint>(0, spVec.back(), 0,
-                                                    pos, posHashList, posHashListSize,
-                                                    sti, kt, ht, 10, 11, 1, 1));
-            ASSERT_EQUAL(1, wq.queue.size());
-            ASSERT_EQUAL(1, spVec.size());
-            sph2.addMove(0, SplitPointMove(TextIO::uciStringToMove("g8f6"), 0, 4, -1, false));
-            sph2.addMove(1, SplitPointMove(TextIO::uciStringToMove("c7c6"), 0, 4, -1, false));
-            ASSERT_EQUAL(1, wq.queue.size());
-            ASSERT_EQUAL(1, spVec.size());
-            sph2.addToQueue();
-            ASSERT_EQUAL(2, wq.queue.size());
-            ASSERT_EQUAL(2, spVec.size());
+        void reportResult(int jobId, int score) override {
+            comm.sendReportResult(jobId, score);
+            nReport++;
         }
-        ASSERT_EQUAL(1, wq.queue.size());
-        ASSERT_EQUAL(1, spVec.size());
-    }
-    ASSERT_EQUAL(0, wq.queue.size());
-    ASSERT_EQUAL(0, spVec.size());
-}
-
-static void
-probeTT(Position& pos, const Move& m, TranspositionTable& tt, TranspositionTable::TTEntry& ent) {
-    UndoInfo ui;
-    pos.makeMove(m, ui);
-    ent.clear();
-    tt.probe(pos.historyHash(), ent);
-    pos.unMakeMove(m, ui);
-}
-
-void
-ParallelTest::testWorkerThread() {
-    const int minProbeDepth = UciParams::minProbeDepth->getIntPar();
-    UciParams::minProbeDepth->set("100");
-
-    TranspositionTable tt(18);
-    ParallelData pd(tt);
-    FailHighInfo& fhi = pd.fhInfo;
-    std::vector<std::shared_ptr<SplitPoint>> spVec, pending;
-
-    for (int m = 0; m < 2; m++) {
-        for (int i = 0; i < 10; i++) {
-            for (int cnt = 0; cnt < (1<<(9-i)); cnt++) {
-                fhi.addData(m, i, true, true);
-                if (m == 0)
-                    fhi.addData(m, i, false, true);
-            }
+        void stopAck() override {
+            comm.sendStopAck(true);
+            nStopAck++;
         }
-    }
 
-    std::shared_ptr<SplitPoint> nullRoot;
-    Position pos = TextIO::readFEN(TextIO::startPosFEN);
-    std::vector<U64> posHashList(200);
-    posHashList[0] = pos.zobristHash();
-    int posHashListSize = 1;
-    SearchTreeInfo sti;
-    KillerTable kt;
-    History ht;
+        int getNInit() const { return nInit; }
+        int getNStart() const { return nStart; }
+        int getNStop() const { return nStop; }
+        int getNReport() const { return nReport; }
+        int getNStopAck() const { return nStopAck; }
 
-    pd.addRemoveWorkers(3);
+    private:
+        Communicator& comm;
+        int nInit = 0;
+        int nStart = 0;
+        int nStop = 0;
+        int nReport = 0;
+        int nStopAck = 0;
+    };
 
-    {
-        SplitPointHolder sph(pd, spVec, pending);
-        auto sp = std::make_shared<SplitPoint>(0, nullRoot, 0,
-                                               pos, posHashList, posHashListSize,
-                                               sti, kt, ht, 10, 11, 1, 1);
-        sph.setSp(sp);
-        int depth = 10;
-        sph.addMove(0, SplitPointMove(TextIO::uciStringToMove("e2e4"), 0, depth, -1, false));
-        sph.addMove(1, SplitPointMove(TextIO::uciStringToMove("c2c4"), 0, depth, -1, false));
-        sph.addMove(2, SplitPointMove(TextIO::uciStringToMove("f2f4"), 0, depth, -1, false));
-        sph.addToQueue();
-        pd.startAll();
-        while (sp->hasUnFinishedMove()) {
-            std::cout << "waiting..." << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-        pd.stopAll();
+    Handler h0(root);
+    Handler h1(child1);
+    Handler h2(child2);
+    Handler h3(child3);
 
-        TranspositionTable::TTEntry ent;
-        probeTT(pos, TextIO::uciStringToMove("e2e4"), tt, ent);
-        ASSERT(ent.getType() == TType::T_EMPTY); // Only searched by "master" thread, which does not exist in this test
+    child1.poll(h1);
+    ASSERT_EQUAL(0, getCount(c0, 0));
+    ASSERT_EQUAL(1, getCount(c1, 1));
+    ASSERT_EQUAL(1, getCount(c2, 1));
+    ASSERT_EQUAL(0, getCount(c3, 0));
+    ASSERT_EQUAL(1, h1.getNInit());
+    ASSERT_EQUAL(0, h2.getNInit());
 
-        probeTT(pos, TextIO::uciStringToMove("c2c4"), tt, ent);
-        ASSERT(ent.getType() != TType::T_EMPTY);
-        ASSERT(ent.getDepth() >= 6);
-        probeTT(pos, TextIO::uciStringToMove("f2f4"), tt, ent);
-        ASSERT(ent.getType() != TType::T_EMPTY);
-        ASSERT(ent.getDepth() >= 5);
-    }
+    child2.poll(h2);
+    ASSERT_EQUAL(0, getCount(c0, 0));
+    ASSERT_EQUAL(1, getCount(c1, 1));
+    ASSERT_EQUAL(1, getCount(c2, 1));
+    ASSERT_EQUAL(1, getCount(c3, 1));
+    ASSERT_EQUAL(1, h1.getNInit());
+    ASSERT_EQUAL(1, h2.getNInit());
 
-    UciParams::minProbeDepth->set(num2Str(minProbeDepth));
+    int jobId = 1;
+    root.sendStartSearch(jobId, sti, -100, 100, 3);
+    ASSERT_EQUAL(2, getCount(c1, 2));
+    ASSERT_EQUAL(2, getCount(c2, 2));
+    child2.poll(h2);
+    ASSERT_EQUAL(1, h2.getNStart());
+    ASSERT_EQUAL(2, getCount(c3, 2));
+
+    child3.sendReportResult(jobId, 17);
+    ASSERT_EQUAL(3, getCount(c2, 3));
+    ASSERT_EQUAL(0, getCount(c0, 0));
+
+    child2.poll(h2);
+    ASSERT_EQUAL(1, h2.getNReport());
+    ASSERT_EQUAL(1, getCount(c0, 1));
+    root.poll(h0);
+    ASSERT_EQUAL(1, h0.getNReport());
+
+    ASSERT_EQUAL(2, getCount(c1, 2));
+    ASSERT_EQUAL(0, h1.getNReport());
+
+    // Node counters
+    ASSERT_EQUAL(0, root.getNumSearchedNodes());
+    ASSERT_EQUAL(0, child1.getNumSearchedNodes());
+    ASSERT_EQUAL(0, child2.getNumSearchedNodes());
+    ASSERT_EQUAL(0, child3.getNumSearchedNodes());
+    ASSERT_EQUAL(0, root.getTbHits());
+    ASSERT_EQUAL(0, child1.getTbHits());
+    ASSERT_EQUAL(0, child2.getTbHits());
+    ASSERT_EQUAL(0, child3.getTbHits());
+
+    child3.sendReportStats(100, 10, true);
+    ASSERT_EQUAL(0, root.getNumSearchedNodes());
+    ASSERT_EQUAL(100, child2.getNumSearchedNodes());
+    ASSERT_EQUAL(0, child3.getNumSearchedNodes());
+    ASSERT_EQUAL(0, root.getTbHits());
+    ASSERT_EQUAL(10, child2.getTbHits());
+    ASSERT_EQUAL(0, child3.getTbHits());
+    ASSERT_EQUAL(3, getCount(c2, 3));
+    ASSERT_EQUAL(2, getCount(c3, 2));
+
+    child2.poll(h2);
+    ASSERT_EQUAL(0, root.getNumSearchedNodes());
+    ASSERT_EQUAL(0, child3.getNumSearchedNodes());
+    ASSERT_EQUAL(100, child2.getNumSearchedNodes());
+    ASSERT_EQUAL(0, root.getTbHits());
+    ASSERT_EQUAL(0, child3.getTbHits());
+    ASSERT_EQUAL(10, child2.getTbHits());
+    ASSERT_EQUAL(3, getCount(c2, 3));
+    ASSERT_EQUAL(2, getCount(c3, 2));
+
+    child2.sendReportStats(200, 30, true);
+    ASSERT_EQUAL(300, root.getNumSearchedNodes());
+    ASSERT_EQUAL(0, child3.getNumSearchedNodes());
+    ASSERT_EQUAL(0, child2.getNumSearchedNodes());
+    ASSERT_EQUAL(40, root.getTbHits());
+    ASSERT_EQUAL(0, child3.getTbHits());
+    ASSERT_EQUAL(0, child2.getTbHits());
+    ASSERT_EQUAL(3, getCount(c2, 3));
+    ASSERT_EQUAL(2, getCount(c3, 2));
+
+    // Stop ack
+    c0.resetCount();
+    c1.resetCount();
+    c2.resetCount();
+    c3.resetCount();
+    root.sendStopSearch();
+    ASSERT_EQUAL(1, getCount(c0, 1));
+    ASSERT_EQUAL(1, getCount(c1, 1));
+    ASSERT_EQUAL(1, getCount(c2, 1));
+    ASSERT_EQUAL(0, getCount(c3, 0));
+
+    child2.poll(h2);
+    ASSERT_EQUAL(1, h2.getNStop());
+    ASSERT_EQUAL(0, h2.getNStopAck());
+    ASSERT_EQUAL(1, getCount(c3, 1));
+    ASSERT_EQUAL(2, getCount(c2, 2));
+    ASSERT_EQUAL(1, getCount(c0, 1));
+
+    child1.poll(h1);
+    ASSERT_EQUAL(1, h1.getNStop());
+    ASSERT_EQUAL(0, h1.getNStopAck());
+    ASSERT_EQUAL(2, getCount(c0, 2));
+    ASSERT_EQUAL(0, h0.getNStopAck());
+
+    root.poll(h0);
+    ASSERT_EQUAL(1, h0.getNStopAck());
+    ASSERT_EQUAL(2, getCount(c0, 2));
+
+    child3.poll(h3);
+    ASSERT_EQUAL(1, h3.getNStop());
+    ASSERT_EQUAL(0, h3.getNStopAck());
+    ASSERT_EQUAL(3, getCount(c2, 3));
+    ASSERT_EQUAL(0, h2.getNStopAck());
+    ASSERT_EQUAL(1, h0.getNStopAck());
+
+    child2.poll(h2);
+    ASSERT_EQUAL(1, h0.getNStopAck());
+    ASSERT_EQUAL(1, h2.getNStopAck());
+    ASSERT_EQUAL(3, getCount(c0, 3));
+
+    root.poll(h0);
+    ASSERT_EQUAL(2, h0.getNStopAck());
 }
 
 cute::suite
 ParallelTest::getSuite() const {
     cute::suite s;
-    s.push_back(CUTE(testFailHighInfo));
-    s.push_back(CUTE(testNpsInfo));
-    s.push_back(CUTE(testWorkQueue));
-    s.push_back(CUTE(testWorkQueueParentChild));
-    s.push_back(CUTE(testSplitPointHolder));
-    s.push_back(CUTE(testWorkerThread));
+    s.push_back(CUTE(testCommunicator));
     return s;
 }

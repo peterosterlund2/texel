@@ -35,12 +35,7 @@ public:
     cute::suite getSuite() const override;
 
 private:
-    static void testFailHighInfo();
-    static void testNpsInfo();
-    static void testWorkQueue();
-    static void testWorkQueueParentChild();
-    static void testSplitPointHolder();
-    static void testWorkerThread();
+    static void testCommunicator();
 };
 
 #endif /* PARALLELTEST_HPP_ */

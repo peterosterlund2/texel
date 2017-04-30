@@ -29,6 +29,12 @@
 #include "move.hpp"
 #include "position.hpp"
 #include "treeLogger.hpp" // Serializer namespace
+#include "constants.hpp"
+#include "transpositionTable.hpp"
+#include "killerTable.hpp"
+#include "history.hpp"
+#include "evaluate.hpp"
+#include "parallel.hpp"
 
 #include <memory>
 #include <atomic>
@@ -36,13 +42,17 @@
 #include <deque>
 #include <unordered_set>
 #include <unordered_map>
+#include <set>
 #include <map>
 #include <climits>
 #include <chrono>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 class BookBuildTest;
 class GameNode;
-
+class Search;
 
 namespace BookBuild {
 
@@ -510,7 +520,8 @@ private:
     KillerTable kt;
     History ht;
     TranspositionTable& tt;
-    ParallelData pd;
+    Notifier notifier;
+    ThreadCommunicator comm;
     TreeLogger treeLog;
     std::weak_ptr<Search> search;
 

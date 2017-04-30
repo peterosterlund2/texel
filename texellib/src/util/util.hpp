@@ -72,22 +72,6 @@ public:
     }
 };
 
-/** Helper class to run code when a variable goes out of scope. */
-template <typename Func>
-class Finally {
-public:
-    Finally(Func func) : f(func) {}
-    ~Finally() { f(); }
-    Finally(const Finally&) = delete;
-    Finally& operator=(const Finally&) = delete;
-private:
-    Func f;
-};
-
-#define finally(f) \
-    auto finally_lambda = f; \
-    Finally<decltype(finally_lambda)> finally_guard(finally_lambda)
-
 template <typename T>
 T clamp(T val, T min, T max) {
     if (val < min)
@@ -224,81 +208,6 @@ trim(const std::string& s) {
     }
     return "";
 }
-
-// ----------------------------------------------------------------------------
-
-// A fixed size array that can compute the sum of a range of values in time O(log N)
-template <int N>
-class RangeSumArray {
-public:
-
-    /** Get value at index i. */
-    int get(size_t i) const {
-        return arr[i];
-    }
-
-    /** Add delta to value at index i. */
-    void add(size_t i, int delta) {
-        arr[i] += delta;
-        pairs.add(i/2, delta);
-    }
-
-    /** Compute sum of all elements in [b,e). */
-    int sum(size_t b, size_t e) const {
-        int result = 0;
-        sumHelper(b, e, result);
-        return result;
-    }
-
-private:
-    template <int N2> friend class RangeSumArray;
-
-    void sumHelper(size_t b, size_t e, int& result) const {
-        if (b >= e)
-            return;
-        if (b & 1) {
-            result += arr[b];
-            b++;
-        }
-        if (e & 1) {
-            if (e != N)
-                result -= arr[e];
-            e++;
-        }
-        pairs.sumHelper(b/2, e/2, result);
-    }
-
-    std::array<std::atomic<int>, N> arr {};
-    RangeSumArray<(N+1)/2> pairs;
-};
-
-template<>
-class RangeSumArray<1> {
-public:
-    int get(size_t i) const {
-        return value;
-    }
-
-    void add(size_t i, int delta) {
-        value += delta;
-    }
-
-    int sum(size_t b, size_t e) const {
-        int result = 0;
-        sumHelper(b, e, result);
-        return result;
-    }
-
-private:
-    template <int N2> friend class RangeSumArray;
-
-    void sumHelper(size_t b, size_t e, int& result) const {
-        if (b < e)
-            result += value;
-    }
-
-    std::atomic<int> value { 0 };
-};
 
 // ----------------------------------------------------------------------------
 

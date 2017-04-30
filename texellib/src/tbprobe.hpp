@@ -60,7 +60,7 @@ public:
      *             but is restored to original state before function returns.
      */
     static bool tbProbe(Position& pos, int ply, int alpha, int beta,
-                        TranspositionTable& tt,
+                        const TranspositionTable& tt,
                         TranspositionTable::TTEntry& ent);
 
     /** If some TB files are missing, it may be necessary to only search a subset
@@ -75,11 +75,11 @@ public:
      */
     static bool getSearchMoves(Position& pos, const MoveList& legalMoves,
                                std::vector<Move>& movesToSearch,
-                               TranspositionTable& tt);
+                               const TranspositionTable& tt);
 
     /** Enhance PV with DTM information from gaviota tablebases. */
     static void extendPV(const Position& rootPos, std::vector<Move>& pv,
-                         TranspositionTable& tt);
+                         const TranspositionTable& tt);
 
     /** Probe gaviota DTM tablebases.
      * @param pos  The position to probe. The position can be temporarily modified
@@ -132,7 +132,7 @@ private:
     static void gtbInitialize(const std::string& path, int cacheMB, int wdlFraction);
 
     static bool tbProbe(Position& pos, int ply, int alpha, int beta,
-                        TranspositionTable& tt,
+                        const TranspositionTable& tt,
                         TranspositionTable::TTEntry& ent,
                         const int nPieces);
 
@@ -161,12 +161,13 @@ private:
     static bool gtbProbeWDL(const GtbProbeData& gtbData, int ply, int& score);
 
     /** Probe GTB and on-demand TBs to find a DTM score. */
-    static bool dtmProbe(Position& pos, int ply, TranspositionTable& tt, int& score);
+    static bool dtmProbe(Position& pos, int ply, const TranspositionTable& tt,
+                         int& score);
 };
 
 inline bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
-                 TranspositionTable& tt,
+                 const TranspositionTable& tt,
                  TranspositionTable::TTEntry& ent) {
     const int nPieces = pos.nPieces();
     if (nPieces > TBProbeData::maxPieces)

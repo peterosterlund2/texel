@@ -29,12 +29,13 @@
 #include "player.hpp"
 #include "transpositionTable.hpp"
 #include "book.hpp"
-#include "search.hpp"
+#include "evaluate.hpp"
 
 #include <string>
 #include <memory>
 
 class ComputerPlayerTest;
+class Search;
 
 /**
  * A computer algorithm player.
@@ -85,7 +86,6 @@ private:
 
     int maxNodes;
     TranspositionTable tt;
-    ParallelData pd;
     std::unique_ptr<Evaluate::EvalHashTables> et;
     Book book;
     bool bookEnabled;

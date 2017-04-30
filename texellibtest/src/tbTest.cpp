@@ -555,15 +555,13 @@ TBTest::tbTest() {
 
     {
         pos = TextIO::readFEN("2R5/4k3/Q7/8/8/8/8/K7 w - - 98 1");
-        Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::pd,
-                  nullptr, SearchTest::treeLog);
+        Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::comm, SearchTest::treeLog);
         Move m = SearchTest::idSearch(sc, 4, 0);
         ASSERT_EQUAL("a6e6", TextIO::moveToUCIString(m));
     }
     {
         pos = TextIO::readFEN("2R5/4k3/Q7/8/8/8/8/K7 w - - 97 1");
-        Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::pd,
-                  nullptr, SearchTest::treeLog);
+        Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::comm, SearchTest::treeLog);
         Move m = SearchTest::idSearch(sc, 4, 1);
         ASSERT_EQUAL("c8c7", TextIO::moveToUCIString(m));
     }
@@ -602,8 +600,7 @@ TBTest::testMissingTables() {
         if (gtb)
             compareMoves(std::vector<std::string>{"e7e8q", "e7e8r", "e7e8b", "e7e8n"}, movesToSearch);
         {
-            Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::pd,
-                      nullptr, SearchTest::treeLog);
+            Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::comm, SearchTest::treeLog);
             Move m = SearchTest::idSearch(sc, 4, 3);
             ASSERT_EQUAL("e7e8q", TextIO::moveToUCIString(m));
         }

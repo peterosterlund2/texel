@@ -27,11 +27,16 @@
 #define SEARCHUTIL_HPP_
 
 #include "move.hpp"
+#include "treeLogger.hpp"
 
 
 class SearchTreeInfo {
 public:
     SearchTreeInfo();
+
+    /** Serialize to byte buffer. */
+    U8* serialize(U8* buffer) const;
+    const U8* deSerialize(const U8* buffer);
 
     bool allowNullMove;    // Don't allow two null-moves in a row
     Move bestMove;         // Copy of the best found move at this ply
@@ -50,5 +55,22 @@ SearchTreeInfo::SearchTreeInfo()
       lmr(0), nodeIdx(0) {
 }
 
+inline U8*
+SearchTreeInfo::serialize(U8* buffer) const {
+    return Serializer::serialize<4096>(buffer, allowNullMove, bestMove.getCompressedMove(),
+                                       currentMove.getCompressedMove(), currentMoveNo,
+                                       lmr, nodeIdx, singularMove.getCompressedMove());
+}
+
+inline const U8*
+SearchTreeInfo::deSerialize(const U8* buffer) {
+    U16 m1, m2, m3;
+    buffer = Serializer::deSerialize<4096>(buffer, allowNullMove, m1, m2,
+                                           currentMoveNo, lmr, nodeIdx, m3);
+    bestMove.setFromCompressed(m1);
+    currentMove.setFromCompressed(m2);
+    singularMove.setFromCompressed(m3);
+    return buffer;
+}
 
 #endif /* SEARCHUTIL_HPP_ */

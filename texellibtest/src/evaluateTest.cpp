@@ -28,6 +28,7 @@
 #include "evaluate.hpp"
 #include "position.hpp"
 #include "textio.hpp"
+#include "parameters.hpp"
 
 #include "cute.h"
 

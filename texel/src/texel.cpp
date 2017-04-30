@@ -29,11 +29,13 @@
 #include "treeLogger.hpp"
 #include "uciprotocol.hpp"
 #include "numa.hpp"
+#include "cluster.hpp"
 
 #include <memory>
 
 /** Texel chess engine main function. */
 int main(int argc, char* argv[]) {
+    Cluster::instance().init(&argc, &argv);
     ComputerPlayer::initEngine();
     if ((argc == 2) && (std::string(argv[1]) == "txt")) {
         auto whitePlayer = make_unique<HumanPlayer>();
@@ -48,4 +50,5 @@ int main(int argc, char* argv[]) {
             Numa::instance().disable();
         UCIProtocol::main(false);
     }
+    Cluster::instance().finalize();
 }

@@ -33,10 +33,10 @@
 #include <cassert>
 
 
-Game::Game(std::unique_ptr<Player> whitePlayer,
-           std::unique_ptr<Player> blackPlayer) {
-    this->whitePlayer = std::move(whitePlayer);
-    this->blackPlayer = std::move(blackPlayer);
+Game::Game(std::unique_ptr<Player>&& whitePlayer,
+           std::unique_ptr<Player>&& blackPlayer)
+    : whitePlayer(std::move(whitePlayer)),
+      blackPlayer(std::move(blackPlayer)) {
     handleCommand("new");
 }
 

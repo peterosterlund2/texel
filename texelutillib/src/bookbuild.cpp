@@ -1371,7 +1371,8 @@ Book::getQueueData(QueueData& queueData) const {
 // ----------------------------------------------------------------------------
 
 SearchRunner::SearchRunner(int instanceNo0, TranspositionTable& tt0)
-    : instanceNo(instanceNo0), tt(tt0), pd(tt), aborted(false) {
+    : instanceNo(instanceNo0), tt(tt0),
+      comm(nullptr, tt, notifier, false), aborted(false) {
 }
 
 Move
@@ -1380,7 +1381,7 @@ SearchRunner::analyze(const std::vector<Move>& gameMoves,
                       int searchTime) {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     UndoInfo ui;
-    std::vector<U64> posHashList(200 + gameMoves.size());
+    std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2 + gameMoves.size());
     int posHashListSize = 0;
     for (const Move& m : gameMoves) {
         posHashList[posHashListSize++] = pos.zobristHash();
@@ -1407,11 +1408,11 @@ SearchRunner::analyze(const std::vector<Move>& gameMoves,
 
     kt.clear();
     ht.init();
-    Search::SearchTables st(tt, kt, ht, et);
+    Search::SearchTables st(comm.getCTT(), kt, ht, et);
     std::shared_ptr<Search> sc;
     {
         std::lock_guard<std::mutex> L(mutex);
-        sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, pd, nullptr, treeLog);
+        sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, comm, treeLog);
         search = sc;
         int minTimeLimit = aborted ? 0 : searchTime;
         int maxTimeLimit = aborted ? 0 : searchTime;
@@ -1576,7 +1577,7 @@ SearchScheduler::workerLoop(SearchRunner& sr, Book::Listener* listener) {
         wu.bestMove = sr.analyze(wu.gameMoves, wu.movesToSearch, wu.searchTime);
         wu.instNo = sr.instNo();
         {
-            std::unique_lock<std::mutex> L(mutex);
+            std::lock_guard<std::mutex> L(mutex);
             bool empty = complete.empty();
             complete.push_back(wu);
             if (empty)

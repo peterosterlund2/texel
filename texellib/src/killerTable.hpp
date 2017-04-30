@@ -28,6 +28,7 @@
 
 #include "util/util.hpp"
 #include "move.hpp"
+#include "constants.hpp"
 #include <cassert>
 
 
@@ -60,7 +61,7 @@ private:
         RelaxedShared<int> move0;
         RelaxedShared<int> move1;
     };
-    KTEntry ktList[200];
+    KTEntry ktList[SearchConst::MAX_SEARCH_DEPTH * 2];
 };
 
 inline

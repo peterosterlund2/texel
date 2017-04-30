@@ -33,8 +33,8 @@
 #include <fstream>
 #include <iomanip>
 
-TUIGame::TUIGame(std::unique_ptr<Player> whitePlayer,
-                 std::unique_ptr<Player> blackPlayer)
+TUIGame::TUIGame(std::unique_ptr<Player>&& whitePlayer,
+                 std::unique_ptr<Player>&& blackPlayer)
     : Game(std::move(whitePlayer), std::move(blackPlayer)) {
 }
 

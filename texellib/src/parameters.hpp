@@ -139,10 +139,8 @@ public:
 
         ComboParam(const std::string& name, const std::vector<std::string>& allowed,
                    const std::string& def)
-            : ParamBase(name, COMBO) {
-            this->allowedValues = allowed;
-            this->value = def;
-            this->defaultValue = def;
+            : ParamBase(name, COMBO), allowedValues(allowed),
+              value(def), defaultValue(def) {
         }
 
         std::string getStringPar() const override { return value; }
@@ -161,7 +159,7 @@ public:
 
     /** An action parameter. */
     struct ButtonParam : public ParamBase {
-        ButtonParam(const std::string& name)
+        explicit ButtonParam(const std::string& name)
             : ParamBase(name, BUTTON) { }
 
         void set(const std::string& value) override {
@@ -175,9 +173,7 @@ public:
         std::string defaultValue;
 
         StringParam(const std::string& name, const std::string& def)
-            : ParamBase(name, STRING) {
-            this->value = def;
-            this->defaultValue = def;
+            : ParamBase(name, STRING), value(def), defaultValue(def) {
         }
 
         std::string getStringPar() const override { return value; }
@@ -299,7 +295,7 @@ private:
 template <int N>
 class ParamTableMirrored {
 public:
-    ParamTableMirrored(ParamTable<N>& orig0) : orig(orig0) {
+    explicit ParamTableMirrored(ParamTable<N>& orig0) : orig(orig0) {
         orig.addListener([this]() {
             if (N == 64) {
                 for (int sq = 0; sq < N; sq++)

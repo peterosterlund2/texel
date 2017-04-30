@@ -26,7 +26,7 @@
 #ifndef GAMETREE_HPP_
 #define GAMETREE_HPP_
 
-#include "textio.hpp"
+#include "position.hpp"
 #include "util/util.hpp"
 
 #include <map>

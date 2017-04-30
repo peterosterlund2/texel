@@ -26,7 +26,6 @@
 #ifndef EVALUATE_HPP_
 #define EVALUATE_HPP_
 
-#include "parameters.hpp"
 #include "piece.hpp"
 #include "position.hpp"
 #include "util/alignedAlloc.hpp"
@@ -89,7 +88,7 @@ public:
     };
 
     /** Constructor. */
-    Evaluate(EvalHashTables& et);
+    explicit Evaluate(EvalHashTables& et);
 
     static int pieceValueOrder[Piece::nPieceTypes];
 

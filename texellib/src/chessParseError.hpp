@@ -35,7 +35,7 @@
 class ChessParseError : public std::exception {
 public:
     ChessParseError();
-    ChessParseError(const std::string& msg);
+    explicit ChessParseError(const std::string& msg);
 
     virtual const char* what() const noexcept override;
 

@@ -28,14 +28,11 @@
 
 #include "constants.hpp"
 #include "position.hpp"
-#include "killerTable.hpp"
-#include "history.hpp"
-#include "transpositionTable.hpp"
 #include "evaluate.hpp"
-#include "treeLogger.hpp"
 #include "moveGen.hpp"
 #include "searchUtil.hpp"
 #include "parallel.hpp"
+#include "parameters.hpp"
 #include "util/histogram.hpp"
 
 #include <limits>
@@ -45,8 +42,12 @@
 class SearchTest;
 class ChessTool;
 class PosGenerator;
+class ClusterTT;
+class History;
+class KillerTable;
 
-/** Implements the nega-scout search algorithm. */
+
+/** Implements the NegaScout search algorithm. */
 class Search {
     friend class SearchTest;
     friend class ChessTool;
@@ -54,9 +55,9 @@ class Search {
 public:
     /** Help tables used by the search. */
     struct SearchTables {
-        SearchTables(TranspositionTable& tt0, KillerTable& kt0, History& ht0,
+        SearchTables(ClusterTT& tt0, KillerTable& kt0, History& ht0,
                      Evaluate::EvalHashTables& et0);
-        TranspositionTable& tt;
+        ClusterTT& tt;
         KillerTable& kt;
         History& ht;
         Evaluate::EvalHashTables& et;
@@ -64,12 +65,14 @@ public:
 
     /** Constructor. */
     Search(const Position& pos, const std::vector<U64>& posHashList,
-           int posHashListSize, SearchTables& st,
-           ParallelData& pd, const std::shared_ptr<SplitPoint>& rootSp,
+           int posHashListSize, SearchTables& st, Communicator& comm,
            TreeLogger& logFile);
 
     Search(const Search& other) = delete;
     Search& operator=(const Search& other) = delete;
+
+    /** Initializes the searchTreeInfo array. */
+    void initSearchTreeInfo();
 
     /** Interface for reporting search information during search. */
     class Listener {
@@ -84,7 +87,7 @@ public:
         virtual void notifyStats(U64 nodes, int nps, int hashFull, U64 tbHits, int time) = 0;
     };
 
-    void setListener(std::unique_ptr<Listener> listener);
+    void setListener(Listener& listener);
 
     /** Exception thrown to stop the search. */
     class StopSearch : public std::exception {
@@ -111,19 +114,17 @@ public:
     Move iterativeDeepening(const MoveList& scMovesIn,
                             int maxDepth, S64 initialMaxNodes, bool verbose,
                             int maxPV = 1, bool onlyExact = false,
-                            int minProbeDepth = 0);
+                            int minProbeDepth = 0, bool clearHistory = false);
 
     /**
      * Main recursive search algorithm.
      * @return Score for the side to make a move, in position given by "pos".
      */
-    template <bool smp, bool tb>
+    template <bool tb>
     int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
-    int negaScout(bool smp, bool tb,
+    int negaScout(bool tb,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
-                  const bool inCheck);
-    int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck);
 
     /** Compute extension depth for a move. */
@@ -142,7 +143,6 @@ public:
 
     /** Set search tree information for a given ply. */
     void setSearchTreeInfo(int ply, const SearchTreeInfo& sti,
-                           const Move& currMove, int currMoveNo, int lmr,
                            U64 rootNodeIdx);
 
     /** Get total number of nodes searched by this thread. */
@@ -160,6 +160,9 @@ public:
 private:
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
               int posHashListSize0);
+
+    int negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
+                      const bool inCheck);
 
     /** Information used for move ordering at root and for PV reporting. */
     struct MoveInfo {
@@ -241,7 +244,7 @@ private:
 
     class DefaultStopHandler : public StopHandler {
     public:
-        DefaultStopHandler(Search& sc0) : sc(sc0) { }
+        explicit DefaultStopHandler(Search& sc0) : sc(sc0) { }
         bool shouldStop() override { return sc.shouldStop(); }
     private:
         Search& sc;
@@ -249,9 +252,6 @@ private:
 
     /** Return true if the search should be stopped immediately. */
     bool shouldStop();
-
-    /** Throw a FailHighException if a helper thread has failed high. */
-    void checkHelperFailHigh() const;
 
 
     Position pos;
@@ -261,20 +261,18 @@ private:
     std::vector<U64> posHashList; // List of hashes for previous positions up to the last "zeroing" move.
     int posHashListSize;          // Number of used entries in posHashList
     int posHashFirstNew;          // First entry in posHashList that has not been played OTB.
-    TranspositionTable& tt;
-    ParallelData& pd;
-    std::vector<std::shared_ptr<SplitPoint>> spVec;
-    std::vector<std::shared_ptr<SplitPoint>> pending;
+    ClusterTT& tt;
+    Communicator& comm;
+    int jobId = 0;
     int threadNo;
     bool mainNumaNode; // True if this thread runs on the NUMA node holding the transposition table
     TreeLogger& logFile;
 
-    std::unique_ptr<Listener> listener;
+    Listener* listener = nullptr;
     std::unique_ptr<StopHandler> stopHandler;
     Move emptyMove;
 
-    static const int MAX_SEARCH_DEPTH = 100;
-    SearchTreeInfo searchTreeInfo[MAX_SEARCH_DEPTH * 2];
+    SearchTreeInfo searchTreeInfo[SearchConst::MAX_SEARCH_DEPTH * 2];
 
     // Time management
     S64 tStart;                // Time when search started
@@ -303,14 +301,14 @@ private:
 };
 
 inline
-Search::SearchTables::SearchTables(TranspositionTable& tt0, KillerTable& kt0, History& ht0,
+Search::SearchTables::SearchTables(ClusterTT& tt0, KillerTable& kt0, History& ht0,
                                    Evaluate::EvalHashTables& et0)
     : tt(tt0), kt(kt0), ht(ht0), et(et0) {
 }
 
 inline void
-Search::setListener(std::unique_ptr<Listener> listener) {
-    this->listener = std::move(listener);
+Search::setListener(Listener& listener) {
+    this->listener = &listener;
 }
 
 inline void
@@ -399,43 +397,21 @@ Search::selectBest(MoveList& moves, int startIdx) {
 }
 
 inline void
-Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti, const Move& currMove,
-                          int currMoveNo, int lmr, U64 rootNodeIdx) {
+Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti,
+                          U64 rootNodeIdx) {
     searchTreeInfo[ply] = sti;
-    searchTreeInfo[ply].currentMove = currMove;
-    searchTreeInfo[ply].currentMoveNo = currMoveNo;
-    searchTreeInfo[ply].lmr = lmr;
     searchTreeInfo[ply].nodeIdx = rootNodeIdx;
 }
 
 inline int
-Search::negaScout(bool smp, bool tb,
+Search::negaScout(bool tb,
                   int alpha, int beta, int ply, int depth, int recaptureSquare,
                   const bool inCheck) {
-    using namespace SearchConst;
-    int minDepth = pd.wq.getMinSplitDepth();
-    if (threadNo == 0)
-        minDepth = (minDepth + MIN_SMP_DEPTH) / 2;
-    if (smp && (depth >= minDepth) &&
-               ((int)spVec.size() < MAX_SP_PER_THREAD)) {
-        bool tb2 = tb && depth >= minProbeDepth;
-        if (tb2)
-            return negaScout<true,true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
-        else
-            return negaScout<true,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
-    } else {
-        bool tb2 = tb && depth >= minProbeDepth;
-        if (tb2)
-            return negaScout<false,true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
-        else
-            return negaScout<false,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
-    }
-}
-
-inline int
-Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
-                  const bool inCheck) {
-    return negaScout<false,false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+    bool tb2 = tb && depth >= minProbeDepth;
+    if (tb2)
+        return negaScout<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+    else
+        return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
 }
 
 inline bool
@@ -445,7 +421,7 @@ Search::canClaimDraw50(const Position& pos) {
 
 inline S64
 Search::getTotalNodes() const {
-    return totalNodes + pd.getNumSearchedNodes();
+    return totalNodes + comm.getNumSearchedNodes();
 }
 
 inline S64
@@ -455,7 +431,7 @@ Search::getTotalNodesThisThread() const {
 
 inline S64
 Search::getTbHits() const {
-    return tbHits + pd.getTbHits();
+    return tbHits + comm.getTbHits();
 }
 
 inline S64

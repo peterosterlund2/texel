@@ -28,6 +28,9 @@
 #include "moveGen.hpp"
 #include "tbprobe.hpp"
 #include "search.hpp"
+#include "clustertt.hpp"
+#include "history.hpp"
+#include "killerTable.hpp"
 #include "syzygy/rtb-probe.hpp"
 #include "parameters.hpp"
 #include "util/timeUtil.hpp"
@@ -500,12 +503,13 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
     }
 
     TranspositionTable tt(19);
-    ParallelData pd(tt);
-    std::vector<U64> nullHist(200);
+    Notifier notifier;
+    ThreadCommunicator comm(nullptr, tt, notifier, false);
+    std::vector<U64> nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
     KillerTable kt;
     History ht;
     auto et = Evaluate::getEvalHashTables();
-    Search::SearchTables st(tt, kt, ht, *et);
+    Search::SearchTables st(comm.getCTT(), kt, ht, *et);
     TreeLogger treeLog;
     TranspositionTable::TTEntry ent;
     const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
@@ -520,7 +524,7 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
         int evScore, qScore;
         {
             const int mate0 = SearchConst::MATE0;
-            Search sc(pos, nullHist, 0, st, pd, nullptr, treeLog);
+            Search sc(pos, nullHist, 0, st, comm, treeLog);
             sc.init(pos, nullHist, 0);
             sc.q0Eval = UNKNOWN_SCORE;
             qScore = sc.quiesce(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
