@@ -831,6 +831,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Start searching move alternatives
+    bool expectedCutNodeComputed = false;
+    bool expectedCutNode = false;
     UndoInfo ui;
     bool haveLegalMoves = false;
     int b = beta;
@@ -890,6 +892,16 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         lmr = 2;
                     } else if (mi >= 2) {
                         lmr = 1;
+                    }
+                    if ((lmr > 0) && !isCapture && defenseMove(pos, m))
+                        lmr = 0;
+                    if ((lmr > 0) && (lmr + 3 <= depth) && (beta == alpha + 1)) {
+                        if (!expectedCutNodeComputed) {
+                            expectedCutNode = isExpectedCutNode(ply);
+                            expectedCutNodeComputed = true;
+                        }
+                        if (expectedCutNode)
+                            lmr += 1; // Reduce expected cut nodes more
                     }
                 }
             }

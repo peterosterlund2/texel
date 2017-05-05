@@ -216,6 +216,12 @@ private:
 
     static bool passedPawnPush(const Position& pos, const Move& m);
 
+    /** Return true if m moves a piece away from a threat. */
+    static bool defenseMove(const Position& pos, const Move& m);
+
+    /** Return true if the current node at ply is an expected cut node. */
+    bool isExpectedCutNode(int ply) const;
+
     /** Quiescence search. Only non-losing captures are searched. */
     int quiesce(int alpha, int beta, int ply, int depth, const bool inCheck);
 
@@ -347,6 +353,38 @@ Search::passedPawnPush(const Position& pos, const Move& m) {
             return false;
         return m.to() <= H3;
     }
+}
+
+inline bool
+Search::defenseMove(const Position& pos, const Move& m) {
+    int p = pos.getPiece(m.from());
+    if (pos.isWhiteMove()) {
+        if (p == Piece::WPAWN)
+            return false;
+        if ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::wPawnAttacks[m.from()]) == 0)
+            return false;
+        return (pos.pieceTypeBB(Piece::BPAWN) & BitBoard::wPawnAttacks[m.to()]) == 0;
+    } else {
+        if (p == Piece::BPAWN)
+            return false;
+        if ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::bPawnAttacks[m.from()]) == 0)
+            return false;
+        return (pos.pieceTypeBB(Piece::WPAWN) & BitBoard::bPawnAttacks[m.to()]) == 0;
+    }
+}
+
+inline bool
+Search::isExpectedCutNode(int ply) const {
+    int nFirst = 0;
+    while (ply > 0) {
+        ply--;
+        int moveNo = searchTreeInfo[ply].currentMoveNo;
+        if (moveNo == 0)
+            nFirst++;
+        else
+            return (nFirst % 2) == 0;
+    }
+    return false;
 }
 
 inline int
