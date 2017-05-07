@@ -332,8 +332,8 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
 
         std::stringstream ss;
         ss.precision(1);
-        ss << std::fixed << (nMoves / (double)nGames);
-        os << "nGames: " << nGames << " nMoves: " << nMoves << " plies/game: " << ss.str() << std::endl;
+        ss << std::fixed << (nMoves / (double)nGames / 2);
+        os << "nGames: " << nGames << " moves/game: " << ss.str() << std::endl;
 
         if (pairMode && players.size() != 2) {
             std::cerr << "Pair mode requires two players" << std::endl;
