@@ -245,6 +245,7 @@ TBProbe::getSearchMoves(Position& pos, const MoveList& legalMoves,
     const int mate0 = SearchConst::MATE0;
     const int ply = 0;
     TranspositionTable::TTEntry rootEnt;
+    rootEnt.clear();
     if (!tbProbe(pos, ply, -mate0, mate0, tt, rootEnt) || rootEnt.getType() == TType::T_LE)
         return false;
     const int rootScore = rootEnt.getScore(ply);
