@@ -1335,13 +1335,14 @@ Search::scoreMoveList(MoveList& moves, int ply, int startIdx) {
             else
                 score -= 50;
             score *= 100;
-        }
-        int ks = kt.getKillerScore(ply, m);
-        if (ks > 0) {
-            score += ks + 50;
         } else {
-            int hs = ht.getHistScore(pos, m);
-            score += hs;
+            int ks = kt.getKillerScore(ply, m);
+            if (ks > 0) {
+                score += ks + 50;
+            } else {
+                int hs = ht.getHistScore(pos, m);
+                score += hs;
+            }
         }
         m.setScore(score);
     }
