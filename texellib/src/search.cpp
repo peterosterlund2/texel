@@ -598,10 +598,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
     }
 
-    int posExtend = inCheck ? 1 : 0; // Check extension
-
     // If out of depth, perform quiescence search
-    if (depth + posExtend <= 0) {
+    if (depth <= 0) {
         q0Eval = evalScore;
         sti.bestMove.setMove(0,0,0,0);
         int score = quiesce(alpha, beta, ply, 0, inCheck);
@@ -637,7 +635,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Reverse futility pruning
-    if (!inCheck && (depth < 5) && (posExtend == 0) && normalBound && !singularSearch) {
+    if (!inCheck && (depth < 5) && normalBound && !singularSearch) {
         bool mtrlOk;
         if (pos.isWhiteMove()) {
             mtrlOk = (pos.wMtrl() > pos.wMtrlPawns()) && (pos.wMtrlPawns() > 0);
@@ -731,7 +729,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     bool futilityPrune = false;
     int futilityScore = alpha;
-    if (!inCheck && (depth < 5) && (posExtend == 0) && normalBound && !singularSearch) {
+    if (!inCheck && (depth < 5) && normalBound && !singularSearch) {
         int margin;
         if (depth <= 1)      margin = futilityMargin1;
         else if (depth <= 2) margin = futilityMargin2;
@@ -784,7 +782,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     // Handle singular extension
     bool singularExtend = false;
-    if ((depth > 6) && (posExtend == 0) &&
+    if ((depth > 6) &&
             hashMoveSelected && !singularSearch &&
             (ent.getType() != TType::T_LE) &&
             (ent.getDepth() >= depth - 3) &&
@@ -878,8 +876,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 continue;
             if (!MoveGen::isLegal(pos, m, inCheck))
                 continue;
-            int moveExtend = (posExtend > 0) ? 0 : getMoveExtend(m, recaptureSquare);
-            int extend = std::max(posExtend, moveExtend);
+            int extend = givesCheck ? 1 : getMoveExtend(m, recaptureSquare);
             if (singularExtend && (mi == 0))
                 extend = 1;
             int lmr = 0;

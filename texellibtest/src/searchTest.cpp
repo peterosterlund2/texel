@@ -273,7 +273,7 @@ SearchTest::testCheckEvasion() {
     pos = TextIO::readFEN("r1bq2rk/pp3pbp/2p1p1pQ/7P/3P4/2PB1N2/PP3PPR/2KR4 w - -"); // WAC 004
     sc.init(pos, nullHist, 0);
     sc.setMinProbeDepth(100);
-    bestM = idSearch(sc, 1);
+    bestM = idSearch(sc, 2);
     ASSERT_EQUAL(SearchConst::MATE0 - 4, bestM.score());
     ASSERT_EQUAL(TextIO::stringToMove(pos, "Qxh7+"), bestM);
 }
