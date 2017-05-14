@@ -151,12 +151,14 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             if (mi < maxPV)
                 aspirationDelta = isWinScore(std::abs(rootMoves[mi].score())) ? 3000 : aspirationWindow;
             int alpha, beta;
-            if (firstIteration) {
-                alpha = -MATE0;
-                beta = MATE0;
-            } else if (mi < maxPV) {
-                alpha = std::max(rootMoves[mi].score() - aspirationDelta, -MATE0);
-                beta  = std::min(rootMoves[mi].score() + aspirationDelta, MATE0);
+            if (mi < maxPV) {
+                if (firstIteration) {
+                    alpha = -MATE0;
+                    beta = MATE0;
+                } else {
+                    alpha = std::max(rootMoves[mi].score() - aspirationDelta, -MATE0);
+                    beta  = std::min(rootMoves[mi].score() + aspirationDelta, MATE0);
+                }
             } else {
                 alpha = rootMoves[maxPV-1].score();
                 beta = alpha + 1;
@@ -1052,6 +1054,9 @@ Search::getRootMoves(const MoveList& rootMovesIn,
                 rootMoves.filter(movesToSearch);
         }
     }
+    scoreMoveList(rootMoves, 0, 0);
+    for (int i = 0; i < rootMoves.size; i++)
+        selectBest(rootMoves, i);
 
     // If strength is < 10%, only include a subset of the root moves.
     // At least one move is always included though.
@@ -1175,6 +1180,8 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
                 }
             }
         }
+        if (depth < -6 && mi >= 2)
+            continue;
         if (!realInCheckComputed) {
             realInCheck = MoveGen::inCheck(pos);
             realInCheckComputed = true;
