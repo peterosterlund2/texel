@@ -155,7 +155,7 @@ public:
      * Static exchange evaluation function.
      * @return SEE score for m. Positive value is good for the side that makes the first move.
      */
-    static int SEE(Position& pos, const Move& m);
+    static int SEE(Position& pos, const Move& m, int alpha, int beta);
 
 private:
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
@@ -229,7 +229,7 @@ private:
      * Static exchange evaluation function.
      * @return SEE score for m. Positive value is good for the side that makes the first move.
      */
-    int SEE(const Move& m);
+    int SEE(const Move& m, int alpha, int beta);
 
     /** Return >0, 0, <0, depending on the sign of SEE(m). */
     int signSEE(const Move& m);
@@ -388,8 +388,8 @@ Search::isExpectedCutNode(int ply) const {
 }
 
 inline int
-Search::SEE(const Move& m) {
-    return SEE(pos, m);
+Search::SEE(const Move& m, int alpha, int beta) {
+    return SEE(pos, m, alpha, beta);
 }
 
 inline int
@@ -398,7 +398,7 @@ Search::signSEE(const Move& m) {
     int p1 = ::pieceValue[pos.getPiece(m.to())];
     if (p0 < p1)
         return 1;
-    return SEE(m);
+    return SEE(m, -1, 1);
 }
 
 inline bool
@@ -407,7 +407,7 @@ Search::negSEE(const Move& m) {
     int p1 = ::pieceValue[pos.getPiece(m.to())];
     if (p1 >= p0)
         return false;
-    return SEE(m) < 0;
+    return SEE(m, -1, 0) < 0;
 }
 
 inline void

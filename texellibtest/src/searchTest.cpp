@@ -299,9 +299,12 @@ SearchTest::testKQKRNullMove() {
 /** Compute SEE(m) and assure that signSEE and negSEE give matching results. */
 int
 SearchTest::getSEE(Search& sc, const Move& m) {
-    int see = sc.SEE(m);
+    const int mate0 = SearchConst::MATE0;
+    int see = sc.SEE(m, -mate0, mate0);
+
     bool neg = sc.negSEE(m);
-    ASSERT_EQUAL(neg, see < 0);
+    ASSERT_EQUAL(see < 0, neg);
+
     int sign = sc.signSEE(m);
     if (sign > 0) {
         ASSERT(see > 0);
@@ -310,6 +313,19 @@ SearchTest::getSEE(Search& sc, const Move& m) {
     } else {
         ASSERT(see < 0);
     }
+
+    int see2 = sc.SEE(m, see, see + 1);
+    ASSERT(see2 <= see);
+    see2 = sc.SEE(m, see - 1, see);
+    ASSERT(see2 >= see);
+    see2 = sc.SEE(m, see - 1, see + 1);
+    ASSERT_EQUAL(see, see2);
+
+    see2 = sc.SEE(m, see - 2, see - 1);
+    ASSERT(see2 >= see - 1);
+    see2 = sc.SEE(m, see + 1, see + 2);
+    ASSERT(see2 <= see + 1);
+
     return see;
 }
 
@@ -422,12 +438,6 @@ SearchTest::testSEE() {
     pos = TextIO::readFEN("8/8/4k3/8/r3P3/8/4K3/8 b - - 0 1");
     sc.init(pos, nullHist, 0);
     ASSERT_EQUAL(pV, getSEE(sc, TextIO::stringToMove(pos, "Rxe4+")));
-
-    pos = TextIO::readFEN("8/3k4/8/8/r1K5/8/8/2R5 w - - 0 1");
-    pos.setWhiteMove(false);
-    sc.init(pos, nullHist, 0);
-    ASSERT_EQUAL(kV, getSEE(sc, Move(TextIO::getSquare("a4"), TextIO::getSquare("c4"), Piece::EMPTY)));
-
 
     // Test blocking pieces
     pos = TextIO::readFEN("r7/p2k4/8/r7/P7/8/4K3/R7 b - - 0 1");

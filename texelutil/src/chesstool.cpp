@@ -1703,7 +1703,8 @@ ChessTool::staticScoreMoveListQuiet(Position& pos, Evaluate& eval, MoveList& mov
         }
         score += prevHang * moHangPenalty1 / 32;
 
-        int seeScore = Search::SEE(pos, m);
+        const int mate0 = SearchConst::MATE0;
+        int seeScore = Search::SEE(pos, m, -mate0, mate0);
         score += seeScore * moSeeBonus / 32;
 
         pos.makeMove(m, ui);

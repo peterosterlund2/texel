@@ -913,8 +913,9 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 int tVal = ::pieceValue[pos.getPiece(m.to())];
                 const int pV = ::pV;
                 if (std::abs(tVal - fVal) < pV / 2) {    // "Equal" capture
-                    sVal = SEE(m);
-                    if (std::abs(sVal) < pV / 2)
+                    int hp = pV / 2;
+                    sVal = SEE(m, -hp, hp);
+                    if (std::abs(sVal) < hp)
                         newCaptureSquare = m.to();
                 }
             }
@@ -1014,9 +1015,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 int
 Search::getMoveExtend(const Move& m, int recaptureSquare) {
     if ((m.to() == recaptureSquare)) {
-        int sVal = SEE(m);
         int tVal = ::pieceValue[pos.getPiece(m.to())];
-        if (sVal > tVal - pV / 2)
+        int a = tVal - pV / 2;
+        int sVal = SEE(m, a, a + 1);
+        if (sVal > a)
             return 1;
     }
     bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
@@ -1205,11 +1207,9 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
     return bestScore;
 }
 
-
 int
-Search::SEE(Position& pos, const Move& m) {
+Search::SEE(Position& pos, const Move& m, int alpha, int beta) {
     int captures[64];   // Value of captured pieces
-
     const int kV = ::kV;
 
     const int square = m.to();
@@ -1217,8 +1217,6 @@ Search::SEE(Position& pos, const Move& m) {
         captures[0] = ::pV;
     } else {
         captures[0] = ::pieceValue[pos.getPiece(square)];
-        if (captures[0] == kV)
-            return kV;
     }
     int nCapt = 1;                  // Number of entries in captures[]
 
@@ -1227,7 +1225,12 @@ Search::SEE(Position& pos, const Move& m) {
     bool white = pos.isWhiteMove();
     int valOnSquare = ::pieceValue[pos.getPiece(square)];
     U64 occupied = pos.occupiedBB();
+    int currScore = -captures[0];
+    int tmp = alpha; alpha = -beta; beta = -tmp;
     while (true) {
+        if ((currScore + valOnSquare <= alpha) || (currScore >= beta))
+            break;
+        alpha = std::max(alpha, currScore);
         int bestValue = std::numeric_limits<int>::max();
         U64 atk;
         if (white) {
@@ -1302,6 +1305,8 @@ Search::SEE(Position& pos, const Move& m) {
         captures[nCapt++] = valOnSquare;
         if (valOnSquare == kV)
             break;
+        currScore = -(currScore + valOnSquare);
+        int tmp = alpha; alpha = -beta; beta = -tmp;
         valOnSquare = bestValue;
         occupied &= ~(atk & -atk);
         white = !white;
