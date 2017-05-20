@@ -878,35 +878,31 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 continue;
             if (!MoveGen::isLegal(pos, m, inCheck))
                 continue;
-            int extend = givesCheck ? 1 : getMoveExtend(m, recaptureSquare);
+            int extend = givesCheck && ((depth <= 3) || !negSEE(m)) ? 1 : getMoveExtend(m, recaptureSquare);
             if (singularExtend && (mi == 0))
                 extend = 1;
             int lmr = 0;
-            if ((depth >= 2) && mayReduce && (extend == 0)) {
-                if (!givesCheck && !passedPawnPush(pos, m)) {
-                    lmrCount++;
-                    if ((lmrCount > lmrMoveCountLimit2) && (depth >= 5) && !isCapture) {
-                        lmr = 3;
-                    } else if ((lmrCount > lmrMoveCountLimit1) && (depth >= 3) && !isCapture) {
-                        lmr = 2;
-                    } else if (mi >= 2) {
-                        lmr = 1;
+            if ((depth >= 2) && mayReduce && (extend == 0) && !passedPawnPush(pos, m)) {
+                lmrCount++;
+                if ((lmrCount > lmrMoveCountLimit2) && (depth >= 5) && !isCapture) {
+                    lmr = 3;
+                } else if ((lmrCount > lmrMoveCountLimit1) && (depth >= 3) && !isCapture) {
+                    lmr = 2;
+                } else if (mi >= 2) {
+                    lmr = 1;
+                }
+                if ((lmr > 0) && !isCapture && defenseMove(pos, m))
+                    lmr = 0;
+                if ((lmr > 0) && (lmr + 3 <= depth) && (beta == alpha + 1)) {
+                    if (!expectedCutNodeComputed) {
+                        expectedCutNode = isExpectedCutNode(ply);
+                        expectedCutNodeComputed = true;
                     }
-                    if ((lmr > 0) && !isCapture && defenseMove(pos, m))
-                        lmr = 0;
-                    if ((lmr > 0) && (lmr + 3 <= depth) && (beta == alpha + 1)) {
-                        if (!expectedCutNodeComputed) {
-                            expectedCutNode = isExpectedCutNode(ply);
-                            expectedCutNodeComputed = true;
-                        }
-                        if (expectedCutNode)
-                            lmr += 1; // Reduce expected cut nodes more
-                    }
+                    if (expectedCutNode)
+                        lmr += 1; // Reduce expected cut nodes more
                 }
             }
-            bool negSEECheck = givesCheck && (((lmr > 0) && (depth - lmr >= 2)) ||
-                    ((depth > 3) && negSEE(m)));
-            int newDepth = depth - 1 + extend - lmr - (negSEECheck ? 1 : 0);
+            int newDepth = depth - 1 + extend - lmr;
             int newCaptureSquare = -1;
             if (isCapture && (givesCheck || (depth + extend) > 1)) {
                 // Compute recapture target square, but only if we are not going
