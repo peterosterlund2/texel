@@ -184,13 +184,10 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             SearchTreeInfo& sti = searchTreeInfo[0];
             sti.currentMove = m;
             sti.currentMoveNo = mi;
-            sti.lmr = lmrS;
             sti.nodeIdx = rootNodeIdx;
             int score = -negaScoutRoot(true, -beta, -alpha, 1, depth - lmrS - 1, givesCheck);
-            if ((lmrS > 0) && (score > alpha)) {
-                sti.lmr = 0;
+            if ((lmrS > 0) && (score > alpha))
                 score = -negaScoutRoot(true, -beta, -alpha, 1, depth - 1, givesCheck);
-            }
             nodesThisMove += totalNodes;
             posHashListSize--;
             pos.unMakeMove(m, ui);
@@ -923,12 +920,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             nodesToGo--;
             sti.currentMove = m;
             sti.currentMoveNo = mi;
-            sti.lmr = lmr;
 
             score = -negaScout(tb, -b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
             if (((lmr > 0) && (score > alpha)) ||
                     ((score > alpha) && (score < beta) && (b != beta))) {
-                sti.lmr = 0;
                 newDepth += lmr;
                 score = -negaScout(tb, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
             }

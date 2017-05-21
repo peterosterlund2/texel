@@ -42,7 +42,6 @@ public:
     Move bestMove;         // Copy of the best found move at this ply
     Move currentMove;      // Move currently being searched
     int currentMoveNo;     // Index of currentMove in move list
-    int lmr;               // LMR reduction amount
     U64 nodeIdx;           // For tree logging
     Move singularMove;     // Non-empty when searching for second best
                            // move to determine if best move is singular
@@ -51,22 +50,21 @@ public:
 
 inline
 SearchTreeInfo::SearchTreeInfo()
-    : allowNullMove(true), currentMoveNo(0),
-      lmr(0), nodeIdx(0) {
+    : allowNullMove(true), currentMoveNo(0), nodeIdx(0) {
 }
 
 inline U8*
 SearchTreeInfo::serialize(U8* buffer) const {
     return Serializer::serialize<4096>(buffer, allowNullMove, bestMove.getCompressedMove(),
                                        currentMove.getCompressedMove(), currentMoveNo,
-                                       lmr, nodeIdx, singularMove.getCompressedMove());
+                                       nodeIdx, singularMove.getCompressedMove());
 }
 
 inline const U8*
 SearchTreeInfo::deSerialize(const U8* buffer) {
     U16 m1, m2, m3;
     buffer = Serializer::deSerialize<4096>(buffer, allowNullMove, m1, m2,
-                                           currentMoveNo, lmr, nodeIdx, m3);
+                                           currentMoveNo, nodeIdx, m3);
     bestMove.setFromCompressed(m1);
     currentMove.setFromCompressed(m2);
     singularMove.setFromCompressed(m3);
