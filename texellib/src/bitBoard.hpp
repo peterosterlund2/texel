@@ -93,8 +93,7 @@ public:
         return sqMask(sq0) | sqMask(squares...);
     }
 
-    /** Mirror a bitmask in the X or Y direction.
-     * This implementation is slow. Use only in initialization code. */
+    /** Mirror a bitmask in the X or Y direction. */
     static U64 mirrorX(U64 mask);
     static U64 mirrorY(U64 mask);
 
@@ -152,6 +151,29 @@ private:
     static const S8 taxiDistTable[];
     static const int trailingZ[64];
 };
+
+inline U64
+BitBoard::mirrorX(U64 mask) {
+    U64 k1 = 0x5555555555555555ULL;
+    U64 k2 = 0x3333333333333333ULL;
+    U64 k3 = 0x0f0f0f0f0f0f0f0fULL;
+    U64 t = mask;
+    t = ((t >> 1) & k1) | ((t & k1) << 1);
+    t = ((t >> 2) & k2) | ((t & k2) << 2);
+    t = ((t >> 4) & k3) | ((t & k3) << 4);
+    return t;
+}
+
+inline U64
+BitBoard::mirrorY(U64 mask) {
+    U64 k1 = 0x00ff00ff00ff00ffULL;
+    U64 k2 = 0x0000ffff0000ffffULL;
+    U64 t = mask;
+    t = ((t >>  8) & k1) | ((t & k1) <<  8);
+    t = ((t >> 16) & k2) | ((t & k2) << 16);
+    t = ((t >> 32)     ) | ((t     ) << 32);
+    return t;
+}
 
 inline U64
 BitBoard::bishopAttacks(int sq, U64 occupied) {

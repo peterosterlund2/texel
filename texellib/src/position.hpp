@@ -614,7 +614,7 @@ Position::getY(int square) {
 
 inline int
 Position::mirrorY(int square) {
-    return square ^ 56;
+    return square ^ 0x38;
 }
 
 /** Return true if (x,y) is a dark square. */

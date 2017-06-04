@@ -382,27 +382,3 @@ BitBoard::staticInitialize() {
         }
     }
 }
-
-U64 BitBoard::mirrorX(U64 mask) {
-    U64 ret = 0;
-    while (mask != 0) {
-        int sq = extractSquare(mask);
-        int x = Position::getX(sq);
-        int y = Position::getY(sq);
-        int sq2 = Position::getSquare(7-x, y);
-        ret |= (1ULL << sq2);
-    }
-    return ret;
-}
-
-U64 BitBoard::mirrorY(U64 mask) {
-    U64 ret = 0;
-    while (mask != 0) {
-        int sq = extractSquare(mask);
-        int x = Position::getX(sq);
-        int y = Position::getY(sq);
-        int sq2 = Position::getSquare(x, 7-y);
-        ret |= (1ULL << sq2);
-    }
-    return ret;
-}

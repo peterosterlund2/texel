@@ -267,6 +267,42 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
     }
     }
 
+    // QvsRBP fortress detection
+    if (pos.pieceTypeBB(Piece::WQUEEN) && (wMtrlNoPawns == qV) &&
+        pos.pieceTypeBB(Piece::BROOK) && pos.pieceTypeBB(Piece::BPAWN) &&
+        pos.pieceTypeBB(Piece::BBISHOP, Piece::BKNIGHT) && (bMtrlNoPawns == rV + bV)) {
+        if (!doEval)
+            return 1;
+        if (score > 0) {
+            bool bishop = pos.pieceTypeBB(Piece::BBISHOP) != 0;
+            int wq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WQUEEN));
+            int br = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BROOK));
+            int bm = BitBoard::firstSquare(pos.pieceTypeBB(bishop ? Piece::BBISHOP : Piece::BKNIGHT));
+            U64 wp = pos.pieceTypeBB(Piece::WPAWN);
+            U64 bp = pos.pieceTypeBB(Piece::BPAWN);
+            if (kqkrmFortress(bishop, wq, br, bm, wp, bp))
+                return score / 8;
+        }
+    }
+    if (pos.pieceTypeBB(Piece::BQUEEN) && (bMtrlNoPawns == qV) &&
+        pos.pieceTypeBB(Piece::WROOK) && pos.pieceTypeBB(Piece::WPAWN) &&
+        pos.pieceTypeBB(Piece::WBISHOP, Piece::WKNIGHT) && (wMtrlNoPawns == rV + bV)) {
+        if (!doEval)
+            return 1;
+        if (score < 0) {
+            bool bishop = pos.pieceTypeBB(Piece::WBISHOP) != 0;
+            int bq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BQUEEN));
+            int wr = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WROOK));
+            int wm = BitBoard::firstSquare(pos.pieceTypeBB(bishop ? Piece::WBISHOP : Piece::WKNIGHT));
+            U64 bp = pos.pieceTypeBB(Piece::BPAWN);
+            U64 wp = pos.pieceTypeBB(Piece::WPAWN);
+            if (kqkrmFortress(bishop, Position::mirrorY(bq), Position::mirrorY(wr),
+                              Position::mirrorY(wm), BitBoard::mirrorY(bp),
+                              BitBoard::mirrorY(wp)))
+                return score / 8;
+        }
+    }
+
     // QvsRP fortress detection
     if (pos.pieceTypeBB(Piece::WQUEEN) && (pos.wMtrl() == qV) &&
         pos.pieceTypeBB(Piece::BROOK) && pos.pieceTypeBB(Piece::BPAWN) &&
@@ -315,7 +351,6 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
     const int nWB2 = BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP) & BitBoard::maskDarkSq);
     const int nBB1 = BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP) & BitBoard::maskLightSq);
     const int nBB2 = BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP) & BitBoard::maskDarkSq);
-    const int qV = ::qV;
 
     if (pos.materialId() == MI::WB * 2 + MI::BN) {
         if (!doEval) return 1;
@@ -920,6 +955,38 @@ EndGameEval::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, b
         break;
     }
     return drawish ? score / 16 : score;
+}
+
+bool
+EndGameEval::kqkrmFortress(bool bishop, int wQueen, int bRook, int bMinor, U64 wPawns, U64 bPawns) {
+    U64 needPawnGuard = 0;
+    U64 bpAtk = BitBoard::bPawnAttacksMask(bPawns);
+    U64 bmAtk = bishop ? BitBoard::bishopAttacks(bMinor, wPawns | bPawns | (1ULL << bRook))
+                       : BitBoard::knightAttacks[bMinor];
+    U64 brAtk = BitBoard::rookAttacks(bRook, wPawns | bPawns | (1ULL << bMinor));
+    if (!(bmAtk & (1ULL << bRook)))
+        needPawnGuard |= 1ULL << bRook;
+    if (!(brAtk & (1ULL << bMinor)))
+        needPawnGuard |= 1ULL << bMinor;
+
+    while (true) {
+        if ((bpAtk & needPawnGuard) != needPawnGuard)
+            return false;
+        U64 newBPawns = bPawns & (bpAtk | bmAtk | brAtk);
+        if (newBPawns == bPawns)
+            break;
+        bPawns = newBPawns;
+        bpAtk = BitBoard::bPawnAttacksMask(bPawns);
+    }
+    U64 safeMask = bPawns | (1ULL << bRook) | (1ULL << bMinor);
+    U64 tmp = wPawns;
+    while (tmp) {
+        int wp = BitBoard::extractSquare(tmp);
+        U64 span = BitBoard::northFill(1ULL << wp) & ~BitBoard::northFill(safeMask);
+        if ((span & BitBoard::maskRow8) || (BitBoard::wPawnAttacksMask(span) & safeMask))
+            return false;
+    }
+    return true;
 }
 
 int

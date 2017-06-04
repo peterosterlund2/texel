@@ -510,6 +510,36 @@ EvaluateTest::testEndGameEval() {
         int score5 = evalFEN("8/2n5/k7/P7/RK6/8/8/8 w - - 0 1", true);
         ASSERT(score5 > 400);
     }
+
+    { // Test KQKRM+pawns
+        int score = evalFEN("8/3pk3/2b1r3/4P3/3QK3/8/8/8 w - - 0 1");
+        ASSERT(score < pV / 2);
+        score = evalFEN("8/3pk3/2b2r2/5P2/3Q1K2/8/8/8 w - - 0 1");
+        ASSERT(score > pV);
+        score = evalFEN("8/3p1k2/2b2r2/8/5P2/3QK3/8/8 w - - 0 1");
+        ASSERT(score > pV);
+        score = evalFEN("8/3p1k2/2b5/8/8/5r2/3QKP2/8 w - - 0 1");
+        ASSERT(score < pV / 2);
+        score = evalFEN("8/4pk2/5b2/6p1/3r2Pp/8/2Q1K2P/8 w - - 0 1");
+        ASSERT(score < pV / 5);
+        score = evalFEN("8/4pk2/5b2/6p1/3r3p/8/2Q1K1PP/8 w - - 0 1");
+        ASSERT(score > pV / 2);
+        score = evalFEN("8/4p1k1/4Pb2/5Pp1/3r2Pp/8/2Q1K2P/8 w - - 0 1");
+        ASSERT(score < pV);
+        score = evalFEN("8/4p1k1/4Pb2/5Pp1/3r2Pp/3P4/2Q1K2P/8 w - - 0 1");
+        ASSERT(score < pV);
+        score = evalFEN("7k/3p4/2p5/1r3b2/8/8/1P1Q1P2/4K3 w - - 0 1");
+        ASSERT(score < pV / 2);
+        score = evalFEN("8/5p2/5Bp1/1k3qP1/3R4/4K3/8/8 w - - 0 1");
+        ASSERT(score > -pV / 2);
+
+        score = evalFEN("7k/3p4/2p1n3/2P5/3r4/2QP1K2/8/8 w - - 0 1");
+        ASSERT(score < pV / 2);
+        score = evalFEN("7k/3p4/2p1n3/2P5/3r4/2Q2K2/4P3/8 w - - 0 1");
+        ASSERT(score > pV * 2);
+        score = evalFEN("8/3p1k2/2p1n3/2P5/3rP3/2Q2K2/8/8 w - - 0 1");
+        ASSERT(score < pV / 2);
+    }
 }
 
 void
