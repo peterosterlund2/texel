@@ -27,6 +27,7 @@
 
 #ifdef USE_LARGE_PAGES
 #ifdef _WIN32
+#include <windows.h>
 #else
 #include <sys/mman.h>
 #endif
@@ -36,6 +37,41 @@ std::shared_ptr<void>
 LargePageAlloc::allocBytes(size_t numBytes) {
 #ifdef USE_LARGE_PAGES
 #ifdef _WIN32
+#if _WIN32_WINNT >= 0x0601
+    auto getLargePageMin = []() {
+        static bool initialized = false;
+        static size_t ret = 0;
+        if (!initialized) {
+            size_t val = GetLargePageMinimum();
+            if (val > 0) {
+                HANDLE token;
+                if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &token)) {
+                    TOKEN_PRIVILEGES priv;
+                    priv.PrivilegeCount = 1;
+                    priv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+                    if (LookupPrivilegeValue(NULL, SE_LOCK_MEMORY_NAME, &priv.Privileges[0].Luid) &&
+                        AdjustTokenPrivileges(token, FALSE, &priv, 0, NULL, NULL))
+                        ret = val;
+                    CloseHandle(token);
+                }
+            }
+            initialized = true;
+        }
+        return ret;
+    };
+
+    size_t largePageMin = getLargePageMin();
+    if (largePageMin > 0 && ((numBytes % largePageMin) == 0)) {
+        void* mem = VirtualAlloc(NULL, numBytes, MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES,
+                                 PAGE_READWRITE);
+        if (mem != NULL) {
+            auto deleter = [](void* mem) {
+                VirtualFree(mem, 0, MEM_RELEASE);
+            };
+            return std::shared_ptr<void>(mem, deleter);
+        }
+    }
+#endif
 #else
     auto deleter = [numBytes](void* mem) {
         munmap(mem, numBytes);
