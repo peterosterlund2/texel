@@ -742,7 +742,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Internal iterative deepening
-    if ((depth > 4) && hashMove.isEmpty()) {
+    if ((depth > 4) && hashMove.isEmpty() && !inCheck) {
         bool isPv = beta > alpha + 1;
         if (isPv || (depth > 8)) {
             SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
