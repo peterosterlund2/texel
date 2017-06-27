@@ -616,7 +616,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 
     // Razoring
     const bool normalBound = !isLoseScore(alpha) && !isWinScore(beta);
-    if (normalBound && (depth < 4) && (beta == alpha + 1) && !singularSearch) {
+    if (normalBound && !inCheck && (depth < 4) && (beta == alpha + 1) && !singularSearch) {
         if (evalScore == UNKNOWN_SCORE) {
             evalScore = eval.evalPos(pos);
         }
