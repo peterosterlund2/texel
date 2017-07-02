@@ -742,7 +742,7 @@ public:
     ThreadStopHandler(WorkerThread& wt, int jobId, const Search& sc,
                       Communicator::CommandHandler& commHandler);
 
-    /** Destructor. Report searched nodes to ParallelData object. */
+    /** Destructor. Report searched nodes to parent communicator. */
     ~ThreadStopHandler();
 
     ThreadStopHandler(const ThreadStopHandler&) = delete;
