@@ -403,9 +403,8 @@ Evaluate::tradeBonus(const Position& pos, int wCorr, int bCorr) const {
     const int bPawn = pos.bMtrlPawns();
     const int deltaScore = wM - bM;
 
-    int pBonus = 0;
+    int pBonus = deltaScore * 11 / 128;
     pBonus += interpolate((deltaScore > 0) ? wPawn : bPawn, 0, -pawnTradePenalty * deltaScore / 100, pawnTradeThreshold, 0);
-    pBonus += interpolate((deltaScore > 0) ? bM : wM, 0, pieceTradeBonus * deltaScore / 100, pieceTradeThreshold * 100, 0);
 
     return pBonus;
 }
