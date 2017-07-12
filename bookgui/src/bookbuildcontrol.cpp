@@ -343,7 +343,7 @@ BookBuildControl::startAnalysis(const std::vector<Move>& moves) {
     sc->timeLimit(-1, -1);
     int minProbeDepth = UciParams::minProbeDepth->getIntPar();
     auto f = [this,moveList,minProbeDepth]() {
-        sc->iterativeDeepening(*moveList, -1, -1, false, 1, false, minProbeDepth);
+        sc->iterativeDeepening(*moveList, -1, -1, 1, false, minProbeDepth);
     };
     engineThread = std::make_shared<std::thread>(f);
 }

@@ -132,11 +132,10 @@ MatchBookCreator::evaluateBookLines(std::vector<BookLine>& lines, int searchTime
 
         int maxDepth = -1;
         S64 maxNodes = -1;
-        bool verbose = false;
         int maxPV = 1;
         bool onlyExact = true;
         int minProbeDepth = 1;
-        Move bestMove = sc.iterativeDeepening(legalMoves, maxDepth, maxNodes, verbose, maxPV,
+        Move bestMove = sc.iterativeDeepening(legalMoves, maxDepth, maxNodes, maxPV,
                                               onlyExact, minProbeDepth);
         int score = bestMove.score();
         if (!pos.isWhiteMove())

@@ -44,7 +44,6 @@ ComputerPlayerTest::testGetCommand() {
     ComputerPlayer cp;
     cp.maxDepth = 1;
     cp.maxTimeMillis = -1;
-    cp.verbose = false;
     std::string result = cp.getCommand(pos, false, nullHist);
     ASSERT_EQUAL("a5", result);     // Only one legal move
 
@@ -77,7 +76,6 @@ ComputerPlayerTest::testDrawRep() {
     ComputerPlayer cp;
     cp.maxDepth = 3;
     cp.maxTimeMillis = -1;
-    cp.verbose = false;
     game.processString("setpos 7k/5RR1/8/8/8/8/q3q3/2K5 w - - 0 1");
     game.processString("Rh7");
     game.processString("Kg8");

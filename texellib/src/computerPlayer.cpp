@@ -41,7 +41,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.07a20";
+    std::string name = "Texel 1.07a21";
     if (sizeof(char*) == 4)
         name += " 32-bit";
     engineName = name;
@@ -79,7 +79,6 @@ ComputerPlayer::ComputerPlayer()
     maxTimeMillis = 10000;
     maxDepth = 100;
     maxNodes = -1;
-    verbose = true;
     bookEnabled = true;
     currentSearch = nullptr;
 }
@@ -130,7 +129,7 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
         bestM.setScore(0);
     } else {
         sc.timeLimit(minTimeMillis, maxTimeMillis);
-        bestM = sc.iterativeDeepening(moves, maxDepth, maxNodes, verbose, 1, false, 100);
+        bestM = sc.iterativeDeepening(moves, maxDepth, maxNodes, 1, false, 100);
     }
     currentSearch = nullptr;
     //        tt.printStats();
@@ -197,7 +196,7 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
 
     // Find best move using iterative deepening
     sc.timeLimit(maxTimeMillis, maxTimeMillis);
-    Move bestM = sc.iterativeDeepening(moves, -1, -1, false);
+    Move bestM = sc.iterativeDeepening(moves, -1, -1);
 
     // Extract PV
     std::string PV = TextIO::moveToString(pos, bestM, false) + " ";

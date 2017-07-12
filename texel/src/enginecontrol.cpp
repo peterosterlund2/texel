@@ -212,7 +212,7 @@ EngineMainThread::doSearch() {
 
     bool waitForStop = false;
     if (m.isEmpty()) {
-        m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, false, maxPV, false,
+        m = sc->iterativeDeepening(*moves, maxDepth, maxNodes, maxPV, false,
                                    minProbeDepth, clearHistory);
         waitForStop = true;
     }

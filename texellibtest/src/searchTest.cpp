@@ -58,7 +58,7 @@ SearchTest::idSearch(Search& sc, int maxDepth, int minProbeDepth) {
     MoveGen::removeIllegal(sc.pos, moves);
     sc.scoreMoveList(moves, 0);
     sc.timeLimit(-1, -1);
-    Move bestM = sc.iterativeDeepening(moves, maxDepth, -1, false, 1, false, minProbeDepth);
+    Move bestM = sc.iterativeDeepening(moves, maxDepth, -1, 1, false, minProbeDepth);
     ASSERT_EQUAL(sc.pos.materialId(), PositionTest::computeMaterialId(sc.pos));
     return bestM;
 }
@@ -553,7 +553,7 @@ SearchTest::testTBSearch() {
         MoveGen::removeIllegal(sc.pos, moves);
         sc.scoreMoveList(moves, 0);
         sc.timeLimit(10000, 20000); // Should take less than 2s to generate the TB
-        Move bestM = sc.iterativeDeepening(moves, -1, -1, false, 1, false, -1);
+        Move bestM = sc.iterativeDeepening(moves, -1, -1, 1, false, -1);
         ASSERT_EQUAL(sc.pos.materialId(), PositionTest::computeMaterialId(sc.pos));
         ASSERT_EQUAL(mate0 - 33 * 2, bestM.score());
         TBTest::initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);

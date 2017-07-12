@@ -28,6 +28,7 @@
 #include "gametree.hpp"
 #include "moveGen.hpp"
 #include "search.hpp"
+#include "util/histogram.hpp"
 #include "textio.hpp"
 #include <random>
 
@@ -1425,11 +1426,10 @@ SearchRunner::analyze(const std::vector<Move>& gameMoves,
 
     int maxDepth = -1;
     S64 maxNodes = -1;
-    bool verbose = false;
     int maxPV = 1;
     bool onlyExact = true;
     int minProbeDepth = 1;
-    Move bestMove = sc->iterativeDeepening(moveList, maxDepth, maxNodes, verbose, maxPV,
+    Move bestMove = sc->iterativeDeepening(moveList, maxDepth, maxNodes, maxPV,
                                            onlyExact, minProbeDepth);
     return bestMove;
 }

@@ -33,7 +33,7 @@
 #include "searchUtil.hpp"
 #include "parallel.hpp"
 #include "parameters.hpp"
-#include "util/histogram.hpp"
+#include "util/util.hpp"
 
 #include <limits>
 #include <memory>
@@ -112,7 +112,7 @@ public:
     void setMinProbeDepth(int depth);
 
     Move iterativeDeepening(const MoveList& scMovesIn,
-                            int maxDepth, S64 initialMaxNodes, bool verbose,
+                            int maxDepth, S64 initialMaxNodes,
                             int maxPV = 1, bool onlyExact = false,
                             int minProbeDepth = 0, bool clearHistory = false);
 
@@ -246,8 +246,6 @@ private:
     /** If hashMove exists in the move list, move the hash move to the front of the list. */
     static bool selectHashMove(MoveList& moves, const Move& hashMove);
 
-    void initNodeStats();
-
     class DefaultStopHandler : public StopHandler {
     public:
         explicit DefaultStopHandler(Search& sc0) : sc(sc0) { }
@@ -297,11 +295,9 @@ private:
     U64 randomSeed;
 
     // Search statistics stuff
-    Histogram<0,20> nodesByPly, nodesByDepth;
     S64 totalNodes;
     S64 tbHits;
     S64 tLastStats;        // Time when notifyStats was last called
-    bool verbose;
 
     int q0Eval; // Static eval score at first level of quiescence search
 };

@@ -44,7 +44,6 @@ class ComputerPlayer : public Player {
     friend class ComputerPlayerTest;
 public:
     static std::string engineName;
-    bool verbose;
 
     ComputerPlayer();
     ComputerPlayer(const ComputerPlayer& other) = delete;

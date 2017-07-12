@@ -58,7 +58,6 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     posHashList = posHashList0;
     posHashListSize = posHashListSize0;
     posHashFirstNew = posHashListSize;
-    initNodeStats();
     minTimeMillis = -1;
     maxTimeMillis = -1;
     earlyStopPercentage = minTimeUsage;
@@ -73,7 +72,6 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     totalNodes = 0;
     tbHits = 0;
     nodesToGo = 0;
-    verbose = false;
 }
 
 void
@@ -104,7 +102,7 @@ Search::initSearchTreeInfo() {
 Move
 Search::iterativeDeepening(const MoveList& scMovesIn,
                            int maxDepth, S64 initialMaxNodes,
-                           bool verbose, int maxPV, bool onlyExact,
+                           int maxPV, bool onlyExact,
                            int minProbeDepth, bool clearHistory) {
     tStart = currentTimeMillis();
     totalNodes = 0;
@@ -129,7 +127,6 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     bool firstIteration = true;
     Move bestMove = rootMoves[0].move; // bestMove is != rootMoves[0].move when there is an unresolved fail high
     Move bestExactMove = rootMoves[0].move; // Only updated when new best move has exact score
-    this->verbose = verbose;
     if ((maxDepth < 0) || (maxDepth > MAX_SEARCH_DEPTH))
         maxDepth = MAX_SEARCH_DEPTH;
     maxPV = std::min(maxPV, (int)rootMoves.size());
@@ -141,7 +138,6 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     bool knownLoss = false; // True if at least one of the first maxPV moves is a known loss
     try {
     for (int depth = 1; ; depth++, firstIteration = false) {
-        initNodeStats();
         if (listener) listener->notifyDepth(depth);
         int aspirationDelta = 0;
         UndoInfo ui;
@@ -192,7 +188,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             posHashListSize--;
             pos.unMakeMove(m, ui);
             storeSearchResult(rootMoves, mi, depth, alpha, beta, score);
-            if ((verbose && firstIteration) || (mi < maxPV) || (score > rootMoves[maxPV-1].score()))
+            if ((mi < maxPV) || (score > rootMoves[maxPV-1].score()))
                 notifyPV(rootMoves, mi, maxPV);
             int betaRetryDelta = aspirationDelta;
             int alphaRetryDelta = aspirationDelta;
@@ -249,20 +245,6 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             }
         }
         S64 tNow = currentTimeMillis();
-        if (verbose) {
-            for (int i = nodesByPly.minValue(); i < nodesByPly.maxValue(); i++)
-                std::cout << std::setw(2) << i
-                          << ' ' << std::setw(7) << nodesByPly.get(i)
-                          << ' ' << std::setw(7) << nodesByDepth.get(i)
-                          << std::endl;
-            std::stringstream ss;
-            ss.precision(3);
-            ss << std::fixed << "Time: " << ((tNow - tStart) * .001);
-            ss.precision(2);
-            ss << " depth:" << depth
-               << " nps:" << ((int)(getTotalNodes() / ((tNow - tStart) * .001)));
-            std::cout << ss.str() << std::endl;
-        }
         if (maxTimeMillis >= 0)
             if (tNow - tStart > minTimeMillis * 0.01 * earlyStopPercentage)
                 break;
@@ -385,25 +367,6 @@ Search::notifyPV(const MoveInfo& info, int multiPVIndex) {
     bool uBound = info.score() <= info.alpha;
     bool lBound = info.score() >= info.beta;
     int score = info.move.score();
-    if (verbose) {
-        std::stringstream ss;
-        ss << std::setw(6) << std::left << TextIO::moveToString(pos, info.move, false)
-           << ' ' << std::setw(6) << std::right << score
-           << ' ' << std::setw(6) << totalNodes;
-        if (uBound)
-            ss << " <=";
-        else if (lBound)
-            ss << " >=";
-        else {
-            std::string PV = TextIO::moveToString(pos, info.move, false) + " ";
-            UndoInfo ui;
-            pos.makeMove(info.move, ui);
-            PV += tt.extractPV(pos);
-            pos.unMakeMove(info.move, ui);
-            ss << ' ' << PV;
-        }
-        std::cout << ss.str() << std::endl;
-    }
     if (!listener)
         return;
     bool isMate = false;
@@ -483,11 +446,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             throw StopSearch();
     }
 
-    // Collect statistics
-    if (verbose) {
-        nodesByPly.add(ply);
-        nodesByDepth.add(depth);
-    }
     const U64 hKey = pos.historyHash();
     SearchTreeInfo& sti = searchTreeInfo[ply];
     sti.currentMove = emptyMove;
@@ -1359,12 +1317,6 @@ Search::selectHashMove(MoveList& moves, const Move& hashMove) {
         }
     }
     return false;
-}
-
-void
-Search::initNodeStats() {
-    nodesByPly.clear();
-    nodesByDepth.clear();
 }
 
 void
