@@ -833,7 +833,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 continue;
             if (!MoveGen::isLegal(pos, m, inCheck))
                 continue;
-            int extend = givesCheck && ((depth <= 3) || !negSEE(m)) ? 1 : getMoveExtend(m, recaptureSquare);
+            int extend = givesCheck && ((depth <= 2) || !negSEE(m)) ? 1 : getMoveExtend(m, recaptureSquare);
             if (singularExtend && (mi == 0))
                 extend = 1;
             int lmr = 0;
