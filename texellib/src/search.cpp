@@ -771,6 +771,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             singularExtend = true;
     }
 
+    sti.evalScore = evalScore;
+    bool badPrevMove = evalScore != UNKNOWN_SCORE && ply >= 2 &&
+                       evalScore < searchTreeInfo[ply-2].evalScore;
+
     // Determine late move pruning (LMP) limit
     int lmpMoveCountLimit = 256;
     if (beta == alpha + 1) {
@@ -780,17 +784,19 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         else
             lmpOk = (pos.bMtrl() > pos.bMtrlPawns()) && (pos.bMtrlPawns() > 0);
         if (lmpOk) {
-            if (depth <= 1)      lmpMoveCountLimit = lmpMoveCountLimit1;
-            else if (depth <= 2) lmpMoveCountLimit = lmpMoveCountLimit2;
-            else if (depth <= 3) lmpMoveCountLimit = lmpMoveCountLimit3;
-            else if (depth <= 4) lmpMoveCountLimit = lmpMoveCountLimit4;
+            if (depth <= 1) {
+                lmpMoveCountLimit = badPrevMove ?  2 : lmpMoveCountLimit1;
+            } else if (depth <= 2) {
+                lmpMoveCountLimit = badPrevMove ?  4 : lmpMoveCountLimit2;
+            } else if (depth <= 3) {
+                lmpMoveCountLimit = badPrevMove ?  7 : lmpMoveCountLimit3;
+            } else if (depth <= 4) {
+                lmpMoveCountLimit = badPrevMove ? 15 : lmpMoveCountLimit4;
+            }
         }
     }
 
     // Start searching move alternatives
-    sti.evalScore = evalScore;
-    bool badPrevMove = evalScore != UNKNOWN_SCORE && ply >= 2 &&
-                       evalScore < searchTreeInfo[ply-2].evalScore;
     bool expectedCutNodeComputed = false;
     bool expectedCutNode = false;
     UndoInfo ui;
