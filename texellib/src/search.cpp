@@ -130,6 +130,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     if ((maxDepth < 0) || (maxDepth > MAX_SEARCH_DEPTH))
         maxDepth = MAX_SEARCH_DEPTH;
     maxPV = std::min(maxPV, (int)rootMoves.size());
+    const int evalScore = eval.evalPos(pos);
     initSearchTreeInfo();
     ht.reScale();
     comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory);
@@ -180,6 +181,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             SearchTreeInfo& sti = searchTreeInfo[0];
             sti.currentMove = m;
             sti.currentMoveNo = mi;
+            sti.evalScore = evalScore;
             sti.nodeIdx = rootNodeIdx;
             int score = -negaScoutRoot(true, -beta, -alpha, 1, depth - lmrS - 1, givesCheck);
             if ((lmrS > 0) && (score > alpha))
@@ -786,6 +788,9 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     }
 
     // Start searching move alternatives
+    sti.evalScore = evalScore;
+    bool badPrevMove = evalScore != UNKNOWN_SCORE && ply >= 2 &&
+                       evalScore < searchTreeInfo[ply-2].evalScore;
     bool expectedCutNodeComputed = false;
     bool expectedCutNode = false;
     UndoInfo ui;
@@ -855,6 +860,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     }
                     if (expectedCutNode)
                         lmr += 1; // Reduce expected cut nodes more
+                    else if (badPrevMove)
+                        lmr += 1;
                 }
             }
             int newDepth = depth - 1 + extend - lmr;
