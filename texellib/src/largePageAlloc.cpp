@@ -29,6 +29,9 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
 #include <sys/mman.h>
 #endif
 #endif
