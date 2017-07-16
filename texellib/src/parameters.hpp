@@ -502,10 +502,10 @@ DECLARE_PARAM(rootLMRMoveCount, 2, 0, 100, useUciParam);
 DECLARE_PARAM(razorMargin1, 86, 1, 500, useUciParam);
 DECLARE_PARAM(razorMargin2, 353, 1, 1000, useUciParam);
 
-DECLARE_PARAM(reverseFutilityMargin1, 204, 1, 1000, useUciParam);
-DECLARE_PARAM(reverseFutilityMargin2, 420, 1, 1000, useUciParam);
-DECLARE_PARAM(reverseFutilityMargin3, 533, 1, 2000, useUciParam);
-DECLARE_PARAM(reverseFutilityMargin4, 788, 1, 3000, useUciParam);
+DECLARE_PARAM(reverseFutilityMargin1, 102, 1, 1000, useUciParam);
+DECLARE_PARAM(reverseFutilityMargin2, 210, 1, 1000, useUciParam);
+DECLARE_PARAM(reverseFutilityMargin3, 267, 1, 2000, useUciParam);
+DECLARE_PARAM(reverseFutilityMargin4, 394, 1, 3000, useUciParam);
 
 DECLARE_PARAM(futilityMargin1,  61, 1,  500, useUciParam);
 DECLARE_PARAM(futilityMargin2, 144, 1,  500, useUciParam);
