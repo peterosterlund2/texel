@@ -302,7 +302,47 @@ BitBoard::staticInitialize() {
         bPawnBlockerMask[sq] = m;
     }
 
+#ifdef HAS_BMI2
+    int tdSize = 0;
+    for (int sq = 0; sq < 64; sq++) {
+        int x = Position::getX(sq);
+        int y = Position::getY(sq);
+        rMasks[sq] = addRookRays(x, y, 0ULL, true);
+        bMasks[sq] = addBishopRays(x, y, 0ULL, true);
+        tdSize += 1 << bitCount(rMasks[sq]);
+        tdSize += 1 << bitCount(bMasks[sq]);
+    }
+    tableData.resize(tdSize);
+
     // Rook magics
+    int tableUsed = 0;
+    for (int sq = 0; sq < 64; sq++) {
+        int x = Position::getX(sq);
+        int y = Position::getY(sq);
+        int tableSize = 1 << bitCount(rMasks[sq]);
+        U64* table = &tableData[tableUsed];
+        tableUsed += tableSize;
+        for (int i = 0; i < tableSize; i++) {
+            U64 p = createPattern(i, rMasks[sq]);
+            table[i] = addRookRays(x, y, p, false);
+        }
+        rTables[sq] = table;
+    }
+
+    // Bishop magics
+    for (int sq = 0; sq < 64; sq++) {
+        int x = Position::getX(sq);
+        int y = Position::getY(sq);
+        int tableSize = 1 << bitCount(bMasks[sq]);
+        U64* table = &tableData[tableUsed];
+        tableUsed += tableSize;
+        for (int i = 0; i < tableSize; i++) {
+            U64 p = createPattern(i, bMasks[sq]);
+            table[i] = addBishopRays(x, y, p, false);
+        }
+        bTables[sq] = table;
+    }
+#else
     int rTableSize = 0;
     for (int sq = 0; sq < 64; sq++)
         rTableSize += 1 << (64 - rBits[sq]);
@@ -311,6 +351,7 @@ BitBoard::staticInitialize() {
         bTableSize += 1 << (64 - bBits[sq]);
     tableData.resize(rTableSize + bTableSize);
 
+    // Rook magics
     int tableUsed = 0;
     for (int sq = 0; sq < 64; sq++) {
         int x = Position::getX(sq);
@@ -321,7 +362,7 @@ BitBoard::staticInitialize() {
         tableUsed += tableSize;
         const U64 unInit = 0xffffffffffffffffULL;
         for (int i = 0; i < tableSize; i++) table[i] = unInit;
-        int nPatterns = 1 << BitBoard::bitCount(rMasks[sq]);
+        int nPatterns = 1 << bitCount(rMasks[sq]);
         for (int i = 0; i < nPatterns; i++) {
             U64 p = createPattern(i, rMasks[sq]);
             int entry = (int)((p * rMagics[sq]) >> rBits[sq]);
@@ -345,7 +386,7 @@ BitBoard::staticInitialize() {
         tableUsed += tableSize;
         const U64 unInit = 0xffffffffffffffffULL;
         for (int i = 0; i < tableSize; i++) table[i] = unInit;
-        int nPatterns = 1 << BitBoard::bitCount(bMasks[sq]);
+        int nPatterns = 1 << bitCount(bMasks[sq]);
         for (int i = 0; i < nPatterns; i++) {
             U64 p = createPattern(i, bMasks[sq]);
             int entry = (int)((p * bMagics[sq]) >> bBits[sq]);
@@ -358,6 +399,7 @@ BitBoard::staticInitialize() {
         }
         bTables[sq] = table;
     }
+#endif
 
     // squaresBetween
     for (int sq1 = 0; sq1 < 64; sq1++) {

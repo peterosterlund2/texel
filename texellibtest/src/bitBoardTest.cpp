@@ -378,6 +378,13 @@ BitBoardTest::testMaskAndMirror() {
     }
 }
 
+void
+BitBoardTest::testSliders() {
+    Position pos = TextIO::readFEN("4k3/8/8/8/8/8/8/R3K3 w Q - 0 1");
+    ASSERT_EQUAL(BitBoard::sqMask(B1,C1,D1,E1,A2,A3,A4,A5,A6,A7,A8),
+                 BitBoard::rookAttacks(A1, pos.occupiedBB()));
+}
+
 cute::suite
 BitBoardTest::getSuite() const {
     cute::suite s;
@@ -389,5 +396,6 @@ BitBoardTest::getSuite() const {
     s.push_back(CUTE(testGetDistance));
     s.push_back(CUTE(testTrailingZeros));
     s.push_back(CUTE(testMaskAndMirror));
+    s.push_back(CUTE(testSliders));
     return s;
 }

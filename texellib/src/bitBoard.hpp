@@ -29,6 +29,14 @@
 #include "util/util.hpp"
 #include "util/alignedAlloc.hpp"
 
+
+#ifdef HAS_BMI2
+#include <immintrin.h>
+inline U64 pext(U64 value, U64 mask) {
+    return _pext_u64(value, mask);
+}
+#endif
+
 enum Square {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -177,12 +185,20 @@ BitBoard::mirrorY(U64 mask) {
 
 inline U64
 BitBoard::bishopAttacks(int sq, U64 occupied) {
+#ifdef HAS_BMI2
+    return bTables[sq][pext(occupied, bMasks[sq])];
+#else
     return bTables[sq][(int)(((occupied & bMasks[sq]) * bMagics[sq]) >> bBits[sq])];
+#endif
 }
 
 inline U64
 BitBoard::rookAttacks(int sq, U64 occupied) {
+#ifdef HAS_BMI2
+    return rTables[sq][pext(occupied, rMasks[sq])];
+#else
     return rTables[sq][(int)(((occupied & rMasks[sq]) * rMagics[sq]) >> rBits[sq])];
+#endif
 }
 
 inline U64
