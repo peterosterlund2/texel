@@ -76,6 +76,9 @@ LargePageAlloc::allocBytes(size_t numBytes) {
     }
 #endif
 #else
+#ifndef MAP_HUGE_SHIFT
+#define MAP_HUGE_SHIFT 26
+#endif
     auto deleter = [numBytes](void* mem) {
         munmap(mem, numBytes);
     };
