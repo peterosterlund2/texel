@@ -428,6 +428,16 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
             return 0;
     }
 
+    // Correction for KQKNNNN which is generally won by the knights
+    if ((pos.wMtrl() == qV) && pos.pieceTypeBB(Piece::WQUEEN) && (nBN >= 4)) {
+        if (!doEval) return 1;
+        return score - 125 - mateEval(pos.getKingSq(false), pos.getKingSq(true));
+    }
+    if ((pos.bMtrl() == qV) && pos.pieceTypeBB(Piece::BQUEEN) && (nWN >= 4)) {
+        if (!doEval) return 1;
+        return score + 125 + mateEval(pos.getKingSq(true), pos.getKingSq(false));
+    }
+
     const int nWR = BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK));
     const int nBR = BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK));
 

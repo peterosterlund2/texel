@@ -204,32 +204,32 @@ Evaluate::evalPos(const Position& pos) {
     bPawnAttacks = BitBoard::bPawnAttacksMask(pos.pieceTypeBB(Piece::BPAWN));
 
     score += pieceSquareEval(pos);
-    if (print) std::cout << "eval pst    :" << score << std::endl;
+    if (print) std::cout << "info string eval pst    :" << score << std::endl;
     score += pawnBonus(pos);
-    if (print) std::cout << "eval pawn   :" << score << std::endl;
+    if (print) std::cout << "info string eval pawn   :" << score << std::endl;
     score += castleBonus(pos);
-    if (print) std::cout << "eval castle :" << score << std::endl;
+    if (print) std::cout << "info string eval castle :" << score << std::endl;
 
     score += rookBonus(pos);
-    if (print) std::cout << "eval rook   :" << score << std::endl;
+    if (print) std::cout << "info string eval rook   :" << score << std::endl;
     score += bishopEval(pos, score);
-    if (print) std::cout << "eval bishop :" << score << std::endl;
+    if (print) std::cout << "info string eval bishop :" << score << std::endl;
     score += knightEval(pos);
-    if (print) std::cout << "eval knight :" << score << std::endl;
+    if (print) std::cout << "info string eval knight :" << score << std::endl;
     score += threatBonus(pos);
-    if (print) std::cout << "eval threat :" << score << std::endl;
+    if (print) std::cout << "info string eval threat :" << score << std::endl;
     score += protectBonus(pos);
-    if (print) std::cout << "eval protect:" << score << std::endl;
+    if (print) std::cout << "info string eval protect:" << score << std::endl;
     score += kingSafety(pos);
-    if (print) std::cout << "eval king   :" << score << std::endl;
+    if (print) std::cout << "info string eval king   :" << score << std::endl;
     if (mhd->endGame)
         score = EndGameEval::endGameEval<true>(pos, phd->passedPawns, score);
-    if (print) std::cout << "eval endgame:" << score << std::endl;
+    if (print) std::cout << "info string eval endgame:" << score << std::endl;
     if (pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) {
         int hmc = clamp(pos.getHalfMoveClock() / 10, 0, 9);
         score = score * halfMoveFactor[hmc] / 128;
     }
-    if (print) std::cout << "eval halfmove:" << score << std::endl;
+    if (print) std::cout << "info string eval halfmove:" << score << std::endl;
     if (score > 0) {
         int nStale = BitBoard::bitCount(BitBoard::southFill(phd->stalePawns & pos.pieceTypeBB(Piece::WPAWN)) & 0xff);
         score = score * stalePawnFactor[nStale] / 128;
@@ -237,7 +237,7 @@ Evaluate::evalPos(const Position& pos) {
         int nStale = BitBoard::bitCount(BitBoard::southFill(phd->stalePawns & pos.pieceTypeBB(Piece::BPAWN)) & 0xff);
         score = score * stalePawnFactor[nStale] / 128;
     }
-    if (print) std::cout << "eval staleP :" << score << std::endl;
+    if (print) std::cout << "info string eval staleP :" << score << std::endl;
 
     if (!pos.isWhiteMove())
         score = -score;
@@ -268,7 +268,7 @@ void
 Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool print) const {
     // Compute material part of score
     int score = pos.wMtrl() - pos.bMtrl();
-    if (print) std::cout << "eval mtrlraw:" << score << std::endl;
+    if (print) std::cout << "info string eval mtrlraw:" << score << std::endl;
     const int nWQ = BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN));
     const int nBQ = BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN));
     const int nWN = BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT));
@@ -276,9 +276,9 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     int wCorr = correctionNvsQ(nWN, nBQ);
     int bCorr = correctionNvsQ(nBN, nWQ);
     score += wCorr - bCorr;
-    if (print) std::cout << "eval qncorr :" << score << std::endl;
+    if (print) std::cout << "info string eval qncorr :" << score << std::endl;
     score += tradeBonus(pos, wCorr, bCorr);
-    if (print) std::cout << "eval trade  :" << score << std::endl;
+    if (print) std::cout << "info string eval trade  :" << score << std::endl;
 
     const int nWR = BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK));
     const int nBR = BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK));
@@ -289,7 +289,7 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
         int b = std::min(bMajor, 3);
         score += majorPieceRedundancy[w*4+b];
     }
-    if (print) std::cout << "eval majred :" << score << std::endl;
+    if (print) std::cout << "info string eval majred :" << score << std::endl;
 
     const int wMtrl = pos.wMtrl();
     const int bMtrl = pos.bMtrl();
@@ -338,7 +338,7 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
             score -= (nBR == 0) ? QvsRMBonus1 : QvsRMBonus2;
         }
     }
-    if (print) std::cout << "eval imbala :" << score << std::endl;
+    if (print) std::cout << "info string eval imbala :" << score << std::endl;
     mhd.id = pos.materialId();
     mhd.score = score;
     mhd.endGame = EndGameEval::endGameEval<false>(pos, 0, 0);

@@ -422,13 +422,13 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
     bool analyseMode = UciParams::analyseMode->getBoolPar();
     int maxPV = (infinite || analyseMode) ? UciParams::multiPV->getIntPar() : 1;
     int minProbeDepth = UciParams::minProbeDepth->getIntPar();
-    if (analyseMode) {
+    if (analyseMode || infinite) {
         Evaluate eval(*et);
         int evScore = eval.evalPosPrint(pos) * (pos.isWhiteMove() ? 1 : -1);
         std::stringstream ss;
         ss.precision(2);
         ss << std::fixed << (evScore / 100.0);
-        os << "info string Eval: " << ss.str() << std::endl;
+        os << "info string eval total  :" << ss.str() << std::endl;
         if (UciParams::analysisAgeHash->getBoolPar())
             engineThread.getTT().nextGeneration();
     } else {
