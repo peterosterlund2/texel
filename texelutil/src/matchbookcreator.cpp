@@ -403,5 +403,7 @@ MatchBookCreator::getCommentDepth(const std::string& comment, int& depth) {
     auto n = comment.find('/');
     if (n == std::string::npos)
         return false;
-    return str2Num(comment.substr(n+1), depth);
+    if (!str2Num(comment.substr(n+1), depth))
+        return false;
+    return depth < 200;
 }
