@@ -269,7 +269,6 @@ private:
     Communicator& comm;
     int jobId = 0;
     int threadNo;
-    bool mainNumaNode; // True if this thread runs on the NUMA node holding the transposition table
     TreeLogger& logFile;
 
     Listener* listener = nullptr;

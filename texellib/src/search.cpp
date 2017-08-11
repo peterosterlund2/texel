@@ -46,7 +46,7 @@ Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                int posHashListSize0, SearchTables& st, Communicator& comm,
                TreeLogger& logFile)
     : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), comm(comm), threadNo(0),
-      mainNumaNode(true), logFile(logFile) {
+      logFile(logFile) {
     stopHandler = make_unique<DefaultStopHandler>(*this);
     init(pos0, posHashList0, posHashListSize0);
 }
@@ -479,8 +479,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     TranspositionTable::TTEntry ent;
     ent.clear();
     const bool singularSearch = !sti.singularMove.isEmpty();
-    const bool useTT = (mainNumaNode || (depth >= 1)) && // To reduce memory bandwidth
-                       !singularSearch;
+    const bool useTT = !singularSearch;
     if (useTT) tt.probe(hKey, ent);
     Move hashMove;
     if (ent.getType() != TType::T_EMPTY) {
@@ -1335,5 +1334,4 @@ Search::selectHashMove(MoveList& moves, const Move& hashMove) {
 void
 Search::setThreadNo(int tNo) {
     threadNo = tNo;
-    mainNumaNode = Numa::instance().isMainNode(threadNo);
 }
