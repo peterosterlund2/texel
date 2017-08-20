@@ -148,6 +148,9 @@ public:
 
     void setOption(const std::string& optionName, const std::string& optionValue);
 
+    /** If the engine is not searching, wait until all pending options have been processed. */
+    void waitReady();
+
     void finishSearch(Position& pos, const Move& bestMove);
 
 private:

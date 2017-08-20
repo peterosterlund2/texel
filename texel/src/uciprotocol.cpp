@@ -175,6 +175,7 @@ UCIProtocol::handleCommand(const std::string& cmdLine, std::ostream& os) {
             os << "uciok" << std::endl;
         } else if (cmd == "isready") {
             initEngine(os);
+            engine->waitReady();
             os << "readyok" << std::endl;
         } else if (cmd == "setoption") {
             initEngine(os);

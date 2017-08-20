@@ -547,6 +547,12 @@ EngineControl::setOption(const std::string& optionName, const std::string& optio
 }
 
 void
+EngineControl::waitReady() {
+    if (!sc)
+        engineThread.waitOptionsSet();
+}
+
+void
 EngineControl::finishSearch(Position& pos, const Move& bestMove) {
     Move ponderMove = getPonderMove(pos, bestMove);
     listener.notifyPlayedMove(bestMove, ponderMove);
