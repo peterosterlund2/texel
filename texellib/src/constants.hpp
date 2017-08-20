@@ -29,6 +29,7 @@
 namespace SearchConst {
     const int MATE0 = 32000;
     const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
+    const int BUSY = -32766; // Represents a busy node in the ABDADA algorithm
 
     inline bool isWinScore(int score) { return score > MATE0 / 2; }
     inline bool isLoseScore(int score) { return score < -(MATE0 / 2); }

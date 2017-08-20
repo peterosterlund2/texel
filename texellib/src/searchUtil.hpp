@@ -40,6 +40,8 @@ public:
     const U8* deSerialize(const U8* buffer);
 
     bool allowNullMove;    // Don't allow two null-moves in a row
+    bool abdadaExclusive;  // True to make search avoid searching a subtree that
+                           // is already being searched.
     Move bestMove;         // Copy of the best found move at this ply
     Move currentMove;      // Move currently being searched
     int currentMoveNo;     // Index of currentMove in move list
@@ -58,7 +60,7 @@ SearchTreeInfo::SearchTreeInfo()
 
 inline U8*
 SearchTreeInfo::serialize(U8* buffer) const {
-    return Serializer::serialize<4096>(buffer, allowNullMove, bestMove.getCompressedMove(),
+    return Serializer::serialize<4096>(buffer, allowNullMove, abdadaExclusive, bestMove.getCompressedMove(),
                                        currentMove.getCompressedMove(), currentMoveNo,
                                        evalScore, nodeIdx, singularMove.getCompressedMove());
 }
@@ -66,7 +68,7 @@ SearchTreeInfo::serialize(U8* buffer) const {
 inline const U8*
 SearchTreeInfo::deSerialize(const U8* buffer) {
     U16 m1, m2, m3;
-    buffer = Serializer::deSerialize<4096>(buffer, allowNullMove, m1, m2,
+    buffer = Serializer::deSerialize<4096>(buffer, allowNullMove, abdadaExclusive, m1, m2,
                                            currentMoveNo, evalScore, nodeIdx, m3);
     bestMove.setFromCompressed(m1);
     currentMove.setFromCompressed(m2);

@@ -38,13 +38,14 @@ ClusterTT::addReceiver(TTReceiver* receiver) {
 }
 
 void
-ClusterTT::clusterInsert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore) {
+ClusterTT::clusterInsert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore, bool busy) {
     TranspositionTable::TTEntry ent;
     ent.clear();
     ent.setMove(sm);
     ent.setKey(key);
     ent.setScore(sm.score(), ply);
     ent.setDepth(depth);
+    ent.setBusy(busy);
     ent.setType(type);
     ent.setEvalScore(evalScore);
     insert(ent);
@@ -107,11 +108,12 @@ LocalTTReceiver::applyChunk(const ChangeBatch& changes) {
         int type = ent.getType();
         int ply = 0;
         int depth = ent.getDepth();
+        bool busy = ent.getBusy();
         int evalScore = ent.getEvalScore();
         Move sm;
         ent.getMove(sm);
         sm.setScore(ent.getScore(ply));
-        tt.insert(key, sm, type, ply, depth, evalScore);
+        tt.insert(key, sm, type, ply, depth, evalScore, busy);
     }
     return 0;
 }

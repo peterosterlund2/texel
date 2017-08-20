@@ -76,7 +76,8 @@ TranspositionTable::clear() {
 }
 
 void
-TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore) {
+TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore,
+                           bool busy) {
     if (depth < 0) depth = 0;
     size_t idx0 = getIndex(key);
     U64 key2 = getStoredKey(key);
@@ -99,13 +100,15 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
         }
     }
     bool doStore = true;
-    if ((ent.getKey() == key2) && (ent.getDepth() > depth) && (ent.getType() == type)) {
-        if (type == TType::T_EXACT)
-            doStore = false;
-        else if ((type == TType::T_GE) && (sm.score() <= ent.getScore(ply)))
-            doStore = false;
-        else if ((type == TType::T_LE) && (sm.score() >= ent.getScore(ply)))
-            doStore = false;
+    if (!busy) {
+        if ((ent.getKey() == key2) && (ent.getDepth() > depth) && (ent.getType() == type)) {
+            if (type == TType::T_EXACT)
+                doStore = false;
+            else if ((type == TType::T_GE) && (sm.score() <= ent.getScore(ply)))
+                doStore = false;
+            else if ((type == TType::T_LE) && (sm.score() >= ent.getScore(ply)))
+                doStore = false;
+        }
     }
     if (doStore) {
         if ((ent.getKey() != key2) || (sm.from() != sm.to()))
@@ -113,11 +116,24 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
         ent.setKey(key2);
         ent.setScore(sm.score(), ply);
         ent.setDepth(depth);
+        ent.setBusy(busy);
         ent.setGeneration((S8)generation);
         ent.setType(type);
         ent.setEvalScore(evalScore);
         ent.store(table[idx]);
     }
+}
+
+void
+TranspositionTable::setBusy(const TTEntry& ent, int ply) {
+    U64 key = ent.getKey();
+    int type = ent.getType();
+    int depth = ent.getDepth();
+    int evalScore = ent.getEvalScore();
+    Move sm;
+    ent.getMove(sm);
+    sm.setScore(ent.getScore(ply));
+    insert(key, sm, type, ply, depth, evalScore, true);
 }
 
 void

@@ -51,6 +51,7 @@ testTTEntry() {
     ent1.setMove(move);
     ent1.setScore(score, ply);
     ent1.setDepth(3);
+    ent1.setBusy(false);
     ent1.setGeneration(0);
     ent1.setType(TType::T_EXACT);
     Move tmpMove;
@@ -58,6 +59,7 @@ testTTEntry() {
     ASSERT_EQUAL(move, tmpMove);
     ASSERT_EQUAL(score, ent1.getScore(ply));
     ASSERT_EQUAL(score, ent1.getScore(ply + 3));    // Non-mate score, should be ply-independent
+    ASSERT_EQUAL(false, ent1.getBusy());
 
     // Test positive mate score
     TTEntry ent2;
@@ -68,12 +70,14 @@ testTTEntry() {
     ent2.setMove(move);
     ent2.setScore(score, ply);
     ent2.setDepth(99);
+    ent2.setBusy(true);
     ent2.setGeneration(0);
     ent2.setType(TType::T_EXACT);
     ent2.getMove(tmpMove);
     ASSERT_EQUAL(move, tmpMove);
     ASSERT_EQUAL(score, ent2.getScore(ply));
     ASSERT_EQUAL(score + 2, ent2.getScore(ply - 2));
+    ASSERT_EQUAL(true, ent2.getBusy());
 
     // Compare ent1 and ent2
     ASSERT(!ent1.betterThan(ent2, 0));  // More depth is good
@@ -128,7 +132,13 @@ testInsert() {
         int type = TType::T_EXACT;
         int ply = i + 1;
         int depth = (i * 2 + 5);
-        tt.insert(pos.historyHash(), m, type, ply, depth, score * 2 + 3);
+        tt.insert(pos.historyHash(), m, type, ply, depth, score * 2 + 3, (i % 2) == 0);
+        if (i == 7) {
+            TranspositionTable::TTEntry ent;
+            ent.clear();
+            tt.probe(pos.historyHash(), ent);
+            tt.setBusy(ent, ply);
+        }
     }
 
     pos = TextIO::readFEN(TextIO::startPosFEN);
@@ -148,6 +158,7 @@ testInsert() {
         Move tmpMove;
         ent.getMove(tmpMove);
         ASSERT_EQUAL(m, tmpMove);
+        ASSERT_EQUAL((i % 2) == 0 || (i == 7), ent.getBusy());
     }
 }
 

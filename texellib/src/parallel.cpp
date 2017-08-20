@@ -801,19 +801,6 @@ ThreadStopHandler::reportNodes() {
     wt.sendReportStats(nodes, tbHits);
 }
 
-/*
-static int getExtraDepth(int threadNo) {
-    int t = threadNo;
-    int x = t + 1;
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-    return BitBoard::bitCount(x - t - 1);
-}
-*/
-
 void
 WorkerThread::doSearch(CommHandler& commHandler) {
     if (!et)
@@ -824,9 +811,7 @@ WorkerThread::doSearch(CommHandler& commHandler) {
         ht = make_unique<History>();
 
     using namespace SearchConst;
-    int globalThreadNo = Cluster::instance().getGlobalThreadOffset() + threadNo;
-    int initExtraDepth = globalThreadNo & 1;
-//    int initExtraDepth = getExtraDepth(globalThreadNo);
+    int initExtraDepth = 0;
     for (int extraDepth = initExtraDepth; ; extraDepth++) {
         Search::SearchTables st(comm->getCTT(), *kt, *ht, *et);
         Position pos(this->pos);

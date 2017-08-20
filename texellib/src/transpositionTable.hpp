@@ -109,6 +109,8 @@ public:
 
         int getDepth() const;
         void setDepth(int d);
+        bool getBusy() const;
+        void setBusy(bool b);
         int getGeneration() const;
         void setGeneration(int g);
         int getType() const;
@@ -120,7 +122,8 @@ public:
         U64 key;        //  0 64 key         Zobrist hash key
         U64 data;       //  0 16 move        from + (to<<6) + (promote<<12)
                         // 16 16 score       Score from search
-                        // 32 10 depth       Search depth
+                        // 32  9 depth       Search depth
+                        // 41  1 busy        True if some thread is searching in this position
                         // 42  4 generation  Increase when OTB position changes
                         // 46  2 type        exact score, lower bound, upper bound
                         // 48 16 evalScore   Score from static evaluation
@@ -137,7 +140,11 @@ public:
     void reSize(int log2Size);
 
     /** Insert an entry in the hash table. */
-    void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore);
+    void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore,
+                bool busy = false);
+
+    /** Set the busy flag for an entry. Used by "approximate ABDADA" algorithm. */
+    void setBusy(const TTEntry& ent, int ply);
 
     /** Retrieve an entry from the hash table corresponding to position with zobrist key "key". */
     void probe(U64 key, TTEntry& result);
@@ -352,12 +359,22 @@ TranspositionTable::TTEntry::isCutOff(int alpha, int beta, int ply, int depth) c
 
 inline int
 TranspositionTable::TTEntry::getDepth() const {
-    return getBits(32, 10);
+    return getBits(32, 9);
 }
 
 inline void
 TranspositionTable::TTEntry::setDepth(int d) {
-    setBits(32, 10, d);
+    setBits(32, 9, d);
+}
+
+inline bool
+TranspositionTable::TTEntry::getBusy() const {
+    return getBits(41, 1);
+}
+
+inline void
+TranspositionTable::TTEntry::setBusy(bool b) {
+    setBits(41, 1, b);
 }
 
 inline int

@@ -56,7 +56,8 @@ public:
 
     void addReceiver(TTReceiver* receiver);
 
-    void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore);
+    void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore, bool busy = false);
+    void setBusy(const TranspositionTable::TTEntry& ent, int ply);
     void probe(U64 key, TranspositionTable::TTEntry& result);
     void prefetch(U64 key);
     void extractPVMoves(const Position& rootPos, const Move& mFirst, std::vector<Move>& pv);
@@ -72,7 +73,7 @@ private:
     TranspositionTable& tt;
     int minDepth; // Smallest minDepth among all receivers
 
-    void clusterInsert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore);
+    void clusterInsert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore, bool busy);
 
 
     struct ReceiverData {
@@ -142,10 +143,22 @@ ClusterTT::ClusterTT(TranspositionTable& tt)
 }
 
 inline void
-ClusterTT::insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore) {
-    tt.insert(key, sm, type, ply, depth, evalScore);
+ClusterTT::insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore, bool busy) {
+    tt.insert(key, sm, type, ply, depth, evalScore, busy);
     if (depth >= minDepth)
-        clusterInsert(key, sm, type, ply, depth, evalScore);
+        clusterInsert(key, sm, type, ply, depth, evalScore, busy);
+}
+
+inline void
+ClusterTT::setBusy(const TranspositionTable::TTEntry& ent, int ply) {
+    U64 key = ent.getKey();
+    int type = ent.getType();
+    int depth = ent.getDepth();
+    int evalScore = ent.getEvalScore();
+    Move sm;
+    ent.getMove(sm);
+    sm.setScore(ent.getScore(ply));
+    insert(key, sm, type, ply, depth, evalScore, true);
 }
 
 inline void
@@ -196,8 +209,11 @@ public:
 class ClusterTT {
 public:
     ClusterTT(TranspositionTable& tt) : tt(tt) {}
-    void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore) {
-        tt.insert(key, sm, type, ply, depth, evalScore);
+    void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore, bool busy = false) {
+        tt.insert(key, sm, type, ply, depth, evalScore, busy);
+    }
+    void setBusy(const TranspositionTable::TTEntry& ent, int ply) {
+        tt.setBusy(ent, ply);
     }
     void probe(U64 key, TranspositionTable::TTEntry& result) {
         tt.probe(key, result);
