@@ -54,7 +54,7 @@ public:
 
 inline
 SearchTreeInfo::SearchTreeInfo()
-    : allowNullMove(true), currentMoveNo(0),
+    : allowNullMove(true), abdadaExclusive(false), currentMoveNo(0),
       evalScore(SearchConst::UNKNOWN_SCORE), nodeIdx(0) {
 }
 

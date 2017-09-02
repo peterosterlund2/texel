@@ -409,6 +409,7 @@ private:
     TranspositionTable& tt;
 
     std::unique_ptr<TreeLogger> logFile;
+    U64 rootNodeIdx = 0;
     Position pos;
     SearchTreeInfo sti;
     std::vector<U64> posHashList;

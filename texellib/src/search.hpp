@@ -142,8 +142,7 @@ public:
     void scoreMoveList(MoveList& moves, int ply, int startIdx = 0);
 
     /** Set search tree information for a given ply. */
-    void setSearchTreeInfo(int ply, const SearchTreeInfo& sti,
-                           U64 rootNodeIdx);
+    void setSearchTreeInfo(int ply, const SearchTreeInfo& sti, U64 rootNodeIdx);
 
     /** Get total number of nodes searched by this thread. */
     S64 getTotalNodesThisThread() const;

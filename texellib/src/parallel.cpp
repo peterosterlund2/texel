@@ -664,6 +664,7 @@ WorkerThread::CommHandler::initSearch(const Position& pos,
 
     wt.logFile = make_unique<TreeLogger>();
     wt.logFile->open("/home/petero/treelog.dmp", wt.threadNo);
+    wt.rootNodeIdx = wt.logFile->logPosition(pos);
     if (wt.kt)
         wt.kt->clear();
     if (wt.ht) {
@@ -815,7 +816,6 @@ WorkerThread::doSearch(CommHandler& commHandler) {
     for (int extraDepth = initExtraDepth; ; extraDepth++) {
         Search::SearchTables st(comm->getCTT(), *kt, *ht, *et);
         Position pos(this->pos);
-        const U64 rootNodeIdx = logFile->logPosition(pos);
 
         UndoInfo ui;
         pos.makeMove(sti.currentMove, ui);
@@ -834,6 +834,7 @@ WorkerThread::doSearch(CommHandler& commHandler) {
         int ply = 1;
         sc.setSearchTreeInfo(ply-1, sti, rootNodeIdx);
         bool inCheck = MoveGen::inCheck(pos);
+        U64 nodeIdx = logFile->peekNextNodeIdx();
         try {
             int searchDepth = std::min(depth + extraDepth, MAX_SEARCH_DEPTH);
             int captSquare = -1;
@@ -844,6 +845,8 @@ WorkerThread::doSearch(CommHandler& commHandler) {
                 break;
             }
         } catch (const Search::StopSearch&) {
+            logFile->logNodeEnd(nodeIdx, UNKNOWN_SCORE, TType::T_EMPTY,
+                                UNKNOWN_SCORE, this->pos.historyHash());
             break;
         }
     }

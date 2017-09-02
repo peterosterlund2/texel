@@ -288,6 +288,7 @@ Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
     SearchTreeInfo sti = searchTreeInfo[ply-1];
     jobId++;
     comm.sendStartSearch(jobId, sti, alpha, beta, depth);
+    U64 nodeIdx = logFile.peekNextNodeIdx();
     Position pos0(pos);
     int posHashListSize0 = posHashListSize;
     try {
@@ -302,7 +303,7 @@ Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
         int score = res.getScore();
         int evalScore = UNKNOWN_SCORE;
         int type = score <= alpha ? TType::T_LE : score >= beta ? TType::T_GE : TType::T_EXACT;
-        logFile.logNodeEnd(searchTreeInfo[ply].nodeIdx, score, type, evalScore, hKey);
+        logFile.logNodeEnd(nodeIdx, score, type, evalScore, hKey);
         return score;
     }
 }

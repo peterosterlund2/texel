@@ -271,6 +271,9 @@ public:
      * Return index of position entry. */
     U64 logPosition(const Position& pos);
 
+    /** Return node index that will be returned if logNodeStart() is called. */
+    U64 peekNextNodeIdx() const;
+
     /**
      * Log information when entering a search node.
      * @param parentId     Index of parent node.
@@ -320,6 +323,7 @@ public:
     void close() { }
     bool isOpened() const { return false; }
     U64 logPosition(const Position& pos) { return 0; }
+    U64 peekNextNodeIdx() const { return 0; }
     U64 logNodeStart(U64 parentIndex, const Move& m, int alpha, int beta, int ply, int depth) { return 0; }
     U64 logNodeEnd(U64 startIndex, int score, int scoreType, int evalScore, U64 hashKey) { return 0; }
 };
@@ -426,6 +430,11 @@ TreeLoggerWriter::logPosition(const Position& pos) {
     U64 ret = nextIndex;
     writePosition(pos);
     return ret;
+}
+
+inline U64
+TreeLoggerWriter::peekNextNodeIdx() const {
+    return nextIndex;
 }
 
 inline U64
