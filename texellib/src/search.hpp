@@ -285,7 +285,7 @@ private:
     S64 maxNodes;              // Maximum number of nodes to search (approximately)
     int minProbeDepth;         // Minimum depth to probe endgame tablebases.
     int nodesToGo;             // Number of nodes until next time check
-    RelaxedShared<int> nodesBetweenTimeCheck; // How often to check remaining time
+    int nodesBetweenTimeCheck; // How often to check remaining time
 
     // Reduced strength variables
     int strength;              // Strength (0-1000)

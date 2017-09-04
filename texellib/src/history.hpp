@@ -67,7 +67,7 @@ private:
     // Each entry has the following encoding:
     // Bits  0-15: nSuccess + nFail
     // Bits 16-31: histScore * scale
-    RelaxedShared<U32> ht[Piece::nPieceTypes][64];
+    U32 ht[Piece::nPieceTypes][64];
 };
 
 
