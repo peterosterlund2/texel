@@ -34,19 +34,19 @@ int History::depthTable[] = {
 
 void
 History::init() {
-    for (int p = 0; p < Piece::nPieceTypes; p++)
-        for (int sq = 0; sq < 64; sq++)
-            ht[p][sq] = 0;
+    for (int p = 0; p < Piece::nPieceTypes; p++) {
+        for (int sq = 0; sq < 64; sq++) {
+            ht[p][sq].nValues = 0;
+            ht[p][sq].scaledScore = 0;
+        }
+    }
 }
 
 void
 History::reScale() {
-    for (int p = 0; p < Piece::nPieceTypes; p++) {
-        for (int sq = 0; sq < 64; sq++) {
-            U32 e = ht[p][sq];
-            ht[p][sq] = (e & 0xffff0000) + ((e & 0xffff) >> 2);
-        }
-    }
+    for (int p = 0; p < Piece::nPieceTypes; p++)
+        for (int sq = 0; sq < 64; sq++)
+            ht[p][sq].nValues >>= 2;
 }
 
 void
@@ -60,7 +60,7 @@ History::print() const {
                     std::cout << "  ";
                 for (int col = 0; col < 8; col++) {
                     int sq = Position::getSquare(col, row);
-                    int hist = ht[piece][sq] >> (16 + log2Scale);
+                    int hist = ht[piece][sq].scaledScore >> log2Scale;
                     std::cout << ' ' << std::setw(2) << hist;
                 }
             }
@@ -78,7 +78,7 @@ History::print() const {
                     std::cout << "  ";
                 for (int col = 0; col < 8; col++) {
                     int sq = Position::getSquare(col, row);
-                    int s = (ht[piece][sq] & 0xffff) * 100 / (maxSum + 1);
+                    int s = ht[piece][sq].nValues * 100 / (maxSum + 1);
                     std::cout << ' ' << std::setw(2) << s;
                 }
             }

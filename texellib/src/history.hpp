@@ -64,10 +64,11 @@ private:
     static const int maxSum = 1000;          // max value of nSuccess + nFail
     static const int maxVal = 50;            // getHistScore returns < maxVal
 
-    // Each entry has the following encoding:
-    // Bits  0-15: nSuccess + nFail
-    // Bits 16-31: histScore * scale
-    U32 ht[Piece::nPieceTypes][64];
+    struct HTEntry {
+        U16 nValues;     // nSuccess + nFail
+        U16 scaledScore; // histScore * scale
+    };
+    HTEntry ht[Piece::nPieceTypes][64];
 };
 
 
@@ -83,39 +84,38 @@ History::depthWeight(int depth) {
 
 inline void
 History::addSuccess(const Position& pos, const Move& m, int depth) {
-    int p = pos.getPiece(m.from());
     int cnt = depthWeight(depth);
-    if (cnt == 0)
-        return;
-    U32 e = ht[p][m.to()];
-    int fpHistVal = e >> 16;
-    int sum = e & 0xffff;
-
-    fpHistVal = (fpHistVal * sum + (maxVal * scale - 1) * cnt) / (sum + cnt);
-    sum = std::min(sum + cnt, maxSum);
-    ht[p][m.to()] = (fpHistVal << 16) + sum;
+    if (cnt != 0) {
+        int p = pos.getPiece(m.from());
+        HTEntry& e = ht[p][m.to()];
+        int fpHistVal = e.scaledScore;
+        int sum = e.nValues;
+        fpHistVal = (fpHistVal * sum + (maxVal * scale - 1) * cnt) / (sum + cnt);
+        sum = std::min(sum + cnt, maxSum);
+        e.nValues = sum;
+        e.scaledScore = fpHistVal;
+    }
 }
 
 inline void
 History::addFail(const Position& pos, const Move& m, int depth) {
-    int p = pos.getPiece(m.from());
     int cnt = depthWeight(depth);
-    if (cnt == 0)
-        return;
-    U32 e = ht[p][m.to()];
-    int fpHistVal = e >> 16;
-    int sum = e & 0xffff;
-
-    fpHistVal = fpHistVal * sum / (sum + cnt);
-    sum = std::min(sum + cnt, maxSum);
-    ht[p][m.to()] = (fpHistVal << 16) + sum;
+    if (cnt != 0) {
+        int p = pos.getPiece(m.from());
+        HTEntry& e = ht[p][m.to()];
+        int fpHistVal = e.scaledScore;
+        int sum = e.nValues;
+        fpHistVal = fpHistVal * sum / (sum + cnt);
+        sum = std::min(sum + cnt, maxSum);
+        e.nValues = sum;
+        e.scaledScore = fpHistVal;
+    }
 }
 
 inline int
 History::getHistScore(const Position& pos, const Move& m) const {
     int p = pos.getPiece(m.from());
-    U32 e = ht[p][m.to()];
-    return e >> (16 + log2Scale);
+    return ht[p][m.to()].scaledScore >> log2Scale;
 }
 
 #endif /* HISTORY_HPP_ */
