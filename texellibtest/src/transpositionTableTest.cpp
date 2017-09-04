@@ -111,6 +111,22 @@ testTTEntry() {
     ASSERT_EQUAL(move, tmpMove);
     ASSERT_EQUAL(score, ent3.getScore(ply));
     ASSERT_EQUAL(score - 2, ent3.getScore(ply - 2));
+
+    // PV is better than bound if depth similar, but deep bound is better than shallow PV
+    ent1.clear();
+    ent1.setDepth(10);
+    ent1.setType(TType::T_EXACT);
+    ent2.clear();
+    ent2.setDepth(10);
+    ent2.setType(TType::T_GE);
+    ASSERT(ent1.betterThan(ent2, 0));
+    ASSERT(!ent2.betterThan(ent1, 0));
+    ent1.setDepth(9);
+    ASSERT(ent1.betterThan(ent2, 0));
+    ASSERT(!ent2.betterThan(ent1, 0));
+    ent1.setDepth(3);
+    ASSERT(!ent1.betterThan(ent2, 0));
+    ASSERT(ent2.betterThan(ent1, 0));
 }
 
 /**

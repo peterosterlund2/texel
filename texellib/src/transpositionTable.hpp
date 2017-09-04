@@ -282,11 +282,13 @@ inline bool
 TranspositionTable::TTEntry::betterThan(const TTEntry& other, int currGen) const {
     if ((getGeneration() == currGen) != (other.getGeneration() == currGen))
         return getGeneration() == currGen;   // Old entries are less valuable
-    if ((getType() == TType::T_EXACT) != (other.getType() == TType::T_EXACT))
-        return getType() == TType::T_EXACT;         // Exact score more valuable than lower/upper bound
-    if (getDepth() != other.getDepth())
-        return getDepth() > other.getDepth();     // Larger depth is more valuable
-    return false;   // Otherwise, pretty much equally valuable
+    int e1 = (getType() == TType::T_EXACT) ? 3 : 0;
+    int e2 = (other.getType() == TType::T_EXACT) ? 3 : 0;
+    int d1 = getDepth() + e1;
+    int d2 = other.getDepth() + e2;
+    if (d1 != d2)
+        return d1 > d2; // Larger depth is more valuable
+    return false;       // Otherwise, pretty much equally valuable
 }
 
 inline U64
