@@ -427,7 +427,7 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
     }
 
     cmd->fromByteBuf(buffer);
-    return std::move(cmd);
+    return cmd;
 }
 
 // ----------------------------------------------------------------------------
