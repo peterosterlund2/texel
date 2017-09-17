@@ -831,7 +831,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
             bool isPromotion = (m.promoteTo() != Piece::EMPTY);
             int sVal = std::numeric_limits<int>::min();
-            bool mayReduce = (m.score() < 53) && (!isCapture || m.score() < 0) && !isPromotion;
+            bool mayReduce = (m.score() < 30) && (!isCapture || m.score() < 0) && !isPromotion;
             bool givesCheck = MoveGen::givesCheck(pos, m);
             bool doFutility = false;
             if ((pass == 0) && mayReduce && haveLegalMoves && !givesCheck && !passedPawnPush(pos, m)) {
@@ -880,6 +880,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                                 lmr += 1; // Reduce expected cut nodes more
                             else if (badPrevMove)
                                 lmr += 1;
+                            else if (m.score() < 20)
+                                lmr += 1; // Bad history score
                         }
                     }
                 } else {

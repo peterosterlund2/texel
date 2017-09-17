@@ -292,7 +292,7 @@ SearchTest::testKQKRNullMove() {
     Position pos = TextIO::readFEN("7K/6R1/5k2/3q4/8/8/8/8 b - - 0 1");
     Search sc(pos, nullHist, 0, st, comm, treeLog);
     sc.setMinProbeDepth(100);
-    Move bestM = idSearch(sc, 12);
+    Move bestM = idSearch(sc, 13);
     ASSERT_EQUAL(SearchConst::MATE0-18, bestM.score());
 }
 
