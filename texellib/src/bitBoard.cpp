@@ -70,7 +70,7 @@ int BitBoard::rBits[64] = { 64-12, 64-11, 64-11, 64-11, 64-11, 64-11, 64-11, 64-
                             64-11, 64-10, 64-10, 64-10, 64-10, 64-10, 64-10, 64-11,
                             64-11, 64-10, 64-10, 64-10, 64-10, 64-10, 64-10, 64-11,
                             64-11, 64-10, 64-10, 64-11, 64-10, 64-10, 64-10, 64-11,
-                            64-10, 64- 9, 64- 9, 64- 9, 64- 9, 64- 9, 64-10, 64-10,
+                            64-10, 64- 9, 64- 9, 64- 9, 64- 9, 64- 9, 64- 9, 64-10,
                             64-11, 64-10, 64-10, 64-10, 64-10, 64-11, 64-10, 64-11 };
 const U64 BitBoard::rMagics[64] = {
     0x19a80065ff2bffffULL, 0x3fd80075ffebffffULL, 0x4010000df6f6fffeULL, 0x0050001faffaffffULL,
@@ -86,7 +86,7 @@ const U64 BitBoard::rMagics[64] = {
     0x00fffdfdd8005000ULL, 0x007fff80ebffb000ULL, 0x003fffdf603f6000ULL, 0x001fffe050405000ULL,
     0x000fff400700c00cULL, 0x0007ff6007bf600aULL, 0x0003ffeebffec005ULL, 0x0001fffdf3feb001ULL,
     0x00ffff39ff484a00ULL, 0x007fff3fff486300ULL, 0x003fff99ffac2e00ULL, 0x001fff31ff2a6a00ULL,
-    0x000fff19ff15b600ULL, 0x0007fff5fff28600ULL, 0x0003fffddffbfee0ULL, 0x0001fff5f63c96a0ULL,
+    0x000fff19ff15b600ULL, 0x0007fff5fff28600ULL, 0x0003ff95e5e6a4c0ULL, 0x0001fff5f63c96a0ULL,
     0x00ffff5dff65cfb6ULL, 0x007fffbaffd1c5aeULL, 0x003fff71ff6cbceaULL, 0x001fffd9ffd4756eULL,
     0x000ffff5fff338e6ULL, 0x0007fffdfffe24f6ULL, 0x0003ffef27eebe74ULL, 0x0001ffff23ff605eULL
 };
