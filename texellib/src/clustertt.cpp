@@ -102,6 +102,10 @@ LocalTTReceiver::LocalTTReceiver(TranspositionTable& tt)
 int
 LocalTTReceiver::applyChunk(const ChangeBatch& changes) {
     int n = changes.nEnts;
+#ifdef HAS_PREFETCH
+    for (int i = 0; i < n; i++)
+        tt.prefetch(changes.ent[i].getKey());
+#endif
     for (int i = 0; i < n; i++) {
         const TranspositionTable::TTEntry& ent = changes.ent[i];
         U64 key = ent.getKey();
