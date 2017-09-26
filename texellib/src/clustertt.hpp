@@ -137,11 +137,6 @@ private:
 };
 
 
-inline
-ClusterTT::ClusterTT(TranspositionTable& tt)
-    : tt(tt), minDepth(0) {
-}
-
 inline void
 ClusterTT::insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore, bool busy) {
     tt.insert(key, sm, type, ply, depth, evalScore, busy);

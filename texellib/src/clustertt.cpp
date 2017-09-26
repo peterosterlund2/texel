@@ -24,12 +24,17 @@
  */
 
 #include "clustertt.hpp"
+#include "cluster.hpp"
 #include "util/logger.hpp"
 #include "treeLogger.hpp"
 
 #include <limits.h>
 
 #ifdef CLUSTER
+
+ClusterTT::ClusterTT(TranspositionTable& tt)
+    : tt(tt), minDepth(Cluster::instance().isEnabled() ? 0 : INT_MAX) {
+}
 
 void
 ClusterTT::addReceiver(TTReceiver* receiver) {
