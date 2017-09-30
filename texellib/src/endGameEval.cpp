@@ -267,7 +267,7 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
     }
     }
 
-    // QvsRBP fortress detection
+    // QvsRMP fortress detection
     if (pos.pieceTypeBB(Piece::WQUEEN) && (wMtrlNoPawns == qV) &&
         pos.pieceTypeBB(Piece::BROOK) && pos.pieceTypeBB(Piece::BPAWN) &&
         pos.pieceTypeBB(Piece::BBISHOP, Piece::BKNIGHT) && (bMtrlNoPawns == rV + bV)) {
