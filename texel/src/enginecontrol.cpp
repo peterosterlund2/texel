@@ -340,9 +340,6 @@ EngineControl::newGame() {
     setOption("Clear Hash", "");
 }
 
-/**
- * Compute thinking time for current search.
- */
 void
 EngineControl::computeTimeLimit(const SearchParams& sPar) {
     minTimeLimit = -1;
@@ -469,9 +466,6 @@ EngineControl::setupPosition(Position pos, const std::vector<Move>& moves) {
     this->pos = pos;
 }
 
-/**
- * Try to find a move to ponder from the transposition table.
- */
 Move
 EngineControl::getPonderMove(Position pos, const Move& m) {
     Move ret;

@@ -436,7 +436,7 @@ MPICommunicator::mpiRecv() {
                     break;
                 }
                 case CommandType::START_SEARCH: {
-                    const StartSearchCommand*  sCmd = static_cast<const StartSearchCommand*>(cmd.get());
+                    const StartSearchCommand* sCmd = static_cast<const StartSearchCommand*>(cmd.get());
                     sendStartSearch(sCmd->jobId, sCmd->sti, sCmd->alpha, sCmd->beta, sCmd->depth);
                     break;
                 }

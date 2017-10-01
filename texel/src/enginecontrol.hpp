@@ -154,9 +154,7 @@ public:
     void finishSearch(Position& pos, const Move& bestMove);
 
 private:
-    /**
-     * Compute thinking time for current search.
-     */
+    /** Compute thinking time for current search. */
     void computeTimeLimit(const SearchParams& sPar);
 
     void startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPercentage,
@@ -166,9 +164,7 @@ private:
 
     void setupPosition(Position pos, const std::vector<Move>& moves);
 
-    /**
-     * Try to find a move to ponder from the transposition table.
-     */
+    /** Try to find a move to ponder from the transposition table. */
     Move getPonderMove(Position pos, const Move& m);
 
 
