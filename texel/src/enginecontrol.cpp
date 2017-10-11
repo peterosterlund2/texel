@@ -148,6 +148,8 @@ EngineMainThread::startSearch(EngineControl* engineControl,
                               int maxPV, int minProbeDepth,
                               std::atomic<bool>& ponder, std::atomic<bool>& infinite) {
     int nThreads = UciParams::threads->getIntPar();
+    if (UciParams::strength->getIntPar() < 1000)
+        nThreads = 1;
     int nThreadsThisNode;
     std::vector<int> nThreadsChildren;
     Cluster::instance().assignThreads(nThreads, nThreadsThisNode, nThreadsChildren);
