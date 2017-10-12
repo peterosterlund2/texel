@@ -29,7 +29,7 @@ void
 MoveList::filter(const std::vector<Move>& searchMoves)
 {
     int used = 0;
-    for (int i = 0;i < size; i++)
+    for (int i = 0; i < size; i++)
         if (std::find(searchMoves.begin(), searchMoves.end(), (*this)[i]) != searchMoves.end())
             (*this)[used++] = (*this)[i];
     size = used;
