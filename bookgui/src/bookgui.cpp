@@ -874,7 +874,6 @@ BookGui::importPgn() {
         }
     } catch (...) {
         std::cerr << "Error parsing game " << nGames << std::endl;
-        throw;
     }
     updatePGNView();
 }
