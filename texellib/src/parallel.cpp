@@ -197,12 +197,8 @@ Communicator::forwardStopAck() {
 void
 Communicator::sendQuitAck() {
     quitAckWaitChildren--;
-    if (hasQuitAck()) {
-        if (parent)
-            parent->doSendQuitAck();
-        else
-            notifyThread();
-    }
+    if (parent && hasQuitAck())
+        parent->doSendQuitAck();
 }
 
 void
@@ -558,7 +554,7 @@ ThreadCommunicator::notifyThread() {
 
 WorkerThread::WorkerThread(int threadNo, Communicator* parentComm,
                            int numWorkers, TranspositionTable& tt)
-    : threadNo(threadNo), numWorkers(numWorkers), terminate(false), tt(tt) {
+    : threadNo(threadNo), numWorkers(numWorkers), tt(tt) {
     if (parentComm) {
         auto f = [this,parentComm]() {
             mainLoop(parentComm, false);
@@ -569,7 +565,6 @@ WorkerThread::WorkerThread(int threadNo, Communicator* parentComm,
 
 WorkerThread::~WorkerThread() {
     children.clear();
-    terminate = true;
     threadNotifier.notify();
     if (thread)
         thread->join();
@@ -629,9 +624,8 @@ WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
     CommHandler handler(*this);
 
     while (true) {
-        threadNotifier.wait(Cluster::instance().isEnabled() ? 1 : -1);
-        if (terminate)
-            break;
+        bool handleClusterComm = Cluster::instance().isEnabled() && threadNo == 0;
+        threadNotifier.wait(handleClusterComm ? 1 : -1);
         comm->poll(handler);
         if (comm->hasQuitAck())
             break;
@@ -703,11 +697,7 @@ WorkerThread::CommHandler::setParam(const std::string& name, const std::string& 
 
 void
 WorkerThread::CommHandler::quit() {
-    if (wt.getThreadNo() == 0)
-        wt.comm->sendQuit();
-    else {
-        wt.comm->forwardQuitAck();
-    }
+    wt.comm->sendQuit();
 }
 
 void
