@@ -27,11 +27,9 @@
 #include "util/timeUtil.hpp"
 #include "parameters.hpp"
 #include "chesstool.hpp"
+#include "threadpool.hpp"
 #include "chessParseError.hpp"
-#include <deque>
-#include <thread>
-#include <condition_variable>
-#include <mutex>
+#include <memory>
 #include <iostream>
 #include <limits>
 
@@ -397,100 +395,51 @@ public:
     void getResult(WorkUnit& wu);
 
 private:
-    /** Worker thread main loop. */
-    void workerLoop(GameRunner& gr);
-
-    bool stopped;
-    std::mutex mutex;
-
-    std::vector<GameRunner> workers;
-    std::vector<std::unique_ptr<std::thread>> threads;
-
-    std::deque<WorkUnit> pending;
-    std::condition_variable pendingCv;
-
-    std::deque<WorkUnit> complete;
-    std::condition_variable completeCv;
+    std::vector<GameRunner> runners;
+    std::unique_ptr<ThreadPool<WorkUnit>> pool;
 };
 
-GameScheduler::GameScheduler()
-    : stopped(false) {
+GameScheduler::GameScheduler() {
 }
 
 GameScheduler::~GameScheduler() {
+    WorkUnit wu;
+    while (pool->getResult(wu))
+        ;
     stopWorkers();
 }
 
 void
 GameScheduler::addWorker(const GameRunner& gr) {
-    workers.push_back(gr);
+    runners.push_back(gr);
 }
 
 void
 GameScheduler::startWorkers() {
-    for (GameRunner& gr : workers) {
-        auto thread = make_unique<std::thread>([this,&gr]() {
-            workerLoop(gr);
-        });
-        threads.push_back(std::move(thread));
-    }
+    pool = make_unique<ThreadPool<WorkUnit>>(runners.size());
 }
 
 void
 GameScheduler::stopWorkers() {
-    {
-        std::lock_guard<std::mutex> L(mutex);
-        stopped = true;
-    }
-    pendingCv.notify_all();
-    for (auto& t : threads) {
-        t->join();
-        t.reset();
-    }
+    pool = nullptr;
 }
 
 void
-GameScheduler::addWorkUnit(const WorkUnit& wu) {
-    std::lock_guard<std::mutex> L(mutex);
-    bool empty = pending.empty();
-    pending.push_back(wu);
-    if (empty)
-        pendingCv.notify_all();
+GameScheduler::addWorkUnit(const WorkUnit& wuIn) {
+    auto func = [this,wuIn](int workerNo) -> WorkUnit {
+        WorkUnit wu(wuIn);
+        GameRunner& gr = runners[workerNo];
+        wu.result = gr.runGame(wu.engine1Params, wu.engine2Params);
+        wu.compName = gr.compName();
+        wu.instNo = gr.instNo();
+        return wu;
+    };
+    pool->addTask(func);
 }
 
 void
 GameScheduler::getResult(WorkUnit& wu) {
-    std::unique_lock<std::mutex> L(mutex);
-    while (complete.empty())
-        completeCv.wait(L);
-    wu = complete.front();
-    complete.pop_front();
-}
-
-void
-GameScheduler::workerLoop(GameRunner& gr) {
-    while (true) {
-        WorkUnit wu;
-        {
-            std::unique_lock<std::mutex> L(mutex);
-            while (!stopped && pending.empty())
-                pendingCv.wait(L);
-            if (stopped)
-                return;
-            wu = pending.front();
-            pending.pop_front();
-        }
-        wu.result = gr.runGame(wu.engine1Params, wu.engine2Params);
-        wu.compName = gr.compName();
-        wu.instNo = gr.instNo();
-        {
-            std::unique_lock<std::mutex> L(mutex);
-            bool empty = complete.empty();
-            complete.push_back(wu);
-            if (empty)
-                completeCv.notify_all();
-        }
-    }
+    pool->getResult(wu);
 }
 
 /** Configuration parameters for SPSA optimization. */
