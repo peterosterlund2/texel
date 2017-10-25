@@ -123,6 +123,10 @@ public:
     /** Print positions where abs(qScore) >= threshold and game result != (1+sign(qScore))/2. */
     void outliers(std::istream& is, int threshold);
 
+    /** In a FEN file, update the search score in each line by running a script to get the new score.
+     *  Use "nWorkers" worker threads. */
+    void computeSearchScores(std::istream& is, const std::string& script, int nWorkers);
+
     /** Print how much position evaluation improves when parValues are applied to evaluation function.
      * Positions with no change are not printed. */
     void evalEffect(std::istream& is, const std::vector<ParamValue>& parValues);

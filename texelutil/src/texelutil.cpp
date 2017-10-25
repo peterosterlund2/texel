@@ -94,6 +94,8 @@ usage() {
     std::cerr << "                                     -m treat bishop and knight as same type\n";
     std::cerr << "        mtrl [-m] wQ wR wB [wN] wP bQ bR bB [bN] bP : material satisfies pattern\n";
     std::cerr << "                                     -m treat bishop and knight as same type\n";
+    std::cerr << " search script nWorkers: Update search score in FEN file by running script\n";
+    std::cerr << "                         on all lines. Run nWorkers scripts in parallel\n";
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
     std::cerr << " evaleffect evalfile : Print eval improvement when parameters are changed\n";
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage\n";
@@ -328,6 +330,14 @@ main(int argc, char* argv[]) {
                 chessTool.filterTotalMaterial(std::cin, minorEqual, mtrlPattern);
             } else
                 usage();
+        } else if (cmd == "search") {
+            if (argc != 4)
+                usage();
+            std::string script = argv[2];
+            int nWorkers;
+            if (!str2Num(argv[3], nWorkers))
+                usage();
+            chessTool.computeSearchScores(std::cin, script, nWorkers);
         } else if (cmd == "outliers") {
             int threshold;
             if ((argc < 3) || !str2Num(argv[2], threshold))
