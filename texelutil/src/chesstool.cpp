@@ -120,9 +120,10 @@ static std::vector<std::string> splitLines(const std::string& lines) {
 
 // --------------------------------------------------------------------------------
 
-ChessTool::ChessTool(bool useEntropyErr, bool optMoveOrder)
+ChessTool::ChessTool(bool useEntropyErr, bool optMoveOrder, bool useSearchScore)
     : useEntropyErrorFunction(useEntropyErr),
-      optimizeMoveOrdering(optMoveOrder) {
+      optimizeMoveOrdering(optMoveOrder),
+      useSearchScore(useSearchScore) {
 
     moEvalWeight.registerParam("MoveOrderEvalWeight", Parameters::instance());
     moHangPenalty1.registerParam("MoveOrderHangPenalty1", Parameters::instance());
@@ -1700,6 +1701,12 @@ ChessTool::computeAvgError(const std::vector<PositionInfo>& positions, const Sco
             errSum += err;
         }
         return errSum / positions.size();
+    } else if (useSearchScore) {
+        for (const PositionInfo& pi : positions) {
+            double err = sp.getProb(pi.qScore) - sp.getProb(pi.searchScore);
+            errSum += err * err;
+        }
+        return sqrt(errSum / positions.size());
     } else {
         for (const PositionInfo& pi : positions) {
             double p = sp.getProb(pi.qScore);

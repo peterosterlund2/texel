@@ -79,8 +79,11 @@ public:
      * @param useEntropyErrorFunction  Use entropy error function instead of LSQ
      *                                 in optimization objective function.
      * @param optmizeMoveOrdering  If true, optimize static move ordering parameters
-     *                             instead of evaluation function parameters. */
-    ChessTool(bool useEntropyErrorFunction, bool optimizeMoveOrdering);
+     *                             instead of evaluation function parameters.
+     * @param useSearchScore       If true, use the search score instead of
+     *                             the game result when optimizing. */
+    ChessTool(bool useEntropyErrorFunction, bool optimizeMoveOrdering,
+              bool useSearchScore);
 
     /** Setup tablebase directory paths. */
     static void setupTB();
@@ -215,6 +218,7 @@ private:
 
     bool useEntropyErrorFunction;
     bool optimizeMoveOrdering;
+    bool useSearchScore;
 };
 
 
