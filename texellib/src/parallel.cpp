@@ -554,7 +554,7 @@ ThreadCommunicator::notifyThread() {
 
 WorkerThread::WorkerThread(int threadNo, Communicator* parentComm,
                            int numWorkers, TranspositionTable& tt)
-    : threadNo(threadNo), numWorkers(numWorkers), tt(tt) {
+    : threadNo(threadNo), numWorkers(numWorkers), terminate(false), tt(tt) {
     if (parentComm) {
         auto f = [this,parentComm]() {
             mainLoop(parentComm, false);
@@ -565,6 +565,7 @@ WorkerThread::WorkerThread(int threadNo, Communicator* parentComm,
 
 WorkerThread::~WorkerThread() {
     children.clear();
+    terminate = true;
     threadNotifier.notify();
     if (thread)
         thread->join();
@@ -626,6 +627,8 @@ WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
     while (true) {
         bool handleClusterComm = Cluster::instance().isEnabled() && threadNo == 0;
         threadNotifier.wait(handleClusterComm ? 1 : -1);
+        if (terminate)
+            break;
         comm->poll(handler);
         if (comm->hasQuitAck())
             break;

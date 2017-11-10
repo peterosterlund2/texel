@@ -401,6 +401,7 @@ private:
     const int numWorkers; // Number of worker threads including all child threads
 
     Notifier initialized;
+    std::atomic<bool> terminate;
 
     std::unique_ptr<Evaluate::EvalHashTables> et;
     std::unique_ptr<KillerTable> kt;
