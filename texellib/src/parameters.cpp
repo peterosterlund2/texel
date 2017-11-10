@@ -34,6 +34,7 @@ namespace UciParams {
     std::shared_ptr<Parameters::CheckParam> analyseMode(std::make_shared<Parameters::CheckParam>("UCI_AnalyseMode", false));
     std::shared_ptr<Parameters::StringParam> opponent(std::make_shared<Parameters::StringParam>("UCI_Opponent", ""));
     std::shared_ptr<Parameters::SpinParam> strength(std::make_shared<Parameters::SpinParam>("Strength", 0, 1000, 1000));
+    std::shared_ptr<Parameters::SpinParam> maxNPS(std::make_shared<Parameters::SpinParam>("MaxNPS", 0, 10000000, 0));
 #ifdef CLUSTER
     int maxThreads = 64*1024*1024;
 #else
@@ -620,6 +621,7 @@ Parameters::Parameters() {
     addPar(UciParams::analyseMode);
     addPar(UciParams::opponent);
     addPar(UciParams::strength);
+    addPar(UciParams::maxNPS);
     addPar(UciParams::threads);
     addPar(UciParams::multiPV);
 

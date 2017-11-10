@@ -64,10 +64,7 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     searchNeedMoreTime = false;
     maxNodes = -1;
     minProbeDepth = 0;
-    nodesBetweenTimeCheck = 1000;
-    strength = 1000;
-    weak = false;
-    randomSeed = 0;
+    setStrength(1000, 0, 0);
     tLastStats = currentTimeMillis();
     totalNodes = 0;
     tbHits = 0;
@@ -82,12 +79,16 @@ Search::timeLimit(int minTimeLimit, int maxTimeLimit, int earlyStopPercent) {
 }
 
 void
-Search::setStrength(int strength, U64 randomSeed) {
+Search::setStrength(int strength, U64 randomSeed, int maxNPS) {
     if (strength < 0) strength = 0;
     if (strength > 1000) strength = 1000;
     this->strength = strength;
     weak = strength < 1000;
     this->randomSeed = randomSeed;
+    this->maxNPS = maxNPS;
+    nodesBetweenTimeCheck = 1000;
+    if (maxNPS > 0)
+        nodesBetweenTimeCheck = clamp(maxNPS / 100, 1, nodesBetweenTimeCheck);
 }
 
 Move
@@ -169,6 +170,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             }
             pos.makeMove(m, ui);
             totalNodes++;
+            nodesToGo--;
             SearchTreeInfo& sti = searchTreeInfo[0];
             sti.currentMove = m;
             sti.currentMoveNo = mi;
@@ -208,6 +210,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
                 }
                 pos.makeMove(m, ui);
                 totalNodes++;
+                nodesToGo--;
                 score = -negaScoutRoot(true, -beta, -alpha, 1, depth - 1, givesCheck);
                 nodesThisMove += totalNodes;
                 posHashListSize--;
@@ -415,6 +418,15 @@ Search::shouldStop() {
     if (    ((timeLimit >= 0) && (tNow - tStart >= timeLimit)) ||
             ((maxNodes >= 0) && (getTotalNodes() >= maxNodes)))
         return true;
+    if (maxNPS > 0) {
+        S64 time = currentTimeMillis() - tStart;
+        S64 totNodes = getTotalNodes();
+        if (totNodes * 1000.0 > maxNPS * std::max((S64)1,time)) {
+            S64 wantedTime = totNodes * 1000 / maxNPS;
+            int sleepTime = wantedTime - time;
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
+        }
+    }
     if (tNow - tLastStats >= 1000)
         notifyStats();
     return false;

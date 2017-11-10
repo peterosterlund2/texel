@@ -148,7 +148,8 @@ EngineMainThread::startSearch(EngineControl* engineControl,
                               int maxPV, int minProbeDepth,
                               std::atomic<bool>& ponder, std::atomic<bool>& infinite) {
     int nThreads = UciParams::threads->getIntPar();
-    if (UciParams::strength->getIntPar() < 1000)
+    if ((UciParams::strength->getIntPar() < 1000) ||
+        (UciParams::maxNPS->getIntPar() > 0))
         nThreads = 1;
     int nThreadsThisNode;
     std::vector<int> nThreadsChildren;
@@ -397,7 +398,8 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
     Search::SearchTables st(comm->getCTT(), kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, *comm, treeLog);
     sc->setListener(listener);
-    sc->setStrength(UciParams::strength->getIntPar(), randomSeed);
+    sc->setStrength(UciParams::strength->getIntPar(), randomSeed,
+                    UciParams::maxNPS->getIntPar());
     std::shared_ptr<MoveList> moves(std::make_shared<MoveList>());
     MoveGen::pseudoLegalMoves(pos, *moves);
     MoveGen::removeIllegal(pos, *moves);

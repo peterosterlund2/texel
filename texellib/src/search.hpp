@@ -106,7 +106,7 @@ public:
 
     void timeLimit(int minTimeLimit, int maxTimeLimit, int earlyStopPercent = -1);
 
-    void setStrength(int strength, U64 randomSeed);
+    void setStrength(int strength, U64 randomSeed, int maxNPS);
 
     /** Set minimum depth for TB probes. */
     void setMinProbeDepth(int depth);
@@ -291,6 +291,7 @@ private:
     int strength;              // Strength (0-1000)
     bool weak;                 // True if strength < 1000
     U64 randomSeed;
+    int maxNPS;                // If > 0, reduce strength by limiting NPS
 
     // Search statistics stuff
     S64 totalNodes;
