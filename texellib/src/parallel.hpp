@@ -54,7 +54,7 @@ public:
     void notify();
 
     /** Wait until notify has been called at least once since the last call
-     *  to this method. The method should only be called by one thread.
+     *  to this method. This method should only be called by one thread.
      *  @param timeOutMs Maximum amount of time to wait, or -1 to wait indefinitely */
     void wait(int timeOutMs = -1);
 
