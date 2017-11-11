@@ -217,11 +217,11 @@ trim(const std::string& s) {
 template <typename T>
 class RelaxedShared {
 public:
-    RelaxedShared<T>() { }
-    RelaxedShared<T>(T value) { set(value); }
-    RelaxedShared<T>(const RelaxedShared<T>& r) { set(r.get()); }
-    RelaxedShared<T>& operator=(const RelaxedShared<T>& r) { set(r.get()); return *this; }
-    RelaxedShared<T>& operator=(const T& t) { set(t); return *this; }
+    RelaxedShared() { }
+    RelaxedShared(T value) { set(value); }
+    RelaxedShared(const RelaxedShared& r) { set(r.get()); }
+    RelaxedShared& operator=(const RelaxedShared& r) { set(r.get()); return *this; }
+    RelaxedShared& operator=(const T& t) { set(t); return *this; }
     operator T() const { return get(); }
     T get() const { return data.load(std::memory_order_relaxed); }
     void set(T value) { data.store(value, std::memory_order_relaxed); }
