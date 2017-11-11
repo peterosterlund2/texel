@@ -60,11 +60,6 @@ public:
 
     const Position& getPos() const;
 
-    /**
-     * Get the last played move, or null if no moves played yet.
-     */
-    Move getLastMove();
-
     enum GameState {
         ALIVE,
         WHITE_MATE,         // White mates
@@ -89,8 +84,6 @@ public:
      * @return True if the current player has the option to accept a draw offer.
      */
     bool haveDrawOffer();
-
-    void getPosHistory(std::vector<std::string> ret);
 
     std::string getMoveListString(bool compressed);
 

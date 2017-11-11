@@ -47,9 +47,6 @@ public:
     /** Bind current thread to NUMA node determined by nodeForThread(). */
     void bindThread(int threadNo) const;
 
-    /** Return true if threadNo runs on the same NUMA node as thread 0. */
-    bool isMainNode(int threadNo) const;
-
 private:
     Numa();
 

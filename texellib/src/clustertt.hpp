@@ -52,7 +52,7 @@ public:
  *  transposition table changes to neighboring cluster nodes. */
 class ClusterTT {
 public:
-    ClusterTT(TranspositionTable& tt);
+    explicit ClusterTT(TranspositionTable& tt);
 
     void addReceiver(TTReceiver* receiver);
 
@@ -77,7 +77,7 @@ private:
 
 
     struct ReceiverData {
-        ReceiverData(TTReceiver* receiver) : receiver(receiver) {}
+        explicit ReceiverData(TTReceiver* receiver) : receiver(receiver) {}
         int minDepth = 0;
         TTReceiver::ChangeBatch changes;
         TTReceiver* receiver;
@@ -88,7 +88,7 @@ private:
 /** Stores transposition table changes in a local transposition table. */
 class LocalTTReceiver : public TTReceiver {
 public:
-    LocalTTReceiver(TranspositionTable& tt);
+    explicit LocalTTReceiver(TranspositionTable& tt);
 
     int applyChunk(const ChangeBatch& changes) override;
 private:

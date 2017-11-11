@@ -295,8 +295,3 @@ Numa::bindThread(int threadNo) const {
 #endif
 #endif
 }
-
-bool
-Numa::isMainNode(int threadNo) const {
-    return nodeForThread(threadNo) == nodeForThread(0);
-}

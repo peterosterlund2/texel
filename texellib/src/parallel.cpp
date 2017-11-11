@@ -295,7 +295,6 @@ U8*
 Communicator::AssignThreadsCommand::toByteBuf(U8* buffer) const {
     buffer = Command::toByteBuf(buffer);
     return Serializer::serialize<64>(buffer, nThreads, firstThreadNo);
-    return buffer;
 }
 
 const U8*

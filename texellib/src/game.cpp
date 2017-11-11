@@ -107,14 +107,6 @@ Game::getGameStateString() {
     }
 }
 
-Move
-Game::getLastMove() {
-    Move m;
-    if (currentMove > 0)
-        m = moveList[currentMove - 1];
-    return m;
-}
-
 Game::GameState
 Game::getGameState() {
     MoveList moves;
@@ -252,29 +244,6 @@ void
 Game::activateHumanPlayer() {
     if (!(pos.isWhiteMove() ? whitePlayer : blackPlayer)->isHumanPlayer())
         std::swap(whitePlayer, blackPlayer);
-}
-
-void
-Game::getPosHistory(std::vector<std::string> ret) {
-    ret.clear();
-    Position pos(this->pos);
-    for (int i = currentMove; i > 0; i--)
-        pos.unMakeMove(moveList[i - 1], uiInfoList[i - 1]);
-    ret.push_back(TextIO::toFEN(pos)); // Store initial FEN
-
-    std::string moves;
-    UndoInfo ui;
-    for (size_t i = 0; i < moveList.size(); i++) {
-        const Move& move = moveList[i];
-        std::string strMove(TextIO::moveToString(pos, move, false));
-        moves += ' ';
-        moves += strMove;
-        pos.makeMove(move, ui);
-    }
-    ret.push_back(moves); // Store move list string
-
-    int numUndo = (int)moveList.size() - currentMove;
-    ret.push_back(num2Str(numUndo));
 }
 
 std::string
