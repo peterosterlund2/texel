@@ -129,6 +129,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
 
     int posHashFirstNew0 = posHashFirstNew;
     bool knownLoss = false; // True if at least one of the first maxPV moves is a known loss
+    hardFactor = 1.0;
     try {
     for (int depth = 1; ; depth++, firstIteration = false) {
         if (listener) listener->notifyDepth(depth);
@@ -198,8 +199,10 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
                         betaRetryDelta = MATE0; // Don't use aspiration window when searching for faster mate
                     beta = std::min(score + betaRetryDelta, MATE0);
                     betaRetryDelta = betaRetryDelta * 3 / 2;
-                    if (mi != 0)
+                    if (mi != 0) {
                         needMoreTime = true;
+                        hardFactor = std::max(hardFactor, 1.0);
+                    }
                     bestMove = m;
                 } else { // score <= alpha
                     if (isLoseScore(score))
@@ -207,6 +210,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
                     alpha = std::max(score - alphaRetryDelta, -MATE0);
                     alphaRetryDelta = alphaRetryDelta * 3 / 2;
                     needMoreTime = searchNeedMoreTime = true;
+                    hardFactor = std::max(hardFactor, 2.0);
                 }
                 pos.makeMove(m, ui);
                 totalNodes++;
@@ -241,9 +245,22 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             }
         }
         S64 tNow = currentTimeMillis();
-        if (maxTimeMillis >= 0)
-            if (tNow - tStart > minTimeMillis * 0.01 * earlyStopPercentage)
+        {
+            double f = rootMoves[0].nodes / (double)totalNodes;
+            double hard;
+            if      (f < 0.20) hard = 3.5;
+            else if (f < 0.40) hard = 3.5 + (1.0 - 3.5) * (f - 0.20) / (0.40 - 0.20);
+            else if (f < 0.60) hard = 1.0;
+            else if (f < 0.85) hard = 1.0 + (0.3 - 1.0) * (f - 0.60) / (0.85 - 0.60);
+            else               hard = 0.3;
+            hardFactor = (hardFactor + hard) / 2;
+        }
+        if (maxTimeMillis >= 0) {
+            if (tNow - tStart > minTimeMillis * 0.01 * earlyStopPercentage * hardFactor)
                 break;
+            if (tNow - tStart >= maxTimeMillis)
+                break;
+        }
         if (depth >= maxDepth)
             break;
         if (maxNodes >= 0)
@@ -414,7 +431,11 @@ Search::shouldStop() {
     comm.poll(handler);
 
     S64 tNow = currentTimeMillis();
-    S64 timeLimit = searchNeedMoreTime ? maxTimeMillis : minTimeMillis;
+    S64 maxT = maxTimeMillis;
+    S64 minT = minTimeMillis;
+    if (minT >= 0)
+        minT = std::min((S64)(minT * hardFactor), maxT);
+    S64 timeLimit = searchNeedMoreTime ? maxT : minT;
     if (    ((timeLimit >= 0) && (tNow - tStart >= timeLimit)) ||
             ((maxNodes >= 0) && (getTotalNodes() >= maxNodes)))
         return true;

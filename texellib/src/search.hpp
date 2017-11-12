@@ -282,6 +282,7 @@ private:
     RelaxedShared<S64> maxTimeMillis; // Maximum allowed thinking time
     int earlyStopPercentage;   // Can stop searching after this many percent of minTimeMillis
     bool searchNeedMoreTime;   // True if negaScout should use up to maxTimeMillis time.
+    double hardFactor;         // How hard it seems to be to determine the best move.
     S64 maxNodes;              // Maximum number of nodes to search (approximately)
     int minProbeDepth;         // Minimum depth to probe endgame tablebases.
     int nodesToGo;             // Number of nodes until next time check
