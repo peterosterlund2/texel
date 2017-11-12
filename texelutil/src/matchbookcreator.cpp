@@ -212,11 +212,16 @@ public:
     }
 
     /** Add average search depth information for this player and the opponent player. */
-    void addDepth(int myMoveSum, int myDepthSum, int oppoMoveSum, int oppoDepthSum) {
+    void addDepth(int myMoveSum, int myDepthSum, int oppoMoveSum, int oppoDepthSum,
+                  int myTimeSum, int myTimeCnt, int oppoTimeSum, int oppoTimeCnt) {
         this->myMoveSum += myMoveSum;
         this->myDepthSum += myDepthSum;
         this->oppoMoveSum += oppoMoveSum;
         this->oppoDepthSum += oppoDepthSum;
+        this->myTimeSum += myTimeSum;
+        this->myTimeCnt += myTimeCnt;
+        this->oppoTimeSum += oppoTimeSum;
+        this->oppoTimeCnt += oppoTimeCnt;
     }
 
     void getWDLInfo(int& w, int& d, int& l) const {
@@ -242,6 +247,11 @@ public:
         oppoDepth = oppoDepthSum / (double)oppoMoveSum;
     }
 
+    void getAvgTime(int& myTime, int& oppoTime) const {
+        myTime = myTimeCnt > 0 ? (int)(myTimeSum / myTimeCnt) : 0;
+        oppoTime = oppoTimeCnt > 0 ? (int)(oppoTimeSum / oppoTimeCnt) : 0;
+    }
+
 private:
     const std::string name; // Player name
     int nWin = 0;           // Number of won games
@@ -256,6 +266,10 @@ private:
     int myDepthSum = 0;     // Sum of search depth for this player
     int oppoMoveSum = 0;    // Number of moves with depth information for opponent player
     int oppoDepthSum = 0;   // Sum of search depth for opponent player
+    S64 myTimeSum = 0;
+    int myTimeCnt = 0;
+    S64 oppoTimeSum = 0;
+    int oppoTimeCnt = 0;
 };
 
 struct GameInfo {
@@ -266,6 +280,10 @@ struct GameInfo {
     int wDepthSum;
     int bMoveSum;
     int bDepthSum;
+    int wTimeSum;
+    int wTimeCnt;
+    int bTimeSum;
+    int bTimeCnt;
 };
 }
 
@@ -295,20 +313,33 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
             GameNode gn = gt.getRootNode();
             int wMoveSum = 0, wDepthSum = 0;
             int bMoveSum = 0, bDepthSum = 0;
+            int wTimeSum = 0, wTimeCnt = 0;
+            int bTimeSum = 0, bTimeCnt = 0;
             int ply = 0;
+            int timeCnt = 0;
             while (true) {
                 if (gn.nChildren() == 0)
                     break;
                 bool wtm = gn.getPos().isWhiteMove();
                 gn.goForward(0);
-                int depth;
-                if (getCommentDepth(gn.getComment(), depth)) {
+                int depth, ms;
+                if (getCommentDepth(gn.getComment(), depth, ms)) {
                     if (wtm) {
                         wDepthSum += depth;
                         wMoveSum++;
                     } else {
                         bDepthSum += depth;
                         bMoveSum++;
+                    }
+                }
+                if (ms > 0 && timeCnt < 20) {
+                    timeCnt++;
+                    if (wtm) {
+                        wTimeSum += ms;
+                        wTimeCnt++;
+                    } else {
+                        bTimeSum += ms;
+                        bTimeCnt++;
                     }
                 }
                 ply++;
@@ -326,7 +357,8 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
             case GameTree::BLACK_WIN: score = 0;   break;
             default:                 throw ChessParseError("Unknown result");
             }
-            games.push_back(GameInfo{pw, pb, score, wMoveSum, wDepthSum, bMoveSum, bDepthSum});
+            games.push_back(GameInfo{pw, pb, score, wMoveSum, wDepthSum, bMoveSum, bDepthSum,
+                                     wTimeSum, wTimeCnt, bTimeSum, bTimeCnt});
         }
 
         std::stringstream ss;
@@ -353,8 +385,10 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
                 players[gi.pw].addScore(gi.score);
                 players[gi.pb].addScore(1-gi.score);
             }
-            players[gi.pw].addDepth(gi.wMoveSum, gi.wDepthSum, gi.bMoveSum, gi.bDepthSum);
-            players[gi.pb].addDepth(gi.bMoveSum, gi.bDepthSum, gi.wMoveSum, gi.wDepthSum);
+            players[gi.pw].addDepth(gi.wMoveSum, gi.wDepthSum, gi.bMoveSum, gi.bDepthSum,
+                                    gi.wTimeSum, gi.wTimeCnt, gi.bTimeSum, gi.bTimeCnt);
+            players[gi.pb].addDepth(gi.bMoveSum, gi.bDepthSum, gi.wMoveSum, gi.wDepthSum,
+                                    gi.bTimeSum, gi.bTimeCnt, gi.wTimeSum, gi.wTimeCnt);
         }
 
         for (const PlayerInfo& pi : players) {
@@ -386,6 +420,9 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
             pi.getAvgDepth(myDepth, oppoDepth);
             ss.precision(2);
             ss << " depth: " << std::fixed << myDepth << " - " << std::fixed << oppoDepth;
+            int myTime, oppoTime;
+            pi.getAvgTime(myTime, oppoTime);
+            ss << " time: " << myTime << " - " << oppoTime;
             os << ss.str() << std::endl;
             if (pairMode)
                 break;
@@ -397,7 +434,17 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
 }
 
 bool
-MatchBookCreator::getCommentDepth(const std::string& comment, int& depth) {
+MatchBookCreator::getCommentDepth(const std::string& comment, int& depth, int& ms) {
+    ms = -1;
+    auto idx = comment.find(' ');
+    if (idx != std::string::npos) {
+        auto idx2 = comment.find('s');
+        if (idx2 != std::string::npos) {
+            double t;
+            if (str2Num(comment.substr(idx+1, idx2-(idx+1)), t))
+                ms = (int)(t * 1000);
+        }
+    }
     if (startsWith(comment, "+M") || startsWith(comment, "-M"))
         return false;
     auto n = comment.find('/');

@@ -75,7 +75,7 @@ private:
 
     /** Extract search depth from a PGN comment having the format "score/depth time".
      *  Depths corresponding to mate scores are ignored. */
-    static bool getCommentDepth(const std::string& comment, int& depth);
+    static bool getCommentDepth(const std::string& comment, int& depth, int& ms);
 
 
     std::map<U64, BookLine> bookLines;
