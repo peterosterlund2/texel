@@ -48,7 +48,7 @@ public:
     template <typename Func>
     void addTask(Func func);
 
-    /** Wait for a retrieve a result. Return false if there is no task to wait for. */
+    /** Wait for and retrieve a result. Return false if there is no task to wait for. */
     bool getResult(Result& result);
 
 private:
