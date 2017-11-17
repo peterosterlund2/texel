@@ -379,8 +379,10 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
             int timeLimit = (time + inc * (moves - 1) - margin) / moves;
             minTimeLimit = timeLimit;
             if (UciParams::ponder->getBoolPar()) {
-                const double ponderHitRate = timePonderHitRate * 0.01;
-                minTimeLimit = (int)ceil(minTimeLimit / (1 - ponderHitRate));
+                int oTime = white ? sPar.bTime : sPar.wTime;
+                int oInc  = white ? sPar.bInc : sPar.wInc;
+                int oTimeLimit = (oTime + oInc * (moves - 1) - margin) / moves;
+                minTimeLimit += oTimeLimit * timePonderHitRate * 0.01;
             }
             maxTimeLimit = (int)(minTimeLimit * clamp(moves * 0.5, 2.0, static_cast<int>(maxTimeUsage) * 0.01));
 

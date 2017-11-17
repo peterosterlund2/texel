@@ -531,7 +531,7 @@ DECLARE_PARAM(timeMaxRemainingMoves, 35, 2, 200, useUciParam);
 DECLARE_PARAM(bufferTime, 1000, 1, 10000, true);
 DECLARE_PARAM(minTimeUsage, 85, 1, 100, useUciParam);
 DECLARE_PARAM(maxTimeUsage, 350, 100, 1000, useUciParam);
-DECLARE_PARAM(timePonderHitRate, 35, 1, 100, useUciParam);
+DECLARE_PARAM(timePonderHitRate, 35, 0, 100, useUciParam);
 
 
 #endif /* PARAMETERS_HPP_ */
