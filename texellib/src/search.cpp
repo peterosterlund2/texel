@@ -433,7 +433,7 @@ Search::shouldStop() {
     S64 tNow = currentTimeMillis();
     S64 maxT = maxTimeMillis;
     S64 minT = minTimeMillis;
-    if (minT >= 0)
+    if (minT >= 0 && earlyStopPercentage <= 100)
         minT = std::min((S64)(minT * hardFactor), maxT);
     S64 timeLimit = searchNeedMoreTime ? maxT : minT;
     if (    ((timeLimit >= 0) && (tNow - tStart >= timeLimit)) ||

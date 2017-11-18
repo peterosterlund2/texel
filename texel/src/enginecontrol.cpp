@@ -366,7 +366,7 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
 
         if (sPar.moveTime > 0) {
              minTimeLimit = maxTimeLimit = sPar.moveTime;
-             earlyStopPercentage = 100; // Don't stop search early if asked to search a fixed amount of time
+             earlyStopPercentage = 10000; // Don't stop search early if asked to search a fixed amount of time
         } else if (sPar.wTime || sPar.bTime) {
             int moves = sPar.movesToGo;
             if (moves == 0)
