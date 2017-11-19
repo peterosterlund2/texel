@@ -381,10 +381,11 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
             if (UciParams::ponder->getBoolPar()) {
                 int oTime = white ? sPar.bTime : sPar.wTime;
                 int oInc  = white ? sPar.bInc : sPar.wInc;
-                int oTimeLimit = (oTime + oInc * (moves - 1) - margin) / moves;
-                minTimeLimit += oTimeLimit * timePonderHitRate * 0.01;
+                double oTimeLimit = (oTime + oInc * (moves - 1) - margin) / moves;
+                double k = timePonderHitRate * 0.01;
+                minTimeLimit += (int)(std::min(oTimeLimit, timeLimit / (1 - k)) * k);
             }
-            maxTimeLimit = (int)(minTimeLimit * clamp(moves * 0.5, 2.0, static_cast<int>(maxTimeUsage) * 0.01));
+            maxTimeLimit = (int)(minTimeLimit * clamp(moves * 0.5, 2.0, maxTimeUsage * 0.01));
 
             // Leave at least 1s on the clock, but can't use negative time
             minTimeLimit = clamp(minTimeLimit, 1, time - margin);
