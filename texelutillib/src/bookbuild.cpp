@@ -396,7 +396,7 @@ Book::addToBook(int maxPly, GameNode& gn, int& nAdded) {
 
 void
 Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFile,
-                     int maxErrSelf, double errOtherExpConst) {
+                     int maxErrSelf, double errOtherExpConst, bool includeLeafNodes) {
     readFromFile(bookFile);
 
     WeightInfo weights;
@@ -448,6 +448,11 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
         moveList.clear();
         if (!getPosition(node->getHashKey(), pos, moveList))
             assert(false);
+
+        if (!includeLeafNodes &&
+                bookMoveOk(*node, Move().getCompressedMove(), maxErrSelf))
+            continue;
+
         const bool wtm = pos.isWhiteMove();
         BookMoves& bm = pgBook[PolyglotBook::getHashKey(pos)];
         for (auto& c : node->getChildren()) {

@@ -136,7 +136,7 @@ usage() {
     std::cerr << " book improve bookFile searchTime nThreads \"startmoves\" [c1 c2 c3]\n";
     std::cerr << "                                            : Improve opening book\n";
     std::cerr << " book import bookFile pgnFile [maxPly]      : Import moves from PGN file\n";
-    std::cerr << " book export bookFile polyglotFile maxErrSelf errOtherExpConst\n";
+    std::cerr << " book export bookFile polyglotFile maxErrSelf errOtherExpConst [noleaf]\n";
     std::cerr << "                                            : Export as polyglot book\n";
     std::cerr << " book query bookFile maxErrSelf errOtherExpConst : Interactive query mode\n";
     std::cerr << " book stats bookFile                        : Print book statistics\n";
@@ -584,7 +584,7 @@ main(int argc, char* argv[]) {
                 BookBuild::Book book(logFile);
                 book.importPGN(bookFile, pgnFile, maxPly);
             } else if (bookCmd == "export") {
-                if (argc != 7)
+                if (argc < 7 || argc > 8)
                     usage();
                 std::string polyglotFile = argv[4];
                 int maxErrSelf;
@@ -592,8 +592,12 @@ main(int argc, char* argv[]) {
                 if (!str2Num(argv[5], maxErrSelf) ||
                     !str2Num(argv[6], errOtherExpConst))
                     usage();
+                bool includeLeafNodes = true;
+                if (argc == 8 && std::string(argv[7]) == "noleaf")
+                    includeLeafNodes = false;
                 BookBuild::Book book("");
-                book.exportPolyglot(bookFile, polyglotFile, maxErrSelf, errOtherExpConst);
+                book.exportPolyglot(bookFile, polyglotFile, maxErrSelf, errOtherExpConst,
+                                    includeLeafNodes);
             } else if (bookCmd == "query") {
                 if (argc != 6)
                     usage();
