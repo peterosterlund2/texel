@@ -138,10 +138,9 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
         bool needMoreTime = false;
         for (int mi = 0; mi < (int)rootMoves.size(); mi++) {
             posHashFirstNew = posHashFirstNew0 + ((maxPV > 1) ? 1 : 0);
-            if (mi < maxPV)
-                aspirationDelta = isWinScore(std::abs(rootMoves[mi].score())) ? 3000 : aspirationWindow;
             int alpha, beta;
             if (mi < maxPV) {
+                aspirationDelta = isWinScore(std::abs(rootMoves[mi].score())) ? 3000 : aspirationWindow;
                 if (firstIteration) {
                     alpha = -MATE0;
                     beta = MATE0;
