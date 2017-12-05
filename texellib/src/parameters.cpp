@@ -30,7 +30,7 @@ namespace UciParams {
     std::shared_ptr<Parameters::SpinParam> hash(std::make_shared<Parameters::SpinParam>("Hash", 1, 524288, 16));
     std::shared_ptr<Parameters::CheckParam> ownBook(std::make_shared<Parameters::CheckParam>("OwnBook", false));
     std::shared_ptr<Parameters::StringParam> bookFile(std::make_shared<Parameters::StringParam>("BookFile", ""));
-    std::shared_ptr<Parameters::CheckParam> ponder(std::make_shared<Parameters::CheckParam>("Ponder", true));
+    std::shared_ptr<Parameters::CheckParam> ponder(std::make_shared<Parameters::CheckParam>("Ponder", false));
     std::shared_ptr<Parameters::CheckParam> analyseMode(std::make_shared<Parameters::CheckParam>("UCI_AnalyseMode", false));
     std::shared_ptr<Parameters::StringParam> opponent(std::make_shared<Parameters::StringParam>("UCI_Opponent", ""));
     std::shared_ptr<Parameters::SpinParam> strength(std::make_shared<Parameters::SpinParam>("Strength", 0, 1000, 1000));
