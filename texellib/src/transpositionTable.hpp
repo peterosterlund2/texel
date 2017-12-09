@@ -204,9 +204,6 @@ private:
     /** Get position in hash table given zobrist key. */
     size_t getIndex(U64 key) const;
 
-    /** Get part of zobrist key to store in hash table. */
-    static U64 getStoredKey(U64 key);
-
 
     TTEntryStorage* table; // Points to either tableV or tableLP
     size_t tableSize;      // Number of entries
@@ -433,19 +430,13 @@ TranspositionTable::getIndex(U64 key) const {
     return (size_t)(key & hashMask);
 }
 
-inline U64
-TranspositionTable::getStoredKey(U64 key) {
-    return key;
-}
-
 inline void
 TranspositionTable::probe(U64 key, TTEntry& result) {
     size_t idx0 = getIndex(key);
-    U64 key2 = getStoredKey(key);
     TTEntry ent;
     for (int i = 0; i < 4; i++) {
         ent.load(table[idx0 + i]);
-        if (ent.getKey() == key2) {
+        if (ent.getKey() == key) {
             if (ent.getGeneration() != generation) {
                 ent.setGeneration(generation);
                 ent.store(table[idx0 + i]);

@@ -80,14 +80,13 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
                            bool busy) {
     if (depth < 0) depth = 0;
     size_t idx0 = getIndex(key);
-    U64 key2 = getStoredKey(key);
     TTEntry ent, tmp;
     ent.clear();
     size_t idx = idx0;
     for (int i = 0; i < 4; i++) {
         size_t idx1 = idx0 + i;
         tmp.load(table[idx1]);
-        if (tmp.getKey() == key2) {
+        if (tmp.getKey() == key) {
             ent = tmp;
             idx = idx1;
             break;
@@ -101,7 +100,7 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
     }
     bool doStore = true;
     if (!busy) {
-        if ((ent.getKey() == key2) && (ent.getDepth() > depth) && (ent.getType() == type)) {
+        if ((ent.getKey() == key) && (ent.getDepth() > depth) && (ent.getType() == type)) {
             if (type == TType::T_EXACT)
                 doStore = false;
             else if ((type == TType::T_GE) && (sm.score() <= ent.getScore(ply)))
@@ -111,9 +110,9 @@ TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth
         }
     }
     if (doStore) {
-        if ((ent.getKey() != key2) || (sm.from() != sm.to()))
+        if ((ent.getKey() != key) || (sm.from() != sm.to()))
             ent.setMove(sm);
-        ent.setKey(key2);
+        ent.setKey(key);
         ent.setScore(sm.score(), ply);
         ent.setDepth(depth);
         ent.setBusy(busy);
