@@ -89,8 +89,19 @@ TranspositionTable::clear() {
 }
 
 void
+TranspositionTable::setWhiteContempt(int contempt) {
+    if (contempt > 0) {
+        contemptHash = 0x9E3779B97DE88147ULL * (U64)contempt;
+    } else if (contempt < 0) {
+        contemptHash = ~(0x9E3779B97DE88147ULL * ((U64)-contempt));
+    } else
+        contemptHash = 0;
+}
+
+void
 TranspositionTable::insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore,
                            bool busy) {
+    key ^= contemptHash;
     if (depth < 0) depth = 0;
     size_t idx0 = getIndex(key);
     TTEntry ent, tmp;

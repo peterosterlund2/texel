@@ -56,6 +56,7 @@ public:
 
     void addReceiver(TTReceiver* receiver);
 
+    void setWhiteContempt(int contempt);
     void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore, bool busy = false);
     void setBusy(const TranspositionTable::TTEntry& ent, int ply);
     void probe(U64 key, TranspositionTable::TTEntry& result);
@@ -157,6 +158,11 @@ ClusterTT::setBusy(const TranspositionTable::TTEntry& ent, int ply) {
 }
 
 inline void
+ClusterTT::setWhiteContempt(int contempt) {
+    tt.setWhiteContempt(contempt);
+}
+
+inline void
 ClusterTT::probe(U64 key, TranspositionTable::TTEntry& result) {
     tt.probe(key, result);
 }
@@ -204,6 +210,9 @@ public:
 class ClusterTT {
 public:
     ClusterTT(TranspositionTable& tt) : tt(tt) {}
+    void setWhiteContempt(int contempt) {
+        tt.setWhiteContempt(contempt);
+    }
     void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore, bool busy = false) {
         tt.insert(key, sm, type, ply, depth, evalScore, busy);
     }

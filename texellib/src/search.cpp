@@ -91,6 +91,13 @@ Search::setStrength(int strength, U64 randomSeed, int maxNPS) {
         nodesBetweenTimeCheck = clamp(maxNPS / 100, 1, nodesBetweenTimeCheck);
 }
 
+void
+Search::setWhiteContempt(int contempt) {
+    eval.setWhiteContempt(contempt);
+    if (threadNo == 0)
+        tt.setWhiteContempt(contempt);
+}
+
 Move
 Search::iterativeDeepening(const MoveList& scMovesIn,
                            int maxDepth, S64 initialMaxNodes,
@@ -125,7 +132,8 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     const int evalScore = eval.evalPos(pos);
     initSearchTreeInfo();
     ht.reScale();
-    comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory);
+    comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory,
+                        eval.getWhiteContempt());
 
     int posHashFirstNew0 = posHashFirstNew;
     bool knownLoss = false; // True if at least one of the first maxPV moves is a known loss

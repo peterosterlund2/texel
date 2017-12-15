@@ -110,6 +110,9 @@ public:
     int evalPos(const Position& pos);
     int evalPosPrint(const Position& pos);
 
+    void setWhiteContempt(int contempt);
+    int getWhiteContempt() const;
+
     /** Compute "swindle" score corresponding to an evaluation score when
      * the position is a known TB draw.
      * @param distToWin For draws that would be a win if the 50-move rule
@@ -207,6 +210,8 @@ private:
     U64 wQueenContactChecks;        // White queen checks adjacent to black king
     U64 bQueenContactChecks;
     U64 wContactSupport, bContactSupport; // Attacks from P,N,B,R,K
+
+    int whiteContempt; // Assume white is this many centipawns stronger than black
 };
 
 
@@ -246,6 +251,16 @@ Evaluate::prefetch(U64 key) {
 #ifdef HAS_PREFETCH
     __builtin_prefetch(&getEvalHashEntry(evalHash, key));
 #endif
+}
+
+inline void
+Evaluate::setWhiteContempt(int contempt) {
+    whiteContempt = contempt;
+}
+
+inline int
+Evaluate::getWhiteContempt() const {
+    return whiteContempt;
 }
 
 inline int

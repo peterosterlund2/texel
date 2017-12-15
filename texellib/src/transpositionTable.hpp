@@ -139,6 +139,8 @@ public:
 
     void reSize(U64 numEntries);
 
+    void setWhiteContempt(int contempt);
+
     /** Insert an entry in the hash table. */
     void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore,
                 bool busy = false);
@@ -213,6 +215,7 @@ private:
     U64 usedSizeMask = 0;
 
     U8 generation = 0;
+    U64 contemptHash = 0;
     U64 tableSize = 0;     // Number of entries
 
     vector_aligned<TTEntryStorage> tableV;
@@ -435,6 +438,7 @@ TranspositionTable::getIndex(U64 key) const {
 
 inline void
 TranspositionTable::probe(U64 key, TTEntry& result) {
+    key ^= contemptHash;
     size_t idx0 = getIndex(key);
     TTEntry ent;
     for (int i = 0; i < 4; i++) {
@@ -454,6 +458,7 @@ TranspositionTable::probe(U64 key, TTEntry& result) {
 inline void
 TranspositionTable::prefetch(U64 key) {
 #ifdef HAS_PREFETCH
+    key ^= contemptHash;
     size_t idx0 = getIndex(key);
     __builtin_prefetch(&table[idx0]);
 #endif

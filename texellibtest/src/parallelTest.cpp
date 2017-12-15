@@ -128,7 +128,7 @@ ParallelTest::testCommunicator() {
     SearchTreeInfo sti;
     std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2);
     int posHashListSize = 0;
-    root.sendInitSearch(pos, posHashList, posHashListSize, false);
+    root.sendInitSearch(pos, posHashList, posHashListSize, false, 0);
     ASSERT_EQUAL(0, getCount(c0, 0));
     ASSERT_EQUAL(1, getCount(c1, 1));
     ASSERT_EQUAL(1, getCount(c2, 1));
@@ -140,8 +140,8 @@ ParallelTest::testCommunicator() {
 
         void initSearch(const Position& pos,
                         const std::vector<U64>& posHashList, int posHashListSize,
-                        bool clearHistory) override {
-            comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory);
+                        bool clearHistory, int whiteContempt) override {
+            comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory, whiteContempt);
             nInit++;
         }
         void startSearch(int jobId, const SearchTreeInfo& sti,

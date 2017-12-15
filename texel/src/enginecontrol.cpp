@@ -420,8 +420,13 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
     bool analyseMode = UciParams::analyseMode->getBoolPar();
     int maxPV = (infinite || analyseMode) ? UciParams::multiPV->getIntPar() : 1;
     int minProbeDepth = UciParams::minProbeDepth->getIntPar();
+    int playContempt = UciParams::contempt->getIntPar() * (pos.isWhiteMove() ? 1 : -1);
+    int analyzeContempt = UciParams::analyzeContempt->getIntPar();
+    int whiteContempt = analyseMode ? analyzeContempt : playContempt;
+    sc->setWhiteContempt(whiteContempt);
     if (analyseMode || infinite) {
         Evaluate eval(*et);
+        eval.setWhiteContempt(whiteContempt);
         int evScore = eval.evalPosPrint(pos) * (pos.isWhiteMove() ? 1 : -1);
         std::stringstream ss;
         ss.precision(2);

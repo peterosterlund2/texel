@@ -134,7 +134,7 @@ public:
     void doSendAssignThreads(int nThreads, int firstThreadNo) override;
     void doSendInitSearch(const Position& pos,
                           const std::vector<U64>& posHashList, int posHashListSize,
-                          bool clearHistory) override;
+                          bool clearHistory, int whiteContempt) override;
     void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                            int alpha, int beta, int depth) override;
     void doSendStopSearch() override;

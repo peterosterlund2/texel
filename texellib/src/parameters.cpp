@@ -45,6 +45,9 @@ namespace UciParams {
 
     std::shared_ptr<Parameters::CheckParam> useNullMove(std::make_shared<Parameters::CheckParam>("UseNullMove", true));
 
+    std::shared_ptr<Parameters::SpinParam> contempt(std::make_shared<Parameters::SpinParam>("Contempt", -2000, 2000, 0));
+    std::shared_ptr<Parameters::SpinParam> analyzeContempt(std::make_shared<Parameters::SpinParam>("AnalyzeContempt", -2000, 2000, 0));
+
     std::shared_ptr<Parameters::StringParam> gtbPath(std::make_shared<Parameters::StringParam>("GaviotaTbPath", ""));
     std::shared_ptr<Parameters::SpinParam> gtbCache(std::make_shared<Parameters::SpinParam>("GaviotaTbCache", 1, 2047, 1));
     std::shared_ptr<Parameters::StringParam> rtbPath(std::make_shared<Parameters::StringParam>("SyzygyPath", ""));
@@ -626,6 +629,8 @@ Parameters::Parameters() {
     addPar(UciParams::multiPV);
 
     addPar(UciParams::useNullMove);
+    addPar(UciParams::contempt);
+    addPar(UciParams::analyzeContempt);
 
     addPar(UciParams::gtbPath);
     addPar(UciParams::gtbCache);

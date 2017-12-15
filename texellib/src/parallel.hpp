@@ -93,7 +93,7 @@ public:
 
     void sendInitSearch(const Position& pos,
                         const std::vector<U64>& posHashList, int posHashListSize,
-                        bool clearHistory);
+                        bool clearHistory, int whiteContempt);
 
     void sendStartSearch(int jobId, const SearchTreeInfo& sti,
                          int alpha, int beta, int depth);
@@ -127,7 +127,7 @@ public:
         virtual void assignThreads(int nThreads, int firstThreadNo) {}
         virtual void initSearch(const Position& pos,
                                 const std::vector<U64>& posHashList, int posHashListSize,
-                                bool clearHistory) {}
+                                bool clearHistory, int whiteContempt) {}
         virtual void startSearch(int jobId, const SearchTreeInfo& sti,
                                  int alpha, int beta, int depth) {}
         virtual void stopSearch() {}
@@ -156,7 +156,7 @@ protected:
     virtual void doSendAssignThreads(int nThreads, int firstThreadNo) = 0;
     virtual void doSendInitSearch(const Position& pos,
                                   const std::vector<U64>& posHashList, int posHashListSize,
-                                  bool clearHistory) = 0;
+                                  bool clearHistory, int whiteContempt) = 0;
     virtual void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                                    int alpha, int beta, int depth) = 0;
     virtual void doSendStopSearch() = 0;
@@ -222,9 +222,10 @@ protected:
     struct InitSearchCommand : public Command {
         InitSearchCommand() {}
         InitSearchCommand(const Position& pos,const std::vector<U64>& posHashList,
-                          int posHashListSize, bool clearHistory)
+                          int posHashListSize, bool clearHistory, int whiteContempt)
             : Command(INIT_SEARCH, -1, 0, clearHistory),
-              posHashList(posHashList), posHashListSize(posHashListSize) {
+              posHashList(posHashList), posHashListSize(posHashListSize),
+              whiteContempt(whiteContempt) {
             pos.serialize(posData);
         }
         U8* toByteBuf(U8* buffer) const override;
@@ -233,6 +234,7 @@ protected:
         Position::SerializeData posData;
         std::vector<U64> posHashList;
         int posHashListSize = 0;
+        int whiteContempt = 0;
     };
     struct StartSearchCommand : public Command {
         StartSearchCommand() {}
@@ -298,7 +300,7 @@ protected:
     void doSendAssignThreads(int nThreads, int firstThreadNo) override;
     void doSendInitSearch(const Position& pos,
                           const std::vector<U64>& posHashList, int posHashListSize,
-                          bool clearHistory) override;
+                          bool clearHistory, int whiteContempt) override;
     void doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                            int alpha, int beta, int depth) override;
     void doSendStopSearch() override;
@@ -375,7 +377,7 @@ private:
         void assignThreads(int nThreads, int firstThreadNo) override;
         void initSearch(const Position& pos,
                         const std::vector<U64>& posHashList, int posHashListSize,
-                        bool clearHistory) override;
+                        bool clearHistory, int whiteContempt) override;
         void startSearch(int jobId, const SearchTreeInfo& sti,
                          int alpha, int beta, int depth) override;
         void stopSearch() override;
@@ -414,6 +416,7 @@ private:
     SearchTreeInfo sti;
     std::vector<U64> posHashList;
     int posHashListSize = 0;
+    int whiteContempt = 0;
     int jobId = -1; // job ID or -1 when no active search job
     int alpha = 0;
     int beta = 0;

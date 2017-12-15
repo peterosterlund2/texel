@@ -166,7 +166,8 @@ Evaluate::Evaluate(EvalHashTables& et)
       wKingZone(0), bKingZone(0),
       wKingAttacks(0), bKingAttacks(0),
       wAttacksBB(0), bAttacksBB(0),
-      wPawnAttacks(0), bPawnAttacks(0) {
+      wPawnAttacks(0), bPawnAttacks(0),
+      whiteContempt(0) {
 }
 
 int
@@ -225,6 +226,14 @@ Evaluate::evalPos(const Position& pos) {
     if (mhd->endGame)
         score = EndGameEval::endGameEval<true>(pos, phd->passedPawns, score);
     if (print) std::cout << "info string eval endgame:" << score << std::endl;
+    if ((whiteContempt != 0) && !mhd->endGame) {
+        int mtrlPawns = pos.wMtrlPawns() + pos.bMtrlPawns();
+        int mtrl = pos.wMtrl() + pos.bMtrl();
+        int hiMtrl = (rV + bV*2 + nV*2) * 2;
+        int piecePlay = interpolate(mtrl - mtrlPawns, 0, 64, hiMtrl, 128);
+        score += whiteContempt * piecePlay / 128;
+        if (print) std::cout << "eval contemp:" << score << ' ' << piecePlay << std::endl;
+    }
     if (pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) {
         int hmc = clamp(pos.getHalfMoveClock() / 10, 0, 9);
         score = score * halfMoveFactor[hmc] / 128;

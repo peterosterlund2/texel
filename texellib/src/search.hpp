@@ -107,6 +107,7 @@ public:
     void timeLimit(int minTimeLimit, int maxTimeLimit, int earlyStopPercent = -1);
 
     void setStrength(int strength, U64 randomSeed, int maxNPS);
+    void setWhiteContempt(int contempt);
 
     /** Set minimum depth for TB probes. */
     void setMinProbeDepth(int depth);

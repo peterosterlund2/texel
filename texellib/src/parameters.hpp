@@ -375,6 +375,9 @@ namespace UciParams {
 
     extern std::shared_ptr<Parameters::CheckParam> useNullMove;
 
+    extern std::shared_ptr<Parameters::SpinParam> contempt;
+    extern std::shared_ptr<Parameters::SpinParam> analyzeContempt;
+
     extern std::shared_ptr<Parameters::StringParam> gtbPath;
     extern std::shared_ptr<Parameters::SpinParam> gtbCache;
     extern std::shared_ptr<Parameters::StringParam> rtbPath;

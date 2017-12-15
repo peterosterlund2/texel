@@ -116,11 +116,11 @@ Communicator::forwardAssignThreads(int nThreads, int firstThreadNo) {
 void
 Communicator::sendInitSearch(const Position& pos,
                              const std::vector<U64>& posHashList, int posHashListSize,
-                             bool clearHistory) {
+                             bool clearHistory, int whiteContempt) {
     nodesSearched = 0;
     tbHits = 0;
     for (auto& c : children)
-        c->doSendInitSearch(pos, posHashList, posHashListSize, clearHistory);
+        c->doSendInitSearch(pos, posHashList, posHashListSize, clearHistory, whiteContempt);
 }
 
 void
@@ -234,7 +234,8 @@ Communicator::poll(CommandHandler& handler) {
             const InitSearchCommand* iCmd = static_cast<const InitSearchCommand*>(cmd.get());
             Position pos;
             pos.deSerialize(iCmd->posData);
-            handler.initSearch(pos, iCmd->posHashList, iCmd->posHashListSize, iCmd->clearHistory);
+            handler.initSearch(pos, iCmd->posHashList, iCmd->posHashListSize, iCmd->clearHistory,
+                               iCmd->whiteContempt);
             break;
         }
         case CommandType::START_SEARCH: {
@@ -314,6 +315,7 @@ Communicator::InitSearchCommand::toByteBuf(U8* buffer) const {
     for (int i = 0; i < len; i++)
         buffer = putBytes(buffer, posHashList[i]);
     buffer = putBytes(buffer, posHashListSize);
+    buffer = putBytes(buffer, whiteContempt);
     return buffer;
 }
 
@@ -328,6 +330,7 @@ Communicator::InitSearchCommand::fromByteBuf(const U8* buffer) {
     for (int i = 0; i < len; i++)
         buffer = getBytes(buffer, posHashList[i]);
     buffer = getBytes(buffer, posHashListSize);
+    buffer = getBytes(buffer, whiteContempt);
     return buffer;
 }
 
@@ -457,9 +460,10 @@ ThreadCommunicator::doSendAssignThreads(int nThreads, int firstThreadNo) {
 void
 ThreadCommunicator::doSendInitSearch(const Position& pos,
                                      const std::vector<U64>& posHashList, int posHashListSize,
-                                     bool clearHistory) {
+                                     bool clearHistory, int whiteContempt) {
     std::lock_guard<std::mutex> L(mutex);
-    cmdQueue.push_back(std::make_shared<InitSearchCommand>(pos, posHashList, posHashListSize, clearHistory));
+    cmdQueue.push_back(std::make_shared<InitSearchCommand>(pos, posHashList, posHashListSize,
+                                                           clearHistory, whiteContempt));
     notifier->notify();
 }
 
@@ -651,11 +655,12 @@ WorkerThread::CommHandler::assignThreads(int nThreads, int firstThreadNo) {
 void
 WorkerThread::CommHandler::initSearch(const Position& pos,
                                       const std::vector<U64>& posHashList, int posHashListSize,
-                                      bool clearHistory) {
-    wt.comm->sendInitSearch(pos, posHashList, posHashListSize, clearHistory);
+                                      bool clearHistory, int whiteContempt) {
+    wt.comm->sendInitSearch(pos, posHashList, posHashListSize, clearHistory, whiteContempt);
     wt.pos = pos;
     wt.posHashList = posHashList;
     wt.posHashListSize = posHashListSize;
+    wt.whiteContempt = whiteContempt;
     wt.jobId = -1;
 
     wt.logFile = make_unique<TreeLogger>();
@@ -816,6 +821,7 @@ WorkerThread::doSearch(CommHandler& commHandler) {
         Search sc(pos, posHashList, posHashListSize, st, *comm, *logFile);
         posHashListSize--;
         sc.setThreadNo(threadNo);
+        sc.setWhiteContempt(whiteContempt);
         sc.initSearchTreeInfo();
         const int minProbeDepth = TBProbe::tbEnabled() ? UciParams::minProbeDepth->getIntPar() : MAX_SEARCH_DEPTH;
         sc.setMinProbeDepth(minProbeDepth);

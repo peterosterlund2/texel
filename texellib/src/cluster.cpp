@@ -290,9 +290,9 @@ MPICommunicator::doSendAssignThreads(int nThreads, int firstThreadNo) {
 void
 MPICommunicator::doSendInitSearch(const Position& pos,
                                   const std::vector<U64>& posHashList, int posHashListSize,
-                                  bool clearHistory) {
-    cmdQueue.push_back(std::make_shared<InitSearchCommand>(pos, posHashList,
-                                                           posHashListSize, clearHistory));
+                                  bool clearHistory, int whiteContempt) {
+    cmdQueue.push_back(std::make_shared<InitSearchCommand>(pos, posHashList, posHashListSize,
+                                                           clearHistory, whiteContempt));
     mpiSend();
 }
 
@@ -432,7 +432,8 @@ MPICommunicator::mpiRecv() {
                     const InitSearchCommand* iCmd = static_cast<const InitSearchCommand*>(cmd.get());
                     Position pos;
                     pos.deSerialize(iCmd->posData);
-                    sendInitSearch(pos, iCmd->posHashList, iCmd->posHashListSize, iCmd->clearHistory);
+                    sendInitSearch(pos, iCmd->posHashList, iCmd->posHashListSize, iCmd->clearHistory,
+                                   iCmd->whiteContempt);
                     break;
                 }
                 case CommandType::START_SEARCH: {
