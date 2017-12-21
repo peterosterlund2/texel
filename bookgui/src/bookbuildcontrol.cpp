@@ -32,7 +32,7 @@
 
 
 BookBuildControl::BookBuildControl(ChangeListener& listener)
-    : listener(listener), nPendingBookTasks(0), tt(27),
+    : listener(listener), nPendingBookTasks(0), tt(128*1024*1024),
       comm(nullptr, tt, notifier, false) {
     ComputerPlayer::initEngine();
     setupTB();

@@ -49,7 +49,7 @@ public:
     ComputerPlayer(const ComputerPlayer& other) = delete;
     ComputerPlayer& operator=(const ComputerPlayer& other) = delete;
 
-    void setTTLogSize(int logSize);
+    void setTTSize(U64 numEntries);
 
     std::string getCommand(const Position& posIn, bool drawOffer, const std::vector<Position>& history) override;
 
@@ -93,8 +93,8 @@ private:
 
 
 inline void
-ComputerPlayer::setTTLogSize(int logSize) {
-    tt.reSize(logSize);
+ComputerPlayer::setTTSize(U64 numEntries) {
+    tt.reSize(numEntries);
 }
 
 inline bool

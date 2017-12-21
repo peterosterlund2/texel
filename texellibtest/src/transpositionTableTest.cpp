@@ -134,7 +134,7 @@ testTTEntry() {
  */
 static void
 testInsert() {
-    TranspositionTable tt(16);
+    TranspositionTable tt(64*1024);
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     std::string moves[] = {
         "e4", "e5", "Nf3", "Nc6", "Bb5", "a6", "Ba4", "b5", "Bb3", "Nf6", "O-O", "Be7", "Re1"

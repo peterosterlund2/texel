@@ -45,7 +45,7 @@
 
 
 EngineMainThread::EngineMainThread()
-    : tt(8) {
+    : tt(256) {
     Communicator* clusterParent = Cluster::instance().createParentCommunicator(tt);
     comm = make_unique<ThreadCommunicator>(clusterParent, tt, notifier, true);
     Cluster::instance().createChildCommunicators(comm.get(), tt);
@@ -121,20 +121,14 @@ EngineMainThread::setupTT() {
     int hashSizeMB = UciParams::hash->getIntPar();
     U64 nEntries = hashSizeMB > 0 ? ((U64)hashSizeMB) * (1 << 20) / sizeof(TranspositionTable::TTEntry)
                                   : (U64)1024;
-    int logSize = 0;
-    while (nEntries > 1) {
-        logSize++;
-        nEntries /= 2;
-    }
-    logSize++;
     while (true) {
         try {
-            logSize--;
-            if (logSize <= 0)
+            if (nEntries < 1)
                 break;
-            tt.reSize(logSize);
+            tt.reSize(nEntries);
             break;
         } catch (const std::bad_alloc& ex) {
+            nEntries /= 2;
         }
     }
 }

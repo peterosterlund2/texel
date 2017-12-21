@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     if ((argc == 2) && (std::string(argv[1]) == "txt")) {
         auto whitePlayer = make_unique<HumanPlayer>();
         auto blackPlayer = make_unique<ComputerPlayer>();
-        blackPlayer->setTTLogSize(21);
+        blackPlayer->setTTSize(2*1024*1024);
         TUIGame game(std::move(whitePlayer), std::move(blackPlayer));
         game.play();
     } else if ((argc == 3) && (std::string(argv[1]) == "tree")) {

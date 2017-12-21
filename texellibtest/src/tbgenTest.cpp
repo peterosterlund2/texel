@@ -215,7 +215,7 @@ TBGenTest::testGenerateInternal(const PieceCount& pc) {
     VectorStorage vs;
     TBGenerator<VectorStorage> tbGen(vs, pc);
 #else
-    TranspositionTable tt(19);
+    TranspositionTable tt(512*1024);
     TTStorage tts(tt);
     TBGenerator<TTStorage> tbGen(tts, pc);
 #endif

@@ -35,14 +35,17 @@
 using namespace std;
 
 
-TranspositionTable::TranspositionTable(int log2Size)
+TranspositionTable::TranspositionTable(U64 numEntries)
     : table(nullptr), tableSize(0), ttStorage(*this) {
-    reSize(log2Size);
+    reSize(numEntries);
 }
 
 void
-TranspositionTable::reSize(int log2Size) {
-    const size_t numEntries = ((size_t)1) << log2Size;
+TranspositionTable::reSize(U64 numEntries) {
+    while (BitBoard::bitCount(numEntries) > 1)
+        numEntries &= numEntries - 1;
+    if (numEntries < 4)
+        numEntries = 4;
 
     tableV.clear();
     tableLP.reset();

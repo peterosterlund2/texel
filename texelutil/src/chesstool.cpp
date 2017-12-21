@@ -165,7 +165,7 @@ const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 void
 ChessTool::pgnToFen(std::istream& is, int everyNth) {
     static std::vector<U64> nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
-    static TranspositionTable tt(19);
+    static TranspositionTable tt(512*1024);
     Notifier notifier;
     ThreadCommunicator comm(nullptr, tt, notifier, false);
     static KillerTable kt;
@@ -1642,7 +1642,7 @@ ChessTool::qEval(std::vector<PositionInfo>& positions) {
 
 void
 ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int end) {
-    TranspositionTable tt(19);
+    TranspositionTable tt(512*1024);
     Notifier notifier;
     ThreadCommunicator comm(nullptr, tt, notifier, false);
 

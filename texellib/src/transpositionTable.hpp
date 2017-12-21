@@ -133,11 +133,11 @@ public:
     };
 
     /** Constructor. Creates an empty transposition table with numEntries slots. */
-    explicit TranspositionTable(int log2Size);
+    explicit TranspositionTable(U64 numEntries);
     TranspositionTable(const TranspositionTable& other) = delete;
     TranspositionTable operator=(const TranspositionTable& other) = delete;
 
-    void reSize(int log2Size);
+    void reSize(U64 numEntries);
 
     /** Insert an entry in the hash table. */
     void insert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore,

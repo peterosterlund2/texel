@@ -502,7 +502,7 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
         ptVec.push_back(p);
     }
 
-    TranspositionTable tt(19);
+    TranspositionTable tt(512*1024);
     Notifier notifier;
     ThreadCommunicator comm(nullptr, tt, notifier, false);
     std::vector<U64> nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);

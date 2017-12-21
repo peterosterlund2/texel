@@ -326,7 +326,7 @@ Book::improve(const std::string& bookFile, int searchTime, int numThreads,
     std::atomic<U64> startHash(startPos.bookHash());
     std::atomic<bool> stopFlag(false);
     DropoutSelector selector(*this, mutex, startHash, stopFlag);
-    TranspositionTable tt(27);
+    TranspositionTable tt(128*1024*1024);
     extendBook(selector, searchTime, numThreads, tt);
 }
 

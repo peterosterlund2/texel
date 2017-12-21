@@ -571,7 +571,7 @@ BookBuildTest::testAddPosToBookConnectToChild() {
 
 void
 BookBuildTest::testSelector() {
-    TranspositionTable tt(27);
+    TranspositionTable tt(128*1024*1024);
     auto system = [](const std::string& cmd) { ::system(cmd.c_str()); };
     std::string tmpDir = "/tmp/booktest";
     system("mkdir -p " + tmpDir);
