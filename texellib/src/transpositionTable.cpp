@@ -36,14 +36,12 @@ using namespace std;
 
 
 TranspositionTable::TranspositionTable(U64 numEntries)
-    : table(nullptr), tableSize(0), ttStorage(*this) {
+    : table(nullptr), ttStorage(*this) {
     reSize(numEntries);
 }
 
 void
 TranspositionTable::reSize(U64 numEntries) {
-    while (BitBoard::bitCount(numEntries) > 1)
-        numEntries &= numEntries - 1;
     if (numEntries < 4)
         numEntries = 4;
 
@@ -62,14 +60,26 @@ TranspositionTable::reSize(U64 numEntries) {
     tableSize = numEntries;
 
     generation = 0;
-    setHashMask(tableSize);
+    setUsedSize(tableSize);
     tbGen.reset();
     notUsedCnt = 0;
 }
 
+void TranspositionTable::setUsedSize(U64 s) {
+    usedSize = s;
+    usedSizeShift = 0;
+    U64 topBits = usedSize;
+    while (topBits >= 256) {
+        topBits /= 2;
+        usedSizeShift++;
+    }
+    usedSizeTopBits = (int)topBits;
+    usedSizeMask = ((1ULL << usedSizeShift) - 1) & ~3ULL;
+}
+
 void
 TranspositionTable::clear() {
-    setHashMask(tableSize);
+    setUsedSize(tableSize);
     tbGen.reset();
     notUsedCnt = 0;
     TTEntry ent;
@@ -278,7 +288,7 @@ TranspositionTable::updateTB(const Position& pos, RelaxedShared<S64>& maxTimeMil
         pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) { // pos not suitable for TB generation
         if (tbGen && notUsedCnt++ > 3) {
             tbGen.reset();
-            setHashMask(tableSize);
+            setUsedSize(tableSize);
             notUsedCnt = 0;
         }
         return tbGen != nullptr;
@@ -295,8 +305,9 @@ TranspositionTable::updateTB(const Position& pos, RelaxedShared<S64>& maxTimeMil
         return false; // Not enough time to generate TB
 
     U64 ttSize = tableSize * sizeof(TTEntryStorage);
-    if (ttSize < 8 * 1024 * 1024)
-        return false; // Need at least 5MB for TB storage
+    const int tbSize = 5 * 1024 * 1024; // Max TB size, 10*64^3*2
+    if (ttSize < tbSize + 2 * 1024 * 1024)
+        return false;
 
     PieceCount pc;
     pc.nwq = BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN));
@@ -316,9 +327,7 @@ TranspositionTable::updateTB(const Position& pos, RelaxedShared<S64>& maxTimeMil
             requiredTime = std::max(maxT, requiredTime) * 2;
         return false;
     }
-    int shift = (ttSize < 16 * 1024 * 1024) ? 2 : 1;
-    setHashMask(tableSize >> shift);
-    hashMask = (tableSize - 1) >> shift;
+    setUsedSize(tableSize - tbSize / sizeof(TTEntryStorage));
     notUsedCnt = 0;
     return true;
 }

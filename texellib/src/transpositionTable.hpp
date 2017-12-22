@@ -198,20 +198,25 @@ public:
     U64 byteSize() const;
 
 private:
-    /** Set hashMask from hash table size. */
-    void setHashMask(size_t s);
+    /** Set how much of the hash table to use. */
+    void setUsedSize(U64 s);
 
     /** Get position in hash table given zobrist key. */
     size_t getIndex(U64 key) const;
 
 
     TTEntryStorage* table; // Points to either tableV or tableLP
-    size_t tableSize;      // Number of entries
+
+    U64 usedSize = 0;        // Number of used entries. Smaller than tableSize when TB used
+    int usedSizeTopBits = 0; // < 256, (usedSizeTopBits << usedSizeShift) <= usedSize
+    int usedSizeShift = 0;
+    U64 usedSizeMask = 0;
+
+    U8 generation = 0;
+    U64 tableSize = 0;     // Number of entries
+
     vector_aligned<TTEntryStorage> tableV;
     std::shared_ptr<TTEntryStorage> tableLP; // Large page allocation if used
-
-    U64 hashMask; // Mask to convert zobrist key to table index
-    U8 generation;
 
     // On-demand TB generation
     TTStorage ttStorage;
@@ -418,16 +423,14 @@ TranspositionTable::TTEntry::getBits(int first, int size) const {
     return (unsigned int)((data >> first) & sizeMask);
 }
 
-
-inline void
-TranspositionTable::setHashMask(size_t s) {
-    hashMask = tableSize - 1;
-    hashMask &= ~((size_t)3);
-}
-
 inline size_t
 TranspositionTable::getIndex(U64 key) const {
-    return (size_t)(key & hashMask);
+    U64 r = key >> (64 - 16);
+    r *= usedSizeTopBits;
+    r >>= 16;
+    r <<= usedSizeShift;
+    r |= key & usedSizeMask;
+    return (size_t)r;
 }
 
 inline void
