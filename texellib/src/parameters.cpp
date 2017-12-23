@@ -813,7 +813,7 @@ Parameters::getParam(const std::string& name) const {
 
 void
 Parameters::addPar(const std::shared_ptr<ParamBase>& p) {
-    std::string name = toLowerCase(p->name);
+    std::string name = toLowerCase(p->getName());
     assert(params.find(name) == params.end());
     params[name] = p;
     paramNames.push_back(name);

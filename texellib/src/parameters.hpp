@@ -65,25 +65,27 @@ public:
     };
 
     /** Base class for UCI parameters. */
-    struct ParamBase : public Listener {
-        std::string name;
-        Type type;
-
+    class ParamBase : public Listener {
+    public:
         ParamBase(const std::string& n, Type t) : name(n), type(t) { }
         ParamBase(const ParamBase& other) = delete;
         ParamBase& operator=(const ParamBase& other) = delete;
+
+        const std::string& getName() const { return name; }
+        Type getType() const { return type; }
 
         virtual bool getBoolPar() const { assert(false); return false; }
         virtual int getIntPar() const { assert(false); return 0; }
         virtual std::string getStringPar() const { assert(false); return ""; }
         virtual void set(const std::string& value) { assert(false); }
+    private:
+        std::string name;
+        Type type;
     };
 
     /** A boolean parameter. */
-    struct CheckParam : public ParamBase {
-        bool value;
-        bool defaultValue;
-
+    class CheckParam : public ParamBase {
+    public:
         CheckParam(const std::string& name, bool def)
             : ParamBase(name, CHECK) {
             this->value = def;
@@ -91,6 +93,7 @@ public:
         }
 
         bool getBoolPar() const override { return value; }
+        bool getDefaultValue() const { return defaultValue; }
 
         void set(const std::string& value) override {
             if (toLowerCase(value) == "true")
@@ -99,21 +102,17 @@ public:
                 this->value = false;
             notify();
         }
+    private:
+        bool value;
+        bool defaultValue;
     };
 
     /** An integer parameter. */
-    struct SpinParam : public ParamBase {
-        int minValue;
-        int maxValue;
-        int value;
-        int defaultValue;
-
+    class SpinParam : public ParamBase {
+    public:
         SpinParam(const std::string& name, int minV, int maxV, int def)
-            : ParamBase(name, SPIN) {
-            minValue = minV;
-            maxValue = maxV;
-            value = def;
-            defaultValue = def;
+            : ParamBase(name, SPIN), minValue(minV), maxValue(maxV),
+              value(def), defaultValue(def) {
         }
 
         int getIntPar() const override { return value; }
@@ -129,14 +128,16 @@ public:
         int getDefaultValue() const { return defaultValue; }
         int getMinValue() const { return minValue; }
         int getMaxValue() const { return maxValue; }
+    private:
+        int minValue;
+        int maxValue;
+        int value;
+        int defaultValue;
     };
 
     /** A multi-choice parameter. */
-    struct ComboParam : public ParamBase {
-        std::vector<std::string> allowedValues;
-        std::string value;
-        std::string defaultValue;
-
+    class ComboParam : public ParamBase {
+    public:
         ComboParam(const std::string& name, const std::vector<std::string>& allowed,
                    const std::string& def)
             : ParamBase(name, COMBO), allowedValues(allowed),
@@ -144,6 +145,8 @@ public:
         }
 
         std::string getStringPar() const override { return value; }
+        const std::string& getDefaultValue() const { return defaultValue; }
+        const std::vector<std::string>& getAllowedValues() const { return allowedValues; }
 
         void set(const std::string& value) override {
             for (size_t i = 0; i < allowedValues.size(); i++) {
@@ -155,10 +158,15 @@ public:
                 }
             }
         }
+    private:
+        std::vector<std::string> allowedValues;
+        std::string value;
+        std::string defaultValue;
     };
 
     /** An action parameter. */
-    struct ButtonParam : public ParamBase {
+    class ButtonParam : public ParamBase {
+    public:
         explicit ButtonParam(const std::string& name)
             : ParamBase(name, BUTTON) { }
 
@@ -168,20 +176,22 @@ public:
     };
 
     /** A string parameter. */
-    struct StringParam : public ParamBase {
-        std::string value;
-        std::string defaultValue;
-
+    class StringParam : public ParamBase {
+    public:
         StringParam(const std::string& name, const std::string& def)
             : ParamBase(name, STRING), value(def), defaultValue(def) {
         }
 
         std::string getStringPar() const override { return value; }
+        const std::string& getDefaultValue() const { return defaultValue; }
 
         void set(const std::string& value) override {
             this->value = value;
             notify();
         }
+    private:
+        std::string value;
+        std::string defaultValue;
     };
 
     /** Get singleton instance. */
@@ -205,7 +215,7 @@ private:
     Parameters();
 
     std::map<std::string, std::shared_ptr<ParamBase>> params;
-    std::vector<std::string> paramNames;
+    std::vector<std::string> paramNames; // Names in insertion order
 };
 
 // ----------------------------------------------------------------------------

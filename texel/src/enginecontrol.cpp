@@ -262,7 +262,7 @@ EngineMainThread::setOptions() {
             const std::string& optionName = p.first;
             std::string optionValue = p.second;
             std::shared_ptr<Parameters::ParamBase> par = params.getParam(optionName);
-            if (par && par->type == Parameters::STRING && optionValue == "<empty>")
+            if (par && par->getType() == Parameters::STRING && optionValue == "<empty>")
                 optionValue.clear();
             params.set(optionName, optionValue);
             comm->sendSetParam(optionName, optionValue);
@@ -501,35 +501,35 @@ EngineControl::printOptions(std::ostream& os) {
     Parameters::instance().getParamNames(parNames);
     for (const auto& pName : parNames) {
         std::shared_ptr<Parameters::ParamBase> p = Parameters::instance().getParam(pName);
-        switch (p->type) {
+        switch (p->getType()) {
         case Parameters::CHECK: {
-            const Parameters::CheckParam& cp = dynamic_cast<const Parameters::CheckParam&>(*p.get());
-            os << "option name " << cp.name << " type check default "
-               << (cp.defaultValue?"true":"false") << std::endl;
+            const Parameters::CheckParam& cp = static_cast<const Parameters::CheckParam&>(*p.get());
+            os << "option name " << cp.getName() << " type check default "
+               << (cp.getDefaultValue() ? "true" : "false") << std::endl;
             break;
         }
         case Parameters::SPIN: {
-            const Parameters::SpinParam& sp = dynamic_cast<const Parameters::SpinParam&>(*p.get());
-            os << "option name " << sp.name << " type spin default "
+            const Parameters::SpinParam& sp = static_cast<const Parameters::SpinParam&>(*p.get());
+            os << "option name " << sp.getName() << " type spin default "
                << sp.getDefaultValue() << " min " << sp.getMinValue()
                << " max " << sp.getMaxValue() << std::endl;
             break;
         }
         case Parameters::COMBO: {
-            const Parameters::ComboParam& cp = dynamic_cast<const Parameters::ComboParam&>(*p.get());
-            os << "option name " << cp.name << " type combo default " << cp.defaultValue;
-            for (size_t i = 0; i < cp.allowedValues.size(); i++)
-                os << " var " << cp.allowedValues[i];
+            const Parameters::ComboParam& cp = static_cast<const Parameters::ComboParam&>(*p.get());
+            os << "option name " << cp.getName() << " type combo default " << cp.getDefaultValue();
+            for (size_t i = 0; i < cp.getAllowedValues().size(); i++)
+                os << " var " << cp.getAllowedValues()[i];
             os << std::endl;
             break;
         }
         case Parameters::BUTTON:
-            os << "option name " << p->name << " type button" << std::endl;
+            os << "option name " << p->getName() << " type button" << std::endl;
             break;
         case Parameters::STRING: {
-            const Parameters::StringParam& sp = dynamic_cast<const Parameters::StringParam&>(*p.get());
-            os << "option name " << sp.name << " type string default "
-               << sp.defaultValue << std::endl;
+            const Parameters::StringParam& sp = static_cast<const Parameters::StringParam&>(*p.get());
+            os << "option name " << sp.getName() << " type string default "
+               << sp.getDefaultValue() << std::endl;
             break;
         }
         }
