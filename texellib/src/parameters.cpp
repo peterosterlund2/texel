@@ -460,10 +460,6 @@ ParamTable<4> protectBonus { -50, 50, useUciParam,
     {  1,  2,  3,  4 }
 };
 
-ParamTable<14> bishMobScore = { -50, 50, useUciParam,
-    {-18,-11, -1,  6, 13, 19, 24, 28, 31, 35, 36, 39, 41, 39 },
-    {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14 }
-};
 ParamTable<28> knightMobScore { -200, 200, useUciParam,
     {-31,-48, 25,-40,-14, -2,  5,-56,-24, -4,  9, 15,-26,-26,-19,-11, -2,  4,  6,-24,-24,-18,-12, -4,  1,  5,  9,  6 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 23, 24, 25, 26 }
@@ -622,6 +618,19 @@ static void rookMobScoreUpdate() {
         rookMobScore[i] = k0 + k1 * i / 10 + k2 * i * i / 100;
 }
 
+int bishMobScore[14];
+ParamTable<3> bishMobParams { -250, 250, useUciParam,
+    {-18, 90, -35 },
+    {  1,  2,   3 }
+};
+static void bishMobScoreUpdate() {
+    int k0 = bishMobParams[0];
+    int k1 = bishMobParams[1];
+    int k2 = bishMobParams[2];
+    for (int i = 0; i < 14; i++)
+        bishMobScore[i] = k0 + k1 * i / 10 + k2 * i * i / 100;
+}
+
 
 Parameters::Parameters() {
     std::string about = ComputerPlayer::engineName +
@@ -658,6 +667,9 @@ Parameters::Parameters() {
 
     rookMobParams.registerParams("RookMobility", *this);
     rookMobParams.addListener(rookMobScoreUpdate);
+
+    bishMobParams.registerParams("BishopMobility", *this);
+    bishMobParams.addListener(bishMobScoreUpdate);
 
 #if 0
     REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
@@ -745,7 +757,6 @@ Parameters::Parameters() {
     protectedPawnBonus.registerParams("ProtectedPawnBonus", *this);
     attackedPawnBonus.registerParams("AttackedPawnBonus", *this);
     protectBonus.registerParams("ProtectBonus", *this);
-    bishMobScore.registerParams("BishopMobility", *this);
     knightMobScore.registerParams("KnightMobility", *this);
     queenMobScore.registerParams("QueenMobility", *this);
     majorPieceRedundancy.registerParams("MajorPieceRedundancy", *this);

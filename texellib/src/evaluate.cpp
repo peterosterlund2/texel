@@ -203,6 +203,9 @@ Evaluate::evalPos(const Position& pos) {
     bPawnAttacks = BitBoard::bPawnAttacksMask(pos.pieceTypeBB(Piece::BPAWN));
 
     score += rookBonus(pos);
+    if (print) std::cout << "info string eval rook   :" << score << std::endl;
+    score += bishopEval(pos, score);
+    if (print) std::cout << "info string eval bishop :" << score << std::endl;
 
 #if 0
     wKingAttacks = bKingAttacks = 0;
@@ -219,10 +222,6 @@ Evaluate::evalPos(const Position& pos) {
     score += castleBonus(pos);
     if (print) std::cout << "info string eval castle :" << score << std::endl;
 
-    score += rookBonus(pos);
-    if (print) std::cout << "info string eval rook   :" << score << std::endl;
-    score += bishopEval(pos, score);
-    if (print) std::cout << "info string eval bishop :" << score << std::endl;
     score += knightEval(pos);
     if (print) std::cout << "info string eval knight :" << score << std::endl;
     score += threatBonus(pos);
@@ -1061,6 +1060,26 @@ Evaluate::rookBonus(const Position& pos) {
 int
 Evaluate::bishopEval(const Position& pos, int oldScore) {
     int score = 0;
+
+    const U64 occupied = pos.occupiedBB();
+    const U64 wBishops = pos.pieceTypeBB(Piece::WBISHOP);
+    const U64 bBishops = pos.pieceTypeBB(Piece::BBISHOP);
+    if ((wBishops | bBishops) == 0)
+        return 0;
+    U64 m = wBishops;
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        U64 atk = BitBoard::bishopAttacks(sq, occupied);
+        score += bishMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB() | bPawnAttacks))];
+    }
+    m = bBishops;
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        U64 atk = BitBoard::bishopAttacks(sq, occupied);
+        score -= bishMobScore[BitBoard::bitCount(atk & ~(pos.blackBB() | wPawnAttacks))];
+    }
+
+    return score;
 #if 0
     const U64 occupied = pos.occupiedBB();
     const U64 wBishops = pos.pieceTypeBB(Piece::WBISHOP);
@@ -1145,7 +1164,6 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
             score += bTrapped;
     }
 #endif
-    return score;
 }
 
 int
