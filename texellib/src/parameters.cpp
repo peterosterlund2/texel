@@ -167,6 +167,7 @@ DEFINE_PARAM(minTimeUsage);
 DEFINE_PARAM(maxTimeUsage);
 DEFINE_PARAM(timePonderHitRate);
 
+#if 0
 /** Piece/square table for king during middle game. */
 ParamTable<64> kt1b { -200, 200, useUciParam,
     {  60,  63,  85,  70,  51,  80,  68,-192,
@@ -610,6 +611,7 @@ ParamTable<9> stalePawnFactor { 0, 192, useUciParam,
     {114,124,129,129,132,126,106, 73, 41 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9 }
 };
+#endif
 
 Parameters::Parameters() {
     std::string about = ComputerPlayer::engineName +
