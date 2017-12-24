@@ -460,10 +460,6 @@ ParamTable<4> protectBonus { -50, 50, useUciParam,
     {  1,  2,  3,  4 }
 };
 
-ParamTable<15> rookMobScore { -50, 50, useUciParam,
-    {-23,-12, -8, -1, -1,  5,  9, 12, 16, 20, 24, 26, 26, 23, 28 },
-    {   1, 2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 }
-};
 ParamTable<14> bishMobScore = { -50, 50, useUciParam,
     {-18,-11, -1,  6, 13, 19, 24, 28, 31, 35, 36, 39, 41, 39 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14 }
@@ -749,7 +745,6 @@ Parameters::Parameters() {
     protectedPawnBonus.registerParams("ProtectedPawnBonus", *this);
     attackedPawnBonus.registerParams("AttackedPawnBonus", *this);
     protectBonus.registerParams("ProtectBonus", *this);
-    rookMobScore.registerParams("RookMobility", *this);
     bishMobScore.registerParams("BishopMobility", *this);
     knightMobScore.registerParams("KnightMobility", *this);
     queenMobScore.registerParams("QueenMobility", *this);

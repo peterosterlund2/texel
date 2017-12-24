@@ -507,7 +507,6 @@ extern ParamTable<9> stalePawnFactor;
 #endif
 
 extern int rookMobScore[15];
-extern ParamTable<3> rookMobParams;
 
 
 // Search parameters
