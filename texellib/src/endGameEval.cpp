@@ -56,6 +56,9 @@ template int EndGameEval::endGameEval<true>(const Position&, U64, int);
 template <bool doEval>
 int
 EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
+    if (!doEval) return 0;
+    return oldScore;
+#if 0
     int score = oldScore;
     const int wMtrlPawns = pos.wMtrlPawns();
     const int bMtrlPawns = pos.bMtrlPawns();
@@ -607,6 +610,7 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
 
     if (!doEval) return 0;
     return score;
+#endif
 }
 
 int
@@ -1053,6 +1057,7 @@ EndGameEval::kpkpEval(int wKing, int bKing, int wPawn, int bPawn, int& score) {
 
 int
 EndGameEval::krkpEval(int wKing, int bKing, int bPawn, bool whiteMove, int score) {
+#if 0
     if (Position::getX(bKing) >= 4) { // Mirror X
         wKing ^= 7;
         bKing ^= 7;
@@ -1070,11 +1075,14 @@ EndGameEval::krkpEval(int wKing, int bKing, int bPawn, bool whiteMove, int score
         score /= 50;
     else
         score += krkpBonus;
+#endif
     return score;
 }
 
 int
 EndGameEval::krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bool whiteMove) {
+    return 0;
+#if 0
     if (Position::getX(wPawn) >= 4) { // Mirror X
         wKing ^= 7;
         bKing ^= 7;
@@ -1108,16 +1116,19 @@ EndGameEval::krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bo
             score /= 4;
     }
     return score;
+#endif
 }
 
 int
 EndGameEval::krpkrpEval(int wKing, int bKing, int wPawn, int wRook, int bRook, int bPawn, bool whiteMove, int score) {
+#if 0
     int hiScore = krpkrEval(wKing, bKing, wPawn, wRook, bRook, whiteMove);
     if (score > hiScore * 14 / 16)
         return hiScore * 14 / 16;
     int loScore = -krpkrEval(63-bKing, 63-wKing, 63-bPawn, 63-bRook, 63-wRook, !whiteMove);
     if (score < loScore * 14 / 16)
         return loScore * 14 / 16;
+#endif
     return score;
 }
 

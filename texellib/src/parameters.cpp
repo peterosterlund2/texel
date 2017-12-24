@@ -63,6 +63,7 @@ DEFINE_PARAM(rV);
 DEFINE_PARAM(qV);
 DEFINE_PARAM(kV);
 
+#if 0
 DEFINE_PARAM(pawnIslandPenalty);
 DEFINE_PARAM(pawnBackwardPenalty);
 DEFINE_PARAM(pawnSemiBackwardPenalty1);
@@ -130,6 +131,7 @@ DEFINE_PARAM(oppoBishopLoMtrl);
 DEFINE_PARAM(oppoBishopHiMtrl);
 DEFINE_PARAM(knightOutpostLoMtrl);
 DEFINE_PARAM(knightOutpostHiMtrl);
+#endif
 
 
 DEFINE_PARAM(aspirationWindow);
@@ -642,6 +644,7 @@ Parameters::Parameters() {
     REGISTER_PARAM(qV, "QueenValue");
     REGISTER_PARAM(kV, "KingValue");
 
+#if 0
     REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
     REGISTER_PARAM(pawnBackwardPenalty, "PawnBackwardPenalty");
     REGISTER_PARAM(pawnSemiBackwardPenalty1, "PawnSemiBackwardPenalty1");
@@ -755,6 +758,7 @@ Parameters::Parameters() {
     pawnIsolatedPenalty.registerParams("PawnIsolatedPenalty", *this);
     halfMoveFactor.registerParams("HalfMoveFactor", *this);
     stalePawnFactor.registerParams("StalePawnFactor", *this);
+#endif
 
     // Search parameters
     REGISTER_PARAM(aspirationWindow, "AspirationWindow");

@@ -1058,6 +1058,7 @@ printTable(const ParamTable<N>& pt, const std::string& name, std::ostream& os) {
 void
 ChessTool::printParams() {
     std::ostream& os = std::cout;
+#if 0
     printTableNxN<8>(kt1b, "kt1b", os);
     printTableNxN<8>(kt2b, "kt2b", os);
     printTableNxN<8>(pt1b, "pt1b", os);
@@ -1102,6 +1103,7 @@ ChessTool::printParams() {
     printTable(pawnIsolatedPenalty, "pawnIsolatedPenalty", os);
     printTable(halfMoveFactor, "halfMoveFactor", os);
     printTable(stalePawnFactor, "stalePawnFactor", os);
+#endif
 
     os << "pV : " << pV << std::endl;
     os << "nV : " << nV << std::endl;
@@ -1109,6 +1111,7 @@ ChessTool::printParams() {
     os << "rV : " << rV << std::endl;
     os << "qV : " << qV << std::endl;
 
+#if 0
     os << "pawnIslandPenalty        : " << pawnIslandPenalty << std::endl;
     os << "pawnBackwardPenalty      : " << pawnBackwardPenalty << std::endl;
     os << "pawnSemiBackwardPenalty1 : " << pawnSemiBackwardPenalty1 << std::endl;
@@ -1176,6 +1179,7 @@ ChessTool::printParams() {
     os << "oppoBishopHiMtrl    : " << oppoBishopHiMtrl << std::endl;
     os << "knightOutpostLoMtrl : " << knightOutpostLoMtrl << std::endl;
     os << "knightOutpostHiMtrl : " << knightOutpostHiMtrl << std::endl;
+#endif
 
     os << "moEvalWeight   : " << moEvalWeight << std::endl;
     os << "moHangPenalty1 : " << moHangPenalty1 << std::endl;
@@ -1259,6 +1263,7 @@ ChessTool::patchParams(const std::string& directory) {
     std::vector<std::string> cppFile = readFile(directory + "/parameters.cpp");
     std::vector<std::string> hppFile = readFile(directory + "/parameters.hpp");
 
+#if 0
     replaceTableNxN<8>(kt1b, "kt1b", cppFile);
     replaceTableNxN<8>(kt2b, "kt2b", cppFile);
     replaceTableNxN<8>(pt1b, "pt1b", cppFile);
@@ -1303,6 +1308,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(pawnIsolatedPenalty, "pawnIsolatedPenalty", cppFile);
     replaceTable(halfMoveFactor, "halfMoveFactor", cppFile);
     replaceTable(stalePawnFactor, "stalePawnFactor", cppFile);
+#endif
 
     replaceValue(pV, "pV", hppFile);
     replaceValue(nV, "nV", hppFile);
@@ -1310,6 +1316,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(rV, "rV", hppFile);
     replaceValue(qV, "qV", hppFile);
 
+#if 0
     replaceValue(pawnIslandPenalty, "pawnIslandPenalty", hppFile);
     replaceValue(pawnBackwardPenalty, "pawnBackwardPenalty", hppFile);
     replaceValue(pawnSemiBackwardPenalty1, "pawnSemiBackwardPenalty1", hppFile);
@@ -1377,6 +1384,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(oppoBishopHiMtrl, "oppoBishopHiMtrl", hppFile);
     replaceValue(knightOutpostLoMtrl, "knightOutpostLoMtrl", hppFile);
     replaceValue(knightOutpostHiMtrl, "knightOutpostHiMtrl", hppFile);
+#endif
 
 //    replaceValue(moEvalWeight, "moEvalWeight", hppFile);
 //    replaceValue(moHangPenalty1, "moHangPenalty1", hppFile);

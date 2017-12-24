@@ -58,6 +58,9 @@ static inline U64 getMask(int sq, int dx, int dy) {
 
 void
 Evaluate::staticInitialize() {
+    for (int i = 0; i < Piece::nPieceTypes; i++)
+        psTab1[i] = psTab2[i] = empty;
+#if 0
     psTab1[Piece::EMPTY]   = empty;
     psTab1[Piece::WKING]   = kt1w.getTable();
     psTab1[Piece::WQUEEN]  = qt1w.getTable();
@@ -97,10 +100,12 @@ Evaluate::staticInitialize() {
         knightKingProtectPattern[sq] = n;
         bishopKingProtectPattern[sq] = b;
     }
+#endif
 }
 
 void
 Evaluate::updateEvalParams() {
+#if 0
     // Castle bonus
     for (int i = 0; i < 256; i++) {
         int h1Dist = 100;
@@ -149,6 +154,7 @@ Evaluate::updateEvalParams() {
             knightMobScoreA[sq][m] = knightMobScore[offs + std::min(m, maxMob)];
         }
     }
+#endif
 }
 
 const int* Evaluate::psTab1[Piece::nPieceTypes];
@@ -192,8 +198,8 @@ Evaluate::evalPos(const Position& pos) {
     }
 
     int score = materialScore(pos, print);
-    if (false) {
 
+#if 0
     wKingAttacks = bKingAttacks = 0;
     wKingZone = BitBoard::kingAttacks[pos.getKingSq(true)]; wKingZone |= wKingZone << 8;
     bKingZone = BitBoard::kingAttacks[pos.getKingSq(false)]; bKingZone |= bKingZone >> 8;
@@ -240,6 +246,7 @@ Evaluate::evalPos(const Position& pos) {
     }
     if (print) std::cout << "info string eval staleP :" << score << std::endl;
     }
+#endif
 
     if (!pos.isWhiteMove())
         score = -score;
@@ -250,6 +257,7 @@ Evaluate::evalPos(const Position& pos) {
     return score;
 }
 
+#if 0
 /** Compensate for the fact that many knights are stronger compared to queens
  * than what the default material scores would predict. */
 static inline int correctionNvsQ(int n, int q) {
@@ -265,11 +273,13 @@ static inline int correctionNvsQ(int n, int q) {
     int corr = knightBonus * (n - q - 1);
     return corr;
 }
+#endif
 
 void
 Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool print) const {
     // Compute material part of score
     int score = pos.wMtrl() - pos.bMtrl();
+#if 0
     if (print) std::cout << "info string eval mtrlraw:" << score << std::endl;
     const int nWQ = BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN));
     const int nBQ = BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN));
@@ -342,7 +352,9 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     }
     if (print) std::cout << "info string eval imbala :" << score << std::endl;
     mhd.id = pos.materialId();
+#endif
     mhd.score = score;
+#if 0
     mhd.endGame = EndGameEval::endGameEval<false>(pos, 0, 0);
 
     // Compute interpolation factors
@@ -395,10 +407,13 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
         const int hiMtrl = knightOutpostHiMtrl;
         mhd.knightOutPostIPF = interpolate(wMtrlPawns + bMtrlPawns, loMtrl, 0, hiMtrl, IPOLMAX);
     }
+#endif
 }
 
 int
 Evaluate::tradeBonus(const Position& pos, int wCorr, int bCorr) const {
+    return 0;
+#if 0
     const int wM = pos.wMtrl() + wCorr;
     const int bM = pos.bMtrl() + bCorr;
     const int wPawn = pos.wMtrlPawns();
@@ -409,12 +424,13 @@ Evaluate::tradeBonus(const Position& pos, int wCorr, int bCorr) const {
     pBonus += interpolate((deltaScore > 0) ? wPawn : bPawn, 0, -pawnTradePenalty * deltaScore / 100, pawnTradeThreshold, 0);
 
     return pBonus;
+#endif
 }
 
 int
 Evaluate::pieceSquareEval(const Position& pos) {
     int score = 0;
-
+#if 0
     // Kings/pawns
     if (pos.wMtrlPawns() + pos.bMtrlPawns() > 0) {
         const int k1 = (pos.psScore1(Piece::WKING) + pos.psScore1(Piece::WPAWN)) -
@@ -482,12 +498,14 @@ Evaluate::pieceSquareEval(const Position& pos) {
             score -= s;
         }
     }
-
+#endif
     return score;
 }
 
 int
 Evaluate::castleBonus(const Position& pos) {
+    return 0;
+#if 0
     if (pos.getCastleMask() == 0) return 0;
 
     const int k1 = kt1b[G8] - kt1b[E8];
@@ -510,10 +528,13 @@ Evaluate::castleBonus(const Position& pos) {
     const int bBonus = (castleValue * castleMaskFactor[tmp]) >> 7;
 
     return wBonus - bBonus;
+#endif
 }
 
 int
 Evaluate::pawnBonus(const Position& pos) {
+    return 0;
+#if 0
     U64 key = pos.pawnZobristHash();
     PawnHashData& phd = getPawnHashEntry(pawnHash, key);
     if (phd.key != key)
@@ -692,8 +713,10 @@ Evaluate::pawnBonus(const Position& pos) {
         score -= prBonus;
 
     return score;
+#endif
 }
 
+#if 0
 template <bool white>
 static inline int
 evalConnectedPP(int x, int y, U64 ppMask) {
@@ -752,9 +775,12 @@ bPawnCtrlSquares(U64 mask, U64 wPawns, U64 bPawns) {
             (mask & (wLAtks ^ wRAtks) & (bLAtks | bRAtks)) |
             (mask & bLAtks & bRAtks));
 }
+#endif
 
 U64
 Evaluate::computeStalePawns(const Position& pos) {
+    return 0;
+#if 0
     const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
     const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
 
@@ -797,10 +823,12 @@ Evaluate::computeStalePawns(const Position& pos) {
     }
 
     return wStale | bStale;
+#endif
 }
 
 void
 Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
+#if 0
     int score = 0;
 
     // Evaluate double pawns and pawn islands
@@ -965,11 +993,13 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     ph.passedBonusB = (S16)passedBonusB;
     ph.passedPawns = passedPawnsW | passedPawnsB;
     ph.stalePawns = stalePawns;
+#endif
 }
 
 int
 Evaluate::rookBonus(const Position& pos) {
     int score = 0;
+#if 0
     const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
     const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
     const U64 occupied = pos.occupiedBB();
@@ -1007,12 +1037,14 @@ Evaluate::rookBonus(const Position& pos) {
     if (((r7 & (r7 - 1)) != 0) &&
         ((pos.pieceTypeBB(Piece::WKING) & BitBoard::maskRow1) != 0))
       score -= rookDouble7thRowBonus; // Two rooks on 2:nd row
+#endif
     return score;
 }
 
 int
 Evaluate::bishopEval(const Position& pos, int oldScore) {
     int score = 0;
+#if 0
     const U64 occupied = pos.occupiedBB();
     const U64 wBishops = pos.pieceTypeBB(Piece::WBISHOP);
     const U64 bBishops = pos.pieceTypeBB(Piece::BBISHOP);
@@ -1095,13 +1127,14 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
             (pos.getPiece(F2) == Piece::WPAWN))
             score += bTrapped;
     }
-
+#endif
     return score;
 }
 
 int
 Evaluate::knightEval(const Position& pos) {
     int score = 0;
+#if 0
     U64 wKnights = pos.pieceTypeBB(Piece::WKNIGHT);
     U64 bKnights = pos.pieceTypeBB(Piece::BKNIGHT);
     if ((wKnights | bKnights) == 0)
@@ -1145,14 +1178,14 @@ Evaluate::knightEval(const Position& pos) {
         }
         score -= interpolate(0, outPost, mhd->knightOutPostIPF);
     }
-
+#endif
     return score;
 }
 
 int
 Evaluate::threatBonus(const Position& pos) {
     int score = 0;
-
+#if 0
     // Sum values for all black pieces under attack
     U64 atk = wAttacksBB & pos.pieceTypeBB(Piece::BKNIGHT, Piece::BBISHOP, Piece::BROOK, Piece::BQUEEN);
     atk |= wPawnAttacks;
@@ -1192,13 +1225,14 @@ Evaluate::threatBonus(const Position& pos) {
                                         pos.pieceTypeBB(Piece::WKNIGHT, Piece::WBISHOP,
                                                         Piece::WROOK, Piece::WQUEEN));
     score += latentAttacks * latentAttackBonus;
-
+#endif
     return score;
 }
 
 int
 Evaluate::protectBonus(const Position& pos) {
     int score = 0;
+#if 0
     score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT) & wPawnAttacks) * ::protectBonus[0];
     score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP) & wPawnAttacks) * ::protectBonus[1];
     score += BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK  ) & wPawnAttacks) * ::protectBonus[2];
@@ -1207,12 +1241,15 @@ Evaluate::protectBonus(const Position& pos) {
     score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP) & bPawnAttacks) * ::protectBonus[1];
     score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK  ) & bPawnAttacks) * ::protectBonus[2];
     score -= BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN ) & bPawnAttacks) * ::protectBonus[3];
+#endif
     return score;
 }
 
 /** Compute king safety for both kings. */
 int
 Evaluate::kingSafety(const Position& pos) {
+    return 0;
+#if 0
     const int minM = (rV + bV) * 2;
     const int m = pos.wMtrl() - pos.wMtrlPawns() + pos.bMtrl() - pos.bMtrlPawns();
     if (m <= minM)
@@ -1279,8 +1316,10 @@ Evaluate::kingSafety(const Position& pos) {
 
     const int kSafety = interpolate(0, score, mhd->kingSafetyIPF);
     return kSafety;
+#endif
 }
 
+#if 0
 template <bool white, bool right>
 static inline int
 evalKingPawnShelter(const Position& pos) {
@@ -1307,9 +1346,12 @@ evalKingPawnShelter(const Position& pos) {
     }
     return score;
 }
+#endif
 
 int
 Evaluate::kingSafetyKPPart(const Position& pos) {
+    return 0;
+#if 0
     const U64 key = pos.pawnZobristHash() ^ pos.kingZobristHash();
     KingSafetyHashData& ksh = getKingSafetyHashEntry(kingSafetyHash, key);
     if (ksh.key != key) {
@@ -1413,6 +1455,7 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
         ksh.score = score;
     }
     return ksh.score;
+#endif
 }
 
 std::unique_ptr<Evaluate::EvalHashTables>
