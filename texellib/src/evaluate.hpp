@@ -162,10 +162,13 @@ private:
     void computePawnHashData(const Position& pos, PawnHashData& ph);
 
     /** Compute rook bonus. Rook on open/half-open file. */
-    int rookBonus(const Position& pos);
+    int rookEval(const Position& pos);
 
     /** Compute bishop evaluation. */
     int bishopEval(const Position& pos, int oldScore);
+
+    /** Compute queen evaluation. */
+    int queenEval(const Position& pos);
 
     /** Compute knight evaluation. */
     int knightEval(const Position& pos);

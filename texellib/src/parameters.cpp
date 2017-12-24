@@ -25,6 +25,7 @@
 
 #include "parameters.hpp"
 #include "computerPlayer.hpp"
+#include <cmath>
 
 namespace UciParams {
     std::shared_ptr<Parameters::SpinParam> hash(std::make_shared<Parameters::SpinParam>("Hash", 1, 1024*1024, 16));
@@ -464,10 +465,6 @@ ParamTable<28> knightMobScore { -200, 200, useUciParam,
     {-31,-48, 25,-40,-14, -2,  5,-56,-24, -4,  9, 15,-26,-26,-19,-11, -2,  4,  6,-24,-24,-18,-12, -4,  1,  5,  9,  6 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 23, 24, 25, 26 }
 };
-ParamTable<28> queenMobScore { -100, 100, useUciParam,
-    {  7,  3, -2, -3, -1,  1,  3,  5,  8, 10, 13, 16, 20, 23, 26, 31, 35, 38, 42, 46, 49, 48, 50, 48, 47, 40, 54, 37 },
-    {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28 }
-};
 
 ParamTable<36> connectedPPBonus { -200, 400, useUciParam,
     {  -2,  -6,   3,   7,   9,  -5,
@@ -631,6 +628,17 @@ static void bishMobScoreUpdate() {
         bishMobScore[i] = k0 + k1 * i / 10 + k2 * i * i / 100;
 }
 
+int queenMobScore[28];
+ParamTable<2> queenMobParams { 0, 100, useUciParam,
+    {48, -32 },
+    { 1,   2 },
+};
+static void queenMobScoreUpdate() {
+    double k0 = queenMobParams[0];
+    double k1 = queenMobParams[1];
+    for (int i = 0; i < 28; i++)
+        queenMobScore[i] = (int)std::round(k0 / (1 + exp(k1 / 100 * (i - 13.5))));
+}
 
 Parameters::Parameters() {
     std::string about = ComputerPlayer::engineName +
@@ -670,6 +678,9 @@ Parameters::Parameters() {
 
     bishMobParams.registerParams("BishopMobility", *this);
     bishMobParams.addListener(bishMobScoreUpdate);
+
+    queenMobParams.registerParams("QueenMobility", *this);
+    queenMobParams.addListener(queenMobScoreUpdate);
 
 #if 0
     REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
@@ -758,7 +769,6 @@ Parameters::Parameters() {
     attackedPawnBonus.registerParams("AttackedPawnBonus", *this);
     protectBonus.registerParams("ProtectBonus", *this);
     knightMobScore.registerParams("KnightMobility", *this);
-    queenMobScore.registerParams("QueenMobility", *this);
     majorPieceRedundancy.registerParams("MajorPieceRedundancy", *this);
     connectedPPBonus.registerParams("ConnectedPPBonus", *this);
     passedPawnBonusX.registerParams("PassedPawnBonusX", *this);

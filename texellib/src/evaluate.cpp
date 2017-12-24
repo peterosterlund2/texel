@@ -202,10 +202,12 @@ Evaluate::evalPos(const Position& pos) {
     wPawnAttacks = BitBoard::wPawnAttacksMask(pos.pieceTypeBB(Piece::WPAWN));
     bPawnAttacks = BitBoard::bPawnAttacksMask(pos.pieceTypeBB(Piece::BPAWN));
 
-    score += rookBonus(pos);
+    score += rookEval(pos);
     if (print) std::cout << "info string eval rook   :" << score << std::endl;
     score += bishopEval(pos, score);
     if (print) std::cout << "info string eval bishop :" << score << std::endl;
+    score += queenEval(pos);
+    if (print) std::cout << "info string eval queen  :" << score << std::endl;
 
 #if 0
     wKingAttacks = bKingAttacks = 0;
@@ -998,7 +1000,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
 }
 
 int
-Evaluate::rookBonus(const Position& pos) {
+Evaluate::rookEval(const Position& pos) {
     int score = 0;
 
     const U64 occupied = pos.occupiedBB();
@@ -1164,6 +1166,25 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
             score += bTrapped;
     }
 #endif
+}
+
+int
+Evaluate::queenEval(const Position& pos) {
+    int score = 0;
+    const U64 occupied = pos.occupiedBB();
+    U64 m = pos.pieceTypeBB(Piece::WQUEEN);
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        U64 atk = BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied);
+        score += queenMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB() | bPawnAttacks))];
+    }
+    m = pos.pieceTypeBB(Piece::BQUEEN);
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        U64 atk = BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied);
+        score -= queenMobScore[BitBoard::bitCount(atk & ~(pos.blackBB() | wPawnAttacks))];
+    }
+    return score;
 }
 
 int
