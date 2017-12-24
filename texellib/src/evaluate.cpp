@@ -192,6 +192,7 @@ Evaluate::evalPos(const Position& pos) {
     }
 
     int score = materialScore(pos, print);
+    if (false) {
 
     wKingAttacks = bKingAttacks = 0;
     wKingZone = BitBoard::kingAttacks[pos.getKingSq(true)]; wKingZone |= wKingZone << 8;
@@ -238,6 +239,7 @@ Evaluate::evalPos(const Position& pos) {
         score = score * stalePawnFactor[nStale] / 128;
     }
     if (print) std::cout << "info string eval staleP :" << score << std::endl;
+    }
 
     if (!pos.isWhiteMove())
         score = -score;
