@@ -119,48 +119,12 @@ Evaluate::updateEvalParams() {
         int dist = std::min(a1Dist, h1Dist);
         castleMaskFactor[i] = dist < 4 ? castleFactor[dist] : 0;
     }
-
-    // Knight mobility scores
-    for (int sq = 0; sq < 64; sq++) {
-        int x = Position::getX(sq);
-        int y = Position::getY(sq);
-        if (x >= 4) x = 7 - x;
-        if (y >= 4) y = 7 - y;
-        if (x < y) std::swap(x, y);
-        int maxMob = 0;
-        switch (y*8+x) {
-        case A1: maxMob = 2; break;
-        case B1: maxMob = 3; break;
-        case C1: maxMob = 4; break;
-        case D1: maxMob = 4; break;
-        case B2: maxMob = 4; break;
-        case C2: maxMob = 6; break;
-        case D2: maxMob = 6; break;
-        case C3: maxMob = 8; break;
-        case D3: maxMob = 8; break;
-        case D4: maxMob = 8; break;
-        default:
-            assert(false);
-        }
-        for (int m = 0; m <= 8; m++) {
-            int offs = 0;
-            switch (maxMob) {
-            case 2: offs = 0; break;
-            case 3: offs = 3; break;
-            case 4: offs = 7; break;
-            case 6: offs = 12; break;
-            case 8: offs = 19; break;
-            }
-            knightMobScoreA[sq][m] = knightMobScore[offs + std::min(m, maxMob)];
-        }
-    }
 #endif
 }
 
 const int* Evaluate::psTab1[Piece::nPieceTypes];
 const int* Evaluate::psTab2[Piece::nPieceTypes];
 
-int Evaluate::knightMobScoreA[64][9];
 U64 Evaluate::knightKingProtectPattern[64];
 U64 Evaluate::bishopKingProtectPattern[64];
 
@@ -1190,6 +1154,7 @@ Evaluate::queenEval(const Position& pos) {
 int
 Evaluate::knightEval(const Position& pos) {
     int score = 0;
+
 #if 0
     U64 wKnights = pos.pieceTypeBB(Piece::WKNIGHT);
     U64 bKnights = pos.pieceTypeBB(Piece::BKNIGHT);
@@ -1201,9 +1166,26 @@ Evaluate::knightEval(const Position& pos) {
     while (m != 0) {
         int sq = BitBoard::extractSquare(m);
         U64 atk = BitBoard::knightAttacks[sq];
+        score += knightMobScore[sq][BitBoard::bitCount(atk & ~pos.whiteBB() & ~bPawnAttacks)];
+    }
+    m = bKnights;
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        U64 atk = BitBoard::knightAttacks[sq];
+        score -= knightMobScore[sq][BitBoard::bitCount(atk & ~pos.blackBB() & ~wPawnAttacks)];
+    }
+#endif
+
+    return score;
+#if 0
+    // Knight mobility
+    U64 m = wKnights;
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        U64 atk = BitBoard::knightAttacks[sq];
         wAttacksBB |= atk;
         wContactSupport |= atk;
-        score += knightMobScoreA[sq][BitBoard::bitCount(atk & ~pos.whiteBB() & ~bPawnAttacks)];
+        score += knightMobScore[sq][BitBoard::bitCount(atk & ~pos.whiteBB() & ~bPawnAttacks)];
     }
 
     m = bKnights;
@@ -1212,7 +1194,7 @@ Evaluate::knightEval(const Position& pos) {
         U64 atk = BitBoard::knightAttacks[sq];
         bAttacksBB |= atk;
         bContactSupport |= atk;
-        score -= knightMobScoreA[sq][BitBoard::bitCount(atk & ~pos.blackBB() & ~wPawnAttacks)];
+        score -= knightMobScore[sq][BitBoard::bitCount(atk & ~pos.blackBB() & ~wPawnAttacks)];
     }
 
     m = wKnights & phd->outPostsW;
@@ -1235,7 +1217,6 @@ Evaluate::knightEval(const Position& pos) {
         score -= interpolate(0, outPost, mhd->knightOutPostIPF);
     }
 #endif
-    return score;
 }
 
 int

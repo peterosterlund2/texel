@@ -476,8 +476,6 @@ extern ParamTable<64> knightOutpostBonus;
 extern ParamTable<64> protectedPawnBonus, attackedPawnBonus;
 extern ParamTable<4> protectBonus;
 
-extern ParamTable<28> knightMobScore;
-
 extern ParamTable<36> connectedPPBonus;
 extern ParamTable<8> passedPawnBonusX, passedPawnBonusY;
 extern ParamTable<10> ppBlockerBonus;
@@ -506,6 +504,7 @@ extern ParamTable<9> stalePawnFactor;
 extern int rookMobScore[15];
 extern int bishMobScore[14];
 extern int queenMobScore[28];
+extern int knightMobScore[64][9];
 
 
 // Search parameters

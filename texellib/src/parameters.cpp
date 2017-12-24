@@ -461,11 +461,6 @@ ParamTable<4> protectBonus { -50, 50, useUciParam,
     {  1,  2,  3,  4 }
 };
 
-ParamTable<28> knightMobScore { -200, 200, useUciParam,
-    {-31,-48, 25,-40,-14, -2,  5,-56,-24, -4,  9, 15,-26,-26,-19,-11, -2,  4,  6,-24,-24,-18,-12, -4,  1,  5,  9,  6 },
-    {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 23, 24, 25, 26 }
-};
-
 ParamTable<36> connectedPPBonus { -200, 400, useUciParam,
     {  -2,  -6,   3,   7,   9,  -5,
        -6,  -4,  -1,   9,  14,   8,
@@ -603,7 +598,7 @@ ParamTable<9> stalePawnFactor { 0, 192, useUciParam,
 #endif
 
 int rookMobScore[15];
-ParamTable<3> rookMobParams { -250, 250, useUciParam,
+static ParamTable<3> rookMobParams { -250, 250, useUciParam,
     {-22, 70, -25 },
     {  1,  2,   3 }
 };
@@ -616,7 +611,7 @@ static void rookMobScoreUpdate() {
 }
 
 int bishMobScore[14];
-ParamTable<3> bishMobParams { -250, 250, useUciParam,
+static ParamTable<3> bishMobParams { -250, 250, useUciParam,
     {-18, 90, -35 },
     {  1,  2,   3 }
 };
@@ -629,7 +624,7 @@ static void bishMobScoreUpdate() {
 }
 
 int queenMobScore[28];
-ParamTable<2> queenMobParams { 0, 100, useUciParam,
+static ParamTable<2> queenMobParams { 0, 100, useUciParam,
     {48, -32 },
     { 1,   2 },
 };
@@ -638,6 +633,24 @@ static void queenMobScoreUpdate() {
     double k1 = queenMobParams[1];
     for (int i = 0; i < 28; i++)
         queenMobScore[i] = (int)std::round(k0 / (1 + exp(k1 / 100 * (i - 13.5))));
+}
+
+int knightMobScore[64][9];
+static ParamTable<3> knightMobParams { -250, 250, useUciParam,
+    {-35, 70, -25 },
+    {  1,  2,   3 }
+};
+static void knightMobScoreUpdate() {
+    int k0 = knightMobParams[0];
+    int k1 = knightMobParams[1];
+    int k2 = knightMobParams[2];
+    for (int sq = 0; sq < 64; sq++) {
+        int maxMob = BitBoard::bitCount(BitBoard::knightAttacks[sq]);
+        for (int m = 0; m <= 8; m++) {
+            double x = std::min(m, maxMob) / (double)maxMob;
+            knightMobScore[sq][m] = (int)std::round(k0 + k1 * x + k2 * x * x);
+        }
+    }
 }
 
 Parameters::Parameters() {
@@ -681,6 +694,9 @@ Parameters::Parameters() {
 
     queenMobParams.registerParams("QueenMobility", *this);
     queenMobParams.addListener(queenMobScoreUpdate);
+
+    knightMobParams.registerParams("KnightMobility", *this);
+    knightMobParams.addListener(knightMobScoreUpdate);
 
 #if 0
     REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
@@ -768,7 +784,6 @@ Parameters::Parameters() {
     protectedPawnBonus.registerParams("ProtectedPawnBonus", *this);
     attackedPawnBonus.registerParams("AttackedPawnBonus", *this);
     protectBonus.registerParams("ProtectBonus", *this);
-    knightMobScore.registerParams("KnightMobility", *this);
     majorPieceRedundancy.registerParams("MajorPieceRedundancy", *this);
     connectedPPBonus.registerParams("ConnectedPPBonus", *this);
     passedPawnBonusX.registerParams("PassedPawnBonusX", *this);
