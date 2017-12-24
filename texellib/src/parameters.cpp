@@ -613,6 +613,20 @@ ParamTable<9> stalePawnFactor { 0, 192, useUciParam,
 };
 #endif
 
+int rookMobScore[15];
+ParamTable<3> rookMobParams { -250, 250, useUciParam,
+    {-22, 70, -25 },
+    {  1,  2,   3 }
+};
+static void rookMobScoreUpdate() {
+    int k0 = rookMobParams[0];
+    int k1 = rookMobParams[1];
+    int k2 = rookMobParams[2];
+    for (int i = 0; i < 15; i++)
+        rookMobScore[i] = k0 + k1 * i / 10 + k2 * i * i / 100;
+}
+
+
 Parameters::Parameters() {
     std::string about = ComputerPlayer::engineName +
                         " by Peter Osterlund, see http://hem.bredband.net/petero2b/javachess/index.html#texel";
@@ -645,6 +659,9 @@ Parameters::Parameters() {
     REGISTER_PARAM(rV, "RookValue");
     REGISTER_PARAM(qV, "QueenValue");
     REGISTER_PARAM(kV, "KingValue");
+
+    rookMobParams.registerParams("RookMobility", *this);
+    rookMobParams.addListener(rookMobScoreUpdate);
 
 #if 0
     REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");

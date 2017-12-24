@@ -199,6 +199,11 @@ Evaluate::evalPos(const Position& pos) {
 
     int score = materialScore(pos, print);
 
+    wPawnAttacks = BitBoard::wPawnAttacksMask(pos.pieceTypeBB(Piece::WPAWN));
+    bPawnAttacks = BitBoard::bPawnAttacksMask(pos.pieceTypeBB(Piece::BPAWN));
+
+    score += rookBonus(pos);
+
 #if 0
     wKingAttacks = bKingAttacks = 0;
     wKingZone = BitBoard::kingAttacks[pos.getKingSq(true)]; wKingZone |= wKingZone << 8;
@@ -206,9 +211,6 @@ Evaluate::evalPos(const Position& pos) {
     wAttacksBB = bAttacksBB = 0;
     wQueenContactChecks = bQueenContactChecks = 0;
     wContactSupport = bContactSupport = 0;
-
-    wPawnAttacks = BitBoard::wPawnAttacksMask(pos.pieceTypeBB(Piece::WPAWN));
-    bPawnAttacks = BitBoard::bPawnAttacksMask(pos.pieceTypeBB(Piece::BPAWN));
 
     score += pieceSquareEval(pos);
     if (print) std::cout << "info string eval pst    :" << score << std::endl;
@@ -999,6 +1001,22 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
 int
 Evaluate::rookBonus(const Position& pos) {
     int score = 0;
+
+    const U64 occupied = pos.occupiedBB();
+    U64 m = pos.pieceTypeBB(Piece::WROOK);
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        U64 atk = BitBoard::rookAttacks(sq, occupied);
+        score += rookMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB() | bPawnAttacks))];
+    }
+    m = pos.pieceTypeBB(Piece::BROOK);
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        U64 atk = BitBoard::rookAttacks(sq, occupied);
+        score -= rookMobScore[BitBoard::bitCount(atk & ~(pos.blackBB() | wPawnAttacks))];
+    }
+
+    return score;
 #if 0
     const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
     const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
@@ -1038,7 +1056,6 @@ Evaluate::rookBonus(const Position& pos) {
         ((pos.pieceTypeBB(Piece::WKING) & BitBoard::maskRow1) != 0))
       score -= rookDouble7thRowBonus; // Two rooks on 2:nd row
 #endif
-    return score;
 }
 
 int
