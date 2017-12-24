@@ -501,6 +501,11 @@ extern ParamTable<10> halfMoveFactor;
 extern ParamTable<9> stalePawnFactor;
 #endif
 
+extern ParamTable<3> rookMobParams;
+extern ParamTable<3> bishMobParams;
+extern ParamTable<2> queenMobParams;
+extern ParamTable<3> knightMobParams;
+
 extern int rookMobScore[15];
 extern int bishMobScore[14];
 extern int queenMobScore[28];

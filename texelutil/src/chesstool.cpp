@@ -1058,6 +1058,11 @@ printTable(const ParamTable<N>& pt, const std::string& name, std::ostream& os) {
 void
 ChessTool::printParams() {
     std::ostream& os = std::cout;
+
+    printTable(rookMobParams, "rookMobParams", os);
+    printTable(bishMobParams, "bishMobParams", os);
+    printTable(knightMobParams, "knightMobParams", os);
+    printTable(queenMobParams, "queenMobParams", os);
 #if 0
     printTableNxN<8>(kt1b, "kt1b", os);
     printTableNxN<8>(kt2b, "kt2b", os);
@@ -1075,10 +1080,6 @@ ChessTool::printParams() {
     printTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", os);
     printTable(protectBonus, "protectBonus", os);
 
-    printTable(rookMobScore, "rookMobScore", os);
-    printTable(bishMobScore, "bishMobScore", os);
-    printTable(knightMobScore, "knightMobScore", os);
-    printTable(queenMobScore, "queenMobScore", os);
     printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", os);
     printTableNxN<6>(connectedPPBonus, "connectedPPBonus", os);
     printTable(passedPawnBonusX, "passedPawnBonusX", os);
@@ -1263,6 +1264,11 @@ ChessTool::patchParams(const std::string& directory) {
     std::vector<std::string> cppFile = readFile(directory + "/parameters.cpp");
     std::vector<std::string> hppFile = readFile(directory + "/parameters.hpp");
 
+    replaceTable(rookMobParams, "rookMobParams", cppFile);
+    replaceTable(bishMobParams, "bishMobParams", cppFile);
+    replaceTable(knightMobParams, "knightMobParams", cppFile);
+    replaceTable(queenMobParams, "queenMobParams", cppFile);
+
 #if 0
     replaceTableNxN<8>(kt1b, "kt1b", cppFile);
     replaceTableNxN<8>(kt2b, "kt2b", cppFile);
@@ -1280,10 +1286,6 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", cppFile);
     replaceTable(protectBonus, "protectBonus", cppFile);
 
-    replaceTable(rookMobScore, "rookMobScore", cppFile);
-    replaceTable(bishMobScore, "bishMobScore", cppFile);
-    replaceTable(knightMobScore, "knightMobScore", cppFile);
-    replaceTable(queenMobScore, "queenMobScore", cppFile);
     replaceTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", cppFile);
     replaceTableNxN<6>(connectedPPBonus, "connectedPPBonus", cppFile);
     replaceTable(passedPawnBonusX, "passedPawnBonusX", cppFile);
