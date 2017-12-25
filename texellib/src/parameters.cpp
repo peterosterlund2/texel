@@ -255,48 +255,6 @@ ParamTable<64> pt2b { -200, 200, useUciParam,
 };
 ParamTableMirrored<64> pt2w(pt2b);
 
-/** Piece/square table for bishops during middle game. */
-ParamTable<64> bt1b { -200, 200, useUciParam,
-    { -45, -46, -46, -62, -58,-109,   8, -83,
-      -37, -26, -20, -21, -31, -12, -71, -50,
-      -15,  -7,  -8,  10,  23,  72,  36,   7,
-      -30,  -9,  -9,  32,   3,   7, -15, -18,
-      -17, -19, -11,   6,  14, -18, -15,   4,
-      -25,  -2,  -7, -10, -14,  -9, -13, -12,
-        1,  -8,  -3, -15,  -9,  -4,  11, -20,
-      -31,  -1, -23, -31, -21, -23, -33, -33 },
-    {   1,   2,   3,   4,   5,   6,   7,   8,
-        9,  10,  11,  12,  13,  14,  15,  16,
-       17,  18,  19,  20,  21,  22,  23,  24,
-       25,  26,  27,  28,  29,  30,  31,  32,
-       33,  34,  35,  36,  37,  38,  39,  40,
-       41,  42,  43,  44,  45,  46,  47,  48,
-       49,  50,  51,  52,  53,  54,  55,  56,
-       57,  58,  59,  60,  61,  62,  63,  64 }
-};
-ParamTableMirrored<64> bt1w(bt1b);
-
-/** Piece/square table for bishops during end game. */
-ParamTable<64> bt2b { -200, 200, useUciParam,
-    {  23,  23,  24,  28,  28,  24,  23,  23,
-       23,  23,  36,  37,  37,  36,  23,  23,
-       24,  36,  41,  48,  48,  41,  36,  24,
-       28,  37,  48,  53,  53,  48,  37,  28,
-       28,  37,  48,  53,  53,  48,  37,  28,
-       24,  36,  41,  48,  48,  41,  36,  24,
-       23,  23,  36,  37,  37,  36,  23,  23,
-       23,  23,  24,  28,  28,  24,  23,  23 },
-    {  10,   1,   2,   3,   3,   2,   1,  10,
-        1,   4,   5,   6,   6,   5,   4,   1,
-        2,   5,   7,   8,   8,   7,   5,   2,
-        3,   6,   8,   9,   9,   8,   6,   3,
-        3,   6,   8,   9,   9,   8,   6,   3,
-        2,   5,   7,   8,   8,   7,   5,   2,
-        1,   4,   5,   6,   6,   5,   4,   1,
-       10,   1,   2,   3,   3,   2,   1,  10 }
-};
-ParamTableMirrored<64> bt2w(bt2b);
-
 /** Piece/square table for queens during middle game. */
 ParamTable<64> qt1b { -200, 200, useUciParam,
     { -74, -26, -17, -39, -41,  -2,  48,  20,
@@ -590,6 +548,44 @@ static void knightTableUpdate() {
     }
 }
 
+int bishopTableWhiteMG[64], bishopTableBlackMG[64];
+int bishopTableWhiteEG[64], bishopTableBlackEG[64];
+ParamTable<8> bishopTableParams { -250, 250, useUciParam,
+    {-21, 13,-55,-12, 10, 23, 53,-75 },
+    {  1,  2,  3,  4,  5,  6,  7,  8 }
+};
+static void bishopTableUpdate() {
+    int k0mg = bishopTableParams[0];
+    int k1mg = bishopTableParams[1];
+    int k2mg = bishopTableParams[2];
+    int k3mg = bishopTableParams[3];
+    int k4mg = bishopTableParams[4];
+    int k0eg = bishopTableParams[5];
+    int k1eg = bishopTableParams[6];
+    int k2eg = bishopTableParams[7];
+
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            int sq = Position::getSquare(x, y);
+
+            int valMG = std::min(k0mg + (k1mg - k0mg) * y / 5,
+                                 k1mg + (k2mg - k1mg) * (y - 5) / 2);
+            if (x == 0 || x == 7)
+                valMG += k3mg;
+            if (sq == B2 || sq == G2)
+                valMG += k4mg;
+            bishopTableWhiteMG[sq] = valMG;
+            bishopTableBlackMG[Position::mirrorY(sq)] = valMG;
+
+            auto distFromMiddle = [](int x) { return std::max(3 - x, x - 4); };
+            int dist = distFromMiddle(x) + distFromMiddle(y);
+            int valEG = std::max(k0eg, k1eg + k2eg * dist / 10);
+            bishopTableWhiteEG[sq] = valEG;
+            bishopTableBlackEG[Position::mirrorY(sq)] = valEG;
+        }
+    }
+}
+
 // ----------------------------------------------------------------------------
 
 int rookMobScore[15];
@@ -685,18 +681,17 @@ Parameters::Parameters() {
 
     rookMobParams.registerParams("RookMobility", *this);
     rookMobParams.addListener(rookMobScoreUpdate);
-
     bishMobParams.registerParams("BishopMobility", *this);
     bishMobParams.addListener(bishMobScoreUpdate);
-
     queenMobParams.registerParams("QueenMobility", *this);
     queenMobParams.addListener(queenMobScoreUpdate);
-
     knightMobParams.registerParams("KnightMobility", *this);
     knightMobParams.addListener(knightMobScoreUpdate);
 
     knightTableParams.registerParams("KnightTable", *this);
     knightTableParams.addListener(knightTableUpdate);
+    bishopTableParams.registerParams("BishopTable", *this);
+    bishopTableParams.addListener(bishopTableUpdate);
 
 #if 0
     REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
@@ -774,8 +769,6 @@ Parameters::Parameters() {
     kt2b.registerParams("KingTableEG", *this);
     pt1b.registerParams("PawnTableMG", *this);
     pt2b.registerParams("PawnTableEG", *this);
-    bt1b.registerParams("BishopTableMG", *this);
-    bt2b.registerParams("BishopTableEG", *this);
     qt1b.registerParams("QueenTableMG", *this);
     qt2b.registerParams("QueenTableEG", *this);
     rt1b.registerParams("RookTable", *this);
