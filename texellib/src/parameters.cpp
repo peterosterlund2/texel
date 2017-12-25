@@ -115,10 +115,10 @@ DEFINE_PARAM(kingSafetyThreshold);
 DEFINE_PARAM(knightKingProtectBonus);
 DEFINE_PARAM(bishopKingProtectBonus);
 DEFINE_PARAM(pawnStormBonus);
+#endif
 
 DEFINE_PARAM(pawnLoMtrl);
 DEFINE_PARAM(pawnHiMtrl);
-#endif
 DEFINE_PARAM(minorLoMtrl);
 DEFINE_PARAM(minorHiMtrl);
 #if 0
@@ -212,48 +212,6 @@ ParamTable<64> kt2b { -200, 200, useUciParam,
         0,  29,  30,  31,  31,  30,  29,   0 }
 };
 ParamTableMirrored<64> kt2w(kt2b);
-
-/** Piece/square table for pawns during middle game. */
-ParamTable<64> pt1b { -200, 300, useUciParam,
-    {   0,   0,   0,   0,   0,   0,   0,   0,
-      150, 126, 111,  92,  86,  57, -37, 125,
-       12,  13,  19,  28,  28,  56,  22,  21,
-       -7,  -8, -17,  -5,   2,  -4,   4,  -5,
-      -11, -10, -11,  -9,  -2,  13,  -4, -19,
-      -19, -17, -27, -19, -10,  -8,   1, -14,
-      -13, -20, -27, -20, -19,   7,   9,  -5,
-        0,   0,   0,   0,   0,   0,   0,   0 },
-    {   0,   0,   0,   0,   0,   0,   0,   0,
-        1,   2,   3,   4,   5,   6,   7,   8,
-        9,  10,  11,  12,  13,  14,  15,  16,
-       17,  18,  19,  20,  21,  22,  23,  24,
-       25,  26,  27,  28,  29,  30,  31,  32,
-       33,  34,  35,  36,  37,  38,  39,  40,
-       41,  42,  43,  44,  45,  46,  47,  48,
-        0,   0,   0,   0,   0,   0,   0,   0 }
-};
-ParamTableMirrored<64> pt1w(pt1b);
-
-/** Piece/square table for pawns during end game. */
-ParamTable<64> pt2b { -200, 200, useUciParam,
-    {   0,   0,   0,   0,   0,   0,   0,   0,
-        4,  16,  17,   7,   7,  17,  16,   4,
-       41,  40,  26,   8,   8,  26,  40,  41,
-       25,  26,  11,   7,   7,  11,  26,  25,
-       16,  26,  16,  17,  17,  16,  26,  16,
-        8,  19,  17,  27,  27,  17,  19,   8,
-        8,  22,  28,  39,  39,  28,  22,   8,
-        0,   0,   0,   0,   0,   0,   0,   0 },
-    {   0,   0,   0,   0,   0,   0,   0,   0,
-        1,   2,   3,   4,   4,   3,   2,   1,
-        5,   6,   7,   8,   8,   7,   6,   5,
-        9,  10,  11,  12,  12,  11,  10,   9,
-       13,  14,  15,  16,  16,  15,  14,  13,
-       17,  18,  19,  20,  20,  19,  18,  17,
-       21,  22,  23,  24,  24,  23,  22,  21,
-        0,   0,   0,   0,   0,   0,   0,   0 }
-};
-ParamTableMirrored<64> pt2w(pt2b);
 
 /** Piece/square table for queens during middle game. */
 ParamTable<64> qt1b { -200, 200, useUciParam,
@@ -548,6 +506,7 @@ static void knightTableUpdate() {
     }
 }
 
+// Piece/square tables for bishops
 int bishopTableWhiteMG[64], bishopTableBlackMG[64];
 int bishopTableWhiteEG[64], bishopTableBlackEG[64];
 ParamTable<8> bishopTableParams { -250, 250, useUciParam,
@@ -582,6 +541,31 @@ static void bishopTableUpdate() {
             int valEG = std::max(k0eg, k1eg + k2eg * dist / 10);
             bishopTableWhiteEG[sq] = valEG;
             bishopTableBlackEG[Position::mirrorY(sq)] = valEG;
+        }
+    }
+}
+
+// Piece/square tables for pawns
+int pawnTableWhiteMG[64], pawnTableBlackMG[64];
+int pawnTableWhiteEG[64], pawnTableBlackEG[64];
+ParamTable<20> pawnTableParams { -250, 250, useUciParam,
+    {-21, -4,-15,-13,-20,-24,-24,-18, 24,123,  7, 15,  6,  4, -7,-15,-13,  4, 58,113 },
+    {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 }
+};
+static void pawnTableUpdate() {
+    for (int y = 1; y < 7; y++) {
+        for (int x = 0; x < 8; x++) {
+            int sq = Position::getSquare(x, y);
+
+            int xi = x;
+            if (xi >= 4) xi = 7 - xi;
+            int valMG = pawnTableParams[xi] + pawnTableParams[4+(y-1)];
+            pawnTableWhiteMG[sq] = valMG;
+            pawnTableBlackMG[Position::mirrorY(sq)] = valMG;
+
+            int valEG = pawnTableParams[10+xi] + pawnTableParams[10+4+(y-1)];
+            pawnTableWhiteEG[sq] = valEG;
+            pawnTableBlackEG[Position::mirrorY(sq)] = valEG;
         }
     }
 }
@@ -692,6 +676,8 @@ Parameters::Parameters() {
     knightTableParams.addListener(knightTableUpdate);
     bishopTableParams.registerParams("BishopTable", *this);
     bishopTableParams.addListener(bishopTableUpdate);
+    pawnTableParams.registerParams("PawnTable", *this);
+    pawnTableParams.addListener(pawnTableUpdate);
 
 #if 0
     REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
@@ -744,10 +730,10 @@ Parameters::Parameters() {
     REGISTER_PARAM(knightKingProtectBonus, "KnightKingProtectBonus");
     REGISTER_PARAM(bishopKingProtectBonus, "BishopKingProtectBonus");
     REGISTER_PARAM(pawnStormBonus, "PawnStormBonus");
+#endif
 
     REGISTER_PARAM(pawnLoMtrl, "PawnLoMtrl");
     REGISTER_PARAM(pawnHiMtrl, "PawnHiMtrl");
-#endif
     REGISTER_PARAM(minorLoMtrl, "MinorLoMtrl");
     REGISTER_PARAM(minorHiMtrl, "MinorHiMtrl");
 #if 0
@@ -767,8 +753,6 @@ Parameters::Parameters() {
     // Evaluation tables
     kt1b.registerParams("KingTableMG", *this);
     kt2b.registerParams("KingTableEG", *this);
-    pt1b.registerParams("PawnTableMG", *this);
-    pt2b.registerParams("PawnTableEG", *this);
     qt1b.registerParams("QueenTableMG", *this);
     qt2b.registerParams("QueenTableEG", *this);
     rt1b.registerParams("RookTable", *this);

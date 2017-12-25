@@ -64,13 +64,13 @@ Evaluate::staticInitialize() {
     psTab1[Piece::WROOK]   = empty; // rt1w.getTable();
     psTab1[Piece::WBISHOP] = bishopTableWhiteMG;
     psTab1[Piece::WKNIGHT] = knightTableWhiteMG;
-    psTab1[Piece::WPAWN]   = empty; // pt1w.getTable();
+    psTab1[Piece::WPAWN]   = pawnTableWhiteMG;
     psTab1[Piece::BKING]   = empty; // kt1b.getTable();
     psTab1[Piece::BQUEEN]  = empty; // qt1b.getTable();
     psTab1[Piece::BROOK]   = empty; // rt1b.getTable();
     psTab1[Piece::BBISHOP] = bishopTableBlackMG;
     psTab1[Piece::BKNIGHT] = knightTableBlackMG;
-    psTab1[Piece::BPAWN]   = empty; // pt1b.getTable();
+    psTab1[Piece::BPAWN]   = pawnTableBlackMG;
 
     psTab2[Piece::EMPTY]   = empty;
     psTab2[Piece::WKING]   = empty; // kt2w.getTable();
@@ -78,13 +78,13 @@ Evaluate::staticInitialize() {
     psTab2[Piece::WROOK]   = empty; // rt1w.getTable();
     psTab2[Piece::WBISHOP] = bishopTableWhiteEG;
     psTab2[Piece::WKNIGHT] = knightTableWhiteEG;
-    psTab2[Piece::WPAWN]   = empty; // pt2w.getTable();
+    psTab2[Piece::WPAWN]   = pawnTableWhiteEG;
     psTab2[Piece::BKING]   = empty; // kt2b.getTable();
     psTab2[Piece::BQUEEN]  = empty; // qt2b.getTable();
     psTab2[Piece::BROOK]   = empty; // rt1b.getTable();
     psTab2[Piece::BBISHOP] = bishopTableBlackEG;
     psTab2[Piece::BKNIGHT] = knightTableBlackEG;
-    psTab2[Piece::BPAWN]   = empty; // pt2b.getTable();
+    psTab2[Piece::BPAWN]   = pawnTableBlackEG;
 
 #if 0
     // Initialize knight/bishop king safety patterns
@@ -274,12 +274,12 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
 
     const int wMtrl = pos.wMtrl();
     const int bMtrl = pos.bMtrl();
-#if 0
     const int wMtrlPawns = pos.wMtrlPawns();
     const int bMtrlPawns = pos.bMtrlPawns();
     const int wMtrlNoPawns = wMtrl - wMtrlPawns;
     const int bMtrlNoPawns = bMtrl - bMtrlPawns;
 
+#if 0
     // Handle imbalances
     const int nWB = BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP));
     const int nBB = BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP));
@@ -324,18 +324,22 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     mhd.id = pos.materialId();
 #endif
     mhd.score = score;
+
 #if 0
     mhd.endGame = EndGameEval::endGameEval<false>(pos, 0, 0);
+#endif
 
     // Compute interpolation factors
     { // Pawn
         const int loMtrl = pawnLoMtrl;
         const int hiMtrl = pawnHiMtrl;
         mhd.pawnIPF = interpolate(wMtrlNoPawns + bMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
+#if 0
         if (wCorr + bCorr > 200)
             mhd.pawnIPF = mhd.pawnIPF * 200 / (wCorr + bCorr);
-    }
 #endif
+    }
+
     { // Knight/bishop
         const int loMtrl = minorLoMtrl;
         const int hiMtrl = minorHiMtrl;
@@ -402,7 +406,7 @@ Evaluate::tradeBonus(const Position& pos, int wCorr, int bCorr) const {
 int
 Evaluate::pieceSquareEval(const Position& pos) {
     int score = 0;
-#if 0
+
     // Kings/pawns
     if (pos.wMtrlPawns() + pos.bMtrlPawns() > 0) {
         const int k1 = (pos.psScore1(Piece::WKING) + pos.psScore1(Piece::WPAWN)) -
@@ -419,7 +423,6 @@ Evaluate::pieceSquareEval(const Position& pos) {
             score += EndGameEval::winKingTable[pos.getKingSq(true)] -
                      EndGameEval::winKingTable[pos.getKingSq(false)];
     }
-#endif
 
     // Knights/bishops
     {

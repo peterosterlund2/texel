@@ -453,10 +453,8 @@ DECLARE_PARAM(bishopKingProtectBonus,    11, -50, 50, useUciParam);
 DECLARE_PARAM(pawnStormBonus,            12, 0, 20, useUciParam);
 #endif
 
-#if 0
 DECLARE_PARAM(pawnLoMtrl,          1007, 0, 10000, useUciParam);
 DECLARE_PARAM(pawnHiMtrl,          6415, 0, 10000, useUciParam);
-#endif
 DECLARE_PARAM(minorLoMtrl,         2228, 0, 10000, useUciParam);
 DECLARE_PARAM(minorHiMtrl,         7492, 0, 10000, useUciParam);
 #if 0
@@ -473,8 +471,8 @@ DECLARE_PARAM(oppoBishopHiMtrl,    3387, 0, 10000, useUciParam);
 DECLARE_PARAM(knightOutpostLoMtrl, 296, 0, 10000, useUciParam);
 DECLARE_PARAM(knightOutpostHiMtrl, 1082, 0, 10000, useUciParam);
 
-extern ParamTable<64>         kt1b, kt2b, pt1b, pt2b, qt1b, qt2b, rt1b;
-extern ParamTableMirrored<64> kt1w, kt2w, pt1w, pt2w, qt1w, qt2w, rt1w;
+extern ParamTable<64>         kt1b, kt2b, qt1b, qt2b, rt1b;
+extern ParamTableMirrored<64> kt1w, kt2w, qt1w, qt2w, rt1w;
 
 extern ParamTable<64> knightOutpostBonus;
 extern ParamTable<64> protectedPawnBonus, attackedPawnBonus;
@@ -513,6 +511,10 @@ extern ParamTable<6> knightTableParams;
 extern int bishopTableWhiteMG[64], bishopTableBlackMG[64];
 extern int bishopTableWhiteEG[64], bishopTableBlackEG[64];
 extern ParamTable<8> bishopTableParams;
+
+extern int pawnTableWhiteMG[64], pawnTableBlackMG[64];
+extern int pawnTableWhiteEG[64], pawnTableBlackEG[64];
+extern ParamTable<20> pawnTableParams;
 
 
 extern ParamTable<3> rookMobParams;
