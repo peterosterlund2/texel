@@ -172,6 +172,8 @@ Evaluate::evalPos(const Position& pos) {
     if (print) std::cout << "info string eval bishop :" << score << std::endl;
     score += queenEval(pos);
     if (print) std::cout << "info string eval queen  :" << score << std::endl;
+    score += knightEval(pos);
+    if (print) std::cout << "info string eval knight :" << score << std::endl;
 
 #if 0
     wKingAttacks = bKingAttacks = 0;
@@ -1155,7 +1157,6 @@ int
 Evaluate::knightEval(const Position& pos) {
     int score = 0;
 
-#if 0
     U64 wKnights = pos.pieceTypeBB(Piece::WKNIGHT);
     U64 bKnights = pos.pieceTypeBB(Piece::BKNIGHT);
     if ((wKnights | bKnights) == 0)
@@ -1174,7 +1175,6 @@ Evaluate::knightEval(const Position& pos) {
         U64 atk = BitBoard::knightAttacks[sq];
         score -= knightMobScore[sq][BitBoard::bitCount(atk & ~pos.blackBB() & ~wPawnAttacks)];
     }
-#endif
 
     return score;
 #if 0

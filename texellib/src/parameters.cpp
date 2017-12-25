@@ -599,7 +599,7 @@ ParamTable<9> stalePawnFactor { 0, 192, useUciParam,
 
 int rookMobScore[15];
 ParamTable<3> rookMobParams { -250, 250, useUciParam,
-    {-24, 74,-16 },
+    {-83, 74,-16 },
     {  1,  2,   3 }
 };
 static void rookMobScoreUpdate() {
@@ -612,7 +612,7 @@ static void rookMobScoreUpdate() {
 
 int bishMobScore[14];
 ParamTable<3> bishMobParams { -250, 250, useUciParam,
-    {-22, 90,-35 },
+    {-84, 90,-35 },
     {  1,  2,   3 }
 };
 static void bishMobScoreUpdate() {
@@ -624,8 +624,8 @@ static void bishMobScoreUpdate() {
 }
 
 int queenMobScore[28];
-ParamTable<2> queenMobParams { 0, 100, useUciParam,
-    { 68,-32 },
+ParamTable<2> queenMobParams { -250, 250, useUciParam,
+    { 34,-31 },
     { 1,   2 },
 };
 static void queenMobScoreUpdate() {
@@ -637,7 +637,7 @@ static void queenMobScoreUpdate() {
 
 int knightMobScore[64][9];
 ParamTable<3> knightMobParams { -250, 250, useUciParam,
-    {-35, 70,-25 },
+    {-102, 65,-27 },
     {  1,  2,  3 }
 };
 static void knightMobScoreUpdate() {
