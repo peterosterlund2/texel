@@ -563,8 +563,8 @@ ParamTable<9> stalePawnFactor { 0, 192, useUciParam,
 int knightTableWhiteMG[64], knightTableBlackMG[64];
 int knightTableWhiteEG[64], knightTableBlackEG[64];
 ParamTable<6> knightTableParams { -250, 250, useUciParam,
-    { 25, 40, -30, 30, 40, -40 },
-    {  1,  2,   3,  4,  5,   6 }
+    {  5, 41,-24, 19, 41,-55 },
+    {  1,  2,  3,  4,  5,  6 }
 };
 static void knightTableUpdate() {
     double k0mg = knightTableParams[0];
