@@ -1059,6 +1059,7 @@ void
 ChessTool::printParams() {
     std::ostream& os = std::cout;
 
+    printTable(knightTableParams, "knightTableParams", os);
     printTable(rookMobParams, "rookMobParams", os);
     printTable(bishMobParams, "bishMobParams", os);
     printTable(knightMobParams, "knightMobParams", os);
@@ -1068,8 +1069,6 @@ ChessTool::printParams() {
     printTableNxN<8>(kt2b, "kt2b", os);
     printTableNxN<8>(pt1b, "pt1b", os);
     printTableNxN<8>(pt2b, "pt2b", os);
-    printTableNxN<8>(nt1b, "nt1b", os);
-    printTableNxN<8>(nt2b, "nt2b", os);
     printTableNxN<8>(bt1b, "bt1b", os);
     printTableNxN<8>(bt2b, "bt2b", os);
     printTableNxN<8>(qt1b, "qt1b", os);
@@ -1166,8 +1165,10 @@ ChessTool::printParams() {
 
     os << "pawnLoMtrl          : " << pawnLoMtrl << std::endl;
     os << "pawnHiMtrl          : " << pawnHiMtrl << std::endl;
+#endif
     os << "minorLoMtrl         : " << minorLoMtrl << std::endl;
     os << "minorHiMtrl         : " << minorHiMtrl << std::endl;
+#if 0
     os << "castleLoMtrl        : " << castleLoMtrl << std::endl;
     os << "castleHiMtrl        : " << castleHiMtrl << std::endl;
     os << "queenLoMtrl         : " << queenLoMtrl << std::endl;
@@ -1264,6 +1265,8 @@ ChessTool::patchParams(const std::string& directory) {
     std::vector<std::string> cppFile = readFile(directory + "/parameters.cpp");
     std::vector<std::string> hppFile = readFile(directory + "/parameters.hpp");
 
+    replaceTable(knightTableParams, "knightTableParams", cppFile);
+
     replaceTable(rookMobParams, "rookMobParams", cppFile);
     replaceTable(bishMobParams, "bishMobParams", cppFile);
     replaceTable(knightMobParams, "knightMobParams", cppFile);
@@ -1274,8 +1277,6 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTableNxN<8>(kt2b, "kt2b", cppFile);
     replaceTableNxN<8>(pt1b, "pt1b", cppFile);
     replaceTableNxN<8>(pt2b, "pt2b", cppFile);
-    replaceTableNxN<8>(nt1b, "nt1b", cppFile);
-    replaceTableNxN<8>(nt2b, "nt2b", cppFile);
     replaceTableNxN<8>(bt1b, "bt1b", cppFile);
     replaceTableNxN<8>(bt2b, "bt2b", cppFile);
     replaceTableNxN<8>(qt1b, "qt1b", cppFile);
@@ -1372,8 +1373,10 @@ ChessTool::patchParams(const std::string& directory) {
 
     replaceValue(pawnLoMtrl, "pawnLoMtrl", hppFile);
     replaceValue(pawnHiMtrl, "pawnHiMtrl", hppFile);
+#endif
     replaceValue(minorLoMtrl, "minorLoMtrl", hppFile);
     replaceValue(minorHiMtrl, "minorHiMtrl", hppFile);
+#if 0
     replaceValue(castleLoMtrl, "castleLoMtrl", hppFile);
     replaceValue(castleHiMtrl, "castleHiMtrl", hppFile);
     replaceValue(queenLoMtrl, "queenLoMtrl", hppFile);

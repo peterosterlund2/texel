@@ -41,7 +41,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.08ne5";
+    std::string name = "Texel 1.08ne6";
     if (sizeof(char*) == 4)
         name += " 32-bit";
     engineName = name;
@@ -61,7 +61,6 @@ ComputerPlayer::initEngine() {
     UciParams::rtbPath->addListener(tbInit, false);
 
 #if 0
-    knightMobScore.addListener(Evaluate::updateEvalParams);
     castleFactor.addListener(Evaluate::updateEvalParams, false);
 #endif
     bV.addListener([]() { Parameters::instance().set("KnightValue", num2Str((int)bV)); });

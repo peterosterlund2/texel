@@ -118,8 +118,10 @@ DEFINE_PARAM(pawnStormBonus);
 
 DEFINE_PARAM(pawnLoMtrl);
 DEFINE_PARAM(pawnHiMtrl);
+#endif
 DEFINE_PARAM(minorLoMtrl);
 DEFINE_PARAM(minorHiMtrl);
+#if 0
 DEFINE_PARAM(castleLoMtrl);
 DEFINE_PARAM(castleHiMtrl);
 DEFINE_PARAM(queenLoMtrl);
@@ -252,48 +254,6 @@ ParamTable<64> pt2b { -200, 200, useUciParam,
         0,   0,   0,   0,   0,   0,   0,   0 }
 };
 ParamTableMirrored<64> pt2w(pt2b);
-
-/** Piece/square table for knights during middle game. */
-ParamTable<64> nt1b { -300, 200, useUciParam,
-    {-240,-110, -79,   1,   9, -92, -75,-254,
-      -43, -43,  14,  59,  14,  61, -17,   3,
-      -51,  -6,  21,  39,  77, 105,  32, -24,
-      -27,  -2,  15,  41,  15,  53,  14,  15,
-      -23,   5,  12,   4,  16,  19,  26, -13,
-      -57, -19,  -9,   6,   7, -14, -16, -52,
-      -63, -48, -23,  -5, -12, -25, -48, -42,
-     -103, -46, -67, -49, -42, -50, -44, -79 },
-    {   1,   2,   3,   4,   5,   6,   7,   8,
-        9,  10,  11,  12,  13,  14,  15,  16,
-       17,  18,  19,  20,  21,  22,  23,  24,
-       25,  26,  27,  28,  29,  30,  31,  32,
-       33,  34,  35,  36,  37,  38,  39,  40,
-       41,  42,  43,  44,  45,  46,  47,  48,
-       49,  50,  51,  52,  53,  54,  55,  56,
-       57,  58,  59,  60,  61,  62,  63,  64 }
-};
-ParamTableMirrored<64> nt1w(nt1b);
-
-/** Piece/square table for knights during end game. */
-ParamTable<64> nt2b { -200, 200, useUciParam,
-    { -52,  14,  20,  16,  16,  20,  14, -52,
-       -1,  14,  29,  46,  46,  29,  14,  -1,
-        5,  34,  49,  50,  50,  49,  34,   5,
-       13,  41,  54,  58,  58,  54,  41,  13,
-        8,  42,  53,  57,  57,  53,  42,   8,
-      -17,  21,  31,  49,  49,  31,  21, -17,
-      -15,   0,  17,  19,  19,  17,   0, -15,
-      -57, -31, -12,  -1,  -1, -12, -31, -57 },
-    {   1,   2,   3,   4,   4,   3,   2,   1,
-        5,   6,   7,   8,   8,   7,   6,   5,
-        9,  10,  11,  12,  12,  11,  10,   9,
-       13,  14,  15,  16,  16,  15,  14,  13,
-       17,  18,  19,  20,  20,  19,  18,  17,
-       21,  22,  23,  24,  24,  23,  22,  21,
-       25,  26,  27,  28,  28,  27,  26,  25,
-       29,  30,  31,  32,  32,  31,  30,  29 }
-};
-ParamTableMirrored<64> nt2w(nt2b);
 
 /** Piece/square table for bishops during middle game. */
 ParamTable<64> bt1b { -200, 200, useUciParam,
@@ -597,6 +557,41 @@ ParamTable<9> stalePawnFactor { 0, 192, useUciParam,
 };
 #endif
 
+// ----------------------------------------------------------------------------
+
+// Piece/square tables for knights
+int knightTableWhiteMG[64], knightTableBlackMG[64];
+int knightTableWhiteEG[64], knightTableBlackEG[64];
+ParamTable<6> knightTableParams { -250, 250, useUciParam,
+    { 25, 40, -30, 30, 40, -40 },
+    {  1,  2,   3,  4,  5,   6 }
+};
+static void knightTableUpdate() {
+    double k0mg = knightTableParams[0];
+    double k1mg = knightTableParams[1];
+    double k2mg = knightTableParams[2];
+    double k0eg = knightTableParams[3];
+    double k1eg = knightTableParams[4];
+    double k2eg = knightTableParams[5];
+    auto fxy = [](double x, double y, double k0, double k1, double k2) -> int {
+        auto sqr = [](double x) { return x * x; };
+        return (int)std::round(k0 + k1 * y / 10 + k2 * (sqr(x - 3.5) + sqr(y - 3.5)) / 10);
+    };
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            int sq = Position::getSquare(x, y);
+            int valMG = fxy(x, y, k0mg, k1mg, k2mg);
+            knightTableWhiteMG[sq] = valMG;
+            knightTableBlackMG[Position::mirrorY(sq)] = valMG;
+            int valEG = fxy(x, y, k0eg, k1eg, k2eg);
+            knightTableWhiteEG[sq] = valEG;
+            knightTableBlackEG[Position::mirrorY(sq)] = valEG;
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+
 int rookMobScore[15];
 ParamTable<3> rookMobParams { -250, 250, useUciParam,
     {-83, 74,-16 },
@@ -653,6 +648,8 @@ static void knightMobScoreUpdate() {
     }
 }
 
+// ----------------------------------------------------------------------------
+
 Parameters::Parameters() {
     std::string about = ComputerPlayer::engineName +
                         " by Peter Osterlund, see http://hem.bredband.net/petero2b/javachess/index.html#texel";
@@ -697,6 +694,9 @@ Parameters::Parameters() {
 
     knightMobParams.registerParams("KnightMobility", *this);
     knightMobParams.addListener(knightMobScoreUpdate);
+
+    knightTableParams.registerParams("KnightTable", *this);
+    knightTableParams.addListener(knightTableUpdate);
 
 #if 0
     REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
@@ -752,8 +752,10 @@ Parameters::Parameters() {
 
     REGISTER_PARAM(pawnLoMtrl, "PawnLoMtrl");
     REGISTER_PARAM(pawnHiMtrl, "PawnHiMtrl");
+#endif
     REGISTER_PARAM(minorLoMtrl, "MinorLoMtrl");
     REGISTER_PARAM(minorHiMtrl, "MinorHiMtrl");
+#if 0
     REGISTER_PARAM(castleLoMtrl, "CastleLoMtrl");
     REGISTER_PARAM(castleHiMtrl, "CastleHiMtrl");
     REGISTER_PARAM(queenLoMtrl, "QueenLoMtrl");
@@ -772,8 +774,6 @@ Parameters::Parameters() {
     kt2b.registerParams("KingTableEG", *this);
     pt1b.registerParams("PawnTableMG", *this);
     pt2b.registerParams("PawnTableEG", *this);
-    nt1b.registerParams("KnightTableMG", *this);
-    nt2b.registerParams("KnightTableEG", *this);
     bt1b.registerParams("BishopTableMG", *this);
     bt2b.registerParams("BishopTableEG", *this);
     qt1b.registerParams("QueenTableMG", *this);

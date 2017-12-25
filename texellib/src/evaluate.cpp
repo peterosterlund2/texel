@@ -58,37 +58,35 @@ static inline U64 getMask(int sq, int dx, int dy) {
 
 void
 Evaluate::staticInitialize() {
-    for (int i = 0; i < Piece::nPieceTypes; i++)
-        psTab1[i] = psTab2[i] = empty;
-#if 0
     psTab1[Piece::EMPTY]   = empty;
-    psTab1[Piece::WKING]   = kt1w.getTable();
-    psTab1[Piece::WQUEEN]  = qt1w.getTable();
-    psTab1[Piece::WROOK]   = rt1w.getTable();
-    psTab1[Piece::WBISHOP] = bt1w.getTable();
-    psTab1[Piece::WKNIGHT] = nt1w.getTable();
-    psTab1[Piece::WPAWN]   = pt1w.getTable();
-    psTab1[Piece::BKING]   = kt1b.getTable();
-    psTab1[Piece::BQUEEN]  = qt1b.getTable();
-    psTab1[Piece::BROOK]   = rt1b.getTable();
-    psTab1[Piece::BBISHOP] = bt1b.getTable();
-    psTab1[Piece::BKNIGHT] = nt1b.getTable();
-    psTab1[Piece::BPAWN]   = pt1b.getTable();
+    psTab1[Piece::WKING]   = empty; // kt1w.getTable();
+    psTab1[Piece::WQUEEN]  = empty; // qt1w.getTable();
+    psTab1[Piece::WROOK]   = empty; // rt1w.getTable();
+    psTab1[Piece::WBISHOP] = empty; // bt1w.getTable();
+    psTab1[Piece::WKNIGHT] = knightTableWhiteMG;
+    psTab1[Piece::WPAWN]   = empty; // pt1w.getTable();
+    psTab1[Piece::BKING]   = empty; // kt1b.getTable();
+    psTab1[Piece::BQUEEN]  = empty; // qt1b.getTable();
+    psTab1[Piece::BROOK]   = empty; // rt1b.getTable();
+    psTab1[Piece::BBISHOP] = empty; // bt1b.getTable();
+    psTab1[Piece::BKNIGHT] = knightTableBlackMG;
+    psTab1[Piece::BPAWN]   = empty; // pt1b.getTable();
 
     psTab2[Piece::EMPTY]   = empty;
-    psTab2[Piece::WKING]   = kt2w.getTable();
-    psTab2[Piece::WQUEEN]  = qt2w.getTable();
-    psTab2[Piece::WROOK]   = rt1w.getTable();
-    psTab2[Piece::WBISHOP] = bt2w.getTable();
-    psTab2[Piece::WKNIGHT] = nt2w.getTable();
-    psTab2[Piece::WPAWN]   = pt2w.getTable();
-    psTab2[Piece::BKING]   = kt2b.getTable();
-    psTab2[Piece::BQUEEN]  = qt2b.getTable();
-    psTab2[Piece::BROOK]   = rt1b.getTable();
-    psTab2[Piece::BBISHOP] = bt2b.getTable();
-    psTab2[Piece::BKNIGHT] = nt2b.getTable();
-    psTab2[Piece::BPAWN]   = pt2b.getTable();
+    psTab2[Piece::WKING]   = empty; // kt2w.getTable();
+    psTab2[Piece::WQUEEN]  = empty; // qt2w.getTable();
+    psTab2[Piece::WROOK]   = empty; // rt1w.getTable();
+    psTab2[Piece::WBISHOP] = empty; // bt2w.getTable();
+    psTab2[Piece::WKNIGHT] = knightTableWhiteEG;
+    psTab2[Piece::WPAWN]   = empty; // pt2w.getTable();
+    psTab2[Piece::BKING]   = empty; // kt2b.getTable();
+    psTab2[Piece::BQUEEN]  = empty; // qt2b.getTable();
+    psTab2[Piece::BROOK]   = empty; // rt1b.getTable();
+    psTab2[Piece::BBISHOP] = empty; // bt2b.getTable();
+    psTab2[Piece::BKNIGHT] = knightTableBlackEG;
+    psTab2[Piece::BPAWN]   = empty; // pt2b.getTable();
 
+#if 0
     // Initialize knight/bishop king safety patterns
     for (int sq = 0; sq < 64; sq++) {
         const int x = Position::getX(sq);
@@ -166,6 +164,9 @@ Evaluate::evalPos(const Position& pos) {
     wPawnAttacks = BitBoard::wPawnAttacksMask(pos.pieceTypeBB(Piece::WPAWN));
     bPawnAttacks = BitBoard::bPawnAttacksMask(pos.pieceTypeBB(Piece::BPAWN));
 
+    score += pieceSquareEval(pos);
+    if (print) std::cout << "info string eval pst    :" << score << std::endl;
+
     score += rookEval(pos);
     if (print) std::cout << "info string eval rook   :" << score << std::endl;
     score += bishopEval(pos, score);
@@ -183,8 +184,6 @@ Evaluate::evalPos(const Position& pos) {
     wQueenContactChecks = bQueenContactChecks = 0;
     wContactSupport = bContactSupport = 0;
 
-    score += pieceSquareEval(pos);
-    if (print) std::cout << "info string eval pst    :" << score << std::endl;
     score += pawnBonus(pos);
     if (print) std::cout << "info string eval pawn   :" << score << std::endl;
     score += castleBonus(pos);
@@ -271,9 +270,11 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
         score += majorPieceRedundancy[w*4+b];
     }
     if (print) std::cout << "info string eval majred :" << score << std::endl;
+#endif
 
     const int wMtrl = pos.wMtrl();
     const int bMtrl = pos.bMtrl();
+#if 0
     const int wMtrlPawns = pos.wMtrlPawns();
     const int bMtrlPawns = pos.bMtrlPawns();
     const int wMtrlNoPawns = wMtrl - wMtrlPawns;
@@ -334,11 +335,13 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
         if (wCorr + bCorr > 200)
             mhd.pawnIPF = mhd.pawnIPF * 200 / (wCorr + bCorr);
     }
+#endif
     { // Knight/bishop
         const int loMtrl = minorLoMtrl;
         const int hiMtrl = minorHiMtrl;
         mhd.knightIPF = interpolate(wMtrl + bMtrl, loMtrl, 0, hiMtrl, IPOLMAX);
     }
+#if 0
     { // Castle
         const int loMtrl = castleLoMtrl;
         const int hiMtrl = castleHiMtrl;
@@ -416,6 +419,7 @@ Evaluate::pieceSquareEval(const Position& pos) {
             score += EndGameEval::winKingTable[pos.getKingSq(true)] -
                      EndGameEval::winKingTable[pos.getKingSq(false)];
     }
+#endif
 
     // Knights/bishops
     {
@@ -426,6 +430,7 @@ Evaluate::pieceSquareEval(const Position& pos) {
         score += interpolate(n2, n1, mhd->knightIPF);
     }
 
+#if 0
     // Queens
     {
         const U64 occupied = pos.occupiedBB();
