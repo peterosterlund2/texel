@@ -551,7 +551,7 @@ static void knightTableUpdate() {
 int bishopTableWhiteMG[64], bishopTableBlackMG[64];
 int bishopTableWhiteEG[64], bishopTableBlackEG[64];
 ParamTable<8> bishopTableParams { -250, 250, useUciParam,
-    {-21, 13,-55,-12, 10, 23, 53,-75 },
+    { -5, 26,-48, -5, 11,-33, 10,-73 },
     {  1,  2,  3,  4,  5,  6,  7,  8 }
 };
 static void bishopTableUpdate() {
