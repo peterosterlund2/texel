@@ -171,48 +171,6 @@ DEFINE_PARAM(maxTimeUsage);
 DEFINE_PARAM(timePonderHitRate);
 
 #if 0
-/** Piece/square table for king during middle game. */
-ParamTable<64> kt1b { -200, 200, useUciParam,
-    {  60,  63,  85,  70,  51,  80,  68,-192,
-       41,   6,  18,  57,  52,  32,  24,  45,
-      -28, -20,  -8,   0,  43,  66,  18, -22,
-      -44, -19, -27, -27, -32,  -9, -26, -67,
-      -37,  -1, -19, -37, -26, -39, -30, -85,
-      -31,  20,  -9, -26, -24,  -4,   9, -21,
-       36,  31,  19,  -5,   2,  -3,  41,  33,
-      -11,  39,  22, -19,  14, -15,  33,  10 },
-    {   1,   2,   3,   4,   5,   6,   7,   8,
-        9,  10,  11,  12,  13,  14,  15,  16,
-       17,  18,  19,  20,  21,  22,  23,  24,
-       25,  26,  27,  28,  29,  30,  31,  32,
-       33,  34,  35,  36,  37,  38,  39,  40,
-       41,  42,  43,  44,  45,  46,  47,  48,
-       49,  50,  51,  52,  53,  54,  55,  56,
-       57,  58,  59,  60,  61,  62,  63,  64 }
-};
-ParamTableMirrored<64> kt1w(kt1b);
-
-/** Piece/square table for king during end game. */
-ParamTable<64> kt2b { -200, 200, useUciParam,
-    {  -8,  64,  90,  93,  93,  90,  64,  -8,
-       54, 105, 113, 109, 109, 113, 105,  54,
-       88, 113, 115, 113, 113, 115, 113,  88,
-       77, 104, 111, 113, 113, 111, 104,  77,
-       55,  82,  95, 101, 101,  95,  82,  55,
-       48,  63,  77,  86,  86,  77,  63,  48,
-       31,  52,  65,  65,  65,  65,  52,  31,
-        0,  22,  36,  21,  21,  36,  22,   0 },
-    {   1,   2,   3,   4,   4,   3,   2,   1,
-        5,   6,   7,   8,   8,   7,   6,   5,
-        9,  10,  11,  12,  12,  11,  10,   9,
-       13,  14,  15,  16,  16,  15,  14,  13,
-       17,  18,  19,  20,  20,  19,  18,  17,
-       21,  22,  23,  24,  24,  23,  22,  21,
-       25,  26,  27,  28,  28,  27,  26,  25,
-        0,  29,  30,  31,  31,  30,  29,   0 }
-};
-ParamTableMirrored<64> kt2w(kt2b);
-
 /** Piece/square table for queens during middle game. */
 ParamTable<64> qt1b { -200, 200, useUciParam,
     { -74, -26, -17, -39, -41,  -2,  48,  20,
@@ -570,6 +528,36 @@ static void pawnTableUpdate() {
     }
 }
 
+// Piece/square tables for kings
+int kingTableWhiteMG[64], kingTableBlackMG[64];
+int kingTableWhiteEG[64], kingTableBlackEG[64];
+ParamTable<5> kingTableParams { -250, 250, useUciParam,
+    { 22, 53,-26, 19,-20 },
+    {  1,  2,  3,  4,  5 }
+};
+static void kingTableUpdate() {
+    double k0mg = kingTableParams[0];
+    double k1mg = kingTableParams[1];
+    double k0eg = kingTableParams[2];
+    double k1eg = kingTableParams[3];
+    double k2eg = kingTableParams[4];
+    auto sqr = [](double x) { return x * x; };
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            int sq = Position::getSquare(x, y);
+
+            int valMG = (int)std::round(k0mg/10*sqr(x-3.5) + k1mg/10*sqr(y-3.5));
+            kingTableWhiteMG[sq] = valMG;
+            kingTableBlackMG[Position::mirrorY(sq)] = valMG;
+
+            int valEG = (int)std::round(k0eg/10*(sqr(x-3.5)+sqr(y-3.5)) +
+                                        k1eg / (1 + exp(k2eg/10*(y-4))));
+            kingTableWhiteEG[sq] = valEG;
+            kingTableBlackEG[Position::mirrorY(sq)] = valEG;
+        }
+    }
+}
+
 // ----------------------------------------------------------------------------
 
 int rookMobScore[15];
@@ -678,6 +666,8 @@ Parameters::Parameters() {
     bishopTableParams.addListener(bishopTableUpdate);
     pawnTableParams.registerParams("PawnTable", *this);
     pawnTableParams.addListener(pawnTableUpdate);
+    kingTableParams.registerParams("KingTable", *this);
+    kingTableParams.addListener(kingTableUpdate);
 
 #if 0
     REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
@@ -751,8 +741,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(knightOutpostHiMtrl, "KnightOutpostHiMtrl");
 
     // Evaluation tables
-    kt1b.registerParams("KingTableMG", *this);
-    kt2b.registerParams("KingTableEG", *this);
     qt1b.registerParams("QueenTableMG", *this);
     qt2b.registerParams("QueenTableEG", *this);
     rt1b.registerParams("RookTable", *this);

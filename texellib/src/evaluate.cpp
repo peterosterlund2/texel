@@ -59,13 +59,13 @@ static inline U64 getMask(int sq, int dx, int dy) {
 void
 Evaluate::staticInitialize() {
     psTab1[Piece::EMPTY]   = empty;
-    psTab1[Piece::WKING]   = empty; // kt1w.getTable();
+    psTab1[Piece::WKING]   = kingTableWhiteMG;
     psTab1[Piece::WQUEEN]  = empty; // qt1w.getTable();
     psTab1[Piece::WROOK]   = empty; // rt1w.getTable();
     psTab1[Piece::WBISHOP] = bishopTableWhiteMG;
     psTab1[Piece::WKNIGHT] = knightTableWhiteMG;
     psTab1[Piece::WPAWN]   = pawnTableWhiteMG;
-    psTab1[Piece::BKING]   = empty; // kt1b.getTable();
+    psTab1[Piece::BKING]   = kingTableBlackMG;
     psTab1[Piece::BQUEEN]  = empty; // qt1b.getTable();
     psTab1[Piece::BROOK]   = empty; // rt1b.getTable();
     psTab1[Piece::BBISHOP] = bishopTableBlackMG;
@@ -73,13 +73,13 @@ Evaluate::staticInitialize() {
     psTab1[Piece::BPAWN]   = pawnTableBlackMG;
 
     psTab2[Piece::EMPTY]   = empty;
-    psTab2[Piece::WKING]   = empty; // kt2w.getTable();
+    psTab2[Piece::WKING]   = kingTableWhiteEG;
     psTab2[Piece::WQUEEN]  = empty; // qt2w.getTable();
     psTab2[Piece::WROOK]   = empty; // rt1w.getTable();
     psTab2[Piece::WBISHOP] = bishopTableWhiteEG;
     psTab2[Piece::WKNIGHT] = knightTableWhiteEG;
     psTab2[Piece::WPAWN]   = pawnTableWhiteEG;
-    psTab2[Piece::BKING]   = empty; // kt2b.getTable();
+    psTab2[Piece::BKING]   = kingTableBlackEG;
     psTab2[Piece::BQUEEN]  = empty; // qt2b.getTable();
     psTab2[Piece::BROOK]   = empty; // rt1b.getTable();
     psTab2[Piece::BBISHOP] = bishopTableBlackEG;
