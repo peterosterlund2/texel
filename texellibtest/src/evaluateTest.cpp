@@ -1277,24 +1277,14 @@ ParamTable<10> uciParTable { 0, 100, true,
     { 0,1,2,3,-4,4,3,2,0,-1 }
 };
 
-ParamTableMirrored<10> uciParTableM(uciParTable);
-
 void
 EvaluateTest::testUciParamTable() {
     ASSERT_EQUAL(0, uciParTable[0]);
     ASSERT_EQUAL(2, uciParTable[1]);
     ASSERT_EQUAL(3, uciParTable[2]);
 
-    ASSERT_EQUAL(-2, uciParTableM[0]);
-    ASSERT_EQUAL(0, uciParTableM[1]);
-    ASSERT_EQUAL(3, uciParTableM[2]);
-    ASSERT_EQUAL(0, uciParTableM[9]);
-    ASSERT_EQUAL(2, uciParTableM[8]);
-    ASSERT_EQUAL(3, uciParTableM[7]);
-
     uciParTable.registerParams("uciParTable", Parameters::instance());
     const int* table = uciParTable.getTable();
-    const int* tableM = uciParTableM.getTable();
 
     Parameters::instance().set("uciParTable1", "11");
     {
@@ -1302,8 +1292,6 @@ EvaluateTest::testUciParamTable() {
         for (int i = 0; i < 10; i++) {
             ASSERT_EQUAL(expected[i], uciParTable[i]);
             ASSERT_EQUAL(expected[i], table[i]);
-            ASSERT_EQUAL(expected[10-1-i], uciParTableM[i]);
-            ASSERT_EQUAL(expected[10-1-i], tableM[i]);
         }
     }
 
@@ -1313,8 +1301,6 @@ EvaluateTest::testUciParamTable() {
         for (int i = 0; i < 10; i++) {
             ASSERT_EQUAL(expected[i], uciParTable[i]);
             ASSERT_EQUAL(expected[i], table[i]);
-            ASSERT_EQUAL(expected[10-1-i], uciParTableM[i]);
-            ASSERT_EQUAL(expected[10-1-i], tableM[i]);
         }
     }
 
@@ -1324,8 +1310,6 @@ EvaluateTest::testUciParamTable() {
         for (int i = 0; i < 10; i++) {
             ASSERT_EQUAL(expected[i], uciParTable[i]);
             ASSERT_EQUAL(expected[i], table[i]);
-            ASSERT_EQUAL(expected[10-1-i], uciParTableM[i]);
-            ASSERT_EQUAL(expected[10-1-i], tableM[i]);
         }
     }
 
@@ -1335,8 +1319,6 @@ EvaluateTest::testUciParamTable() {
         for (int i = 0; i < 10; i++) {
             ASSERT_EQUAL(expected[i], uciParTable[i]);
             ASSERT_EQUAL(expected[i], table[i]);
-            ASSERT_EQUAL(expected[10-1-i], uciParTableM[i]);
-            ASSERT_EQUAL(expected[10-1-i], tableM[i]);
         }
     }
 }

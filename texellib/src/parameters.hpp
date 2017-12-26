@@ -303,27 +303,6 @@ private:
 };
 
 template <int N>
-class ParamTableMirrored {
-public:
-    explicit ParamTableMirrored(ParamTable<N>& orig0) : orig(orig0) {
-        orig.addListener([this]() {
-            if (N == 64) {
-                for (int sq = 0; sq < N; sq++)
-                    table[sq] = orig[Position::mirrorY(sq)];
-            } else {
-                for (int i = 0; i < N; i++)
-                    table[i] = orig[N-1-i];
-            }
-        });
-    }
-    int operator[](int i) const { return table[i]; }
-    const int* getTable() const { return table; }
-private:
-    int table[N];
-    ParamTable<N>& orig;
-};
-
-template <int N>
 ParamTable<N>::ParamTable(int minVal0, int maxVal0, bool uci0,
                           std::initializer_list<int> table0,
                           std::initializer_list<int> parNo0)
@@ -460,8 +439,10 @@ DECLARE_PARAM(minorHiMtrl,         7492, 0, 10000, useUciParam);
 #if 0
 DECLARE_PARAM(castleLoMtrl,        713, 0, 10000, useUciParam);
 DECLARE_PARAM(castleHiMtrl,        7884, 0, 10000, useUciParam);
+#endif
 DECLARE_PARAM(queenLoMtrl,         4593, 0, 10000, useUciParam);
 DECLARE_PARAM(queenHiMtrl,         6596, 0, 10000, useUciParam);
+#if 0
 DECLARE_PARAM(passedPawnLoMtrl,    776, 0, 10000, useUciParam);
 DECLARE_PARAM(passedPawnHiMtrl,    2512, 0, 10000, useUciParam);
 DECLARE_PARAM(kingSafetyLoMtrl,    917, 0, 10000, useUciParam);
@@ -470,9 +451,6 @@ DECLARE_PARAM(oppoBishopLoMtrl,    753, 0, 10000, useUciParam);
 DECLARE_PARAM(oppoBishopHiMtrl,    3387, 0, 10000, useUciParam);
 DECLARE_PARAM(knightOutpostLoMtrl, 296, 0, 10000, useUciParam);
 DECLARE_PARAM(knightOutpostHiMtrl, 1082, 0, 10000, useUciParam);
-
-extern ParamTable<64>         qt1b, qt2b;
-extern ParamTableMirrored<64> qt1w, qt2w;
 
 extern ParamTable<64> knightOutpostBonus;
 extern ParamTable<64> protectedPawnBonus, attackedPawnBonus;
@@ -522,6 +500,10 @@ extern ParamTable<5> kingTableParams;
 
 extern int rookTableWhiteMG[64], rookTableBlackMG[64];
 extern ParamTable<12> rookTableParams;
+
+extern int queenTableWhiteMG[64], queenTableBlackMG[64];
+extern int queenTableWhiteEG[64], queenTableBlackEG[64];
+extern ParamTable<14> queenTableParams;
 
 
 extern ParamTable<3> rookMobParams;

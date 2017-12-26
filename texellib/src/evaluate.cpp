@@ -60,13 +60,13 @@ void
 Evaluate::staticInitialize() {
     psTab1[Piece::EMPTY]   = empty;
     psTab1[Piece::WKING]   = kingTableWhiteMG;
-    psTab1[Piece::WQUEEN]  = empty; // qt1w.getTable();
+    psTab1[Piece::WQUEEN]  = queenTableWhiteMG;
     psTab1[Piece::WROOK]   = rookTableWhiteMG;
     psTab1[Piece::WBISHOP] = bishopTableWhiteMG;
     psTab1[Piece::WKNIGHT] = knightTableWhiteMG;
     psTab1[Piece::WPAWN]   = pawnTableWhiteMG;
     psTab1[Piece::BKING]   = kingTableBlackMG;
-    psTab1[Piece::BQUEEN]  = empty; // qt1b.getTable();
+    psTab1[Piece::BQUEEN]  = queenTableBlackMG;
     psTab1[Piece::BROOK]   = rookTableBlackMG;
     psTab1[Piece::BBISHOP] = bishopTableBlackMG;
     psTab1[Piece::BKNIGHT] = knightTableBlackMG;
@@ -74,13 +74,13 @@ Evaluate::staticInitialize() {
 
     psTab2[Piece::EMPTY]   = empty;
     psTab2[Piece::WKING]   = kingTableWhiteEG;
-    psTab2[Piece::WQUEEN]  = empty; // qt2w.getTable();
+    psTab2[Piece::WQUEEN]  = queenTableWhiteEG;
     psTab2[Piece::WROOK]   = empty;
     psTab2[Piece::WBISHOP] = bishopTableWhiteEG;
     psTab2[Piece::WKNIGHT] = knightTableWhiteEG;
     psTab2[Piece::WPAWN]   = pawnTableWhiteEG;
     psTab2[Piece::BKING]   = kingTableBlackEG;
-    psTab2[Piece::BQUEEN]  = empty; // qt2b.getTable();
+    psTab2[Piece::BQUEEN]  = queenTableBlackEG;
     psTab2[Piece::BROOK]   = empty;
     psTab2[Piece::BBISHOP] = bishopTableBlackEG;
     psTab2[Piece::BKNIGHT] = knightTableBlackEG;
@@ -352,12 +352,14 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
         const int m = wMtrlNoPawns + bMtrlNoPawns;
         mhd.castleIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
     }
+#endif
     {
         const int loMtrl = queenLoMtrl;
         const int hiMtrl = queenHiMtrl;
         const int m = wMtrlNoPawns + bMtrlNoPawns;
         mhd.queenIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
     }
+#if 0
     { // Passed pawn
         const int loMtrl = passedPawnLoMtrl;
         const int hiMtrl = passedPawnHiMtrl;
@@ -433,19 +435,22 @@ Evaluate::pieceSquareEval(const Position& pos) {
         score += interpolate(n2, n1, mhd->knightIPF);
     }
 
+    // Queens
+    {
+        int q1 = pos.psScore1(Piece::WQUEEN) - pos.psScore1(Piece::BQUEEN);
+        int q2 = pos.psScore2(Piece::WQUEEN) - pos.psScore2(Piece::BQUEEN);
+        score += interpolate(q2, q1, mhd->queenIPF);
+    }
+
 #if 0
     // Queens
     {
         const U64 occupied = pos.occupiedBB();
-        int q1 = pos.psScore1(Piece::WQUEEN) - pos.psScore1(Piece::BQUEEN);
-        int q2 = pos.psScore2(Piece::WQUEEN) - pos.psScore2(Piece::BQUEEN);
-        score += interpolate(q2, q1, mhd->queenIPF);
         U64 m = pos.pieceTypeBB(Piece::WQUEEN);
         while (m != 0) {
             int sq = BitBoard::extractSquare(m);
             U64 atk = BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied);
             wAttacksBB |= atk;
-            score += queenMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB() | bPawnAttacks))];
             bKingAttacks += BitBoard::bitCount(atk & bKingZone) * 2;
             wQueenContactChecks = atk & BitBoard::kingAttacks[pos.bKingSq()];
         }
@@ -454,7 +459,6 @@ Evaluate::pieceSquareEval(const Position& pos) {
             int sq = BitBoard::extractSquare(m);
             U64 atk = BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied);
             bAttacksBB |= atk;
-            score -= queenMobScore[BitBoard::bitCount(atk & ~(pos.blackBB() | wPawnAttacks))];
             wKingAttacks += BitBoard::bitCount(atk & wKingZone) * 2;
             bQueenContactChecks = atk & BitBoard::kingAttacks[pos.wKingSq()];
         }

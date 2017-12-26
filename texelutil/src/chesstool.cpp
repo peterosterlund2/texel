@@ -1064,14 +1064,13 @@ ChessTool::printParams() {
     printTable(pawnTableParams, "pawnTableParams", os);
     printTable(kingTableParams, "kingTableParams", os);
     printTable(rookTableParams, "rookTableParams", os);
+    printTable(queenTableParams, "queenTableParams", os);
 
     printTable(rookMobParams, "rookMobParams", os);
     printTable(bishMobParams, "bishMobParams", os);
     printTable(knightMobParams, "knightMobParams", os);
     printTable(queenMobParams, "queenMobParams", os);
 #if 0
-    printTableNxN<8>(qt1b, "qt1b", os);
-    printTableNxN<8>(qt2b, "qt2b", os);
     printTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", os);
     printTableNxN<8>(protectedPawnBonus, "protectedPawnBonus", os);
     printTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", os);
@@ -1169,8 +1168,10 @@ ChessTool::printParams() {
 #if 0
     os << "castleLoMtrl        : " << castleLoMtrl << std::endl;
     os << "castleHiMtrl        : " << castleHiMtrl << std::endl;
+#endif
     os << "queenLoMtrl         : " << queenLoMtrl << std::endl;
     os << "queenHiMtrl         : " << queenHiMtrl << std::endl;
+#if 0
     os << "passedPawnLoMtrl    : " << passedPawnLoMtrl << std::endl;
     os << "passedPawnHiMtrl    : " << passedPawnHiMtrl << std::endl;
     os << "kingSafetyLoMtrl    : " << kingSafetyLoMtrl << std::endl;
@@ -1268,6 +1269,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(pawnTableParams, "pawnTableParams", cppFile);
     replaceTable(kingTableParams, "kingTableParams", cppFile);
     replaceTable(rookTableParams, "rookTableParams", cppFile);
+    replaceTable(queenTableParams, "queenTableParams", cppFile);
 
     replaceTable(rookMobParams, "rookMobParams", cppFile);
     replaceTable(bishMobParams, "bishMobParams", cppFile);
@@ -1275,8 +1277,6 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(queenMobParams, "queenMobParams", cppFile);
 
 #if 0
-    replaceTableNxN<8>(qt1b, "qt1b", cppFile);
-    replaceTableNxN<8>(qt2b, "qt2b", cppFile);
     replaceTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", cppFile);
     replaceTableNxN<8>(protectedPawnBonus, "protectedPawnBonus", cppFile);
     replaceTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", cppFile);
@@ -1374,8 +1374,10 @@ ChessTool::patchParams(const std::string& directory) {
 #if 0
     replaceValue(castleLoMtrl, "castleLoMtrl", hppFile);
     replaceValue(castleHiMtrl, "castleHiMtrl", hppFile);
+#endif
     replaceValue(queenLoMtrl, "queenLoMtrl", hppFile);
     replaceValue(queenHiMtrl, "queenHiMtrl", hppFile);
+#if 0
     replaceValue(passedPawnLoMtrl, "passedPawnLoMtrl", hppFile);
     replaceValue(passedPawnHiMtrl, "passedPawnHiMtrl", hppFile);
     replaceValue(kingSafetyLoMtrl, "kingSafetyLoMtrl", hppFile);

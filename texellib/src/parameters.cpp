@@ -124,8 +124,10 @@ DEFINE_PARAM(minorHiMtrl);
 #if 0
 DEFINE_PARAM(castleLoMtrl);
 DEFINE_PARAM(castleHiMtrl);
+#endif
 DEFINE_PARAM(queenLoMtrl);
 DEFINE_PARAM(queenHiMtrl);
+#if 0
 DEFINE_PARAM(passedPawnLoMtrl);
 DEFINE_PARAM(passedPawnHiMtrl);
 DEFINE_PARAM(kingSafetyLoMtrl);
@@ -171,47 +173,6 @@ DEFINE_PARAM(maxTimeUsage);
 DEFINE_PARAM(timePonderHitRate);
 
 #if 0
-/** Piece/square table for queens during middle game. */
-ParamTable<64> qt1b { -200, 200, useUciParam,
-    { -74, -26, -17, -39, -41,  -2,  48,  20,
-      -59, -82, -45, -35,-115, -40, -76,  42,
-      -43, -39, -71, -53, -46, -20, -39, -55,
-      -37, -28, -32, -47, -52, -55, -49, -39,
-      -25, -25, -13, -29, -26, -30,  -3, -36,
-      -29, -13, -13, -19, -18, -22,  -9, -33,
-      -27, -17, -12,  -3, -15,  -7, -19, -47,
-      -23, -18,  -9,  -5, -16, -48, -78, -61 },
-    {   1,   2,   3,   4,   5,   6,   7,   8,
-        9,  10,  11,  12,  13,  14,  15,  16,
-       17,  18,  19,  20,  21,  22,  23,  24,
-       25,  26,  27,  28,  29,  30,  31,  32,
-       33,  34,  35,  36,  37,  38,  39,  40,
-       41,  42,  43,  44,  45,  46,  47,  48,
-       49,  50,  51,  52,  53,  54,  55,  56,
-       57,  58,  59,  60,  61,  62,  63,  64 }
-};
-ParamTableMirrored<64> qt1w(qt1b);
-
-ParamTable<64> qt2b { -200, 200, useUciParam,
-    { -17, -18, -21, -15, -15, -21, -18, -17,
-      -18, -17, -11,  -8,  -8, -11, -17, -18,
-      -21, -11,  -1,   1,   1,  -1, -11, -21,
-      -15,  -8,   1,  12,  12,   1,  -8, -15,
-      -15,  -8,   1,  12,  12,   1,  -8, -15,
-      -21, -11,  -1,   1,   1,  -1, -11, -21,
-      -18, -17, -11,  -8,  -8, -11, -17, -18,
-      -17, -18, -21, -15, -15, -21, -18, -17 },
-     { 10,   1,   2,   3,   3,   2,   1,  10,
-        1,   4,   5,   6,   6,   5,   4,   1,
-        2,   5,   7,   8,   8,   7,   5,   2,
-        3,   6,   8,   9,   9,   8,   6,   3,
-        3,   6,   8,   9,   9,   8,   6,   3,
-        2,   5,   7,   8,   8,   7,   5,   2,
-        1,   4,   5,   6,   6,   5,   4,   1,
-       10,   1,   2,   3,   3,   2,   1,  10 }
-};
-ParamTableMirrored<64> qt2w(qt2b);
-
 ParamTable<64> knightOutpostBonus { 0, 150, useUciParam,
     {   0,   0,   0,   0,   0,   0,   0,   0,
         0,   0,   0,   0,   0,   0,   0,   0,
@@ -554,6 +515,60 @@ static void rookTableUpdate() {
     }
 }
 
+// Piece/square tables for queens
+int queenTableWhiteMG[64], queenTableBlackMG[64];
+int queenTableWhiteEG[64], queenTableBlackEG[64];
+ParamTable<14> queenTableParams { -250, 250, useUciParam,
+    {-13,-21,-23,-26,-15, 12,-50,-12,-107,-112,-101,-96,-88,-77 },
+    {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14 }
+};
+static void queenTableUpdate() {
+    auto symSquare = [](int sq) -> int {
+        int x = Position::getX(sq);
+        int y = Position::getY(sq);
+        if (x >= 4) x = 7 - x;
+        if (y >= 4) y = 7 - y;
+        if (x < y)
+            std::swap(x, y);
+        return Position::getSquare(x, y);
+    };
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            int sq = Position::getSquare(x, y);
+
+            int valMG = queenTableParams[y];
+            queenTableWhiteMG[sq] = valMG;
+            queenTableBlackMG[Position::mirrorY(sq)] = valMG;
+
+            int valEG = 0;
+            switch (symSquare(sq)) {
+            case A1: case B1: case C1: case D1:
+                valEG = queenTableParams[8+0];
+                break;
+            case B2:
+                valEG = queenTableParams[8+1];
+                break;
+            case C2:
+                valEG = queenTableParams[8+2];
+                break;
+            case D2:
+                valEG = queenTableParams[8+3];
+                break;
+            case C3: case D3:
+                valEG = queenTableParams[8+4];
+                break;
+            case D4:
+                valEG = queenTableParams[8+5];
+                break;
+            default:
+                break;
+            }
+            queenTableWhiteEG[sq] = valEG;
+            queenTableBlackEG[Position::mirrorY(sq)] = valEG;
+        }
+    }
+}
+
 // ----------------------------------------------------------------------------
 
 int rookMobScore[15];
@@ -666,6 +681,8 @@ Parameters::Parameters() {
     kingTableParams.addListener(kingTableUpdate);
     rookTableParams.registerParams("RookTable", *this);
     rookTableParams.addListener(rookTableUpdate);
+    queenTableParams.registerParams("QueenTable", *this);
+    queenTableParams.addListener(queenTableUpdate);
 
 #if 0
     REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
@@ -727,8 +744,10 @@ Parameters::Parameters() {
 #if 0
     REGISTER_PARAM(castleLoMtrl, "CastleLoMtrl");
     REGISTER_PARAM(castleHiMtrl, "CastleHiMtrl");
+#endif
     REGISTER_PARAM(queenLoMtrl, "QueenLoMtrl");
     REGISTER_PARAM(queenHiMtrl, "QueenHiMtrl");
+#if 0
     REGISTER_PARAM(passedPawnLoMtrl, "PassedPawnLoMtrl");
     REGISTER_PARAM(passedPawnHiMtrl, "PassedPawnHiMtrl");
     REGISTER_PARAM(kingSafetyLoMtrl, "KingSafetyLoMtrl");
@@ -739,9 +758,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(knightOutpostHiMtrl, "KnightOutpostHiMtrl");
 
     // Evaluation tables
-    qt1b.registerParams("QueenTableMG", *this);
-    qt2b.registerParams("QueenTableEG", *this);
-
     knightOutpostBonus.registerParams("KnightOutpostBonus", *this);
     protectedPawnBonus.registerParams("ProtectedPawnBonus", *this);
     attackedPawnBonus.registerParams("AttackedPawnBonus", *this);
