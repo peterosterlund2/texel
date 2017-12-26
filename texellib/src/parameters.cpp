@@ -212,27 +212,6 @@ ParamTable<64> qt2b { -200, 200, useUciParam,
 };
 ParamTableMirrored<64> qt2w(qt2b);
 
-/** Piece/square table for rooks during middle game. */
-ParamTable<64> rt1b { -200, 200, useUciParam,
-    {  35,  42,  45,  39,  40,  61,  66,  60,
-       39,  36,  51,  54,  45,  59,  61,  49,
-       28,  36,  42,  39,  53,  69,  67,  47,
-       12,  18,  27,  30,  18,  45,  39,  21,
-      -11,  -1,   9,   6,   6,   9,  21,  -7,
-      -21, -13,  -7,  -3, -12,  -6,   3, -18,
-      -24, -16,  -3,   0,  -6,  -3,  -9, -42,
-        0,   0,   7,   9,   5,   9,   1,   4 },
-    {   1,   2,   3,   4,   5,   6,   7,   8,
-        9,  10,  11,  12,  13,  14,  15,  16,
-       17,  18,  19,  20,  21,  22,  23,  24,
-       25,  26,  27,  28,  29,  30,  31,  32,
-       33,  34,  35,  36,  37,  38,  39,  40,
-       41,  42,  43,  44,  45,  46,  47,  48,
-       49,  50,  51,  52,  53,  54,  55,  56,
-       57,  58,  59,  60,  61,  62,  63,  64 }
-};
-ParamTableMirrored<64> rt1w(rt1b);
-
 ParamTable<64> knightOutpostBonus { 0, 150, useUciParam,
     {   0,   0,   0,   0,   0,   0,   0,   0,
         0,   0,   0,   0,   0,   0,   0,   0,
@@ -515,8 +494,7 @@ static void pawnTableUpdate() {
         for (int x = 0; x < 8; x++) {
             int sq = Position::getSquare(x, y);
 
-            int xi = x;
-            if (xi >= 4) xi = 7 - xi;
+            int xi = std::min(x, 7-x);
             int valMG = pawnTableParams[xi] + pawnTableParams[4+(y-1)];
             pawnTableWhiteMG[sq] = valMG;
             pawnTableBlackMG[Position::mirrorY(sq)] = valMG;
@@ -554,6 +532,24 @@ static void kingTableUpdate() {
                                         k1eg / (1 + exp(k2eg/10*(y-4))));
             kingTableWhiteEG[sq] = valEG;
             kingTableBlackEG[Position::mirrorY(sq)] = valEG;
+        }
+    }
+}
+
+// Piece/square tables for rooks
+int rookTableWhiteMG[64], rookTableBlackMG[64];
+ParamTable<12> rookTableParams { -250, 250, useUciParam,
+    {-10, -1, 11, 11, -5,-18,-14,  1, 28, 49, 49, 37 },
+    {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12 }
+};
+static void rookTableUpdate() {
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            int sq = Position::getSquare(x, y);
+            int xi = std::min(x, 7-x);
+            int valMG = rookTableParams[xi] + rookTableParams[4+y];
+            rookTableWhiteMG[sq] = valMG;
+            rookTableBlackMG[Position::mirrorY(sq)] = valMG;
         }
     }
 }
@@ -668,6 +664,8 @@ Parameters::Parameters() {
     pawnTableParams.addListener(pawnTableUpdate);
     kingTableParams.registerParams("KingTable", *this);
     kingTableParams.addListener(kingTableUpdate);
+    rookTableParams.registerParams("RookTable", *this);
+    rookTableParams.addListener(rookTableUpdate);
 
 #if 0
     REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
@@ -743,7 +741,6 @@ Parameters::Parameters() {
     // Evaluation tables
     qt1b.registerParams("QueenTableMG", *this);
     qt2b.registerParams("QueenTableEG", *this);
-    rt1b.registerParams("RookTable", *this);
 
     knightOutpostBonus.registerParams("KnightOutpostBonus", *this);
     protectedPawnBonus.registerParams("ProtectedPawnBonus", *this);

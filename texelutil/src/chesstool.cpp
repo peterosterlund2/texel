@@ -1063,6 +1063,7 @@ ChessTool::printParams() {
     printTable(bishopTableParams, "bishopTableParams", os);
     printTable(pawnTableParams, "pawnTableParams", os);
     printTable(kingTableParams, "kingTableParams", os);
+    printTable(rookTableParams, "rookTableParams", os);
 
     printTable(rookMobParams, "rookMobParams", os);
     printTable(bishMobParams, "bishMobParams", os);
@@ -1071,7 +1072,6 @@ ChessTool::printParams() {
 #if 0
     printTableNxN<8>(qt1b, "qt1b", os);
     printTableNxN<8>(qt2b, "qt2b", os);
-    printTableNxN<8>(rt1b, "rt1b", os);
     printTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", os);
     printTableNxN<8>(protectedPawnBonus, "protectedPawnBonus", os);
     printTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", os);
@@ -1267,6 +1267,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(bishopTableParams, "bishopTableParams", cppFile);
     replaceTable(pawnTableParams, "pawnTableParams", cppFile);
     replaceTable(kingTableParams, "kingTableParams", cppFile);
+    replaceTable(rookTableParams, "rookTableParams", cppFile);
 
     replaceTable(rookMobParams, "rookMobParams", cppFile);
     replaceTable(bishMobParams, "bishMobParams", cppFile);
@@ -1276,7 +1277,6 @@ ChessTool::patchParams(const std::string& directory) {
 #if 0
     replaceTableNxN<8>(qt1b, "qt1b", cppFile);
     replaceTableNxN<8>(qt2b, "qt2b", cppFile);
-    replaceTableNxN<8>(rt1b, "rt1b", cppFile);
     replaceTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", cppFile);
     replaceTableNxN<8>(protectedPawnBonus, "protectedPawnBonus", cppFile);
     replaceTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", cppFile);

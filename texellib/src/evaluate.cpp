@@ -61,13 +61,13 @@ Evaluate::staticInitialize() {
     psTab1[Piece::EMPTY]   = empty;
     psTab1[Piece::WKING]   = kingTableWhiteMG;
     psTab1[Piece::WQUEEN]  = empty; // qt1w.getTable();
-    psTab1[Piece::WROOK]   = empty; // rt1w.getTable();
+    psTab1[Piece::WROOK]   = rookTableWhiteMG;
     psTab1[Piece::WBISHOP] = bishopTableWhiteMG;
     psTab1[Piece::WKNIGHT] = knightTableWhiteMG;
     psTab1[Piece::WPAWN]   = pawnTableWhiteMG;
     psTab1[Piece::BKING]   = kingTableBlackMG;
     psTab1[Piece::BQUEEN]  = empty; // qt1b.getTable();
-    psTab1[Piece::BROOK]   = empty; // rt1b.getTable();
+    psTab1[Piece::BROOK]   = rookTableBlackMG;
     psTab1[Piece::BBISHOP] = bishopTableBlackMG;
     psTab1[Piece::BKNIGHT] = knightTableBlackMG;
     psTab1[Piece::BPAWN]   = pawnTableBlackMG;
@@ -75,13 +75,13 @@ Evaluate::staticInitialize() {
     psTab2[Piece::EMPTY]   = empty;
     psTab2[Piece::WKING]   = kingTableWhiteEG;
     psTab2[Piece::WQUEEN]  = empty; // qt2w.getTable();
-    psTab2[Piece::WROOK]   = empty; // rt1w.getTable();
+    psTab2[Piece::WROOK]   = empty;
     psTab2[Piece::WBISHOP] = bishopTableWhiteEG;
     psTab2[Piece::WKNIGHT] = knightTableWhiteEG;
     psTab2[Piece::WPAWN]   = pawnTableWhiteEG;
     psTab2[Piece::BKING]   = kingTableBlackEG;
     psTab2[Piece::BQUEEN]  = empty; // qt2b.getTable();
-    psTab2[Piece::BROOK]   = empty; // rt1b.getTable();
+    psTab2[Piece::BROOK]   = empty;
     psTab2[Piece::BBISHOP] = bishopTableBlackEG;
     psTab2[Piece::BKNIGHT] = knightTableBlackEG;
     psTab2[Piece::BPAWN]   = pawnTableBlackEG;
@@ -459,6 +459,7 @@ Evaluate::pieceSquareEval(const Position& pos) {
             bQueenContactChecks = atk & BitBoard::kingAttacks[pos.wKingSq()];
         }
     }
+#endif
 
     // Rooks
     {
@@ -475,7 +476,7 @@ Evaluate::pieceSquareEval(const Position& pos) {
             score -= s;
         }
     }
-#endif
+
     return score;
 }
 
