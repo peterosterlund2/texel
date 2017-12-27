@@ -331,8 +331,8 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
 
     // Compute interpolation factors
     { // Pawn
-        const int loMtrl = pawnLoMtrl;
-        const int hiMtrl = pawnHiMtrl;
+        const int loMtrl = pawnLoMtrl * 10;
+        const int hiMtrl = pawnHiMtrl * 10;
         mhd.pawnIPF = interpolate(wMtrlNoPawns + bMtrlNoPawns, loMtrl, 0, hiMtrl, IPOLMAX);
 #if 0
         if (wCorr + bCorr > 200)
@@ -341,48 +341,48 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     }
 
     { // Knight/bishop
-        const int loMtrl = minorLoMtrl;
-        const int hiMtrl = minorHiMtrl;
+        const int loMtrl = minorLoMtrl * 10;
+        const int hiMtrl = minorHiMtrl * 10;
         mhd.knightIPF = interpolate(wMtrl + bMtrl, loMtrl, 0, hiMtrl, IPOLMAX);
     }
 #if 0
     { // Castle
-        const int loMtrl = castleLoMtrl;
-        const int hiMtrl = castleHiMtrl;
+        const int loMtrl = castleLoMtrl * 10;
+        const int hiMtrl = castleHiMtrl * 10;
         const int m = wMtrlNoPawns + bMtrlNoPawns;
         mhd.castleIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
     }
 #endif
     {
-        const int loMtrl = queenLoMtrl;
-        const int hiMtrl = queenHiMtrl;
+        const int loMtrl = queenLoMtrl * 10;
+        const int hiMtrl = queenHiMtrl * 10;
         const int m = wMtrlNoPawns + bMtrlNoPawns;
         mhd.queenIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
     }
 #if 0
     { // Passed pawn
-        const int loMtrl = passedPawnLoMtrl;
-        const int hiMtrl = passedPawnHiMtrl;
+        const int loMtrl = passedPawnLoMtrl * 10;
+        const int hiMtrl = passedPawnHiMtrl * 10;
         mhd.wPassedPawnIPF = interpolate(bMtrlNoPawns-nBN*(nV/2), loMtrl, 0, hiMtrl, IPOLMAX);
         mhd.bPassedPawnIPF = interpolate(wMtrlNoPawns-nWN*(nV/2), loMtrl, 0, hiMtrl, IPOLMAX);
     }
     { // King safety
-        const int loMtrl = kingSafetyLoMtrl;
-        const int hiMtrl = kingSafetyHiMtrl;
+        const int loMtrl = kingSafetyLoMtrl * 10;
+        const int hiMtrl = kingSafetyHiMtrl * 10;
         const int m = (wMtrlNoPawns + bMtrlNoPawns) / 2;
         mhd.kingSafetyIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
         if (wCorr + bCorr > 200)
             mhd.kingSafetyIPF = mhd.kingSafetyIPF * 200 / (wCorr + bCorr);
     }
     { // Different color bishops
-        const int loMtrl = oppoBishopLoMtrl;
-        const int hiMtrl = oppoBishopHiMtrl;
+        const int loMtrl = oppoBishopLoMtrl * 10;
+        const int hiMtrl = oppoBishopHiMtrl * 10;
         const int m = wMtrlNoPawns + bMtrlNoPawns;
         mhd.diffColorBishopIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
     }
     { // Knight outpost
-        const int loMtrl = knightOutpostLoMtrl;
-        const int hiMtrl = knightOutpostHiMtrl;
+        const int loMtrl = knightOutpostLoMtrl * 10;
+        const int hiMtrl = knightOutpostHiMtrl * 10;
         mhd.knightOutPostIPF = interpolate(wMtrlPawns + bMtrlPawns, loMtrl, 0, hiMtrl, IPOLMAX);
     }
 #endif

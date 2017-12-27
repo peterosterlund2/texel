@@ -432,25 +432,25 @@ DECLARE_PARAM(bishopKingProtectBonus,    11, -50, 50, useUciParam);
 DECLARE_PARAM(pawnStormBonus,            12, 0, 20, useUciParam);
 #endif
 
-DECLARE_PARAM(pawnLoMtrl,          1007, 0, 10000, useUciParam);
-DECLARE_PARAM(pawnHiMtrl,          6415, 0, 10000, useUciParam);
-DECLARE_PARAM(minorLoMtrl,         2228, 0, 10000, useUciParam);
-DECLARE_PARAM(minorHiMtrl,         7492, 0, 10000, useUciParam);
+DECLARE_PARAM(pawnLoMtrl,          101, 0, 1000, useUciParam);
+DECLARE_PARAM(pawnHiMtrl,          642, 0, 1000, useUciParam);
+DECLARE_PARAM(minorLoMtrl,         223, 0, 1000, useUciParam);
+DECLARE_PARAM(minorHiMtrl,         749, 0, 1000, useUciParam);
 #if 0
-DECLARE_PARAM(castleLoMtrl,        713, 0, 10000, useUciParam);
-DECLARE_PARAM(castleHiMtrl,        7884, 0, 10000, useUciParam);
+DECLARE_PARAM(castleLoMtrl,        71, 0, 1000, useUciParam);
+DECLARE_PARAM(castleHiMtrl,        788, 0, 1000, useUciParam);
 #endif
-DECLARE_PARAM(queenLoMtrl,         4593, 0, 10000, useUciParam);
-DECLARE_PARAM(queenHiMtrl,         6596, 0, 10000, useUciParam);
+DECLARE_PARAM(queenLoMtrl,         459, 0, 1000, useUciParam);
+DECLARE_PARAM(queenHiMtrl,         660, 0, 1000, useUciParam);
 #if 0
-DECLARE_PARAM(passedPawnLoMtrl,    776, 0, 10000, useUciParam);
-DECLARE_PARAM(passedPawnHiMtrl,    2512, 0, 10000, useUciParam);
-DECLARE_PARAM(kingSafetyLoMtrl,    917, 0, 10000, useUciParam);
-DECLARE_PARAM(kingSafetyHiMtrl,    3564, 0, 10000, useUciParam);
-DECLARE_PARAM(oppoBishopLoMtrl,    753, 0, 10000, useUciParam);
-DECLARE_PARAM(oppoBishopHiMtrl,    3387, 0, 10000, useUciParam);
-DECLARE_PARAM(knightOutpostLoMtrl, 296, 0, 10000, useUciParam);
-DECLARE_PARAM(knightOutpostHiMtrl, 1082, 0, 10000, useUciParam);
+DECLARE_PARAM(passedPawnLoMtrl,    78, 0, 1000, useUciParam);
+DECLARE_PARAM(passedPawnHiMtrl,    251, 0, 1000, useUciParam);
+DECLARE_PARAM(kingSafetyLoMtrl,    92, 0, 1000, useUciParam);
+DECLARE_PARAM(kingSafetyHiMtrl,    356, 0, 1000, useUciParam);
+DECLARE_PARAM(oppoBishopLoMtrl,    75, 0, 1000, useUciParam);
+DECLARE_PARAM(oppoBishopHiMtrl,    339, 0, 1000, useUciParam);
+DECLARE_PARAM(knightOutpostLoMtrl, 30, 0, 1000, useUciParam);
+DECLARE_PARAM(knightOutpostHiMtrl, 108, 0, 1000, useUciParam);
 
 extern ParamTable<64> knightOutpostBonus;
 extern ParamTable<64> protectedPawnBonus, attackedPawnBonus;
