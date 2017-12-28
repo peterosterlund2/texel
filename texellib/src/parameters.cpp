@@ -70,7 +70,9 @@ DEFINE_PARAM(pawnBackwardPenalty);
 DEFINE_PARAM(pawnSemiBackwardPenalty1);
 DEFINE_PARAM(pawnSemiBackwardPenalty2);
 DEFINE_PARAM(pawnRaceBonus);
+#endif
 DEFINE_PARAM(passedPawnEGFactor);
+#if 0
 DEFINE_PARAM(RBehindPP1);
 DEFINE_PARAM(RBehindPP2);
 DEFINE_PARAM(activePawnPenalty);
@@ -127,9 +129,9 @@ DEFINE_PARAM(castleHiMtrl);
 #endif
 DEFINE_PARAM(queenLoMtrl);
 DEFINE_PARAM(queenHiMtrl);
-#if 0
 DEFINE_PARAM(passedPawnLoMtrl);
 DEFINE_PARAM(passedPawnHiMtrl);
+#if 0
 DEFINE_PARAM(kingSafetyLoMtrl);
 DEFINE_PARAM(kingSafetyHiMtrl);
 DEFINE_PARAM(oppoBishopLoMtrl);
@@ -249,17 +251,19 @@ ParamTable<36> connectedPPBonus { -200, 400, useUciParam,
        11,  12,  13,  14,  15,  20,
        16,  17,  18,  19,  20,  21 }
 };
+#endif
 
 ParamTable<8> passedPawnBonusX { -200, 200, useUciParam,
-    {  0,  4, -2, -5, -5, -2,  4,  0 },
+    {  0,  2, -3, -3, -3, -3,  2,  0 },
     {  0,  1,  2,  3,  3,  2,  1,  0 }
 };
 
 ParamTable<8> passedPawnBonusY { -200, 200, useUciParam,
-    {  0,  3,  4, 14, 35, 64,103,  0 },
+    {  0,  2,  2, 10, 20, 37,  6,  0 },
     {  0,  1,  2,  3,  4,  5,  6,  0 }
 };
 
+#if 0
 ParamTable<10> ppBlockerBonus { -50, 50, useUciParam,
     { 25, 29, 13, -9, 50,  1,  4,  3, -1,  9 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10 }
@@ -447,7 +451,7 @@ static void bishopTableUpdate() {
 int pawnTableWhiteMG[64], pawnTableBlackMG[64];
 int pawnTableWhiteEG[64], pawnTableBlackEG[64];
 ParamTable<20> pawnTableParams { -250, 250, useUciParam,
-    {-21, -4,-15,-13,-20,-24,-24,-18, 24,123,  7, 15,  6,  4, -7,-15,-13,  4, 58,113 },
+    {-17, -2,-12,-10,-22,-23,-22,-14, 17,118,  3, 11,  5,  1, -7,-13,-12, -6, 10,114 },
     {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 }
 };
 static void pawnTableUpdate() {
@@ -690,7 +694,9 @@ Parameters::Parameters() {
     REGISTER_PARAM(pawnSemiBackwardPenalty1, "PawnSemiBackwardPenalty1");
     REGISTER_PARAM(pawnSemiBackwardPenalty2, "PawnSemiBackwardPenalty2");
     REGISTER_PARAM(pawnRaceBonus, "PawnRaceBonus");
+#endif
     REGISTER_PARAM(passedPawnEGFactor, "PassedPawnEGFactor");
+#if 0
     REGISTER_PARAM(RBehindPP1, "RookBehindPassedPawn1");
     REGISTER_PARAM(RBehindPP2, "RookBehindPassedPawn2");
     REGISTER_PARAM(activePawnPenalty, "ActivePawnPenalty");
@@ -747,9 +753,9 @@ Parameters::Parameters() {
 #endif
     REGISTER_PARAM(queenLoMtrl, "QueenLoMtrl");
     REGISTER_PARAM(queenHiMtrl, "QueenHiMtrl");
-#if 0
     REGISTER_PARAM(passedPawnLoMtrl, "PassedPawnLoMtrl");
     REGISTER_PARAM(passedPawnHiMtrl, "PassedPawnHiMtrl");
+#if 0
     REGISTER_PARAM(kingSafetyLoMtrl, "KingSafetyLoMtrl");
     REGISTER_PARAM(kingSafetyHiMtrl, "KingSafetyHiMtrl");
     REGISTER_PARAM(oppoBishopLoMtrl, "OppositeBishopLoMtrl");
@@ -764,8 +770,10 @@ Parameters::Parameters() {
     protectBonus.registerParams("ProtectBonus", *this);
     majorPieceRedundancy.registerParams("MajorPieceRedundancy", *this);
     connectedPPBonus.registerParams("ConnectedPPBonus", *this);
+#endif
     passedPawnBonusX.registerParams("PassedPawnBonusX", *this);
     passedPawnBonusY.registerParams("PassedPawnBonusY", *this);
+#if 0
     ppBlockerBonus.registerParams("PassedPawnBlockerBonus", *this);
     candidatePassedBonus.registerParams("CandidatePassedPawnBonus", *this);
     QvsRRBonus.registerParams("QueenVs2RookBonus", *this);

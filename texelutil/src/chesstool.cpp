@@ -1078,8 +1078,10 @@ ChessTool::printParams() {
 
     printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", os);
     printTableNxN<6>(connectedPPBonus, "connectedPPBonus", os);
+#endif
     printTable(passedPawnBonusX, "passedPawnBonusX", os);
     printTable(passedPawnBonusY, "passedPawnBonusY", os);
+#if 0
     printTable(ppBlockerBonus, "ppBlockerBonus", os);
     printTable(candidatePassedBonus, "candidatePassedBonus", os);
     printTable(QvsRRBonus, "QvsRRBonus", os);
@@ -1114,7 +1116,9 @@ ChessTool::printParams() {
     os << "pawnSemiBackwardPenalty1 : " << pawnSemiBackwardPenalty1 << std::endl;
     os << "pawnSemiBackwardPenalty2 : " << pawnSemiBackwardPenalty2 << std::endl;
     os << "pawnRaceBonus            : " << pawnRaceBonus << std::endl;
+#endif
     os << "passedPawnEGFactor       : " << passedPawnEGFactor << std::endl;
+#if 0
     os << "RBehindPP1               : " << RBehindPP1 << std::endl;
     os << "RBehindPP2               : " << RBehindPP2 << std::endl;
     os << "activePawnPenalty        : " << activePawnPenalty << std::endl;
@@ -1171,9 +1175,9 @@ ChessTool::printParams() {
 #endif
     os << "queenLoMtrl         : " << queenLoMtrl << std::endl;
     os << "queenHiMtrl         : " << queenHiMtrl << std::endl;
-#if 0
     os << "passedPawnLoMtrl    : " << passedPawnLoMtrl << std::endl;
     os << "passedPawnHiMtrl    : " << passedPawnHiMtrl << std::endl;
+#if 0
     os << "kingSafetyLoMtrl    : " << kingSafetyLoMtrl << std::endl;
     os << "kingSafetyHiMtrl    : " << kingSafetyHiMtrl << std::endl;
     os << "oppoBishopLoMtrl    : " << oppoBishopLoMtrl << std::endl;
@@ -1284,8 +1288,10 @@ ChessTool::patchParams(const std::string& directory) {
 
     replaceTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", cppFile);
     replaceTableNxN<6>(connectedPPBonus, "connectedPPBonus", cppFile);
+#endif
     replaceTable(passedPawnBonusX, "passedPawnBonusX", cppFile);
     replaceTable(passedPawnBonusY, "passedPawnBonusY", cppFile);
+#if 0
     replaceTable(ppBlockerBonus, "ppBlockerBonus", cppFile);
     replaceTable(candidatePassedBonus, "candidatePassedBonus", cppFile);
     replaceTable(QvsRRBonus, "QvsRRBonus", cppFile);
@@ -1320,7 +1326,9 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(pawnSemiBackwardPenalty1, "pawnSemiBackwardPenalty1", hppFile);
     replaceValue(pawnSemiBackwardPenalty2, "pawnSemiBackwardPenalty2", hppFile);
     replaceValue(pawnRaceBonus, "pawnRaceBonus", hppFile);
+#endif
     replaceValue(passedPawnEGFactor, "passedPawnEGFactor", hppFile);
+#if 0
     replaceValue(RBehindPP1, "RBehindPP1", hppFile);
     replaceValue(RBehindPP2, "RBehindPP2", hppFile);
     replaceValue(activePawnPenalty, "activePawnPenalty", hppFile);
@@ -1377,9 +1385,9 @@ ChessTool::patchParams(const std::string& directory) {
 #endif
     replaceValue(queenLoMtrl, "queenLoMtrl", hppFile);
     replaceValue(queenHiMtrl, "queenHiMtrl", hppFile);
-#if 0
     replaceValue(passedPawnLoMtrl, "passedPawnLoMtrl", hppFile);
     replaceValue(passedPawnHiMtrl, "passedPawnHiMtrl", hppFile);
+#if 0
     replaceValue(kingSafetyLoMtrl, "kingSafetyLoMtrl", hppFile);
     replaceValue(kingSafetyHiMtrl, "kingSafetyHiMtrl", hppFile);
     replaceValue(oppoBishopLoMtrl, "oppoBishopLoMtrl", hppFile);

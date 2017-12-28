@@ -372,7 +372,7 @@ extern int pieceValue[Piece::nPieceTypes];
 
 // Evaluation parameters
 
-DECLARE_PARAM(pV, 116, 1, 200, useUciParam);
+DECLARE_PARAM(pV, 111, 1, 200, useUciParam);
 DECLARE_PARAM(nV, 398, 1, 800, useUciParam);
 DECLARE_PARAM(bV, 398, 1, 800, useUciParam);
 DECLARE_PARAM(rV, 568, 1, 1200, useUciParam);
@@ -385,7 +385,9 @@ DECLARE_PARAM(pawnBackwardPenalty,      13, 0, 50, useUciParam);
 DECLARE_PARAM(pawnSemiBackwardPenalty1, 11, -50, 50, useUciParam);
 DECLARE_PARAM(pawnSemiBackwardPenalty2, 2, -50, 50, useUciParam);
 DECLARE_PARAM(pawnRaceBonus,            167, 0, 1000, useUciParam);
+#endif
 DECLARE_PARAM(passedPawnEGFactor,       62, 1, 128, useUciParam);
+#if 0
 DECLARE_PARAM(RBehindPP1,               12, -100, 100, useUciParam);
 DECLARE_PARAM(RBehindPP2,               26, -100, 100, useUciParam);
 DECLARE_PARAM(activePawnPenalty,         6, -50, 50, useUciParam);
@@ -442,9 +444,9 @@ DECLARE_PARAM(castleHiMtrl,        788, 0, 1000, useUciParam);
 #endif
 DECLARE_PARAM(queenLoMtrl,         459, 0, 1000, useUciParam);
 DECLARE_PARAM(queenHiMtrl,         660, 0, 1000, useUciParam);
-#if 0
-DECLARE_PARAM(passedPawnLoMtrl,    78, 0, 1000, useUciParam);
+DECLARE_PARAM(passedPawnLoMtrl,    79, 0, 1000, useUciParam);
 DECLARE_PARAM(passedPawnHiMtrl,    251, 0, 1000, useUciParam);
+#if 0
 DECLARE_PARAM(kingSafetyLoMtrl,    92, 0, 1000, useUciParam);
 DECLARE_PARAM(kingSafetyHiMtrl,    356, 0, 1000, useUciParam);
 DECLARE_PARAM(oppoBishopLoMtrl,    75, 0, 1000, useUciParam);
@@ -457,7 +459,9 @@ extern ParamTable<64> protectedPawnBonus, attackedPawnBonus;
 extern ParamTable<4> protectBonus;
 
 extern ParamTable<36> connectedPPBonus;
+#endif
 extern ParamTable<8> passedPawnBonusX, passedPawnBonusY;
+#if 0
 extern ParamTable<10> ppBlockerBonus;
 extern ParamTable<8> candidatePassedBonus;
 

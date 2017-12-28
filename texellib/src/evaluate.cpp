@@ -183,9 +183,10 @@ Evaluate::evalPos(const Position& pos) {
     wAttacksBB = bAttacksBB = 0;
     wQueenContactChecks = bQueenContactChecks = 0;
     wContactSupport = bContactSupport = 0;
-
+#endif
     score += pawnBonus(pos);
     if (print) std::cout << "info string eval pawn   :" << score << std::endl;
+#if 0
     score += castleBonus(pos);
     if (print) std::cout << "info string eval castle :" << score << std::endl;
 
@@ -251,8 +252,10 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     if (print) std::cout << "info string eval mtrlraw:" << score << std::endl;
     const int nWQ = BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN));
     const int nBQ = BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN));
+#endif
     const int nWN = BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT));
     const int nBN = BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT));
+#if 0
     int wCorr = correctionNvsQ(nWN, nBQ);
     int bCorr = correctionNvsQ(nBN, nWQ);
     score += wCorr - bCorr;
@@ -359,13 +362,13 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
         const int m = wMtrlNoPawns + bMtrlNoPawns;
         mhd.queenIPF = interpolate(m, loMtrl, 0, hiMtrl, IPOLMAX);
     }
-#if 0
     { // Passed pawn
         const int loMtrl = passedPawnLoMtrl * 10;
         const int hiMtrl = passedPawnHiMtrl * 10;
         mhd.wPassedPawnIPF = interpolate(bMtrlNoPawns-nBN*(nV/2), loMtrl, 0, hiMtrl, IPOLMAX);
         mhd.bPassedPawnIPF = interpolate(wMtrlNoPawns-nWN*(nV/2), loMtrl, 0, hiMtrl, IPOLMAX);
     }
+#if 0
     { // King safety
         const int loMtrl = kingSafetyLoMtrl * 10;
         const int hiMtrl = kingSafetyHiMtrl * 10;
@@ -515,8 +518,6 @@ Evaluate::castleBonus(const Position& pos) {
 
 int
 Evaluate::pawnBonus(const Position& pos) {
-    return 0;
-#if 0
     U64 key = pos.pawnZobristHash();
     PawnHashData& phd = getPawnHashEntry(pawnHash, key);
     if (phd.key != key)
@@ -526,6 +527,7 @@ Evaluate::pawnBonus(const Position& pos) {
 
     // Bonus for own king supporting passed pawns
     int passedScore = phd.passedBonusW;
+#if 0
     const U64 passedPawnsW = phd.passedPawns & pos.pieceTypeBB(Piece::WPAWN);
     U64 m = passedPawnsW;
     if (m != 0) {
@@ -566,9 +568,10 @@ Evaluate::pawnBonus(const Position& pos) {
         passedScore += RBehindPP1 * BitBoard::bitCount(m & pos.pieceTypeBB(Piece::WROOK));
         passedScore -= RBehindPP2 * BitBoard::bitCount(m & pos.pieceTypeBB(Piece::BROOK));
     }
+#endif
     score += interpolate(passedScore * passedPawnEGFactor / 32, passedScore, mhd->wPassedPawnIPF);
-
     passedScore = phd.passedBonusB;
+#if 0
     const U64 passedPawnsB = phd.passedPawns & pos.pieceTypeBB(Piece::BPAWN);
     m = passedPawnsB;
     if (m != 0) {
@@ -609,8 +612,9 @@ Evaluate::pawnBonus(const Position& pos) {
         passedScore += RBehindPP1 * BitBoard::bitCount(m & pos.pieceTypeBB(Piece::BROOK));
         passedScore -= RBehindPP2 * BitBoard::bitCount(m & pos.pieceTypeBB(Piece::WROOK));
     }
+#endif
     score -= interpolate(passedScore * passedPawnEGFactor / 32, passedScore, mhd->bPassedPawnIPF);
-
+#if 0
     // Passed pawns are more dangerous if enemy king is far away
     const int hiMtrl = passedPawnHiMtrl;
     m = passedPawnsW;
@@ -693,9 +697,8 @@ Evaluate::pawnBonus(const Position& pos) {
             score += prBonus;
     } else if (bestBPromSq >= 0)
         score -= prBonus;
-
-    return score;
 #endif
+    return score;
 }
 
 #if 0
@@ -810,15 +813,15 @@ Evaluate::computeStalePawns(const Position& pos) {
 
 void
 Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
-#if 0
     int score = 0;
 
-    // Evaluate double pawns and pawn islands
     const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
+    const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
+#if 0
+    // Evaluate double pawns and pawn islands
     const U64 wPawnFiles = BitBoard::southFill(wPawns) & 0xff;
     const int wIslands = BitBoard::bitCount(((~wPawnFiles) >> 1) & wPawnFiles);
 
-    const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
     const U64 bPawnFiles = BitBoard::southFill(bPawns) & 0xff;
     const int bIslands = BitBoard::bitCount(((~bPawnFiles) >> 1) & bPawnFiles);
     score -= (wIslands - bIslands) * pawnIslandPenalty;
@@ -881,7 +884,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     U64 bSemiBackward = bPawns & ~((wPawns | bPawns) << 8) & (wPawnAttacks << 8);
     score += BitBoard::bitCount(bSemiBackward & BitBoard::maskRow7) * pawnSemiBackwardPenalty1;
     score += BitBoard::bitCount(bSemiBackward & BitBoard::maskRow6) * pawnSemiBackwardPenalty2;
-
+#endif
     // Evaluate passed pawn bonus, white
     U64 passedPawnsW = wPawns & ~BitBoard::southFill(bPawns | bPawnAttacks | (wPawns >> 8));
     int passedBonusW = 0;
@@ -892,7 +895,7 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
             int x = Position::getX(sq);
             int y = Position::getY(sq);
             passedBonusW += passedPawnBonusX[x] + passedPawnBonusY[y];
-            passedBonusW += evalConnectedPP<true>(x, y, passedPawnsW);
+//            passedBonusW += evalConnectedPP<true>(x, y, passedPawnsW);
         }
     }
 
@@ -906,10 +909,10 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
             int x = Position::getX(sq);
             int y = Position::getY(sq);
             passedBonusB += passedPawnBonusX[x] + passedPawnBonusY[7-y];
-            passedBonusB += evalConnectedPP<false>(x, y, passedPawnsB);
+//            passedBonusB += evalConnectedPP<false>(x, y, passedPawnsB);
         }
     }
-
+#if 0
     // Evaluate candidate passed pawn bonus
     const U64 wLeftAtks  = (wPawns & BitBoard::maskBToHFiles) << 7;
     const U64 wRightAtks = (wPawns & BitBoard::maskAToGFiles) << 9;
@@ -968,14 +971,13 @@ Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
     U64 stalePawns = computeStalePawns(pos) & ~passedPawnsW & ~passedPawnsB;
     score -= BitBoard::bitCount(wPawns & ~((stalePawns & wPawns) | passedPawnsW)) * activePawnPenalty;
     score += BitBoard::bitCount(bPawns & ~((stalePawns & bPawns) | passedPawnsB)) * activePawnPenalty;
-
+#endif
     ph.key = pos.pawnZobristHash();
     ph.score = score;
     ph.passedBonusW = (S16)passedBonusW;
     ph.passedBonusB = (S16)passedBonusB;
     ph.passedPawns = passedPawnsW | passedPawnsB;
-    ph.stalePawns = stalePawns;
-#endif
+    ph.stalePawns = 0; // stalePawns;
 }
 
 int
