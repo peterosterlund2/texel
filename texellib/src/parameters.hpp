@@ -410,11 +410,11 @@ DECLARE_PARAM(threatBonus1,       66, 5, 500, useUciParam);
 DECLARE_PARAM(threatBonus2,     1196, 100, 10000, useUciParam);
 DECLARE_PARAM(latentAttackBonus,  17, -50, 50, useUciParam);
 
-DECLARE_PARAM(rookHalfOpenBonus,     16, 0, 100, useUciParam);
-DECLARE_PARAM(rookOpenBonus,         26, 0, 100, useUciParam);
-DECLARE_PARAM(rookDouble7thRowBonus, 88, 0, 100, useUciParam);
-DECLARE_PARAM(trappedRookPenalty1,   78, 0, 200, useUciParam);
-DECLARE_PARAM(trappedRookPenalty2,   48, 0, 200, useUciParam);
+//DECLARE_PARAM(rookHalfOpenBonus,     16, 0, 100, useUciParam);
+//DECLARE_PARAM(rookOpenBonus,         26, 0, 100, useUciParam);
+//DECLARE_PARAM(rookDouble7thRowBonus, 88, 0, 100, useUciParam);
+//DECLARE_PARAM(trappedRookPenalty1,   78, 0, 200, useUciParam);
+//DECLARE_PARAM(trappedRookPenalty2,   48, 0, 200, useUciParam);
 #endif
 DECLARE_PARAM(bishopPairPawnPenalty, 7, 0, 10, useUciParam);
 #if 0
