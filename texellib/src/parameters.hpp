@@ -415,8 +415,9 @@ DECLARE_PARAM(rookOpenBonus,         26, 0, 100, useUciParam);
 DECLARE_PARAM(rookDouble7thRowBonus, 88, 0, 100, useUciParam);
 DECLARE_PARAM(trappedRookPenalty1,   78, 0, 200, useUciParam);
 DECLARE_PARAM(trappedRookPenalty2,   48, 0, 200, useUciParam);
-
-DECLARE_PARAM(bishopPairPawnPenalty, 5, 0, 10, useUciParam);
+#endif
+DECLARE_PARAM(bishopPairPawnPenalty, 7, 0, 10, useUciParam);
+#if 0
 DECLARE_PARAM(trappedBishopPenalty,  141, 0, 300, useUciParam);
 DECLARE_PARAM(oppoBishopPenalty,     81, 0, 128, useUciParam);
 
@@ -468,7 +469,9 @@ extern ParamTable<8> candidatePassedBonus;
 extern ParamTable<16> majorPieceRedundancy;
 extern ParamTable<5> QvsRRBonus;
 extern ParamTable<7> RvsMBonus, RvsMMBonus;
+#endif
 extern ParamTable<4> bishopPairValue;
+#if 0
 extern ParamTable<7> rookEGDrawFactor, RvsBPDrawFactor;
 
 extern ParamTable<4> castleFactor;

@@ -1087,7 +1087,9 @@ ChessTool::printParams() {
     printTable(QvsRRBonus, "QvsRRBonus", os);
     printTable(RvsMBonus, "RvsMBonus", os);
     printTable(RvsMMBonus, "RvsMMBonus", os);
+#endif
     printTable(bishopPairValue, "bishopPairValue", os);
+#if 0
     printTable(rookEGDrawFactor, "rookEGDrawFactor", os);
     printTable(RvsBPDrawFactor, "RvsBPDrawFactor", os);
     printTable(castleFactor, "castleFactor", os);
@@ -1146,8 +1148,9 @@ ChessTool::printParams() {
     os << "rookDouble7thRowBonus : " << rookDouble7thRowBonus << std::endl;
     os << "trappedRookPenalty1   : " << trappedRookPenalty1 << std::endl;
     os << "trappedRookPenalty2   : " << trappedRookPenalty2 << std::endl;
-
+#endif
     os << "bishopPairPawnPenalty : " << bishopPairPawnPenalty << std::endl;
+#if 0
     os << "trappedBishopPenalty  : " << trappedBishopPenalty << std::endl;
     os << "oppoBishopPenalty     : " << oppoBishopPenalty << std::endl;
 
@@ -1297,7 +1300,9 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTable(QvsRRBonus, "QvsRRBonus", cppFile);
     replaceTable(RvsMBonus, "RvsMBonus", cppFile);
     replaceTable(RvsMMBonus, "RvsMMBonus", cppFile);
+#endif
     replaceTable(bishopPairValue, "bishopPairValue", cppFile);
+#if 0
     replaceTable(rookEGDrawFactor, "rookEGDrawFactor", cppFile);
     replaceTable(RvsBPDrawFactor, "RvsBPDrawFactor", cppFile);
     replaceTable(castleFactor, "castleFactor", cppFile);
@@ -1356,8 +1361,9 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(rookDouble7thRowBonus, "rookDouble7thRowBonus", hppFile);
     replaceValue(trappedRookPenalty1, "trappedRookPenalty1", hppFile);
     replaceValue(trappedRookPenalty2, "trappedRookPenalty2", hppFile);
-
+#endif
     replaceValue(bishopPairPawnPenalty, "bishopPairPawnPenalty", hppFile);
+#if 0
     replaceValue(trappedBishopPenalty, "trappedBishopPenalty", hppFile);
     replaceValue(oppoBishopPenalty, "oppoBishopPenalty", hppFile);
 

@@ -100,8 +100,9 @@ DEFINE_PARAM(rookOpenBonus);
 DEFINE_PARAM(rookDouble7thRowBonus);
 DEFINE_PARAM(trappedRookPenalty1);
 DEFINE_PARAM(trappedRookPenalty2);
-
+#endif
 DEFINE_PARAM(bishopPairPawnPenalty);
+#if 0
 DEFINE_PARAM(trappedBishopPenalty);
 DEFINE_PARAM(oppoBishopPenalty);
 
@@ -299,12 +300,12 @@ ParamTable<7> RvsMMBonus { -200, 200, useUciParam,
     {-73,-73, -4, 19, 19, 33, 52 },
     {   1,   1,  2,  3,  4,  5,  6 }
 };
-
+#endif
 ParamTable<4> bishopPairValue { 0, 200, useUciParam,
-    { 71, 70, 60, 54 },
+    { 69, 48, 54, 51 },
     {  1,  2,  3,  4 }
 };
-
+#if 0
 ParamTable<7> rookEGDrawFactor { 0, 255, useUciParam,
     { 71, 75,110,139,136,154,158 },
     {  1,  2,  3,  4,  5,  6,  7 }
@@ -724,8 +725,9 @@ Parameters::Parameters() {
     REGISTER_PARAM(rookDouble7thRowBonus, "RookDouble7thRowBonus");
     REGISTER_PARAM(trappedRookPenalty1, "TrappedRookPenalty1");
     REGISTER_PARAM(trappedRookPenalty2, "TrappedRookPenalty2");
-
+#endif
     REGISTER_PARAM(bishopPairPawnPenalty, "BishopPairPawnPenalty");
+#if 0
     REGISTER_PARAM(trappedBishopPenalty, "TrappedBishopPenalty");
     REGISTER_PARAM(oppoBishopPenalty, "OppositeBishopPenalty");
 
@@ -779,7 +781,9 @@ Parameters::Parameters() {
     QvsRRBonus.registerParams("QueenVs2RookBonus", *this);
     RvsMBonus.registerParams("RookVsMinorBonus", *this);
     RvsMMBonus.registerParams("RookVs2MinorBonus", *this);
+#endif
     bishopPairValue.registerParams("BishopPairValue", *this);
+#if 0
     rookEGDrawFactor.registerParams("RookEndGameDrawFactor", *this);
     RvsBPDrawFactor.registerParams("RookVsBishopPawnDrawFactor", *this);
     castleFactor.registerParams("CastleFactor", *this);

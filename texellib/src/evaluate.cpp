@@ -1062,34 +1062,6 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
         score -= bishMobScore[BitBoard::bitCount(atk & ~(pos.blackBB() | wPawnAttacks))];
     }
 
-    return score;
-#if 0
-    const U64 occupied = pos.occupiedBB();
-    const U64 wBishops = pos.pieceTypeBB(Piece::WBISHOP);
-    const U64 bBishops = pos.pieceTypeBB(Piece::BBISHOP);
-    if ((wBishops | bBishops) == 0)
-        return 0;
-    U64 m = wBishops;
-    while (m != 0) {
-        int sq = BitBoard::extractSquare(m);
-        U64 atk = BitBoard::bishopAttacks(sq, occupied);
-        wAttacksBB |= atk;
-        wContactSupport |= atk;
-        score += bishMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB() | bPawnAttacks))];
-        if ((atk & bKingZone) != 0)
-            bKingAttacks += BitBoard::bitCount(atk & bKingZone);
-    }
-    m = bBishops;
-    while (m != 0) {
-        int sq = BitBoard::extractSquare(m);
-        U64 atk = BitBoard::bishopAttacks(sq, occupied);
-        bAttacksBB |= atk;
-        bContactSupport |= atk;
-        score -= bishMobScore[BitBoard::bitCount(atk & ~(pos.blackBB() | wPawnAttacks))];
-        if ((atk & wKingZone) != 0)
-            wKingAttacks += BitBoard::bitCount(atk & wKingZone);
-    }
-
     bool whiteDark  = wBishops & BitBoard::maskDarkSq;
     bool whiteLight = wBishops & BitBoard::maskLightSq;
     bool blackDark  = bBishops & BitBoard::maskDarkSq;
@@ -1105,6 +1077,32 @@ Evaluate::bishopEval(const Position& pos, int oldScore) {
         int numMinors = BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP, Piece::WKNIGHT));
         const int numPawns = BitBoard::bitCount(pos.pieceTypeBB(Piece::BPAWN));
         score -= bishopPairValue[std::min(numMinors,3)] - numPawns * bishopPairPawnPenalty;
+    }
+
+    return score;
+#if 0
+    const U64 occupied = pos.occupiedBB();
+    const U64 wBishops = pos.pieceTypeBB(Piece::WBISHOP);
+    const U64 bBishops = pos.pieceTypeBB(Piece::BBISHOP);
+    if ((wBishops | bBishops) == 0)
+        return 0;
+    U64 m = wBishops;
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        U64 atk = BitBoard::bishopAttacks(sq, occupied);
+        wAttacksBB |= atk;
+        wContactSupport |= atk;
+        if ((atk & bKingZone) != 0)
+            bKingAttacks += BitBoard::bitCount(atk & bKingZone);
+    }
+    m = bBishops;
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        U64 atk = BitBoard::bishopAttacks(sq, occupied);
+        bAttacksBB |= atk;
+        bContactSupport |= atk;
+        if ((atk & wKingZone) != 0)
+            wKingAttacks += BitBoard::bitCount(atk & wKingZone);
     }
 
     if ((whiteDark != whiteLight) && (blackDark != blackLight) && (whiteDark != blackDark) &&
