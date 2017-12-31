@@ -453,8 +453,6 @@ DECLARE_PARAM(kingSafetyWeight2,         -46, -50, 200, useUciParam);
 DECLARE_PARAM(kingSafetyWeight3,         4, -50, 200, useUciParam);
 DECLARE_PARAM(kingSafetyWeight4,         0, -50, 200, useUciParam);
 DECLARE_PARAM(kingSafetyThreshold,       44, 0, 200, useUciParam);
-DECLARE_PARAM(knightKingProtectBonus,    13, -50, 50, useUciParam);
-DECLARE_PARAM(bishopKingProtectBonus,    11, -50, 50, useUciParam);
 DECLARE_PARAM(pawnStormBonus,            12, 0, 20, useUciParam);
 
 DECLARE_PARAM(tempoBonusMG, 8, -100, 100, useUciParam);

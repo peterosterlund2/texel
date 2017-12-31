@@ -115,8 +115,6 @@ DEFINE_PARAM(kingSafetyWeight2);
 DEFINE_PARAM(kingSafetyWeight3);
 DEFINE_PARAM(kingSafetyWeight4);
 DEFINE_PARAM(kingSafetyThreshold);
-DEFINE_PARAM(knightKingProtectBonus);
-DEFINE_PARAM(bishopKingProtectBonus);
 DEFINE_PARAM(pawnStormBonus);
 
 DEFINE_PARAM(tempoBonusMG);
@@ -701,8 +699,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(kingSafetyWeight3, "KingSafetyWeight3");
     REGISTER_PARAM(kingSafetyWeight4, "KingSafetyWeight4");
     REGISTER_PARAM(kingSafetyThreshold, "KingSafetyThreshold");
-    REGISTER_PARAM(knightKingProtectBonus, "KnightKingProtectBonus");
-    REGISTER_PARAM(bishopKingProtectBonus, "BishopKingProtectBonus");
     REGISTER_PARAM(pawnStormBonus, "PawnStormBonus");
 
     REGISTER_PARAM(tempoBonusMG, "TempoBonusMG");

@@ -85,18 +85,6 @@ Evaluate::staticInitialize() {
     psTab2[Piece::BBISHOP] = bt2b.getTable();
     psTab2[Piece::BKNIGHT] = nt2b.getTable();
     psTab2[Piece::BPAWN]   = pt2b.getTable();
-
-    // Initialize knight/bishop king safety patterns
-    for (int sq = 0; sq < 64; sq++) {
-        const int x = Position::getX(sq);
-        const int y = Position::getY(sq);
-        int dx = (x < 4) ? -1 : 1;
-        int dy = (y < 4) ? 1 : -1;
-        U64 n = getMask(sq, -dx, 0) | getMask(sq, dx, 0) | getMask(sq, 0, dy) | getMask(sq, 0, 2*dy) | getMask(sq, dx, 2*dy);
-        U64 b = getMask(sq, -dx, 0) | getMask(sq, 0, dy) | getMask(sq, dx, 2*dy);
-        knightKingProtectPattern[sq] = n;
-        bishopKingProtectPattern[sq] = b;
-    }
 }
 
 void
@@ -155,8 +143,6 @@ const int* Evaluate::psTab1[Piece::nPieceTypes];
 const int* Evaluate::psTab2[Piece::nPieceTypes];
 
 int Evaluate::knightMobScoreA[64][9];
-U64 Evaluate::knightKingProtectPattern[64];
-U64 Evaluate::bishopKingProtectPattern[64];
 
 Evaluate::Evaluate(EvalHashTables& et)
     : pawnHash(et.pawnHash),
@@ -1260,12 +1246,7 @@ Evaluate::kingSafety(const Position& pos) {
         }
     }
 
-    // Bonus for minor pieces protecting king
-    score += BitBoard::bitCount(Evaluate::knightKingProtectPattern[wKing] & pos.pieceTypeBB(Piece::WKNIGHT)) * knightKingProtectBonus;
-    score += BitBoard::bitCount(Evaluate::bishopKingProtectPattern[wKing] & pos.pieceTypeBB(Piece::WBISHOP)) * bishopKingProtectBonus;
-    score -= BitBoard::bitCount(Evaluate::knightKingProtectPattern[bKing] & pos.pieceTypeBB(Piece::BKNIGHT)) * knightKingProtectBonus;
-    score -= BitBoard::bitCount(Evaluate::bishopKingProtectPattern[bKing] & pos.pieceTypeBB(Piece::BBISHOP)) * bishopKingProtectBonus;
-
+    // Bonus for attacks close to the enemy king
     score += kingAttackWeight[std::min(bKingAttacks, 13)] - kingAttackWeight[std::min(wKingAttacks, 13)];
 
     // Bonus for non-losing queen contact checks

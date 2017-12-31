@@ -190,8 +190,6 @@ private:
 
     static int castleMaskFactor[256];
     static int knightMobScoreA[64][9];
-    static U64 knightKingProtectPattern[64];
-    static U64 bishopKingProtectPattern[64];
 
     std::vector<PawnHashData>& pawnHash;
     const PawnHashData* phd;
