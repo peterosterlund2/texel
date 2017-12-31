@@ -33,9 +33,6 @@
 
 #include "cute.h"
 
-/**
- * Test of getCommand method, of class ComputerPlayer.
- */
 void
 ComputerPlayerTest::testGetCommand() {
     std::vector<Position> nullHist;
@@ -65,9 +62,6 @@ ComputerPlayerTest::testGetCommand() {
     ASSERT_EQUAL("Kxg8", result);
 }
 
-/**
- * Test of draw by repetition, of class ComputerPlayer.
- */
 void
 ComputerPlayerTest::testDrawRep() {
     HumanPlayer hp1, hp2;

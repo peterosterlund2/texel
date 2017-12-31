@@ -32,7 +32,6 @@
 #include "cute.h"
 
 
-/** Test of kingAttacks, of class BitBoard. */
 void
 BitBoardTest::testKingAttacks() {
     ASSERT_EQUAL(5, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("g1")]));
@@ -44,7 +43,6 @@ BitBoardTest::testKingAttacks() {
     ASSERT_EQUAL(8, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("b2")]));
 }
 
-/** Test of knightAttacks, of class BitBoard. */
 void
 BitBoardTest::testKnightAttacks() {
     ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("g1")]));
@@ -96,7 +94,6 @@ BitBoardTest::testPawnAttacks() {
                  BitBoard::bPawnAttacksMask(BitBoard::sqMask(G4,G3)));
 }
 
-/** Test of squaresBetween[][], of class BitBoard. */
 void
 BitBoardTest::testSquaresBetween() {
     // Tests that the set of nonzero elements is correct

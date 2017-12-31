@@ -30,9 +30,6 @@
 #include "cute.h"
 
 
-/**
- * Test of getHistScore method, of class History.
- */
 static void
 testGetHistScore() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);

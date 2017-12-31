@@ -46,9 +46,6 @@ checkValid(Position& pos, const Move& move) {
     ASSERT(contains);
 }
 
-/**
- * Test of getBookMove method, of class Book.
- */
 static void
 testGetBookMove() {
     Position pos(TextIO::readFEN(TextIO::startPosFEN));
@@ -58,9 +55,6 @@ testGetBookMove() {
     checkValid(pos, move);
 }
 
-/**
- * Test of getAllBookMoves method, of class Book.
- */
 static void
 testGetAllBookMoves() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);

@@ -63,9 +63,6 @@ SearchTest::idSearch(Search& sc, int maxDepth, int minProbeDepth) {
     return bestM;
 }
 
-/**
- * Test of negaScout method, of class Search.
- */
 void
 SearchTest::testNegaScout() {
     const int ply = 1;
@@ -116,9 +113,6 @@ SearchTest::testNegaScout() {
     ASSERT(TextIO::moveToString(pos, bestM, false) != "Qxb3");
 }
 
-/**
- * Test of draw by 50 move rule, of class Search.
- */
 void
 SearchTest::testDraw50() {
     const int ply = 1;
@@ -199,9 +193,6 @@ SearchTest::testDraw50() {
     ASSERT_EQUAL(0, score);   // Black can claim draw at first move
 }
 
-/**
- * Test of draw by repetition rule, of class Search.
- */
 void
 SearchTest::testDrawRep() {
     const int ply = 1;
@@ -242,9 +233,6 @@ SearchTest::testDrawRep() {
     ASSERT_EQUAL(0, score); // Draw, black can not escape from perpetual checks
 }
 
-/**
- * Test of hash table, of class Search.
- */
 void
 SearchTest::testHashing() {
     Position pos = TextIO::readFEN("/k/3p/p2P1p/P2P1P///K w - -");  // Fine #70
@@ -329,9 +317,6 @@ SearchTest::getSEE(Search& sc, const Move& m) {
     return see;
 }
 
-/**
- * Test of SEE method, of class Search.
- */
 void
 SearchTest::testSEE() {
     const int pV = ::pV;
@@ -475,9 +460,6 @@ SearchTest::testSEE() {
     ASSERT_EQUAL(h1, h2);
 }
 
-/**
- * Test of scoreMoveList method, of class Search.
- */
 void
 SearchTest::testScoreMoveList() {
     Position pos = TextIO::readFEN("r2qk2r/ppp2ppp/1bnp1nb1/1N2p3/3PP3/1PP2N2/1P3PPP/R1BQRBK1 w kq - 0 1");

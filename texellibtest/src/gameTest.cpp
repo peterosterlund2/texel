@@ -36,9 +36,6 @@
 
 #include "cute.h"
 
-/**
- * Test of haveDrawOffer method, of class Game.
- */
 void
 GameTest::testHaveDrawOffer() {
     Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
@@ -128,9 +125,6 @@ GameTest::testHaveDrawOffer() {
     ASSERT_EQUAL(false, game.haveDrawOffer());
 }
 
-/**
- * Test of draw by 50 move rule, of class Game.
- */
 void
 GameTest::testDraw50() {
     Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
@@ -186,9 +180,6 @@ GameTest::testDraw50() {
     ASSERT_EQUAL(Game::ALIVE, game.drawState);
 }
 
-/**
- * Test of draw by repetition, of class Game.
- */
 void
 GameTest::testDrawRep() {
     Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
@@ -259,9 +250,6 @@ GameTest::testDrawRep() {
     ASSERT_EQUAL(Game::DRAW_REP, game.getGameState());
 }
 
-/**
- * Test of resign command, of class Game.
- */
 void
 GameTest::testResign() {
     Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
@@ -285,9 +273,6 @@ GameTest::testResign() {
     ASSERT_EQUAL(Game::BLACK_MATE, game.getGameState());   // Can't resign after game over
 }
 
-/**
- * Test of processString method, of class Game.
- */
 void
 GameTest::testProcessString() {
     Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
@@ -339,9 +324,6 @@ GameTest::testProcessString() {
     ASSERT_EQUAL(false, res);
 }
 
-/**
- * Test of getGameState method, of class Game.
- */
 void
 GameTest::testGetGameState() {
     Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
@@ -356,9 +338,6 @@ GameTest::testGetGameState() {
     ASSERT_EQUAL(Game::BLACK_STALEMATE, game.getGameState());
 }
 
-/**
- * Test of insufficientMaterial method, of class Game.
- */
 void
 GameTest::testInsufficientMaterial() {
     Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
@@ -400,9 +379,6 @@ GameTest::testInsufficientMaterial() {
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
 }
 
-/**
- * Test of perfT method, of class Game.
- */
 void
 GameTest::testPerfT() {
     Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());

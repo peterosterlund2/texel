@@ -36,16 +36,14 @@
 #include <vector>
 #include <set>
 
-int PositionTest::computeMaterialId(const Position& pos) {
+int
+PositionTest::computeMaterialId(const Position& pos) {
     MatId id;
     for (int sq = 0; sq < 64; sq++)
         id.addPiece(pos.getPiece(sq));
     return id();
 }
 
-/**
- * Test of getPiece method, of class Position.
- */
 static void
 testGetPiece() {
     Position pos;
@@ -65,9 +63,6 @@ testGetPiece() {
     }
 }
 
-/**
- * Test of getIndex method, of class Position.
- */
 static void
 testGetIndex() {
     for (int x = 0; x < 8; x++) {
@@ -82,9 +77,6 @@ testGetIndex() {
     }
 }
 
-/**
- * Test of setPiece method, of class Position.
- */
 static void
 testSetPiece() {
     Position instance;
@@ -93,9 +85,6 @@ testSetPiece() {
     ASSERT_EQUAL(Piece::WKING, instance.getPiece(Position::getSquare(3, 4)));
 }
 
-/**
- * Test of makeMove method, of class Position.
- */
 static void
 testMakeMove() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
@@ -203,9 +192,6 @@ testCastleMask() {
     ASSERT_EQUAL(castleMask, pos.getCastleMask());
 }
 
-/**
- * Test of makeMove method, of class Position.
- */
 static void
 testPromotion() {
     std::string fen = "r1bqk2r/1Pppbppp/p1n2n2/2P1p3/B3P3/5N2/Pp1P1PPP/R1BQK2R w KQkq - 0 1";
@@ -304,9 +290,6 @@ testMoveCounters()  {
     ASSERT_EQUAL(69, pos.getFullMoveCounter());
 }
 
-/**
- * Test of drawRuleEquals, of class Position.
- */
 static void
 testDrawRuleEquals() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
@@ -348,9 +331,6 @@ testDrawRuleEquals() {
     ASSERT_EQUAL(false, pos.drawRuleEquals(origPos));   // Not equal, en passant rights lost
 }
 
-/**
- * Test of hashCode method, of class Position.
- */
 static void
 testHashCode() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
@@ -408,9 +388,6 @@ testHashCode() {
     }
 }
 
-/**
- * Test of getKingSq method, of class Position.
- */
 static void
 testGetKingSq() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);

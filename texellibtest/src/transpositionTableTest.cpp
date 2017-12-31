@@ -34,9 +34,6 @@
 
 using TTEntry = TranspositionTable::TTEntry;
 
-/**
- * Test of TTEntry nested class, of class TranspositionTable.
- */
 static void
 testTTEntry() {
     const int mate0 = SearchConst::MATE0;
@@ -129,9 +126,6 @@ testTTEntry() {
     ASSERT(ent2.betterThan(ent1, 0));
 }
 
-/**
- * Test of insert method, of class TranspositionTable.
- */
 static void
 testInsert() {
     TranspositionTable tt(64*1024);

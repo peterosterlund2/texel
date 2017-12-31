@@ -186,9 +186,6 @@ getMoveList(Position& pos, bool onlyLegal) {
     return ret;
 }
 
-/**
- * Test of pseudoLegalMoves method, of class MoveGen.
- */
 static void
 testPseudoLegalMoves() {
     std::string fen = "8/3k4/8/2n2pP1/1P6/1NB5/2QP4/R3K2R w KQ f6 0 2";
@@ -233,9 +230,6 @@ testPseudoLegalMoves() {
     ASSERT(contains(strMoves, "e1c1"));
 }
 
-/**
- * Test of pseudoLegalMoves method, of class MoveGen. Pawn moves.
- */
 static void
 testPawnMoves() {
     std::string fen = "1r2k3/P1pppp1p/8/1pP3p1/1nPp2P1/n4p1P/1P2PP2/4KBNR w K b6 0 1";
@@ -274,9 +268,6 @@ testPawnMoves() {
     ASSERT(contains(strMoves, "a2a1b"));
 }
 
-/**
- * Test of inCheck method, of class MoveGen.
- */
 static void
 testInCheck() {
     Position pos;
@@ -308,9 +299,6 @@ testInCheck() {
     ASSERT_EQUAL(false, MoveGen::inCheck(pos));
 }
 
-/**
- * Test of givesCheck method, of class MoveGen.
- */
 static void
 testGivesCheck() {
     Position pos;
@@ -465,9 +453,6 @@ testGivesCheck() {
     ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "exf3")));
 }
 
-/**
- * Test of removeIllegal method, of class MoveGen.
- */
 static void
 testRemoveIllegal() {
     Position pos = TextIO::readFEN("8/3k4/8/2n1rpP1/1P6/1NB5/2QP4/R3K2R w KQ f6 0 1");

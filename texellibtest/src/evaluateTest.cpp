@@ -175,9 +175,6 @@ evalFEN(const std::string& fen, bool testMirror = false) {
     return evalWhite(pos, testMirror);
 }
 
-/**
- * Test of evalPos method, of class Evaluate.
- */
 void
 EvaluateTest::testEvalPos() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
@@ -243,9 +240,6 @@ EvaluateTest::testEvalPos() {
     ASSERT(sc2 > sc1);
 }
 
-/**
- * Test of pieceSquareEval method, of class Evaluate.
- */
 void
 EvaluateTest::testPieceSquareEval() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
@@ -284,9 +278,6 @@ EvaluateTest::testPieceSquareEval() {
     ASSERT(score > 100); // Two rooks on 7:th rank is very good
 }
 
-/**
- * Test of tradeBonus method, of class Evaluate.
- */
 void
 EvaluateTest::testTradeBonus() {
     std::string fen = "8/5k2/6r1/2p1p3/3p4/2P2N2/3PPP2/4K1R1 w - - 0 1";
@@ -316,9 +307,6 @@ static int material(const Position& pos) {
     return pos.wMtrl() - pos.bMtrl();
 }
 
-/**
- * Test of material method, of class Evaluate.
- */
 void
 EvaluateTest::testMaterial() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
@@ -370,9 +358,6 @@ static void movePiece(Position& pos, const std::string& from, const std::string&
     pos.setPiece(t, p);
 }
 
-/**
- * Test of kingSafety method, of class Evaluate.
- */
 void
 EvaluateTest::testKingSafety() {
     Position pos = TextIO::readFEN("r3kb1r/p1p1pppp/b2q1n2/4N3/3P4/2N1PQ2/P2B1PPP/R3R1K1 w kq - 0 1");
@@ -463,9 +448,6 @@ evalEgFen(const std::string& fen, int fuzz = 0) {
     return evalFEN(fen);
 }
 
-/**
- * Test of endGameEval method, of class Evaluate.
- */
 void
 EvaluateTest::testEndGameEval() {
     Position pos;
@@ -781,9 +763,6 @@ EvaluateTest::testPassedPawns() {
     evalFEN("8/6K1/4R3/7p/2q5/5p1Q/5k2/8 w - - 2 89");
 }
 
-/**
- * Test of endGameEval method, of class Evaluate.
- */
 void
 EvaluateTest::testBishAndRookPawns() {
     const int bV = ::bV;
@@ -919,9 +898,6 @@ EvaluateTest::testTrappedBishop() {
     ASSERT(evalWhite(pos) > -pV/2); // Black has trapped bishop
 }
 
-/**
- * Test of endGameEval method, of class Evaluate.
- */
 void
 EvaluateTest::testKQKP() {
     const int pV = ::pV;

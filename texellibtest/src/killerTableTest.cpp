@@ -30,10 +30,8 @@
 
 #include "cute.h"
 
-/**
- * Test of addKiller method, of class KillerTable.
- */
-static void testAddKiller() {
+static void
+testAddKiller() {
     KillerTable kt;
     Move m(TextIO::getSquare("b1"), TextIO::getSquare("b5"), Piece::EMPTY);
     kt.addKiller(3, m);
@@ -42,10 +40,8 @@ static void testAddKiller() {
     kt.addKiller(3, m);
 }
 
-/**
- * Test of getKillerScore method, of class KillerTable.
- */
-static void testGetKillerScore() {
+static void
+testGetKillerScore() {
     KillerTable kt;
     Move m1(TextIO::getSquare("b1"), TextIO::getSquare("b5"), Piece::EMPTY);
     Move m2(TextIO::getSquare("c1"), TextIO::getSquare("d2"), Piece::EMPTY);

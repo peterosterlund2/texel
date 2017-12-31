@@ -30,9 +30,6 @@
 #include "move.hpp"
 #include "piece.hpp"
 
-/**
- * Test of isWhite method, of class Piece.
- */
 static void
 testIsWhite() {
     ASSERT_EQUAL(false, Piece::isWhite(Piece::BBISHOP));

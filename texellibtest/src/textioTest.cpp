@@ -28,9 +28,7 @@
 
 #include "cute.h"
 
-/**
- *  Tests if trying to parse a FEN string causes an error.
- *  */
+/** Tests if trying to parse a FEN string causes an error. */
 static bool
 testFENParseError(const std::string& fen) {
     bool wasError = false;
@@ -42,9 +40,6 @@ testFENParseError(const std::string& fen) {
     return wasError;
 }
 
-/**
- * Test of readFEN method, of class TextIO.
- */
 static void
 testReadFEN() {
     std::string fen = "rnbqk2r/1p3ppp/p7/1NpPp3/QPP1P1n1/P4N2/4KbPP/R1B2B1R b kq - 0 1";
@@ -128,9 +123,6 @@ testReadFEN() {
     ASSERT(pos.equals(TextIO::readFEN("rnbqkbnr/pp1ppppp/8/8/2pPP3/3P4/PP3PPP/RNBQKBNR b KQkq - 0 1")));
 }
 
-/**
- * Test of moveToString method, of class TextIO.
- */
 static void
 testMoveToString() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
@@ -164,9 +156,6 @@ testMoveToString() {
     ASSERT_EQUAL("c7-c8Q+", result);
 }
 
-/**
- * Test of moveToString method, of class TextIO, mate/stalemate tests.
- */
 static void
 testMoveToStringMate() {
     Position pos = TextIO::readFEN("3k4/1PR5/3N4/8/4K3/8/8/8 w - - 0 1");
@@ -189,9 +178,6 @@ testMoveToStringMate() {
     ASSERT_EQUAL("b7-b8B", result);     // stalemate
 }
 
-/**
- * Test of moveToString method, of class TextIO, short form.
- */
 static void
 testMoveToStringShortForm() {
     std::string fen = "r4rk1/2pn3p/2q1q1n1/8/2q2p2/6R1/p4PPP/1R4K1 b - - 0 1";
@@ -240,9 +226,6 @@ testMoveToStringShortForm() {
     ASSERT_EQUAL("Rfd8", result);     // File disambiguation needed
 }
 
-/**
- * Test of stringToMove method, of class TextIO.
- */
 static void
 testStringToMove() {
     Position pos = TextIO::readFEN("r4rk1/2pn3p/2q1q1n1/8/2q2p2/6R1/p4PPP/1R4K1 b - - 0 1");
@@ -353,9 +336,6 @@ testStringToMove() {
     ASSERT_EQUAL(mNf3, TextIO::stringToMove(pos, "Nf"));
 }
 
-/**
- * Test of getSquare method, of class TextIO.
- */
 static void
 testGetSquare() {
     ASSERT_EQUAL(Position::getSquare(0, 0), TextIO::getSquare("a1"));
@@ -366,9 +346,6 @@ testGetSquare() {
     ASSERT_EQUAL(Position::getSquare(7, 7), TextIO::getSquare("h8"));
 }
 
-/**
- * Test of squareToString method, of class TextIO.
- */
 static void
 testSquareToString() {
     ASSERT_EQUAL("a1", TextIO::squareToString(Position::getSquare(0, 0)));
@@ -392,9 +369,6 @@ static int countSubStr(const std::string& str, const std::string& sub) {
     return ret;
 }
 
-/**
- * Test of asciiBoard method, of class TextIO.
- */
 static void
 testAsciiBoard() {
     Position pos = TextIO::readFEN("r4rk1/2pn3p/2q1q1n1/8/2q2p2/6R1/p4PPP/1R4K1 b - - 0 1");
@@ -410,9 +384,6 @@ testAsciiBoard() {
     ASSERT_EQUAL("a1,c2,d4", sqList);
 }
 
-/**
- * Test of uciStringToMove method, of class TextIO.
- */
 static void
 testUciStringToMove() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
