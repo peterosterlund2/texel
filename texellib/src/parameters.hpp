@@ -454,6 +454,9 @@ DECLARE_PARAM(knightKingProtectBonus,    13, -50, 50, useUciParam);
 DECLARE_PARAM(bishopKingProtectBonus,    11, -50, 50, useUciParam);
 DECLARE_PARAM(pawnStormBonus,            12, 0, 20, useUciParam);
 
+DECLARE_PARAM(tempoBonusMG, 8, -100, 100, useUciParam);
+DECLARE_PARAM(tempoBonusEG, 3, -100, 100, useUciParam);
+
 DECLARE_PARAM(pawnLoMtrl,          1007, 0, 10000, useUciParam);
 DECLARE_PARAM(pawnHiMtrl,          6415, 0, 10000, useUciParam);
 DECLARE_PARAM(minorLoMtrl,         2228, 0, 10000, useUciParam);

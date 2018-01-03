@@ -117,6 +117,9 @@ DEFINE_PARAM(knightKingProtectBonus);
 DEFINE_PARAM(bishopKingProtectBonus);
 DEFINE_PARAM(pawnStormBonus);
 
+DEFINE_PARAM(tempoBonusMG);
+DEFINE_PARAM(tempoBonusEG);
+
 DEFINE_PARAM(pawnLoMtrl);
 DEFINE_PARAM(pawnHiMtrl);
 DEFINE_PARAM(minorLoMtrl);
@@ -697,6 +700,9 @@ Parameters::Parameters() {
     REGISTER_PARAM(knightKingProtectBonus, "KnightKingProtectBonus");
     REGISTER_PARAM(bishopKingProtectBonus, "BishopKingProtectBonus");
     REGISTER_PARAM(pawnStormBonus, "PawnStormBonus");
+
+    REGISTER_PARAM(tempoBonusMG, "TempoBonusMG");
+    REGISTER_PARAM(tempoBonusEG, "TempoBonusEG");
 
     REGISTER_PARAM(pawnLoMtrl, "PawnLoMtrl");
     REGISTER_PARAM(pawnHiMtrl, "PawnHiMtrl");

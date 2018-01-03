@@ -251,6 +251,9 @@ Evaluate::evalPos(const Position& pos) {
     if (!pos.isWhiteMove())
         score = -score;
 
+    // Tempo bonus
+    score += interpolate(tempoBonusEG, tempoBonusMG, mhd->kingSafetyIPF);
+
     if (useHashTable)
         ehd->data = (key & 0xffffffffffff0000ULL) + (score + (1 << 15));
 

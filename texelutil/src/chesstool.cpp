@@ -1160,6 +1160,9 @@ ChessTool::printParams() {
     os << "bishopKingProtectBonus    : " << bishopKingProtectBonus << std::endl;
     os << "pawnStormBonus            : " << pawnStormBonus << std::endl;
 
+    os << "tempoBonusMG : " << tempoBonusMG << std::endl;
+    os << "tempoBonusEG : " << tempoBonusEG << std::endl;
+
     os << "pawnLoMtrl          : " << pawnLoMtrl << std::endl;
     os << "pawnHiMtrl          : " << pawnHiMtrl << std::endl;
     os << "minorLoMtrl         : " << minorLoMtrl << std::endl;
@@ -1360,6 +1363,9 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(knightKingProtectBonus, "knightKingProtectBonus", hppFile);
     replaceValue(bishopKingProtectBonus, "bishopKingProtectBonus", hppFile);
     replaceValue(pawnStormBonus, "pawnStormBonus", hppFile);
+
+    replaceValue(tempoBonusMG, "tempoBonusMG", hppFile);
+    replaceValue(tempoBonusEG, "tempoBonusEG", hppFile);
 
     replaceValue(pawnLoMtrl, "pawnLoMtrl", hppFile);
     replaceValue(pawnHiMtrl, "pawnHiMtrl", hppFile);
