@@ -234,9 +234,9 @@ TBTest::kpkTest() {
                     if (!pos.isWhiteMove())
                         evalWhite = -evalWhite;
                     if (score == 0) {
-                        ASSERT(evalWhite == 0);
+                        ASSERT(abs(evalWhite) <= tempoBonusEG);
                     } else {
-                        ASSERT(evalWhite > 0);
+                        ASSERT(evalWhite > tempoBonusEG);
                     }
                 }
             }
