@@ -32,7 +32,6 @@ namespace UciParams {
     std::shared_ptr<Parameters::StringParam> bookFile(std::make_shared<Parameters::StringParam>("BookFile", ""));
     std::shared_ptr<Parameters::CheckParam> ponder(std::make_shared<Parameters::CheckParam>("Ponder", false));
     std::shared_ptr<Parameters::CheckParam> analyseMode(std::make_shared<Parameters::CheckParam>("UCI_AnalyseMode", false));
-    std::shared_ptr<Parameters::StringParam> opponent(std::make_shared<Parameters::StringParam>("UCI_Opponent", ""));
     std::shared_ptr<Parameters::SpinParam> strength(std::make_shared<Parameters::SpinParam>("Strength", 0, 1000, 1000));
     std::shared_ptr<Parameters::SpinParam> maxNPS(std::make_shared<Parameters::SpinParam>("MaxNPS", 0, 10000000, 0));
 #ifdef CLUSTER
@@ -47,6 +46,9 @@ namespace UciParams {
 
     std::shared_ptr<Parameters::SpinParam> contempt(std::make_shared<Parameters::SpinParam>("Contempt", -2000, 2000, 0));
     std::shared_ptr<Parameters::SpinParam> analyzeContempt(std::make_shared<Parameters::SpinParam>("AnalyzeContempt", -2000, 2000, 0));
+    std::shared_ptr<Parameters::CheckParam> autoContempt(std::make_shared<Parameters::CheckParam>("AutoContempt", false));
+    std::shared_ptr<Parameters::StringParam> contemptFile(std::make_shared<Parameters::StringParam>("ContemptFile", ""));
+    std::shared_ptr<Parameters::StringParam> opponent(std::make_shared<Parameters::StringParam>("UCI_Opponent", ""));
 
     std::shared_ptr<Parameters::StringParam> gtbPath(std::make_shared<Parameters::StringParam>("GaviotaTbPath", ""));
     std::shared_ptr<Parameters::SpinParam> gtbCache(std::make_shared<Parameters::SpinParam>("GaviotaTbCache", 1, 2047, 1));
@@ -625,7 +627,6 @@ Parameters::Parameters() {
     addPar(UciParams::bookFile);
     addPar(UciParams::ponder);
     addPar(UciParams::analyseMode);
-    addPar(UciParams::opponent);
     addPar(UciParams::strength);
     addPar(UciParams::maxNPS);
     addPar(UciParams::threads);
@@ -634,6 +635,9 @@ Parameters::Parameters() {
     addPar(UciParams::useNullMove);
     addPar(UciParams::contempt);
     addPar(UciParams::analyzeContempt);
+    addPar(UciParams::autoContempt);
+    addPar(UciParams::contemptFile);
+    addPar(UciParams::opponent);
 
     addPar(UciParams::gtbPath);
     addPar(UciParams::gtbCache);

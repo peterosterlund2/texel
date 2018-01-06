@@ -377,6 +377,9 @@ namespace UciParams {
 
     extern std::shared_ptr<Parameters::SpinParam> contempt;
     extern std::shared_ptr<Parameters::SpinParam> analyzeContempt;
+    extern std::shared_ptr<Parameters::CheckParam> autoContempt;
+    extern std::shared_ptr<Parameters::StringParam> contemptFile;
+    extern std::shared_ptr<Parameters::StringParam> opponent;
 
     extern std::shared_ptr<Parameters::StringParam> gtbPath;
     extern std::shared_ptr<Parameters::SpinParam> gtbCache;

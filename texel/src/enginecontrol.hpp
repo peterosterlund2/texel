@@ -157,6 +157,12 @@ private:
     /** Compute thinking time for current search. */
     void computeTimeLimit(const SearchParams& sPar);
 
+    /** Set opponent specific data. */
+    void setOpponent();
+
+    /** Return contempt value to use, from white's point of view. */
+    int getWhiteContempt(bool whiteMove);
+
     void startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPercentage,
                      int maxDepth, int maxNodes);
 
@@ -172,6 +178,8 @@ private:
 
     int hashParListenerId;
     int clearHashParListenerId;
+    int opponentParListenerId;
+    int contemptFileParListenerId;
 
     EngineMainThread& engineThread;
     SearchListener& listener;
@@ -180,6 +188,7 @@ private:
     History ht;
     std::unique_ptr<Evaluate::EvalHashTables> et;
     TreeLogger treeLog;
+    int opponentBasedContempt = 0;
 
     Position pos;
     std::vector<U64> posHashList;

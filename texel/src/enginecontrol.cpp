@@ -42,6 +42,8 @@
 #include <iostream>
 #include <memory>
 #include <chrono>
+#include <fstream>
+#include <regex>
 
 
 EngineMainThread::EngineMainThread()
@@ -284,12 +286,21 @@ EngineControl::EngineControl(std::ostream& o, EngineMainThread& engineThread0,
         ht.init();
         engineThread.setClearHistory();
     }, false);
+    opponentParListenerId = UciParams::opponent->addListener([this]() {
+        setOpponent();
+    });
+    contemptFileParListenerId = UciParams::contemptFile->addListener([this]() {
+        setOpponent();
+    }, false);
+
     et = Evaluate::getEvalHashTables();
 }
 
 EngineControl::~EngineControl() {
     UciParams::hash->removeListener(hashParListenerId);
-    UciParams::hash->removeListener(clearHashParListenerId);
+    UciParams::clearHash->removeListener(clearHashParListenerId);
+    UciParams::opponent->removeListener(opponentParListenerId);
+    UciParams::contemptFile->removeListener(contemptFileParListenerId);
 }
 
 void
@@ -388,6 +399,46 @@ EngineControl::computeTimeLimit(const SearchParams& sPar) {
     }
 }
 
+void EngineControl::setOpponent() {
+    opponentBasedContempt = 0;
+    std::string opponent = UciParams::opponent->getStringPar();
+    std::ifstream is(UciParams::contemptFile->getStringPar());
+    while (true) {
+        std::string line;
+        std::getline(is, line);
+        if (!is || is.eof())
+            break;
+        if (startsWith(line, "#"))
+            continue;
+        size_t tabPos = line.find('\t');
+        if (tabPos == std::string::npos)
+            continue;
+
+        std::regex re(line.substr(0, tabPos), std::regex::icase);
+        if (std::regex_match(opponent, re)) {
+            std::string sVal = trim(line.substr(tabPos+1));
+            int val = 0;
+            if (str2Num(sVal, val)) {
+                opponentBasedContempt = val;
+                return;
+            }
+        }
+    }
+}
+
+int EngineControl::getWhiteContempt(bool whiteMove) {
+    if (UciParams::analyseMode->getBoolPar())
+        return UciParams::analyzeContempt->getIntPar();
+    int contempt;
+    if (UciParams::autoContempt->getBoolPar()) {
+        contempt = opponentBasedContempt;
+    } else {
+        contempt = UciParams::contempt->getIntPar();
+    }
+    int ret = whiteMove ? contempt : -contempt;
+    return ret;
+}
+
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPercentage,
                            int maxDepth, int maxNodes) {
@@ -420,9 +471,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
     bool analyseMode = UciParams::analyseMode->getBoolPar();
     int maxPV = (infinite || analyseMode) ? UciParams::multiPV->getIntPar() : 1;
     int minProbeDepth = UciParams::minProbeDepth->getIntPar();
-    int playContempt = UciParams::contempt->getIntPar() * (pos.isWhiteMove() ? 1 : -1);
-    int analyzeContempt = UciParams::analyzeContempt->getIntPar();
-    int whiteContempt = analyseMode ? analyzeContempt : playContempt;
+    int whiteContempt = getWhiteContempt(pos.isWhiteMove());
     sc->setWhiteContempt(whiteContempt);
     if (analyseMode || infinite) {
         Evaluate eval(*et);
