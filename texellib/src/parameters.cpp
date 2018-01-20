@@ -569,6 +569,10 @@ ParamTable<9> pawnStormTable { -400, 100, useUciParam,
     {-105,-47,-262, 43, 55,  9, 13,-15,-13 },
     {  1,   2,   3,  4,  5,  6,  7,  8,  9 }
 };
+ParamTable<4> pawnStormMissingPenalty { -400, 100, useUciParam,
+    {  0, 20, 70, 90 },
+    {  0,  1,  2,  3 }
+};
 
 ParamTable<14> kingAttackWeight { 0, 400, useUciParam,
     {  0,  3,  0,  6,  6, 13, 25, 47, 62, 97,104,147,207,321 },
@@ -757,6 +761,7 @@ Parameters::Parameters() {
     castleFactor.registerParams("CastleFactor", *this);
     pawnShelterTable.registerParams("PawnShelterTable", *this);
     pawnStormTable.registerParams("PawnStormTable", *this);
+    pawnStormMissingPenalty.registerParams("PawnStormMissingPenalty", *this);
     kingAttackWeight.registerParams("KingAttackWeight", *this);
     qContactCheckBonus.registerParams("QueenContactCheckBonus", *this);
     pieceKingAttackBonus.registerParams("PieceKingAttackBonus", *this);

@@ -500,6 +500,7 @@ extern ParamTable<7> rookEGDrawFactor, RvsBPDrawFactor;
 
 extern ParamTable<4> castleFactor;
 extern ParamTable<9> pawnShelterTable, pawnStormTable;
+extern ParamTable<4> pawnStormMissingPenalty;
 extern ParamTable<14> kingAttackWeight;
 extern ParamTable<5> kingPPSupportK;
 extern ParamTable<8> kingPPSupportP;

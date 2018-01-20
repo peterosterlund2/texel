@@ -1389,11 +1389,15 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
         const int kingDiff = std::abs(wKingZone - bKingZone);
         if (kingDiff > 1) {
             U64 m = wPawns & pStormMask[bKingZone];
+            int wNMissing = BitBoard::bitCount(bPawns & pStormMask[bKingZone]) - BitBoard::bitCount(m);
+            score -= pawnStormMissingPenalty[clamp(wNMissing, 0, 3)];
             while (m != 0) {
                 int sq = BitBoard::extractSquare(m);
                 score += pawnStormBonus * (Position::getY(sq)-5);
             }
             m = bPawns & pStormMask[wKingZone];
+            int bNMissing = BitBoard::bitCount(wPawns & pStormMask[wKingZone]) - BitBoard::bitCount(m);
+            score += pawnStormMissingPenalty[clamp(bNMissing, 0, 3)];
             while (m != 0) {
                 int sq = BitBoard::extractSquare(m);
                 score += pawnStormBonus * (Position::getY(sq)-2);
