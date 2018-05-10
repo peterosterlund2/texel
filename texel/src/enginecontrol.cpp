@@ -403,26 +403,30 @@ void EngineControl::setOpponent() {
     opponentBasedContempt = 0;
     std::string opponent = UciParams::opponent->getStringPar();
     std::ifstream is(UciParams::contemptFile->getStringPar());
-    while (true) {
-        std::string line;
-        std::getline(is, line);
-        if (!is || is.eof())
-            break;
-        if (startsWith(line, "#"))
-            continue;
-        size_t tabPos = line.find('\t');
-        if (tabPos == std::string::npos)
-            continue;
+    try {
+        while (true) {
+            std::string line;
+            std::getline(is, line);
+            if (!is || is.eof())
+                break;
+            if (startsWith(line, "#"))
+                continue;
+            size_t tabPos = line.find('\t');
+            if (tabPos == std::string::npos)
+                continue;
 
-        std::regex re(line.substr(0, tabPos), std::regex::icase);
-        if (std::regex_match(opponent, re)) {
-            std::string sVal = trim(line.substr(tabPos+1));
-            int val = 0;
-            if (str2Num(sVal, val)) {
-                opponentBasedContempt = val;
-                return;
+            std::regex re(line.substr(0, tabPos), std::regex::icase);
+            if (std::regex_match(opponent, re)) {
+                std::string sVal = trim(line.substr(tabPos+1));
+                int val = 0;
+                if (str2Num(sVal, val)) {
+                    opponentBasedContempt = val;
+                    return;
+                }
             }
         }
+    } catch (const std::regex_error& ex) {
+        os << "info string error parsing contempt file" << std::endl;
     }
 }
 
