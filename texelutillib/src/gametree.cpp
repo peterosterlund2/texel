@@ -28,6 +28,7 @@
 #include <stdexcept>
 #include <cassert>
 #include <unordered_map>
+#include <functional>
 
 // --------------------------------------------------------------------------------
 

@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include <climits>
+#include <functional>
 
 
 bool ProofGame::staticInitDone = false;
