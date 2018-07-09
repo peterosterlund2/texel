@@ -67,6 +67,7 @@ private:
         std::atomic<U64> data;
         TTEntryStorage();
         TTEntryStorage(const TTEntryStorage& a);
+        TTEntryStorage& operator=(const TTEntryStorage& a) = delete;
     };
     static_assert(sizeof(TTEntryStorage) == 16, "TTEntryStorage size wrong");
 

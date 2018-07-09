@@ -209,7 +209,7 @@ public:
 };
 class ClusterTT {
 public:
-    ClusterTT(TranspositionTable& tt) : tt(tt) {}
+    explicit ClusterTT(TranspositionTable& tt) : tt(tt) {}
     void setWhiteContempt(int contempt) {
         tt.setWhiteContempt(contempt);
     }

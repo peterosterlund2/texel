@@ -64,8 +64,7 @@ Notifier::wait(int timeOutMs) {
 // ----------------------------------------------------------------------------
 
 Communicator::Communicator(Communicator* parent, TranspositionTable& tt)
-    : parent(parent) {
-    ctt = make_unique<ClusterTT>(tt);
+    : parent(parent), ctt(make_unique<ClusterTT>(tt)) {
     if (parent)
         parent->addChild(this);
 }

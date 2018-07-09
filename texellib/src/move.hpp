@@ -38,9 +38,6 @@ public:
     /** Create a move object. */
     Move(int from, int to, int promoteTo, int score = 0);
 
-    /** Copy constructor. */
-    Move(const Move& m);
-
     /** Set move properties. */
     void setMove(int from, int to, int promoteTo, int score);
 
@@ -63,8 +60,6 @@ public:
     bool equals(const Move& other) const;
 
     bool operator==(const Move& other) const;
-
-    int hashCode() const;
 
     /** Not declared "nothrow". Avoids nullptr check in generated assembly code when using placement new. */
     void* operator new (std::size_t size, void* ptr);
@@ -97,14 +92,6 @@ Move::Move(int from, int to, int promoteTo, int score) {
     to_ = to;
     promoteTo_ = promoteTo;
     score_ = score;
-}
-
-inline
-Move::Move(const Move& m) {
-    from_ = m.from_;
-    to_ = m.to_;
-    promoteTo_ = m.promoteTo_;
-    score_ = m.score_;
 }
 
 inline void
@@ -170,11 +157,6 @@ Move::equals(const Move& other) const {
 inline bool
 Move::operator==(const Move& other) const {
     return (*this).equals(other);
-}
-
-inline int
-Move::hashCode() const {
-    return (from_ * 64 + to_) * 16 + promoteTo_;
 }
 
 inline void*

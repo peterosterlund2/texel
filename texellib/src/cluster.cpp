@@ -271,8 +271,8 @@ Cluster::assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& t
 
 MPICommunicator::MPICommunicator(Communicator* parent, TranspositionTable& tt,
                                  int myRank, int peerRank, int childNo)
-    : Communicator(parent, tt), myRank(myRank), peerRank(peerRank), childNo(childNo) {
-    ttReceiver = make_unique<ClusterTTReceiver>(CommandType::TT_DATA, peerRank, *ctt);
+    : Communicator(parent, tt), myRank(myRank), peerRank(peerRank), childNo(childNo),
+      ttReceiver(make_unique<ClusterTTReceiver>(CommandType::TT_DATA, peerRank, *ctt)) {
 }
 
 TTReceiver*

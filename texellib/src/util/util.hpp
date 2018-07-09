@@ -218,7 +218,7 @@ template <typename T>
 class RelaxedShared {
 public:
     RelaxedShared() { }
-    RelaxedShared(T value) { set(value); }
+    explicit RelaxedShared(T value) { set(value); }
     RelaxedShared(const RelaxedShared& r) { set(r.get()); }
     RelaxedShared& operator=(const RelaxedShared& r) { set(r.get()); return *this; }
     RelaxedShared& operator=(const T& t) { set(t); return *this; }
