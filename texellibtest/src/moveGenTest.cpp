@@ -206,24 +206,24 @@ testPseudoLegalMoves() {
     ASSERT(contains(strMoves, "e1c1"));
     ASSERT_EQUAL(49, strMoves.size());
 
-    pos.setPiece(Position::getSquare(4,3), Piece::BROOK);
+    pos.setPiece(Square::getSquare(4,3), Piece::BROOK);
     strMoves = getMoveList(pos, false);
     ASSERT(!contains(strMoves, "e1g1"));      // In check, no castling possible
     ASSERT(!contains(strMoves, "e1c1"));
 
-    pos.setPiece(Position::getSquare(4, 3), Piece::EMPTY);
-    pos.setPiece(Position::getSquare(5, 3), Piece::BROOK);
+    pos.setPiece(Square::getSquare(4, 3), Piece::EMPTY);
+    pos.setPiece(Square::getSquare(5, 3), Piece::BROOK);
     strMoves = getMoveList(pos, false);
     ASSERT(!contains(strMoves, "e1g1"));      // f1 attacked, short castle not possible
     ASSERT(contains(strMoves, "e1c1"));
 
-    pos.setPiece(Position::getSquare(5, 3), Piece::EMPTY);
-    pos.setPiece(Position::getSquare(6, 3), Piece::BBISHOP);
+    pos.setPiece(Square::getSquare(5, 3), Piece::EMPTY);
+    pos.setPiece(Square::getSquare(6, 3), Piece::BBISHOP);
     strMoves = getMoveList(pos, false);
     ASSERT(contains(strMoves, "e1g1"));      // d1 attacked, long castle not possible
     ASSERT(!contains(strMoves, "e1c1"));
 
-    pos.setPiece(Position::getSquare(6, 3), Piece::EMPTY);
+    pos.setPiece(Square::getSquare(6, 3), Piece::EMPTY);
     pos.setCastleMask(1 << Position::A1_CASTLE);
     strMoves = getMoveList(pos, false);
     ASSERT(!contains(strMoves, "e1g1"));      // short castle right has been lost
@@ -260,7 +260,7 @@ testPawnMoves() {
     ASSERT_EQUAL(28, strMoves.size());
 
     // Check black pawn promotion
-    pos.setPiece(Position::getSquare(0,1), Piece::BPAWN);
+    pos.setPiece(Square::getSquare(0,1), Piece::BPAWN);
     strMoves = getMoveList(pos, false);
     ASSERT(contains(strMoves, "a2a1q"));
     ASSERT(contains(strMoves, "a2a1r"));
@@ -271,31 +271,31 @@ testPawnMoves() {
 static void
 testInCheck() {
     Position pos;
-    pos.setPiece(Position::getSquare(4,2), Piece::WKING);
-    pos.setPiece(Position::getSquare(4,7), Piece::BKING);
+    pos.setPiece(Square::getSquare(4,2), Piece::WKING);
+    pos.setPiece(Square::getSquare(4,7), Piece::BKING);
     ASSERT_EQUAL(false, MoveGen::inCheck(pos));
 
-    pos.setPiece(Position::getSquare(3,3), Piece::BQUEEN);
+    pos.setPiece(Square::getSquare(3,3), Piece::BQUEEN);
     ASSERT_EQUAL(true, MoveGen::inCheck(pos));
-    pos.setPiece(Position::getSquare(3,3), Piece::BROOK);
+    pos.setPiece(Square::getSquare(3,3), Piece::BROOK);
     ASSERT_EQUAL(false, MoveGen::inCheck(pos));
-    pos.setPiece(Position::getSquare(3,3), Piece::BPAWN);
+    pos.setPiece(Square::getSquare(3,3), Piece::BPAWN);
     ASSERT_EQUAL(true, MoveGen::inCheck(pos));
 
-    pos.setPiece(Position::getSquare(3,3), Piece::EMPTY);
-    pos.setPiece(Position::getSquare(5,3), Piece::WQUEEN);
-    ASSERT_EQUAL(false, MoveGen::inCheck(pos));
-
-    pos.setPiece(Position::getSquare(4, 6), Piece::BROOK);
-    ASSERT_EQUAL(true, MoveGen::inCheck(pos));
-    pos.setPiece(Position::getSquare(4, 4), Piece::WPAWN);
+    pos.setPiece(Square::getSquare(3,3), Piece::EMPTY);
+    pos.setPiece(Square::getSquare(5,3), Piece::WQUEEN);
     ASSERT_EQUAL(false, MoveGen::inCheck(pos));
 
-    pos.setPiece(Position::getSquare(2, 3), Piece::BKNIGHT);
+    pos.setPiece(Square::getSquare(4, 6), Piece::BROOK);
+    ASSERT_EQUAL(true, MoveGen::inCheck(pos));
+    pos.setPiece(Square::getSquare(4, 4), Piece::WPAWN);
+    ASSERT_EQUAL(false, MoveGen::inCheck(pos));
+
+    pos.setPiece(Square::getSquare(2, 3), Piece::BKNIGHT);
     ASSERT_EQUAL(true, MoveGen::inCheck(pos));
 
-    pos.setPiece(Position::getSquare(2, 3), Piece::EMPTY);
-    pos.setPiece(Position::getSquare(0, 4), Piece::BKNIGHT);
+    pos.setPiece(Square::getSquare(2, 3), Piece::EMPTY);
+    pos.setPiece(Square::getSquare(0, 4), Piece::BKNIGHT);
     ASSERT_EQUAL(false, MoveGen::inCheck(pos));
 }
 

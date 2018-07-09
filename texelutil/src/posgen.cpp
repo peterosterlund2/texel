@@ -66,25 +66,25 @@ PosGenerator::genQvsN() {
                             continue;
                         Position pos;
                         for (int i = 0; i < 8; i++) {
-                            pos.setPiece(Position::getSquare(i, 1), Piece::WPAWN);
-                            pos.setPiece(Position::getSquare(i, 6), Piece::BPAWN);
-                            pos.setPiece(Position::getSquare(i, 7), Piece::BKNIGHT);
+                            pos.setPiece(Square::getSquare(i, 1), Piece::WPAWN);
+                            pos.setPiece(Square::getSquare(i, 6), Piece::BPAWN);
+                            pos.setPiece(Square::getSquare(i, 7), Piece::BKNIGHT);
                         }
-                        pos.setPiece(Position::getSquare(bk, 7), Piece::BKING);
-                        pos.setPiece(Position::getSquare(wk, 0), Piece::WKING);
-                        pos.setPiece(Position::getSquare(q1, 0), Piece::WQUEEN);
-                        pos.setPiece(Position::getSquare(q2, 0), Piece::WQUEEN);
-                        pos.setPiece(Position::getSquare(q3, 0), Piece::WQUEEN);
+                        pos.setPiece(Square::getSquare(bk, 7), Piece::BKING);
+                        pos.setPiece(Square::getSquare(wk, 0), Piece::WKING);
+                        pos.setPiece(Square::getSquare(q1, 0), Piece::WQUEEN);
+                        pos.setPiece(Square::getSquare(q2, 0), Piece::WQUEEN);
+                        pos.setPiece(Square::getSquare(q3, 0), Piece::WQUEEN);
                         writeFEN(pos);
                         for (int i = 0; i < 8; i++) {
-                            pos.setPiece(Position::getSquare(i, 6), Piece::EMPTY);
+                            pos.setPiece(Square::getSquare(i, 6), Piece::EMPTY);
                             writeFEN(pos);
-                            pos.setPiece(Position::getSquare(i, 6), Piece::BPAWN);
+                            pos.setPiece(Square::getSquare(i, 6), Piece::BPAWN);
                         }
                         for (int i = 0; i < 8; i++) {
-                            pos.setPiece(Position::getSquare(i, 1), Piece::EMPTY);
+                            pos.setPiece(Square::getSquare(i, 1), Piece::EMPTY);
                             writeFEN(pos);
-                            pos.setPiece(Position::getSquare(i, 1), Piece::WPAWN);
+                            pos.setPiece(Square::getSquare(i, 1), Piece::WPAWN);
                         }
                     }
                 }
@@ -264,8 +264,8 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
     const bool epPossible = whitePawns && blackPawns;
 
     for (int wk = 0; wk < 64; wk++) {
-        int x = Position::getX(wk);
-        int y = Position::getY(wk);
+        int x = Square::getX(wk);
+        int y = Square::getY(wk);
         if (skipSymmetric) {
             if (x >= 4)
                 continue;
@@ -274,8 +274,8 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
                     continue;
         }
         for (int bk = 0; bk < 64; bk++) {
-            int x2 = Position::getX(bk);
-            int y2 = Position::getY(bk);
+            int x2 = Square::getX(bk);
+            int y2 = Square::getY(bk);
             if (std::abs(x2-x) < 2 && std::abs(y2-y) < 2)
                 continue;
 

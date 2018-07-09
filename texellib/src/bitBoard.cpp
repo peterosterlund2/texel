@@ -214,7 +214,7 @@ static U64 addRay(U64 mask, int x, int y, int dx, int dy,
         if (dy != 0) {
             y += dy; if ((y < lo) || (y > hi)) break;
         }
-        int sq = Position::getSquare(x, y);
+        int sq = Square::getSquare(x, y);
         mask |= 1ULL << sq;
         if ((occupied & (1ULL << sq)) != 0)
             break;
@@ -247,13 +247,13 @@ BitBoard::staticInitialize() {
 
     for (int f = 0; f < 8; f++) {
         U64 m = 0;
-        if (f > 0) m |= 1ULL << Position::getSquare(f-1, 3);
-        if (f < 7) m |= 1ULL << Position::getSquare(f+1, 3);
+        if (f > 0) m |= 1ULL << Square::getSquare(f-1, 3);
+        if (f < 7) m |= 1ULL << Square::getSquare(f+1, 3);
         epMaskW[f] = m;
 
         m = 0;
-        if (f > 0) m |= 1ULL << Position::getSquare(f-1, 4);
-        if (f < 7) m |= 1ULL << Position::getSquare(f+1, 4);
+        if (f > 0) m |= 1ULL << Square::getSquare(f-1, 4);
+        if (f < 7) m |= 1ULL << Square::getSquare(f+1, 4);
         epMaskB[f] = m;
     }
 
@@ -284,20 +284,20 @@ BitBoard::staticInitialize() {
         mask = ((m >> 9) & maskAToGFiles) | ((m >> 7) & maskBToHFiles);
         bPawnAttacks[sq] = mask;
 
-        int x = Position::getX(sq);
-        int y = Position::getY(sq);
+        int x = Square::getX(sq);
+        int y = Square::getY(sq);
         m = 0;
         for (int y2 = y+1; y2 < 8; y2++) {
-            if (x > 0) m |= 1ULL << Position::getSquare(x-1, y2);
-                       m |= 1ULL << Position::getSquare(x  , y2);
-            if (x < 7) m |= 1ULL << Position::getSquare(x+1, y2);
+            if (x > 0) m |= 1ULL << Square::getSquare(x-1, y2);
+                       m |= 1ULL << Square::getSquare(x  , y2);
+            if (x < 7) m |= 1ULL << Square::getSquare(x+1, y2);
         }
         wPawnBlockerMask[sq] = m;
         m = 0;
         for (int y2 = y-1; y2 >= 0; y2--) {
-            if (x > 0) m |= 1ULL << Position::getSquare(x-1, y2);
-                       m |= 1ULL << Position::getSquare(x  , y2);
-            if (x < 7) m |= 1ULL << Position::getSquare(x+1, y2);
+            if (x > 0) m |= 1ULL << Square::getSquare(x-1, y2);
+                       m |= 1ULL << Square::getSquare(x  , y2);
+            if (x < 7) m |= 1ULL << Square::getSquare(x+1, y2);
         }
         bPawnBlockerMask[sq] = m;
     }
@@ -305,8 +305,8 @@ BitBoard::staticInitialize() {
 #ifdef HAS_BMI2
     int tdSize = 0;
     for (int sq = 0; sq < 64; sq++) {
-        int x = Position::getX(sq);
-        int y = Position::getY(sq);
+        int x = Square::getX(sq);
+        int y = Square::getY(sq);
         rMasks[sq] = addRookRays(x, y, 0ULL, true);
         bMasks[sq] = addBishopRays(x, y, 0ULL, true);
         tdSize += 1 << bitCount(rMasks[sq]);
@@ -317,8 +317,8 @@ BitBoard::staticInitialize() {
     // Rook magics
     int tableUsed = 0;
     for (int sq = 0; sq < 64; sq++) {
-        int x = Position::getX(sq);
-        int y = Position::getY(sq);
+        int x = Square::getX(sq);
+        int y = Square::getY(sq);
         int tableSize = 1 << bitCount(rMasks[sq]);
         U64* table = &tableData[tableUsed];
         tableUsed += tableSize;
@@ -331,8 +331,8 @@ BitBoard::staticInitialize() {
 
     // Bishop magics
     for (int sq = 0; sq < 64; sq++) {
-        int x = Position::getX(sq);
-        int y = Position::getY(sq);
+        int x = Square::getX(sq);
+        int y = Square::getY(sq);
         int tableSize = 1 << bitCount(bMasks[sq]);
         U64* table = &tableData[tableUsed];
         tableUsed += tableSize;
@@ -354,8 +354,8 @@ BitBoard::staticInitialize() {
     // Rook magics
     int tableUsed = 0;
     for (int sq = 0; sq < 64; sq++) {
-        int x = Position::getX(sq);
-        int y = Position::getY(sq);
+        int x = Square::getX(sq);
+        int y = Square::getY(sq);
         rMasks[sq] = addRookRays(x, y, 0ULL, true);
         int tableSize = 1 << (64 - rBits[sq]);
         U64* table = &tableData[tableUsed];
@@ -378,8 +378,8 @@ BitBoard::staticInitialize() {
 
     // Bishop magics
     for (int sq = 0; sq < 64; sq++) {
-        int x = Position::getX(sq);
-        int y = Position::getY(sq);
+        int x = Square::getX(sq);
+        int y = Square::getY(sq);
         bMasks[sq] = addBishopRays(x, y, 0ULL, true);
         int tableSize = 1 << (64 - bBits[sq]);
         U64* table = &tableData[tableUsed];
@@ -410,13 +410,13 @@ BitBoard::staticInitialize() {
                 if ((dx == 0) && (dy == 0))
                     continue;
                 U64 m = 0;
-                int x = Position::getX(sq1);
-                int y = Position::getY(sq1);
+                int x = Square::getX(sq1);
+                int y = Square::getY(sq1);
                 while (true) {
                     x += dx; y += dy;
                     if ((x < 0) || (x > 7) || (y < 0) || (y > 7))
                         break;
-                    int sq2 = Position::getSquare(x, y);
+                    int sq2 = Square::getSquare(x, y);
                     squaresBetween[sq1][sq2] = m;
                     m |= 1ULL << sq2;
                 }

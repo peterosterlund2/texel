@@ -186,21 +186,6 @@ public:
     int bMtrlPawns() const;
 
 
-    /** Return index in squares[] vector corresponding to (x,y). */
-    static int getSquare(int x, int y);
-
-    /** Return x position (file) corresponding to a square. */
-    static int getX(int square);
-
-    /** Return y position (rank) corresponding to a square. */
-    static int getY(int square);
-
-    /** Return getSquare(getX(square),7-getY(square)). */
-    static int mirrorY(int square);
-
-    /** Return true if (x,y) is a dark square. */
-    static bool darkSquare(int x, int y);
-
     /** Compute the Zobrist hash value non-incrementally. Only useful for testing. */
     U64 computeZobristHash();
 
@@ -430,8 +415,8 @@ Position::getEpSquare() const {
 inline void
 Position::setEpSquare(int epSquare) {
     if (this->epSquare != epSquare) {
-        hashKey ^= epHashKeys[(this->epSquare >= 0) ? getX(this->epSquare) + 1 : 0];
-        hashKey ^= epHashKeys[(epSquare >= 0) ? getX(epSquare) + 1 : 0];
+        hashKey ^= epHashKeys[(this->epSquare >= 0) ? Square::getX(this->epSquare) + 1 : 0];
+        hashKey ^= epHashKeys[(epSquare >= 0) ? Square::getX(epSquare) + 1 : 0];
         this->epSquare = epSquare;
     }
 }
@@ -593,34 +578,6 @@ Position::unMakeSEEMove(const Move& move, const UndoInfo& ui) {
             setSEEPiece(move.to() + 8, Piece::WPAWN);
         }
     }
-}
-
-inline int
-Position::getSquare(int x, int y) {
-    return y * 8 + x;
-}
-
-/** Return x position (file) corresponding to a square. */
-inline int
-Position::getX(int square) {
-    return square & 7;
-}
-
-/** Return y position (rank) corresponding to a square. */
-inline int
-Position::getY(int square) {
-    return square >> 3;
-}
-
-inline int
-Position::mirrorY(int square) {
-    return square ^ 0x38;
-}
-
-/** Return true if (x,y) is a dark square. */
-inline bool
-Position::darkSquare(int x, int y) {
-    return (x & 1) == (y & 1);
 }
 
 inline int Position::getFullMoveCounter() const {

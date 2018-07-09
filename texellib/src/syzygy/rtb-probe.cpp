@@ -465,7 +465,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
         for (int m = 0; m < moveList.size; m++) {
             const Move& move = moveList[m];
             if ((pos.getPiece(move.from()) != pawn) ||
-                (Position::getX(move.from()) != Position::getX(move.to())) ||
+                (Square::getX(move.from()) != Square::getX(move.to())) ||
                 !MoveGen::isLegal(pos, move, inCheck))
                 continue;
             pos.makeMove(move, ui);

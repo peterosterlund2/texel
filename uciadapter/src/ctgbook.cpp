@@ -58,9 +58,9 @@ extractInt(const std::vector<U8>& buf, int offs, int len) {
 
 int
 mirrorSquareColor(int sq) {
-    int x = Position::getX(sq);
-    int y = 7 - Position::getY(sq);
-    return Position::getSquare(x, y);
+    int x = Square::getX(sq);
+    int y = 7 - Square::getY(sq);
+    return Square::getSquare(x, y);
 }
 
 int
@@ -82,9 +82,9 @@ mirrorMoveColor(Move& m) {
 
 int
 mirrorSquareLeftRight(int sq) {
-    int x = 7 - Position::getX(sq);
-    int y = Position::getY(sq);
-    return Position::getSquare(x, y);
+    int x = 7 - Square::getX(sq);
+    int y = Square::getY(sq);
+    return Square::getSquare(x, y);
 }
 
 void
@@ -146,7 +146,7 @@ positionToByteArray(Position& pos, std::vector<U8>& encodedPos) {
     bits.addBits(0, 8); // Header byte
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            int p = pos.getPiece(Position::getSquare(x, y));
+            int p = pos.getPiece(Square::getSquare(x, y));
             switch (p) {
             case Piece::EMPTY:   bits.addBits(0x00, 1); break;
             case Piece::WKING:   bits.addBits(0x20, 6); break;
@@ -176,7 +176,7 @@ positionToByteArray(Position& pos, std::vector<U8>& encodedPos) {
         bits.addBit(false);
 
     if (ep)
-        bits.addBits(Position::getX(pos.getEpSquare()), 3);
+        bits.addBits(Square::getX(pos.getEpSquare()), 3);
     if (cs) {
         bits.addBit(pos.h8Castle());
         bits.addBit(pos.a8Castle());
@@ -463,7 +463,7 @@ int
 PositionData::findPiece(const Position& pos, int piece, int pieceNo) {
     for (int x = 0; x < 8; x++)
         for (int y = 0; y < 8; y++) {
-            int sq = Position::getSquare(x, y);
+            int sq = Square::getSquare(x, y);
             if (pos.getPiece(sq) == piece)
                 if (pieceNo-- == 0)
                     return sq;
@@ -480,9 +480,9 @@ PositionData::decodeMove(const Position& pos, int moveCode) {
     int from = findPiece(pos, mi.piece, mi.pieceNo);
     if (from < 0)
         return move;
-    int toX = (Position::getX(from) + mi.dx) & 7;
-    int toY = (Position::getY(from) + mi.dy) & 7;
-    int to = Position::getSquare(toX, toY);
+    int toX = (Square::getX(from) + mi.dx) & 7;
+    int toY = (Square::getY(from) + mi.dy) & 7;
+    int to = Square::getSquare(toX, toY);
     int promoteTo = Piece::EMPTY;
     if ((pos.getPiece(from) == Piece::WPAWN) && (toY == 7))
         promoteTo = Piece::WQUEEN;
@@ -575,7 +575,7 @@ CtgFile::getPositionData(const Position& pos0, PositionData& pd) {
         mirrorPosColor(pos);
 
     bool mirrorLeftRight = false;
-    if ((pos.getCastleMask() == 0) && (Position::getX(pos.getKingSq(true)) < 4)) {
+    if ((pos.getCastleMask() == 0) && (Square::getX(pos.getKingSq(true)) < 4)) {
         mirrorPosLeftRight(pos);
         mirrorLeftRight = true;
     }

@@ -666,12 +666,12 @@ getMaxPawnMoves(const Position& pos) {
     U64 m = pos.pieceTypeBB(Piece::WPAWN);
     while (m != 0) {
         int sq = BitBoard::extractSquare(m);
-        maxPawnMoves += 6 - Position::getY(sq);
+        maxPawnMoves += 6 - Square::getY(sq);
     }
     m = pos.pieceTypeBB(Piece::BPAWN);
     while (m != 0) {
         int sq = BitBoard::extractSquare(m);
-        maxPawnMoves += Position::getY(sq) - 1;
+        maxPawnMoves += Square::getY(sq) - 1;
     }
     return maxPawnMoves;
 }

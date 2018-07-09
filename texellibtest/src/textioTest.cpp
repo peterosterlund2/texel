@@ -45,9 +45,9 @@ testReadFEN() {
     std::string fen = "rnbqk2r/1p3ppp/p7/1NpPp3/QPP1P1n1/P4N2/4KbPP/R1B2B1R b kq - 0 1";
     Position pos = TextIO::readFEN(fen);
     ASSERT_EQUAL(fen, TextIO::toFEN(pos));
-    ASSERT_EQUAL(Piece::WQUEEN, pos.getPiece(Position::getSquare(0, 3)));
-    ASSERT_EQUAL(Piece::BKING, pos.getPiece(Position::getSquare(4, 7)));
-    ASSERT_EQUAL(Piece::WKING, pos.getPiece(Position::getSquare(4, 1)));
+    ASSERT_EQUAL(Piece::WQUEEN, pos.getPiece(Square::getSquare(0, 3)));
+    ASSERT_EQUAL(Piece::BKING, pos.getPiece(Square::getSquare(4, 7)));
+    ASSERT_EQUAL(Piece::WKING, pos.getPiece(Square::getSquare(4, 1)));
     ASSERT_EQUAL(false, pos.isWhiteMove());
     ASSERT_EQUAL(false, pos.a1Castle());
     ASSERT_EQUAL(false, pos.h1Castle());
@@ -127,31 +127,31 @@ static void
 testMoveToString() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     ASSERT_EQUAL(TextIO::startPosFEN, TextIO::toFEN(pos));
-    Move move(Position::getSquare(4, 1), Position::getSquare(4, 3), Piece::EMPTY);
+    Move move(Square::getSquare(4, 1), Square::getSquare(4, 3), Piece::EMPTY);
     bool longForm = true;
     std::string result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("e2-e4", result);
 
-    move = Move(Position::getSquare(6, 0), Position::getSquare(5, 2), Piece::EMPTY);
+    move = Move(Square::getSquare(6, 0), Square::getSquare(5, 2), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("Ng1-f3", result);
 
-    move = Move(Position::getSquare(4, 7), Position::getSquare(2, 7), Piece::EMPTY);
+    move = Move(Square::getSquare(4, 7), Square::getSquare(2, 7), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("O-O-O", result);
 
     std::string fen = "1r3k2/2P5/8/8/8/4K3/8/8 w - - 0 1";
     pos = TextIO::readFEN(fen);
     ASSERT_EQUAL(fen, TextIO::toFEN(pos));
-    move = Move(Position::getSquare(2,6), Position::getSquare(1,7), Piece::WROOK);
+    move = Move(Square::getSquare(2,6), Square::getSquare(1,7), Piece::WROOK);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("c7xb8R+", result);
 
-    move = Move(Position::getSquare(2,6), Position::getSquare(2,7), Piece::WKNIGHT);
+    move = Move(Square::getSquare(2,6), Square::getSquare(2,7), Piece::WKNIGHT);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("c7-c8N", result);
 
-    move = Move(Position::getSquare(2,6), Position::getSquare(2,7), Piece::WQUEEN);
+    move = Move(Square::getSquare(2,6), Square::getSquare(2,7), Piece::WQUEEN);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("c7-c8Q+", result);
 }
@@ -161,19 +161,19 @@ testMoveToStringMate() {
     Position pos = TextIO::readFEN("3k4/1PR5/3N4/8/4K3/8/8/8 w - - 0 1");
     bool longForm = true;
 
-    Move move(Position::getSquare(1, 6), Position::getSquare(1, 7), Piece::WROOK);
+    Move move(Square::getSquare(1, 6), Square::getSquare(1, 7), Piece::WROOK);
     std::string result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("b7-b8R+", result);    // check
 
-    move = Move(Position::getSquare(1, 6), Position::getSquare(1, 7), Piece::WQUEEN);
+    move = Move(Square::getSquare(1, 6), Square::getSquare(1, 7), Piece::WQUEEN);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("b7-b8Q#", result);    // check mate
 
-    move = Move(Position::getSquare(1, 6), Position::getSquare(1, 7), Piece::WKNIGHT);
+    move = Move(Square::getSquare(1, 6), Square::getSquare(1, 7), Piece::WKNIGHT);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("b7-b8N", result);
 
-    move = Move(Position::getSquare(1, 6), Position::getSquare(1, 7), Piece::WBISHOP);
+    move = Move(Square::getSquare(1, 6), Square::getSquare(1, 7), Piece::WBISHOP);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("b7-b8B", result);     // stalemate
 }
@@ -185,43 +185,43 @@ testMoveToStringShortForm() {
     ASSERT_EQUAL(fen, TextIO::toFEN(pos));
     bool longForm = false;
 
-    Move move = Move(Position::getSquare(4,5), Position::getSquare(4,3), Piece::EMPTY);
+    Move move = Move(Square::getSquare(4,5), Square::getSquare(4,3), Piece::EMPTY);
     std::string result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("Qee4", result);   // File disambiguation needed
 
-    move = Move(Position::getSquare(2,5), Position::getSquare(4,3), Piece::EMPTY);
+    move = Move(Square::getSquare(2,5), Square::getSquare(4,3), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("Qc6e4", result);  // Full disambiguation needed
 
-    move = Move(Position::getSquare(2,3), Position::getSquare(4,3), Piece::EMPTY);
+    move = Move(Square::getSquare(2,3), Square::getSquare(4,3), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("Q4e4", result);   // Row disambiguation needed
 
-    move = Move(Position::getSquare(2,3), Position::getSquare(2,0), Piece::EMPTY);
+    move = Move(Square::getSquare(2,3), Square::getSquare(2,0), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("Qc1+", result);   // No disambiguation needed
 
-    move = Move(Position::getSquare(0,1), Position::getSquare(0,0), Piece::BQUEEN);
+    move = Move(Square::getSquare(0,1), Square::getSquare(0,0), Piece::BQUEEN);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("a1Q", result);    // Normal promotion
 
-    move = Move(Position::getSquare(0,1), Position::getSquare(1,0), Piece::BQUEEN);
+    move = Move(Square::getSquare(0,1), Square::getSquare(1,0), Piece::BQUEEN);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("axb1Q#", result); // Capture promotion and check mate
 
-    move = Move(Position::getSquare(0,1), Position::getSquare(1,0), Piece::BKNIGHT);
+    move = Move(Square::getSquare(0,1), Square::getSquare(1,0), Piece::BKNIGHT);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("axb1N", result);  // Capture promotion
 
-    move = Move(Position::getSquare(3,6), Position::getSquare(4,4), Piece::EMPTY);
+    move = Move(Square::getSquare(3,6), Square::getSquare(4,4), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("Ne5", result);    // Other knight pinned, no disambiguation needed
 
-    move = Move(Position::getSquare(7,6), Position::getSquare(7,4), Piece::EMPTY);
+    move = Move(Square::getSquare(7,6), Square::getSquare(7,4), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("h5", result);     // Regular pawn move
 
-    move = Move(Position::getSquare(5,7), Position::getSquare(3,7), Piece::EMPTY);
+    move = Move(Square::getSquare(5,7), Square::getSquare(3,7), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     ASSERT_EQUAL("Rfd8", result);     // File disambiguation needed
 }
@@ -230,7 +230,7 @@ static void
 testStringToMove() {
     Position pos = TextIO::readFEN("r4rk1/2pn3p/2q1q1n1/8/2q2p2/6R1/p4PPP/1R4K1 b - - 0 1");
 
-    Move mNe5(Position::getSquare(3, 6), Position::getSquare(4, 4), Piece::EMPTY);
+    Move mNe5(Square::getSquare(3, 6), Square::getSquare(4, 4), Piece::EMPTY);
     Move m = TextIO::stringToMove(pos, "Ne5");
     ASSERT_EQUAL(mNe5, m);
     m = TextIO::stringToMove(pos, "ne");
@@ -238,7 +238,7 @@ testStringToMove() {
     m = TextIO::stringToMove(pos, "N");
     ASSERT(m.isEmpty());
 
-    Move mQc6e4(Position::getSquare(2, 5), Position::getSquare(4, 3), Piece::EMPTY);
+    Move mQc6e4(Square::getSquare(2, 5), Square::getSquare(4, 3), Piece::EMPTY);
     m = TextIO::stringToMove(pos, "Qc6-e4");
     ASSERT_EQUAL(mQc6e4, m);
     m = TextIO::stringToMove(pos, "Qc6e4");
@@ -248,7 +248,7 @@ testStringToMove() {
     m = TextIO::stringToMove(pos, "Q6e4");
     ASSERT(m.isEmpty());
 
-    Move maxb1Q(Position::getSquare(0, 1), Position::getSquare(1, 0), Piece::BQUEEN);
+    Move maxb1Q(Square::getSquare(0, 1), Square::getSquare(1, 0), Piece::BQUEEN);
     m = TextIO::stringToMove(pos, "axb1Q");
     ASSERT_EQUAL(maxb1Q, m);
     m = TextIO::stringToMove(pos, "axb1Q#");
@@ -256,7 +256,7 @@ testStringToMove() {
     m = TextIO::stringToMove(pos, "axb1Q+");
     ASSERT_EQUAL(maxb1Q, m);
 
-    Move mh5(Position::getSquare(7, 6), Position::getSquare(7, 4), Piece::EMPTY);
+    Move mh5(Square::getSquare(7, 6), Square::getSquare(7, 4), Piece::EMPTY);
     m = TextIO::stringToMove(pos, "h5");
     ASSERT_EQUAL(mh5, m);
     m = TextIO::stringToMove(pos, "h7-h5");
@@ -276,8 +276,8 @@ testStringToMove() {
 
     // Test castling. o-o is a substring of o-o-o, which could cause problems.
     pos = TextIO::readFEN("5k2/p1pQn3/1p2Bp1r/8/4P1pN/2N5/PPP2PPP/R3K2R w KQ - 0 16");
-    Move kCastle(Position::getSquare(4,0), Position::getSquare(6,0), Piece::EMPTY);
-    Move qCastle(Position::getSquare(4,0), Position::getSquare(2,0), Piece::EMPTY);
+    Move kCastle(Square::getSquare(4,0), Square::getSquare(6,0), Piece::EMPTY);
+    Move qCastle(Square::getSquare(4,0), Square::getSquare(2,0), Piece::EMPTY);
     m = TextIO::stringToMove(pos, "o");
     ASSERT(m.isEmpty());
     m = TextIO::stringToMove(pos, "o-o");
@@ -288,8 +288,8 @@ testStringToMove() {
     ASSERT_EQUAL(qCastle, m);
 
     // Test 'o-o+'
-    pos.setPiece(Position::getSquare(5,1), Piece::EMPTY);
-    pos.setPiece(Position::getSquare(5,5), Piece::EMPTY);
+    pos.setPiece(Square::getSquare(5,1), Piece::EMPTY);
+    pos.setPiece(Square::getSquare(5,5), Piece::EMPTY);
     m = TextIO::stringToMove(pos, "o");
     ASSERT(m.isEmpty());
     m = TextIO::stringToMove(pos, "o-o");
@@ -338,19 +338,19 @@ testStringToMove() {
 
 static void
 testGetSquare() {
-    ASSERT_EQUAL(Position::getSquare(0, 0), TextIO::getSquare("a1"));
-    ASSERT_EQUAL(Position::getSquare(1, 7), TextIO::getSquare("b8"));
-    ASSERT_EQUAL(Position::getSquare(3, 3), TextIO::getSquare("d4"));
-    ASSERT_EQUAL(Position::getSquare(4, 3), TextIO::getSquare("e4"));
-    ASSERT_EQUAL(Position::getSquare(3, 1), TextIO::getSquare("d2"));
-    ASSERT_EQUAL(Position::getSquare(7, 7), TextIO::getSquare("h8"));
+    ASSERT_EQUAL(Square::getSquare(0, 0), TextIO::getSquare("a1"));
+    ASSERT_EQUAL(Square::getSquare(1, 7), TextIO::getSquare("b8"));
+    ASSERT_EQUAL(Square::getSquare(3, 3), TextIO::getSquare("d4"));
+    ASSERT_EQUAL(Square::getSquare(4, 3), TextIO::getSquare("e4"));
+    ASSERT_EQUAL(Square::getSquare(3, 1), TextIO::getSquare("d2"));
+    ASSERT_EQUAL(Square::getSquare(7, 7), TextIO::getSquare("h8"));
 }
 
 static void
 testSquareToString() {
-    ASSERT_EQUAL("a1", TextIO::squareToString(Position::getSquare(0, 0)));
-    ASSERT_EQUAL("h6", TextIO::squareToString(Position::getSquare(7, 5)));
-    ASSERT_EQUAL("e4", TextIO::squareToString(Position::getSquare(4, 3)));
+    ASSERT_EQUAL("a1", TextIO::squareToString(Square::getSquare(0, 0)));
+    ASSERT_EQUAL("h6", TextIO::squareToString(Square::getSquare(7, 5)));
+    ASSERT_EQUAL("e4", TextIO::squareToString(Square::getSquare(4, 3)));
 }
 
 static int countSubStr(const std::string& str, const std::string& sub) {

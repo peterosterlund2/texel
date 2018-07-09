@@ -33,8 +33,8 @@
 
 static void
 testMoveConstructor() {
-    int f = Position::getSquare(4, 1);
-    int t = Position::getSquare(4, 3);
+    int f = Square::getSquare(4, 1);
+    int t = Square::getSquare(4, 3);
     int p = Piece::WROOK;
     Move move(f, t, p);
     ASSERT_EQUAL(move.from(), f);
@@ -44,11 +44,11 @@ testMoveConstructor() {
 
 static void
 testEquals() {
-    Move m1(Position::getSquare(0, 6), Position::getSquare(1, 7), Piece::WROOK);
-    Move m2(Position::getSquare(0, 6), Position::getSquare(0, 7), Piece::WROOK);
-    Move m3(Position::getSquare(1, 6), Position::getSquare(1, 7), Piece::WROOK);
-    Move m4(Position::getSquare(0, 6), Position::getSquare(1, 7), Piece::WKNIGHT);
-    Move m5(Position::getSquare(0, 6), Position::getSquare(1, 7), Piece::WROOK);
+    Move m1(Square::getSquare(0, 6), Square::getSquare(1, 7), Piece::WROOK);
+    Move m2(Square::getSquare(0, 6), Square::getSquare(0, 7), Piece::WROOK);
+    Move m3(Square::getSquare(1, 6), Square::getSquare(1, 7), Piece::WROOK);
+    Move m4(Square::getSquare(0, 6), Square::getSquare(1, 7), Piece::WKNIGHT);
+    Move m5(Square::getSquare(0, 6), Square::getSquare(1, 7), Piece::WROOK);
     ASSERT(!(m1 == m2));
     ASSERT(!(m1 == m3));
     ASSERT(!(m1 == m4));

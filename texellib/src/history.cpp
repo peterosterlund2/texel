@@ -59,7 +59,7 @@ History::print() const {
                 if (d > 0)
                     std::cout << "  ";
                 for (int col = 0; col < 8; col++) {
-                    int sq = Position::getSquare(col, row);
+                    int sq = Square::getSquare(col, row);
                     int hist = ht[piece][sq].scaledScore >> log2Scale;
                     std::cout << ' ' << std::setw(2) << hist;
                 }
@@ -77,7 +77,7 @@ History::print() const {
                 if (d > 0)
                     std::cout << "  ";
                 for (int col = 0; col < 8; col++) {
-                    int sq = Position::getSquare(col, row);
+                    int sq = Square::getSquare(col, row);
                     int s = ht[piece][sq].nValues * 100 / (maxSum + 1);
                     std::cout << ' ' << std::setw(2) << s;
                 }

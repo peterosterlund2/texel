@@ -106,11 +106,11 @@ TextIO::readFEN(const std::string& fen) {
             int epSq = getSquare(fen.substr(i, 2));
             if (epSq != -1) {
                 if (pos.isWhiteMove()) {
-                    if ((Position::getY(epSq) != 5) || (pos.getPiece(epSq) != Piece::EMPTY) ||
+                    if ((Square::getY(epSq) != 5) || (pos.getPiece(epSq) != Piece::EMPTY) ||
                             (pos.getPiece(epSq - 8) != Piece::BPAWN))
                         epSq = -1;
                 } else {
-                    if ((Position::getY(epSq) != 2) || (pos.getPiece(epSq) != Piece::EMPTY) ||
+                    if ((Square::getY(epSq) != 2) || (pos.getPiece(epSq) != Piece::EMPTY) ||
                             (pos.getPiece(epSq + 8) != Piece::WPAWN))
                         epSq = -1;
                 }
@@ -147,7 +147,7 @@ TextIO::readFEN(const std::string& fen) {
     int bKings = 0;
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            int p = pos.getPiece(Position::getSquare(x, y));
+            int p = pos.getPiece(Square::getSquare(x, y));
             if (p == Piece::WKING)
                 wKings++;
             else if (p == Piece::BKING)
@@ -200,7 +200,7 @@ TextIO::toFEN(const Position& pos) {
     for (int r = 7; r >=0; r--) {
         int numEmpty = 0;
         for (int c = 0; c < 8; c++) {
-            int p = pos.getPiece(Position::getSquare(c, r));
+            int p = pos.getPiece(Square::getSquare(c, r));
             if (p == Piece::EMPTY) {
                 numEmpty++;
             } else {
@@ -258,8 +258,8 @@ TextIO::toFEN(const Position& pos) {
     {
         ret += ' ';
         if (pos.getEpSquare() >= 0) {
-            int x = Position::getX(pos.getEpSquare());
-            int y = Position::getY(pos.getEpSquare());
+            int x = Square::getX(pos.getEpSquare());
+            int y = Square::getY(pos.getEpSquare());
             ret += ((char)(x + 'a'));
             ret += ((char)(y + '1'));
         } else {
@@ -317,9 +317,9 @@ TextIO::uciStringToMove(const std::string& move) {
     bool white = true;
     if (move.length() == 5) {
         prom = move[4];
-        if (Position::getY(toSq) == 7) {
+        if (Square::getY(toSq) == 7) {
             white = true;
-        } else if (Position::getY(toSq) == 0) {
+        } else if (Square::getY(toSq) == 0) {
             white = false;
         } else {
             return m;
@@ -372,28 +372,28 @@ pieceToChar(int p) {
 static std::string
 moveToString(Position& pos, const Move& move, bool longForm, const MoveList& moves) {
     std::string ret;
-    int wKingOrigPos = Position::getSquare(4, 0);
-    int bKingOrigPos = Position::getSquare(4, 7);
+    int wKingOrigPos = Square::getSquare(4, 0);
+    int bKingOrigPos = Square::getSquare(4, 7);
     if (move.from() == wKingOrigPos && pos.getPiece(wKingOrigPos) == Piece::WKING) {
         // Check white castle
-        if (move.to() == Position::getSquare(6, 0))
+        if (move.to() == Square::getSquare(6, 0))
             ret += "O-O";
-        else if (move.to() == Position::getSquare(2, 0))
+        else if (move.to() == Square::getSquare(2, 0))
             ret += "O-O-O";
     } else if (move.from() == bKingOrigPos && pos.getPiece(bKingOrigPos) == Piece::BKING) {
         // Check black castle
-        if (move.to() == Position::getSquare(6, 7))
+        if (move.to() == Square::getSquare(6, 7))
             ret += "O-O";
-        else if (move.to() == Position::getSquare(2, 7))
+        else if (move.to() == Square::getSquare(2, 7))
             ret += "O-O-O";
     }
     if (ret.length() == 0) {
         int p = pos.getPiece(move.from());
         ret += pieceToChar(p);
-        int x1 = Position::getX(move.from());
-        int y1 = Position::getY(move.from());
-        int x2 = Position::getX(move.to());
-        int y2 = Position::getY(move.to());
+        int x1 = Square::getX(move.from());
+        int y1 = Square::getY(move.from());
+        int x2 = Square::getX(move.to());
+        int y2 = Square::getY(move.to());
         if (longForm) {
             ret += (char)(x1 + 'a');
             ret += (char)(y1 + '1');
@@ -412,9 +412,9 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveList& mov
                         break;
                     if ((pos.getPiece(m.from()) == p) && (m.to() == move.to())) {
                         numSameTarget++;
-                        if (Position::getX(m.from()) == x1)
+                        if (Square::getX(m.from()) == x1)
                             numSameFile++;
-                        if (Position::getY(m.from()) == y1)
+                        if (Square::getY(m.from()) == y1)
                             numSameRow++;
                     }
                 }
@@ -572,13 +572,13 @@ TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
         bool match = true;
         if ((info.piece >= 0) && (info.piece != p))
             match = false;
-        if ((info.fromX >= 0) && (info.fromX != Position::getX(m.from())))
+        if ((info.fromX >= 0) && (info.fromX != Square::getX(m.from())))
             match = false;
-        if ((info.fromY >= 0) && (info.fromY != Position::getY(m.from())))
+        if ((info.fromY >= 0) && (info.fromY != Square::getY(m.from())))
             match = false;
-        if ((info.toX >= 0) && (info.toX != Position::getX(m.to())))
+        if ((info.toX >= 0) && (info.toX != Square::getX(m.to())))
             match = false;
-        if ((info.toY >= 0) && (info.toY != Position::getY(m.to())))
+        if ((info.toY >= 0) && (info.toY != Square::getY(m.to())))
             match = false;
         if ((info.promPiece >= 0) && (info.promPiece != m.promoteTo()))
             match = false;
@@ -615,9 +615,9 @@ TextIO::asciiBoard(const Position& pos) {
         ret += "    |";
         for (int x = 0; x < 8; x++) {
             ret += ' ';
-            int p = pos.getPiece(Position::getSquare(x, y));
+            int p = pos.getPiece(Square::getSquare(x, y));
             if (p == Piece::EMPTY) {
-                bool dark = Position::darkSquare(x, y);
+                bool dark = Square::darkSquare(x, y);
                 ret.append(dark ? ".. |" : "   |");
             } else {
                 ret += Piece::isWhite(p) ? ' ' : '*';
@@ -641,7 +641,7 @@ TextIO::asciiBoard(U64 mask) {
     std::string ret;
     for (int y = 7; y >= 0; y--) {
         for (int x = 0; x < 8; x++) {
-            int sq = Position::getSquare(x, y);
+            int sq = Square::getSquare(x, y);
             ret += (mask & (1ULL << sq)) ? '1' : '0';
         }
         ret += '\n';

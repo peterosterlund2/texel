@@ -47,7 +47,7 @@ ProofGame::staticInit() {
 
     for (int y = 7; y >= 0; y--) {
         for (int x = 0; x < 8; x++) {
-            int sq = Position::getSquare(x, y);
+            int sq = Square::getSquare(x, y);
             U64 mask = 1ULL << sq;
             if (y < 7) {
                 mask |= wPawnReachable[sq + 8];
@@ -62,7 +62,7 @@ ProofGame::staticInit() {
 
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
-            int sq = Position::getSquare(x, y);
+            int sq = Square::getSquare(x, y);
             U64 mask = 1ULL << sq;
             if (y > 0) {
                 mask |= bPawnReachable[sq - 8];
@@ -378,7 +378,7 @@ ProofGame::capturesFeasible(const Position& pos, int pieceCnt[],
             int ti = 0;
             while (to) {
                 int toSq = BitBoard::extractSquare(to);
-                int d = std::abs(Position::getX(fromSq) - Position::getX(toSq));
+                int d = std::abs(Square::getX(fromSq) - Square::getX(toSq));
                 as.setCost(fi, ti, d);
                 ti++;
             }
@@ -570,11 +570,11 @@ ProofGame::computeShortestPathData(const Position& pos,
         bool testPromote = false;
         switch (p) {
         case Piece::WQUEEN: case Piece::WROOK: case Piece::WBISHOP: case Piece::WKNIGHT:
-            if (wtm && Position::getY(sq) == 7)
+            if (wtm && Square::getY(sq) == 7)
                 testPromote = true;
             break;
         case Piece::BQUEEN: case Piece::BROOK: case Piece::BBISHOP: case Piece::BKNIGHT:
-            if (!wtm && Position::getY(sq) == 0)
+            if (!wtm && Square::getY(sq) == 0)
                 testPromote = true;
             break;
         default:
@@ -583,7 +583,7 @@ ProofGame::computeShortestPathData(const Position& pos,
         bool promotionPossible = false;
         if (testPromote) {
             int c = wtm ? 0 : 1;
-            int x = Position::getX(sq);
+            int x = Square::getX(sq);
             Piece::Type pawn = wtm ? Piece::WPAWN : Piece::BPAWN;
             if (!promPath[c][x].spd)
                 promPath[c][x].spd = shortestPaths(pawn, sq, blocked, maxCapt);
@@ -711,7 +711,7 @@ ProofGame::computeCutSets(bool wtm, U64 fromSqMask, int toSq, U64 blocked, int m
 
 U64
 ProofGame::allPawnPaths(bool wtm, int fromSq, int toSq, U64 blocked, int maxCapt) {
-    int yDelta = Position::getY(fromSq) - Position::getY(toSq);
+    int yDelta = Square::getY(fromSq) - Square::getY(toSq);
     maxCapt = std::min(maxCapt, std::abs(yDelta)); // Can't make use of more than yDelta captures
     Piece::Type pawn = wtm ? Piece::WPAWN : Piece::BPAWN;
     Piece::Type oPawn = wtm ? Piece::BPAWN : Piece::WPAWN;
@@ -978,7 +978,7 @@ ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
                     break;
                 spd->pathLen[sq] = dist;
                 reached |= 1ULL << sq;
-                if (Position::getY(sq) != ((d > 0) ? 5 : 2))
+                if (Square::getY(sq) != ((d > 0) ? 5 : 2))
                     dist++;
             }
         } else {
@@ -991,10 +991,10 @@ ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
                 return std::min(a, b);
             };
             if (p == Piece::WPAWN) {
-                for (int y = Position::getY(toSq) - 1; y >= 0; y--) {
+                for (int y = Square::getY(toSq) - 1; y >= 0; y--) {
                     bool newReached = false;
                     for (int x = 0; x < 8; x++) {
-                        int sq = Position::getSquare(x, y);
+                        int sq = Square::getSquare(x, y);
                         if (blocked & (1ULL << sq))
                             continue;
                         int best = sub->pathLen[sq];
@@ -1015,10 +1015,10 @@ ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
                         break;
                 }
             } else {
-                for (int y = Position::getY(toSq) + 1; y < 8; y++) {
+                for (int y = Square::getY(toSq) + 1; y < 8; y++) {
                     bool newReached = false;
                     for (int x = 0; x < 8; x++) {
-                        int sq = Position::getSquare(x, y);
+                        int sq = Square::getSquare(x, y);
                         if (blocked & (1ULL << sq))
                             continue;
                         int best = sub->pathLen[sq];

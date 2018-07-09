@@ -117,15 +117,15 @@ TBIndex::staticInitialize() {
     for (int sq = 0; sq < 64; sq++) {
         int sym = 0;
         int mSq = sq;
-        if (Position::getX(mSq) >= 4) {
+        if (Square::getX(mSq) >= 4) {
             sym |= 1;
             mSq ^= 0x07;
         }
-        if (Position::getY(mSq) >= 4) {
+        if (Square::getY(mSq) >= 4) {
             sym |= 2;
             mSq ^= 0x38;
         }
-        if (Position::getY(mSq) > Position::getX(mSq)) {
+        if (Square::getY(mSq) > Square::getX(mSq)) {
             sym |= 4;
         }
         symType[sq] = sym;
@@ -145,7 +145,7 @@ TBIndex::staticInitialize() {
                 if (s & 2) // Mirror Y
                     mSq ^= 0x38;
                 if (s & 4) // Mirror D
-                    mSq = Position::getSquare(Position::getY(mSq), Position::getX(mSq));
+                    mSq = Square::getSquare(Square::getY(mSq), Square::getX(mSq));
                 kingMap[mSq] = kIdx;
             }
             kIdx++;

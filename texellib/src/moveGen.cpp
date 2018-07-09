@@ -529,7 +529,7 @@ MoveGen::givesCheck(const Position& pos, const Move& m) {
         }
     } else if (p == Piece::WPAWN) {
         if (pos.getPiece(m.to()) == Piece::EMPTY) {
-            int dx = Position::getX(m.to()) - Position::getX(m.from());
+            int dx = Square::getX(m.to()) - Square::getX(m.from());
             if (dx != 0) { // en passant
                 int epSq = m.from() + dx;
                 int d3 = BitBoard::getDirection(epSq, oKingSq);

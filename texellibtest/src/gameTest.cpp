@@ -49,25 +49,25 @@ GameTest::testHaveDrawOffer() {
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(true, game.haveDrawOffer());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());    // Draw offer does not imply draw
-    ASSERT_EQUAL(Piece::BPAWN, game.pos.getPiece(Position::getSquare(4, 4))); // e5 move made
+    ASSERT_EQUAL(Piece::BPAWN, game.pos.getPiece(Square::getSquare(4, 4))); // e5 move made
 
     res = game.processString("draw offer Nf3");
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(true, game.haveDrawOffer());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());    // Draw offer does not imply draw
-    ASSERT_EQUAL(Piece::WKNIGHT, game.pos.getPiece(Position::getSquare(5, 2))); // Nf3 move made
+    ASSERT_EQUAL(Piece::WKNIGHT, game.pos.getPiece(Square::getSquare(5, 2))); // Nf3 move made
 
     res = game.processString("Nc6");
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(false, game.haveDrawOffer());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
-    ASSERT_EQUAL(Piece::BKNIGHT, game.pos.getPiece(Position::getSquare(2, 5))); // Nc6 move made
+    ASSERT_EQUAL(Piece::BKNIGHT, game.pos.getPiece(Square::getSquare(2, 5))); // Nc6 move made
 
     res = game.processString("draw offer Bb5");
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(true, game.haveDrawOffer());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
-    ASSERT_EQUAL(Piece::WBISHOP, game.pos.getPiece(Position::getSquare(1, 4))); // Bb5 move made
+    ASSERT_EQUAL(Piece::WBISHOP, game.pos.getPiece(Square::getSquare(1, 4))); // Bb5 move made
 
     res = game.processString("draw accept");
     ASSERT_EQUAL(true, res);
@@ -75,23 +75,23 @@ GameTest::testHaveDrawOffer() {
 
     res = game.processString("undo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(Piece::EMPTY, game.pos.getPiece(Position::getSquare(1, 4))); // Bb5 move undone
+    ASSERT_EQUAL(Piece::EMPTY, game.pos.getPiece(Square::getSquare(1, 4))); // Bb5 move undone
     ASSERT_EQUAL(false, game.haveDrawOffer());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     res = game.processString("undo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(Piece::EMPTY, game.pos.getPiece(Position::getSquare(2, 5))); // Nc6 move undone
+    ASSERT_EQUAL(Piece::EMPTY, game.pos.getPiece(Square::getSquare(2, 5))); // Nc6 move undone
     ASSERT_EQUAL(true, game.haveDrawOffer());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
 
     res = game.processString("redo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(Piece::BKNIGHT, game.pos.getPiece(Position::getSquare(2, 5))); // Nc6 move redone
+    ASSERT_EQUAL(Piece::BKNIGHT, game.pos.getPiece(Square::getSquare(2, 5))); // Nc6 move redone
     ASSERT_EQUAL(false, game.haveDrawOffer());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     res = game.processString("redo");
     ASSERT_EQUAL(true, res);
-    ASSERT_EQUAL(Piece::WBISHOP, game.pos.getPiece(Position::getSquare(1, 4))); // Bb5 move redone
+    ASSERT_EQUAL(Piece::WBISHOP, game.pos.getPiece(Square::getSquare(1, 4))); // Bb5 move redone
     ASSERT_EQUAL(true, game.haveDrawOffer());
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     res = game.processString("redo");
@@ -111,7 +111,7 @@ GameTest::testHaveDrawOffer() {
     res = game.processString("e4");
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(true, game.haveDrawOffer());   // Previous draw offer still valid
-    ASSERT_EQUAL(Piece::WPAWN, game.pos.getPiece(Position::getSquare(4, 3))); // e4 move made
+    ASSERT_EQUAL(Piece::WPAWN, game.pos.getPiece(Square::getSquare(4, 3))); // e4 move made
 
     // Undo/redo shall clear "pendingDrawOffer".
     game.processString("new");
@@ -149,7 +149,7 @@ GameTest::testDraw50() {
     game.processString(cmd);
     game.processString("draw 50 a6");
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());      // Pawn move resets counter
-    ASSERT_EQUAL(Piece::WPAWN, game.pos.getPiece(Position::getSquare(0, 5))); // Move a6 made
+    ASSERT_EQUAL(Piece::WPAWN, game.pos.getPiece(Square::getSquare(0, 5))); // Move a6 made
 
     game.processString(cmd);
     game.processString("draw 50 O-O");
@@ -196,14 +196,14 @@ GameTest::testDrawRep() {
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());    // Claim not valid, one more move needed
     game.processString("draw rep Nc6");
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());    // Claim not valid, wrong move claimed
-    ASSERT_EQUAL(Piece::BKNIGHT, game.pos.getPiece(Position::getSquare(2, 5)));   // Move Nc6 made
+    ASSERT_EQUAL(Piece::BKNIGHT, game.pos.getPiece(Square::getSquare(2, 5)));   // Move Nc6 made
     ASSERT_EQUAL(true, game.haveDrawOffer());
     game.processString("undo");
     ASSERT_EQUAL(false, game.haveDrawOffer());
-    ASSERT_EQUAL(Piece::EMPTY, game.pos.getPiece(Position::getSquare(2, 5)));
+    ASSERT_EQUAL(Piece::EMPTY, game.pos.getPiece(Square::getSquare(2, 5)));
     game.processString("draw rep Ng8");
     ASSERT_EQUAL(Game::DRAW_REP, game.getGameState());
-    ASSERT_EQUAL(Piece::EMPTY, game.pos.getPiece(Position::getSquare(6, 7))); // Ng8 not played
+    ASSERT_EQUAL(Piece::EMPTY, game.pos.getPiece(Square::getSquare(6, 7))); // Ng8 not played
 
     // Test draw by repetition when a "potential ep square but not real ep square" position is present.
     game.processString("new");
@@ -344,7 +344,7 @@ GameTest::testInsufficientMaterial() {
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.processString("setpos 4k3/8/8/8/8/8/8/4K3 w - - 0 1");
     ASSERT_EQUAL(Game::DRAW_NO_MATE, game.getGameState());
-    const int a1 = Position::getSquare(0, 0);
+    const int a1 = Square::getSquare(0, 0);
     game.pos.setPiece(a1, Piece::WROOK);
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.pos.setPiece(a1, Piece::BQUEEN);
@@ -356,7 +356,7 @@ GameTest::testInsufficientMaterial() {
     game.pos.setPiece(a1, Piece::WBISHOP);
     ASSERT_EQUAL(Game::DRAW_NO_MATE, game.getGameState());
 
-    const int c1 = Position::getSquare(2, 0);
+    const int c1 = Square::getSquare(2, 0);
     game.pos.setPiece(c1, Piece::WKNIGHT);
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
     game.pos.setPiece(c1, Piece::BBISHOP);
@@ -364,13 +364,13 @@ GameTest::testInsufficientMaterial() {
     game.pos.setPiece(c1, Piece::WBISHOP);
     ASSERT_EQUAL(Game::DRAW_NO_MATE, game.getGameState());
 
-    const int b2 = Position::getSquare(1, 1);
+    const int b2 = Square::getSquare(1, 1);
     game.pos.setPiece(b2, Piece::WBISHOP);
     ASSERT_EQUAL(Game::DRAW_NO_MATE, game.getGameState());
     game.pos.setPiece(b2, Piece::BBISHOP);
     ASSERT_EQUAL(Game::DRAW_NO_MATE, game.getGameState());
 
-    const int b3 = Position::getSquare(1, 2);
+    const int b3 = Square::getSquare(1, 2);
     game.pos.setPiece(b3, Piece::WBISHOP);
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());
 

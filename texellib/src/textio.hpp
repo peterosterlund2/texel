@@ -113,15 +113,15 @@ TextIO::getSquare(const std::string& s)
     if ((x < 0) || (x > 7) || (y < 0) || (y > 7))
         return -1;
 
-    return Position::getSquare(x, y);
+    return Square::getSquare(x, y);
 }
 
 inline std::string
 TextIO::squareToString(int square)
 {
     std::string ret;
-    int x = Position::getX(square);
-    int y = Position::getY(square);
+    int x = Square::getX(square);
+    int y = Square::getY(square);
     ret += (char)(((x + 'a')));
     ret += (char)(((y + '1')));
     return ret;
@@ -133,7 +133,7 @@ TextIO::safeSetPiece(Position& pos, int col, int row, int p) {
     if ((p == Piece::WPAWN) || (p == Piece::BPAWN))
         if ((row == 0) || (row == 7))
             throw ChessParseError("Pawn on first/last rank");
-    pos.setPiece(Position::getSquare(col, row), p);
+    pos.setPiece(Square::getSquare(col, row), p);
 }
 
 inline int

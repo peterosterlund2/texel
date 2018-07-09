@@ -58,7 +58,7 @@ PolyglotBook::getHashKey(const Position& pos) {
 
     // EP file
     if (pos.getEpSquare() >= 0) {
-        int epFile = Position::getX(pos.getEpSquare());
+        int epFile = Square::getX(pos.getEpSquare());
         key ^= hashRandoms[772 + epFile];
     }
 
@@ -71,22 +71,22 @@ PolyglotBook::getHashKey(const Position& pos) {
 
 U16
 PolyglotBook::getPGMove(const Position& pos, const Move& move) {
-    int fromX = Position::getX(move.from());
-    int fromY = Position::getY(move.from());
-    int toX = Position::getX(move.to());
-    int toY = Position::getY(move.to());
+    int fromX = Square::getX(move.from());
+    int fromY = Square::getY(move.from());
+    int toX = Square::getX(move.to());
+    int toY = Square::getY(move.to());
 
     if ((move.from() == E1) && (pos.getPiece(move.from()) == Piece::WKING)) {
         if (move.to() == G1)
-            toX = Position::getX(H1);
+            toX = Square::getX(H1);
         if (move.to() == C1)
-            toX = Position::getX(A1);
+            toX = Square::getX(A1);
     }
     if ((move.from() == E8) && (pos.getPiece(move.from()) == Piece::BKING)) {
         if (move.to() == G8)
-            toX = Position::getX(H8);
+            toX = Square::getX(H8);
         if (move.to() == C8)
-            toX = Position::getX(A8);
+            toX = Square::getX(A8);
     }
 
     int prom = 0;
@@ -117,8 +117,8 @@ PolyglotBook::getMove(const Position& pos, U16 move) {
     int fromRow = (move >> 9) & 7;
     int prom = (move >> 12) & 7;
 
-    int from = Position::getSquare(fromFile, fromRow);
-    int to = Position::getSquare(toFile, toRow);
+    int from = Square::getSquare(fromFile, fromRow);
+    int to = Square::getSquare(toFile, toRow);
     int promoteTo;
     switch (prom) {
     case 1: promoteTo = wtm ? Piece::WKNIGHT : Piece::BKNIGHT; break;

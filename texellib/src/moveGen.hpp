@@ -259,15 +259,15 @@ MoveGen::nextPieceSafe(const Position& pos, int sq, int delta) {
     case -8: dx=0; dy=-1; break;
     case -7: dx=1; dy=-1; break;
     }
-    int x = Position::getX(sq);
-    int y = Position::getY(sq);
+    int x = Square::getX(sq);
+    int y = Square::getY(sq);
     while (true) {
         x += dx;
         y += dy;
         if ((x < 0) || (x > 7) || (y < 0) || (y > 7)) {
             return Piece::EMPTY;
         }
-        int p = pos.getPiece(Position::getSquare(x, y));
+        int p = pos.getPiece(Square::getSquare(x, y));
         if (p != Piece::EMPTY)
             return p;
     }

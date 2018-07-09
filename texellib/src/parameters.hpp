@@ -309,7 +309,7 @@ public:
         orig.addListener([this]() {
             if (N == 64) {
                 for (int sq = 0; sq < N; sq++)
-                    table[sq] = orig[Position::mirrorY(sq)];
+                    table[sq] = orig[Square::mirrorY(sq)];
             } else {
                 for (int i = 0; i < N; i++)
                     table[i] = orig[N-1-i];

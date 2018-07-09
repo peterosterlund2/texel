@@ -210,7 +210,7 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
         // Handle en passant and epSquare
         if (p == Piece::WPAWN) {
             if (move.to() - move.from() == 2 * 8) {
-                int x = getX(move.to());
+                int x = Square::getX(move.to());
                 if (BitBoard::epMaskW[x] & pieceTypeBB(Piece::BPAWN))
                     setEpSquare(move.from() + 8);
             } else if (move.to() == prevEpSquare) {
@@ -218,7 +218,7 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
             }
         } else if (p == Piece::BPAWN) {
             if (move.to() - move.from() == -2 * 8) {
-                int x = getX(move.to());
+                int x = Square::getX(move.to());
                 if (BitBoard::epMaskB[x] & pieceTypeBB(Piece::WPAWN))
                     setEpSquare(move.from() - 8);
             } else if (move.to() == prevEpSquare) {
@@ -407,7 +407,7 @@ Position::deSerialize(const SerializeData& data) {
     if (whiteMove)
         hash ^= whiteHashKey;
     hash ^= castleHashKeys[castleMask];
-    hash ^= epHashKeys[(epSquare >= 0) ? getX(epSquare) + 1 : 0];
+    hash ^= epHashKeys[(epSquare >= 0) ? Square::getX(epSquare) + 1 : 0];
     hashKey = hash;
 }
 
@@ -436,7 +436,7 @@ Position::computeZobristHash() {
     if (whiteMove)
         hash ^= whiteHashKey;
     hash ^= castleHashKeys[castleMask];
-    hash ^= epHashKeys[(epSquare >= 0) ? getX(epSquare) + 1 : 0];
+    hash ^= epHashKeys[(epSquare >= 0) ? Square::getX(epSquare) + 1 : 0];
     hashKey = hash;
     return hash;
 }

@@ -67,7 +67,7 @@ ChessBoard::getSquare(double xCrd, double yCrd) const {
     int y = 7 - (int)floor(yCrd / sqSize);
     if ((x < 0) || (x > 7) || (y < 0) || (y > 7))
         return -1;
-    return Position::getSquare(x, y);
+    return Square::getSquare(x, y);
 }
 
 bool
@@ -79,7 +79,7 @@ ChessBoard::draw(const Cairo::RefPtr<Cairo::Context>& ctx) {
 
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            if (Position::darkSquare(x, y))
+            if (Square::darkSquare(x, y))
                 ctx->set_source_rgb(0.514, 0.647, 0.824);
             else
                 ctx->set_source_rgb(1.0, 1.0, 1.0);
@@ -87,7 +87,7 @@ ChessBoard::draw(const Cairo::RefPtr<Cairo::Context>& ctx) {
             double yCrd = (7-y) * sqSize;
             ctx->rectangle(xCrd, yCrd, sqSize, sqSize);
             ctx->fill();
-            int sq = Position::getSquare(x, y);
+            int sq = Square::getSquare(x, y);
             int piece = pos.getPiece(sq);
             if (sq != dragSquare)
                 drawPiece(ctx, xCrd, yCrd, sqSize, piece);

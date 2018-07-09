@@ -35,9 +35,9 @@
 
 static int
 swapSquareY(int square) {
-    int x = Position::getX(square);
-    int y = Position::getY(square);
-    return Position::getSquare(x, 7-y);
+    int x = Square::getX(square);
+    int y = Square::getY(square);
+    return Square::getSquare(x, 7-y);
 }
 
 static Position
@@ -46,7 +46,7 @@ swapColors(const Position& pos) {
     sym.setWhiteMove(!pos.isWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            int sq = Position::getSquare(x, y);
+            int sq = Square::getSquare(x, y);
             int p = pos.getPiece(sq);
             p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
             sym.setPiece(swapSquareY(sq), p);
@@ -261,17 +261,17 @@ ProofGameTest::comparePaths(Piece::Type p, int sq, U64 blocked, int maxMoves,
     ProofGame ps(TextIO::startPosFEN);
     auto spd = ps.shortestPaths(p, sq, blocked, maxMoves);
     for (int i = 0; i < 64; i++) {
-        ASSERT_EQUAL(expected[Position::mirrorY(i)], (int)spd->pathLen[i]);
-        ASSERT_EQUAL(expected[Position::mirrorY(i)] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
+        ASSERT_EQUAL(expected[Square::mirrorY(i)], (int)spd->pathLen[i]);
+        ASSERT_EQUAL(expected[Square::mirrorY(i)] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
     }
 
     if (testColorReversed) {
         Piece::Type oP = (Piece::Type)(Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p));
-        int oSq = Position::getSquare(Position::getX(sq), 7 - Position::getY(sq));
+        int oSq = Square::getSquare(Square::getX(sq), 7 - Square::getY(sq));
         U64 oBlocked = 0;
         std::vector<int> oExpected(64);
         for (int s = 0; s < 64; s++) {
-            int oS = Position::getSquare(Position::getX(s), 7 - Position::getY(s));
+            int oS = Square::getSquare(Square::getX(s), 7 - Square::getY(s));
             if ((1ULL << s) & blocked)
                 oBlocked |= (1ULL << oS);
             oExpected[oS] = expected[s];
@@ -304,7 +304,7 @@ ProofGameTest::testShortestPath() {
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             int d = ((x != 0) ? 1 : 0) + ((y != 0) ? 1 : 0);
-            int sq = Position::getSquare(x, y);
+            int sq = Square::getSquare(x, y);
             ASSERT_EQUAL(d, (int)(spd->pathLen[sq]));
         }
     }

@@ -34,15 +34,15 @@
 
 
 int swapSquareX(int square) {
-    int x = Position::getX(square);
-    int y = Position::getY(square);
-    return Position::getSquare(7-x, y);
+    int x = Square::getX(square);
+    int y = Square::getY(square);
+    return Square::getSquare(7-x, y);
 }
 
 int swapSquareY(int square) {
-    int x = Position::getX(square);
-    int y = Position::getY(square);
-    return Position::getSquare(x, 7-y);
+    int x = Square::getX(square);
+    int y = Square::getY(square);
+    return Square::getSquare(x, 7-y);
 }
 
 Position
@@ -51,7 +51,7 @@ swapColors(const Position& pos) {
     sym.setWhiteMove(!pos.isWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            int sq = Position::getSquare(x, y);
+            int sq = Square::getSquare(x, y);
             int p = pos.getPiece(sq);
             p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
             sym.setPiece(swapSquareY(sq), p);
@@ -80,7 +80,7 @@ Position mirrorX(const Position& pos) {
     mir.setWhiteMove(pos.isWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            int sq = Position::getSquare(x, y);
+            int sq = Square::getSquare(x, y);
             int p = pos.getPiece(sq);
             mir.setPiece(swapSquareX(sq), p);
         }
@@ -228,8 +228,8 @@ EvaluateTest::testEvalPos() {
 
     pos = TextIO::readFEN("8/pp1bk3/8/8/8/8/PPPBK3/8 w - - 0 1");
     sc1 = evalWhite(pos);
-    pos.setPiece(Position::getSquare(3, 1), Piece::EMPTY);
-    pos.setPiece(Position::getSquare(3, 2), Piece::WBISHOP);
+    pos.setPiece(Square::getSquare(3, 1), Piece::EMPTY);
+    pos.setPiece(Square::getSquare(3, 2), Piece::WBISHOP);
     sc2 = evalWhite(pos);
     ASSERT(sc2 > sc1);      // Easier to win if bishops on same color
 
@@ -451,36 +451,36 @@ evalEgFen(const std::string& fen, int fuzz = 0) {
 void
 EvaluateTest::testEndGameEval() {
     Position pos;
-    pos.setPiece(Position::getSquare(4, 1), Piece::WKING);
-    pos.setPiece(Position::getSquare(4, 6), Piece::BKING);
+    pos.setPiece(Square::getSquare(4, 1), Piece::WKING);
+    pos.setPiece(Square::getSquare(4, 6), Piece::BKING);
     int score = evalWhite(pos, true);
     ASSERT_EQUAL(tempoBonusEG, score);
 
-    pos.setPiece(Position::getSquare(3, 1), Piece::WBISHOP);
+    pos.setPiece(Square::getSquare(3, 1), Piece::WBISHOP);
     score = evalWhite(pos, true);
     ASSERT_EQUAL(tempoBonusEG, score); // Insufficient material to mate
 
-    pos.setPiece(Position::getSquare(3, 1), Piece::WKNIGHT);
+    pos.setPiece(Square::getSquare(3, 1), Piece::WKNIGHT);
     score = evalWhite(pos, true);
     ASSERT_EQUAL(tempoBonusEG, score); // Insufficient material to mate
 
-    pos.setPiece(Position::getSquare(3, 1), Piece::WROOK);
+    pos.setPiece(Square::getSquare(3, 1), Piece::WROOK);
     score = evalWhite(pos, true);
     const int rV = ::rV;
     ASSERT(std::abs(score) > rV + 90);   // Enough material to force mate
 
-    pos.setPiece(Position::getSquare(3, 6), Piece::BBISHOP);
+    pos.setPiece(Square::getSquare(3, 6), Piece::BBISHOP);
     score = evalWhite(pos, true);
     const int bV = ::bV;
     ASSERT(score >= 0);
     ASSERT(score < rV - bV);   // Insufficient excess material to mate
 
-    pos.setPiece(Position::getSquare(5, 6), Piece::BROOK);
+    pos.setPiece(Square::getSquare(5, 6), Piece::BROOK);
     score = evalWhite(pos, true);
     ASSERT(score <= 0);
     ASSERT(-score < bV);
 
-    pos.setPiece(Position::getSquare(2, 6), Piece::BBISHOP);
+    pos.setPiece(Square::getSquare(2, 6), Piece::BBISHOP);
     score = evalWhite(pos, true);
     ASSERT(-score > bV * 2);
 
