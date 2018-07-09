@@ -301,13 +301,6 @@ ChessTool::filterScore(std::istream& is, int scLimit, double prLimit) {
     std::cout << std::flush;
 }
 
-static int
-swapSquareY(int square) {
-    int x = Square::getX(square);
-    int y = Square::getY(square);
-    return Square::getSquare(x, 7-y);
-}
-
 static Position
 swapColors(const Position& pos) {
     Position sym;
@@ -317,7 +310,7 @@ swapColors(const Position& pos) {
             int sq = Square::getSquare(x, y);
             int p = pos.getPiece(sq);
             p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
-            sym.setPiece(swapSquareY(sq), p);
+            sym.setPiece(Square::mirrorY(sq), p);
         }
     }
 
@@ -329,7 +322,7 @@ swapColors(const Position& pos) {
     sym.setCastleMask(castleMask);
 
     if (pos.getEpSquare() >= 0)
-        sym.setEpSquare(swapSquareY(pos.getEpSquare()));
+        sym.setEpSquare(Square::mirrorY(pos.getEpSquare()));
 
     sym.setHalfMoveClock(pos.getHalfMoveClock());
     sym.setFullMoveCounter(pos.getFullMoveCounter());

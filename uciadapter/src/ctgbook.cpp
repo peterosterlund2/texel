@@ -58,9 +58,7 @@ extractInt(const std::vector<U8>& buf, int offs, int len) {
 
 int
 mirrorSquareColor(int sq) {
-    int x = Square::getX(sq);
-    int y = 7 - Square::getY(sq);
-    return Square::getSquare(x, y);
+    return Square::mirrorY(sq);
 }
 
 int
@@ -82,9 +80,7 @@ mirrorMoveColor(Move& m) {
 
 int
 mirrorSquareLeftRight(int sq) {
-    int x = 7 - Square::getX(sq);
-    int y = Square::getY(sq);
-    return Square::getSquare(x, y);
+    return Square::mirrorX(sq);
 }
 
 void

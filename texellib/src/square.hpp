@@ -48,6 +48,9 @@ public:
     /** Return y position (rank) corresponding to a square. */
     static int getY(int square);
 
+    /** Return getSquare(7-getX(square),getY(square)). */
+    static int mirrorX(int square);
+
     /** Return getSquare(getX(square),7-getY(square)). */
     static int mirrorY(int square);
 
@@ -70,6 +73,11 @@ Square::getX(int square) {
 inline int
 Square::getY(int square) {
     return square >> 3;
+}
+
+inline int
+Square::mirrorX(int square) {
+    return square ^ 0x7;
 }
 
 inline int
