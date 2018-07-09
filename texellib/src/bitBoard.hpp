@@ -145,8 +145,6 @@ private:
     static vector_aligned<U64> tableData;
 
     static const S8 dirTable[];
-    static const S8 kingDistTable[];
-    static const S8 taxiDistTable[];
     static const int trailingZ[64];
 };
 
@@ -211,14 +209,16 @@ BitBoard::getDirection(int from, int to) {
 
 inline int
 BitBoard::getKingDistance(int from, int to) {
-    int offs = to + (to|7) - from - (from|7) + 0x77;
-    return kingDistTable[offs];
+    int dx = Square::getX(to) - Square::getX(from);
+    int dy = Square::getY(to) - Square::getY(from);
+    return std::max(std::abs(dx), std::abs(dy));
 }
 
 inline int
 BitBoard::getTaxiDistance(int from, int to) {
-    int offs = to + (to|7) - from - (from|7) + 0x77;
-    return taxiDistTable[offs];
+    int dx = Square::getX(to) - Square::getX(from);
+    int dy = Square::getY(to) - Square::getY(from);
+    return std::abs(dx) + std::abs(dy);
 }
 
 inline U64
