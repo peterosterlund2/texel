@@ -49,10 +49,10 @@ testEquals() {
     Move m3(Position::getSquare(1, 6), Position::getSquare(1, 7), Piece::WROOK);
     Move m4(Position::getSquare(0, 6), Position::getSquare(1, 7), Piece::WKNIGHT);
     Move m5(Position::getSquare(0, 6), Position::getSquare(1, 7), Piece::WROOK);
-    ASSERT(!m1.equals(m2));
-    ASSERT(!m1.equals(m3));
-    ASSERT(!m1.equals(m4));
-    ASSERT(m1.equals(m5));
+    ASSERT(!(m1 == m2));
+    ASSERT(!(m1 == m3));
+    ASSERT(!(m1 == m4));
+    ASSERT(m1 == m5);
 }
 
 cute::suite

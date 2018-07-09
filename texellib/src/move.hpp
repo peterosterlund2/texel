@@ -57,8 +57,6 @@ public:
     bool isEmpty() const;
 
     /** Note that score is not included in the comparison. */
-    bool equals(const Move& other) const;
-
     bool operator==(const Move& other) const;
 
     /** Not declared "nothrow". Avoids nullptr check in generated assembly code when using placement new. */
@@ -144,7 +142,7 @@ Move::isEmpty() const {
 }
 
 inline bool
-Move::equals(const Move& other) const {
+Move::operator==(const Move& other) const {
     if (from_ != other.from_)
         return false;
     if (to_ != other.to_)
@@ -152,11 +150,6 @@ Move::equals(const Move& other) const {
     if (promoteTo_ != other.promoteTo_)
         return false;
     return true;
-}
-
-inline bool
-Move::operator==(const Move& other) const {
-    return (*this).equals(other);
 }
 
 inline void*

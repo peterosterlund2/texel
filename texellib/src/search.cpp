@@ -890,7 +890,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 eval.prefetch(nextHash);
 #endif
                 if (pass == 0) {
-                    if ((mi == 0) && m.equals(sti.singularMove))
+                    if ((mi == 0) && m == sti.singularMove)
                         continue;
                     if (!MoveGen::isLegal(pos, m, inCheck))
                         continue;
@@ -1392,7 +1392,7 @@ bool
 Search::selectHashMove(MoveList& moves, const Move& hashMove) {
     for (int i = 0; i < moves.size; i++) {
         Move& m = moves[i];
-        if (m.equals(hashMove)) {
+        if (m == hashMove) {
             m.setScore(10000);
             std::swap(moves[i], moves[0]);
             return true;

@@ -662,7 +662,7 @@ CtgBook::getBookMove(Position& pos, Move& out) {
     for (const BookEntry& be : bookMoves) {
         bool contains = false;
         for (int mi = 0; mi < legalMoves.size; mi++)
-            if (legalMoves[mi].equals(be.move)) {
+            if (legalMoves[mi] == be.move) {
                 contains = true;
                 break;
             }
@@ -679,7 +679,7 @@ CtgBook::getBookMove(Position& pos, Move& out) {
     for (const BookEntry& be : bookMoves) {
         bool contains = false;
         for (int mi = 0; mi < legalMoves.size; mi++)
-            if (legalMoves[mi].equals(be.move)) {
+            if (legalMoves[mi] == be.move) {
                 contains = true;
                 break;
             }

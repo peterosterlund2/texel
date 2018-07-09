@@ -432,7 +432,7 @@ BookGui::updatePGNSelection() {
         int n = gn.nChildren();
         for (int i = 0; i < n; i++) {
             gn.goForward(i);
-            if (m.equals(gn.getMove())) {
+            if (m == gn.getMove()) {
                 found = true;
                 break;
             }

@@ -39,7 +39,7 @@ checkValid(Position& pos, const Move& move) {
     MoveGen::removeIllegal(pos, moveList);
     bool contains = false;
     for (int mi = 0; mi < moveList.size; mi++)
-        if (moveList[mi].equals(move)) {
+        if (moveList[mi] == move) {
             contains = true;
             break;
         }

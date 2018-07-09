@@ -59,7 +59,7 @@ Book::getBookMove(Position& pos, Move& out) {
     for (const BookEntry& be : bookMoves) {
         bool contains = false;
         for (int mi = 0; mi < legalMoves.size; mi++)
-            if (legalMoves[mi].equals(be.move)) {
+            if (legalMoves[mi] == be.move) {
                 contains = true;
                 break;
             }
@@ -210,7 +210,7 @@ Book::addToBook(const Position& pos, const Move& moveToAdd) {
     std::vector<BookEntry>& ent = it->second;
     for (size_t i = 0; i < ent.size(); i++) {
         BookEntry& be = ent[i];
-        if (be.move.equals(moveToAdd)) {
+        if (be.move == moveToAdd) {
             be.count++;
             return;
         }

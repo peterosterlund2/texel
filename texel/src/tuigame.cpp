@@ -143,7 +143,7 @@ TUIGame::handleTestSuite(const std::string& cmd) {
                 Move am(TextIO::stringToMove(testPos, a));
                 if (am.isEmpty())
                     throw ChessParseError("Invalid move " + a);
-                if (am.equals(m)) {
+                if (am == m) {
                     correct = true;
                     break;
                 }
