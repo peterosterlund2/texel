@@ -533,7 +533,6 @@ EngineControl::getPonderMove(Position pos, const Move& m) {
     UndoInfo ui;
     pos.makeMove(m, ui);
     TranspositionTable::TTEntry ent;
-    ent.clear();
     engineThread.getTT().probe(pos.historyHash(), ent);
     if (ent.getType() != TType::T_EMPTY) {
         ent.getMove(ret);

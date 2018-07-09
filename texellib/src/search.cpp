@@ -509,7 +509,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     // Check transposition table
     int evalScore = UNKNOWN_SCORE;
     TranspositionTable::TTEntry ent;
-    ent.clear();
     const bool singularSearch = !sti.singularMove.isEmpty();
     const bool useTT = !singularSearch;
     if (useTT) tt.probe(hKey, ent);
@@ -548,7 +547,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     int tbScore = illegalScore;
     if (tb && depth >= minProbeDepth && !singularSearch) {
         TranspositionTable::TTEntry tbEnt;
-        tbEnt.clear();
         if (TBProbe::tbProbe(pos, ply, alpha, beta, tt.getTT(), tbEnt)) {
             tbHits++;
             nodesToGo -= 100;

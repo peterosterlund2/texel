@@ -94,7 +94,6 @@ testTTEntry() {
 
     // Test negative mate score
     TTEntry ent3;
-    ent3.clear();
     score = -mate0 + 5;
     ply = 3;
     ent3.setKey(3);
@@ -145,7 +144,6 @@ testInsert() {
         tt.insert(pos.historyHash(), m, type, ply, depth, score * 2 + 3, (i % 2) == 0);
         if (i == 7) {
             TranspositionTable::TTEntry ent;
-            ent.clear();
             tt.probe(pos.historyHash(), ent);
             tt.setBusy(ent, ply);
         }
@@ -156,7 +154,6 @@ testInsert() {
         Move m = TextIO::stringToMove(pos, moves[i]);
         pos.makeMove(m, ui);
         TranspositionTable::TTEntry ent;
-        ent.clear();
         tt.probe(pos.historyHash(), ent);
         ASSERT_EQUAL(TType::T_EXACT, ent.getType());
         int score = i * 17 + 3;
@@ -186,7 +183,6 @@ testMateDepth() {
     pos.makeMove(m, ui);
 
     TranspositionTable::TTEntry ent;
-    ent.clear();
     const int mate0 = SearchConst::MATE0;
     int ply = 5;
     tt.probe(pos.historyHash(), ent);

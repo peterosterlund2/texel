@@ -75,7 +75,7 @@ public:
     /** A local copy of a transposition table entry. */
     class TTEntry {
     public:
-        TTEntry() {}
+        TTEntry() : key(0), data(0) {}
         TTEntry(U64 key, U64 data) : key(key), data(data) {}
 
         /** Set type to T_EMPTY. */

@@ -45,7 +45,6 @@ ClusterTT::addReceiver(TTReceiver* receiver) {
 void
 ClusterTT::clusterInsert(U64 key, const Move& sm, int type, int ply, int depth, int evalScore, bool busy) {
     TranspositionTable::TTEntry ent;
-    ent.clear();
     ent.setMove(sm);
     ent.setKey(key);
     ent.setScore(sm.score(), ply);
