@@ -46,16 +46,6 @@ int Evaluate::castleMaskFactor[256];
 static StaticInitializer<Evaluate> evInit;
 
 
-/** Get bitboard mask for a square translated (dx,dy). Return 0 if square outside board. */
-static inline U64 getMask(int sq, int dx, int dy) {
-    int x = Position::getX(sq) + dx;
-    int y = Position::getY(sq) + dy;
-    if (x >= 0 && x < 8 && y >= 0 && y < 8)
-        return 1ULL << Position::getSquare(x, y);
-    else
-        return 0;
-}
-
 void
 Evaluate::staticInitialize() {
     psTab1[Piece::EMPTY]   = empty;
