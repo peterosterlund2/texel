@@ -89,7 +89,7 @@ static void
 testMakeMove() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     Position origPos(pos);
-    ASSERT(pos.equals(origPos));
+    ASSERT(pos == origPos);
     Move move(Position::getSquare(4,1), Position::getSquare(4,3), Piece::EMPTY);
     UndoInfo ui;
     pos.makeMove(move, ui);
@@ -97,7 +97,7 @@ testMakeMove() {
     ASSERT_EQUAL(-1, pos.getEpSquare());
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(4,1)));
     ASSERT_EQUAL(Piece::WPAWN, pos.getPiece(Position::getSquare(4,3)));
-    ASSERT(!pos.equals(origPos));
+    ASSERT(!(pos == origPos));
     int castleMask = (1 << Position::A1_CASTLE) |
                      (1 << Position::H1_CASTLE) |
                      (1 << Position::A8_CASTLE) |
@@ -107,7 +107,7 @@ testMakeMove() {
     ASSERT_EQUAL(pos.isWhiteMove(), true);
     ASSERT_EQUAL(Piece::WPAWN, pos.getPiece(Position::getSquare(4,1)));
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(4,3)));
-    ASSERT(pos.equals(origPos));
+    ASSERT(pos == origPos);
 
     std::string fen = "r1bqk2r/2ppbppp/p1n2n2/1pP1p3/B3P3/5N2/PP1P1PPP/RNBQK2R w KQkq b6 0 2";
     pos = TextIO::readFEN(fen);
@@ -122,7 +122,7 @@ testMakeMove() {
     ASSERT_EQUAL(Piece::WBISHOP, pos.getPiece(Position::getSquare(1,4)));
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(0,3)));
     pos.unMakeMove(move, ui);
-    ASSERT(pos.equals(origPos));
+    ASSERT(pos == origPos);
 
     // Test castling
     move = Move(Position::getSquare(4, 0), Position::getSquare(6,0), Piece::EMPTY);
@@ -134,7 +134,7 @@ testMakeMove() {
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     ASSERT_EQUAL(-1, pos.getEpSquare());
     pos.unMakeMove(move, ui);
-    ASSERT(pos.equals(origPos));
+    ASSERT(pos == origPos);
 
     // Test castling rights (king move)
     move = Move(Position::getSquare(4, 0), Position::getSquare(4,1), Piece::EMPTY);
@@ -144,7 +144,7 @@ testMakeMove() {
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     ASSERT_EQUAL(-1, pos.getEpSquare());
     pos.unMakeMove(move, ui);
-    ASSERT(pos.equals(origPos));
+    ASSERT(pos == origPos);
 
     // Test castling rights (rook move)
     move = Move(Position::getSquare(7, 0), Position::getSquare(6,0), Piece::EMPTY);
@@ -155,7 +155,7 @@ testMakeMove() {
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     ASSERT_EQUAL(-1, pos.getEpSquare());
     pos.unMakeMove(move, ui);
-    ASSERT(pos.equals(origPos));
+    ASSERT(pos == origPos);
 
     // Test en passant
     move = Move(Position::getSquare(2, 4), Position::getSquare(1,5), Piece::EMPTY);
@@ -164,7 +164,7 @@ testMakeMove() {
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(2,4)));
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(1,4)));
     pos.unMakeMove(move, ui);
-    ASSERT(pos.equals(origPos));
+    ASSERT(pos == origPos);
 
     // Test castling rights loss when rook captured
     pos.setPiece(Position::getSquare(6,2), Piece::BKNIGHT);
@@ -178,7 +178,7 @@ testMakeMove() {
     ASSERT_EQUAL(castleMask,pos.getCastleMask());
     ASSERT_EQUAL(-1, pos.getEpSquare());
     pos.unMakeMove(move, ui);
-    ASSERT(pos.equals(origPos2));
+    ASSERT(pos == origPos2);
 }
 
 static void
@@ -198,7 +198,7 @@ testPromotion() {
     Position pos = TextIO::readFEN(fen);
     ASSERT_EQUAL(fen, TextIO::toFEN(pos));
     Position origPos(pos);
-    ASSERT(origPos.equals(pos));
+    ASSERT(origPos == pos);
 
     Move move(Position::getSquare(1, 6), Position::getSquare(0,7), Piece::WQUEEN);
     UndoInfo ui;
@@ -206,14 +206,14 @@ testPromotion() {
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(1,6)));
     ASSERT_EQUAL(Piece::WQUEEN, pos.getPiece(Position::getSquare(0,7)));
     pos.unMakeMove(move, ui);
-    ASSERT(origPos.equals(pos));
+    ASSERT(origPos == pos);
 
     move = Move(Position::getSquare(1, 6), Position::getSquare(1,7), Piece::WKNIGHT);
     pos.makeMove(move, ui);
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(1,6)));
     ASSERT_EQUAL(Piece::WKNIGHT, pos.getPiece(Position::getSquare(1,7)));
     pos.unMakeMove(move, ui);
-    ASSERT(origPos.equals(pos));
+    ASSERT(origPos == pos);
 
     pos.setWhiteMove(false);
     origPos = pos;
@@ -223,7 +223,7 @@ testPromotion() {
     ASSERT_EQUAL(Piece::EMPTY, pos.getPiece(Position::getSquare(1,1)));
     ASSERT_EQUAL(Piece::BROOK, pos.getPiece(Position::getSquare(2,0)));
     pos.unMakeMove(move, ui);
-    ASSERT(origPos.equals(pos));
+    ASSERT(origPos == pos);
 }
 
 /**
@@ -303,7 +303,7 @@ testDrawRuleEquals() {
     ASSERT_EQUAL(false, pos.drawRuleEquals(origPos));
     pos.makeMove(TextIO::stringToMove(pos, "Ng8"), ui);
     ASSERT_EQUAL(true, pos.drawRuleEquals(origPos));
-    ASSERT_EQUAL(false, pos.equals(origPos));       // Move counters have changed
+    ASSERT_EQUAL(false, pos == origPos);       // Move counters have changed
 
     std::string fen = "r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1";
     pos = TextIO::readFEN(fen);
@@ -537,7 +537,7 @@ testSerialize() {
     Position::SerializeData data;
     pos.serialize(data);
     pos2.deSerialize(data);
-    ASSERT(pos.equals(pos2));
+    ASSERT(pos == pos2);
     ASSERT_EQUAL(pos.wMtrl(), pos2.wMtrl());
     ASSERT_EQUAL(pos.bMtrl(), pos2.bMtrl());
     ASSERT_EQUAL(pos.wMtrlPawns(), pos2.wMtrlPawns());

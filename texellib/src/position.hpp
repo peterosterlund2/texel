@@ -59,7 +59,7 @@ public:
     /** Initialize board to empty position. */
     Position();
 
-    bool equals(const Position& other) const;
+    bool operator==(const Position& other) const;
 
     /**
      * Return Zobrist hash value for the current position.
@@ -268,7 +268,7 @@ private:
 std::ostream& operator<<(std::ostream& os, const Position& pos);
 
 inline bool
-Position::equals(const Position& other) const {
+Position::operator==(const Position& other) const {
     if (!drawRuleEquals(other))
         return false;
     if (halfMoveClock != other.halfMoveClock)

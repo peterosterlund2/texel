@@ -249,7 +249,7 @@ ProofGame::getSolution(const Position& startPos, int idx, std::vector<Move>& mov
         UndoInfo ui;
         for (int i = 0; i < moves.size; i++) {
             pos.makeMove(moves[i], ui);
-            if (pos.equals(target)) {
+            if (pos == target) {
                 pos.unMakeMove(moves[i], ui);
                 movePath.push_back(moves[i]);
                 break;

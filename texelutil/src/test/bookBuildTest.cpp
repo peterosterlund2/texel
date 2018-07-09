@@ -384,11 +384,11 @@ BookBuildTest::testAddPosToBook() {
     Position pos2;
     std::vector<Move> moveList;
     ASSERT(book.getPosition(rootHash, pos2, moveList));
-    ASSERT(pos2.equals(TextIO::readFEN(TextIO::startPosFEN)));
+    ASSERT(pos2 == TextIO::readFEN(TextIO::startPosFEN));
     ASSERT_EQUAL(0, moveList.size());
     moveList.clear();
     ASSERT(book.getPosition(n2Hash, pos2, moveList));
-    ASSERT(pos2.equals(pos));
+    ASSERT(pos2 == pos);
     ASSERT_EQUAL(1, moveList.size());
     ASSERT_EQUAL(e4, moveList[0]);
 
@@ -420,7 +420,7 @@ BookBuildTest::testAddPosToBook() {
 
     moveList.clear();
     ASSERT(book.getPosition(n3Hash, pos2, moveList));
-    ASSERT(pos2.equals(pos));
+    ASSERT(pos2 == pos);
     ASSERT_EQUAL(2, moveList.size());
     ASSERT_EQUAL(e4, moveList[0]);
     ASSERT_EQUAL(nf6, moveList[1]);
@@ -446,7 +446,7 @@ BookBuildTest::testAddPosToBook() {
 
     moveList.clear();
     ASSERT(book.getPosition(n5Hash, pos2, moveList));
-    ASSERT(pos2.equals(pos));
+    ASSERT(pos2 == pos);
     ASSERT_EQUAL(1, moveList.size());
     ASSERT_EQUAL(d4, moveList[0]);
 
@@ -469,7 +469,7 @@ BookBuildTest::testAddPosToBook() {
 
     moveList.clear();
     ASSERT(book.getPosition(n6Hash, pos2, moveList));
-    ASSERT(pos2.equals(pos));
+    ASSERT(pos2 == pos);
     ASSERT_EQUAL(2, moveList.size());
     ASSERT_EQUAL(d4, moveList[0]);
     ASSERT_EQUAL(nf6, moveList[1]);
@@ -498,7 +498,7 @@ BookBuildTest::testAddPosToBook() {
 
     moveList.clear();
     ASSERT(book.getPosition(n4Hash, pos2, moveList));
-    ASSERT(pos2.equals(pos));
+    ASSERT(pos2 == pos);
     ASSERT_EQUAL(3, moveList.size());
     ASSERT_EQUAL(d4, moveList[0]);
     ASSERT_EQUAL(nf6, moveList[1]);

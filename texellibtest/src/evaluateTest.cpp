@@ -110,7 +110,7 @@ evalPos(Evaluate& eval, const Position& pos, bool evalMirror, bool testMirror) {
     Position::SerializeData data;
     pos.serialize(data);
     pos2.deSerialize(data);
-    ASSERT(pos.equals(pos2));
+    ASSERT(pos == pos2);
     ASSERT_EQUAL(pos.wMtrl(), pos2.wMtrl());
     ASSERT_EQUAL(pos.bMtrl(), pos2.bMtrl());
     ASSERT_EQUAL(pos.wMtrlPawns(), pos2.wMtrlPawns());

@@ -318,7 +318,7 @@ GameTest::testProcessString() {
     Position pos = TextIO::readFEN(fen);
     res = game.processString("setpos " + fen);
     ASSERT_EQUAL(true, res);
-    ASSERT(pos.equals(game.pos));
+    ASSERT(pos == game.pos);
 
     res = game.processString("junk");
     ASSERT_EQUAL(false, res);
@@ -457,10 +457,10 @@ GameTest::perfT(Position& pos, int depth, Evaluate& eval) {
             Position pos2(pos);
             pos2.makeSEEMove(m, ui);
             pos2.unMakeSEEMove(m, ui);
-            ASSERT(pos.equals(pos2));
+            ASSERT(pos == pos2);
             pos2.makeMoveB(m, ui);
             pos2.unMakeMoveB(m, ui);
-            ASSERT(pos.equals(pos2));
+            ASSERT(pos == pos2);
         }
     }
     return nodes;
