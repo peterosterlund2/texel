@@ -25,6 +25,13 @@
 
 #include "moveGen.hpp"
 
+//#define MOVELIST_DEBUG
+
+#ifdef MOVELIST_DEBUG
+# include <set>
+# include "textio.hpp"
+#endif
+
 void
 MoveList::filter(const std::vector<Move>& searchMoves)
 {
@@ -236,9 +243,9 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
         removeIllegal(tmpPos, allMoves);
         std::set<std::string> evMoves;
         for (int i = 0; i < moveList.size; i++)
-            evMoves.insert(TextIO::moveToUCIString(moveList.m[i]));
+            evMoves.insert(TextIO::moveToUCIString(moveList[i]));
         for (int i = 0; i < allMoves.size; i++)
-            assert(evMoves.find(TextIO::moveToUCIString(allMoves.m[i])) != evMoves.end());
+            assert(evMoves.find(TextIO::moveToUCIString(allMoves[i])) != evMoves.end());
     }
 #endif
 }

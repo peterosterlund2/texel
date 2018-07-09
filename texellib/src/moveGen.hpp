@@ -32,13 +32,6 @@
 
 #include <cassert>
 
-//#define MOVELIST_DEBUG
-
-#ifdef MOVELIST_DEBUG
-# include <set>
-# include "textio.hpp"
-#endif
-
 /** A stack-allocated move list object. */
 class MoveList {
 public:
