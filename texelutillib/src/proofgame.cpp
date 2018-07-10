@@ -914,7 +914,7 @@ ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
         m = bGoalPawns & bCurrPawns & ~blocked;
         while (m) {
             int sq = BitBoard::extractSquare(m);
-            U64 tgt = BitBoard::bPawnAttacks(sq) | (1ULL >> (sq - 8));
+            U64 tgt = BitBoard::bPawnAttacks(sq) | (1ULL << (sq - 8));
             if ((tgt & bUsefulPawnSquares) == 0)
                 blocked |= (1ULL << sq);
         }
