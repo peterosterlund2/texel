@@ -835,7 +835,7 @@ EndGameEval::isBishopPawnDraw(const Position& pos) {
 int
 EndGameEval::kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove, int score) {
     bool canWin = false;
-    if (((1ULL << bKing) & 0xFFFF) == 0) {
+    if (bKing >= A3) {
         canWin = true; // King doesn't support pawn
     } else if (std::abs(Square::getX(bPawn) - Square::getX(bKing)) > 2) {
         canWin = true; // King doesn't support pawn
