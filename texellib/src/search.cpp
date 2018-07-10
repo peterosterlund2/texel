@@ -600,7 +600,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     // If out of depth, perform quiescence search
     if (depth <= 0) {
         q0Eval = evalScore;
-        sti.bestMove.setMove(0,0,0,0);
+        sti.bestMove.setMove(A1,A1,0,0);
         int score = quiesce(alpha, beta, ply, 0, inCheck);
         int type = TType::T_EXACT;
         if (score <= alpha) {
@@ -686,7 +686,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 const int epSquare = pos.getEpSquare();
                 pos.setEpSquare(-1);
                 searchTreeInfo[ply+1].allowNullMove = false;
-                searchTreeInfo[ply+1].bestMove.setMove(0,0,0,0);
+                searchTreeInfo[ply+1].bestMove.setMove(A1,A1,0,0);
                 const int hmc = pos.getHalfMoveClock();
                 pos.setHalfMoveClock(0);
                 score = -negaScout(tb, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
@@ -702,7 +702,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 const Move savedMove = sti2.currentMove;
                 const int savedMoveNo = sti2.currentMoveNo;
                 const S64 savedNodeIdx2 = sti2.nodeIdx;
-                sti2.currentMove = Move(1,1,0); // Represents "no move"
+                sti2.currentMove.setMove(B1,B1,0,0); // Represents "no move"
                 sti2.currentMoveNo = -1;
                 sti2.nodeIdx = sti.nodeIdx;
                 const S64 savedNodeIdx = sti.nodeIdx;
@@ -713,7 +713,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 sti2.currentMove = savedMove;
                 sti2.currentMoveNo = savedMoveNo;
                 sti2.nodeIdx = savedNodeIdx2;
-                sti3.bestMove.setMove(0,0,0,0);
+                sti3.bestMove.setMove(A1,A1,0,0);
             }
             if (score >= beta) {
                 if (isWinScore(score))
@@ -749,7 +749,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             const Move savedMove = sti2.currentMove;
             const int savedMoveNo = sti2.currentMoveNo;
             const S64 savedNodeIdx2 = sti2.nodeIdx;
-            sti2.currentMove = Move(1,1,0); // Represents "no move"
+            sti2.currentMove.setMove(B1,B1,0,0); // Represents "no move"
             sti2.currentMoveNo = -1;
             sti2.nodeIdx = sti.nodeIdx;
             const S64 savedNodeIdx = sti.nodeIdx;
@@ -793,7 +793,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         const Move savedMove = sti2.currentMove;
         const int savedMoveNo = sti2.currentMoveNo;
         const S64 savedNodeIdx2 = sti2.nodeIdx;
-        sti2.currentMove = Move(1,1,0); // Represents "no move"
+        sti2.currentMove.setMove(B1,B1,0,0); // Represents "no move"
         sti2.currentMoveNo = -1;
         sti2.nodeIdx = sti.nodeIdx;
         const S64 savedNodeIdx = sti.nodeIdx;
@@ -802,7 +802,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         int newBeta = ent.getScore(ply) - 25;
         int singScore = negaScout(tb, newBeta-1, newBeta, ply, newDepth,
                                   recaptureSquare, inCheck);
-        sti.singularMove.setMove(0,0,0,0);
+        sti.singularMove.setMove(A1,A1,0,0);
         sti.nodeIdx = savedNodeIdx;
         sti2.currentMove = savedMove;
         sti2.currentMoveNo = savedMoveNo;
@@ -848,7 +848,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     if (tb && tbScore != illegalScore) {
         bestScore = tbScore - 1;
         bestMove = -2;
-        sti.bestMove.setMove(0, 0, 0, 0);
+        sti.bestMove.setMove(A1,A1,0,0);
     }
     bool allDone = false;
     for (int pass = 0; pass < 2 && !allDone; pass++) {
@@ -1409,7 +1409,7 @@ Search::initSearchTreeInfo() {
     bool useNullMove = UciParams::useNullMove->getBoolPar();
     for (size_t i = 0; i < COUNT_OF(searchTreeInfo); i++) {
         searchTreeInfo[i].allowNullMove = useNullMove;
-        searchTreeInfo[i].singularMove.setMove(0,0,0,0);
+        searchTreeInfo[i].singularMove.setMove(A1,A1,0,0);
         searchTreeInfo[i].abdadaExclusive = false;
     }
 }

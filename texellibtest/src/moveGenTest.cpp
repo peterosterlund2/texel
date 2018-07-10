@@ -115,7 +115,7 @@ getMoveList0(Position& pos, bool onlyLegal) {
         const std::string& sm = strMoves[i];
         Move m = TextIO::uciStringToMove(sm);
         if (!m.isEmpty() && !MoveGen::isLegal(pos, m, MoveGen::inCheck(pos)))
-            m.setMove(0,0,0,0);
+            m.setMove(A1,A1,0,0);
         if (m.isEmpty()) // Move was illegal (but pseudo-legal)
             continue;
         bool qProm = false; // Promotion types considered in qsearch

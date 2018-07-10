@@ -167,7 +167,7 @@ protected:
 
         Move getMove() const {
             Move ret;
-            ret.setMove(move & 63, (move >> 6) & 63, (move >> 12) & 15, 0);
+            ret.setFromCompressed(move);
             return ret;
         }
 
@@ -444,7 +444,7 @@ TreeLoggerWriter::logNodeStart(U64 parentIndex, const Move& m, int alpha, int be
     entry.type = EntryType::NODE_START;
     entry.se.endIndex = -1;
     entry.se.parentIndex = (U32)parentIndex;
-    entry.se.move = m.from() + (m.to() << 6) + (m.promoteTo() << 12);
+    entry.se.move = m.getCompressedMove();
     entry.se.alpha = alpha;
     entry.se.beta = beta;
     entry.se.ply = ply;

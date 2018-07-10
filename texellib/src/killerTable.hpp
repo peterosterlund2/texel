@@ -76,7 +76,7 @@ inline void
 KillerTable::addKiller(int ply, const Move& m) {
     if (ply >= (int)COUNT_OF(ktList))
         return;
-    int move = (short)(m.from() + (m.to() << 6) + (m.promoteTo() << 12));
+    int move = m.getCompressedMove();
     KTEntry& ent = ktList[ply];
     if (move != ent.move0) {
         ent.move1 = ent.move0;
@@ -86,7 +86,7 @@ KillerTable::addKiller(int ply, const Move& m) {
 
 inline int
 KillerTable::getKillerScore(int ply, const Move& m) const {
-    int move = (short)(m.from() + (m.to() << 6) + (m.promoteTo() << 12));
+    int move = m.getCompressedMove();
     if (ply < (int)COUNT_OF(ktList)) {
         const KTEntry& ent = ktList[ply];
         if (move == ent.move0) {
