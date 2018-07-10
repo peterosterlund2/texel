@@ -40,14 +40,6 @@ inline U64 pext(U64 value, U64 mask) {
 
 class BitBoard {
 public:
-    /** Squares attacked by a king on a given square. */
-    static U64 kingAttacks[64];
-    static U64 knightAttacks[64];
-    static U64 wPawnAttacks[64], bPawnAttacks[64];
-
-    // Squares preventing a pawn from being a passed pawn, if occupied by enemy pawn
-    static U64 wPawnBlockerMask[64], bPawnBlockerMask[64];
-
     static const U64 maskFileA = 0x0101010101010101ULL;
     static const U64 maskFileB = 0x0202020202020202ULL;
     static const U64 maskFileC = 0x0404040404040404ULL;
@@ -104,7 +96,13 @@ public:
     /** Shift mask in the SW and SE directions. */
     static U64 bPawnAttacksMask(U64 mask);
 
-    static U64 squaresBetween[64][64];
+    static U64 kingAttacks(int sq) { return kingAttacksTable[sq]; }
+    static U64 knightAttacks(int sq) { return knightAttacksTable[sq]; }
+    static U64 wPawnAttacks(int sq) { return wPawnAttacksTable[sq]; }
+    static U64 bPawnAttacks(int sq) { return bPawnAttacksTable[sq]; }
+    static U64 wPawnBlockerMask(int sq) { return wPawnBlockerMaskTable[sq]; }
+    static U64 bPawnBlockerMask(int sq) { return bPawnBlockerMaskTable[sq]; }
+    static U64 squaresBetween(int s1, int s2) { return squaresBetweenTable[s1][s2]; }
 
     /** Get direction between two squares, 8*sign(dy) + sign(dx) */
     static int getDirection(int from, int to);
@@ -132,6 +130,18 @@ public:
     static void staticInitialize();
 
 private:
+    /** Squares attacked by a king on a given square. */
+    static U64 kingAttacksTable[64];
+    static U64 knightAttacksTable[64];
+    static U64 wPawnAttacksTable[64];
+    static U64 bPawnAttacksTable[64];
+
+    // Squares preventing a pawn from being a passed pawn, if occupied by enemy pawn
+    static U64 wPawnBlockerMaskTable[64];
+    static U64 bPawnBlockerMaskTable[64];
+
+    static U64 squaresBetweenTable[64][64];
+
     static U64* rTables[64];
     static U64 rMasks[64];
     static int rBits[64];

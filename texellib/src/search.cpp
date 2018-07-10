@@ -1270,11 +1270,11 @@ Search::SEE(Position& pos, const Move& m, int alpha, int beta) {
         int bestValue = std::numeric_limits<int>::max();
         U64 atk;
         if (white) {
-            atk = BitBoard::bPawnAttacks[square] & pos.pieceTypeBB(Piece::WPAWN) & occupied;
+            atk = BitBoard::bPawnAttacks(square) & pos.pieceTypeBB(Piece::WPAWN) & occupied;
             if (atk != 0) {
                 bestValue = ::pV;
             } else {
-                atk = BitBoard::knightAttacks[square] & pos.pieceTypeBB(Piece::WKNIGHT) & occupied;
+                atk = BitBoard::knightAttacks(square) & pos.pieceTypeBB(Piece::WKNIGHT) & occupied;
                 if (atk != 0) {
                     bestValue = ::nV;
                 } else {
@@ -1292,7 +1292,7 @@ Search::SEE(Position& pos, const Move& m, int alpha, int beta) {
                             if (atk != 0) {
                                 bestValue = ::qV;
                             } else {
-                                atk = BitBoard::kingAttacks[square] & pos.pieceTypeBB(Piece::WKING) & occupied;
+                                atk = BitBoard::kingAttacks(square) & pos.pieceTypeBB(Piece::WKING) & occupied;
                                 if (atk != 0) {
                                     bestValue = kV;
                                 } else {
@@ -1304,11 +1304,11 @@ Search::SEE(Position& pos, const Move& m, int alpha, int beta) {
                 }
             }
         } else {
-            atk = BitBoard::wPawnAttacks[square] & pos.pieceTypeBB(Piece::BPAWN) & occupied;
+            atk = BitBoard::wPawnAttacks(square) & pos.pieceTypeBB(Piece::BPAWN) & occupied;
             if (atk != 0) {
                 bestValue = ::pV;
             } else {
-                atk = BitBoard::knightAttacks[square] & pos.pieceTypeBB(Piece::BKNIGHT) & occupied;
+                atk = BitBoard::knightAttacks(square) & pos.pieceTypeBB(Piece::BKNIGHT) & occupied;
                 if (atk != 0) {
                     bestValue = ::nV;
                 } else {
@@ -1326,7 +1326,7 @@ Search::SEE(Position& pos, const Move& m, int alpha, int beta) {
                             if (atk != 0) {
                                 bestValue = ::qV;
                             } else {
-                                atk = BitBoard::kingAttacks[square] & pos.pieceTypeBB(Piece::BKING) & occupied;
+                                atk = BitBoard::kingAttacks(square) & pos.pieceTypeBB(Piece::BKING) & occupied;
                                 if (atk != 0) {
                                     bestValue = kV;
                                 } else {

@@ -886,7 +886,7 @@ ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
         m = wGoalPawns & wCurrPawns & ~blocked;
         while (m) {
             int sq = BitBoard::extractSquare(m);
-            U64 tgt = BitBoard::wPawnAttacks[sq] | (1ULL << (sq + 8));
+            U64 tgt = BitBoard::wPawnAttacks(sq) | (1ULL << (sq + 8));
             if ((tgt & wUsefulPawnSquares) == 0)
                 blocked |= (1ULL << sq);
         }
@@ -914,7 +914,7 @@ ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
         m = bGoalPawns & bCurrPawns & ~blocked;
         while (m) {
             int sq = BitBoard::extractSquare(m);
-            U64 tgt = BitBoard::bPawnAttacks[sq] | (1ULL >> (sq - 8));
+            U64 tgt = BitBoard::bPawnAttacks(sq) | (1ULL >> (sq - 8));
             if ((tgt & bUsefulPawnSquares) == 0)
                 blocked |= (1ULL << sq);
         }
@@ -1075,7 +1075,7 @@ ProofGame::computeNeighbors(Piece::Type p, U64 toSquares, U64 blocked) {
     case Piece::WKING: case Piece::BKING:
         while (toSquares) {
             int sq = BitBoard::extractSquare(toSquares);
-            ret |= BitBoard::kingAttacks[sq];
+            ret |= BitBoard::kingAttacks(sq);
         }
         break;
     case Piece::WQUEEN: case Piece::BQUEEN:
@@ -1100,7 +1100,7 @@ ProofGame::computeNeighbors(Piece::Type p, U64 toSquares, U64 blocked) {
     case Piece::WKNIGHT: case Piece::BKNIGHT:
         while (toSquares) {
             int sq = BitBoard::extractSquare(toSquares);
-            ret |= BitBoard::knightAttacks[sq];
+            ret |= BitBoard::knightAttacks(sq);
         }
         break;
     case Piece::WPAWN: {

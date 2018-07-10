@@ -34,27 +34,27 @@
 
 void
 BitBoardTest::testKingAttacks() {
-    ASSERT_EQUAL(5, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("g1")]));
-    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("h1")]));
-    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("a1")]));
-    ASSERT_EQUAL(5, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("a2")]));
-    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("h8")]));
-    ASSERT_EQUAL(5, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("a6")]));
-    ASSERT_EQUAL(8, BitBoard::bitCount(BitBoard::kingAttacks[TextIO::getSquare("b2")]));
+    ASSERT_EQUAL(5, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("g1"))));
+    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("h1"))));
+    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("a1"))));
+    ASSERT_EQUAL(5, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("a2"))));
+    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("h8"))));
+    ASSERT_EQUAL(5, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("a6"))));
+    ASSERT_EQUAL(8, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("b2"))));
 }
 
 void
 BitBoardTest::testKnightAttacks() {
-    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("g1")]));
-    ASSERT_EQUAL(2, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("a1")]));
-    ASSERT_EQUAL(2, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("h1")]));
-    ASSERT_EQUAL(4, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("h6")]));
-    ASSERT_EQUAL(4, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("b7")]));
-    ASSERT_EQUAL(8, BitBoard::bitCount(BitBoard::knightAttacks[TextIO::getSquare("c6")]));
+    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("g1"))));
+    ASSERT_EQUAL(2, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("a1"))));
+    ASSERT_EQUAL(2, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("h1"))));
+    ASSERT_EQUAL(4, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("h6"))));
+    ASSERT_EQUAL(4, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("b7"))));
+    ASSERT_EQUAL(8, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("c6"))));
     ASSERT_EQUAL((1ULL<<TextIO::getSquare("e2")) |
                  (1ULL<<TextIO::getSquare("f3")) |
                  (1ULL<<TextIO::getSquare("h3")),
-                 BitBoard::knightAttacks[TextIO::getSquare("g1")]);
+                 BitBoard::knightAttacks(TextIO::getSquare("g1")));
 }
 
 void
@@ -101,25 +101,26 @@ BitBoardTest::testSquaresBetween() {
         for (int sq2 = 0; sq2 < 64; sq2++) {
             int d = BitBoard::getDirection(sq1, sq2);
             if (d == 0) {
-                ASSERT_EQUAL(0, BitBoard::squaresBetween[sq1][sq2]);
+                ASSERT_EQUAL(0, BitBoard::squaresBetween(sq1, sq2));
             } else {
                 int dx = Square::getX(sq1) - Square::getX(sq2);
                 int dy = Square::getY(sq1) - Square::getY(sq2);
                 if (std::abs(dx * dy) == 2) { // Knight direction
-                    ASSERT_EQUAL(0, BitBoard::squaresBetween[sq1][sq2]);
+                    ASSERT_EQUAL(0, BitBoard::squaresBetween(sq1, sq2));
                 } else {
                     if ((std::abs(dx) > 1) || (std::abs(dy) > 1)) {
-                        ASSERT(BitBoard::squaresBetween[sq1][sq2] != 0);
+                        ASSERT(BitBoard::squaresBetween(sq1, sq2) != 0);
                     } else {
-                        ASSERT_EQUAL(0, BitBoard::squaresBetween[sq1][sq2]);
+                        ASSERT_EQUAL(0, BitBoard::squaresBetween(sq1, sq2));
                     }
                 }
             }
         }
     }
 
-    ASSERT_EQUAL(0x0040201008040200ULL, BitBoard::squaresBetween[0][63]);
-    ASSERT_EQUAL(0x000000001C000000ULL, BitBoard::squaresBetween[TextIO::getSquare("b4")][TextIO::getSquare("f4")]);
+    ASSERT_EQUAL(0x0040201008040200ULL, BitBoard::squaresBetween(0, 63));
+    ASSERT_EQUAL(0x000000001C000000ULL, BitBoard::squaresBetween(TextIO::getSquare("b4"),
+                                                                 TextIO::getSquare("f4")));
 }
 
 /**

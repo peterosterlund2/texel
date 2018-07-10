@@ -215,15 +215,15 @@ template <bool wtm>
 inline bool
 MoveGen::sqAttacked(const Position& pos, int sq, U64 occupied) {
     using OtherColor = ColorTraits<!wtm>;
-    if ((BitBoard::knightAttacks[sq] & pos.pieceTypeBB(OtherColor::KNIGHT)) != 0)
+    if ((BitBoard::knightAttacks(sq) & pos.pieceTypeBB(OtherColor::KNIGHT)) != 0)
         return true;
-    if ((BitBoard::kingAttacks[sq] & pos.pieceTypeBB(OtherColor::KING)) != 0)
+    if ((BitBoard::kingAttacks(sq) & pos.pieceTypeBB(OtherColor::KING)) != 0)
         return true;
     if (wtm) {
-        if ((BitBoard::wPawnAttacks[sq] & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
+        if ((BitBoard::wPawnAttacks(sq) & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
             return true;
     } else {
-        if ((BitBoard::bPawnAttacks[sq] & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
+        if ((BitBoard::bPawnAttacks(sq) & pos.pieceTypeBB(OtherColor::PAWN)) != 0)
             return true;
     }
     U64 bbQueen = pos.pieceTypeBB(OtherColor::QUEEN);

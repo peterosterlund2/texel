@@ -340,13 +340,13 @@ Search::passedPawnPush(const Position& pos, const Move& m) {
     if (pos.isWhiteMove()) {
         if (p != Piece::WPAWN)
             return false;
-        if ((BitBoard::wPawnBlockerMask[m.to()] & pos.pieceTypeBB(Piece::BPAWN)) != 0)
+        if ((BitBoard::wPawnBlockerMask(m.to()) & pos.pieceTypeBB(Piece::BPAWN)) != 0)
             return false;
         return m.to() >= A6;
     } else {
         if (p != Piece::BPAWN)
             return false;
-        if ((BitBoard::bPawnBlockerMask[m.to()] & pos.pieceTypeBB(Piece::WPAWN)) != 0)
+        if ((BitBoard::bPawnBlockerMask(m.to()) & pos.pieceTypeBB(Piece::WPAWN)) != 0)
             return false;
         return m.to() <= H3;
     }
@@ -358,15 +358,15 @@ Search::defenseMove(const Position& pos, const Move& m) {
     if (pos.isWhiteMove()) {
         if (p == Piece::WPAWN)
             return false;
-        if ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::wPawnAttacks[m.from()]) == 0)
+        if ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::wPawnAttacks(m.from())) == 0)
             return false;
-        return (pos.pieceTypeBB(Piece::BPAWN) & BitBoard::wPawnAttacks[m.to()]) == 0;
+        return (pos.pieceTypeBB(Piece::BPAWN) & BitBoard::wPawnAttacks(m.to())) == 0;
     } else {
         if (p == Piece::BPAWN)
             return false;
-        if ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::bPawnAttacks[m.from()]) == 0)
+        if ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::bPawnAttacks(m.from())) == 0)
             return false;
-        return (pos.pieceTypeBB(Piece::WPAWN) & BitBoard::bPawnAttacks[m.to()]) == 0;
+        return (pos.pieceTypeBB(Piece::WPAWN) & BitBoard::bPawnAttacks(m.to())) == 0;
     }
 }
 

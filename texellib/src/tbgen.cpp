@@ -297,7 +297,7 @@ TBPosition::canTakeKing() {
             continue; // Ignore non-present piece
         switch (pieceTypes[i]) {
         case Piece::WKING: case Piece::BKING:
-            if (BitBoard::kingAttacks[sq] & kingMask)
+            if (BitBoard::kingAttacks(sq) & kingMask)
                 return true;
             break;
         case Piece::WQUEEN: case Piece::BQUEEN:
@@ -315,7 +315,7 @@ TBPosition::canTakeKing() {
                 return true;
             break;
         case Piece::WKNIGHT: case Piece::BKNIGHT:
-            if (BitBoard::knightAttacks[sq] & kingMask)
+            if (BitBoard::knightAttacks(sq) & kingMask)
                 return true;
             break;
         }
@@ -341,7 +341,7 @@ TBPosition::getMoves(TbMoveList& lst) {
         U64 toMask = 0;
         switch (pieceTypes[i]) {
         case Piece::WKING: case Piece::BKING:
-            toMask = BitBoard::kingAttacks[from];
+            toMask = BitBoard::kingAttacks(from);
             break;
         case Piece::WQUEEN: case Piece::BQUEEN:
             toMask = BitBoard::bishopAttacks(from, occupied);
@@ -354,7 +354,7 @@ TBPosition::getMoves(TbMoveList& lst) {
             toMask = BitBoard::bishopAttacks(from, occupied);
             break;
         case Piece::WKNIGHT: case Piece::BKNIGHT:
-            toMask = BitBoard::knightAttacks[from];
+            toMask = BitBoard::knightAttacks(from);
             break;
         }
         while (toMask) {
@@ -412,7 +412,7 @@ TBPosition::getUnMoves(TbMoveList& lst) {
         U64 fromMask = 0;
         switch (pieceTypes[i]) {
         case Piece::WKING: case Piece::BKING:
-            fromMask = BitBoard::kingAttacks[to];
+            fromMask = BitBoard::kingAttacks(to);
             break;
         case Piece::WQUEEN: case Piece::BQUEEN:
             fromMask = BitBoard::bishopAttacks(to, occupied);
@@ -425,7 +425,7 @@ TBPosition::getUnMoves(TbMoveList& lst) {
             fromMask = BitBoard::bishopAttacks(to, occupied);
             break;
         case Piece::WKNIGHT: case Piece::BKNIGHT:
-            fromMask = BitBoard::knightAttacks[to];
+            fromMask = BitBoard::knightAttacks(to);
             break;
         }
         fromMask &= ~occupied;

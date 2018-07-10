@@ -171,8 +171,8 @@ Evaluate::evalPos(const Position& pos) {
     int score = materialScore(pos, print);
 
     wKingAttacks = bKingAttacks = 0;
-    wKingZone = BitBoard::kingAttacks[pos.getKingSq(true)]; wKingZone |= wKingZone << 8;
-    bKingZone = BitBoard::kingAttacks[pos.getKingSq(false)]; bKingZone |= bKingZone >> 8;
+    wKingZone = BitBoard::kingAttacks(pos.getKingSq(true)); wKingZone |= wKingZone << 8;
+    bKingZone = BitBoard::kingAttacks(pos.getKingSq(false)); bKingZone |= bKingZone >> 8;
     wAttacksBB = bAttacksBB = 0;
     wQueenContactChecks = bQueenContactChecks = 0;
     wContactSupport = bContactSupport = 0;
@@ -440,7 +440,7 @@ Evaluate::pieceSquareEval(const Position& pos) {
             wAttacksBB |= atk;
             score += queenMobScore[BitBoard::bitCount(atk & ~(pos.whiteBB() | bPawnAttacks))];
             bKingAttacks += BitBoard::bitCount(atk & bKingZone) * 2;
-            wQueenContactChecks = atk & BitBoard::kingAttacks[pos.bKingSq()];
+            wQueenContactChecks = atk & BitBoard::kingAttacks(pos.bKingSq());
         }
         m = pos.pieceTypeBB(Piece::BQUEEN);
         while (m != 0) {
@@ -449,7 +449,7 @@ Evaluate::pieceSquareEval(const Position& pos) {
             bAttacksBB |= atk;
             score -= queenMobScore[BitBoard::bitCount(atk & ~(pos.blackBB() | wPawnAttacks))];
             wKingAttacks += BitBoard::bitCount(atk & wKingZone) * 2;
-            bQueenContactChecks = atk & BitBoard::kingAttacks[pos.wKingSq()];
+            bQueenContactChecks = atk & BitBoard::kingAttacks(pos.wKingSq());
         }
     }
 
@@ -1097,7 +1097,7 @@ Evaluate::knightEval(const Position& pos) {
     U64 m = wKnights;
     while (m != 0) {
         int sq = BitBoard::extractSquare(m);
-        U64 atk = BitBoard::knightAttacks[sq];
+        U64 atk = BitBoard::knightAttacks(sq);
         wAttacksBB |= atk;
         wContactSupport |= atk;
         score += knightMobScoreA[sq][BitBoard::bitCount(atk & ~pos.whiteBB() & ~bPawnAttacks)];
@@ -1106,7 +1106,7 @@ Evaluate::knightEval(const Position& pos) {
     m = bKnights;
     while (m != 0) {
         int sq = BitBoard::extractSquare(m);
-        U64 atk = BitBoard::knightAttacks[sq];
+        U64 atk = BitBoard::knightAttacks(sq);
         bAttacksBB |= atk;
         bContactSupport |= atk;
         score -= knightMobScoreA[sq][BitBoard::bitCount(atk & ~pos.blackBB() & ~wPawnAttacks)];
@@ -1242,8 +1242,8 @@ Evaluate::kingSafety(const Position& pos) {
     // Bonus for non-losing queen contact checks
     wAttacksBB |= wPawnAttacks;
     bAttacksBB |= bPawnAttacks;
-    wContactSupport |= BitBoard::kingAttacks[pos.wKingSq()] | wPawnAttacks;
-    bContactSupport |= BitBoard::kingAttacks[pos.bKingSq()] | bPawnAttacks;
+    wContactSupport |= BitBoard::kingAttacks(pos.wKingSq()) | wPawnAttacks;
+    bContactSupport |= BitBoard::kingAttacks(pos.bKingSq()) | bPawnAttacks;
     score += qContactCheckBonus[clamp(getNContactChecks(pos)+2, 0, 4)];
 
     // Bonus for piece majority on the side where the kings are located

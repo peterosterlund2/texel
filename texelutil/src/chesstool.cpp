@@ -1792,10 +1792,10 @@ ChessTool::staticScoreMoveListQuiet(Position& pos, Evaluate& eval, MoveList& mov
         int prevHang = 0;
         if (pVal > ::pV) {
             if (wtm) {
-                if (BitBoard::wPawnAttacks[m.from()] & pos.pieceTypeBB(Piece::BPAWN))
+                if (BitBoard::wPawnAttacks(m.from()) & pos.pieceTypeBB(Piece::BPAWN))
                     prevHang = pVal;
             } else {
-                if (BitBoard::bPawnAttacks[m.from()] & pos.pieceTypeBB(Piece::WPAWN))
+                if (BitBoard::bPawnAttacks(m.from()) & pos.pieceTypeBB(Piece::WPAWN))
                     prevHang = pVal;
             }
         }
@@ -1812,10 +1812,10 @@ ChessTool::staticScoreMoveListQuiet(Position& pos, Evaluate& eval, MoveList& mov
         int currHang = 0;
         if (pVal > ::pV) {
             if (wtm) {
-                if (BitBoard::wPawnAttacks[m.to()] & pos.pieceTypeBB(Piece::BPAWN))
+                if (BitBoard::wPawnAttacks(m.to()) & pos.pieceTypeBB(Piece::BPAWN))
                     currHang = pVal;
             } else {
-                if (BitBoard::bPawnAttacks[m.to()] & pos.pieceTypeBB(Piece::WPAWN))
+                if (BitBoard::bPawnAttacks(m.to()) & pos.pieceTypeBB(Piece::WPAWN))
                     currHang = pVal;
             }
         }

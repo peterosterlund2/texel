@@ -872,7 +872,7 @@ EndGameEval::kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMov
 
 int
 EndGameEval::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, bool whiteMove, int score) {
-    if (!(BitBoard::bPawnAttacks[bPawn] & (1ULL << bRook)))
+    if (!(BitBoard::bPawnAttacks(bPawn) & (1ULL << bRook)))
         return score; // Rook not protected by pawn, no fortress
     if ((1ULL << bPawn) & (BitBoard::maskFileE | BitBoard::maskFileF |
                            BitBoard::maskFileG | BitBoard::maskFileH)) {
@@ -972,7 +972,7 @@ EndGameEval::kqkrmFortress(bool bishop, int wQueen, int bRook, int bMinor, U64 w
     U64 needPawnGuard = 0;
     U64 bpAtk = BitBoard::bPawnAttacksMask(bPawns);
     U64 bmAtk = bishop ? BitBoard::bishopAttacks(bMinor, wPawns | bPawns | (1ULL << bRook))
-                       : BitBoard::knightAttacks[bMinor];
+                       : BitBoard::knightAttacks(bMinor);
     U64 brAtk = BitBoard::rookAttacks(bRook, wPawns | bPawns | (1ULL << bMinor));
     if (!(bmAtk & (1ULL << bRook)))
         needPawnGuard |= 1ULL << bRook;
@@ -1087,10 +1087,10 @@ EndGameEval::krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bo
     index = index * 64 + wKing;
     const U64 kMask = krpkrTable[index];
     const bool canWin = (kMask & (1ULL << bKing)) != 0;
-    U64 kingNeighbors = BitBoard::kingAttacks[bKing];
+    U64 kingNeighbors = BitBoard::kingAttacks(bKing);
     const U64 occupied = (1ULL<<wKing) | (1ULL<<bKing) | (1ULL<<wPawn) | (1ULL<<bRook);
     const U64 rAtk = BitBoard::rookAttacks(wRook, occupied);
-    kingNeighbors &= ~(BitBoard::kingAttacks[wKing] | BitBoard::wPawnAttacks[wPawn] | rAtk);
+    kingNeighbors &= ~(BitBoard::kingAttacks(wKing) | BitBoard::wPawnAttacks(wPawn) | rAtk);
     bool close;
     if (canWin) {
         close = (kMask & kingNeighbors) != kingNeighbors;
@@ -1159,7 +1159,7 @@ EndGameEval::kbpkbEval(int wKing, int wBish, int wPawn, int bKing, int bBish, in
                 return 0;
     }
 
-    if (bKingMask & BitBoard::wPawnBlockerMask[wPawn])
+    if (bKingMask & BitBoard::wPawnBlockerMask(wPawn))
         return score / 4;
     return score;
 }
@@ -1180,7 +1180,7 @@ EndGameEval::kbpknEval(int wKing, int wBish, int wPawn, int bKing, int bKnight, 
     if ((bKingMask & pawnPath) && ((bKingMask & wBishControl) == 0))
         return 0;
 
-    if (bKingMask & BitBoard::wPawnBlockerMask[wPawn])
+    if (bKingMask & BitBoard::wPawnBlockerMask(wPawn))
         return score / 4;
     return score;
 }

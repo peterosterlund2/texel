@@ -28,12 +28,12 @@
 #include <cassert>
 #include <iostream>
 
-U64 BitBoard::kingAttacks[64];
-U64 BitBoard::knightAttacks[64];
-U64 BitBoard::wPawnAttacks[64];
-U64 BitBoard::bPawnAttacks[64];
-U64 BitBoard::wPawnBlockerMask[64];
-U64 BitBoard::bPawnBlockerMask[64];
+U64 BitBoard::kingAttacksTable[64];
+U64 BitBoard::knightAttacksTable[64];
+U64 BitBoard::wPawnAttacksTable[64];
+U64 BitBoard::bPawnAttacksTable[64];
+U64 BitBoard::wPawnBlockerMaskTable[64];
+U64 BitBoard::bPawnBlockerMaskTable[64];
 
 const U64 BitBoard::maskFile[8] = {
     0x0101010101010101ULL,
@@ -151,7 +151,7 @@ const int BitBoard::trailingZ[64] = {
     44, 24, 15,  8, 23,  7,  6,  5
 };
 
-U64 BitBoard::squaresBetween[64][64];
+U64 BitBoard::squaresBetweenTable[64][64];
 
 static U64 createPattern(int i, U64 mask) {
     U64 ret = 0ULL;
@@ -227,7 +227,7 @@ BitBoard::staticInitialize() {
         U64 mask = (((m >> 1) | (m << 7) | (m >> 9)) & maskAToGFiles) |
                    (((m << 1) | (m << 9) | (m >> 7)) & maskBToHFiles) |
                     (m << 8) | (m >> 8);
-        kingAttacks[sq] = mask;
+        kingAttacksTable[sq] = mask;
     }
 
     // Compute knight attacks
@@ -237,16 +237,16 @@ BitBoard::staticInitialize() {
                    (((m << 15) | (m >> 17)) & maskAToGFiles) |
                    (((m << 17) | (m >> 15)) & maskBToHFiles) |
                    (((m << 10) | (m >>  6)) & maskCToHFiles);
-        knightAttacks[sq] = mask;
+        knightAttacksTable[sq] = mask;
     }
 
     // Compute pawn attacks
     for (int sq = 0; sq < 64; sq++) {
         U64 m = 1ULL << sq;
         U64 mask = ((m << 7) & maskAToGFiles) | ((m << 9) & maskBToHFiles);
-        wPawnAttacks[sq] = mask;
+        wPawnAttacksTable[sq] = mask;
         mask = ((m >> 9) & maskAToGFiles) | ((m >> 7) & maskBToHFiles);
-        bPawnAttacks[sq] = mask;
+        bPawnAttacksTable[sq] = mask;
 
         int x = Square::getX(sq);
         int y = Square::getY(sq);
@@ -256,14 +256,14 @@ BitBoard::staticInitialize() {
                        m |= 1ULL << Square::getSquare(x  , y2);
             if (x < 7) m |= 1ULL << Square::getSquare(x+1, y2);
         }
-        wPawnBlockerMask[sq] = m;
+        wPawnBlockerMaskTable[sq] = m;
         m = 0;
         for (int y2 = y-1; y2 >= 0; y2--) {
             if (x > 0) m |= 1ULL << Square::getSquare(x-1, y2);
                        m |= 1ULL << Square::getSquare(x  , y2);
             if (x < 7) m |= 1ULL << Square::getSquare(x+1, y2);
         }
-        bPawnBlockerMask[sq] = m;
+        bPawnBlockerMaskTable[sq] = m;
     }
 
 #ifdef HAS_BMI2
@@ -368,7 +368,7 @@ BitBoard::staticInitialize() {
     // squaresBetween
     for (int sq1 = 0; sq1 < 64; sq1++) {
         for (int j = 0; j < 64; j++)
-            squaresBetween[sq1][j] = 0;
+            squaresBetweenTable[sq1][j] = 0;
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
                 if ((dx == 0) && (dy == 0))
@@ -381,7 +381,7 @@ BitBoard::staticInitialize() {
                     if ((x < 0) || (x > 7) || (y < 0) || (y > 7))
                         break;
                     int sq2 = Square::getSquare(x, y);
-                    squaresBetween[sq1][sq2] = m;
+                    squaresBetweenTable[sq1][sq2] = m;
                     m |= 1ULL << sq2;
                 }
             }
