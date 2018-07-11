@@ -74,25 +74,25 @@ PosGenerator::genQvsN() {
                             continue;
                         Position pos;
                         for (int i = 0; i < 8; i++) {
-                            pos.setPiece(Square::getSquare(i, 1), Piece::WPAWN);
-                            pos.setPiece(Square::getSquare(i, 6), Piece::BPAWN);
-                            pos.setPiece(Square::getSquare(i, 7), Piece::BKNIGHT);
+                            pos.setPiece(Square(i, 1), Piece::WPAWN);
+                            pos.setPiece(Square(i, 6), Piece::BPAWN);
+                            pos.setPiece(Square(i, 7), Piece::BKNIGHT);
                         }
-                        pos.setPiece(Square::getSquare(bk, 7), Piece::BKING);
-                        pos.setPiece(Square::getSquare(wk, 0), Piece::WKING);
-                        pos.setPiece(Square::getSquare(q1, 0), Piece::WQUEEN);
-                        pos.setPiece(Square::getSquare(q2, 0), Piece::WQUEEN);
-                        pos.setPiece(Square::getSquare(q3, 0), Piece::WQUEEN);
+                        pos.setPiece(Square(bk, 7), Piece::BKING);
+                        pos.setPiece(Square(wk, 0), Piece::WKING);
+                        pos.setPiece(Square(q1, 0), Piece::WQUEEN);
+                        pos.setPiece(Square(q2, 0), Piece::WQUEEN);
+                        pos.setPiece(Square(q3, 0), Piece::WQUEEN);
                         writeFEN(pos);
                         for (int i = 0; i < 8; i++) {
-                            pos.setPiece(Square::getSquare(i, 6), Piece::EMPTY);
+                            pos.setPiece(Square(i, 6), Piece::EMPTY);
                             writeFEN(pos);
-                            pos.setPiece(Square::getSquare(i, 6), Piece::BPAWN);
+                            pos.setPiece(Square(i, 6), Piece::BPAWN);
                         }
                         for (int i = 0; i < 8; i++) {
-                            pos.setPiece(Square::getSquare(i, 1), Piece::EMPTY);
+                            pos.setPiece(Square(i, 1), Piece::EMPTY);
                             writeFEN(pos);
-                            pos.setPiece(Square::getSquare(i, 1), Piece::WPAWN);
+                            pos.setPiece(Square(i, 1), Piece::WPAWN);
                         }
                     }
                 }
@@ -274,8 +274,8 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
     }
 
     for (int wk = 0; wk < 64; wk++) {
-        int x = Square::getX(wk);
-        int y = Square::getY(wk);
+        int x = Square(wk).getX();
+        int y = Square(wk).getY();
         if (skipSymmetric) {
             if (x >= 4)
                 continue;
@@ -284,14 +284,14 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
                     continue;
         }
         for (int bk = 0; bk < 64; bk++) {
-            int x2 = Square::getX(bk);
-            int y2 = Square::getY(bk);
+            int x2 = Square(bk).getX();
+            int y2 = Square(bk).getY();
             if (std::abs(x2-x) < 2 && std::abs(y2-y) < 2)
                 continue;
 
             Position pos;
-            pos.setPiece(wk, Piece::WKING);
-            pos.setPiece(bk, Piece::BKING);
+            pos.setPiece(Square(wk), Piece::WKING);
+            pos.setPiece(Square(bk), Piece::BKING);
             std::vector<int> squares(nPieces, 0);
             int nPlaced = 0;
 
@@ -307,8 +307,8 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
                     for (int sq = first; sq < 64; sq++) {
                         if (!squareValid(sq, p))
                             continue;
-                        if (pos.getPiece(sq) == Piece::EMPTY) {
-                            pos.setPiece(sq, p);
+                        if (pos.getPiece(Square(sq)) == Piece::EMPTY) {
+                            pos.setPiece(Square(sq), p);
                             squares[nPlaced] = sq;
                             nPlaced++;
                             ok = true;
@@ -321,9 +321,9 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
 
                 if (nPlaced == nPieces) {
                     pos.setWhiteMove(true);
-                    bool wKingAttacked = MoveGen::sqAttacked(pos, wk);
+                    bool wKingAttacked = MoveGen::sqAttacked(pos, Square(wk));
                     pos.setWhiteMove(false);
-                    bool bKingAttacked = MoveGen::sqAttacked(pos, bk);
+                    bool bKingAttacked = MoveGen::sqAttacked(pos, Square(bk));
                     for (int side = 0; side < 2; side++) {
                         bool white = side == 0;
                         if (white) {
@@ -340,15 +340,15 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
                         U64 epSquares = epPossible ? getEPSquares(pos) : 0;
                         while (true) {
                             if (epSquares) {
-                                int epSq = BitBoard::firstSquare(epSquares);
+                                Square epSq = BitBoard::firstSquare(epSquares);
                                 pos.setEpSquare(epSq);
                                 TextIO::fixupEPSquare(pos);
-                                if (pos.getEpSquare() == -1) {
+                                if (!pos.getEpSquare().isValid()) {
                                     epSquares &= epSquares - 1;
                                     continue;
                                 }
                             } else {
-                                pos.setEpSquare(-1);
+                                pos.setEpSquare(Square(-1));
                             }
                             func(pos);
                             if (epSquares == 0)
@@ -367,14 +367,14 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
                         break;
                     }
                     int sq0 = squares[nPlaced];
-                    int p = pos.getPiece(sq0);
-                    pos.setPiece(sq0, Piece::EMPTY);
+                    int p = pos.getPiece(Square(sq0));
+                    pos.setPiece(Square(sq0), Piece::EMPTY);
                     bool foundEmpty = false;
                     for (int sq = sq0 + 1; sq < 64; sq++) {
                         if (!squareValid(sq, p))
                             continue;
-                        if (pos.getPiece(sq) == Piece::EMPTY) {
-                            pos.setPiece(sq, p);
+                        if (pos.getPiece(Square(sq)) == Piece::EMPTY) {
+                            pos.setPiece(Square(sq), p);
                             squares[nPlaced] = sq;
                             nPlaced++;
                             foundEmpty = true;
@@ -559,8 +559,8 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
         for (auto pt : ptVec) {
             U64 m = pos.pieceTypeBB(pt);
             while (m) {
-                int sq = BitBoard::extractSquare(m);
-                key.push_back(sq);
+                Square sq = BitBoard::extractSquare(m);
+                key.push_back(sq.asInt());
             }
         }
         ScoreStat& ss = stat[key];
@@ -604,7 +604,7 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
             std::cout << std::setw(2) << key[i];
         }
         for (size_t i = 0; i < key.size(); i++)
-            std::cout << ' ' << TextIO::squareToString(key[i]);
+            std::cout << ' ' << TextIO::squareToString(Square(key[i]));
 
         std::cout << " :";
         int N = ss.whiteWin + ss.draw + ss.blackWin;
@@ -812,7 +812,7 @@ static
 void computeKingData(std::vector<KingData>& kingTable) {
     for (int k1 = 0; k1 < 64; k1++) {
         for (int k2 = 0; k2 < 64; k2++) {
-            if (BitBoard::getKingDistance(k1, k2) <= 1)
+            if (BitBoard::getKingDistance(Square(k1), Square(k2)) <= 1)
                 continue;
             for (int castleMask = 0; castleMask < 16; castleMask++) {
                 bool a1 = castleMask & a1C;
@@ -907,7 +907,7 @@ PosGenerator::randomLegal(int n, U64 rndSeed, int nWorkers, std::ostream& os) {
                 U64 mask = occupied;
                 occupied = 0; // Re-compute occupied to take king squares into account
                 while (mask) {
-                    int sq = BitBoard::extractSquare(mask);
+                    int sq = BitBoard::extractSquare(mask).asInt();
                     if (sq >= k1) {
                         sq++;
                         if (sq >= k2)
@@ -949,11 +949,11 @@ PosGenerator::randomLegalSlowPath(const Position& startPos, Position& pos,
     occupied |= 1ULL << bk;
 
     auto hasPiece = [&pieces,occupied](int x, int y, bool wtm, int pieceType) -> bool {
-        int sq = Square::getSquare(x, y);
+        Square sq = Square(x, y);
         int p = ((wtm ? 1 : 0) << 3) | pieceType;
         if ((occupied & (1ULL << sq)) == 0)
             return false;
-        return pieces[sq] == p;
+        return pieces[sq.asInt()] == p;
     };
 
     int epSquare = -1;
@@ -964,16 +964,16 @@ PosGenerator::randomLegalSlowPath(const Position& startPos, Position& pos,
         for (int x = 0; x < 8; x++) {
             if (!hasPiece(x, y3, !wtm, pawn))
                 continue;
-            if (occupied & (1ULL << Square::getSquare(x, y2)))
+            if (occupied & (1ULL << Square(x, y2)))
                 continue;
-            if (occupied & (1ULL << Square::getSquare(x, y1)))
+            if (occupied & (1ULL << Square(x, y1)))
                 continue;
             bool leftOk = x > 0 && hasPiece(x-1, y3, wtm, pawn);
             bool rightOk = x < 7 && hasPiece(x+1, y3, wtm, pawn);
             if (!leftOk && !rightOk)
                 continue;
             if (--epCode == 0) {
-                epSquare = Square::getSquare(x, y2);
+                epSquare = Square(x, y2).asInt();
                 break;
             }
         }
@@ -1009,14 +1009,14 @@ PosGenerator::randomLegalSlowPath(const Position& startPos, Position& pos,
             }
             if (!white)
                 pt = Piece::makeBlack(pt);
-            pos.setPiece(sq, pt);
+            pos.setPiece(Square(sq), pt);
         } else {
-            pos.clearPiece(sq);
+            pos.clearPiece(Square(sq));
         }
     }
     pos.setWhiteMove(wtm);
     pos.setCastleMask(castleMask);
-    pos.setEpSquare(epSquare);
+    pos.setEpSquare(Square(epSquare));
 
     if (MoveGen::canTakeKing(pos))
         return; // King capture possible

@@ -207,20 +207,20 @@ public:
     MultiBoard(const Position& pos);
 
     /** Get number of pieces on a square. */
-    int nPieces(int square) const;
+    int nPieces(Square square) const;
     /** Get a piece from a square. 0 <= pieceNo < nPieces(square). */
-    int getPiece(int square, int pieceNo) const;
+    int getPiece(Square square, int pieceNo) const;
     /** Return true if there is a piece of a certain type on a square. */
-    bool hasPiece(int square, int piece) const;
+    bool hasPiece(Square square, int piece) const;
     /** Return number of pieces of a given type on a square. */
-    int nPiecesOfType(int square, int piece) const;
+    int nPiecesOfType(Square square, int piece) const;
 
     /** Add a piece to a square. */
-    void addPiece(int square, int piece);
+    void addPiece(Square square, int piece);
     /** Remove a piece from a square. */
-    void removePieceType(int square, int piece);
+    void removePieceType(Square square, int piece);
     /** Remove a piece from a square. 0 <= pieceNo < nPieces(square). */
-    void removePieceNo(int square, int pieceNo);
+    void removePieceNo(Square square, int pieceNo);
 
     /** Move pieces so there is at most one piece on each square.
      *  Also move kings out of check. */
@@ -229,11 +229,11 @@ public:
     /** Return true if it is possible to push a pawn at least up to toSq without
      *  interference from any other pawn. Also return true if there is no pawn
      *  that needs pushing. */
-    bool canMovePawn(bool white, int toSq) const;
+    bool canMovePawn(bool white, Square toSq) const;
 
     /** If there is a piece of type oldPiece on square, replace it with newPiece
      *  and return true. Otherwise return false. */
-    bool replacePiece(int square, int oldPiece, int newPiece);
+    bool replacePiece(Square square, int oldPiece, int newPiece);
 
     /** Copy piece configuration to "pos". Assumes there is at most
      *  one piece in each square. */

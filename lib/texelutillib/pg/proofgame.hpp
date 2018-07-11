@@ -121,7 +121,7 @@ public:
      *  no solution. If a piece can be determined that cannot be moved from the
      *  start square to a goal square, set "fromSq" and "toSq" to the
      *  corresponding squares. */
-    bool isInfeasible(int& fromSq, int& toSq);
+    bool isInfeasible(Square& fromSq, Square& toSq);
 
     /** Return the goal position. */
     const Position& getGoalPos() const;
@@ -132,7 +132,7 @@ public:
 
         /** Get squares that are closer to the goal than fromSq and can
          *  be reached from fromSq in one move. */
-        U64 getNextSquares(int piece, int fromSq, U64 blocked) const;
+        U64 getNextSquares(int piece, Square fromSq, U64 blocked) const;
     };
 
     /** Compute shortest path for a piece p to toSq from all possible start squares,
@@ -141,7 +141,7 @@ public:
      *  @param pawnSub  When "p" is a pawn, solution for the same problem but with
      *                  one less pawn capture available. nullptr if "p" is not a
      *                  pawn or if no pawn capture is available. */
-    static void shortestPaths(Piece::Type p, int toSq, U64 blocked,
+    static void shortestPaths(Piece::Type p, Square toSq, U64 blocked,
                               const ShortestPathData* pawnSub,
                               ShortestPathData& spd);
 
@@ -194,10 +194,10 @@ private:
                           int excessWPawns, int excessBPawns);
 
     struct SqPathData {
-        SqPathData() : square(-1) {}
-        SqPathData(int s, const std::shared_ptr<ShortestPathData>& d)
+        SqPathData() {}
+        SqPathData(Square s, const std::shared_ptr<ShortestPathData>& d)
             : square(s), spd(d) {}
-        int square;
+        Square square;
         std::shared_ptr<ShortestPathData> spd;
     };
 
@@ -210,18 +210,19 @@ private:
 
     /** Print assignment cost matrix to log. */
     void printAssignment(const Assignment<int>& as, int N,
-                         const int (&rowToSq)[16], const int (&colToSq)[16]) const;
+                         const Square (&rowToSq)[16], const Square (&colToSq)[16]) const;
 
     /** Find a single piece that makes the assignment problem infeasible.
      *  If such a piece exists, set "infeasibleFrom" and "infeasibleTo" to the
      *  piece square in the current and goal position. */
     void findInfeasibleMove(const Position& pos, const Assignment<int>& as, int N,
-                            const int (&rowToSq)[16], const int (&colToSq)[16]);
+                            const Square (&rowToSq)[16], const Square (&colToSq)[16]);
 
     /** Return obstacles between fromSq and toSq when following a shortest path
      *  from fromSq to toSq. Obstacles are squares containing the same piece in
      *  "pos" and "goalPos". */
-    U64 getMovePathObstacles(const Position& pos, U64 blocked, int fromSq, int toSq,
+    U64 getMovePathObstacles(const Position& pos, U64 blocked,
+                             Square fromSq, Square toSq,
                              const ShortestPathData& spd) const;
 
     /** If pieceType is a king, extend "blocked" to also include attacks from
@@ -238,11 +239,11 @@ private:
 
     /** Compute shortest path for a pawn on fromSq to a target square after
      * a suitable promotion. */
-    int promPathLen(bool wtm, int fromSq, int targetPiece, U64 blocked, int maxCapt,
+    int promPathLen(bool wtm, Square fromSq, int targetPiece, U64 blocked, int maxCapt,
                     const ShortestPathData& toSqPath, SqPathData promPath[8]);
 
     /** Compute all cutsets for all pawns in the assignment problem. */
-    bool computeAllCutSets(const Assignment<int>& as, int rowToSq[16], int colToSq[16],
+    bool computeAllCutSets(const Assignment<int>& as, Square rowToSq[16], Square colToSq[16],
                            bool wtm, U64 blocked, int maxCapt,
                            U64 cutSets[16], int& nConstraints);
 
@@ -251,21 +252,21 @@ private:
      * from reaching toSq regardless of which square in fromSqMask it started from.
      * Compute zero or more such cut sets and add them to cutSets.
      * Return false if nCutSets becomes > 15. */
-    bool computeCutSets(bool wtm, U64 fromSqMask, int toSq, U64 blocked, int maxCapt,
+    bool computeCutSets(bool wtm, U64 fromSqMask, Square toSq, U64 blocked, int maxCapt,
                         U64 cutSets[16], int& nCutSets);
 
     /** Compute the union of all possible pawn paths from a source square
      * to a target square. */
-    U64 allPawnPaths(bool wtm, int fromSq, int toSq, U64 blocked, int maxCapt);
+    U64 allPawnPaths(bool wtm, Square fromSq, Square toSq, U64 blocked, int maxCapt);
 
     /** Compute shortest distance from one square to one of several possible target squares. */
-    int minDistToSquares(int piece, int fromSq, U64 blocked, int maxCapt,
+    int minDistToSquares(int piece, Square fromSq, U64 blocked, int maxCapt,
                          SqPathData promPath[8], U64 targetSquares, bool canPromote);
 
     /** Compute shortest path for a pawn on fromSq to a target square after
      * any valid promotion. */
-    int promPathLen(bool wtm, int fromSq, U64 blocked, int maxCapt,
-                    int toSq, SqPathData promPath[8], int pLen);
+    int promPathLen(bool wtm, Square fromSq, U64 blocked, int maxCapt,
+                    Square toSq, SqPathData promPath[8], int pLen);
 
     /** Compute and return the smallest cost of a solution to the given assignment
      * problem. Also use heuristics to set weights to bigCost in cases where it can
@@ -282,7 +283,7 @@ private:
      *  taking blocked squares into account. For squares that can not reach toSq,
      *  the shortest path is set to -1. For pawns the maximum number of available
      *  captures is taken into account. */
-    std::shared_ptr<ShortestPathData> shortestPaths(Piece::Type p, int toSq, U64 blocked,
+    std::shared_ptr<ShortestPathData> shortestPaths(Piece::Type p, Square toSq, U64 blocked,
                                                     int maxCapt);
 
     /** Compute all squares that can reach toSquares in one move while
@@ -371,8 +372,8 @@ private:
     bool useNonAdmissible = false;
 
     bool findInfeasible = false;
-    int infeasibleFrom = -1;
-    int infeasibleTo = -1;
+    Square infeasibleFrom;
+    Square infeasibleTo;
 
     std::ostream& log;
 };

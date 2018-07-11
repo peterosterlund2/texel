@@ -59,7 +59,7 @@ Position::Position() {
     whiteBB_ = blackBB_ = 0;
     whiteMove = true;
     castleMask = 0;
-    epSquare = -1;
+    epSquare = Square();
     halfMoveClock = 0;
     fullMoveCounter = 1;
     computeZobristHash();
@@ -105,11 +105,12 @@ Position::forceFullEval() {
 }
 
 void
-Position::setPiece(int square, int piece) {
+Position::setPiece(Square sq, int piece) {
+    const int square = sq.asInt();
     int removedPiece = squares[square];
     squares[square] = piece;
     if (nnEval)
-        nnEval->setPiece(square, removedPiece, piece);
+        nnEval->setPiece(sq, removedPiece, piece);
 
     // Update hash key
     hashKey ^= psHashKeys[removedPiece][square];
@@ -164,11 +165,12 @@ Position::setPiece(int square, int piece) {
 }
 
 void
-Position::clearPiece(int square) {
+Position::clearPiece(Square sq) {
+    const int square = sq.asInt();
     int removedPiece = squares[square];
     squares[square] = Piece::EMPTY;
     if (nnEval)
-        nnEval->setPiece(square, removedPiece, Piece::EMPTY);
+        nnEval->setPiece(sq, removedPiece, Piece::EMPTY);
 
     // Update hash key
     hashKey ^= psHashKeys[removedPiece][square];
@@ -203,22 +205,22 @@ Position::clearPiece(int square) {
 
 U64
 Position::hashAfterMove(const Move& move) const {
-    int from = move.from();
-    int to = move.to();
-    int p = squares[from];
-    int capP = squares[to];
+    Square from = move.from();
+    Square to = move.to();
+    int p = getPiece(from);
+    int capP = getPiece(to);
 
     U64 ret = hashKey ^ whiteHashKey;
-    ret ^= psHashKeys[capP][to];
-    ret ^= psHashKeys[p][to];
-    ret ^= psHashKeys[p][from];
+    ret ^= psHashKeys[capP][to.asInt()];
+    ret ^= psHashKeys[p][to.asInt()];
+    ret ^= psHashKeys[p][from.asInt()];
 
     return ret;
 }
 
 void
 Position::makeMove(const Move& move, UndoInfo& ui) {
-    ui.capturedPiece = squares[move.to()];
+    ui.capturedPiece = getPiece(move.to());
     ui.castleMask = castleMask;
     ui.epSquare = epSquare;
     ui.halfMoveClock = halfMoveClock;
@@ -226,31 +228,31 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
 
     hashKey ^= whiteHashKey;
 
-    const int p = squares[move.from()];
-    int capP = squares[move.to()];
+    const int p = getPiece(move.from());
+    int capP = getPiece(move.to());
     U64 fromMask = 1ULL << move.from();
 
     if (nnEval)
         nnEval->pushState();
 
-    int prevEpSquare = epSquare;
-    setEpSquare(-1);
+    Square prevEpSquare = epSquare;
+    setEpSquare(Square(-1));
 
     if ((capP != Piece::EMPTY) || ((pieceTypeBB(Piece::WPAWN, Piece::BPAWN) & fromMask) != 0)) {
         halfMoveClock = 0;
 
         // Handle en passant and epSquare
         if (p == Piece::WPAWN) {
-            if (move.to() - move.from() == 2 * 8) {
-                int x = Square::getX(move.to());
+            if (move.to() == move.from() + 2 * 8) {
+                int x = move.to().getX();
                 if (BitBoard::epMaskW[x] & pieceTypeBB(Piece::BPAWN))
                     setEpSquare(move.from() + 8);
             } else if (move.to() == prevEpSquare) {
                 clearPiece(move.to() - 8);
             }
         } else if (p == Piece::BPAWN) {
-            if (move.to() - move.from() == -2 * 8) {
-                int x = Square::getX(move.to());
+            if (move.to() == move.from() - 2 * 8) {
+                int x = move.to().getX();
                 if (BitBoard::epMaskB[x] & pieceTypeBB(Piece::WPAWN))
                     setEpSquare(move.from() - 8);
             } else if (move.to() == prevEpSquare) {
@@ -266,7 +268,7 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
 
         // Handle castling
         if ((pieceTypeBB(Piece::WKING, Piece::BKING) & fromMask) != 0) {
-            int k0 = move.from();
+            Square k0 = move.from();
             if (move.to() == k0 + 2) { // O-O
                 movePieceNotPawn(k0 + 3, k0 + 1);
             } else if (move.to() == k0 - 2) { // O-O-O
@@ -278,7 +280,8 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
         movePieceNotPawn(move.from(), move.to());
     }
 
-    setCastleMask(getCastleMask() & castleSqMask[move.from()] & castleSqMask[move.to()]);
+    setCastleMask(getCastleMask() & castleSqMask[move.from().asInt()] &
+                  castleSqMask[move.to().asInt()]);
 
     if (!wtm)
         fullMoveCounter++;
@@ -292,7 +295,7 @@ Position::unMakeMove(const Move& move, const UndoInfo& ui) {
 
     hashKey ^= whiteHashKey;
     whiteMove = !whiteMove;
-    int p = squares[move.to()];
+    int p = getPiece(move.to());
     setPiece(move.to(), ui.capturedPiece);
     setPiece(move.from(), p);
     setCastleMask(ui.castleMask);
@@ -309,7 +312,7 @@ Position::unMakeMove(const Move& move, const UndoInfo& ui) {
     // Handle castling
     int king = wtm ? Piece::WKING : Piece::BKING;
     if (p == king) {
-        int k0 = move.from();
+        Square k0 = move.from();
         if (move.to() == k0 + 2) { // O-O
             movePieceNotPawn(k0 + 1, k0 + 3);
         } else if (move.to() == k0 - 2) { // O-O-O
@@ -333,14 +336,14 @@ Position::unMakeMove(const Move& move, const UndoInfo& ui) {
 
 void
 Position::makeMoveB(const Move& move, UndoInfo& ui) {
-    ui.capturedPiece = squares[move.to()];
+    ui.capturedPiece = getPiece(move.to());
     ui.castleMask = castleMask;
 
-    const int p = squares[move.from()];
-    int capP = squares[move.to()];
+    const int p = getPiece(move.from());
+    int capP = getPiece(move.to());
     U64 fromMask = 1ULL << move.from();
 
-    int prevEpSquare = epSquare;
+    Square prevEpSquare = epSquare;
 
     if ((capP != Piece::EMPTY) || ((pieceTypeBB(Piece::WPAWN, Piece::BPAWN) & fromMask) != 0)) {
         // Handle en passant
@@ -363,7 +366,7 @@ Position::makeMoveB(const Move& move, UndoInfo& ui) {
     } else {
         // Handle castling
         if ((pieceTypeBB(Piece::WKING, Piece::BKING) & fromMask) != 0) {
-            int k0 = move.from();
+            Square k0 = move.from();
             if (move.to() == k0 + 2) { // O-O
                 movePieceNotPawnB(k0 + 3, k0 + 1);
             } else if (move.to() == k0 - 2) { // O-O-O
@@ -377,13 +380,15 @@ Position::makeMoveB(const Move& move, UndoInfo& ui) {
 }
 
 void
-Position::movePieceNotPawn(int from, int to) {
+Position::movePieceNotPawn(Square fromS, Square toS) {
+    const int from = fromS.asInt();
+    const int to = toS.asInt();
     const int piece = squares[from];
     hashKey ^= psHashKeys[piece][from];
     hashKey ^= psHashKeys[piece][to];
     if (nnEval) {
-        nnEval->setPiece(from, piece, Piece::EMPTY);
-        nnEval->setPiece(to, Piece::EMPTY, piece);
+        nnEval->setPiece(fromS, piece, Piece::EMPTY);
+        nnEval->setPiece(toS, Piece::EMPTY, piece);
     }
 
     squares[from] = Piece::EMPTY;
@@ -415,7 +420,7 @@ Position::serialize(SerializeData& data) const {
     }
     U64 flags = whiteMove;
     flags = (flags << 4) | castleMask;
-    flags = (flags << 8) | (epSquare & 0xff);
+    flags = (flags << 8) | (epSquare.asInt() & 0xff);
     flags = (flags << 8) | (halfMoveClock & 0xff);
     flags = (flags << 16) | (fullMoveCounter & 0xffff);
     data.v[4] = flags;
@@ -472,7 +477,7 @@ Position::deSerialize(const SerializeData& data) {
     halfMoveClock = flags & 0xff;
     flags >>= 8;
     int ep = flags & 0xff; if (ep == 0xff) ep = -1;
-    epSquare = ep;
+    epSquare = Square(ep);
     flags >>= 8;
     castleMask = flags & 0xf;
     flags >>= 4;
@@ -481,7 +486,7 @@ Position::deSerialize(const SerializeData& data) {
     if (whiteMove)
         hash ^= whiteHashKey;
     hash ^= castleHashKeys[castleMask];
-    hash ^= epHashKeys[(epSquare >= 0) ? Square::getX(epSquare) + 1 : 0];
+    hash ^= epHashKeys[epSquare.isValid() ? epSquare.getX() + 1 : 0];
     hashKey = hash;
     forceFullEval();
 }
@@ -511,7 +516,7 @@ Position::computeZobristHash() {
     if (whiteMove)
         hash ^= whiteHashKey;
     hash ^= castleHashKeys[castleMask];
-    hash ^= epHashKeys[(epSquare >= 0) ? Square::getX(epSquare) + 1 : 0];
+    hash ^= epHashKeys[epSquare.isValid() ? epSquare.getX() + 1 : 0];
     hashKey = hash;
     return hash;
 }

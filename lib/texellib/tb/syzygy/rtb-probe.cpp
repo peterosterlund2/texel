@@ -99,7 +99,7 @@ static uint64_t get_pieces(const Position& pos, int color, int piece) {
 }
 
 static inline int pop_lsb(uint64_t& bb) {
-    return BitBoard::extractSquare(bb);
+    return BitBoard::extractSquare(bb).asInt();
 }
 
 // probe_wdl_table and probe_dtz_table require similar adaptations.
@@ -392,7 +392,7 @@ int Syzygy::probe_wdl(Position& pos, int *success)
     int v = probe_ab(pos, -2, 2, success);
 
     // If en passant is not possible, we are done.
-    if (pos.getEpSquare() == -1)
+    if (!pos.getEpSquare().isValid())
         return v;
     if (!(*success)) return 0;
 
@@ -469,7 +469,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
         for (int m = 0; m < moveList.size; m++) {
             const Move& move = moveList[m];
             if ((pos.getPiece(move.from()) != pawn) ||
-                (Square::getX(move.from()) != Square::getX(move.to())) ||
+                (Square(move.from()).getX() != Square(move.to()).getX()) ||
                 !MoveGen::isLegal(pos, move, inCheck))
                 continue;
             pos.makeMove(move, ui);
@@ -544,7 +544,7 @@ int Syzygy::probe_dtz(Position& pos, int *success)
     *success = 1;
     int v = probe_dtz_no_ep(pos, success);
 
-    if (pos.getEpSquare() == -1)
+    if (!pos.getEpSquare().isValid())
         return v;
     if (*success == 0) return 0;
 

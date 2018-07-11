@@ -148,8 +148,8 @@ private:
 
     /** Compute ordered list of evasion squares for a non-pawn piece, attempting
      * to put "good" squares early in the list. */
-    void getPieceEvasions(const Position& pos, int fromSq,
-                          std::vector<int>& toSquares) const;
+    void getPieceEvasions(const Position& pos, Square fromSq,
+                          std::vector<Square>& toSquares) const;
 
     std::vector<ExtPkMove> extKernel;
     const Position initPos;

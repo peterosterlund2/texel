@@ -73,19 +73,19 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
         return 0; // King + minor piece vs king + minor piece is a draw
     case MI::WQ + MI::BP: {
         if (!doEval) return 1;
-        int wk = pos.getKingSq(true);
-        int wq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WQUEEN));
-        int bk = pos.getKingSq(false);
-        int bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
+        Square wk = pos.getKingSq(true);
+        Square wq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WQUEEN));
+        Square bk = pos.getKingSq(false);
+        Square bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
         return kqkpEval(wk, wq, bk, bp, pos.isWhiteMove(), score);
     }
     case MI::BQ + MI::WP: {
         if (!doEval) return 1;
-        int bk = pos.getKingSq(false);
-        int bq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BQUEEN));
-        int wk = pos.getKingSq(true);
-        int wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
-        return -kqkpEval(63-bk, 63-bq, 63-wk, 63-wp, !pos.isWhiteMove(), -score);
+        Square bk = pos.getKingSq(false);
+        Square bq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BQUEEN));
+        Square wk = pos.getKingSq(true);
+        Square wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
+        return -kqkpEval(bk.rot180(), bq.rot180(), wk.rot180(), wp.rot180(), !pos.isWhiteMove(), -score);
     }
     case MI::WQ: {
         if (!doEval) return 1;
@@ -109,22 +109,22 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
     }
     case MI::WR + MI::BP: {
         if (!doEval) return 1;
-        int bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
+        Square bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
         return krkpEval(pos.getKingSq(true), pos.getKingSq(false),
                         bp, pos.isWhiteMove(), score);
     }
     case MI::BR + MI::WP: {
         if (!doEval) return 1;
-        int wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
-        return -krkpEval(63-pos.getKingSq(false), 63-pos.getKingSq(true),
-                         63-wp, !pos.isWhiteMove(), -score);
+        Square wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
+        return -krkpEval(pos.getKingSq(false).rot180(), pos.getKingSq(true).rot180(),
+                         wp.rot180(), !pos.isWhiteMove(), -score);
     }
     case MI::WR + MI::BB: {
         if (!doEval) return 1;
         score /= 8;
-        const int kSq = pos.getKingSq(false);
-        const int x = Square::getX(kSq);
-        const int y = Square::getY(kSq);
+        const Square kSq = pos.getKingSq(false);
+        const int x = kSq.getX();
+        const int y = kSq.getY();
         if ((pos.pieceTypeBB(Piece::BBISHOP) & BitBoard::maskDarkSq) != 0)
             score += (7 - distToH1A8[7-y][7-x]) * 7;
         else
@@ -134,9 +134,9 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
     case MI::BR + MI::WB: {
         if (!doEval) return 1;
         score /= 8;
-        const int kSq = pos.getKingSq(true);
-        const int x = Square::getX(kSq);
-        const int y = Square::getY(kSq);
+        const Square kSq = pos.getKingSq(true);
+        const int x = kSq.getX();
+        const int y = kSq.getY();
         if ((pos.pieceTypeBB(Piece::WBISHOP) & BitBoard::maskDarkSq) != 0)
             score -= (7 - distToH1A8[7-y][7-x]) * 7;
         else
@@ -145,30 +145,30 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
     }
     case MI::WR + MI::WP + MI::BR: {
         if (!doEval) return 1;
-        int wk = pos.getKingSq(true);
-        int bk = pos.getKingSq(false);
-        int wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
-        int wr = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WROOK));
-        int br = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BROOK));
+        Square wk = pos.getKingSq(true);
+        Square bk = pos.getKingSq(false);
+        Square wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
+        Square wr = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WROOK));
+        Square br = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BROOK));
         return krpkrEval(wk, bk, wp, wr, br, pos.isWhiteMove());
     }
     case MI::BR + MI::BP + MI::WR: {
         if (!doEval) return 1;
-        int wk = pos.getKingSq(true);
-        int bk = pos.getKingSq(false);
-        int bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
-        int wr = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WROOK));
-        int br = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BROOK));
-        return -krpkrEval(63-bk, 63-wk, 63-bp, 63-br, 63-wr, !pos.isWhiteMove());
+        Square wk = pos.getKingSq(true);
+        Square bk = pos.getKingSq(false);
+        Square bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
+        Square wr = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WROOK));
+        Square br = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BROOK));
+        return -krpkrEval(bk.rot180(), wk.rot180(), bp.rot180(), br.rot180(), wr.rot180(), !pos.isWhiteMove());
     }
     case MI::WR + MI::WP + MI::BR + MI::BP: {
         if (!doEval) return 1;
-        int wk = pos.getKingSq(true);
-        int bk = pos.getKingSq(false);
-        int wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
-        int wr = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WROOK));
-        int br = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BROOK));
-        int bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
+        Square wk = pos.getKingSq(true);
+        Square bk = pos.getKingSq(false);
+        Square wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
+        Square wr = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WROOK));
+        Square br = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BROOK));
+        Square bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
         return krpkrpEval(wk, bk, wp, wr, br, bp, pos.isWhiteMove(), score);
     }
     case MI::WN * 2:
@@ -183,87 +183,90 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
     case MI::BN + MI::BB: {
         if (!doEval) return 1;
         bool darkBishop = (pos.pieceTypeBB(Piece::BBISHOP) & BitBoard::maskDarkSq) != 0;
-        return -kbnkEval(63-pos.getKingSq(false), 63-pos.getKingSq(true), darkBishop);
+        return -kbnkEval(pos.getKingSq(false).rot180(), pos.getKingSq(true).rot180(), darkBishop);
     }
     case MI::WP: {
         if (!doEval) return 1;
-        int wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
+        Square wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
         return kpkEval(pos.getKingSq(true), pos.getKingSq(false),
                        wp, pos.isWhiteMove());
     }
     case MI::BP: {
         if (!doEval) return 1;
-        int bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
-        return -kpkEval(63-pos.getKingSq(false), 63-pos.getKingSq(true),
-                        63-bp, !pos.isWhiteMove());
+        Square bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
+        return -kpkEval(pos.getKingSq(false).rot180(), pos.getKingSq(true).rot180(),
+                        bp.rot180(), !pos.isWhiteMove());
     }
     case MI::WP + MI::BP: {
         if (!doEval) return 1;
-        int wk = pos.getKingSq(true);
-        int bk = pos.getKingSq(false);
-        int wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
-        int bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
+        Square wk = pos.getKingSq(true);
+        Square bk = pos.getKingSq(false);
+        Square wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
+        Square bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
         if (kpkpEval(wk, bk, wp, bp, score))
             return score;
         break;
     }
     case MI::WB + MI::WP + MI::BB: {
         if (!doEval) return 1;
-        int wb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WBISHOP));
-        int wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
-        int bb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BBISHOP));
+        Square wb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WBISHOP));
+        Square wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
+        Square bb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BBISHOP));
         return kbpkbEval(pos.getKingSq(true), wb, wp, pos.getKingSq(false), bb, score);
     }
     case MI::BB + MI::BP + MI::WB: {
         if (!doEval) return 1;
-        int bb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BBISHOP));
-        int bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
-        int wb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WBISHOP));
-        return -kbpkbEval(63-pos.getKingSq(false), 63-bb, 63-bp, 63-pos.getKingSq(true), 63-wb, -score);
+        Square bb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BBISHOP));
+        Square bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
+        Square wb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WBISHOP));
+        return -kbpkbEval(pos.getKingSq(false).rot180(), bb.rot180(), bp.rot180(),
+                          pos.getKingSq(true).rot180(), wb.rot180(), -score);
     }
     case MI::WB + MI::WP + MI::BN: {
         if (!doEval) return 1;
-        int wb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WBISHOP));
-        int wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
-        int bn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BKNIGHT));
+        Square wb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WBISHOP));
+        Square wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
+        Square bn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BKNIGHT));
         return kbpknEval(pos.getKingSq(true), wb, wp, pos.getKingSq(false), bn, score);
     }
     case MI::BB + MI::BP + MI::WN: {
         if (!doEval) return 1;
-        int bb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BBISHOP));
-        int bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
-        int wn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WKNIGHT));
-        return -kbpknEval(63-pos.getKingSq(false), 63-bb, 63-bp, 63-pos.getKingSq(true), 63-wn, -score);
+        Square bb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BBISHOP));
+        Square bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
+        Square wn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WKNIGHT));
+        return -kbpknEval(pos.getKingSq(false).rot180(), bb.rot180(), bp.rot180(),
+                          pos.getKingSq(true).rot180(), wn.rot180(), -score);
     }
     case MI::WN + MI::WP + MI::BB: {
         if (!doEval) return 1;
-        int wn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WKNIGHT));
-        int wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
-        int bb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BBISHOP));
+        Square wn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WKNIGHT));
+        Square wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
+        Square bb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BBISHOP));
         return knpkbEval(pos.getKingSq(true), wn, wp, pos.getKingSq(false), bb,
                          score, pos.isWhiteMove());
     }
     case MI::BN + MI::BP + MI::WB: {
         if (!doEval) return 1;
-        int bn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BKNIGHT));
-        int bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
-        int wb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WBISHOP));
-        return -knpkbEval(63-pos.getKingSq(false), 63-bn, 63-bp, 63-pos.getKingSq(true), 63-wb,
+        Square bn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BKNIGHT));
+        Square bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
+        Square wb = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WBISHOP));
+        return -knpkbEval(pos.getKingSq(false).rot180(), bn.rot180(), bp.rot180(),
+                          pos.getKingSq(true).rot180(), wb.rot180(),
                           -score, !pos.isWhiteMove());
     }
     case MI::WN + MI::WP: {
         if (!doEval) return 1;
-        int wn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WKNIGHT));
-        int wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
+        Square wn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WKNIGHT));
+        Square wp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WPAWN));
         return knpkEval(pos.getKingSq(true), wn, wp, pos.getKingSq(false),
                         score, pos.isWhiteMove());
     }
     case MI::BN + MI::BP: {
         if (!doEval) return 1;
-        int bn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BKNIGHT));
-        int bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
-        return -knpkEval(63-pos.getKingSq(false), 63-bn, 63-bp, 63-pos.getKingSq(true),
-                         -score, !pos.isWhiteMove());
+        Square bn = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BKNIGHT));
+        Square bp = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BPAWN));
+        return -knpkEval(pos.getKingSq(false).rot180(), bn.rot180(), bp.rot180(),
+                         pos.getKingSq(true).rot180(), -score, !pos.isWhiteMove());
     }
     }
 
@@ -275,9 +278,9 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
             return 1;
         if (score > 0) {
             bool bishop = pos.pieceTypeBB(Piece::BBISHOP) != 0;
-            int wq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WQUEEN));
-            int br = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BROOK));
-            int bm = BitBoard::firstSquare(pos.pieceTypeBB(bishop ? Piece::BBISHOP : Piece::BKNIGHT));
+            Square wq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WQUEEN));
+            Square br = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BROOK));
+            Square bm = BitBoard::firstSquare(pos.pieceTypeBB(bishop ? Piece::BBISHOP : Piece::BKNIGHT));
             U64 wp = pos.pieceTypeBB(Piece::WPAWN);
             U64 bp = pos.pieceTypeBB(Piece::BPAWN);
             if (kqkrmFortress(bishop, wq, br, bm, wp, bp))
@@ -291,14 +294,14 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
             return 1;
         if (score < 0) {
             bool bishop = pos.pieceTypeBB(Piece::WBISHOP) != 0;
-            int bq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BQUEEN));
-            int wr = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WROOK));
-            int wm = BitBoard::firstSquare(pos.pieceTypeBB(bishop ? Piece::WBISHOP : Piece::WKNIGHT));
+            Square bq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BQUEEN));
+            Square wr = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WROOK));
+            Square wm = BitBoard::firstSquare(pos.pieceTypeBB(bishop ? Piece::WBISHOP : Piece::WKNIGHT));
             U64 bp = pos.pieceTypeBB(Piece::BPAWN);
             U64 wp = pos.pieceTypeBB(Piece::WPAWN);
-            if (kqkrmFortress(bishop, Square::mirrorY(bq), Square::mirrorY(wr),
-                              Square::mirrorY(wm), BitBoard::mirrorY(bp),
-                              BitBoard::mirrorY(wp)))
+            if (kqkrmFortress(bishop, bq.mirrorY(),
+                              wr.mirrorY(), wm.mirrorY(),
+                              BitBoard::mirrorY(bp), BitBoard::mirrorY(wp)))
                 return score / 8;
         }
     }
@@ -309,14 +312,14 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
         (pos.bMtrl() - pos.bMtrlPawns() < rV * 2)) {
         if (!doEval) return 1;
         if (score > 0) {
-            int wk = pos.getKingSq(true);
-            int wq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WQUEEN));
-            int bk = pos.getKingSq(false);
-            int br = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BROOK));
+            Square wk = pos.getKingSq(true);
+            Square wq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WQUEEN));
+            Square bk = pos.getKingSq(false);
+            Square br = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BROOK));
             U64 m = pos.pieceTypeBB(Piece::BPAWN);
             int newScore = score;
             while (m) {
-                int bp = BitBoard::extractSquare(m);
+                Square bp = BitBoard::extractSquare(m);
                 int s2 = kqkrpEval(wk, wq, bk, br, bp, pos.isWhiteMove(), score);
                 newScore = std::min(newScore, s2);
             }
@@ -329,15 +332,16 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
         (pos.wMtrl() - pos.wMtrlPawns() < rV * 2)) {
         if (!doEval) return 1;
         if (score < 0) {
-            int bk = pos.getKingSq(false);
-            int bq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BQUEEN));
-            int wk = pos.getKingSq(true);
-            int wr = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WROOK));
+            Square bk = pos.getKingSq(false);
+            Square bq = BitBoard::firstSquare(pos.pieceTypeBB(Piece::BQUEEN));
+            Square wk = pos.getKingSq(true);
+            Square wr = BitBoard::firstSquare(pos.pieceTypeBB(Piece::WROOK));
             U64 m = pos.pieceTypeBB(Piece::WPAWN);
             int newScore = score;
             while (m) {
-                int wp = BitBoard::extractSquare(m);
-                int s2 = -kqkrpEval(63-bk, 63-bq, 63-wk, 63-wr, 63-wp, !pos.isWhiteMove(), -score);
+                Square wp = BitBoard::extractSquare(m);
+                int s2 = -kqkrpEval(bk.rot180(), bq.rot180(), wk.rot180(), wr.rot180(),
+                                    wp.rot180(), !pos.isWhiteMove(), -score);
                 newScore = std::max(newScore, s2);
             }
             if (newScore > score)
@@ -566,7 +570,7 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
 }
 
 int
-EndGameEval::mateEval(int k1, int k2) {
+EndGameEval::mateEval(Square k1, Square k2) {
     static const int loseKingTable[64] = {
         0,   4,   8,  12,  12,   8,   4,   0,
         4,   8,  12,  16,  16,  12,   8,   4,
@@ -577,7 +581,7 @@ EndGameEval::mateEval(int k1, int k2) {
         4,   8,  12,  16,  16,  12,   8,   4,
         0,   4,   8,  12,  12,   8,   4,   0
     };
-    return winKingTable[k1] - loseKingTable[k2];
+    return winKingTable[k1.asInt()] - loseKingTable[k2.asInt()];
 }
 
 template <bool whiteBishop>
@@ -651,14 +655,14 @@ EndGameEval::isBishopPawnDraw(const Position& pos) {
     const Piece::Type king = whiteBishop ? Piece::WKING : Piece::BKING;
     const Piece::Type oPawn = whiteBishop ? Piece::BPAWN : Piece::WPAWN;
     const Piece::Type oKnight = whiteBishop ? Piece::BKNIGHT : Piece::WKNIGHT;
-    const int b7 = whiteBishop ? (darkBishop ? B7 : G7) : (lightBishop ? B2 : G2);
-    const int b6 = whiteBishop ? (darkBishop ? B6 : G6) : (lightBishop ? B3 : G3);
-    const int c7 = whiteBishop ? (darkBishop ? C7 : F7) : (lightBishop ? C2 : F2);
-    const int a8 = whiteBishop ? (darkBishop ? A8 : H8) : (lightBishop ? A1 : H1);
-    const int b8 = whiteBishop ? (darkBishop ? B8 : G8) : (lightBishop ? B1 : G1);
-    const int c8 = whiteBishop ? (darkBishop ? C8 : F8) : (lightBishop ? C1 : F1);
-    const int d8 = whiteBishop ? (darkBishop ? D8 : E8) : (lightBishop ? D1 : E1);
-    const int d7 = whiteBishop ? (darkBishop ? D7 : E7) : (lightBishop ? D2 : E2);
+    const auto b7 = whiteBishop ? (darkBishop ? B7 : G7) : (lightBishop ? B2 : G2);
+    const auto b6 = whiteBishop ? (darkBishop ? B6 : G6) : (lightBishop ? B3 : G3);
+    const auto c7 = whiteBishop ? (darkBishop ? C7 : F7) : (lightBishop ? C2 : F2);
+    const auto a8 = whiteBishop ? (darkBishop ? A8 : H8) : (lightBishop ? A1 : H1);
+    const auto b8 = whiteBishop ? (darkBishop ? B8 : G8) : (lightBishop ? B1 : G1);
+    const auto c8 = whiteBishop ? (darkBishop ? C8 : F8) : (lightBishop ? C1 : F1);
+    const auto d8 = whiteBishop ? (darkBishop ? D8 : E8) : (lightBishop ? D1 : E1);
+    const auto d7 = whiteBishop ? (darkBishop ? D7 : E7) : (lightBishop ? D2 : E2);
     const U64 bFile = (whiteBishop == darkBishop) ? 0x0202020202020202ULL : 0x4040404040404040ULL;
     const U64 acFile = (whiteBishop == darkBishop) ? 0x0505050505050505ULL : 0xA0A0A0A0A0A0A0A0ULL;
     const U64 corner = whiteBishop ? (darkBishop ? BitBoard::sqMask(A8,B8,A7) : BitBoard::sqMask(G8,H8,H7))
@@ -669,12 +673,12 @@ EndGameEval::isBishopPawnDraw(const Position& pos) {
         (BitBoard::bitCount(pos.pieceTypeBB(oPawn) & acFile) <= 1)) {
         if (pos.getPiece(c7) == pawn) {
             if (BitBoard::bitCount(pawns & ~bFile) == 1) {
-                int oKingSq = pos.getKingSq(!whiteBishop);
+                Square oKingSq = pos.getKingSq(!whiteBishop);
                 if ((oKingSq == c8) || (oKingSq == d7))
                     return true;
             }
         } else {
-            int oKingSq = pos.getKingSq(!whiteBishop);
+            Square oKingSq = pos.getKingSq(!whiteBishop);
             if ((pawns & ~bFile) == 0) {
                 if ((oKingSq == a8) || (oKingSq == b8) || (oKingSq == c8) ||
                     (oKingSq == d8) || (oKingSq == d7))
@@ -789,17 +793,17 @@ EndGameEval::isBishopPawnDraw(const Position& pos) {
 }
 
 int
-EndGameEval::kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove, int score) {
+EndGameEval::kqkpEval(Square wKing, Square wQueen, Square bKing, Square bPawn, bool whiteMove, int score) {
     bool canWin = false;
-    if (bKing >= A3) {
+    if (bKing.asInt() >= A3) {
         canWin = true; // King doesn't support pawn
-    } else if (std::abs(Square::getX(bPawn) - Square::getX(bKing)) > 2) {
+    } else if (std::abs(bPawn.getX() - bKing.getX()) > 2) {
         canWin = true; // King doesn't support pawn
     } else {
-        switch (bPawn) {
+        switch (bPawn.asInt()) {
         case A2:
             canWin = ((1ULL << wKing) & 0x0F1F1F1F1FULL) != 0;
-            if (canWin && (bKing == A1) && (Square::getX(wQueen) == 1) && !whiteMove)
+            if (canWin && (bKing == A1) && (wQueen.getX() == 1) && !whiteMove)
                 canWin = false; // Stale-mate
             break;
         case C2:
@@ -810,7 +814,7 @@ EndGameEval::kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMov
             break;
         case H2:
             canWin = ((1ULL << wKing) & 0xF0F8F8F8F8ULL) != 0;
-            if (canWin && (bKing == H1) && (Square::getX(wQueen) == 6) && !whiteMove)
+            if (canWin && (bKing == H1) && (wQueen.getX() == 6) && !whiteMove)
                 canWin = false; // Stale-mate
             break;
         default:
@@ -828,36 +832,37 @@ EndGameEval::kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMov
 }
 
 int
-EndGameEval::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, bool whiteMove, int score) {
+EndGameEval::kqkrpEval(Square wKing, Square wQueen, Square bKing, Square bRook,
+                       Square bPawn, bool whiteMove, int score) {
     if (!(BitBoard::bPawnAttacks(bPawn) & (1ULL << bRook)))
         return score; // Rook not protected by pawn, no fortress
     if ((1ULL << bPawn) & (BitBoard::maskFileE | BitBoard::maskFileF |
                            BitBoard::maskFileG | BitBoard::maskFileH)) {
-        wKing = Square::mirrorX(wKing);
-        wQueen = Square::mirrorX(wQueen);
-        bKing = Square::mirrorX(bKing);
-        bRook = Square::mirrorX(bRook);
-        bPawn = Square::mirrorX(bPawn);
+        wKing = wKing.mirrorX();
+        wQueen = wQueen.mirrorX();
+        bKing = bKing.mirrorX();
+        bRook = bRook.mirrorX();
+        bPawn = bPawn.mirrorX();
     }
     bool drawish = false;
-    switch (bPawn) {
+    switch (bPawn.asInt()) {
     case A6:
         drawish = ((1ULL << bKing) & BitBoard::sqMask(A8,B8,A7,B7)) &&
-                  (Square::getX(wKing) >= 2) &&
-                  (Square::getY(wKing) <= 3);
+                  (wKing.getX() >= 2) &&
+                  (wKing.getY() <= 3);
         break;
     case A2:
         drawish = ((1ULL << bKing) & BitBoard::sqMask(A4,B4,A3,B3));
         break;
     case B7:
         drawish = ((1ULL << bKing) & BitBoard::sqMask(A8,B8,C8,A7,C7)) &&
-                  (Square::getY(wKing) <= 4);
+                  (wKing.getY() <= 4);
         break;
     case B6:
         if (bRook == C5) {
             drawish = ((1ULL << bKing) & BitBoard::sqMask(A7,B7)) ||
                       (((1ULL << bKing) & BitBoard::sqMask(A8,B8)) &&
-                       ((Square::getX(wKing) >= 3) || (Square::getY(wKing) <= 3)) &&
+                       ((wKing.getX() >= 3) || (wKing.getY() <= 3)) &&
                        (((1ULL << wQueen) & BitBoard::maskRow7) ||
                         (!whiteMove && (wQueen != A6)) ||
                         (whiteMove && !((1ULL << wQueen) & BitBoard::sqMask(A6,A5,A4,A3,A2,A1,B5,B4,B3,B2,B1,C4,D3,E2,F1)))));
@@ -865,11 +870,11 @@ EndGameEval::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, b
         break;
     case B5:
         drawish = ((1ULL << bKing) & BitBoard::sqMask(A6,B6,C6,A5)) &&
-                  (Square::getY(wKing) <= 2);
+                  (wKing.getY() <= 2);
         break;
     case B4:
         drawish = ((1ULL << bKing) & BitBoard::sqMask(A6,B6,C6,A5,B5,C5)) &&
-                  ((Square::getY(wKing) <= 2) || (Square::getX(wKing) >= 4));
+                  ((wKing.getY() <= 2) || (wKing.getX() >= 4));
         break;
     case B3:
         drawish = (((1ULL << bKing) & BitBoard::sqMask(A4,B4,C4,A3)) &&
@@ -884,7 +889,7 @@ EndGameEval::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, b
         break;
     case C7:
         drawish = ((1ULL << bKing) & BitBoard::sqMask(B8,C8,D8,B7,D7)) &&
-                  (Square::getY(wKing) <= 4);
+                  (wKing.getY() <= 4);
         break;
     case C3:
         drawish = (((1ULL << bKing) & BitBoard::sqMask(B4,C4,D4)) &&
@@ -898,11 +903,11 @@ EndGameEval::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, b
         break;
     case C2:
         drawish = ((1ULL << bKing) & BitBoard::sqMask(B3,C3,D3,B2,D2)) &&
-                  ((Square::getX(wKing) == 0) || (Square::getX(wKing) >= 4));
+                  ((wKing.getX() == 0) || (wKing.getX() >= 4));
         break;
     case D7:
         drawish = ((1ULL << bKing) & BitBoard::sqMask(C8,D8,E8,C7,E7)) &&
-                  (Square::getY(wKing) <= 4);
+                  (wKing.getY() <= 4);
         break;
     case D3:
         drawish = (((1ULL << bKing) & BitBoard::sqMask(C4,D4,E4)) &&
@@ -925,7 +930,7 @@ EndGameEval::kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, b
 }
 
 bool
-EndGameEval::kqkrmFortress(bool bishop, int wQueen, int bRook, int bMinor, U64 wPawns, U64 bPawns) {
+EndGameEval::kqkrmFortress(bool bishop, Square wQueen, Square bRook, Square bMinor, U64 wPawns, U64 bPawns) {
     U64 needPawnGuard = 0;
     U64 bpAtk = BitBoard::bPawnAttacksMask(bPawns);
     U64 bmAtk = bishop ? BitBoard::bishopAttacks(bMinor, wPawns | bPawns | (1ULL << bRook))
@@ -948,7 +953,7 @@ EndGameEval::kqkrmFortress(bool bishop, int wQueen, int bRook, int bMinor, U64 w
     U64 safeMask = bPawns | (1ULL << bRook) | (1ULL << bMinor);
     U64 tmp = wPawns;
     while (tmp) {
-        int wp = BitBoard::extractSquare(tmp);
+        Square wp = BitBoard::extractSquare(tmp);
         U64 span = BitBoard::northFill(1ULL << wp) & ~BitBoard::northFill(safeMask);
         if ((span & BitBoard::maskRow8) || (BitBoard::wPawnAttacksMask(span) & safeMask))
             return false;
@@ -957,27 +962,27 @@ EndGameEval::kqkrmFortress(bool bishop, int wQueen, int bRook, int bMinor, U64 w
 }
 
 int
-EndGameEval::kpkEval(int wKing, int bKing, int wPawn, bool whiteMove) {
-    if (Square::getX(wKing) >= 4) {
-        wKing = Square::mirrorX(wKing);
-        bKing = Square::mirrorX(bKing);
-        wPawn = Square::mirrorX(wPawn);
+EndGameEval::kpkEval(Square wKing, Square bKing, Square wPawn, bool whiteMove) {
+    if (wKing.getX() >= 4) {
+        wKing = wKing.mirrorX();
+        bKing = bKing.mirrorX();
+        wPawn = wPawn.mirrorX();
     }
     int index = whiteMove ? 0 : 1;
-    index = index * 32 + Square::getY(wKing)*4+Square::getX(wKing);
-    index = index * 64 + bKing;
-    index = index * 48 + wPawn - 8;
+    index = index * 32 + wKing.getY() * 4 + wKing.getX();
+    index = index * 64 + bKing.asInt();
+    index = index * 48 + wPawn.asInt() - 8;
 
     int bytePos = index / 8;
     int bitPos = index % 8;
     bool draw = (((int)kpkTable[bytePos]) & (1 << bitPos)) == 0;
     if (draw)
         return 0;
-    return qV - pV / 4 * (7-Square::getY(wPawn));
+    return qV - pV / 4 * (7-wPawn.getY());
 }
 
 bool
-EndGameEval::kpkpEval(int wKing, int bKing, int wPawn, int bPawn, int& score) {
+EndGameEval::kpkpEval(Square wKing, Square bKing, Square wPawn, Square bPawn, int& score) {
     const U64 wKingMask = 1ULL << wKing;
     const U64 bKingMask = 1ULL << bKing;
     if (wPawn == B6 && bPawn == B7) {
@@ -1009,20 +1014,20 @@ EndGameEval::kpkpEval(int wKing, int bKing, int wPawn, int bPawn, int& score) {
 }
 
 int
-EndGameEval::krkpEval(int wKing, int bKing, int bPawn, bool whiteMove, int score) {
-    if (Square::getX(bKing) >= 4) {
-        wKing = Square::mirrorX(wKing);
-        bKing = Square::mirrorX(bKing);
-        bPawn = Square::mirrorX(bPawn);
+EndGameEval::krkpEval(Square wKing, Square bKing, Square bPawn, bool whiteMove, int score) {
+    if (bKing.getX() >= 4) {
+        wKing = wKing.mirrorX();
+        bKing = bKing.mirrorX();
+        bPawn = bPawn.mirrorX();
     }
     int index = whiteMove ? 0 : 1;
-    index = index * 32 + Square::getY(bKing)*4+Square::getX(bKing);
-    index = index * 48 + bPawn - 8;
-    index = index * 8 + Square::getY(wKing);
+    index = index * 32 + bKing.getY() * 4 + bKing.getX();
+    index = index * 48 + bPawn.asInt() - 8;
+    index = index * 8 + wKing.getY();
     U8 mask = krkpTable[index];
-    bool canWin = (mask & (1 << Square::getX(wKing))) != 0;
+    bool canWin = (mask & (1 << wKing.getX())) != 0;
 
-    score = score + Square::getY(bPawn) * pV / 4;
+    score = score + bPawn.getY() * pV / 4;
     if (!canWin)
         score /= 50;
     else
@@ -1031,17 +1036,17 @@ EndGameEval::krkpEval(int wKing, int bKing, int bPawn, bool whiteMove, int score
 }
 
 int
-EndGameEval::krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bool whiteMove) {
-    if (Square::getX(wPawn) >= 4) {
-        wKing = Square::mirrorX(wKing);
-        bKing = Square::mirrorX(bKing);
-        wPawn = Square::mirrorX(wPawn);
-        wRook = Square::mirrorX(wRook);
-        bRook = Square::mirrorX(bRook);
+EndGameEval::krpkrEval(Square wKing, Square bKing, Square wPawn, Square wRook, Square bRook, bool whiteMove) {
+    if (wPawn.getX() >= 4) {
+        wKing = wKing.mirrorX();
+        bKing = bKing.mirrorX();
+        wPawn = wPawn.mirrorX();
+        wRook = wRook.mirrorX();
+        bRook = bRook.mirrorX();
     }
     int index = whiteMove ? 0 : 1;
-    index = index * 24 + (Square::getY(wPawn)-1)*4+Square::getX(wPawn);
-    index = index * 64 + wKing;
+    index = index * 24 + (wPawn.getY()-1) * 4 + wPawn.getX();
+    index = index * 64 + wKing.asInt();
     const U64 kMask = krpkrTable[index];
     const bool canWin = (kMask & (1ULL << bKing)) != 0;
     U64 kingNeighbors = BitBoard::kingAttacks(bKing);
@@ -1054,7 +1059,7 @@ EndGameEval::krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bo
     } else {
         close = (kMask & kingNeighbors) != 0;
     }
-    int score = pV + Square::getY(wPawn) * pV / 4;
+    int score = pV + wPawn.getY() * pV / 4;
     if (canWin) {
         if (!close)
             score += pV;
@@ -1068,22 +1073,24 @@ EndGameEval::krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bo
 }
 
 int
-EndGameEval::krpkrpEval(int wKing, int bKing, int wPawn, int wRook, int bRook, int bPawn, bool whiteMove, int score) {
+EndGameEval::krpkrpEval(Square wKing, Square bKing, Square wPawn, Square wRook,
+                        Square bRook, Square bPawn, bool whiteMove, int score) {
     int hiScore = krpkrEval(wKing, bKing, wPawn, wRook, bRook, whiteMove);
     if (score > hiScore * 14 / 16)
         return hiScore * 14 / 16;
-    int loScore = -krpkrEval(63-bKing, 63-wKing, 63-bPawn, 63-bRook, 63-wRook, !whiteMove);
+    int loScore = -krpkrEval(bKing.rot180(), wKing.rot180(), bPawn.rot180(),
+                             bRook.rot180(), wRook.rot180(), !whiteMove);
     if (score < loScore * 14 / 16)
         return loScore * 14 / 16;
     return score;
 }
 
 int
-EndGameEval::kbnkEval(int wKing, int bKing, bool darkBishop) {
+EndGameEval::kbnkEval(Square wKing, Square bKing, bool darkBishop) {
     int score = 640;
     if (darkBishop) {
-        wKing = Square::mirrorX(wKing);
-        bKing = Square::mirrorX(bKing);
+        wKing = wKing.mirrorX();
+        bKing = bKing.mirrorX();
     }
     static const int bkTable[64] = { 17, 15, 12,  9,  7,  4,  2,  0,
                                      15, 20, 17, 15, 12,  9,  4,  2,
@@ -1094,13 +1101,13 @@ EndGameEval::kbnkEval(int wKing, int bKing, bool darkBishop) {
                                       2,  4,  9, 12, 15, 17, 20, 15,
                                       0,  2,  4,  7,  9, 12, 15, 17 };
 
-    score += winKingTable[wKing] - bkTable[bKing];
+    score += winKingTable[wKing.asInt()] - bkTable[bKing.asInt()];
     score -= std::min(0, BitBoard::getTaxiDistance(wKing, bKing) - 3);
     return score;
 }
 
 int
-EndGameEval::kbpkbEval(int wKing, int wBish, int wPawn, int bKing, int bBish, int score) {
+EndGameEval::kbpkbEval(Square wKing, Square wBish, Square wPawn, Square bKing, Square bBish, int score) {
     U64 wPawnMask = 1ULL << wPawn;
     U64 pawnPath = BitBoard::northFill(wPawnMask);
     U64 bKingMask = 1ULL << bKing;
@@ -1122,7 +1129,7 @@ EndGameEval::kbpkbEval(int wKing, int wBish, int wPawn, int bKing, int bBish, in
 }
 
 int
-EndGameEval::kbpknEval(int wKing, int wBish, int wPawn, int bKing, int bKnight, int score) {
+EndGameEval::kbpknEval(Square wKing, Square wBish, Square wPawn, Square bKing, Square bKnight, int score) {
     U64 wPawnMask = 1ULL << wPawn;
     U64 pawnPath = BitBoard::northFill(wPawnMask);
     U64 bKingMask = 1ULL << bKing;
@@ -1146,7 +1153,7 @@ EndGameEval::kbpknEval(int wKing, int wBish, int wPawn, int bKing, int bKnight, 
 }
 
 int
-EndGameEval::knpkbEval(int wKing, int wKnight, int wPawn, int bKing, int bBish, int score, bool wtm) {
+EndGameEval::knpkbEval(Square wKing, Square wKnight, Square wPawn, Square bKing, Square bBish, int score, bool wtm) {
     U64 wPawnMask = 1ULL << wPawn;
     U64 bBishMask = 1ULL << bBish;
     U64 bBishControl = (bBishMask & BitBoard::maskDarkSq) ? BitBoard::maskDarkSq : BitBoard::maskLightSq;
@@ -1170,12 +1177,12 @@ EndGameEval::knpkbEval(int wKing, int wKnight, int wPawn, int bKing, int bBish, 
 }
 
 int
-EndGameEval::knpkEval(int wKing, int wKnight, int wPawn, int bKing, int score, bool wtm) {
-    if (Square::getX(wPawn) >= 4) {
-        wKing = Square::mirrorX(wKing);
-        wKnight = Square::mirrorX(wKnight);
-        wPawn = Square::mirrorX(wPawn);
-        bKing = Square::mirrorX(bKing);
+EndGameEval::knpkEval(Square wKing, Square wKnight, Square wPawn, Square bKing, int score, bool wtm) {
+    if (wPawn.getX() >= 4) {
+        wKing = wKing.mirrorX();
+        wKnight = wKnight.mirrorX();
+        wPawn = wPawn.mirrorX();
+        bKing = bKing.mirrorX();
     }
     if (score < 600)
         score = (score + 600) / 2;
@@ -1183,8 +1190,8 @@ EndGameEval::knpkEval(int wKing, int wKnight, int wPawn, int bKing, int score, b
         if (bKing == A8 || bKing == B7) // Fortress
             return 0;
         if (wKing == A8 && (bKing == C7 || bKing == C8)) {
-            bool knightDark = Square::darkSquare(Square::getX(wKnight), Square::getY(wKnight));
-            bool kingDark = Square::darkSquare(Square::getX(bKing), Square::getY(bKing));
+            bool knightDark = wKnight.isDark();
+            bool kingDark = bKing.isDark();
             if (wtm == (knightDark == kingDark)) // King trapped
                 return 0;
         }

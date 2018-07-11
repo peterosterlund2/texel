@@ -561,8 +561,8 @@ doRevMoves(const std::string& fen) {
         std::string captP = TextIO::pieceToChar(um.ui.capturedPiece, true);
         if (captP.empty()) captP = "-";
         std::string castle = TextIO::castleMaskToString(um.ui.castleMask);
-        int epSq = um.ui.epSquare;
-        std::string ep = epSq == -1 ? "-" : TextIO::squareToString(epSq);
+        Square epSq = um.ui.epSquare;
+        std::string ep = !epSq.isValid() ? "-" : TextIO::squareToString(epSq);
 
         std::cout << um.move << " captP: " << captP << " castle: " << castle
                   << " ep: " << ep << std::endl;

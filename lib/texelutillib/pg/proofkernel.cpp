@@ -42,11 +42,10 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U6
     minRooks[BLACK] = (goalPos.a8Castle() ? 1 : 0) + (goalPos.h8Castle() ? 1 : 0);
 
     auto isBlocked = [&blocked](int x, int y) -> bool {
-        int sq = Square::getSquare(x, y);
-        return blocked & (1ULL << sq);
+        return blocked & (1ULL << Square(x, y));
     };
     auto getPiece = [&goalPos](int x, int y) -> int {
-        return goalPos.getPiece(Square::getSquare(x, y));
+        return goalPos.getPiece(Square(x, y));
     };
     auto blockedByKing = [&](int x, int y, PieceColor c) -> bool {
         if (x < 0 || x > 7)
@@ -58,17 +57,17 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U6
     for (int x = 0; x < 8; x++) {
         if ((x == 0 || isBlocked(x-1, 6)) && (x == 7 || isBlocked(x+1, 6))) {
             if (getPiece(x, 7) == Piece::BBISHOP)
-                blocked |= 1ULL << Square::getSquare(x, 7);
-            if (initialPos.getPiece(Square::getSquare(x, 7)) == Piece::BBISHOP &&
+                blocked |= 1ULL << Square(x, 7);
+            if (initialPos.getPiece(Square(x, 7)) == Piece::BBISHOP &&
                 getPiece(x, 7) != Piece::BBISHOP)
-                dead |= 1ULL << Square::getSquare(x, 7);
+                dead |= 1ULL << Square(x, 7);
         }
         if ((x == 0 || isBlocked(x-1, 1)) && (x == 7 || isBlocked(x+1, 1))) {
             if (getPiece(x, 0) == Piece::WBISHOP)
-                blocked |= 1ULL << Square::getSquare(x, 0);
-            if (initialPos.getPiece(Square::getSquare(x, 0)) == Piece::WBISHOP &&
+                blocked |= 1ULL << Square(x, 0);
+            if (initialPos.getPiece(Square(x, 0)) == Piece::WBISHOP &&
                 getPiece(x, 0) != Piece::WBISHOP)
-                dead |= 1ULL << Square::getSquare(x, 0);
+                dead |= 1ULL << Square(x, 0);
         }
     }
     deadBishops = dead;
@@ -136,7 +135,7 @@ void ProofKernel::posToState(const Position& pos, std::array<PawnColumn,8>& colu
     for (int x = 0; x < 8; x++) {
         PawnColumn& col = columns[x];
         for (int y = 1; y < 7; y++) {
-            int p = pos.getPiece(Square::getSquare(x, y));
+            int p = pos.getPiece(Square(x, y));
             if (p == Piece::WPAWN) {
                 col.addPawn(col.nPawns(), WHITE);
             } else if (p == Piece::BPAWN) {
@@ -147,7 +146,7 @@ void ProofKernel::posToState(const Position& pos, std::array<PawnColumn,8>& colu
         bool canMove[2] = { true, true };
         for (int c = 0; c < 2; c++) {
             int y = c == WHITE ? 1 : 6;
-            int sq = Square::getSquare(x, y);
+            Square sq(x, y);
             if (blocked & (1ULL << sq)) {
                 int pawn = c == WHITE ? Piece::WPAWN : Piece::BPAWN;
                 if (pos.getPiece(sq) == pawn)
@@ -214,11 +213,9 @@ void
 ProofKernel::initSearch1() {
     path.clear();
     while (deadBishops) {
-        int sq = BitBoard::extractSquare(deadBishops);
-        int x = Square::getX(sq);
-        int y = Square::getY(sq);
-        PieceColor color = (y == 0) ? BLACK : WHITE;
-        PieceType bishop = Square::darkSquare(x, y) ? DARK_BISHOP : LIGHT_BISHOP;
+        const Square sq = BitBoard::extractSquare(deadBishops);
+        PieceColor color = (sq.getY() == 0) ? BLACK : WHITE;
+        PieceType bishop = sq.isDark() ? DARK_BISHOP : LIGHT_BISHOP;
         path.push_back(PkMove::pieceXPiece(color, bishop));
         PkUndoInfo ui;
         makeMove(path.back(), ui);
@@ -384,14 +381,13 @@ ProofKernel::PawnColumn::calcBishopPromotions(const Position& initialPos,
                                               const Position& goalPos,
                                               U64 blocked, int x) {
     auto isBlocked = [blocked](int x, int y) -> bool {
-        int sq = Square::getSquare(x, y);
-        return blocked & (1ULL << sq);
+        return blocked & (1ULL << Square(x, y));
     };
     auto promBlocked = [blocked,x,&isBlocked](int y) -> bool {
         return (x == 0 || isBlocked(x-1, y)) && (x == 7 || isBlocked(x+1, y));
     };
     auto getPiece = [](const Position& pos, int x, int y) {
-        return pos.getPiece(Square::getSquare(x, y));
+        return pos.getPiece(Square(x, y));
     };
 
     S8 nWhiteBishopProm = maxPawns;
@@ -999,16 +995,16 @@ ProofKernel::ExtPkMove
 strToExtPkMove(const std::string& str) {
     int idx = 0;
 
-    auto getSquare = [&str,&idx]() -> int {
+    auto getSquare = [&str,&idx]() -> Square {
         int x = str.at(idx++) - 'a';
         int y = str.at(idx++) - '1';
         ensure(x >= 0 && x < 8 && y >= 0 && y < 8, str);
-        return Square::getSquare(x, y);
+        return Square(x, y);
     };
 
     auto color = str.at(idx++) == 'w' ? ProofKernel::WHITE : ProofKernel::BLACK;
     auto movingPiece = ProofKernel::EMPTY;
-    int fromSq = -1;
+    Square fromSq;
 
     if (str.at(idx) != 'x' && str.at(idx) != '-') {
         movingPiece = parsePiece(str, idx, true, true);
@@ -1016,7 +1012,7 @@ strToExtPkMove(const std::string& str) {
     }
 
     bool capture = str.at(idx++) == 'x';
-    int toSq = getSquare();
+    Square toSq = getSquare();
     auto promPiece = idx < (int)str.size() ? parsePiece(str, idx, false, false) : ProofKernel::EMPTY;
 
     return ProofKernel::ExtPkMove(color, movingPiece, fromSq, capture, toSq, promPiece);
@@ -1135,7 +1131,7 @@ ProofKernel::toPieceType(bool white, PieceType p, bool allowPawn, bool allowKing
 }
 
 ProofKernel::PieceType
-ProofKernel::toPieceType(int p, int sq) {
+ProofKernel::toPieceType(int p, Square sq) {
     switch (p) {
     case Piece::WKING: case Piece::BKING:
         return PieceType::KING;
@@ -1144,7 +1140,7 @@ ProofKernel::toPieceType(int p, int sq) {
     case Piece::WROOK: case Piece::BROOK:
         return PieceType::ROOK;
     case Piece::WBISHOP: case Piece::BBISHOP:
-        return Square::darkSquare(sq) ? PieceType::DARK_BISHOP : PieceType::LIGHT_BISHOP;
+        return sq.isDark() ? PieceType::DARK_BISHOP : PieceType::LIGHT_BISHOP;
     case Piece::WKNIGHT: case Piece::BKNIGHT:
         return PieceType::KNIGHT;
     default:

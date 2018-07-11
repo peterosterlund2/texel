@@ -32,7 +32,7 @@ PolyglotBook::getHashKey(const Position& pos) {
     U64 key = 0;
     for (int sq = 0; sq < 64; sq++) {
         int pVal = -1;
-        switch (pos.getPiece(sq)) {
+        switch (pos.getPiece(Square(sq))) {
         case Piece::BPAWN:   pVal =  0; break;
         case Piece::WPAWN:   pVal =  1; break;
         case Piece::BKNIGHT: pVal =  2; break;
@@ -57,8 +57,8 @@ PolyglotBook::getHashKey(const Position& pos) {
     if (pos.a8Castle()) key ^= hashRandoms[768 + 3];
 
     // EP file
-    if (pos.getEpSquare() >= 0) {
-        int epFile = Square::getX(pos.getEpSquare());
+    if (pos.getEpSquare().isValid()) {
+        int epFile = Square(pos.getEpSquare()).getX();
         key ^= hashRandoms[772 + epFile];
     }
 
@@ -71,22 +71,22 @@ PolyglotBook::getHashKey(const Position& pos) {
 
 U16
 PolyglotBook::getPGMove(const Position& pos, const Move& move) {
-    int fromX = Square::getX(move.from());
-    int fromY = Square::getY(move.from());
-    int toX = Square::getX(move.to());
-    int toY = Square::getY(move.to());
+    int fromX = move.from().getX();
+    int fromY = move.from().getY();
+    int toX = move.to().getX();
+    int toY = move.to().getY();
 
     if ((move.from() == E1) && (pos.getPiece(move.from()) == Piece::WKING)) {
         if (move.to() == G1)
-            toX = Square::getX(H1);
+            toX = Square(H1).getX();
         if (move.to() == C1)
-            toX = Square::getX(A1);
+            toX = Square(A1).getX();
     }
     if ((move.from() == E8) && (pos.getPiece(move.from()) == Piece::BKING)) {
         if (move.to() == G8)
-            toX = Square::getX(H8);
+            toX = Square(H8).getX();
         if (move.to() == C8)
-            toX = Square::getX(A8);
+            toX = Square(A8).getX();
     }
 
     int prom = 0;
@@ -117,8 +117,8 @@ PolyglotBook::getMove(const Position& pos, U16 move) {
     int fromRow = (move >> 9) & 7;
     int prom = (move >> 12) & 7;
 
-    int from = Square::getSquare(fromFile, fromRow);
-    int to = Square::getSquare(toFile, toRow);
+    Square from = Square(fromFile, fromRow);
+    Square to = Square(toFile, toRow);
     int promoteTo;
     switch (prom) {
     case 1: promoteTo = wtm ? Piece::WKNIGHT : Piece::BKNIGHT; break;

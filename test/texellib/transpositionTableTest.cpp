@@ -61,7 +61,7 @@ TEST(TranspositionTableTest, testTTEntry) {
     score = mate0 - 6;
     ply = 3;
     ent2.setKey(3);
-    move = Move(8, 0, Piece::BQUEEN);
+    move = Move(Square(8), Square(0), Piece::BQUEEN);
     ent2.setMove(move);
     ent2.setScore(score, ply);
     ent2.setDepth(99);
@@ -95,7 +95,7 @@ TEST(TranspositionTableTest, testTTEntry) {
     score = -mate0 + 5;
     ply = 3;
     ent3.setKey(3);
-    move = Move(8, 0, Piece::BQUEEN);
+    move = Move(Square(8), Square(0), Piece::BQUEEN);
     ent3.setMove(move);
     ent3.setScore(score, ply);
     ent3.setDepth(99);
@@ -265,7 +265,7 @@ TEST(TranspositionTableTest, testHashFuncBackComp) {
     for (int p = Piece::EMPTY; p <= Piece::BPAWN; p++) {
         for (int sq = 0; sq < 64; sq++) {
             Position pos;
-            pos.setPiece(sq, p);
+            pos.setPiece(Square(sq), p);
             addToHash(pos);
         }
     }

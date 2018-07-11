@@ -54,25 +54,25 @@ GameTest::testHaveDrawOffer() {
     ASSERT_EQ(true, res);
     EXPECT_EQ(true, game.haveDrawOffer());
     EXPECT_EQ(Game::ALIVE, game.getGameState());    // Draw offer does not imply draw
-    EXPECT_EQ(Piece::BPAWN, game.pos.getPiece(Square::getSquare(4, 4))); // e5 move made
+    EXPECT_EQ(Piece::BPAWN, game.pos.getPiece(Square(4, 4))); // e5 move made
 
     res = game.processString("draw offer Nf3");
     ASSERT_EQ(true, res);
     EXPECT_EQ(true, game.haveDrawOffer());
     EXPECT_EQ(Game::ALIVE, game.getGameState());    // Draw offer does not imply draw
-    EXPECT_EQ(Piece::WKNIGHT, game.pos.getPiece(Square::getSquare(5, 2))); // Nf3 move made
+    EXPECT_EQ(Piece::WKNIGHT, game.pos.getPiece(Square(5, 2))); // Nf3 move made
 
     res = game.processString("Nc6");
     ASSERT_EQ(true, res);
     EXPECT_EQ(false, game.haveDrawOffer());
     EXPECT_EQ(Game::ALIVE, game.getGameState());
-    EXPECT_EQ(Piece::BKNIGHT, game.pos.getPiece(Square::getSquare(2, 5))); // Nc6 move made
+    EXPECT_EQ(Piece::BKNIGHT, game.pos.getPiece(Square(2, 5))); // Nc6 move made
 
     res = game.processString("draw offer Bb5");
     ASSERT_EQ(true, res);
     EXPECT_EQ(true, game.haveDrawOffer());
     EXPECT_EQ(Game::ALIVE, game.getGameState());
-    EXPECT_EQ(Piece::WBISHOP, game.pos.getPiece(Square::getSquare(1, 4))); // Bb5 move made
+    EXPECT_EQ(Piece::WBISHOP, game.pos.getPiece(Square(1, 4))); // Bb5 move made
 
     res = game.processString("draw accept");
     ASSERT_EQ(true, res);
@@ -80,23 +80,23 @@ GameTest::testHaveDrawOffer() {
 
     res = game.processString("undo");
     ASSERT_EQ(true, res);
-    EXPECT_EQ(Piece::EMPTY, game.pos.getPiece(Square::getSquare(1, 4))); // Bb5 move undone
+    EXPECT_EQ(Piece::EMPTY, game.pos.getPiece(Square(1, 4))); // Bb5 move undone
     EXPECT_EQ(false, game.haveDrawOffer());
     EXPECT_EQ(Game::ALIVE, game.getGameState());
     res = game.processString("undo");
     ASSERT_EQ(true, res);
-    EXPECT_EQ(Piece::EMPTY, game.pos.getPiece(Square::getSquare(2, 5))); // Nc6 move undone
+    EXPECT_EQ(Piece::EMPTY, game.pos.getPiece(Square(2, 5))); // Nc6 move undone
     EXPECT_EQ(true, game.haveDrawOffer());
     EXPECT_EQ(Game::ALIVE, game.getGameState());
 
     res = game.processString("redo");
     ASSERT_EQ(true, res);
-    EXPECT_EQ(Piece::BKNIGHT, game.pos.getPiece(Square::getSquare(2, 5))); // Nc6 move redone
+    EXPECT_EQ(Piece::BKNIGHT, game.pos.getPiece(Square(2, 5))); // Nc6 move redone
     EXPECT_EQ(false, game.haveDrawOffer());
     EXPECT_EQ(Game::ALIVE, game.getGameState());
     res = game.processString("redo");
     ASSERT_EQ(true, res);
-    EXPECT_EQ(Piece::WBISHOP, game.pos.getPiece(Square::getSquare(1, 4))); // Bb5 move redone
+    EXPECT_EQ(Piece::WBISHOP, game.pos.getPiece(Square(1, 4))); // Bb5 move redone
     EXPECT_EQ(true, game.haveDrawOffer());
     EXPECT_EQ(Game::ALIVE, game.getGameState());
     res = game.processString("redo");
@@ -116,7 +116,7 @@ GameTest::testHaveDrawOffer() {
     res = game.processString("e4");
     ASSERT_EQ(true, res);
     EXPECT_EQ(true, game.haveDrawOffer());   // Previous draw offer still valid
-    EXPECT_EQ(Piece::WPAWN, game.pos.getPiece(Square::getSquare(4, 3))); // e4 move made
+    EXPECT_EQ(Piece::WPAWN, game.pos.getPiece(Square(4, 3))); // e4 move made
 
     // Undo/redo shall clear "pendingDrawOffer".
     game.processString("new");
@@ -160,7 +160,7 @@ GameTest::testDraw50() {
     game.processString(cmd);
     game.processString("draw 50 a6");
     EXPECT_EQ(Game::ALIVE, game.getGameState());      // Pawn move resets counter
-    EXPECT_EQ(Piece::WPAWN, game.pos.getPiece(Square::getSquare(0, 5))); // Move a6 made
+    EXPECT_EQ(Piece::WPAWN, game.pos.getPiece(Square(0, 5))); // Move a6 made
 
     game.processString(cmd);
     game.processString("draw 50 O-O");
@@ -211,14 +211,14 @@ GameTest::testDrawRep() {
     EXPECT_EQ(Game::ALIVE, game.getGameState());    // Claim not valid, one more move needed
     game.processString("draw rep Nc6");
     EXPECT_EQ(Game::ALIVE, game.getGameState());    // Claim not valid, wrong move claimed
-    EXPECT_EQ(Piece::BKNIGHT, game.pos.getPiece(Square::getSquare(2, 5)));   // Move Nc6 made
+    EXPECT_EQ(Piece::BKNIGHT, game.pos.getPiece(Square(2, 5)));   // Move Nc6 made
     EXPECT_EQ(true, game.haveDrawOffer());
     game.processString("undo");
     EXPECT_EQ(false, game.haveDrawOffer());
-    EXPECT_EQ(Piece::EMPTY, game.pos.getPiece(Square::getSquare(2, 5)));
+    EXPECT_EQ(Piece::EMPTY, game.pos.getPiece(Square(2, 5)));
     game.processString("draw rep Ng8");
     EXPECT_EQ(Game::DRAW_REP, game.getGameState());
-    EXPECT_EQ(Piece::EMPTY, game.pos.getPiece(Square::getSquare(6, 7))); // Ng8 not played
+    EXPECT_EQ(Piece::EMPTY, game.pos.getPiece(Square(6, 7))); // Ng8 not played
 
     // Test draw by repetition when a "potential ep square but not real ep square" position is present.
     game.processString("new");
@@ -375,7 +375,7 @@ GameTest::testInsufficientMaterial() {
     EXPECT_EQ(Game::ALIVE, game.getGameState());
     game.processString("setpos 4k3/8/8/8/8/8/8/4K3 w - - 0 1");
     EXPECT_EQ(Game::DRAW_NO_MATE, game.getGameState());
-    const int a1 = Square::getSquare(0, 0);
+    const Square a1(0, 0);
     game.pos.setPiece(a1, Piece::WROOK);
     EXPECT_EQ(Game::ALIVE, game.getGameState());
     game.pos.setPiece(a1, Piece::BQUEEN);
@@ -387,7 +387,7 @@ GameTest::testInsufficientMaterial() {
     game.pos.setPiece(a1, Piece::WBISHOP);
     EXPECT_EQ(Game::DRAW_NO_MATE, game.getGameState());
 
-    const int c1 = Square::getSquare(2, 0);
+    const Square c1(2, 0);
     game.pos.setPiece(c1, Piece::WKNIGHT);
     EXPECT_EQ(Game::ALIVE, game.getGameState());
     game.pos.setPiece(c1, Piece::BBISHOP);
@@ -395,13 +395,13 @@ GameTest::testInsufficientMaterial() {
     game.pos.setPiece(c1, Piece::WBISHOP);
     EXPECT_EQ(Game::DRAW_NO_MATE, game.getGameState());
 
-    const int b2 = Square::getSquare(1, 1);
+    const Square b2(1, 1);
     game.pos.setPiece(b2, Piece::WBISHOP);
     EXPECT_EQ(Game::DRAW_NO_MATE, game.getGameState());
     game.pos.setPiece(b2, Piece::BBISHOP);
     EXPECT_EQ(Game::DRAW_NO_MATE, game.getGameState());
 
-    const int b3 = Square::getSquare(1, 2);
+    const Square b3(1, 2);
     game.pos.setPiece(b3, Piece::WBISHOP);
     EXPECT_EQ(Game::ALIVE, game.getGameState());
 

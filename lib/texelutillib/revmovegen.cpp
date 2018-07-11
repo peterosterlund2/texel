@@ -30,10 +30,10 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
                           bool includeAllEpSquares) {
     const int wtm = !pos.isWhiteMove(); // Other side makes the un-moves
     MoveList moveList;
-    if (pos.getEpSquare() == -1) {
+    if (!pos.getEpSquare().isValid()) {
         genMovesNoUndoInfo(pos, moveList);
     } else {
-        int epSq = pos.getEpSquare();
+        Square epSq = pos.getEpSquare();
         int delta = wtm ? 8 : -8;
         addMovesByMask(moveList, 1ULL << (epSq - delta), epSq + delta);
     }
@@ -50,7 +50,7 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
                 return false; // Castling moves cannot capture
             break;
         case Piece::WPAWN: case Piece::BPAWN:
-            if (Square::getX(m.from()) == Square::getX(m.to()))
+            if (m.from().getX() == m.to().getX())
                 return false; // Only diagonal pawn moves can capture
         default:
             break;
@@ -65,7 +65,7 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
         int mask = pos.getCastleMask();
         if ((movingPiece == Piece::WKING || movingPiece == Piece::BKING) &&
                 BitBoard::getKingDistance(m.from(), m.to()) > 1) {
-            switch (m.to()) {
+            switch (m.to().asInt()) {
             case G1: mask |= 1 << Position::H1_CASTLE; break;
             case G8: mask |= 1 << Position::H8_CASTLE; break;
             case C1: mask |= 1 << Position::A1_CASTLE; break;
@@ -82,8 +82,8 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
         int board[64];
         U64 squares = BitBoard::sqMask(A1, E1, H1, A8, E8, H8);
         while (squares) {
-            int sq = BitBoard::extractSquare(squares);
-            board[sq] = pos.getPiece(sq);
+            Square sq = BitBoard::extractSquare(squares);
+            board[sq.asInt()] = pos.getPiece(sq);
         }
 
         auto maxMask = [&board]() -> int { // Return maximum castle mask for board state
@@ -105,8 +105,8 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
 
         int maxMask0 = maxMask();
 
-        board[m.from()] = movingPiece;
-        board[m.to()] = capturedPiece;
+        board[m.from().asInt()] = movingPiece;
+        board[m.to().asInt()] = capturedPiece;
         if (movingPiece == Piece::WKING && m.from() == E1) {
             if (m.to() == G1)
                 board[H1] = Piece::WROOK;
@@ -126,7 +126,7 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
     // Return true if "m" can only be valid if it is an en passant capture
     auto mustBeEpCapture = [](const Move& m, int movingPiece, int capturedPiece) {
         return Piece::makeWhite(movingPiece) == Piece::WPAWN &&
-               Square::getX(m.from()) != Square::getX(m.to()) &&
+               m.from().getX() != m.to().getX() &&
                capturedPiece == Piece::EMPTY;
     };
 
@@ -141,11 +141,11 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
 
         U64 epFileMask = includeAllEpSquares ? 0xff : 0;
         bool isEp = false;
-        int x = Square::getX(m.to());
-        if (mustBeEpCapture(m, movingPiece, capturedPiece) && Square::getY(m.to()) == y) {
-            if (pos.getPiece(Square::getSquare(x, y + dy)) == Piece::EMPTY &&
-                pos.getPiece(Square::getSquare(x, y - dy)) == Piece::EMPTY) {
-                epFileMask |= 1 << Square::getX(m.to());
+        int x = m.to().getX();
+        if (mustBeEpCapture(m, movingPiece, capturedPiece) && m.to().getY() == y) {
+            if (pos.getPiece(Square(x, y + dy)) == Piece::EMPTY &&
+                pos.getPiece(Square(x, y - dy)) == Piece::EMPTY) {
+                epFileMask |= 1 << m.to().getX();
                 isEp = true;
             } else
                 return 0; // Move invalid regardless of EP square
@@ -155,19 +155,19 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
         if (epFileMask != 0) {
             int board[64];
             for (int i = 0; i < 64; i++)
-                board[i] = pos.getPiece(i);
-            board[m.from()] = movingPiece;
-            board[m.to()] = capturedPiece;
+                board[i] = pos.getPiece(Square(i));
+            board[m.from().asInt()] = movingPiece;
+            board[m.to().asInt()] = capturedPiece;
             if (isEp)
-                board[Square::getSquare(x, y - dy)] = oPawn;
+                board[Square(x, y - dy).asInt()] = oPawn;
             while (epFileMask != 0) {
-                x = BitBoard::extractSquare(epFileMask);
-                if (board[Square::getSquare(x, y + dy)] != Piece::EMPTY ||
-                    board[Square::getSquare(x, y     )] != Piece::EMPTY ||
-                    board[Square::getSquare(x, y - dy)] != oPawn)
+                x = BitBoard::extractSquare(epFileMask).asInt();
+                if (board[Square(x, y + dy).asInt()] != Piece::EMPTY ||
+                    board[Square(x, y     ).asInt()] != Piece::EMPTY ||
+                    board[Square(x, y - dy).asInt()] != oPawn)
                     continue;
-                if ((x > 0 && board[Square::getSquare(x - 1, y - dy)] == pawn) ||
-                    (x < 7 && board[Square::getSquare(x + 1, y - dy)] == pawn))
+                if ((x > 0 && board[Square(x - 1, y - dy).asInt()] == pawn) ||
+                    (x < 7 && board[Square(x + 1, y - dy).asInt()] == pawn))
                     mask |= 1 << x;
             }
         }
@@ -179,7 +179,7 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
         const Move& m = moveList[i];
         const int movingPiece = m.promoteTo() == Piece::EMPTY ? pos.getPiece(m.to()) :
                 wtm ? Piece::WPAWN : Piece::BPAWN;
-        UndoInfo ui { Piece::EMPTY, 0, -1, 0 };
+        UndoInfo ui { Piece::EMPTY, 0, Square(-1), 0 };
         for (int p0 = Piece::EMPTY; p0 <= Piece::WPAWN; p0++) {
             if (!validCapturePiece(pos, m, movingPiece, p0))
                 continue;
@@ -192,8 +192,8 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
 
                 U64 epMask = getEpMask(pos, m, movingPiece, ui.capturedPiece, includeAllEpSquares);
                 while (epMask != 0) {
-                    int epFile = BitBoard::extractSquare(epMask);
-                    ui.epSquare = epFile == 8 ? -1 : Square::getSquare(epFile, wtm ? 5 : 2);
+                    int epFile = BitBoard::extractSquare(epMask).asInt();
+                    ui.epSquare = epFile == 8 ? Square(-1) : Square(epFile, wtm ? 5 : 2);
                     if (mustBeEpCapture(m, movingPiece, ui.capturedPiece) && m.to() != ui.epSquare)
                         continue;
                     if (!knownInvalid(pos, m, ui))
@@ -219,7 +219,7 @@ void RevMoveGen::genMovesNoUndoInfo(const Position& pos, MoveList& moveList) {
     // Queen moves
     U64 squares = pos.pieceTypeBB(q);
     while (squares != 0) {
-        int sq = BitBoard::extractSquare(squares);
+        Square sq = BitBoard::extractSquare(squares);
         U64 m = (BitBoard::rookAttacks(sq, occupied) | BitBoard::bishopAttacks(sq, occupied)) & ~occupied;
         addMovesByMask(moveList, m, sq);
     }
@@ -231,7 +231,7 @@ void RevMoveGen::genMovesNoUndoInfo(const Position& pos, MoveList& moveList) {
     if (pos.a8Castle()) squares &= ~BitBoard::sqMask(A8);
     if (pos.h8Castle()) squares &= ~BitBoard::sqMask(H8);
     while (squares != 0) {
-        int sq = BitBoard::extractSquare(squares);
+        Square sq = BitBoard::extractSquare(squares);
         U64 m = BitBoard::rookAttacks(sq, occupied) & ~occupied;
         addMovesByMask(moveList, m, sq);
     }
@@ -239,7 +239,7 @@ void RevMoveGen::genMovesNoUndoInfo(const Position& pos, MoveList& moveList) {
     // Bishop moves
     squares = pos.pieceTypeBB(b);
     while (squares != 0) {
-        int sq = BitBoard::extractSquare(squares);
+        Square sq = BitBoard::extractSquare(squares);
         U64 m = BitBoard::bishopAttacks(sq, occupied) & ~occupied;
         addMovesByMask(moveList, m, sq);
     }
@@ -247,21 +247,21 @@ void RevMoveGen::genMovesNoUndoInfo(const Position& pos, MoveList& moveList) {
     // Knight moves
     squares = pos.pieceTypeBB(n);
     while (squares != 0) {
-        int sq = BitBoard::extractSquare(squares);
+        Square sq = BitBoard::extractSquare(squares);
         U64 m = BitBoard::knightAttacks(sq) & ~occupied;
         addMovesByMask(moveList, m, sq);
     }
 
     // King moves
-    int sq = pos.getKingSq(wtm);
+    Square sq = pos.getKingSq(wtm);
     if (!((sq == E1 && (pos.a1Castle() || pos.h1Castle())) ||
           (sq == E8 && (pos.a8Castle() || pos.h8Castle())))) {
         U64 m = BitBoard::kingAttacks(sq) & ~occupied;
         addMovesByMask(moveList, m, sq);
 
-        int k0Sq = wtm ? E1 : E8;
-        int kSq = wtm ? G1 : G8;
-        int rSq = wtm ? F1 : F8;
+        Square k0Sq = wtm ? E1 : E8;
+        Square kSq = wtm ? G1 : G8;
+        Square rSq = wtm ? F1 : F8;
         if (sq == kSq && pos.getPiece(rSq) == r) { // Short castle
             U64 OO_SQ = wtm ? BitBoard::sqMask(E1,H1) : BitBoard::sqMask(E8,H8);
             if ((OO_SQ & occupied) == 0 &&
@@ -284,10 +284,10 @@ void RevMoveGen::genMovesNoUndoInfo(const Position& pos, MoveList& moveList) {
     // Pawn moves
     squares = pos.pieceTypeBB(p);
     while (squares != 0) {
-        int sq = BitBoard::extractSquare(squares);
+        Square sq = BitBoard::extractSquare(squares);
         U64 m = wtm ? (BitBoard::bPawnAttacks(sq) | (1ULL << (sq - 8))) & ~BitBoard::maskRow1
                     : (BitBoard::wPawnAttacks(sq) | (1ULL << (sq + 8))) & ~BitBoard::maskRow8;
-        if (Square::getY(sq) == (wtm ? 3 : 4))
+        if (sq.getY() == (wtm ? 3 : 4))
             if (((1ULL << (wtm ? sq - 8 : sq + 8)) & occupied) == 0)
                 m |= 1ULL << (wtm ? sq - 16 : sq + 16);
         m &= ~occupied;
@@ -297,7 +297,7 @@ void RevMoveGen::genMovesNoUndoInfo(const Position& pos, MoveList& moveList) {
     // Promotions
     squares = pos.colorBB(wtm) & (wtm ? BitBoard::maskRow8 : BitBoard::maskRow1);
     while (squares != 0) {
-        int sq = BitBoard::extractSquare(squares);
+        Square sq = BitBoard::extractSquare(squares);
         int promoteTo = pos.getPiece(sq);
         if (promoteTo == Piece::WKING || promoteTo == Piece::BKING)
             continue;
@@ -348,7 +348,7 @@ RevMoveGen::knownInvalid(const Position& pos, const Move& move, const UndoInfo& 
     if (MoveGen::canTakeKing(tmpPos))
         return true;
 
-    int epSquare = tmpPos.getEpSquare();
+    Square epSquare = tmpPos.getEpSquare();
     TextIO::fixupEPSquare(tmpPos);
     if (epSquare != tmpPos.getEpSquare())
         return true;

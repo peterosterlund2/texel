@@ -53,7 +53,7 @@ private:
 
     /** Get the square number corresponding to x/y coordinate,
      *  or -1 if no square at that coordinate. */
-    int getSquare(double xCrd, double yCrd) const;
+    Square getSquare(double xCrd, double yCrd) const;
 
     /** Draw chess board and pieces. */
     bool draw(const Cairo::RefPtr<Cairo::Context>& ctx);
@@ -74,7 +74,7 @@ private:
     FT_Face ftFace;
     Cairo::RefPtr<Cairo::FtFontFace> fontFace;
 
-    int dragSquare = -1; // The square currently being dragged
+    Square dragSquare; // The square currently being dragged
     double dragX = 0;
     double dragY = 0;
 };

@@ -325,7 +325,7 @@ Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
     Position pos0(pos);
     int posHashListSize0 = posHashListSize;
     try {
-        return negaScout(tb, alpha, beta, ply, depth, -1, inCheck);
+        return negaScout(tb, alpha, beta, ply, depth, Square(-1), inCheck);
     } catch (const HelperThreadResult& res) {
         initSearchTreeInfo();
         searchTreeInfo[ply-1] = sti;
@@ -468,7 +468,7 @@ Search::shouldStop() {
 
 template <bool tb>
 int
-Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
+Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquare,
                   const bool inCheck) {
     // Mate distance pruning
     beta = std::min(beta, MATE0-ply-1);
@@ -689,13 +689,13 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             int score;
             {
                 pos.setWhiteMove(!pos.isWhiteMove());
-                const int epSquare = pos.getEpSquare();
-                pos.setEpSquare(-1);
+                const Square epSquare = pos.getEpSquare();
+                pos.setEpSquare(Square(-1));
                 searchTreeInfo[ply+1].allowNullMove = false;
                 searchTreeInfo[ply+1].bestMove.setMove(A1,A1,0,0);
                 const int hmc = pos.getHalfMoveClock();
                 pos.setHalfMoveClock(0);
-                score = -negaScout(tb, -beta, -(beta - 1), ply + 1, depth - R, -1, false);
+                score = -negaScout(tb, -beta, -(beta - 1), ply + 1, depth - R, Square(-1), false);
                 pos.setEpSquare(epSquare);
                 pos.setWhiteMove(!pos.isWhiteMove());
                 pos.setHalfMoveClock(hmc);
@@ -758,7 +758,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             sti2.nodeIdx = sti.nodeIdx;
             const S64 savedNodeIdx = sti.nodeIdx;
             int newDepth = isPv ? depth - 2 : depth * 3 / 8;
-            negaScout(tb, alpha, beta, ply, newDepth, -1, inCheck);
+            negaScout(tb, alpha, beta, ply, newDepth, Square(-1), inCheck);
             sti.nodeIdx = savedNodeIdx;
             sti2.currentMove = savedMove;
             sti2.currentMoveNo = savedMoveNo;
@@ -930,7 +930,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                     lmr = BUSY - m.score();
                 }
                 int newDepth = depth - 1 + extend - lmr;
-                int newCaptureSquare = -1;
+                Square newCaptureSquare;
                 if (isCapture && (givesCheck || (depth + extend) > 1)) {
                     // Compute recapture target square, but only if we are not going
                     // into q-search at the next ply.
@@ -1048,8 +1048,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
 }
 
 int
-Search::getMoveExtend(const Move& m, int recaptureSquare) {
-    if ((m.to() == recaptureSquare)) {
+Search::getMoveExtend(const Move& m, Square recaptureSquare) {
+    if (m.to() == recaptureSquare) {
         int tVal = ::pieceValue[pos.getPiece(m.to())];
         int a = tVal - pV / 2;
         int sVal = SEE(m, a, a + 1);
@@ -1132,7 +1132,7 @@ Search::weakPlaySkipMove(const Position& pos, const Move& m, int ply) const {
 
 template <Piece::Type piece>
 static inline bool
-attackedBy(const Position& pos, int sq) {
+attackedBy(const Position& pos, Square sq) {
     switch (piece) {
     case Piece::WPAWN:
         return (pos.pieceTypeBB(piece) & BitBoard::bPawnAttacks(sq)) != 0;
@@ -1425,7 +1425,7 @@ Search::SEE(Position& pos, const Move& m, int alpha, int beta) {
     int captures[64];   // Value of captured pieces
     const int kV = ::kV;
 
-    const int square = m.to();
+    const Square square = m.to();
     if (square == pos.getEpSquare()) {
         captures[0] = ::pV;
     } else {

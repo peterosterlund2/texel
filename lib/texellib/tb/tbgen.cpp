@@ -48,7 +48,8 @@ TBIndex::TBIndex(int nWhite0, int nBlack, U32 index)
 }
 
 void
-TBIndex::setSquare(int pieceNo, int square) {
+TBIndex::setSquare(int pieceNo, Square sq) {
+    int square = sq.asInt();
     if (pieceNo == 0) { // White king
         idx &= ~(0xf << (6*p-5));
         idx |= kingMap[square] << (6*p-5);
@@ -61,7 +62,7 @@ TBIndex::setSquare(int pieceNo, int square) {
         if (sym & 4)
             mirrorD();
     } else if (pieceNo == nWhite) { // Black king
-        int oldSq = getSquare(pieceNo);
+        Square oldSq = getSquare(pieceNo);
         for (int i = 1; i < p; i++) {
             if (getSquare(i) == oldSq) {
                 idx &= ~(0x3f << pieceShift(i));
@@ -74,12 +75,12 @@ TBIndex::setSquare(int pieceNo, int square) {
     }
 }
 
-int
+Square
 TBIndex::getSquare(int pieceNo) const {
     if (pieceNo == 0) {
-        return kingMapInverse[(idx >> (6*p-5)) & 0xf];
+        return Square(kingMapInverse[(idx >> (6*p-5)) & 0xf]);
     } else {
-        return (idx >> pieceShift(pieceNo)) & 0x3f;
+        return Square((idx >> pieceShift(pieceNo)) & 0x3f);
     }
 }
 
@@ -102,9 +103,9 @@ TBIndex::sortPieces(const std::vector<int>& pieceTypes) {
         for (int j = i+1; j < p; j++) {
             if (pieceTypes[i] != pieceTypes[j])
                 break;
-            int sqI = getSquare(i);
-            int sqJ = getSquare(j);
-            if (sqJ < sqI) {
+            Square sqI = getSquare(i);
+            Square sqJ = getSquare(j);
+            if (sqJ.asInt() < sqI.asInt()) {
                 setSquare(i, sqJ);
                 setSquare(j, sqI);
             }
@@ -116,16 +117,16 @@ void
 TBIndex::staticInitialize() {
     for (int sq = 0; sq < 64; sq++) {
         int sym = 0;
-        int mSq = sq;
-        if (Square::getX(mSq) >= 4) {
+        Square mSq(sq);
+        if (mSq.getX() >= 4) {
             sym |= 1;
-            mSq ^= 0x07;
+            mSq = mSq.mirrorX();
         }
-        if (Square::getY(mSq) >= 4) {
+        if (mSq.getY() >= 4) {
             sym |= 2;
-            mSq ^= 0x38;
+            mSq = mSq.mirrorY();
         }
-        if (Square::getY(mSq) > Square::getX(mSq)) {
+        if (mSq.getY() > mSq.getX()) {
             sym |= 4;
         }
         symType[sq] = sym;
@@ -139,14 +140,14 @@ TBIndex::staticInitialize() {
             kingMap[sq] = kIdx;
             kingMapInverse[kIdx] = sq;
             for (int s = 1; s < 8; s++) {
-                int mSq = sq;
-                if (s & 1) // Mirror X
-                    mSq ^= 0x07;
-                if (s & 2) // Mirror Y
-                    mSq ^= 0x38;
+                Square mSq(sq);
+                if (s & 1)
+                    mSq = mSq.mirrorX();
+                if (s & 2)
+                    mSq = mSq.mirrorY();
                 if (s & 4) // Mirror D
-                    mSq = Square::getSquare(Square::getY(mSq), Square::getX(mSq));
-                kingMap[mSq] = kIdx;
+                    mSq = Square(mSq.getY(), mSq.getX());
+                kingMap[mSq.asInt()] = kIdx;
             }
             kIdx++;
         }
@@ -198,14 +199,14 @@ TBPosition::TBPosition(const PieceCount& pc)
 bool
 TBPosition::indexValid() {
     const int nPieces = pieceTypes.size();
-    const int bKingSq = currIdx.getSquare(nWhite);
+    const Square bKingSq = currIdx.getSquare(nWhite);
 
     if (currIdx.getSquare(0) == bKingSq)
         return false; // White king must be present
 
     U64 occupied = 0;
     for (int i = 0; i < nPieces; i++) {
-        int sq = currIdx.getSquare(i);
+        Square sq = currIdx.getSquare(i);
         if (sq != bKingSq) {
             if (occupied & (1ULL << sq))
                 return false; // More than one piece on sq
@@ -227,14 +228,14 @@ TBPosition::setPosition(const Position& pos) {
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
         pieces[p] = pos.pieceTypeBB((Piece::Type)p);
 
-    const int bKingSq = pos.bKingSq();
+    const Square bKingSq = pos.bKingSq();
     const int nPieces = pieceTypes.size();
 
     currIdx.setSquare(nWhite, bKingSq);
     for (int i = 0; i < nPieces; i++) {
         int p = pieceTypes[i];
         if (pieces[p]) {
-            int sq = BitBoard::extractSquare(pieces[p]);
+            Square sq = BitBoard::extractSquare(pieces[p]);
             if (p != Piece::WKING && p != Piece::BKING)
                 currIdx.setSquare(i, sq);
         } else {
@@ -258,13 +259,13 @@ TBPosition::getPos(Position& pos) const {
     U64 occupied = getOccupied();
     U64 m = pos.occupiedBB() & ~occupied;
     while (m) {
-        int sq = BitBoard::extractSquare(m);
+        Square sq = BitBoard::extractSquare(m);
         pos.setPiece(sq, Piece::EMPTY);
     }
     const int nPieces = pieceTypes.size();
-    int bKingSq = currIdx.getSquare(nWhite);
+    Square bKingSq = currIdx.getSquare(nWhite);
     for (int i = 0; i < nPieces; i++) {
-        int sq = currIdx.getSquare(i);
+        Square sq = currIdx.getSquare(i);
         if (i == nWhite || sq != bKingSq)
             pos.setPiece(sq, pieceTypes[i]);
     }
@@ -284,15 +285,15 @@ bool
 TBPosition::canTakeKing() {
     const U64 occupied = getOccupied();
     const bool whiteMove = currIdx.whiteMove();
-    const int kingSq = currIdx.getSquare(whiteMove ? nWhite : 0);
+    const Square kingSq = currIdx.getSquare(whiteMove ? nWhite : 0);
     const U64 kingMask = 1ULL << kingSq;
 
     const int start = whiteMove ? 0 : nWhite;
     const int stop = whiteMove ? nWhite : pieceTypes.size();
-    const int bKingSq = currIdx.getSquare(nWhite);
+    const Square bKingSq = currIdx.getSquare(nWhite);
 
     for (int i = start; i < stop; i++) {
-        int sq = currIdx.getSquare(i);
+        Square sq = currIdx.getSquare(i);
         if (i != nWhite && sq == bKingSq)
             continue; // Ignore non-present piece
         switch (pieceTypes[i]) {
@@ -331,11 +332,11 @@ TBPosition::getMoves(TbMoveList& lst) {
 
     const int start = whiteMove ? 0 : nWhite;
     const int stop = whiteMove ? nWhite : nPieces;
-    const int bKingSq = currIdx.getSquare(nWhite);
+    const Square bKingSq = currIdx.getSquare(nWhite);
     const U32 origIdx = currIdx.getIndex();
 
     for (int i = start; i < stop; i++) {
-        const int from = currIdx.getSquare(i);
+        const Square from = currIdx.getSquare(i);
         if (i != nWhite && from == bKingSq)
             continue; // Ignore non-present piece
         U64 toMask = 0;
@@ -358,7 +359,7 @@ TBPosition::getMoves(TbMoveList& lst) {
             break;
         }
         while (toMask) {
-            int toSq = BitBoard::extractSquare(toMask);
+            Square toSq = BitBoard::extractSquare(toMask);
             if (toSq == bKingSq)
                 continue;
             int captured = -1;
@@ -396,7 +397,7 @@ TBPosition::getUnMoves(TbMoveList& lst) {
     U32 missingPieces = 0;
     const int start0 = whiteMove ? 1 : nWhite+1;
     const int stop0 = whiteMove ? nWhite : nPieces;
-    const int bKingSq = currIdx.getSquare(nWhite);
+    const Square bKingSq = currIdx.getSquare(nWhite);
     for (int i = start0; i < stop0; i++)
         if (currIdx.getSquare(i) == bKingSq)
             missingPieces |= 1ULL << i;
@@ -406,7 +407,7 @@ TBPosition::getUnMoves(TbMoveList& lst) {
     const U32 origIdx = currIdx.getIndex();
 
     for (int i = start; i < stop; i++) {
-        int to = currIdx.getSquare(i);
+        Square to = currIdx.getSquare(i);
         if (i != nWhite && to == bKingSq)
             continue; // Ignore non-present piece
         U64 fromMask = 0;
@@ -430,7 +431,7 @@ TBPosition::getUnMoves(TbMoveList& lst) {
         }
         fromMask &= ~occupied;
         while (fromMask) {
-            int fromSq = BitBoard::extractSquare(fromMask);
+            Square fromSq = BitBoard::extractSquare(fromMask);
             currIdx.setSquare(i, fromSq);
             currIdx.swapSide();
             currIdx.canonize(pieceTypes, duplicatedPieces);
@@ -438,7 +439,7 @@ TBPosition::getUnMoves(TbMoveList& lst) {
             currIdx.setIndex(origIdx);
             U64 m = missingPieces;
             while (m) {
-                int j = BitBoard::extractSquare(m);
+                int j = BitBoard::extractSquare(m).asInt();
                 if (i == nWhite) { // black king, must set i first
                     currIdx.setSquare(i, fromSq);
                     currIdx.setSquare(j, to);

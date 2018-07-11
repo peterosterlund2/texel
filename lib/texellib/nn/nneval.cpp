@@ -106,32 +106,32 @@ NNEvaluator::popState() {
 /** Return the row in the first layer weight matrix corresponding
  *  to king + piece type + square. */
 static inline int
-getIndex(int kSq, int pt, int sq, bool white) {
+getIndex(Square kSq, int pt, Square sq, bool white) {
     if (!white) {
-        kSq = Square::mirrorY(kSq);
+        kSq = kSq.mirrorY();
         pt = (pt >= 5) ? (pt - 5) : (pt + 5);
-        sq = Square::mirrorY(sq);
+        sq = sq.mirrorY();
     }
-    int x = Square::getX(kSq);
-    int y = Square::getY(kSq);
+    int x = kSq.getX();
+    int y = kSq.getY();
     if (x >= 4) {
-        x = Square::mirrorX(x);
-        sq = Square::mirrorX(sq);
+        x ^= 7;
+        sq = sq.mirrorX();
     }
     int kIdx = y * 4 + x;
-    return (kIdx * 10 + pt) * 64 + sq;
+    return (kIdx * 10 + pt) * 64 + sq.asInt();
 };
 
 void
-NNEvaluator::setPiece(int square, int oldPiece, int newPiece) {
+NNEvaluator::setPiece(Square square, int oldPiece, int newPiece) {
     auto isNonKing = [](int p) {
         return p != Piece::EMPTY && p != Piece::WKING && p != Piece::BKING;
     };
 
     for (int c = 0; c < 2; c++) {
         FirstLayerState& s = getLinState(c);
-        int kSq = s.kingSqComputed;
-        if (kSq == -1)
+        Square kSq = s.kingSqComputed;
+        if (!kSq.isValid())
             continue;
 
         if (isNonKing(oldPiece)) {
@@ -140,7 +140,7 @@ NNEvaluator::setPiece(int square, int oldPiece, int newPiece) {
             if (s.toSubLen < maxIncr) {
                 s.toSub[s.toSubLen++] = idx;
             } else {
-                s.kingSqComputed = -1;
+                s.kingSqComputed = Square();
                 s.toAddLen = 0;
                 s.toSubLen = 0;
                 continue;
@@ -153,7 +153,7 @@ NNEvaluator::setPiece(int square, int oldPiece, int newPiece) {
             if (s.toAddLen < maxIncr) {
                 s.toAdd[s.toAddLen++] = idx;
             } else {
-                s.kingSqComputed = -1;
+                s.kingSqComputed = Square();
                 s.toAddLen = 0;
                 s.toSubLen = 0;
                 continue;
@@ -165,7 +165,7 @@ NNEvaluator::setPiece(int square, int oldPiece, int newPiece) {
 void
 NNEvaluator::computeL1WB() {
     bool doFull[2];
-    int kingSq[2];
+    Square kingSq[2];
     kingSq[0] = posP->getKingSq(true);
     kingSq[1] = posP->getKingSq(false);
     for (int c = 0; c < 2; c++) {
@@ -191,14 +191,14 @@ NNEvaluator::computeL1WB() {
     int add[2][32];
     int len[2] = {0, 0};
     for (int sq = 0; sq < 64; sq++) {
-        const int p = posP->getPiece(sq);
+        const int p = posP->getPiece(Square(sq));
         if (p == Piece::EMPTY || p == Piece::WKING || p == Piece::BKING)
             continue;
         int pt = ptValue[p];
         for (int c = 0; c < 2; c++) {
             if (doFull[c]) {
                 FirstLayerState& s = getLinState(c);
-                add[c][len[c]++] = getIndex(s.kingSqComputed, pt, sq, c == 0);
+                add[c][len[c]++] = getIndex(s.kingSqComputed, pt, Square(sq), c == 0);
             }
         }
     }

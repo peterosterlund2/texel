@@ -79,7 +79,7 @@ SearchTest::testNegaScout() {
     Position pos = TextIO::readFEN("3k4/8/3K2R1/8/8/8/8/8 w - - 0 1");
     std::shared_ptr<Search> sc = getSearch(pos);
     sc->setMinProbeDepth(100);
-    int score = sc->negaScout(false, -mate0, mate0, ply, 2, -1, MoveGen::inCheck(pos)) + ply;
+    int score = sc->negaScout(false, -mate0, mate0, ply, 2, Square(), MoveGen::inCheck(pos)) + ply;
     ASSERT_EQ(mate0 - 2, score);     // depth 2 is enough to find mate in 1
     int score2 = idSearch(*sc, 2).score();
     ASSERT_EQ(score, score2);
@@ -87,7 +87,7 @@ SearchTest::testNegaScout() {
     pos = TextIO::readFEN("8/1P6/k7/2K5/8/8/8/8 w - - 0 1");
     sc->init(pos, nullHist, 0);
     sc->setMinProbeDepth(100);
-    score = sc->negaScout(false, -mate0, mate0, ply, 4, -1, MoveGen::inCheck(pos)) + ply;
+    score = sc->negaScout(false, -mate0, mate0, ply, 4, Square(), MoveGen::inCheck(pos)) + ply;
     ASSERT_EQ(mate0 - 4, score);     // depth 4 is enough to find mate in 2
     score2 = idSearch(*sc, 4).score();
     ASSERT_EQ(score, score2);
@@ -95,7 +95,7 @@ SearchTest::testNegaScout() {
     pos = TextIO::readFEN("8/5P1k/5K2/8/8/8/8/8 w - - 0 1");
     sc->init(pos, nullHist, 0);
     sc->setMinProbeDepth(100);
-    score = sc->negaScout(false, -mate0, mate0, ply, 5, -1, MoveGen::inCheck(pos)) + ply;
+    score = sc->negaScout(false, -mate0, mate0, ply, 5, Square(), MoveGen::inCheck(pos)) + ply;
     ASSERT_EQ(mate0 - 4, score);     // must avoid stale-mate after f8Q
     score2 = idSearch(*sc, 5).score();
     ASSERT_EQ(score, score2);
@@ -103,13 +103,13 @@ SearchTest::testNegaScout() {
     pos = TextIO::readFEN("4k3/8/3K1Q2/8/8/8/8/8 b - - 0 1");
     sc->init(pos, nullHist, 0);
     sc->setMinProbeDepth(100);
-    score = sc->negaScout(false, -mate0, mate0, ply, 2, -1, MoveGen::inCheck(pos));
+    score = sc->negaScout(false, -mate0, mate0, ply, 2, Square(), MoveGen::inCheck(pos));
     ASSERT_EQ(0, score);             // Position is stale-mate
 
     pos = TextIO::readFEN("3kB3/8/1N1K4/8/8/8/8/8 w - - 0 1");
     sc->init(pos, nullHist, 0);
     sc->setMinProbeDepth(100);
-    score = sc->negaScout(false, -mate0, mate0, ply, 3, -1, MoveGen::inCheck(pos));
+    score = sc->negaScout(false, -mate0, mate0, ply, 3, Square(), MoveGen::inCheck(pos));
     ASSERT_LT(std::abs(score), 50);   // Stale-mate trap
     score2 = idSearch(*sc, 5).score();
     ASSERT_EQ(score, score2);
@@ -138,21 +138,21 @@ SearchTest::testDraw50() {
     std::shared_ptr<Search> sc = getSearch(pos);
     sc->maxTimeMillis = -1;
     sc->setMinProbeDepth(100);
-    int score = sc->negaScout(false, -mate0, mate0, ply, 2, -1, MoveGen::inCheck(pos));
+    int score = sc->negaScout(false, -mate0, mate0, ply, 2, Square(), MoveGen::inCheck(pos));
     EXPECT_EQ(matedInOne, score - ply);
 
     pos = TextIO::readFEN("8/1R2k3/R7/8/8/8/8/1K6 b - - 99 80");
     sc->init(pos, nullHist, 0);
     sc->maxTimeMillis = -1;
     sc->setMinProbeDepth(100);
-    score = sc->negaScout(false, -mate0, mate0, ply, 2, -1, MoveGen::inCheck(pos));
+    score = sc->negaScout(false, -mate0, mate0, ply, 2, Square(), MoveGen::inCheck(pos));
     EXPECT_EQ(0, score);     // Draw by 50-move rule
 
     pos = TextIO::readFEN("8/1R2k3/R7/8/8/8/8/1K6 b - - 98 80");
     sc->init(pos, nullHist, 0);
     sc->maxTimeMillis = -1;
     sc->setMinProbeDepth(100);
-    score = sc->negaScout(false, -mate0, mate0, ply, 2, -1, MoveGen::inCheck(pos));
+    score = sc->negaScout(false, -mate0, mate0, ply, 2, Square(), MoveGen::inCheck(pos));
     EXPECT_EQ(matedInOne, score - ply);     // No draw
 
     pos = TextIO::readFEN("8/1R2k3/R7/8/8/8/8/1K6 b - - 99 80");
@@ -217,7 +217,7 @@ SearchTest::testDrawRep() {
     std::shared_ptr<Search> sc = getSearch(pos);
     sc->maxTimeMillis = -1;
     sc->setMinProbeDepth(100);
-    int score = sc->negaScout(false, -mate0, mate0, ply, 3, -1, MoveGen::inCheck(pos));
+    int score = sc->negaScout(false, -mate0, mate0, ply, 3, Square(), MoveGen::inCheck(pos));
     EXPECT_EQ(0, score);
 
     pos = TextIO::readFEN("7k/5RR1/8/8/8/8/q3q3/2K5 w - - 0 1");
@@ -238,7 +238,7 @@ SearchTest::testDrawRep() {
     sc = getSearch(pos);
     sc->maxTimeMillis = -1;
     sc->setMinProbeDepth(100);
-    score = sc->negaScout(false, -mate0, mate0, ply, 3, -1, MoveGen::inCheck(pos));
+    score = sc->negaScout(false, -mate0, mate0, ply, 3, Square(), MoveGen::inCheck(pos));
     EXPECT_LT(score, 0);
 
     pos = TextIO::readFEN("qn6/qn4k1/pp3R2/5R2/8/8/8/K7 w - - 0 1");

@@ -66,7 +66,7 @@ struct PositionBase {
     int fullMoveCounter;
 
     int castleMask;
-    int epSquare;
+    Square epSquare;
 
     U64 hashKey;           // Cached Zobrist hash key
     U64 pHashKey;          // Cached Zobrist pawn hash key
@@ -139,19 +139,19 @@ public:
     void setWhiteMove(bool whiteMove);
 
     /** Return piece occupying a square. */
-    int getPiece(int square) const;
+    int getPiece(Square square) const;
 
     /** Set a square to a piece value. */
-    void setPiece(int square, int piece);
+    void setPiece(Square square, int piece);
 
     /** Remove a piece from a square. */
-    void clearPiece(int square);
+    void clearPiece(Square square);
 
     /**
      * Set a square to a piece value.
      * Special version that only updates enough of the state for the SEE function to be happy.
      */
-    void setSEEPiece(int square, int piece);
+    void setSEEPiece(Square square, int piece);
 
     /** Return true if white long castling right has not been lost. */
     bool a1Castle() const;
@@ -170,11 +170,11 @@ public:
     void setCastleMask(int castleMask);
 
     /** En passant square (on 3rd/6th rank), or -1 if no en passant possible. */
-    int getEpSquare() const;
+    Square getEpSquare() const;
 
-    void setEpSquare(int epSquare);
+    void setEpSquare(Square epSquare);
 
-    int getKingSq(bool white) const;
+    Square getKingSq(bool white) const;
 
     /** Apply a move to the current position. */
     void makeMove(const Move& move, UndoInfo& ui);
@@ -184,7 +184,7 @@ public:
     /** Special make move functions used by MoveGen::isLegal(). Does not update all data members. */
     void makeMoveB(const Move& move, UndoInfo& ui);
     void unMakeMoveB(const Move& move, const UndoInfo& ui);
-    void setPieceB(int square, int piece);
+    void setPieceB(Square square, int piece);
 
     /**
      * Apply a move to the current position.
@@ -214,8 +214,8 @@ public:
     /** BitBoard for all squares occupied by white and black pieces. */
     U64 occupiedBB() const;
 
-    int wKingSq() const;
-    int bKingSq() const;
+    Square wKingSq() const;
+    Square bKingSq() const;
 
     /** Total white/black material value. */
     int wMtrl() const;
@@ -232,7 +232,7 @@ public:
     static void staticInitialize();
 
     /** Get hash key for a piece at a square. */
-    static U64 getHashKey(int piece, int square);
+    static U64 getHashKey(int piece, Square square);
 
 
     /** Serialization. Used by tree logging code. */
@@ -247,8 +247,8 @@ private:
     mutable NNEvaluator* nnEval = nullptr;
 
     /** Move a non-pawn piece to an empty square. */
-    void movePieceNotPawn(int from, int to);
-    void movePieceNotPawnB(int from, int to);
+    void movePieceNotPawn(Square from, Square to);
+    void movePieceNotPawnB(Square from, Square to);
 
     /** Force next NN evaluation to be non-incremental. */
     void forceFullEval();
@@ -295,8 +295,8 @@ Position::pawnZobristHash() const {
 
 inline U64
 Position::kingZobristHash() const {
-    return psHashKeys[Piece::WKING][wKingSq()] ^
-           psHashKeys[Piece::BKING][bKingSq()];
+    return psHashKeys[Piece::WKING][wKingSq().asInt()] ^
+           psHashKeys[Piece::BKING][bKingSq().asInt()];
 }
 
 inline U64
@@ -358,12 +358,13 @@ Position::setWhiteMove(bool whiteMove) {
 }
 
 inline int
-Position::getPiece(int square) const {
-    return squares[square];
+Position::getPiece(Square square) const {
+    return squares[square.asInt()];
 }
 
 inline void
-Position::setSEEPiece(int square, int piece) {
+Position::setSEEPiece(Square sq, int piece) {
+    int square = sq.asInt();
     int removedPiece = squares[square];
 
     // Update board
@@ -421,28 +422,28 @@ Position::setCastleMask(int castleMask) {
     }
 }
 
-inline int
+inline Square
 Position::getEpSquare() const {
     return epSquare;
 }
 
 inline void
-Position::setEpSquare(int epSquare) {
+Position::setEpSquare(Square epSquare) {
     if (this->epSquare != epSquare) {
-        hashKey ^= epHashKeys[(this->epSquare >= 0) ? Square::getX(this->epSquare) + 1 : 0];
-        hashKey ^= epHashKeys[(epSquare >= 0) ? Square::getX(epSquare) + 1 : 0];
+        hashKey ^= epHashKeys[this->epSquare.isValid() ? this->epSquare.getX() + 1 : 0];
+        hashKey ^= epHashKeys[epSquare.isValid() ? epSquare.getX() + 1 : 0];
         this->epSquare = epSquare;
     }
 }
 
-inline int
+inline Square
 Position::getKingSq(bool white) const {
     return white ? wKingSq() : bKingSq();
 }
 
 inline void
 Position::unMakeMoveB(const Move& move, const UndoInfo& ui) {
-    int p = squares[move.to()];
+    int p = getPiece(move.to());
     setPieceB(move.from(), p);
     setPieceB(move.to(), ui.capturedPiece);
     bool wtm = whiteMove;
@@ -454,7 +455,7 @@ Position::unMakeMoveB(const Move& move, const UndoInfo& ui) {
     // Handle castling
     int king = wtm ? Piece::WKING : Piece::BKING;
     if (p == king) {
-        int k0 = move.from();
+        Square k0 = move.from();
         if (move.to() == k0 + 2) { // O-O
             movePieceNotPawnB(k0 + 1, k0 + 3);
         } else if (move.to() == k0 - 2) { // O-O-O
@@ -473,7 +474,8 @@ Position::unMakeMoveB(const Move& move, const UndoInfo& ui) {
 }
 
 inline void
-Position::setPieceB(int square, int piece) {
+Position::setPieceB(Square sq, int piece) {
+    int square = sq.asInt();
     int removedPiece = squares[square];
     squares[square] = piece;
 
@@ -499,7 +501,9 @@ Position::setPieceB(int square, int piece) {
 }
 
 inline void
-Position::movePieceNotPawnB(int from, int to) {
+Position::movePieceNotPawnB(Square fromS, Square toS) {
+    const int from = fromS.asInt();
+    const int to = toS.asInt();
     const int piece = squares[from];
 
     squares[from] = Piece::EMPTY;
@@ -520,8 +524,8 @@ Position::movePieceNotPawnB(int from, int to) {
 
 inline void
 Position::makeSEEMove(const Move& move, UndoInfo& ui) {
-    ui.capturedPiece = squares[move.to()];
-    int p = squares[move.from()];
+    ui.capturedPiece = getPiece(move.to());
+    int p = getPiece(move.from());
 
     // Handle en passant
     if (move.to() == epSquare) {
@@ -541,7 +545,7 @@ Position::makeSEEMove(const Move& move, UndoInfo& ui) {
 inline void
 Position::unMakeSEEMove(const Move& move, const UndoInfo& ui) {
     whiteMove = !whiteMove;
-    int p = squares[move.to()];
+    int p = getPiece(move.to());
     setSEEPiece(move.from(), p);
     setSEEPiece(move.to(), ui.capturedPiece);
 
@@ -596,11 +600,11 @@ inline U64 Position::occupiedBB() const {
     return whiteBB() | blackBB();
 }
 
-inline int Position::wKingSq() const {
+inline Square Position::wKingSq() const {
     return BitBoard::firstSquare(pieceTypeBB_[Piece::WKING]);
 }
 
-inline int Position::bKingSq() const {
+inline Square Position::bKingSq() const {
     return BitBoard::firstSquare(pieceTypeBB_[Piece::BKING]);
 }
 
@@ -620,8 +624,8 @@ inline int Position::bMtrlPawns() const {
     return bMtrlPawns_;
 }
 
-inline U64 Position::getHashKey(int piece, int square) {
-    return psHashKeys[piece][square];
+inline U64 Position::getHashKey(int piece, Square square) {
+    return psHashKeys[piece][square.asInt()];
 }
 
 #endif /* POSITION_HPP_ */

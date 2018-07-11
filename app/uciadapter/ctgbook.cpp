@@ -75,7 +75,7 @@ public:
     static const int posInfoBytes = 3*4 + 4 + (3+4)*2 + 1 + 1 + 1;
 
 private:
-    static int findPiece(const Position& pos, int piece, int pieceNo);
+    static Square findPiece(const Position& pos, int piece, int pieceNo);
 
     Move decodeMove(const Position& pos, int moveCode);
 
@@ -153,9 +153,9 @@ extractInt(const std::vector<U8>& buf, int offs, int len) {
     return val;
 }
 
-int
-mirrorSquareColor(int sq) {
-    return Square::mirrorY(sq);
+Square
+mirrorSquareColor(Square sq) {
+    return sq.mirrorY();
 }
 
 int
@@ -175,25 +175,25 @@ mirrorMoveColor(Move& m) {
                   mirrorPieceColor(m.promoteTo()), 0);
 }
 
-int
-mirrorSquareLeftRight(int sq) {
-    return Square::mirrorX(sq);
+Square
+mirrorSquareLeftRight(Square sq) {
+    return sq.mirrorX();
 }
 
 void
 mirrorPosLeftRight(Position& pos) {
     for (int sq = 0; sq < 64; sq++) {
-        int mSq = mirrorSquareLeftRight(sq);
+        int mSq = mirrorSquareLeftRight(Square(sq)).asInt();
         if (sq < mSq) {
-            int piece1 = pos.getPiece(sq);
-            int piece2 = pos.getPiece(mSq);
-            pos.setPiece(sq, piece2);
-            pos.setPiece(mSq, piece1);
+            int piece1 = pos.getPiece(Square(sq));
+            int piece2 = pos.getPiece(Square(mSq));
+            pos.setPiece(Square(sq), piece2);
+            pos.setPiece(Square(mSq), piece1);
         }
     }
-    int epSquare = pos.getEpSquare();
-    if (epSquare >= 0) {
-        int mEpSquare = mirrorSquareLeftRight(epSquare);
+    Square epSquare = pos.getEpSquare();
+    if (epSquare.isValid()) {
+        Square mEpSquare = mirrorSquareLeftRight(epSquare);
         pos.setEpSquare(mEpSquare);
     }
 }
@@ -208,12 +208,12 @@ mirrorMoveLeftRight(Move& m) {
 void
 mirrorPosColor(Position& pos) {
     for (int sq = 0; sq < 64; sq++) {
-        int mSq = mirrorSquareColor(sq);
+        int mSq = mirrorSquareColor(Square(sq)).asInt();
         if (sq < mSq) {
-            int piece1 = pos.getPiece(sq);
-            int piece2 = pos.getPiece(mSq);
-            pos.setPiece(mSq, mirrorPieceColor(piece1));
-            pos.setPiece(sq, mirrorPieceColor(piece2));
+            int piece1 = pos.getPiece(Square(sq));
+            int piece2 = pos.getPiece(Square(mSq));
+            pos.setPiece(Square(mSq), mirrorPieceColor(piece1));
+            pos.setPiece(Square(sq), mirrorPieceColor(piece2));
         }
     }
     pos.setWhiteMove(!pos.isWhiteMove());
@@ -225,9 +225,9 @@ mirrorPosColor(Position& pos) {
     if (pos.h8Castle()) castleMask |= (1 << Position::H1_CASTLE);
     pos.setCastleMask(castleMask);
 
-    int epSquare = pos.getEpSquare();
-    if (epSquare >= 0) {
-        int mEpSquare = mirrorSquareColor(epSquare);
+    Square epSquare = pos.getEpSquare();
+    if (epSquare.isValid()) {
+        Square mEpSquare = mirrorSquareColor(epSquare);
         pos.setEpSquare(mEpSquare);
     }
 }
@@ -239,7 +239,7 @@ positionToByteArray(Position& pos, std::vector<U8>& encodedPos) {
     bits.addBits(0, 8); // Header byte
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            int p = pos.getPiece(Square::getSquare(x, y));
+            int p = pos.getPiece(Square(x, y));
             switch (p) {
             case Piece::EMPTY:   bits.addBits(0x00, 1); break;
             case Piece::WKING:   bits.addBits(0x20, 6); break;
@@ -259,7 +259,7 @@ positionToByteArray(Position& pos, std::vector<U8>& encodedPos) {
     }
 
     TextIO::fixupEPSquare(pos);
-    bool ep = pos.getEpSquare() != -1;
+    bool ep = pos.getEpSquare().isValid();
     bool cs = pos.getCastleMask() != 0;
     if (!ep && !cs)
         bits.addBit(false); // At least one pad bit
@@ -269,7 +269,7 @@ positionToByteArray(Position& pos, std::vector<U8>& encodedPos) {
         bits.addBit(false);
 
     if (ep)
-        bits.addBits(Square::getX(pos.getEpSquare()), 3);
+        bits.addBits(pos.getEpSquare().getX(), 3);
     if (cs) {
         bits.addBit(pos.h8Castle());
         bits.addBit(pos.a8Castle());
@@ -554,16 +554,16 @@ PositionData::getRecommendation() {
     return recom;
 }
 
-int
+Square
 PositionData::findPiece(const Position& pos, int piece, int pieceNo) {
     for (int x = 0; x < 8; x++)
         for (int y = 0; y < 8; y++) {
-            int sq = Square::getSquare(x, y);
+            Square sq(x, y);
             if (pos.getPiece(sq) == piece)
                 if (pieceNo-- == 0)
                     return sq;
         }
-    return -1;
+    return Square(-1);
 }
 
 Move
@@ -572,12 +572,12 @@ PositionData::decodeMove(const Position& pos, int moveCode) {
     MoveInfo mi = moveInfo[moveCode];
     if (mi.piece == Piece::EMPTY)
         return move;
-    int from = findPiece(pos, mi.piece, mi.pieceNo);
-    if (from < 0)
+    Square from = findPiece(pos, mi.piece, mi.pieceNo);
+    if (!from.isValid())
         return move;
-    int toX = (Square::getX(from) + mi.dx) & 7;
-    int toY = (Square::getY(from) + mi.dy) & 7;
-    int to = Square::getSquare(toX, toY);
+    int toX = (from.getX() + mi.dx) & 7;
+    int toY = (from.getY() + mi.dy) & 7;
+    Square to(toX, toY);
     int promoteTo = Piece::EMPTY;
     if ((pos.getPiece(from) == Piece::WPAWN) && (toY == 7))
         promoteTo = Piece::WQUEEN;
@@ -670,7 +670,7 @@ CtgFile::getPositionData(const Position& pos0, PositionData& pd) {
         mirrorPosColor(pos);
 
     bool mirrorLeftRight = false;
-    if ((pos.getCastleMask() == 0) && (Square::getX(pos.getKingSq(true)) < 4)) {
+    if ((pos.getCastleMask() == 0) && (pos.getKingSq(true).getX() < 4)) {
         mirrorPosLeftRight(pos);
         mirrorLeftRight = true;
     }

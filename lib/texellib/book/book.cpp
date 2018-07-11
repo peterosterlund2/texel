@@ -181,7 +181,7 @@ Book::initBook() {
         } else {
             bool bad = ((move >> 15) & 1) != 0;
             int prom = (move >> 12) & 7;
-            Move m(move & 63, (move >> 6) & 63,
+            Move m(Square(move & 63), Square((move >> 6) & 63),
                    promToPiece(prom, pos.isWhiteMove()));
             if (!bad)
                 addToBook(pos, m);
@@ -259,7 +259,7 @@ Book::addBookLine(const std::string& line, std::vector<S8>& binBook) {
         if (m.isEmpty())
             return false;
         int prom = pieceToProm(m.promoteTo());
-        int val = m.from() + (m.to() << 6) + (prom << 12) + (bad << 15);
+        int val = m.from().asInt() + (m.to().asInt() << 6) + (prom << 12) + (bad << 15);
         binBook.push_back((S8)(val >> 8));
         binBook.push_back((S8)(val & 255));
         pos.makeMove(m, ui);

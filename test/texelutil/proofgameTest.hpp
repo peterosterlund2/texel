@@ -27,6 +27,7 @@
 #define PROOFGAMETEST_HPP_
 
 #include "piece.hpp"
+#include "square.hpp"
 #include "util.hpp"
 
 class Position;
@@ -70,7 +71,7 @@ private:
     static void checkBlockedConsistency(ProofGame& ps, Position& pos);
     static int hScore(const std::string& initFen, const std::string& goalFen,
                       bool useNonAdmissible = false, bool testMirrorY = true);
-    static void comparePaths(Piece::Type p, int sq, U64 blocked, int maxMoves,
+    static void comparePaths(Piece::Type p, Square sq, U64 blocked, int maxMoves,
                              const std::vector<int>& expected, bool testColorReversed = true);
 };
 

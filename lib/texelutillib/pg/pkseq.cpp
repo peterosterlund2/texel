@@ -72,7 +72,7 @@ PkSequence::improve() {
 static bool
 isNonCapturePawnMove(const ProofKernel::ExtPkMove& m) {
     if (m.movingPiece == PieceType::PAWN &&
-        Square::getX(m.fromSquare) == Square::getX(m.toSquare)) {
+        m.fromSquare.getX() == m.toSquare.getX()) {
         assert(!m.capture);
         return true;
     }
@@ -84,14 +84,14 @@ PkSequence::splitPawnMoves() {
     std::vector<ExtPkMove> seq;
     for (const ExtPkMove& m : extKernel) {
         if (isNonCapturePawnMove(m)) {
-            int x = Square::getX(m.fromSquare);
-            int y1 = Square::getY(m.fromSquare);
-            int y2 = Square::getY(m.toSquare);
+            int x = m.fromSquare.getX();
+            int y1 = m.fromSquare.getY();
+            int y2 = m.toSquare.getY();
             int d = y1 < y2 ? 1 : -1;
             for (int y = y1 + d; y != y2 + d; y += d) {
                 ExtPkMove tmpM(m);
-                tmpM.fromSquare = Square::getSquare(x, y1);
-                tmpM.toSquare = Square::getSquare(x, y);
+                tmpM.fromSquare = Square(x, y1);
+                tmpM.toSquare = Square(x, y);
                 if (y != y2)
                     tmpM.promotedPiece = PieceType::EMPTY;
                 seq.push_back(tmpM);
@@ -111,15 +111,15 @@ PkSequence::combinePawnMoves() {
         bool merged = false;
         if (!seq.empty() && isNonCapturePawnMove(m) && isNonCapturePawnMove(seq.back())) {
             const ExtPkMove& m0 = seq.back();
-            int x = Square::getX(m.fromSquare);
-            if (x == Square::getX(m0.fromSquare) &&
-                Square::getY(m0.toSquare) == Square::getY(m.fromSquare)) {
-                int y0 = Square::getY(m0.fromSquare);
-                int y1 = Square::getY(m.toSquare);
+            int x = m.fromSquare.getX();
+            if (x == m0.fromSquare.getX() &&
+                m0.toSquare.getY() == m.fromSquare.getY()) {
+                int y0 = m0.fromSquare.getY();
+                int y1 = m.toSquare.getY();
                 bool white = (m.color == PieceColor::WHITE);
                 if (y0 == (white ? 1 : 6) && y1 == (white ? 3 : 4)) {
                     seq.back() = m;
-                    seq.back().fromSquare = Square::getSquare(x, y0);
+                    seq.back().fromSquare = Square(x, y0);
                     merged = true;
                 }
             }
@@ -132,8 +132,8 @@ PkSequence::combinePawnMoves() {
 
 static U64
 moveMask(const ProofKernel::ExtPkMove& m) {
-    int f = m.fromSquare;
-    int t = m.toSquare;
+    const int f = m.fromSquare.asInt();
+    const int t = m.toSquare.asInt();
     U64 mask = 0;
     if (f != -1) {
         mask |= 1ULL << f;
@@ -163,7 +163,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
     };
 
     if (idx >= (int)kernel.nodes.size()) {
-        int fromSq = -1, toSq = -1;
+        Square fromSq, toSq;
         if (lim.d3 <= 0)
             return true;
         try {
@@ -175,7 +175,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
         } catch (const ChessError&) {
             return true; // Cannot determine feasibility
         }
-        if (fromSq != -1 && toSq != -1) {
+        if (fromSq.isValid() && toSq.isValid()) {
             int p = pos.getPiece(fromSq);
             if (p != Piece::WPAWN && p != Piece::BPAWN) {
                 tmpKernel = kernel;
@@ -205,10 +205,10 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
         // If piece at target square, try to move it away
         int p = pos.getPiece(m.toSquare);
         if (p != Piece::EMPTY && Piece::makeWhite(p) != Piece::WPAWN) {
-            int fromSquare = m.toSquare;
-            std::vector<int> toSquares;
+            Square fromSquare = m.toSquare;
+            std::vector<Square> toSquares;
             getPieceEvasions(pos, fromSquare, toSquares);
-            for (int toSq : toSquares) {
+            for (Square toSq : toSquares) {
                 tmpKernel = kernel;
                 ExtPkMove em(Piece::isWhite(p) ? PieceColor::WHITE : PieceColor::BLACK,
                              ProofKernel::toPieceType(p, fromSquare),
@@ -332,7 +332,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
                     if (expandPieceMove(m, blocked, blockedExpanded)) {
                         for (const ExtPkMove& em : blockedExpanded) {
                             expandedMask |= moveMask(em);
-                            if (em.fromSquare != -1)
+                            if (em.fromSquare.isValid())
                                 expandedMask |= BitBoard::squaresBetween(em.fromSquare, em.toSquare);
                         }
                     }
@@ -340,13 +340,13 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
             }
             U64 mask = expandedMask & ~moveMask(m);
             while (mask != 0) {
-                int fromSquare = BitBoard::extractSquare(mask);
+                Square fromSquare = BitBoard::extractSquare(mask);
                 int p = pos.getPiece(fromSquare);
                 if (p != Piece::EMPTY && Piece::makeWhite(p) != Piece::WPAWN) {
-                    std::vector<int> toSquares;
+                    std::vector<Square> toSquares;
                     getPieceEvasions(pos, fromSquare, toSquares);
                     int tries = 0;
-                    for (int toSq : toSquares) {
+                    for (Square toSq : toSquares) {
                         if (((1ULL << toSq) & expandedMask) != 0)
                             continue;
                         tmpKernel = kernel;
@@ -462,7 +462,7 @@ PkSequence::makeMove(Position& pos, UndoInfo& ui, const ExtPkMove& move) {
     if (move.movingPiece == PieceType::EMPTY)
         return false;
 
-    assert(move.fromSquare != -1);
+    assert(move.fromSquare.isValid());
     int pFrom = pos.getPiece(move.fromSquare);
     if (pFrom == Piece::EMPTY)
         return false;
@@ -499,12 +499,12 @@ PkSequence::assignPiece(Graph& kernel, int idx, const Position& pos) const {
     int bestDist = INT_MAX;
     ProofGame::ShortestPathData spd;
     while (candidates != 0) {
-        int sq = BitBoard::extractSquare(candidates);
+        Square sq = BitBoard::extractSquare(candidates);
         Piece::Type p = (Piece::Type)pos.getPiece(sq);
 
         U64 occupied = pos.occupiedBB() & ~(1ULL << sq) & ~(1ULL << move.toSquare);
         ProofGame::shortestPaths(p, move.toSquare, occupied, nullptr, spd);
-        int dist = spd.pathLen[sq];
+        int dist = spd.pathLen[sq.asInt()];
         if (dist > 0 && dist < bestDist) {
             move.movingPiece = ProofKernel::toPieceType(p, sq);
             move.fromSquare = sq;
@@ -535,15 +535,15 @@ PkSequence::expandPieceMove(const ExtPkMove& move, U64 occupied,
 
     ProofGame::ShortestPathData spd;
     ProofGame::shortestPaths(p, move.toSquare, occupied, nullptr, spd);
-    if (spd.pathLen[move.fromSquare] < 0)
+    if (spd.pathLen[move.fromSquare.asInt()] < 0)
         return false;
 
-    int fromSq = move.fromSquare;
-    int toSq = move.toSquare;
+    Square fromSq = move.fromSquare;
+    Square toSq = move.toSquare;
     while (fromSq != toSq) {
         U64 nextMask = spd.getNextSquares(p, fromSq, occupied);
         assert(nextMask != 0);
-        int nextSq = BitBoard::firstSquare(nextMask);
+        Square nextSq = BitBoard::firstSquare(nextMask);
 
         ExtPkMove m(move);
         m.fromSquare = fromSq;
@@ -564,21 +564,21 @@ PkSequence::getPawnMoves(const Graph& kernel, int idx, const Position& inPos,
     // Remove all but pawns and kings
     Position tmpPos(inPos);
     for (int sq = 0; sq < 64; sq++) {
-        int p = tmpPos.getPiece(sq);
+        int p = tmpPos.getPiece(Square(sq));
         switch (p) {
         case Piece::WKING: case Piece::BKING:
         case Piece::WPAWN: case Piece::BPAWN:
         case Piece::EMPTY:
             break;
         default:
-            tmpPos.setPiece(sq, Piece::EMPTY);
+            tmpPos.setPiece(Square(sq), Piece::EMPTY);
         }
     }
 
     for (int i = idx; i < (int)kernel.nodes.size(); i++) {
         const ExtPkMove& m = kernel.nodes[i].move;
         int p = Piece::EMPTY;
-        if (m.fromSquare != -1) {
+        if (m.fromSquare.isValid()) {
             p = tmpPos.getPiece(m.fromSquare);
             tmpPos.setPiece(m.fromSquare, Piece::EMPTY);
         }
@@ -587,7 +587,7 @@ PkSequence::getPawnMoves(const Graph& kernel, int idx, const Position& inPos,
         tmpPos.setPiece(m.toSquare, p);
     }
 
-    auto countPawns = [](const Position& pos, int sq, bool white) -> int {
+    auto countPawns = [](const Position& pos, Square sq, bool white) -> int {
         U64 mask = 1ULL << sq;
         mask = white ? BitBoard::southFill(mask) : BitBoard::northFill(mask);
         mask &= pos.pieceTypeBB(white ? Piece::WPAWN : Piece::BPAWN);
@@ -598,7 +598,7 @@ PkSequence::getPawnMoves(const Graph& kernel, int idx, const Position& inPos,
         U64 mask = goalPos.pieceTypeBB(white ? Piece::WPAWN : Piece::BPAWN);
         mask &= BitBoard::maskFile[x];
         while (mask != 0) {
-            int sq = BitBoard::extractSquare(mask);
+            Square sq = BitBoard::extractSquare(mask);
             int cntNow = countPawns(tmpPos, sq, white);
             int cntGoal = countPawns(goalPos, sq, white);
             if (cntNow < cntGoal)
@@ -611,16 +611,16 @@ PkSequence::getPawnMoves(const Graph& kernel, int idx, const Position& inPos,
         bool white = c == 0;
         U64 mask = tmpPos.pieceTypeBB(white ? Piece::WPAWN : Piece::BPAWN);
         while (mask != 0) {
-            int sq = BitBoard::extractSquare(mask);
-            int x0 = Square::getX(sq);
-            int y0 = Square::getY(sq);
+            Square sq = BitBoard::extractSquare(mask);
+            int x0 = sq.getX();
+            int y0 = sq.getY();
             for (int d = 1; d <= 2; d++) {
                 if (d == 2 && y0 != (white ? 1 : 6))
                     break;
                 int y1 = y0 + (white ? d : -d);
                 if (y1 == 0 || y1 == 7)
                     break; // Cannot move pawn to first/last rank
-                int toSq = Square::getSquare(x0, y1);
+                Square toSq(x0, y1);
                 if (tmpPos.getPiece(toSq) != Piece::EMPTY)
                     break;
 
@@ -641,8 +641,8 @@ PkSequence::getPawnMoves(const Graph& kernel, int idx, const Position& inPos,
 }
 
 void
-PkSequence::getPieceEvasions(const Position& pos, int fromSq,
-                             std::vector<int>& toSquares) const {
+PkSequence::getPieceEvasions(const Position& pos, Square fromSq,
+                             std::vector<Square>& toSquares) const {
     Piece::Type p = (Piece::Type)pos.getPiece(fromSq);
     ProofGame::ShortestPathData spd;
     ProofGame::shortestPaths(p, fromSq, 0, nullptr, spd);
@@ -655,9 +655,9 @@ PkSequence::getPieceEvasions(const Position& pos, int fromSq,
     std::vector<SquareCost> squares;
     for (int sq = 0; sq < 64; sq++) {
         int d = spd.pathLen[sq];
-        if (d <= 0 || pos.getPiece(sq) != Piece::EMPTY)
+        if (d <= 0 || pos.getPiece(Square(sq)) != Piece::EMPTY)
             continue;
-        int cost = d * 8 + BitBoard::getKingDistance(fromSq, sq);
+        int cost = d * 8 + BitBoard::getKingDistance(fromSq, Square(sq));
         squares.push_back(SquareCost{sq, cost});
     }
 
@@ -668,7 +668,7 @@ PkSequence::getPieceEvasions(const Position& pos, int fromSq,
                   return a.square < b.square;
               });
     for (const SquareCost sc : squares)
-        toSquares.push_back(sc.square);
+        toSquares.push_back(Square(sc.square));
 }
 
 // --------------------------------------------------------------------------------

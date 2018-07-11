@@ -363,10 +363,10 @@ ProofGameFilter::computePath(const Position& startPos, Line& line,
         for (const ExtPkMove& m : extKernel) {
             bool white = m.color == PieceColor::WHITE;
             int movingPiece = Piece::EMPTY;
-            if (m.fromSquare != -1) {
+            if (m.fromSquare.isValid()) {
                 movingPiece = ProofKernel::toPieceType(white, m.movingPiece, true, true);
                 if (!brd.hasPiece(m.fromSquare, movingPiece) &&
-                    Square::getY(m.fromSquare) == (white ? 7 : 0)) {
+                    m.fromSquare.getY() == (white ? 7 : 0)) {
                     int pawn = white ? Piece::WPAWN : Piece::BPAWN;
                     if (brd.hasPiece(m.fromSquare, pawn)) { // Moving promoted pawn
                         if (brd.replacePiece(m.fromSquare, pawn, movingPiece)) {
@@ -447,7 +447,7 @@ ProofGameFilter::enhanceExtKernel(std::vector<ExtPkMove>& extKernel,
 void
 ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
                                   const Position& initPos, const Position& goalPos) const {
-    auto hasMissingProm = [](const ExtPkMove& m, PieceColor c, int sq) {
+    auto hasMissingProm = [](const ExtPkMove& m, PieceColor c, Square sq) {
         return m.color == c &&
             m.movingPiece == PieceType::PAWN &&
             !m.capture && m.toSquare == sq &&
@@ -458,10 +458,10 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
     for (const ExtPkMove& m : extKernel) {
         bool white = m.color == PieceColor::WHITE;
         int movingPiece = Piece::EMPTY;
-        if (m.fromSquare != -1) {
+        if (m.fromSquare.isValid()) {
             movingPiece = ProofKernel::toPieceType(white, m.movingPiece, true, true);
             if (!brd.hasPiece(m.fromSquare, movingPiece) &&
-                Square::getY(m.fromSquare) == (white ? 7 : 0)) {
+                m.fromSquare.getY() == (white ? 7 : 0)) {
                 int pawn = white ? Piece::WPAWN : Piece::BPAWN;
                 if (brd.hasPiece(m.fromSquare, pawn)) { // Moving promoted pawn
                     brd.replacePiece(m.fromSquare, pawn, movingPiece);
@@ -504,7 +504,7 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
         int pawn = white ? Piece::WPAWN : Piece::BPAWN;
         int y = white ? 7 : 0;
         for (int x = 0; x < 8; x++) {
-            if (lastBrd.hasPiece(Square::getSquare(x, y), pawn))
+            if (lastBrd.hasPiece(Square(x, y), pawn))
                 allPromotionsComplete = false;
         }
     }
@@ -525,13 +525,13 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
         int pawn = white ? Piece::WPAWN : Piece::BPAWN;
         int y = white ? 1 : 6;
         for (int x = 0; x < 8; x++) {
-            int sq = Square::getSquare(x, y);
+            Square sq = Square(x, y);
             if ((goalPos.getPiece(sq) == pawn) && (initPos.getPiece(sq) == pawn))
                 blockedPawns |= 1ULL << sq;
         }
     }
     auto isBlocked = [blockedPawns](int x, int y) {
-        int sq = Square::getSquare(x, y);
+        Square sq(x, y);
         return blockedPawns & (1ULL << sq);
     };
     for (int ci = 0; ci < 2; ci++) {
@@ -552,7 +552,7 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
             } else {
                 y = white ? 7 : 0;
                 int bish = white ? Piece::WBISHOP : Piece::BBISHOP;
-                int sq = Square::getSquare(x, y);
+                Square sq(x, y);
                 bool required = goalPos.getPiece(sq) == bish && !lastBrd.hasPiece(sq, bish);
                 fpi.bishopPromRequired = required;
                 fpi.bishopPromAllowed = required;
@@ -560,7 +560,7 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
 
             int nPromAvail = 0;
             for (int y = 0; y < 8; y++)
-                nPromAvail += lastBrd.nPiecesOfType(Square::getSquare(x, y), pawn);
+                nPromAvail += lastBrd.nPiecesOfType(Square(x, y), pawn);
             nPromAvail -= BitBoard::bitCount(goalPos.pieceTypeBB(pawn) & BitBoard::maskFile[x]);
             fpi.nPromAvail = nPromAvail;
         }
@@ -605,7 +605,7 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
                 assert(nPromNeeded[fpi.bishopType][c] > 0);
                 assert(fpi.nPromAvail > 0);
                 assert(fpi.bishopPromAllowed);
-                int sq = Square::getSquare(x, y);
+                Square sq(x, y);
                 if (fpi.nPromAvail == lastBrd.nPiecesOfType(sq, pawn)) {
                     bool found = false;
                     for (int i = (int)extKernel.size() - 1; i >= 0; i--) {
@@ -634,7 +634,7 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
         int y = white ? 7 : 0;
         for (int x = 0; x < 8; x++) {
             FilePromInfo& fpi = fpiVec[x][c];
-            int sq = Square::getSquare(x, y);
+            Square sq(x, y);
             while (lastBrd.hasPiece(sq, pawn)) {
                 assert(fpi.nPromAvail > 0);
                 fpi.nPromAvail--;
@@ -781,9 +781,9 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
                             const Position& initPos, const Position& goalPos) const {
     struct Data {
         int pieceType;
-        int square;
-        std::vector<int> blockingPawns;
-        std::vector<int> pawnTargets;
+        Square square;
+        std::vector<Square> blockingPawns;
+        std::vector<Square> pawnTargets;
     };
     static const std::vector<Data> dataVec = {
         { Piece::WROOK,   A1, { }, { A4, B4 } },
@@ -812,7 +812,7 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
 
         if (!d.blockingPawns.empty()) {
             bool isFree = false;
-            for (int pSq : d.blockingPawns) {
+            for (Square pSq : d.blockingPawns) {
                 if (!brdVec[startIdx].hasPiece(pSq, pawn)) {
                     isFree = true;
                     break;
@@ -822,7 +822,7 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
                 continue;
         }
 
-        for (int tgtSq : d.pawnTargets) {
+        for (Square tgtSq : d.pawnTargets) {
             bool canMove = true;
             for (int b = startIdx; b < nBrds; b++) {
                 if (!brdVec[b].canMovePawn(white, tgtSq)) {
@@ -844,11 +844,11 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
                 }
             }
             if (canMove) {
-                int sq0 = Square::getSquare(Square::getX(tgtSq), white ? 1 : 6);
+                Square sq0(tgtSq.getX(), white ? 1 : 6);
                 int d = white ? 8 : -8;
                 bool moved = false;
                 for (int b = startIdx; b < nBrds; b++) {
-                    for (int sq = sq0; sq != tgtSq; sq += d) {
+                    for (Square sq = sq0; sq != tgtSq; sq += d) {
                         if (brdVec[b].hasPiece(sq, pawn)) {
                             brdVec[b].removePieceType(sq, pawn);
                             brdVec[b].addPiece(tgtSq, pawn);
@@ -1100,7 +1100,8 @@ MultiBoard::MultiBoard() {
 
 MultiBoard::MultiBoard(const Position& pos)
     : MultiBoard() {
-    for (int sq = 0; sq < 64; sq++) {
+    for (int sqI = 0; sqI < 64; sqI++) {
+        Square sq(sqI);
         int p = pos.getPiece(sq);
         if (p != Piece::EMPTY)
             addPiece(sq, p);
@@ -1108,19 +1109,19 @@ MultiBoard::MultiBoard(const Position& pos)
 }
 
 int
-MultiBoard::nPieces(int square) const {
+MultiBoard::nPieces(Square square) const {
     for (int i = 0; ; i++)
-        if (squares[square][i] == -1)
+        if (squares[square.asInt()][i] == -1)
             return i;
 }
 
 int
-MultiBoard::getPiece(int square, int pieceNo) const {
-    return squares[square][pieceNo];
+MultiBoard::getPiece(Square square, int pieceNo) const {
+    return squares[square.asInt()][pieceNo];
 }
 
 bool
-MultiBoard::hasPiece(int square, int piece) const {
+MultiBoard::hasPiece(Square square, int piece) const {
     for (int i = 0; ; i++) {
         int p = getPiece(square, i);
         if (p == -1)
@@ -1131,7 +1132,7 @@ MultiBoard::hasPiece(int square, int piece) const {
 }
 
 int
-MultiBoard::nPiecesOfType(int square, int piece) const {
+MultiBoard::nPiecesOfType(Square square, int piece) const {
     int n = 0;
     for (int i = 0; ; i++) {
         int p = getPiece(square, i);
@@ -1143,11 +1144,11 @@ MultiBoard::nPiecesOfType(int square, int piece) const {
 }
 
 void
-MultiBoard::addPiece(int square, int piece) {
+MultiBoard::addPiece(Square square, int piece) {
     for (int i = 0; i < maxPerSquare; i++) {
-        if (squares[square][i] == -1) {
-            squares[square][i] = piece;
-            squares[square][i+1] = -1;
+        if (squares[square.asInt()][i] == -1) {
+            squares[square.asInt()][i] = piece;
+            squares[square.asInt()][i+1] = -1;
             return;
         }
     }
@@ -1155,9 +1156,9 @@ MultiBoard::addPiece(int square, int piece) {
 }
 
 void
-MultiBoard::removePieceType(int square, int piece) {
+MultiBoard::removePieceType(Square square, int piece) {
     for (int i = nPieces(square) - 1; i >= 0; i--) {
-        if (squares[square][i] == piece) {
+        if (squares[square.asInt()][i] == piece) {
             removePieceNo(square, i);
             return;
         }
@@ -1167,10 +1168,10 @@ MultiBoard::removePieceType(int square, int piece) {
 }
 
 void
-MultiBoard::removePieceNo(int square, int pieceNo) {
+MultiBoard::removePieceNo(Square square, int pieceNo) {
     for (int i = pieceNo; ; i++) {
-        int p = squares[square][i+1];
-        squares[square][i] = p;
+        int p = squares[square.asInt()][i+1];
+        squares[square.asInt()][i] = p;
         if (p == -1)
             return;
     }
@@ -1178,34 +1179,36 @@ MultiBoard::removePieceNo(int square, int pieceNo) {
 
 void
 MultiBoard::expel(int castleMask) {
-    auto getDist = [this](int fromSq, int toSq, bool isKing) {
+    auto getDist = [this](Square fromSq, Square toSq, bool isKing) {
         int d = BitBoard::getKingDistance(fromSq, toSq);
         if (isKing) {
-            int x = Square::getX(toSq);
-            int y = Square::getY(toSq);
-            if ((y == 7 && hasPiece(Square::getSquare(x, 6), Piece::WPAWN)) ||
-                (y == 0 && hasPiece(Square::getSquare(x, 1), Piece::BPAWN)))
+            int x = toSq.getX();
+            int y = toSq.getY();
+            if ((y == 7 && hasPiece(Square(x, 6), Piece::WPAWN)) ||
+                (y == 0 && hasPiece(Square(x, 1), Piece::BPAWN)))
                 d += 20; // Avoid king blocking pawn promotion
         }
         return d;
     };
 
     // Move pieces so there is at most one piece per square
-    for (int fromSq = 0; fromSq < 64; fromSq++) {
+    for (int fromSqI = 0; fromSqI < 64; fromSqI++) {
+        Square fromSq(fromSqI);
         while (nPieces(fromSq) > 1) {
             int p = getPiece(fromSq, 0);
             bool isKing = p == Piece::WKING || p == Piece::BKING;
             bool isBishop = p == Piece::WBISHOP || p == Piece::BBISHOP;
-            int bestSq = -1;
-            for (int toSq = 0; toSq < 64; toSq++) {
+            Square bestSq;
+            for (int toSqI = 0; toSqI < 64; toSqI++) {
+                Square toSq(toSqI);
                 if (nPieces(toSq) > 0)
                     continue;
-                if (isBishop && Square::darkSquare(fromSq) != Square::darkSquare(toSq))
+                if (isBishop && fromSq.isDark() != toSq.isDark())
                     continue;
-                if (bestSq == -1 || getDist(fromSq, toSq, isKing) < getDist(fromSq, bestSq, isKing))
+                if (!bestSq.isValid() || getDist(fromSq, toSq, isKing) < getDist(fromSq, bestSq, isKing))
                     bestSq = toSq;
             }
-            if (bestSq == -1)
+            if (!bestSq.isValid())
                 throw ChessError("Cannot expel piece on square " + TextIO::squareToString(fromSq));
             removePieceNo(fromSq, 0);
             addPiece(bestSq, p);
@@ -1214,26 +1217,27 @@ MultiBoard::expel(int castleMask) {
 
     // Move kings out of check
     Position pos; toPos(pos);
-    int wKingSq = pos.wKingSq(); pos.clearPiece(wKingSq); removePieceNo(wKingSq, 0);
-    int bKingSq = pos.bKingSq(); pos.clearPiece(bKingSq); removePieceNo(bKingSq, 0);
+    Square wKingSq = pos.wKingSq(); pos.clearPiece(wKingSq); removePieceNo(wKingSq, 0);
+    Square bKingSq = pos.bKingSq(); pos.clearPiece(bKingSq); removePieceNo(bKingSq, 0);
     for (int i = 0; i < 2; i++) {
         bool white = i == 0;
         int king = white ? Piece::WKING : Piece::BKING;
-        int bestSq = -1;
+        Square bestSq;
         if (white && (castleMask & ((1 << Position::A1_CASTLE) | (1 << Position::H1_CASTLE)))) {
             bestSq = wKingSq;
         } else if (!white && (castleMask & ((1 << Position::A8_CASTLE) | (1 << Position::H8_CASTLE)))) {
             bestSq = bKingSq;
         } else {
-            int fromSq = white ? wKingSq : bKingSq;
+            Square fromSq = white ? wKingSq : bKingSq;
             U64 notAllowed = pos.occupiedBB() | PosUtil::attackedSquares(pos, !white);
-            for (int toSq = 0; toSq < 64; toSq++) {
+            for (int toSqI = 0; toSqI < 64; toSqI++) {
+                Square toSq(toSqI);
                 if (notAllowed & (1ULL << toSq))
                     continue;
-                if (bestSq == -1 || getDist(fromSq, toSq, true) < getDist(fromSq, bestSq, true))
+                if (!bestSq.isValid() || getDist(fromSq, toSq, true) < getDist(fromSq, bestSq, true))
                     bestSq = toSq;
             }
-            if (bestSq == -1)
+            if (!bestSq.isValid())
                 throw ChessError("Cannot expel king on square " + TextIO::squareToString(fromSq));
         }
         pos.setPiece(bestSq, king);
@@ -1242,9 +1246,9 @@ MultiBoard::expel(int castleMask) {
 }
 
 bool
-MultiBoard::canMovePawn(bool white, int toSq) const {
-    int x = Square::getX(toSq);
-    int yTarget = Square::getY(toSq);
+MultiBoard::canMovePawn(bool white, Square toSq) const {
+    int x = toSq.getX();
+    int yTarget = toSq.getY();
     int yFirst = white ? 1 : 6;
     int d      = white ? 1 : -1;
     int pawn  = white ? Piece::WPAWN : Piece::BPAWN;
@@ -1252,7 +1256,7 @@ MultiBoard::canMovePawn(bool white, int toSq) const {
 
     int y0 = -1;
     for (int y = yFirst; y != yTarget; y += d) {
-        if (hasPiece(Square::getSquare(x, y), pawn)) {
+        if (hasPiece(Square(x, y), pawn)) {
             y0 = y;
             break;
         }
@@ -1261,7 +1265,7 @@ MultiBoard::canMovePawn(bool white, int toSq) const {
         return true;
 
     for (int y = y0 + d; y != yTarget; y += d) {
-        int sq = Square::getSquare(x, y);
+        Square sq(x, y);
         if (hasPiece(sq, pawn) || hasPiece(sq, oPawn))
             return false;
     }
@@ -1269,11 +1273,11 @@ MultiBoard::canMovePawn(bool white, int toSq) const {
 }
 
 bool
-MultiBoard::replacePiece(int square, int oldPiece, int newPiece) {
+MultiBoard::replacePiece(Square square, int oldPiece, int newPiece) {
     int np = nPieces(square);
     for (int i = 0; i < np; i++) {
-        if (squares[square][i] == oldPiece) {
-            squares[square][i] = newPiece;
+        if (squares[square.asInt()][i] == oldPiece) {
+            squares[square.asInt()][i] = newPiece;
             return true;
         }
     }
@@ -1282,7 +1286,8 @@ MultiBoard::replacePiece(int square, int oldPiece, int newPiece) {
 
 void
 MultiBoard::toPos(Position& pos) {
-    for (int sq = 0; sq < 64; sq++) {
+    for (int sqI = 0; sqI < 64; sqI++) {
+        Square sq(sqI);
         int np = nPieces(sq);
         switch (np) {
         case 0:
@@ -1301,7 +1306,7 @@ void
 MultiBoard::print(std::ostream& os) const {
     for (int y = 7; y >= 0; y--) {
         for (int x = 0; x < 8; x++) {
-            int sq = Square::getSquare(x, y);
+            Square sq(x, y);
             std::string s;
             if (hasPiece(sq, Piece::WKING)) s += "K";
             if (hasPiece(sq, Piece::WQUEEN)) s += "Q";

@@ -834,7 +834,7 @@ WorkerThread::doSearch(CommHandler& commHandler) {
         U64 nodeIdx = logFile->peekNextNodeIdx();
         try {
             int searchDepth = std::min(depth + extraDepth, MAX_SEARCH_DEPTH);
-            int captSquare = -1;
+            Square captSquare;
             int score = sc.negaScout(true, alpha, beta, ply, searchDepth, captSquare, inCheck);
             sendReportResult(jobId, score);
             if (searchDepth >= MAX_SEARCH_DEPTH) {

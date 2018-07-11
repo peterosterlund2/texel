@@ -29,6 +29,7 @@
 #include "nntypes.hpp"
 #include "util.hpp"
 #include "piece.hpp"
+#include "square.hpp"
 #include "constants.hpp"
 
 class Position;
@@ -51,7 +52,7 @@ public:
     void popState();
 
     /** Set a square to a piece value. Use Piece::EMPTY to clear a square. */
-    void setPiece(int square, int oldPiece, int newPiece);
+    void setPiece(Square square, int oldPiece, int newPiece);
 
     /** Clear incrementally updated state. Needed if position has changed
      *  in an unknown way. */
@@ -87,13 +88,13 @@ private:
     static constexpr int maxStackSize = SearchConst::MAX_SEARCH_DEPTH * 2;
 
     struct FirstLayerState {
-        Vector<S16, n1> l1Out;   // Linear output corresponding to one side, incrementally updated
-        int toAdd[maxIncr];      // Input features to add to l1Out to make it up to date
-        int toSub[maxIncr];      // Input features to subtract from l1Out to make it up to date
-        int toAddLen = 0;        // Number of entries in toAdd
-        int toSubLen = 0;        // Number of entries in toSub
-        int kingSqComputed = -1; // King square corresponding to l1Out, or -1 if l1Out not valid
-        int pad[5];              // To make size a multiple of 32 bytes
+        Vector<S16, n1> l1Out;  // Linear output corresponding to one side, incrementally updated
+        int toAdd[maxIncr];     // Input features to add to l1Out to make it up to date
+        int toSub[maxIncr];     // Input features to subtract from l1Out to make it up to date
+        int toAddLen = 0;       // Number of entries in toAdd
+        int toSubLen = 0;       // Number of entries in toSub
+        Square kingSqComputed;  // King square corresponding to l1Out, or invalid if l1Out not valid
+        int pad[5];             // To make size a multiple of 32 bytes
         void clear();
     };
     struct FirstLayerStack {
@@ -137,7 +138,7 @@ inline void
 NNEvaluator::FirstLayerState::clear() {
     toAddLen = 0;
     toSubLen = 0;
-    kingSqComputed = -1;
+    kingSqComputed = Square();
 }
 
 #endif /* NNEVAL_HPP_ */

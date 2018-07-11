@@ -60,28 +60,28 @@ private:
     static void genMovesNoUndoInfo(const Position& pos, MoveList& moveList);
 
     /** Add all moves from squares in "fromMask" to square "toSq". */
-    static void addMovesByMask(MoveList& moveList, U64 fromMask, int toSq,
+    static void addMovesByMask(MoveList& moveList, U64 fromMask, Square toSq,
                                int promoteTo = Piece::EMPTY);
 
     /** Return true if the position reached by undoing "m" is known to be invalid. */
     static bool knownInvalid(const Position& pos, const Move& m, const UndoInfo& ui);
 
     /** Non-template version of MoveGen::sqAttacked(). */
-    static bool sqAttacked(bool wtm, const Position& pos, int sq, U64 occupied);
+    static bool sqAttacked(bool wtm, const Position& pos, Square sq, U64 occupied);
 };
 
 
 inline void
-RevMoveGen::addMovesByMask(MoveList& moveList, U64 fromMask, int toSq, int promoteTo) {
+RevMoveGen::addMovesByMask(MoveList& moveList, U64 fromMask, Square toSq, int promoteTo) {
     assert(moveList.size + BitBoard::bitCount(fromMask) < 256);
     while (fromMask != 0) {
-        int sq0 = BitBoard::extractSquare(fromMask);
+        Square sq0 = BitBoard::extractSquare(fromMask);
         moveList.addMove(sq0, toSq, promoteTo);
     }
 }
 
 inline bool
-RevMoveGen::sqAttacked(bool wtm, const Position& pos, int sq, U64 occupied) {
+RevMoveGen::sqAttacked(bool wtm, const Position& pos, Square sq, U64 occupied) {
     if (wtm)
         return MoveGen::sqAttacked<true>(pos, sq, occupied);
     else

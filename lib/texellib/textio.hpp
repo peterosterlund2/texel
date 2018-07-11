@@ -81,12 +81,12 @@ public:
      * Convert a string, such as "e4" to a square number.
      * @return The square number, or -1 if not a legal square.
      */
-    static int getSquare(const std::string& s);
+    static Square getSquare(const std::string& s);
 
     /**
      * Convert a square number to a string, such as "e4".
      */
-    static std::string squareToString(int square);
+    static std::string squareToString(Square square);
 
     /**
      * Create an ASCII representation of a position.
@@ -111,23 +111,21 @@ private:
     static int charToPiece(bool white, char c);
 };
 
-inline int
-TextIO::getSquare(const std::string& s)
-{
+inline Square
+TextIO::getSquare(const std::string& s) {
     int x = s[0] - 'a';
     int y = s[1] - '1';
     if ((x < 0) || (x > 7) || (y < 0) || (y > 7))
-        return -1;
+        return Square(-1);
 
-    return Square::getSquare(x, y);
+    return Square(x, y);
 }
 
 inline std::string
-TextIO::squareToString(int square)
-{
+TextIO::squareToString(Square square) {
     std::string ret;
-    int x = Square::getX(square);
-    int y = Square::getY(square);
+    int x = square.getX();
+    int y = square.getY();
     ret += (char)(((x + 'a')));
     ret += (char)(((y + '1')));
     return ret;
@@ -139,7 +137,7 @@ TextIO::safeSetPiece(Position& pos, int col, int row, int p) {
     if ((p == Piece::WPAWN) || (p == Piece::BPAWN))
         if ((row == 0) || (row == 7))
             throw ChessParseError("Pawn on first/last rank");
-    pos.setPiece(Square::getSquare(col, row), p);
+    pos.setPiece(Square(col, row), p);
 }
 
 inline int

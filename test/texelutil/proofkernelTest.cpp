@@ -982,8 +982,8 @@ ProofKernelTest::testExtMoveToString() {
     test("bRh8-f6", ExtPkMove(PieceColor::BLACK, PieceType::ROOK, H8, false, F6, PieceType::EMPTY));
     test("wPa3-a6", ExtPkMove(PieceColor::WHITE, PieceType::PAWN, A3, false, A6, PieceType::EMPTY));
     test("wPa6xb7", ExtPkMove(PieceColor::WHITE, PieceType::PAWN, A6, true, B7, PieceType::EMPTY));
-    test("wxh8", ExtPkMove(PieceColor::WHITE, PieceType::EMPTY, -1, true, H8, PieceType::EMPTY));
-    test("bxc1", ExtPkMove(PieceColor::BLACK, PieceType::EMPTY, -1, true, C1, PieceType::EMPTY));
+    test("wxh8", ExtPkMove(PieceColor::WHITE, PieceType::EMPTY, Square(), true, H8, PieceType::EMPTY));
+    test("bxc1", ExtPkMove(PieceColor::BLACK, PieceType::EMPTY, Square(), true, C1, PieceType::EMPTY));
 }
 
 static void

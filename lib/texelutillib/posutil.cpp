@@ -33,17 +33,17 @@ PosUtil::swapColors(const Position& pos) {
     sym.setWhiteMove(!pos.isWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            int sq = Square::getSquare(x, y);
+            Square sq(x, y);
             int p = pos.getPiece(sq);
             p = swapPieceColor(p);
-            sym.setPiece(Square::mirrorY(sq), p);
+            sym.setPiece(sq.mirrorY(), p);
         }
     }
 
     sym.setCastleMask(swapCastleMask(pos.getCastleMask()));
 
-    if (pos.getEpSquare() >= 0)
-        sym.setEpSquare(Square::mirrorY(pos.getEpSquare()));
+    if (pos.getEpSquare().isValid())
+        sym.setEpSquare(pos.getEpSquare().mirrorY());
 
     sym.setHalfMoveClock(pos.getHalfMoveClock());
     sym.setFullMoveCounter(pos.getFullMoveCounter());
@@ -72,14 +72,14 @@ PosUtil::mirrorX(const Position& pos) {
     mir.setWhiteMove(pos.isWhiteMove());
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            int sq = Square::getSquare(x, y);
+            Square sq(x, y);
             int p = pos.getPiece(sq);
-            mir.setPiece(Square::mirrorX(sq), p);
+            mir.setPiece(sq.mirrorX(), p);
         }
     }
 
-    if (pos.getEpSquare() >= 0)
-        mir.setEpSquare(Square::mirrorX(pos.getEpSquare()));
+    if (pos.getEpSquare().isValid())
+        mir.setEpSquare(pos.getEpSquare().mirrorX());
 
     mir.setHalfMoveClock(pos.getHalfMoveClock());
     mir.setFullMoveCounter(pos.getFullMoveCounter());
@@ -94,13 +94,13 @@ PosUtil::attackedSquares(const Position& pos, bool whitePieces) {
 
     U64 m = pos.pieceTypeBB(whitePieces ? Piece::WKNIGHT : Piece::BKNIGHT);
     while (m) {
-        int sq = BitBoard::extractSquare(m);
+        Square sq = BitBoard::extractSquare(m);
         attacked |= BitBoard::knightAttacks(sq);
     }
 
     m = pos.pieceTypeBB(whitePieces ? Piece::WKING : Piece::BKING);
     while (m) {
-        int sq = BitBoard::extractSquare(m);
+        Square sq = BitBoard::extractSquare(m);
         attacked |= BitBoard::kingAttacks(sq);
     }
 
@@ -116,13 +116,13 @@ PosUtil::attackedSquares(const Position& pos, bool whitePieces) {
     U64 occupied = pos.occupiedBB();
     m = pos.pieceTypeBB(q, r);
     while (m) {
-        int sq = BitBoard::extractSquare(m);
+        Square sq = BitBoard::extractSquare(m);
         attacked |= BitBoard::rookAttacks(sq, occupied);
     }
 
     m = pos.pieceTypeBB(q, b);
     while (m) {
-        int sq = BitBoard::extractSquare(m);
+        Square sq = BitBoard::extractSquare(m);
         attacked |= BitBoard::bishopAttacks(sq, occupied);
     }
 

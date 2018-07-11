@@ -87,7 +87,7 @@ History::addSuccess(const Position& pos, const Move& m, int depth) {
     int cnt = depthWeight(depth);
     if (cnt != 0) {
         int p = pos.getPiece(m.from());
-        HTEntry& e = ht[p][m.to()];
+        HTEntry& e = ht[p][m.to().asInt()];
         int fpHistVal = e.scaledScore;
         int sum = e.nValues;
         fpHistVal = (fpHistVal * sum + (maxVal * scale - 1) * cnt) / (sum + cnt);
@@ -102,7 +102,7 @@ History::addFail(const Position& pos, const Move& m, int depth) {
     int cnt = depthWeight(depth);
     if (cnt != 0) {
         int p = pos.getPiece(m.from());
-        HTEntry& e = ht[p][m.to()];
+        HTEntry& e = ht[p][m.to().asInt()];
         int fpHistVal = e.scaledScore;
         int sum = e.nValues;
         fpHistVal = fpHistVal * sum / (sum + cnt);
@@ -115,7 +115,7 @@ History::addFail(const Position& pos, const Move& m, int depth) {
 inline int
 History::getHistScore(const Position& pos, const Move& m) const {
     int p = pos.getPiece(m.from());
-    return ht[p][m.to()].scaledScore >> log2Scale;
+    return ht[p][m.to().asInt()].scaledScore >> log2Scale;
 }
 
 #endif /* HISTORY_HPP_ */

@@ -42,7 +42,7 @@ public:
           Move& operator[](int i);
     const Move& operator[](int i) const;
 
-    void addMove(int from, int to, int promoteTo);
+    void addMove(Square from, Square to, int promoteTo);
 
     /** Remove all moves that are not included in searchMoves. */
     void filter(const std::vector<Move>& searchMoves);
@@ -97,9 +97,9 @@ public:
     static bool canTakeKing(Position& pos);
 
     /** Return true if a square is attacked by the opposite side. */
-    static bool sqAttacked(const Position& pos, int sq);
-    static bool sqAttacked(const Position& pos, int sq, U64 occupied);
-    template <bool wtm> static bool sqAttacked(const Position& pos, int sq, U64 occupied);
+    static bool sqAttacked(const Position& pos, Square sq);
+    static bool sqAttacked(const Position& pos, Square sq, U64 occupied);
+    template <bool wtm> static bool sqAttacked(const Position& pos, Square sq, U64 occupied);
 
     /**
      * Remove all illegal moves from moveList.
@@ -114,17 +114,17 @@ public:
 
 private:
     /** Return the next piece in a given direction, starting from sq. */
-    static int nextPiece(const Position& pos, int sq, int delta);
+    static int nextPiece(const Position& pos, Square sq, int delta);
 
     /** Like nextPiece(), but handles board edges. */
-    static int nextPieceSafe(const Position& pos, int sq, int delta);
+    static int nextPieceSafe(const Position& pos, Square sq, int delta);
 
     template <bool wtm>
     static void addPawnMovesByMask(MoveList& moveList, U64 mask, int delta, bool allPromotions);
 
     static void addPawnDoubleMovesByMask(MoveList& moveList, U64 mask, int delta);
 
-    static void addMovesByMask(MoveList& moveList, int sq0, U64 mask);
+    static void addMovesByMask(MoveList& moveList, Square sq0, U64 mask);
 };
 
 
@@ -148,7 +148,7 @@ MoveList::operator[](int i) const {
 }
 
 inline void
-MoveList::addMove(int from, int to, int promoteTo) {
+MoveList::addMove(Square from, Square to, int promoteTo) {
     static_assert(sizeof(Move) % sizeof(int) == 0, "Unsupported sizeof(Move) value");
     Move& m = (*this)[size++];
     new (&m) Move(from, to, promoteTo, 0);
@@ -188,7 +188,7 @@ MoveGen::pseudoLegalCaptures(const Position& pos, MoveList& moveList) {
 
 inline bool
 MoveGen::inCheck(const Position& pos) {
-    int kingSq = pos.getKingSq(pos.isWhiteMove());
+    Square kingSq = pos.getKingSq(pos.isWhiteMove());
     return sqAttacked(pos, kingSq);
 }
 
@@ -201,20 +201,20 @@ MoveGen::canTakeKing(Position& pos) {
 }
 
 inline bool
-MoveGen::sqAttacked(const Position& pos, int sq) {
+MoveGen::sqAttacked(const Position& pos, Square sq) {
     const U64 occupied = pos.occupiedBB();
     return sqAttacked(pos, sq, occupied);
 }
 
 inline bool
-MoveGen::sqAttacked(const Position& pos, int sq, U64 occupied) {
+MoveGen::sqAttacked(const Position& pos, Square sq, U64 occupied) {
     return pos.isWhiteMove() ? sqAttacked<true>(pos, sq, occupied)
                              : sqAttacked<false>(pos, sq, occupied);
 }
 
 template <bool wtm>
 inline bool
-MoveGen::sqAttacked(const Position& pos, int sq, U64 occupied) {
+MoveGen::sqAttacked(const Position& pos, Square sq, U64 occupied) {
     using OtherColor = ColorTraits<!wtm>;
     if ((BitBoard::knightAttacks(sq) & pos.pieceTypeBB(OtherColor::KNIGHT)) != 0)
         return true;
@@ -236,7 +236,7 @@ MoveGen::sqAttacked(const Position& pos, int sq, U64 occupied) {
 }
 
 inline int
-MoveGen::nextPiece(const Position& pos, int sq, int delta) {
+MoveGen::nextPiece(const Position& pos, Square sq, int delta) {
     while (true) {
         sq += delta;
         int p = pos.getPiece(sq);
@@ -248,7 +248,7 @@ MoveGen::nextPiece(const Position& pos, int sq, int delta) {
 }
 
 inline int
-MoveGen::nextPieceSafe(const Position& pos, int sq, int delta) {
+MoveGen::nextPieceSafe(const Position& pos, Square sq, int delta) {
     int dx = 0, dy = 0;
     switch (delta) {
     case 1: dx=1; dy=0; break;
@@ -260,15 +260,15 @@ MoveGen::nextPieceSafe(const Position& pos, int sq, int delta) {
     case -8: dx=0; dy=-1; break;
     case -7: dx=1; dy=-1; break;
     }
-    int x = Square::getX(sq);
-    int y = Square::getY(sq);
+    int x = sq.getX();
+    int y = sq.getY();
     while (true) {
         x += dx;
         y += dy;
         if ((x < 0) || (x > 7) || (y < 0) || (y > 7)) {
             return Piece::EMPTY;
         }
-        int p = pos.getPiece(Square::getSquare(x, y));
+        int p = pos.getPiece(Square(x, y));
         if (p != Piece::EMPTY)
             return p;
     }
@@ -285,8 +285,8 @@ MoveGen::addPawnMovesByMask(MoveList& moveList, U64 mask, int delta, bool allPro
     U64 promMask = mask & BitBoard::maskRow1Row8;
     mask &= ~promMask;
     while (promMask != 0) {
-        int sq = BitBoard::extractSquare(promMask);
-        int sq0 = sq + delta;
+        Square sq = BitBoard::extractSquare(promMask);
+        Square sq0 = sq + delta;
         moveList.addMove(sq0, sq, MyColor::QUEEN);
         moveList.addMove(sq0, sq, MyColor::KNIGHT);
         if (allPromotions) {
@@ -295,7 +295,7 @@ MoveGen::addPawnMovesByMask(MoveList& moveList, U64 mask, int delta, bool allPro
         }
     }
     while (mask != 0) {
-        int sq = BitBoard::extractSquare(mask);
+        Square sq = BitBoard::extractSquare(mask);
         moveList.addMove(sq + delta, sq, Piece::EMPTY);
     }
 }
@@ -303,15 +303,15 @@ MoveGen::addPawnMovesByMask(MoveList& moveList, U64 mask, int delta, bool allPro
 inline void
 MoveGen::addPawnDoubleMovesByMask(MoveList& moveList, U64 mask, int delta) {
     while (mask != 0) {
-        int sq = BitBoard::extractSquare(mask);
+        Square sq = BitBoard::extractSquare(mask);
         moveList.addMove(sq + delta, sq, Piece::EMPTY);
     }
 }
 
 inline void
-MoveGen::addMovesByMask(MoveList& moveList, int sq0, U64 mask) {
+MoveGen::addMovesByMask(MoveList& moveList, Square sq0, U64 mask) {
     while (mask != 0) {
-        int sq = BitBoard::extractSquare(mask);
+        Square sq = BitBoard::extractSquare(mask);
         moveList.addMove(sq0, sq, Piece::EMPTY);
     }
 }

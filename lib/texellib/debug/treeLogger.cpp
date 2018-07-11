@@ -254,7 +254,7 @@ TreeLoggerReader::writeEntry(U64 index, const Entry& entry) {
 }
 
 static bool isNoMove(const Move& m) {
-    return (m.from() == B1) && (m.to() == B1);
+    return (m.from().asInt() == B1) && (m.to().asInt() == B1);
 }
 
 std::string moveToStr(const Move& m) {

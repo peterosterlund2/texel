@@ -148,8 +148,8 @@ EvaluateTest::testEvalPos() {
 
     pos = TextIO::readFEN("8/pp1bk3/8/8/8/8/PPPBK3/8 w - - 0 1");
     int sc1 = evalWhite(pos);
-    pos.setPiece(Square::getSquare(3, 1), Piece::EMPTY);
-    pos.setPiece(Square::getSquare(3, 2), Piece::WBISHOP);
+    pos.setPiece(Square(3, 1), Piece::EMPTY);
+    pos.setPiece(Square(3, 2), Piece::WBISHOP);
     int sc2 = evalWhite(pos);
     EXPECT_GT(sc2, sc1);      // Easier to win if bishops on same color
 }
@@ -237,36 +237,36 @@ TEST(EvaluateTest, testEndGameEval) {
 void
 EvaluateTest::testEndGameEval() {
     Position pos;
-    pos.setPiece(Square::getSquare(4, 1), Piece::WKING);
-    pos.setPiece(Square::getSquare(4, 6), Piece::BKING);
+    pos.setPiece(Square(4, 1), Piece::WKING);
+    pos.setPiece(Square(4, 6), Piece::BKING);
     int score = evalWhite(pos, true);
     EXPECT_TRUE(isDraw(score));
 
-    pos.setPiece(Square::getSquare(3, 1), Piece::WBISHOP);
+    pos.setPiece(Square(3, 1), Piece::WBISHOP);
     score = evalWhite(pos, true);
     EXPECT_TRUE(isDraw(score)); // Insufficient material to mate
 
-    pos.setPiece(Square::getSquare(3, 1), Piece::WKNIGHT);
+    pos.setPiece(Square(3, 1), Piece::WKNIGHT);
     score = evalWhite(pos, true);
     EXPECT_TRUE(isDraw(score)); // Insufficient material to mate
 
-    pos.setPiece(Square::getSquare(3, 1), Piece::WROOK);
+    pos.setPiece(Square(3, 1), Piece::WROOK);
     score = evalWhite(pos, true);
     const int rV = ::rV;
     EXPECT_GT(std::abs(score), rV + 90);   // Enough material to force mate
 
-    pos.setPiece(Square::getSquare(3, 6), Piece::BBISHOP);
+    pos.setPiece(Square(3, 6), Piece::BBISHOP);
     score = evalWhite(pos, true);
     const int bV = ::bV;
     EXPECT_GE(score, 0);
     EXPECT_LT(score, rV - bV);   // Insufficient excess material to mate
 
-    pos.setPiece(Square::getSquare(5, 6), Piece::BROOK);
+    pos.setPiece(Square(5, 6), Piece::BROOK);
     score = evalWhite(pos, true);
     EXPECT_LE(score, 0);
     EXPECT_LT(-score, bV);
 
-    pos.setPiece(Square::getSquare(2, 6), Piece::BBISHOP);
+    pos.setPiece(Square(2, 6), Piece::BBISHOP);
     score = evalWhite(pos, true);
     EXPECT_GT(-score, bV * 2);
 

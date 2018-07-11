@@ -227,25 +227,26 @@ ProofGameTest::testNeighbors() {
 }
 
 void
-ProofGameTest::comparePaths(Piece::Type p, int sq, U64 blocked, int maxMoves,
+ProofGameTest::comparePaths(Piece::Type p, Square sq, U64 blocked, int maxMoves,
                              const std::vector<int>& expected, bool testColorReversed) {
     ProofGame ps(TextIO::startPosFEN, TextIO::startPosFEN, true, {});
     auto spd = ps.shortestPaths(p, sq, blocked, maxMoves);
     for (int i = 0; i < 64; i++) {
-        ASSERT_EQ(expected[Square::mirrorY(i)], (int)spd->pathLen[i]);
-        ASSERT_EQ(expected[Square::mirrorY(i)] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
+        ASSERT_EQ(expected[Square(i).mirrorY().asInt()], (int)spd->pathLen[i]);
+        ASSERT_EQ(expected[Square(i).mirrorY().asInt()] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
     }
 
     if (testColorReversed) {
         Piece::Type oP = (Piece::Type)(Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p));
-        int oSq = Square::getSquare(Square::getX(sq), 7 - Square::getY(sq));
+        Square oSq(sq.getX(), 7 - sq.getY());
         U64 oBlocked = 0;
         std::vector<int> oExpected(64);
-        for (int s = 0; s < 64; s++) {
-            int oS = Square::getSquare(Square::getX(s), 7 - Square::getY(s));
+        for (int sI = 0; sI < 64; sI++) {
+            Square s(sI);
+            Square oS(s.getX(), 7 - s.getY());
             if ((1ULL << s) & blocked)
                 oBlocked |= (1ULL << oS);
-            oExpected[oS] = expected[s];
+            oExpected[oS.asInt()] = expected[s.asInt()];
         }
         comparePaths(oP, oSq, oBlocked, maxMoves, oExpected, false);
     }
@@ -279,8 +280,8 @@ ProofGameTest::testShortestPath() {
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
             int d = ((x != 0) ? 1 : 0) + ((y != 0) ? 1 : 0);
-            int sq = Square::getSquare(x, y);
-            ASSERT_EQ(d, (int)(spd->pathLen[sq]));
+            Square sq(x, y);
+            ASSERT_EQ(d, (int)(spd->pathLen[sq.asInt()]));
         }
     }
 
@@ -465,8 +466,8 @@ ProofGameTest::testPawnReachable() {
         const int maxCapt = 5; // Max number of captures relevant for pawn movements
         for (int x = 0; x < 8; x++) {
             for (int y = 0; y <= 7; y += 7) {
-                ASSERT_EQ(0, ProofGame::wPawnReachable[Square::getSquare(x, y)][maxCapt]);
-                ASSERT_EQ(0, ProofGame::wPawnReachable[Square::getSquare(x, y)][maxCapt]);
+                ASSERT_EQ(0, ProofGame::wPawnReachable[Square(x, y).asInt()][maxCapt]);
+                ASSERT_EQ(0, ProofGame::wPawnReachable[Square(x, y).asInt()][maxCapt]);
             }
         }
         ASSERT_EQ(BitBoard::sqMask(A2), ProofGame::bPawnReachable[A2][maxCapt]);
@@ -1606,7 +1607,7 @@ void ProofGameTest::testFilterPath() {
                    "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPc2-c4 bPd7-d5 wPc4xd5 wPe2-e4 "
                    "bPf7-f5 wPe4xf5 wPb2-b4 bPa7-a5 wPb4xa5 bPh7-h5 wPg2-g5 wRa1-g4 bPh5xg4 ",
                    pos);
-        int fromSq = -1, toSq = -1;
+        Square fromSq, toSq;
         ProofGame pg(TextIO::toFEN(pos), goalFen, true, {}, true);
         bool infeasible = pg.isInfeasible(fromSq, toSq);
         ASSERT_FALSE(infeasible);
@@ -1617,7 +1618,7 @@ void ProofGameTest::testFilterPath() {
         getPathPos(goalFen + " "
                    "unknown: kernel: dummy "
                    "extKernel: bPa7-a4 wPb2-b3 bPa4xb3 bPb3-b2 ", pos);
-        int fromSq = -1, toSq = -1;
+        Square fromSq, toSq;
         ProofGame pg(TextIO::toFEN(pos), goalFen, true, {}, true);
         bool infeasible = pg.isInfeasible(fromSq, toSq);
         ASSERT_FALSE(infeasible);
@@ -1629,7 +1630,7 @@ void ProofGameTest::testFilterPath() {
                    "unknown: kernel: dummy "
                    "extKernel: wPd2-d3 bPe7-e3 bRa8-e4 wPd3xe4 wxa7 wPg2-g4 bPh7-h5 wPg4xh5 "
                    "wPb2-b4 bPc7-c5 wPb4xc5 bPd7-d3 wPe2xd3 bPe3-e2 bDBf8-e3 wPf2xe3", pos);
-        ASSERT_EQ(E1, pos.getKingSq(true));
+        ASSERT_EQ(Square(E1), pos.getKingSq(true));
         ASSERT_TRUE(pos.h1Castle());
     }
 }
@@ -1677,8 +1678,8 @@ void ProofGameTest::testPkSequence() {
             ExtPkMove m = strToExtPkMove(strMove);
             m.color = m.color == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE;
             m.movingPiece = mirrorPieceType(m.movingPiece);
-            m.fromSquare = Square::mirrorY(m.fromSquare);
-            m.toSquare = Square::mirrorY(m.toSquare);
+            m.fromSquare = m.fromSquare.mirrorY();
+            m.toSquare = m.toSquare.mirrorY();
             m.promotedPiece = mirrorPieceType(m.promotedPiece);
             if (!ret.empty())
                 ret += ' ';
@@ -1779,7 +1780,7 @@ void ProofGameTest::testMultiBoard() {
     {
         MultiBoard brd;
         for (int i = 0; i < 64; i++) {
-            ASSERT_EQ(0, brd.nPieces(i));
+            ASSERT_EQ(0, brd.nPieces(Square(i)));
         }
         brd.addPiece(A2, Piece::WPAWN);
         ASSERT_EQ(1, brd.nPieces(A2));
@@ -1810,7 +1811,7 @@ void ProofGameTest::testMultiBoard() {
         Position pos;
         brd.toPos(pos);
         for (int sq = 0; sq < 64; sq++) {
-            ASSERT_EQ(pos.getPiece(sq), initPos.getPiece(sq));
+            ASSERT_EQ(pos.getPiece(Square(sq)), initPos.getPiece(Square(sq)));
         }
     }
 }

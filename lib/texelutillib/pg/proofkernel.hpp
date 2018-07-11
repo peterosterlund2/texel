@@ -82,7 +82,7 @@ public:
     /** Convert PieceType to Piece::Type. */
     static Piece::Type toPieceType(bool white, PieceType p, bool allowPawn, bool allowKing);
     /** Convert Piece::Type to PieceType. */
-    static PieceType toPieceType(int p, int sq);
+    static PieceType toPieceType(int p, Square sq);
 
     /** Represents a move in the proof kernel state space. Each move reduces the
      *  total number of pieces by one. Possible moves are of the following types:
@@ -136,12 +136,12 @@ public:
     struct ExtPkMove {
         PieceColor color;        // Color of moving piece
         PieceType movingPiece;   // Type of moving piece
-        int fromSquare;          // Initial square of moving piece
+        Square fromSquare;       // Initial square of moving piece
         bool capture;            // True if move captures an opponent piece
-        int toSquare;            // Final square of moving piece
+        Square toSquare;         // Final square of moving piece
         PieceType promotedPiece; // Promoted piece, or EMPTY
 
-        ExtPkMove(PieceColor c, PieceType pt, int fromSq, bool capture, int toSq, PieceType prom);
+        ExtPkMove(PieceColor c, PieceType pt, Square fromSq, bool capture, Square toSq, PieceType prom);
 
         bool operator==(const ExtPkMove& other) const;
         bool operator!=(const ExtPkMove& other) const;
@@ -485,8 +485,8 @@ ProofKernel::PkMove::pieceXPiece(PieceColor c, PieceType taken) {
 }
 
 inline
-ProofKernel::ExtPkMove::ExtPkMove(PieceColor c, PieceType pt, int fromSq, bool capt,
-                                  int toSq, PieceType prom)
+ProofKernel::ExtPkMove::ExtPkMove(PieceColor c, PieceType pt, Square fromSq, bool capt,
+                                  Square toSq, PieceType prom)
     : color(c), movingPiece(pt), fromSquare(fromSq), capture(capt),
       toSquare(toSq), promotedPiece(prom) {
 }

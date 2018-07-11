@@ -28,6 +28,7 @@
 
 #include <iosfwd>
 #include "util.hpp"
+#include "square.hpp"
 
 /** Represents a chess move. */
 class Move {
@@ -36,10 +37,10 @@ public:
     Move();
 
     /** Create a move object. */
-    Move(int from, int to, int promoteTo, int score = 0);
+    Move(Square from, Square to, int promoteTo, int score = 0);
 
     /** Set move properties. */
-    void setMove(int from, int to, int promoteTo, int score);
+    void setMove(Square from, Square to, int promoteTo, int score);
 
     void setScore(int score);
 
@@ -49,8 +50,8 @@ public:
     /** Set move from 16 bit compressed representation. Score not changed. */
     void setFromCompressed(U16 move);
 
-    int from() const;
-    int to() const;
+    Square from() const;
+    Square to() const;
     int promoteTo() const;
     int score() const;
 
@@ -67,10 +68,10 @@ public:
 
 private:
     /** From square, 0-63. */
-    int from_;
+    Square from_;
 
     /** To square, 0-63. */
-    int to_;
+    Square to_;
 
     /** Promotion piece. */
     int promoteTo_;
@@ -81,20 +82,16 @@ private:
 
 inline
 Move::Move()
-    : from_(0), to_(0), promoteTo_(0), score_(0) {
+    : from_(Square(0)), to_(Square(0)), promoteTo_(0), score_(0) {
 }
 
 inline
-Move::Move(int from, int to, int promoteTo, int score) {
-    from_ = from;
-    to_ = to;
-    promoteTo_ = promoteTo;
-    score_ = score;
+Move::Move(Square from, Square to, int promoteTo, int score)
+    : from_(from), to_(to), promoteTo_(promoteTo), score_(score) {
 }
 
 inline void
-Move::setMove(int from, int to, int promoteTo, int score)
-{
+Move::setMove(Square from, Square to, int promoteTo, int score) {
     from_ = from;
     to_ = to;
     promoteTo_ = promoteTo;
@@ -108,20 +105,21 @@ Move::setScore(int score) {
 
 inline U16
 Move::getCompressedMove() const {
-    return (U16)(from() + (to() << 6) + (promoteTo() << 12));
+    return (U16)(from().asInt() + (to().asInt() << 6) + (promoteTo() << 12));
 }
 
 inline void
 Move::setFromCompressed(U16 move) {
-    setMove(move & 63, (move >> 6) & 63, (move >> 12) & 15, score());
+    setMove(Square(move & 63), Square((move >> 6) & 63),
+            (move >> 12) & 15, score());
 }
 
-inline int
+inline Square
 Move::from() const {
     return from_;
 }
 
-inline int
+inline Square
 Move::to() const {
     return to_;
 }
@@ -138,7 +136,7 @@ Move::score() const {
 
 inline bool
 Move::isEmpty() const {
-    return (from_ == 0) && (to_ == 0);
+    return (from_.asInt() == 0) && (to_.asInt() == 0);
 }
 
 inline bool

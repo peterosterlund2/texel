@@ -27,6 +27,7 @@
 #define ENDGAMEEVAL_HPP_
 
 #include "util.hpp"
+#include "square.hpp"
 
 class Position;
 
@@ -41,7 +42,7 @@ public:
 
 private:
     /** King evaluation when no pawns left. */
-    static int mateEval(int k1, int k2);
+    static int mateEval(Square k1, Square k2);
 
     static const int winKingTable[64];
 
@@ -49,23 +50,24 @@ private:
      * has a fortress draw. */
     template <bool whiteBishop> static bool isBishopPawnDraw(const Position& pos);
 
-    static int kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMove, int score);
-    static int kqkrpEval(int wKing, int wQueen, int bKing, int bRook, int bPawn, bool whiteMove, int score);
-    static bool kqkrmFortress(bool bishop, int wQueen, int bRook, int bMinor, U64 wPawns, U64 bPawns);
+    static int kqkpEval(Square wKing, Square wQueen, Square bKing, Square bPawn, bool whiteMove, int score);
+    static int kqkrpEval(Square wKing, Square wQueen, Square bKing, Square bRook, Square bPawn, bool whiteMove, int score);
+    static bool kqkrmFortress(bool bishop, Square wQueen, Square bRook, Square bMinor, U64 wPawns, U64 bPawns);
 
-    static int kpkEval(int wKing, int bKing, int wPawn, bool whiteMove);
-    static bool kpkpEval(int wKing, int bKing, int wPawn, int bPawn, int& score);
+    static int kpkEval(Square wKing, Square bKing, Square wPawn, bool whiteMove);
+    static bool kpkpEval(Square wKing, Square bKing, Square wPawn, Square bPawn, int& score);
 
-    static int krkpEval(int wKing, int bKing, int bPawn, bool whiteMove, int score);
-    static int krpkrEval(int wKing, int bKing, int wPawn, int wRook, int bRook, bool whiteMove);
-    static int krpkrpEval(int wKing, int bKing, int wPawn, int wRook, int bRook, int bPawn, bool whiteMove, int score);
+    static int krkpEval(Square wKing, Square bKing, Square bPawn, bool whiteMove, int score);
+    static int krpkrEval(Square wKing, Square bKing, Square wPawn, Square wRook, Square bRook, bool whiteMove);
+    static int krpkrpEval(Square wKing, Square bKing, Square wPawn, Square wRook, Square bRook,
+                          Square bPawn, bool whiteMove, int score);
 
-    static int kbnkEval(int wKing, int bKing, bool darkBishop);
+    static int kbnkEval(Square wKing, Square bKing, bool darkBishop);
 
-    static int kbpkbEval(int wKing, int wBish, int wPawn, int bKing, int bBish, int score);
-    static int kbpknEval(int wKing, int wBish, int wPawn, int bKing, int bKnight, int score);
-    static int knpkbEval(int wKing, int wKnight, int wPawn, int bKing, int bBish, int score, bool wtm);
-    static int knpkEval(int wKing, int wKnight, int wPawn, int bKing, int score, bool wtm);
+    static int kbpkbEval(Square wKing, Square wBish, Square wPawn, Square bKing, Square bBish, int score);
+    static int kbpknEval(Square wKing, Square wBish, Square wPawn, Square bKing, Square bKnight, int score);
+    static int knpkbEval(Square wKing, Square wKnight, Square wPawn, Square bKing, Square bBish, int score, bool wtm);
+    static int knpkEval(Square wKing, Square wKnight, Square wPawn, Square bKing, int score, bool wtm);
 
     static const int distToH1A8[8][8];
     static const U8 kpkTable[2*32*64*48/8];

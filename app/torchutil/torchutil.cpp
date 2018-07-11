@@ -82,17 +82,17 @@ static void
 toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) {
     int pieceType = 0;
     int k1 = r.wKing < 64 ? r.wKing : E1;
-    int k2 = Square::mirrorY(r.bKing < 64 ? r.bKing : E8);
+    int k2 = Square(r.bKing < 64 ? r.bKing : E8).mirrorY().asInt();
 
     auto addIndex = [](std::vector<int>& idxVec, int k, int pieceType, int sq) {
         int idx1, idx2, idx3;
         int kIdx;
         if (k < 64) {
-            int x = Square::getX(k);
-            int y = Square::getY(k);
+            int x = Square(k).getX();
+            int y = Square(k).getY();
             if (x >= 4) {
-                x = Square::mirrorX(x);
-                sq = Square::mirrorX(sq);
+                x = Square(x).mirrorX().asInt();
+                sq = Square(sq).mirrorX().asInt();
             }
             kIdx = y * 4 + x;
         } else {
@@ -111,7 +111,7 @@ toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) 
         if (sq == -1)
             continue;
         int oPieceType = (pieceType + 5) % 10;
-        int mSq = Square::mirrorY(sq);
+        int mSq = Square(sq).mirrorY().asInt();
         addIndex(idxVecW, k1, pieceType, sq);
         addIndex(idxVecB, k2, oPieceType, mSq);
     }
@@ -514,8 +514,8 @@ Net::quantize(NetData& qNet) const {
     torch::Tensor lin1B = lin1->bias;
     {
         auto sameSquare = [](int kIdx, int sq) -> bool {
-            int x = Square::getX(sq);
-            int y = Square::getY(sq);
+            int x = Square(sq).getX();
+            int y = Square(sq).getY();
             if (x >= 4)
                 return false;
             return kIdx == y * 4 + x;
@@ -1156,15 +1156,15 @@ featureStats(const std::string& inFile) {
             int pt = tmp % 10; tmp /= 10;
             int kx = tmp % 4; tmp /= 4;
             int ky = tmp;
-            if ((pt == 4 || pt == 9) && (Square::getY(sq) == 0 || Square::getY(sq) == 7))
+            if ((pt == 4 || pt == 9) && (Square(sq).getY() == 0 || Square(sq).getY() == 7))
                 continue;
-            int kSq = Square::getSquare(kx, ky);
+            int kSq = Square(kx, ky).asInt();
             if (sq == kSq)
                 continue;
             if (ky < 8) {
-                sq = Square::mirrorX(sq);
-                kSq = Square::mirrorX(kSq);
-                ss << 'K' << TextIO::squareToString(kSq) << ',';
+                sq = Square(sq).mirrorX().asInt();
+                kSq = Square(kSq).mirrorX().asInt();
+                ss << 'K' << TextIO::squareToString(Square(kSq)) << ',';
             } else {
                 if (sq == E1)
                     continue;
@@ -1181,15 +1181,15 @@ featureStats(const std::string& inFile) {
                 }
                 ss << ',';
             }
-            ss << "QRBNPqrbnp"[pt] << TextIO::squareToString(sq);
+            ss << "QRBNPqrbnp"[pt] << TextIO::squareToString(Square(sq));
         } else if (i < inFeats1 + inFeats2) {
             int tmp = i - inFeats1;
             int sq = tmp % 64; tmp /= 64;
             int pt = tmp;
-            if ((pt == 4 || pt == 9) && (Square::getY(sq) == 0 || Square::getY(sq) == 7))
+            if ((pt == 4 || pt == 9) && (Square(sq).getY() == 0 || Square(sq).getY() == 7))
                 continue;
-            sq = Square::mirrorX(sq);
-            ss << "QRBNPqrbnp"[pt] << TextIO::squareToString(sq);
+            sq = Square(sq).mirrorX().asInt();
+            ss << "QRBNPqrbnp"[pt] << TextIO::squareToString(Square(sq));
         } else {
             int pt = i - inFeats1 - inFeats2;
             ss << "QRBNPqrbnp"[pt];

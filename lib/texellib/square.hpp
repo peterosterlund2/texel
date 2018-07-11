@@ -37,63 +37,148 @@ enum SquareName {
     A8, B8, C8, D8, E8, F8, G8, H8
 };
 
+
+/** A square on a chess board. Squares also have an integer representation,
+ *  corresponding to the SquareName enum. */
 class Square {
 public:
-    /** Return index in squares[] vector corresponding to (x,y). */
-    static int getSquare(int x, int y);
+    /** Create an invalid square. */
+    Square();
+    /** Create a square with given x/y coordinates. */
+    Square(int x, int y);
+    /** Create a square from the integer representation. */
+    explicit Square(int sq);
+    /** Create a square from a square name. */
+    Square(SquareName s);
 
-    /** Return x position (file) corresponding to a square. */
-    static int getX(int square);
+    /** Return true if the square is valid. */
+    bool isValid() const;
 
-    /** Return y position (rank) corresponding to a square. */
-    static int getY(int square);
+    /** Return the integer representation of the square. */
+    int asInt() const;
 
-    /** Return getSquare(7-getX(square),getY(square)). */
-    static int mirrorX(int square);
+    /** Return square x position (file). */
+    int getX() const;
 
-    /** Return getSquare(getX(square),7-getY(square)). */
-    static int mirrorY(int square);
+    /** Return square y position (rank). */
+    int getY() const;
 
-    /** Return true if (x,y) is a dark square. */
-    static bool darkSquare(int x, int y);
+    /** Return square mirrored in x direction. */
+    Square mirrorX() const;
 
-    /** Return true if "sq" is a dark square. */
-    static bool darkSquare(int sq);
+    /** Return square mirrored in y direction. */
+    Square mirrorY() const;
+
+    /** Return square rotated 180 degrees around center, i.e. mirrored in both X and Y direction. */
+    Square rot180() const;
+
+    /** Return true if square is dark. */
+    bool isDark() const;
+
+    /** Comparison operators. */
+    bool operator==(Square other) const;
+    bool operator!=(Square other) const;
+    bool operator==(SquareName s) const;
+    bool operator!=(SquareName s) const;
+
+    Square& operator+=(int d);
+
+private:
+    int sq;
 };
 
-inline int
-Square::getSquare(int x, int y) {
-    return y * 8 + x;
+inline Square::Square()
+    : sq(-1) {
 }
 
-inline int
-Square::getX(int square) {
-    return square & 7;
+inline Square::Square(int x, int y)
+    : sq(y * 8 + x) {
 }
 
-inline int
-Square::getY(int square) {
-    return square >> 3;
+inline Square::Square(SquareName s)
+    : sq(static_cast<int>(s)) {
 }
 
-inline int
-Square::mirrorX(int square) {
-    return square ^ 0x7;
-}
-
-inline int
-Square::mirrorY(int square) {
-    return square ^ 0x38;
+inline Square::Square(int sq)
+    : sq(sq) {
 }
 
 inline bool
-Square::darkSquare(int x, int y) {
-    return (x & 1) == (y & 1);
+Square::isValid() const {
+    return sq != -1;
+}
+
+inline int
+Square::asInt() const {
+    return sq;
+}
+
+inline int
+Square::getX() const {
+    return sq & 7;
+}
+
+inline int
+Square::getY() const {
+    return sq >> 3;
+}
+
+inline Square
+Square::mirrorX() const {
+    return Square(sq ^ 0x7);
+}
+
+inline Square
+Square::mirrorY() const {
+    return Square(sq ^ 0x38);
+}
+
+inline Square
+Square::rot180() const {
+    return Square(63 - sq);
 }
 
 inline bool
-Square::darkSquare(int sq) {
-    return darkSquare(getX(sq), getY(sq));
+Square::isDark() const {
+    return (getX() & 1) == (getY() & 1);
 }
+
+inline bool
+Square::operator==(Square other) const {
+    return sq == other.sq;
+}
+
+inline bool
+Square::operator!=(Square other) const {
+    return sq != other.sq;
+}
+
+inline bool
+Square::operator==(SquareName s) const {
+    return sq == s;
+}
+
+inline bool
+Square::operator!=(SquareName s) const {
+    return sq != s;
+}
+
+
+// Operator overloading
+
+inline Square&
+Square::operator+=(int d) {
+    sq += d;
+    return *this;
+}
+
+inline Square operator+(Square a, int b) {
+    return Square(a.asInt() + b);
+}
+
+inline Square operator-(Square a, int b) {
+    return Square(a.asInt() - b);
+}
+
 
 #endif /* BITBOARD_HPP_ */

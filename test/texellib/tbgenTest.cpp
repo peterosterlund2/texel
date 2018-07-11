@@ -111,23 +111,23 @@ TBGenTest::testTBIndex() {
     idx.setIndex(0);
     ASSERT_EQ(0, idx.getIndex());
     ASSERT_TRUE(!idx.whiteMove());
-    ASSERT_EQ(0, idx.getSquare(0));
-    ASSERT_EQ(0, idx.getSquare(1));
+    ASSERT_EQ(Square(0), idx.getSquare(0));
+    ASSERT_EQ(Square(0), idx.getSquare(1));
 
     idx.swapSide();
     ASSERT_TRUE(idx.whiteMove());
 
-    idx.setSquare(1, 17);
+    idx.setSquare(1, Square(17));
 
     ASSERT_TRUE(idx.whiteMove());
-    ASSERT_EQ(0, idx.getSquare(0));
-    ASSERT_EQ(17, idx.getSquare(1));
+    ASSERT_EQ(Square(0), idx.getSquare(0));
+    ASSERT_EQ(Square(17), idx.getSquare(1));
 
     std::vector<int> pieceTypes { Piece::WKING, Piece::BKING };
     idx.canonize(pieceTypes, false);
     ASSERT_TRUE(idx.whiteMove());
-    ASSERT_EQ(0, idx.getSquare(0));
-    ASSERT_EQ(10, idx.getSquare(1));
+    ASSERT_EQ(Square(0), idx.getSquare(0));
+    ASSERT_EQ(Square(10), idx.getSquare(1));
 }
 
 TEST(TBGenTest, testTBPosition) {

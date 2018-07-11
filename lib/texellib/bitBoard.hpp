@@ -112,43 +112,43 @@ public:
     static U64 mirrorY(U64 mask);
 
 
-    static U64 bishopAttacks(int sq, U64 occupied);
-    static U64 rookAttacks(int sq, U64 occupied);
+    static U64 bishopAttacks(Square sq, U64 occupied);
+    static U64 rookAttacks(Square sq, U64 occupied);
 
     /** Shift mask in the NW and NE directions. */
     static U64 wPawnAttacksMask(U64 mask);
     /** Shift mask in the SW and SE directions. */
     static U64 bPawnAttacksMask(U64 mask);
 
-    static U64 kingAttacks(int sq) { return kingAttacksTable[sq]; }
-    static U64 knightAttacks(int sq) { return knightAttacksTable[sq]; }
-    static U64 wPawnAttacks(int sq) { return wPawnAttacksTable[sq]; }
-    static U64 bPawnAttacks(int sq) { return bPawnAttacksTable[sq]; }
-    static U64 wPawnBlockerMask(int sq) { return wPawnBlockerMaskTable[sq]; }
-    static U64 bPawnBlockerMask(int sq) { return bPawnBlockerMaskTable[sq]; }
-    static U64 squaresBetween(int s1, int s2) { return squaresBetweenTable[s1][s2]; }
+    static U64 kingAttacks(Square sq) { return kingAttacksTable[sq.asInt()]; }
+    static U64 knightAttacks(Square sq) { return knightAttacksTable[sq.asInt()]; }
+    static U64 wPawnAttacks(Square sq) { return wPawnAttacksTable[sq.asInt()]; }
+    static U64 bPawnAttacks(Square sq) { return bPawnAttacksTable[sq.asInt()]; }
+    static U64 wPawnBlockerMask(Square sq) { return wPawnBlockerMaskTable[sq.asInt()]; }
+    static U64 bPawnBlockerMask(Square sq) { return bPawnBlockerMaskTable[sq.asInt()]; }
+    static U64 squaresBetween(Square s1, Square s2) { return squaresBetweenTable[s1.asInt()][s2.asInt()]; }
 
     /** Get direction between two squares, 8*sign(dy) + sign(dx) */
-    static int getDirection(int from, int to);
+    static int getDirection(Square from, Square to);
 
     /** Get the max norm distance between two squares. */
-    static int getKingDistance(int from, int to);
+    static int getKingDistance(Square from, Square to);
 
     /** Get the L1 norm distance between two squares. */
-    static int getTaxiDistance(int from, int to);
+    static int getTaxiDistance(Square from, Square to);
 
     static U64 southFill(U64 mask);
 
     static U64 northFill(U64 mask);
 
     /** Get the lowest square from mask. mask must be non-zero. */
-    static int firstSquare(U64 mask);
+    static Square firstSquare(U64 mask);
 
     /** Get the highest square from mask. mask must be non-zero. */
-    static int lastSquare(U64 mask);
+    static Square lastSquare(U64 mask);
 
     /** Get the lowest square from mask and remove the corresponding bit in mask. */
-    static int extractSquare(U64& mask);
+    static Square extractSquare(U64& mask);
 
     /** Return number of 1 bits in mask. */
     static int bitCount(U64 mask);
@@ -183,6 +183,10 @@ private:
 
     static const S8 dirTable[];
 };
+
+inline U64 operator<<(U64 b, Square s) {
+    return b << s.asInt();
+}
 
 
 inline int
@@ -277,20 +281,22 @@ BitBoard::mirrorY(U64 mask) {
 }
 
 inline U64
-BitBoard::bishopAttacks(int sq, U64 occupied) {
+BitBoard::bishopAttacks(Square sq, U64 occupied) {
+    int s = sq.asInt();
 #ifdef HAS_BMI2
-    return bTables[sq][pext(occupied, bMasks[sq])];
+    return bTables[s][pext(occupied, bMasks[s])];
 #else
-    return bTables[sq][(int)(((occupied & bMasks[sq]) * bMagics[sq]) >> bBits[sq])];
+    return bTables[s][(int)(((occupied & bMasks[s]) * bMagics[s]) >> bBits[s])];
 #endif
 }
 
 inline U64
-BitBoard::rookAttacks(int sq, U64 occupied) {
+BitBoard::rookAttacks(Square sq, U64 occupied) {
+    int s = sq.asInt();
 #ifdef HAS_BMI2
-    return rTables[sq][pext(occupied, rMasks[sq])];
+    return rTables[s][pext(occupied, rMasks[s])];
 #else
-    return rTables[sq][(int)(((occupied & rMasks[sq]) * rMagics[sq]) >> rBits[sq])];
+    return rTables[s][(int)(((occupied & rMasks[s]) * rMagics[s]) >> rBits[s])];
 #endif
 }
 
@@ -307,22 +313,24 @@ BitBoard::bPawnAttacksMask(U64 mask) {
 }
 
 inline int
-BitBoard::getDirection(int from, int to) {
+BitBoard::getDirection(Square fromS, Square toS) {
+    int from = fromS.asInt();
+    int to = toS.asInt();
     int offs = to + (to|7) - from - (from|7) + 0x77;
     return dirTable[offs];
 }
 
 inline int
-BitBoard::getKingDistance(int from, int to) {
-    int dx = Square::getX(to) - Square::getX(from);
-    int dy = Square::getY(to) - Square::getY(from);
+BitBoard::getKingDistance(Square from, Square to) {
+    int dx = to.getX() - from.getX();
+    int dy = to.getY() - from.getY();
     return std::max(std::abs(dx), std::abs(dy));
 }
 
 inline int
-BitBoard::getTaxiDistance(int from, int to) {
-    int dx = Square::getX(to) - Square::getX(from);
-    int dy = Square::getY(to) - Square::getY(from);
+BitBoard::getTaxiDistance(Square from, Square to) {
+    int dx = to.getX() - from.getX();
+    int dy = to.getY() - from.getY();
     return std::abs(dx) + std::abs(dy);
 }
 
@@ -342,19 +350,19 @@ BitBoard::northFill(U64 mask) {
     return mask;
 }
 
-inline int
+inline Square
 BitBoard::firstSquare(U64 mask) {
-    return BitUtil::firstBit(mask);
+    return Square(BitUtil::firstBit(mask));
 }
 
-inline int
+inline Square
 BitBoard::lastSquare(U64 mask) {
-    return BitUtil::lastBit(mask);
+    return Square(BitUtil::lastBit(mask));
 }
 
-inline int
+inline Square
 BitBoard::extractSquare(U64& mask) {
-    int ret = firstSquare(mask);
+    Square ret = firstSquare(mask);
     mask &= mask - 1;
     return ret;
 }

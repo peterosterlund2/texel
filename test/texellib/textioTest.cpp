@@ -44,9 +44,9 @@ TEST(TextIOTest, testReadFEN) {
     std::string fen = "rnbqk2r/1p3ppp/p7/1NpPp3/QPP1P1n1/P4N2/4KbPP/R1B2B1R b kq - 0 1";
     Position pos = TextIO::readFEN(fen);
     EXPECT_EQ(fen, TextIO::toFEN(pos));
-    EXPECT_EQ(Piece::WQUEEN, pos.getPiece(Square::getSquare(0, 3)));
-    EXPECT_EQ(Piece::BKING, pos.getPiece(Square::getSquare(4, 7)));
-    EXPECT_EQ(Piece::WKING, pos.getPiece(Square::getSquare(4, 1)));
+    EXPECT_EQ(Piece::WQUEEN, pos.getPiece(Square(0, 3)));
+    EXPECT_EQ(Piece::BKING, pos.getPiece(Square(4, 7)));
+    EXPECT_EQ(Piece::WKING, pos.getPiece(Square(4, 1)));
     EXPECT_EQ(false, pos.isWhiteMove());
     EXPECT_EQ(false, pos.a1Castle());
     EXPECT_EQ(false, pos.h1Castle());
@@ -70,7 +70,7 @@ TEST(TextIOTest, testReadFEN) {
     // Make sure bogus en passant square information is removed
     fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
     pos = TextIO::readFEN(fen);
-    EXPECT_EQ(-1, pos.getEpSquare());
+    EXPECT_EQ(Square(-1), pos.getEpSquare());
 
     // Make sure bogus castling flags are removed
     pos = TextIO::readFEN("rnbq1bnr/ppppkppp/4p3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -127,10 +127,10 @@ TEST(TextIOTest, testReadFEN) {
     EXPECT_EQ(pos, TextIO::readFEN("rnbqkbnr/ppp2ppp/8/2Ppp3/8/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1"));
 
     pos = TextIO::readFEN("rnbqkbnr/pppppppp/8/8/3PP3/8/PPP2PPP/RNBQKBNR b KQkq d3 0 1");
-    EXPECT_EQ(-1, pos.getEpSquare());
+    EXPECT_EQ(Square(-1), pos.getEpSquare());
 
     pos = TextIO::readFEN("rnbqkbnr/ppp2ppp/8/3pp3/8/8/PPPPPPPP/RNBQKBNR w KQkq e6 0 1");
-    EXPECT_EQ(-1, pos.getEpSquare());
+    EXPECT_EQ(Square(-1), pos.getEpSquare());
 
     pos = TextIO::readFEN("rnbqkbnr/pp1ppppp/8/8/2pPP3/3P4/PP3PPP/RNBQKBNR b KQkq d3 0 1");
     EXPECT_EQ(pos, TextIO::readFEN("rnbqkbnr/pp1ppppp/8/8/2pPP3/3P4/PP3PPP/RNBQKBNR b KQkq - 0 1"));
@@ -139,31 +139,31 @@ TEST(TextIOTest, testReadFEN) {
 TEST(TextIOTest, testMoveToString) {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     EXPECT_EQ(TextIO::startPosFEN, TextIO::toFEN(pos));
-    Move move(Square::getSquare(4, 1), Square::getSquare(4, 3), Piece::EMPTY);
+    Move move(Square(4, 1), Square(4, 3), Piece::EMPTY);
     bool longForm = true;
     std::string result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("e2-e4", result);
 
-    move = Move(Square::getSquare(6, 0), Square::getSquare(5, 2), Piece::EMPTY);
+    move = Move(Square(6, 0), Square(5, 2), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("Ng1-f3", result);
 
-    move = Move(Square::getSquare(4, 7), Square::getSquare(2, 7), Piece::EMPTY);
+    move = Move(Square(4, 7), Square(2, 7), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("O-O-O", result);
 
     std::string fen = "1r3k2/2P5/8/8/8/4K3/8/8 w - - 0 1";
     pos = TextIO::readFEN(fen);
     EXPECT_EQ(fen, TextIO::toFEN(pos));
-    move = Move(Square::getSquare(2,6), Square::getSquare(1,7), Piece::WROOK);
+    move = Move(Square(2,6), Square(1,7), Piece::WROOK);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("c7xb8R+", result);
 
-    move = Move(Square::getSquare(2,6), Square::getSquare(2,7), Piece::WKNIGHT);
+    move = Move(Square(2,6), Square(2,7), Piece::WKNIGHT);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("c7-c8N", result);
 
-    move = Move(Square::getSquare(2,6), Square::getSquare(2,7), Piece::WQUEEN);
+    move = Move(Square(2,6), Square(2,7), Piece::WQUEEN);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("c7-c8Q+", result);
 }
@@ -172,19 +172,19 @@ TEST(TextIOTest, testMoveToStringMate) {
     Position pos = TextIO::readFEN("3k4/1PR5/3N4/8/4K3/8/8/8 w - - 0 1");
     bool longForm = true;
 
-    Move move(Square::getSquare(1, 6), Square::getSquare(1, 7), Piece::WROOK);
+    Move move(Square(1, 6), Square(1, 7), Piece::WROOK);
     std::string result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("b7-b8R+", result);    // check
 
-    move = Move(Square::getSquare(1, 6), Square::getSquare(1, 7), Piece::WQUEEN);
+    move = Move(Square(1, 6), Square(1, 7), Piece::WQUEEN);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("b7-b8Q#", result);    // check mate
 
-    move = Move(Square::getSquare(1, 6), Square::getSquare(1, 7), Piece::WKNIGHT);
+    move = Move(Square(1, 6), Square(1, 7), Piece::WKNIGHT);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("b7-b8N", result);
 
-    move = Move(Square::getSquare(1, 6), Square::getSquare(1, 7), Piece::WBISHOP);
+    move = Move(Square(1, 6), Square(1, 7), Piece::WBISHOP);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("b7-b8B", result);     // stalemate
 }
@@ -195,43 +195,43 @@ TEST(TextIOTest, testMoveToStringShortForm) {
     EXPECT_EQ(fen, TextIO::toFEN(pos));
     bool longForm = false;
 
-    Move move = Move(Square::getSquare(4,5), Square::getSquare(4,3), Piece::EMPTY);
+    Move move = Move(Square(4,5), Square(4,3), Piece::EMPTY);
     std::string result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("Qee4", result);   // File disambiguation needed
 
-    move = Move(Square::getSquare(2,5), Square::getSquare(4,3), Piece::EMPTY);
+    move = Move(Square(2,5), Square(4,3), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("Qc6e4", result);  // Full disambiguation needed
 
-    move = Move(Square::getSquare(2,3), Square::getSquare(4,3), Piece::EMPTY);
+    move = Move(Square(2,3), Square(4,3), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("Q4e4", result);   // Row disambiguation needed
 
-    move = Move(Square::getSquare(2,3), Square::getSquare(2,0), Piece::EMPTY);
+    move = Move(Square(2,3), Square(2,0), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("Qc1+", result);   // No disambiguation needed
 
-    move = Move(Square::getSquare(0,1), Square::getSquare(0,0), Piece::BQUEEN);
+    move = Move(Square(0,1), Square(0,0), Piece::BQUEEN);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("a1Q", result);    // Normal promotion
 
-    move = Move(Square::getSquare(0,1), Square::getSquare(1,0), Piece::BQUEEN);
+    move = Move(Square(0,1), Square(1,0), Piece::BQUEEN);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("axb1Q#", result); // Capture promotion and check mate
 
-    move = Move(Square::getSquare(0,1), Square::getSquare(1,0), Piece::BKNIGHT);
+    move = Move(Square(0,1), Square(1,0), Piece::BKNIGHT);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("axb1N", result);  // Capture promotion
 
-    move = Move(Square::getSquare(3,6), Square::getSquare(4,4), Piece::EMPTY);
+    move = Move(Square(3,6), Square(4,4), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("Ne5", result);    // Other knight pinned, no disambiguation needed
 
-    move = Move(Square::getSquare(7,6), Square::getSquare(7,4), Piece::EMPTY);
+    move = Move(Square(7,6), Square(7,4), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("h5", result);     // Regular pawn move
 
-    move = Move(Square::getSquare(5,7), Square::getSquare(3,7), Piece::EMPTY);
+    move = Move(Square(5,7), Square(3,7), Piece::EMPTY);
     result = TextIO::moveToString(pos, move, longForm);
     EXPECT_EQ("Rfd8", result);     // File disambiguation needed
 }
@@ -239,7 +239,7 @@ TEST(TextIOTest, testMoveToStringShortForm) {
 TEST(TextIOTest, testStringToMove) {
     Position pos = TextIO::readFEN("r4rk1/2pn3p/2q1q1n1/8/2q2p2/6R1/p4PPP/1R4K1 b - - 0 1");
 
-    Move mNe5(Square::getSquare(3, 6), Square::getSquare(4, 4), Piece::EMPTY);
+    Move mNe5(Square(3, 6), Square(4, 4), Piece::EMPTY);
     Move m = TextIO::stringToMove(pos, "Ne5");
     EXPECT_EQ(mNe5, m);
     m = TextIO::stringToMove(pos, "ne");
@@ -247,7 +247,7 @@ TEST(TextIOTest, testStringToMove) {
     m = TextIO::stringToMove(pos, "N");
     EXPECT_TRUE(m.isEmpty());
 
-    Move mQc6e4(Square::getSquare(2, 5), Square::getSquare(4, 3), Piece::EMPTY);
+    Move mQc6e4(Square(2, 5), Square(4, 3), Piece::EMPTY);
     m = TextIO::stringToMove(pos, "Qc6-e4");
     EXPECT_EQ(mQc6e4, m);
     m = TextIO::stringToMove(pos, "Qc6e4");
@@ -257,7 +257,7 @@ TEST(TextIOTest, testStringToMove) {
     m = TextIO::stringToMove(pos, "Q6e4");
     EXPECT_TRUE(m.isEmpty());
 
-    Move maxb1Q(Square::getSquare(0, 1), Square::getSquare(1, 0), Piece::BQUEEN);
+    Move maxb1Q(Square(0, 1), Square(1, 0), Piece::BQUEEN);
     m = TextIO::stringToMove(pos, "axb1Q");
     EXPECT_EQ(maxb1Q, m);
     m = TextIO::stringToMove(pos, "axb1Q#");
@@ -265,7 +265,7 @@ TEST(TextIOTest, testStringToMove) {
     m = TextIO::stringToMove(pos, "axb1Q+");
     EXPECT_EQ(maxb1Q, m);
 
-    Move mh5(Square::getSquare(7, 6), Square::getSquare(7, 4), Piece::EMPTY);
+    Move mh5(Square(7, 6), Square(7, 4), Piece::EMPTY);
     m = TextIO::stringToMove(pos, "h5");
     EXPECT_EQ(mh5, m);
     m = TextIO::stringToMove(pos, "h7-h5");
@@ -285,8 +285,8 @@ TEST(TextIOTest, testStringToMove) {
 
     // Test castling. o-o is a substring of o-o-o, which could cause problems.
     pos = TextIO::readFEN("5k2/p1pQn3/1p2Bp1r/8/4P1pN/2N5/PPP2PPP/R3K2R w KQ - 0 16");
-    Move kCastle(Square::getSquare(4,0), Square::getSquare(6,0), Piece::EMPTY);
-    Move qCastle(Square::getSquare(4,0), Square::getSquare(2,0), Piece::EMPTY);
+    Move kCastle(Square(4,0), Square(6,0), Piece::EMPTY);
+    Move qCastle(Square(4,0), Square(2,0), Piece::EMPTY);
     m = TextIO::stringToMove(pos, "o");
     EXPECT_TRUE(m.isEmpty());
     m = TextIO::stringToMove(pos, "o-o");
@@ -297,8 +297,8 @@ TEST(TextIOTest, testStringToMove) {
     EXPECT_EQ(qCastle, m);
 
     // Test 'o-o+'
-    pos.setPiece(Square::getSquare(5,1), Piece::EMPTY);
-    pos.setPiece(Square::getSquare(5,5), Piece::EMPTY);
+    pos.setPiece(Square(5,1), Piece::EMPTY);
+    pos.setPiece(Square(5,5), Piece::EMPTY);
     m = TextIO::stringToMove(pos, "o");
     EXPECT_TRUE(m.isEmpty());
     m = TextIO::stringToMove(pos, "o-o");
@@ -346,18 +346,18 @@ TEST(TextIOTest, testStringToMove) {
 }
 
 TEST(TextIOTest, testGetSquare) {
-    EXPECT_EQ(Square::getSquare(0, 0), TextIO::getSquare("a1"));
-    EXPECT_EQ(Square::getSquare(1, 7), TextIO::getSquare("b8"));
-    EXPECT_EQ(Square::getSquare(3, 3), TextIO::getSquare("d4"));
-    EXPECT_EQ(Square::getSquare(4, 3), TextIO::getSquare("e4"));
-    EXPECT_EQ(Square::getSquare(3, 1), TextIO::getSquare("d2"));
-    EXPECT_EQ(Square::getSquare(7, 7), TextIO::getSquare("h8"));
+    EXPECT_EQ(Square(0, 0), TextIO::getSquare("a1"));
+    EXPECT_EQ(Square(1, 7), TextIO::getSquare("b8"));
+    EXPECT_EQ(Square(3, 3), TextIO::getSquare("d4"));
+    EXPECT_EQ(Square(4, 3), TextIO::getSquare("e4"));
+    EXPECT_EQ(Square(3, 1), TextIO::getSquare("d2"));
+    EXPECT_EQ(Square(7, 7), TextIO::getSquare("h8"));
 }
 
 TEST(TextIOTest, testSquareToString) {
-    EXPECT_EQ("a1", TextIO::squareToString(Square::getSquare(0, 0)));
-    EXPECT_EQ("h6", TextIO::squareToString(Square::getSquare(7, 5)));
-    EXPECT_EQ("e4", TextIO::squareToString(Square::getSquare(4, 3)));
+    EXPECT_EQ("a1", TextIO::squareToString(Square(0, 0)));
+    EXPECT_EQ("h6", TextIO::squareToString(Square(7, 5)));
+    EXPECT_EQ("e4", TextIO::squareToString(Square(4, 3)));
 }
 
 static int countSubStr(const std::string& str, const std::string& sub) {
@@ -395,7 +395,7 @@ TEST(TextIOTest, testUciStringToMove) {
     Move m = TextIO::uciStringToMove("e2e4");
     EXPECT_EQ(TextIO::stringToMove(pos, "e4"), m);
     m = TextIO::uciStringToMove("e2e5");
-    EXPECT_EQ(Move(12, 12+8*3, Piece::EMPTY), m);
+    EXPECT_EQ(Move(Square(12), Square(12+8*3), Piece::EMPTY), m);
 
     m = TextIO::uciStringToMove("e2e5q");
     EXPECT_TRUE(m.isEmpty());

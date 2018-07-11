@@ -48,7 +48,7 @@ private:
             return ui1.capturedPiece < ui2.capturedPiece;
         if (ui1.castleMask != ui2.castleMask)
             return ui1.castleMask < ui2.castleMask;
-        return ui1.epSquare < ui2.epSquare;
+        return ui1.epSquare.asInt() < ui2.epSquare.asInt();
     }
 };
 using UnMoveSet = std::set<UnMove, UnMoveCompare>;
@@ -62,8 +62,8 @@ mirrorFenY(const std::string& fen) {
 
 static Move
 mirrorMoveY(const Move& m) {
-    int from = Square::mirrorY(m.from());
-    int to = Square::mirrorY(m.to());
+    Square from = m.from().mirrorY();
+    Square to = m.to().mirrorY();
     int promoteTo = PosUtil::swapPieceColor(m.promoteTo());
     return Move(from, to, promoteTo);
 }
@@ -80,7 +80,7 @@ mirrorUndoInfoY(const UndoInfo& ui) {
     UndoInfo ret;
     ret.capturedPiece = PosUtil::swapPieceColor(ui.capturedPiece);
     ret.castleMask = PosUtil::swapCastleMask(ui.castleMask);
-    ret.epSquare = ui.epSquare == -1 ? -1 : Square::mirrorY(ui.epSquare);
+    ret.epSquare = ui.epSquare.isValid() ? ui.epSquare.mirrorY() : Square(-1);
     ret.halfMoveClock = ui.halfMoveClock;
     return ret;
 }
@@ -318,26 +318,26 @@ const int h8C = 1 << Position::H8_CASTLE;
 
 void
 RevMoveGenTest::testEpSquare() {
-    auto extractEP = [](const std::vector<UnMove>& unMoves, int fromSq, int toSq) {
+    auto extractEP = [](const std::vector<UnMove>& unMoves, Square fromSq, Square toSq) {
         UnMoveSet ret;
         for (const UnMove& um : unMoves)
-            if (um.ui.epSquare != -1)
-                if ((toSq == -1 || um.move.to() == toSq) &&
-                        (fromSq == -1 || um.move.from() == fromSq))
+            if (um.ui.epSquare.isValid())
+                if ((!toSq.isValid() || um.move.to() == toSq) &&
+                    (!fromSq.isValid() || um.move.from() == fromSq))
                     ret.insert(um);
         return ret;
     };
 
     struct Data {
         std::string fen;
-        int fromSq;
-        int toSq;
+        Square fromSq;
+        Square toSq;
         int allEp; // 0=false, 1=true, 2=both
         UnMoveSet epMoves;
     };
     const int both = 2;
 
-    auto UM = [](const std::string& move, int captPiece, int castleMask, int epSq) -> UnMove {
+    auto UM = [](const std::string& move, int captPiece, int castleMask, Square epSq) -> UnMove {
         UnMove um;
         um.move = TextIO::uciStringToMove(move);
         um.ui = { captPiece, castleMask, epSq, 0 };
@@ -347,17 +347,18 @@ RevMoveGenTest::testEpSquare() {
     const int empty = Piece::EMPTY;
     const int bpawn = Piece::BPAWN;
 
+    const Square invSq;
     std::vector<Data> v = {
-        { TextIO::startPosFEN, G8, -1, both, { } },
-        { "4k3/8/1P6/8/8/8/8/4K3 b - - 0 1", -1, B6, both, { UM("a5b6", empty, 0, B6), UM("c5b6", empty, 0, B6) } },
-        { "4k3/8/P7/8/8/8/8/4K3 b - - 0 1", -1, A6, both, { UM("b5a6", empty, 0, A6) } },
-        { "4k3/8/7P/8/8/8/8/4K3 b - - 0 1", -1, H6, both, { UM("g5h6", empty, 0, H6) } },
-        { "4k3/8/8/pPpP4/P1P5/8/8/4K3 b - - 0 1", -1, B5, false, { } },
-        { "4k3/8/8/pPpP4/P1P5/8/8/4K3 b - - 0 1", -1, B5, true, { UM("b4b5", empty, 0, C6) } },
-        { "4k3/8/8/1pPpP3/1P1P4/8/8/4K3 b - - 0 1", -1, C5, true, { UM("c4c5", empty, 0, D6) } },
-        { "4k3/8/8/pPpP4/P1P5/7P/6P1/4K3 b - - 0 1", -1, H3, true, { UM("h2h3", empty, 0, A6), UM("h2h3", empty, 0, C6) } },
-        { "4k3/8/1P6/Pp6/8/8/8/4K3 b - - 0 1", -1, B6, both, { } },
-        { "4k3/1p6/1P6/P7/8/8/8/4K3 b - - 0 1", -1, B6, both, { } },
+        { TextIO::startPosFEN, G8, invSq, both, { } },
+        { "4k3/8/1P6/8/8/8/8/4K3 b - - 0 1", invSq, B6, both, { UM("a5b6", empty, 0, B6), UM("c5b6", empty, 0, B6) } },
+        { "4k3/8/P7/8/8/8/8/4K3 b - - 0 1", invSq, A6, both, { UM("b5a6", empty, 0, A6) } },
+        { "4k3/8/7P/8/8/8/8/4K3 b - - 0 1", invSq, H6, both, { UM("g5h6", empty, 0, H6) } },
+        { "4k3/8/8/pPpP4/P1P5/8/8/4K3 b - - 0 1", invSq, B5, false, { } },
+        { "4k3/8/8/pPpP4/P1P5/8/8/4K3 b - - 0 1", invSq, B5, true, { UM("b4b5", empty, 0, C6) } },
+        { "4k3/8/8/1pPpP3/1P1P4/8/8/4K3 b - - 0 1", invSq, C5, true, { UM("c4c5", empty, 0, D6) } },
+        { "4k3/8/8/pPpP4/P1P5/7P/6P1/4K3 b - - 0 1", invSq, H3, true, { UM("h2h3", empty, 0, A6), UM("h2h3", empty, 0, C6) } },
+        { "4k3/8/1P6/Pp6/8/8/8/4K3 b - - 0 1", invSq, B6, both, { } },
+        { "4k3/1p6/1P6/P7/8/8/8/4K3 b - - 0 1", invSq, B6, both, { } },
         { "3nk3/8/8/PR6/8/8/8/4K3 b - - 0 1", B4, B5, false, { } },
         { "3nk3/8/8/PR6/8/8/8/4K3 b - - 0 1", B4, B5, true, { UM("b4b5", bpawn, 0, B6) } },
         { "3nk3/8/8/PR6/8/8/8/4K3 b - - 0 1", C5, B5, true, { UM("c5b5", bpawn, 0, B6) } },
@@ -408,8 +409,8 @@ RevMoveGenTest::testEpSquare() {
     auto mirrorDataY = [](const Data& d) {
         Data mirror;
         mirror.fen = mirrorFenY(d.fen);
-        mirror.fromSq = d.fromSq == -1 ? -1 : Square::mirrorY(d.fromSq);
-        mirror.toSq = d.toSq == -1 ? -1 : Square::mirrorY(d.toSq);
+        mirror.fromSq = d.fromSq.isValid() ? d.fromSq.mirrorY() : Square();
+        mirror.toSq = d.toSq.isValid() ? d.toSq.mirrorY() : Square();
         mirror.allEp = d.allEp;
         for (const UnMove& um : d.epMoves) {
             UnMove mirrorUm;
@@ -444,23 +445,23 @@ TEST(RevMoveGenTest, testInvalidMoves) {
 void
 RevMoveGenTest::testInvalidMoves() {
     // Return subset of "unMoves" having matching from and/or to squares
-    auto filter = [](const std::vector<UnMove>& unMoves, int fromSq, int toSq) {
+    auto filter = [](const std::vector<UnMove>& unMoves, Square fromSq, Square toSq) {
         UnMoveSet ret;
         for (const UnMove& um : unMoves)
-            if ((toSq == -1 || um.move.to() == toSq) &&
-                    (fromSq == -1 || um.move.from() == fromSq))
+            if ((!toSq.isValid() || um.move.to() == toSq) &&
+                (!fromSq.isValid() || um.move.from() == fromSq))
                 ret.insert(um);
         return ret;
     };
 
     struct Data {
         std::string fen;
-        int fromSq;
-        int toSq;
+        Square fromSq;
+        Square toSq;
         UnMoveSet expected;
     };
 
-    auto UM = [](const std::string& move, int captPiece, int castleMask, int epSq) -> UnMove {
+    auto UM = [](const std::string& move, int captPiece, int castleMask, Square epSq) -> UnMove {
         UnMove um;
         um.move = TextIO::uciStringToMove(move);
         um.ui = { captPiece, castleMask, epSq, 0 };
@@ -474,44 +475,45 @@ RevMoveGenTest::testInvalidMoves() {
     const int bbishop = Piece::BBISHOP;
     const int bqueen  = Piece::BQUEEN;
 
+    const Square invSq;
     std::vector<Data> v = {
         // Piece counts limit possible captured pieces
         { "rnbqkbnr/1ppp1ppp/1P2p3/p7/8/8/8/4K3 b - - 0 1", C5, B6, { } },
-        { "1nbqkbnr/1ppp1ppp/1P2p3/p7/8/8/8/4K3 b - - 0 1", C5, B6, { UM("c5b6", brook, 0, -1) } },
-        { "r1bqkbnr/1ppp1ppp/1P2p3/p7/8/8/8/4K3 b - - 0 1", C5, B6, { UM("c5b6", bknight, 0, -1) } },
-        { "rnbqk1nr/1ppp1ppp/1P2p3/p7/8/8/8/4K3 b - - 0 1", C5, B6, { UM("c5b6", bbishop, 0, -1) } },
-        { "rnb1kbnr/1ppp1ppp/1P2p3/p7/8/8/8/4K3 b - - 0 1", C5, B6, { UM("c5b6", bqueen, 0, -1) } },
+        { "1nbqkbnr/1ppp1ppp/1P2p3/p7/8/8/8/4K3 b - - 0 1", C5, B6, { UM("c5b6", brook, 0, invSq) } },
+        { "r1bqkbnr/1ppp1ppp/1P2p3/p7/8/8/8/4K3 b - - 0 1", C5, B6, { UM("c5b6", bknight, 0, invSq) } },
+        { "rnbqk1nr/1ppp1ppp/1P2p3/p7/8/8/8/4K3 b - - 0 1", C5, B6, { UM("c5b6", bbishop, 0, invSq) } },
+        { "rnb1kbnr/1ppp1ppp/1P2p3/p7/8/8/8/4K3 b - - 0 1", C5, B6, { UM("c5b6", bqueen, 0, invSq) } },
         { "rnbqkbnr/1ppp1ppp/1P2p3/8/8/8/8/4K3 b - - 0 1", C5, B6,
-          { UM("c5b6", bqueen, 0, -1), UM("c5b6", brook, 0, -1), UM("c5b6", bbishop, 0, -1),
-            UM("c5b6", bknight, 0, -1), UM("c5b6", bpawn, 0, -1) }
+          { UM("c5b6", bqueen, 0, invSq), UM("c5b6", brook, 0, invSq), UM("c5b6", bbishop, 0, invSq),
+            UM("c5b6", bknight, 0, invSq), UM("c5b6", bpawn, 0, invSq) }
         },
 
         // Illegal EP square
         { "rn1qkbnr/pb2pppp/8/1Pp5/3pP3/6P1/P1P2P1P/RNBQKBNR b KQkq - 0 1", E2, E4, { } },
-        { "rn1qkbnr/pb2pppp/8/1Pp5/3pP3/6P1/P1P2P1P/RNBQKBNR b KQkq e3 0 1", E2, E4, { UM("e2e4", empty, a1C|h1C|a8C|h8C, -1) } },
-        { "rn1q1bnr/pb1kpppp/8/1Pp5/3pP3/6P1/P1P2P1P/RNBQKBNR b KQ - 0 1", E2, E4, { UM("e2e4", empty, a1C|h1C, -1) } },
-        { "4k3/1q6/4K3/3pP3/8/8/8/8 w - d6 0 1", -1, -1, { } },
-        { "4k3/1q6/5K2/3pP3/8/8/8/8 w - d6 0 1", -1, -1, { UM("d7d5", empty, 0, -1)} },
+        { "rn1qkbnr/pb2pppp/8/1Pp5/3pP3/6P1/P1P2P1P/RNBQKBNR b KQkq e3 0 1", E2, E4, { UM("e2e4", empty, a1C|h1C|a8C|h8C, invSq) } },
+        { "rn1q1bnr/pb1kpppp/8/1Pp5/3pP3/6P1/P1P2P1P/RNBQKBNR b KQ - 0 1", E2, E4, { UM("e2e4", empty, a1C|h1C, invSq) } },
+        { "4k3/1q6/4K3/3pP3/8/8/8/8 w - d6 0 1", invSq, invSq, { } },
+        { "4k3/1q6/5K2/3pP3/8/8/8/8 w - d6 0 1", invSq, invSq, { UM("d7d5", empty, 0, invSq)} },
 
         // Discovered checks
-        { "8/8/1Pk5/8/B7/2R5/8/4K3 b - - 0 1", -1, -1, { UM("c5b6", empty, 0, B6) } },
+        { "8/8/1Pk5/8/B7/2R5/8/4K3 b - - 0 1", invSq, invSq, { UM("c5b6", empty, 0, B6) } },
         { "4k3/8/1P6/8/B7/1R6/8/4K3 b - - 0 1", C5, B6, { UM("c5b6", empty, 0, B6) } },
-        { "4k3/8/8/1pP5/B7/1R6/8/4K3 w - b6 0 1", -1, -1, { UM("b7b5", empty, 0, -1) } },
-        { "4k3/1p6/8/2P5/B7/1R6/8/4K3 b - - 0 1", -1, -1,
-          { UM("b5b3", empty, 0, -1), UM("b5b3", bqueen, 0, -1), UM("b5b3", brook, 0, -1),
-            UM("b5b3", bbishop, 0, -1), UM("b5b3", bknight, 0, -1), UM("b5b3", bpawn, 0, -1) }
+        { "4k3/8/8/1pP5/B7/1R6/8/4K3 w - b6 0 1", invSq, invSq, { UM("b7b5", empty, 0, invSq) } },
+        { "4k3/1p6/8/2P5/B7/1R6/8/4K3 b - - 0 1", invSq, invSq,
+          { UM("b5b3", empty, 0, invSq), UM("b5b3", bqueen, 0, invSq), UM("b5b3", brook, 0, invSq),
+            UM("b5b3", bbishop, 0, invSq), UM("b5b3", bknight, 0, invSq), UM("b5b3", bpawn, 0, invSq) }
         },
-        { "8/3Rk3/8/8/4R3/8/8/4K3 b - - 0 1", -1, -1, { } },
-        { "3Rk3/8/8/8/4R3/8/8/4K3 b - - 0 1", -1, -1,
-          { UM("e7d8r", bqueen, 0, -1), UM("e7d8r", brook, 0, -1), UM("e7d8r", bbishop, 0, -1), UM("e7d8r", bknight, 0, -1) }
+        { "8/3Rk3/8/8/4R3/8/8/4K3 b - - 0 1", invSq, invSq, { } },
+        { "3Rk3/8/8/8/4R3/8/8/4K3 b - - 0 1", invSq, invSq,
+          { UM("e7d8r", bqueen, 0, invSq), UM("e7d8r", brook, 0, invSq), UM("e7d8r", bbishop, 0, invSq), UM("e7d8r", bknight, 0, invSq) }
         },
     };
 
     auto mirrorDataY = [](const Data& d) {
         Data mirror;
         mirror.fen = mirrorFenY(d.fen);
-        mirror.fromSq = d.fromSq == -1 ? -1 : Square::mirrorY(d.fromSq);
-        mirror.toSq = d.toSq == -1 ? -1 : Square::mirrorY(d.toSq);
+        mirror.fromSq = d.fromSq.isValid() ? d.fromSq.mirrorY() : Square();
+        mirror.toSq = d.toSq.isValid() ? d.toSq.mirrorY() : Square();
         for (const UnMove& um : d.expected) {
             UnMove mirrorUm;
             mirrorUm.move = mirrorMoveY(um.move);
@@ -538,7 +540,7 @@ RevMoveGenTest::testInvalidMoves() {
 /** Check that "pos" does not have impossible castle rights. */
 static void checkCastleRights(const Position& pos, const Move& move) {
     if (pos.a1Castle() || pos.h1Castle()) {
-        ASSERT_EQ(E1, pos.getKingSq(true))
+        ASSERT_EQ(Square(E1), pos.getKingSq(true))
                 << TextIO::toFEN(pos) << " m:" << move;
     }
     if (pos.a1Castle()) {
@@ -551,7 +553,7 @@ static void checkCastleRights(const Position& pos, const Move& move) {
     }
 
     if (pos.a8Castle() || pos.h8Castle()) {
-        ASSERT_EQ(E8, pos.getKingSq(false))
+        ASSERT_EQ(Square(E8), pos.getKingSq(false))
                 << TextIO::toFEN(pos) << " m:" << move;
     }
     if (pos.a8Castle()) {
@@ -566,8 +568,8 @@ static void checkCastleRights(const Position& pos, const Move& move) {
 
 static void
 checkEPSquare(const Position& pos, const Move& move) {
-    int epSquare = pos.getEpSquare();
-    if (epSquare == -1)
+    Square epSquare = pos.getEpSquare();
+    if (!epSquare.isValid())
         return;
 
     ASSERT_EQ(Piece::EMPTY, pos.getPiece(epSquare)) << TextIO::toFEN(pos) << " m:" << move;
@@ -575,17 +577,17 @@ checkEPSquare(const Position& pos, const Move& move) {
     bool wtm = pos.isWhiteMove();
     const int pawn  = wtm ? Piece::WPAWN : Piece::BPAWN;
     const int oPawn = wtm ? Piece::BPAWN : Piece::WPAWN;
-    int x = Square::getX(epSquare);
-    int y = Square::getY(epSquare);
+    int x = epSquare.getX();
+    int y = epSquare.getY();
     int dy = wtm ? 1 : -1;
 
     ASSERT_TRUE(y == 2 || y == 5) << TextIO::toFEN(pos) << " m:" << move;
     ASSERT_EQ(wtm, y == 5) << TextIO::toFEN(pos) << " m:" << move;
-    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square::getSquare(x, y + dy))) << TextIO::toFEN(pos) << " m:" << move;
-    ASSERT_EQ(oPawn, pos.getPiece(Square::getSquare(x, y - dy))) << TextIO::toFEN(pos) << " m:" << move;
+    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square(x, y + dy))) << TextIO::toFEN(pos) << " m:" << move;
+    ASSERT_EQ(oPawn, pos.getPiece(Square(x, y - dy))) << TextIO::toFEN(pos) << " m:" << move;
 
-    bool leftPawn  = x > 0 && pos.getPiece(Square::getSquare(x - 1, y - dy)) == pawn;
-    bool rightPawn = x < 7 && pos.getPiece(Square::getSquare(x + 1, y - dy)) == pawn;
+    bool leftPawn  = x > 0 && pos.getPiece(Square(x - 1, y - dy)) == pawn;
+    bool rightPawn = x < 7 && pos.getPiece(Square(x + 1, y - dy)) == pawn;
     ASSERT_TRUE(leftPawn || rightPawn) << TextIO::toFEN(pos) << " m:" << move;
 }
 
@@ -626,7 +628,7 @@ RevMoveGenTest::genMoves(const Position& pos, std::vector<UnMove>& unMoves, bool
                 valid = true;
         ASSERT_TRUE(valid) << TextIO::toFEN(pos) << " invalid move:" << um.move
                 << " captP:" << um.ui.capturedPiece << " castleM:" << um.ui.castleMask
-                << " epSq:" << um.ui.epSquare;
+                << " epSq:" << um.ui.epSquare.asInt();
 
         UndoInfo ui;
         tmpPos.makeMove(um.move, ui);

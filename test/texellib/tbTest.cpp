@@ -240,9 +240,9 @@ TBTest::kpkTest() {
                     continue;
                 for (int c = 0; c < 2; c++) {
                     Position pos;
-                    pos.setPiece(p, Piece::WPAWN);
-                    pos.setPiece(wk, Piece::WKING);
-                    pos.setPiece(bk, Piece::BKING);
+                    pos.setPiece(Square(p), Piece::WPAWN);
+                    pos.setPiece(Square(wk), Piece::WKING);
+                    pos.setPiece(Square(bk), Piece::BKING);
                     pos.setWhiteMove(c == 0);
                     if (MoveGen::canTakeKing(pos))
                         continue;

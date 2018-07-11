@@ -40,22 +40,22 @@ int
 PositionTest::computeMaterialId(const Position& pos) {
     MatId id;
     for (int sq = 0; sq < 64; sq++)
-        id.addPiece(pos.getPiece(sq));
+        id.addPiece(pos.getPiece(Square(sq)));
     return id();
 }
 
 TEST(PositionTest, testGetPiece) {
     Position pos;
-    int result = pos.getPiece(0);
+    int result = pos.getPiece(Square(0));
     ASSERT_EQ(result, Piece::EMPTY);
 
     pos = TextIO::readFEN(TextIO::startPosFEN);
-    result = pos.getPiece(0);
+    result = pos.getPiece(Square(0));
     ASSERT_EQ(result, Piece::WROOK);
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 2; y++) {
-            int p1 = pos.getPiece(Square::getSquare(x, y));
-            int p2 = pos.getPiece(Square::getSquare(x, 7-y));
+            int p1 = pos.getPiece(Square(x, y));
+            int p2 = pos.getPiece(Square(x, 7-y));
             int bwDiff = Piece::BPAWN - Piece::WPAWN;
             EXPECT_EQ(p2, p1 + bwDiff);
         }
@@ -65,34 +65,34 @@ TEST(PositionTest, testGetPiece) {
 TEST(PositionTest, testGetIndex) {
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            int sq = Square::getSquare(x, y);
-            int x2 = Square::getX(sq);
-            int y2 = Square::getY(sq);
+            Square sq(x, y);
+            int x2 = sq.getX();
+            int y2 = sq.getY();
             ASSERT_EQ(x, x2);
             ASSERT_EQ(y, y2);
-            ASSERT_EQ(Square::mirrorY(sq), Square::getSquare(x, 7-y));
+            ASSERT_EQ(sq.mirrorY(), Square(x, 7-y));
         }
     }
 }
 
 TEST(PositionTest, testSetPiece) {
     Position instance;
-    ASSERT_EQ(Piece::EMPTY, instance.getPiece(Square::getSquare(0, 0)));
-    instance.setPiece(Square::getSquare(3, 4), Piece::WKING);
-    ASSERT_EQ(Piece::WKING, instance.getPiece(Square::getSquare(3, 4)));
+    ASSERT_EQ(Piece::EMPTY, instance.getPiece(Square(0, 0)));
+    instance.setPiece(Square(3, 4), Piece::WKING);
+    ASSERT_EQ(Piece::WKING, instance.getPiece(Square(3, 4)));
 }
 
 TEST(PositionTest, testMakeMove) {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     Position origPos(pos);
     ASSERT_EQ(pos, origPos);
-    Move move(Square::getSquare(4,1), Square::getSquare(4,3), Piece::EMPTY);
+    Move move(Square(4,1), Square(4,3), Piece::EMPTY);
     UndoInfo ui;
     pos.makeMove(move, ui);
     ASSERT_EQ(pos.isWhiteMove(), false);
-    ASSERT_EQ(-1, pos.getEpSquare());
-    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square::getSquare(4,1)));
-    ASSERT_EQ(Piece::WPAWN, pos.getPiece(Square::getSquare(4,3)));
+    ASSERT_EQ(Square(-1), pos.getEpSquare());
+    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square(4,1)));
+    ASSERT_EQ(Piece::WPAWN, pos.getPiece(Square(4,3)));
     ASSERT_FALSE(pos == origPos);
     int castleMask = (1 << Position::A1_CASTLE) |
                      (1 << Position::H1_CASTLE) |
@@ -101,78 +101,78 @@ TEST(PositionTest, testMakeMove) {
     ASSERT_EQ(castleMask,pos.getCastleMask());
     pos.unMakeMove(move, ui);
     ASSERT_EQ(pos.isWhiteMove(), true);
-    ASSERT_EQ(Piece::WPAWN, pos.getPiece(Square::getSquare(4,1)));
-    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square::getSquare(4,3)));
+    ASSERT_EQ(Piece::WPAWN, pos.getPiece(Square(4,1)));
+    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square(4,3)));
     ASSERT_EQ(pos, origPos);
 
     std::string fen = "r1bqk2r/2ppbppp/p1n2n2/1pP1p3/B3P3/5N2/PP1P1PPP/RNBQK2R w KQkq b6 0 2";
     pos = TextIO::readFEN(fen);
     ASSERT_EQ(fen, TextIO::toFEN(pos));
     origPos = Position(pos);
-    ASSERT_EQ(Square::getSquare(1,5), pos.getEpSquare());
+    ASSERT_EQ(Square(1,5), pos.getEpSquare());
 
     // Test capture
-    move = Move(Square::getSquare(0, 3), Square::getSquare(1,4), Piece::EMPTY);
+    move = Move(Square(0, 3), Square(1,4), Piece::EMPTY);
     pos.makeMove(move, ui);
-    ASSERT_EQ(-1, pos.getEpSquare());
-    ASSERT_EQ(Piece::WBISHOP, pos.getPiece(Square::getSquare(1,4)));
-    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square::getSquare(0,3)));
+    ASSERT_EQ(Square(-1), pos.getEpSquare());
+    ASSERT_EQ(Piece::WBISHOP, pos.getPiece(Square(1,4)));
+    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square(0,3)));
     pos.unMakeMove(move, ui);
     ASSERT_EQ(pos, origPos);
 
     // Test castling
-    move = Move(Square::getSquare(4, 0), Square::getSquare(6,0), Piece::EMPTY);
+    move = Move(Square(4, 0), Square(6,0), Piece::EMPTY);
     pos.makeMove(move, ui);
-    ASSERT_EQ(Piece::WROOK, pos.getPiece(Square::getSquare(5,0)));
-    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square::getSquare(7,0)));
+    ASSERT_EQ(Piece::WROOK, pos.getPiece(Square(5,0)));
+    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square(7,0)));
     castleMask = (1 << Position::A8_CASTLE) |
                  (1 << Position::H8_CASTLE);
     ASSERT_EQ(castleMask,pos.getCastleMask());
-    ASSERT_EQ(-1, pos.getEpSquare());
+    ASSERT_EQ(Square(-1), pos.getEpSquare());
     pos.unMakeMove(move, ui);
     ASSERT_EQ(pos, origPos);
 
     // Test castling rights (king move)
-    move = Move(Square::getSquare(4, 0), Square::getSquare(4,1), Piece::EMPTY);
+    move = Move(Square(4, 0), Square(4,1), Piece::EMPTY);
     pos.makeMove(move, ui);
     castleMask = (1 << Position::A8_CASTLE) |
                  (1 << Position::H8_CASTLE);
     ASSERT_EQ(castleMask,pos.getCastleMask());
-    ASSERT_EQ(-1, pos.getEpSquare());
+    ASSERT_EQ(Square(-1), pos.getEpSquare());
     pos.unMakeMove(move, ui);
     ASSERT_EQ(pos, origPos);
 
     // Test castling rights (rook move)
-    move = Move(Square::getSquare(7, 0), Square::getSquare(6,0), Piece::EMPTY);
+    move = Move(Square(7, 0), Square(6,0), Piece::EMPTY);
     pos.makeMove(move, ui);
     castleMask = (1 << Position::A1_CASTLE) |
                  (1 << Position::A8_CASTLE) |
                  (1 << Position::H8_CASTLE);
     ASSERT_EQ(castleMask,pos.getCastleMask());
-    ASSERT_EQ(-1, pos.getEpSquare());
+    ASSERT_EQ(Square(-1), pos.getEpSquare());
     pos.unMakeMove(move, ui);
     ASSERT_EQ(pos, origPos);
 
     // Test en passant
-    move = Move(Square::getSquare(2, 4), Square::getSquare(1,5), Piece::EMPTY);
+    move = Move(Square(2, 4), Square(1,5), Piece::EMPTY);
     pos.makeMove(move, ui);
-    ASSERT_EQ(Piece::WPAWN, pos.getPiece(Square::getSquare(1,5)));
-    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square::getSquare(2,4)));
-    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square::getSquare(1,4)));
+    ASSERT_EQ(Piece::WPAWN, pos.getPiece(Square(1,5)));
+    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square(2,4)));
+    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square(1,4)));
     pos.unMakeMove(move, ui);
     ASSERT_EQ(pos, origPos);
 
     // Test castling rights loss when rook captured
-    pos.setPiece(Square::getSquare(6,2), Piece::BKNIGHT);
+    pos.setPiece(Square(6,2), Piece::BKNIGHT);
     pos.setWhiteMove(false);
     Position origPos2(pos);
-    move = Move(Square::getSquare(6,2), Square::getSquare(7,0), Piece::EMPTY);
+    move = Move(Square(6,2), Square(7,0), Piece::EMPTY);
     pos.makeMove(move, ui);
     castleMask = (1 << Position::A1_CASTLE) |
                  (1 << Position::A8_CASTLE) |
                  (1 << Position::H8_CASTLE);
     ASSERT_EQ(castleMask,pos.getCastleMask());
-    ASSERT_EQ(-1, pos.getEpSquare());
+    ASSERT_EQ(Square(-1), pos.getEpSquare());
     pos.unMakeMove(move, ui);
     ASSERT_EQ(pos, origPos2);
 }
@@ -194,28 +194,28 @@ TEST(PositionTest, testPromotion) {
     Position origPos(pos);
     ASSERT_EQ(origPos, pos);
 
-    Move move(Square::getSquare(1, 6), Square::getSquare(0,7), Piece::WQUEEN);
+    Move move(Square(1, 6), Square(0,7), Piece::WQUEEN);
     UndoInfo ui;
     pos.makeMove(move, ui);
-    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square::getSquare(1,6)));
-    ASSERT_EQ(Piece::WQUEEN, pos.getPiece(Square::getSquare(0,7)));
+    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square(1,6)));
+    ASSERT_EQ(Piece::WQUEEN, pos.getPiece(Square(0,7)));
     pos.unMakeMove(move, ui);
     ASSERT_EQ(origPos, pos);
 
-    move = Move(Square::getSquare(1, 6), Square::getSquare(1,7), Piece::WKNIGHT);
+    move = Move(Square(1, 6), Square(1,7), Piece::WKNIGHT);
     pos.makeMove(move, ui);
-    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square::getSquare(1,6)));
-    ASSERT_EQ(Piece::WKNIGHT, pos.getPiece(Square::getSquare(1,7)));
+    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square(1,6)));
+    ASSERT_EQ(Piece::WKNIGHT, pos.getPiece(Square(1,7)));
     pos.unMakeMove(move, ui);
     ASSERT_EQ(origPos, pos);
 
     pos.setWhiteMove(false);
     origPos = pos;
 
-    move = Move(Square::getSquare(1, 1), Square::getSquare(2, 0), Piece::BROOK);
+    move = Move(Square(1, 1), Square(2, 0), Piece::BROOK);
     pos.makeMove(move, ui);
-    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square::getSquare(1,1)));
-    ASSERT_EQ(Piece::BROOK, pos.getPiece(Square::getSquare(2,0)));
+    ASSERT_EQ(Piece::EMPTY, pos.getPiece(Square(1,1)));
+    ASSERT_EQ(Piece::BROOK, pos.getPiece(Square(2,0)));
     pos.unMakeMove(move, ui);
     ASSERT_EQ(origPos, pos);
 }
@@ -311,7 +311,7 @@ TEST(PositionTest, testDrawRuleEquals) {
     pos.makeMove(TextIO::stringToMove(pos, "a6"), ui);
     pos.makeMove(TextIO::stringToMove(pos, "c5"), ui);
     pos.makeMove(TextIO::stringToMove(pos, "b5"), ui);
-    ASSERT_EQ(Square::getSquare(1, 5), pos.getEpSquare());
+    ASSERT_EQ(Square(1, 5), pos.getEpSquare());
     origPos = pos;
     pos.makeMove(TextIO::stringToMove(pos, "Nc3"), ui);
     pos.makeMove(TextIO::stringToMove(pos, "Nc6"), ui);

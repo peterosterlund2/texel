@@ -39,9 +39,9 @@ NNUtil::posToRecord(Position& pos, int searchScore, Record& r) {
         r.searchScore *= -1;
     }
 
-    auto castleSquare = [](int square, int castleMask, bool wtm) -> int {
+    auto castleSquare = [](Square square, int castleMask, bool wtm) -> int {
         int mask = wtm ? (castleMask & 3) : (castleMask >> 2);
-        return mask ? (63 + mask) : square;
+        return mask ? (63 + mask) : square.asInt();
     };
     int castleMask = pos.getCastleMask();
     r.wKing = castleSquare(pos.getKingSq(true), castleMask, true);
@@ -53,8 +53,8 @@ NNUtil::posToRecord(Position& pos, int searchScore, Record& r) {
     for (Piece::Type pt : ptVec) {
         U64 mask = pos.pieceTypeBB(pt);
         while (mask) {
-            int sq = BitBoard::extractSquare(mask);
-            r.squares[i++] = sq;
+            Square sq = BitBoard::extractSquare(mask);
+            r.squares[i++] = sq.asInt();
         }
         if (p < 9)
             r.nPieces[p++] = i;
@@ -66,7 +66,7 @@ NNUtil::posToRecord(Position& pos, int searchScore, Record& r) {
 void
 NNUtil::recordToPos(const Record& r, Position& pos, int& searchScore) {
     for (int sq = 0; sq < 64; sq++)
-        pos.clearPiece(sq);
+        pos.clearPiece(Square(sq));
 
     int castleMask = 0;
     int wk = r.wKing;
@@ -79,8 +79,8 @@ NNUtil::recordToPos(const Record& r, Position& pos, int& searchScore) {
         castleMask |= (bk - 63) << 2;
         bk = E8;
     }
-    pos.setPiece(wk, Piece::WKING);
-    pos.setPiece(bk, Piece::BKING);
+    pos.setPiece(Square(wk), Piece::WKING);
+    pos.setPiece(Square(bk), Piece::BKING);
     pos.setCastleMask(castleMask);
 
     int pieceType = 0;
@@ -90,11 +90,11 @@ NNUtil::recordToPos(const Record& r, Position& pos, int& searchScore) {
         int sq = r.squares[i];
         if (sq == -1)
             continue;
-        pos.setPiece(sq, ptVec[pieceType]);
+        pos.setPiece(Square(sq), ptVec[pieceType]);
     }
 
     pos.setWhiteMove(true);
-    pos.setEpSquare(-1);
+    pos.setEpSquare(Square(-1));
     pos.setHalfMoveClock(r.halfMoveClock);
     pos.setFullMoveCounter(1);
 

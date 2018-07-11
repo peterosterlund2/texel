@@ -375,7 +375,7 @@ TBProbe::gtbProbeDTM(Position& pos, int ply, int& score) {
     GtbProbeData gtbData;
     getGTBProbeData(pos, gtbData);
     bool ret = gtbProbeDTM(gtbData, ply, score);
-    if (ret && score == 0 && pos.getEpSquare() != -1)
+    if (ret && score == 0 && pos.getEpSquare().isValid())
         handleEP(pos, ply, score, ret, [](Position& pos, int ply, int& score) -> bool {
             return TBProbe::gtbProbeDTM(pos, ply, score);
         });
@@ -390,7 +390,7 @@ TBProbe::gtbProbeWDL(Position& pos, int ply, int& score) {
     GtbProbeData gtbData;
     getGTBProbeData(pos, gtbData);
     bool ret = gtbProbeWDL(gtbData, ply, score);
-    if (ret && score == 0 && pos.getEpSquare() != -1)
+    if (ret && score == 0 && pos.getEpSquare().isValid())
         handleEP(pos, ply, score, ret, [](Position& pos, int ply, int& score) -> bool {
             return TBProbe::gtbProbeWDL(pos, ply, score);
         });
@@ -526,7 +526,7 @@ TBProbe::gtbInitialize(const std::string& path, int cacheMB, int wdlFraction) {
 void
 TBProbe::getGTBProbeData(const Position& pos, GtbProbeData& gtbData) {
     gtbData.stm = pos.isWhiteMove() ? tb_WHITE_TO_MOVE : tb_BLACK_TO_MOVE;
-    gtbData.epsq = pos.getEpSquare() >= 0 ? pos.getEpSquare() : tb_NOSQUARE;
+    gtbData.epsq = pos.getEpSquare().isValid() ? pos.getEpSquare().asInt() : tb_NOSQUARE;
 
     gtbData.castles = 0;
     if (pos.a1Castle()) gtbData.castles |= tb_WOOO;
@@ -537,8 +537,8 @@ TBProbe::getGTBProbeData(const Position& pos, GtbProbeData& gtbData) {
     int cnt = 0;
     U64 m = pos.whiteBB();
     while (m != 0) {
-        int sq = BitBoard::extractSquare(m);
-        gtbData.wSq[cnt] = sq;
+        Square sq = BitBoard::extractSquare(m);
+        gtbData.wSq[cnt] = sq.asInt();
         switch (pos.getPiece(sq)) {
         case Piece::WKING:   gtbData.wP[cnt] = tb_KING;   break;
         case Piece::WQUEEN:  gtbData.wP[cnt] = tb_QUEEN;  break;
@@ -557,8 +557,8 @@ TBProbe::getGTBProbeData(const Position& pos, GtbProbeData& gtbData) {
     cnt = 0;
     m = pos.blackBB();
     while (m != 0) {
-        int sq = BitBoard::extractSquare(m);
-        gtbData.bSq[cnt] = sq;
+        Square sq = BitBoard::extractSquare(m);
+        gtbData.bSq[cnt] = sq.asInt();
         switch (pos.getPiece(sq)) {
         case Piece::BKING:   gtbData.bP[cnt] = tb_KING;   break;
         case Piece::BQUEEN:  gtbData.bP[cnt] = tb_QUEEN;  break;
@@ -672,13 +672,13 @@ getMaxPawnMoves(const Position& pos) {
     int maxPawnMoves = 0;
     U64 m = pos.pieceTypeBB(Piece::WPAWN);
     while (m != 0) {
-        int sq = BitBoard::extractSquare(m);
-        maxPawnMoves += 6 - Square::getY(sq);
+        Square sq = BitBoard::extractSquare(m);
+        maxPawnMoves += 6 - sq.getY();
     }
     m = pos.pieceTypeBB(Piece::BPAWN);
     while (m != 0) {
-        int sq = BitBoard::extractSquare(m);
-        maxPawnMoves += Square::getY(sq) - 1;
+        Square sq = BitBoard::extractSquare(m);
+        maxPawnMoves += sq.getY() - 1;
     }
     return maxPawnMoves;
 }

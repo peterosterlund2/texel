@@ -124,14 +124,14 @@ public:
      * @return Score for the side to make a move, in position given by "pos".
      */
     template <bool tb>
-    int negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
+    int negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquare,
                   const bool inCheck);
     int negaScout(bool tb,
-                  int alpha, int beta, int ply, int depth, int recaptureSquare,
+                  int alpha, int beta, int ply, int depth, Square recaptureSquare,
                   const bool inCheck);
 
     /** Compute extension depth for a move. */
-    int getMoveExtend(const Move& m, int recaptureSquare);
+    int getMoveExtend(const Move& m, Square recaptureSquare);
 
     static bool canClaimDraw50(const Position& pos);
 
@@ -348,13 +348,13 @@ Search::passedPawnPush(const Position& pos, const Move& m) {
             return false;
         if ((BitBoard::wPawnBlockerMask(m.to()) & pos.pieceTypeBB(Piece::BPAWN)) != 0)
             return false;
-        return m.to() >= A6;
+        return m.to().asInt() >= A6;
     } else {
         if (p != Piece::BPAWN)
             return false;
         if ((BitBoard::bPawnBlockerMask(m.to()) & pos.pieceTypeBB(Piece::WPAWN)) != 0)
             return false;
-        return m.to() <= H3;
+        return m.to().asInt() <= H3;
     }
 }
 
@@ -428,7 +428,7 @@ Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti,
 
 inline int
 Search::negaScout(bool tb,
-                  int alpha, int beta, int ply, int depth, int recaptureSquare,
+                  int alpha, int beta, int ply, int depth, Square recaptureSquare,
                   const bool inCheck) {
     bool tb2 = tb && depth >= minProbeDepth;
     if (tb2)

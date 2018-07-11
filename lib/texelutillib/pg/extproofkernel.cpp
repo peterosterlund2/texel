@@ -49,7 +49,7 @@ ExtProofKernel::ExtProofKernel(const Position& initialPos,
     allPawns.reserve(16);
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
-            int sq = Square::getSquare(x, y);
+            Square sq = Square(x, y);
             int p = initialPos.getPiece(sq);
             if (p == Piece::WPAWN || p == Piece::BPAWN) {
                 bool w = p == Piece::WPAWN;
@@ -105,9 +105,9 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
         if (currPos.h8Castle()) m &= ~(1ULL << H8);
         assert(m != 0);
 
-        int sq = BitBoard::firstSquare(m);
+        Square sq = BitBoard::firstSquare(m);
         currPos.clearPiece(sq);
-        return { Square::getX(sq), Square::getY(sq), -1 };
+        return { sq.getX(), sq.getY(), -1 };
     };
 
     std::vector<ExtMove> varExtPath;
@@ -273,8 +273,8 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
         fromY = clamp(fromY, 0, 7);
         toY = clamp(toY, 0, 7);
 
-        int fromSq = Square::getSquare(m.from.x, fromY);
-        int toSq = Square::getSquare(m.to.x, toY);
+        Square fromSq = Square(m.from.x, fromY);
+        Square toSq = Square(m.to.x, toY);
         if (fromSq != toSq)
             extPath.emplace_back(m.color, m.movingPiece, fromSq, m.capture, toSq, m.promotedPiece);
     }
@@ -333,7 +333,7 @@ ExtProofKernel::getGoalPawnYPos(int x, int (&goalYPos)[ProofKernel::maxPawns]) c
     bool allBlack = true;
     std::vector<std::pair<bool,int>> goalPawns; // idx -> (white, y)
     for (int y = 1; y < 7; y++) {
-        int p = goalPos.getPiece(Square::getSquare(x, y));
+        int p = goalPos.getPiece(Square(x, y));
         if (p == Piece::WPAWN) {
             goalPawns.emplace_back(true, y);
             allBlack = false;

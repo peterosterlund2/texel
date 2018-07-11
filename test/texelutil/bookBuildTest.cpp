@@ -269,7 +269,7 @@ BookBuildTest::testShortestDepth() {
     auto n2(std::make_shared<BookNode>(2, false));
     auto n3(std::make_shared<BookNode>(3, false));
     auto n4(std::make_shared<BookNode>(4, false));
-    Move m(0, 0, Piece::EMPTY);
+    Move m(A1, A1, Piece::EMPTY);
     U16 mc = m.getCompressedMove();
 
     n1->addChild(mc, n2.get());
@@ -286,7 +286,7 @@ BookBuildTest::testShortestDepth() {
     EXPECT_EQ(2, n3->getDepth());
     EXPECT_EQ(3, n4->getDepth());
 
-    Move m2(1, 1, Piece::EMPTY);
+    Move m2(B1, B1, Piece::EMPTY);
     U16 m2c = m2.getCompressedMove();
     n1->addChild(m2c, n4.get());
     n4->addParent(m2c, n1.get());
@@ -335,7 +335,7 @@ BookBuildTest::testBookNodeDAG() {
     n6->addChild(m, n4.get());
     n4->addParent(m, n6.get());
 
-    Move nm(0, 0, Piece::EMPTY);
+    Move nm(A1, A1, Piece::EMPTY);
     n1->setSearchResult(bd, nm, 10, 10000);
     n2->setSearchResult(bd, nm, -8, 10000);
     n3->setSearchResult(bd, nm, 7, 10000);

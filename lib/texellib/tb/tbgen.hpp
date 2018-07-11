@@ -27,6 +27,7 @@
 #define TBGEN_HPP_
 
 #include "util.hpp"
+#include "square.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -143,7 +144,7 @@ public:
 
     /** Set the square for a piece.
      * When setting the white king the square is mapped to the A1-D1-D4 triangle. */
-    void setSquare(int pieceNo, int square);
+    void setSquare(int pieceNo, Square square);
 
 
     /** Get index. */
@@ -153,7 +154,7 @@ public:
     bool whiteMove() const;
 
     /** Get the square for a piece. */
-    int getSquare(int pieceNo) const;
+    Square getSquare(int pieceNo) const;
 
 
     /** Initialize static data. */
