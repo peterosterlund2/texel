@@ -458,7 +458,7 @@ Game::insufficientMaterial() {
         return true;    // King + bishop/knight vs king is draw
     if (wn + bn == 0) {
         // Only bishops. If they are all on the same color, the position is a draw.
-        U64 bMask = pos.pieceTypeBB(Piece::WBISHOP) | pos.pieceTypeBB(Piece::BBISHOP);
+        U64 bMask = pos.pieceTypeBB(Piece::WBISHOP, Piece::BBISHOP);
         if (((bMask & BitBoard::maskDarkSq) == 0) ||
                 ((bMask & BitBoard::maskLightSq) == 0))
             return true;
