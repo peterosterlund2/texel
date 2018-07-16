@@ -37,6 +37,9 @@
 #include "chesstool.hpp"
 #include "tbgen.hpp"
 
+#include <fstream>
+#include <iomanip>
+
 bool
 PosGenerator::generate(const std::string& type) {
     if (type == "qvsn")
@@ -638,6 +641,30 @@ PosGenerator::wdlTest(const std::vector<std::string>& tbTypes) {
         double t1 = currentTime();
         std::cout << tbType << " nPos:" << nPos << " nDiff:" << nDiff << " nDiff50:" << nDiff50
                   << " t:" << (t1-t0) << std::endl;
+    }
+}
+
+void
+PosGenerator::wdlDump(const std::vector<std::string>& tbTypes) {
+    ChessTool::setupTB();
+    std::ofstream ofs("out.bin", std::ios::binary);
+    for (std::string tbType : tbTypes) {
+        double t0 = currentTime();
+        U64 nPos = 0;
+        U64 cnt[5] = {0, 0, 0, 0, 0};
+        iteratePositions(tbType, [&](Position& pos) {
+            nPos++;
+            int success;
+            int wdl = Syzygy::probe_wdl(pos, &success);
+            if (!success)
+                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+            cnt[wdl+2]++;
+            S8 c = wdl;
+            ofs.write((const char*)&c, 1);
+        });
+        double t1 = currentTime();
+        std::cout << tbType << " nPos:" << nPos << " t:" << (t1-t0) << std::endl;
+        std::cout << cnt[0] << ' ' << cnt[1] << ' ' << cnt[2] << ' ' << cnt[3] << ' ' << cnt[4] << std::endl;
     }
 }
 

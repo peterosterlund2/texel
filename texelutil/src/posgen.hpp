@@ -53,6 +53,8 @@ public:
     /** Compare RTB probe results to GTB probe results, report any differences. */
     static void wdlTest(const std::vector<std::string>& tbTypes);
 
+    static void wdlDump(const std::vector<std::string>& tbTypes);
+
     /** Compare RTB DTZ probe results to GTB DTM probe results, report any unexpected differences. */
     static void dtzTest(const std::vector<std::string>& tbTypes);
 

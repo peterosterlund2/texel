@@ -123,6 +123,7 @@ usage() {
     std::cerr << " wdltest type1 [type2 ...] : Compare RTB and GTB WDL tables\n";
     std::cerr << " dtztest type1 [type2 ...] : Compare RTB DTZ and GTB DTM tables\n";
     std::cerr << " dtz fen                   : Retrieve DTZ value for a position\n";
+    std::cerr << " wdldump type1 [type2 ...] : Dump RTB WDL data to out.bin\n";
     std::cerr << "\n";
     std::cerr << " gamesim meanResult drawProb nGames nSimul : Simulate game results\n";
     std::cerr << " enginesim nGames p1 p2 ... : Simulate engine with parameters p1, p2, ...\n";
@@ -433,6 +434,13 @@ main(int argc, char* argv[]) {
             for (int i = 2; i < argc; i++)
                 tbTypes.push_back(argv[i]);
             PosGenerator::wdlTest(tbTypes);
+        } else if (cmd == "wdldump") {
+            if (argc < 3)
+                usage();
+            std::vector<std::string> tbTypes;
+            for (int i = 2; i < argc; i++)
+                tbTypes.push_back(argv[i]);
+            PosGenerator::wdlDump(tbTypes);
         } else if (cmd == "dtztest") {
             if (argc < 3)
                 usage();
