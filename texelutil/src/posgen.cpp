@@ -658,6 +658,8 @@ PosGenerator::wdlDump(const std::vector<std::string>& tbTypes) {
             int wdl = Syzygy::probe_wdl(pos, &success);
             if (!success)
                 throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+            if (!pos.isWhiteMove())
+                wdl = -wdl;
             cnt[wdl+2]++;
             S8 c = wdl;
             ofs.write((const char*)&c, 1);
