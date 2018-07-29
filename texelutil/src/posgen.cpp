@@ -266,6 +266,16 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
     const bool anyPawns = whitePawns || blackPawns;
     const bool epPossible = whitePawns && blackPawns;
 
+    bool symTable = true; // True if white and black have the same pieces
+    {
+        int nPieces[Piece::nPieceTypes] = { 0 };
+        for (int p : pieces)
+            nPieces[p]++;
+        for (int pt = Piece::WQUEEN; pt <= Piece::WPAWN; pt++)
+            if (nPieces[pt] != nPieces[Piece::makeBlack(pt)])
+                symTable = false;
+    }
+
     for (int wk = 0; wk < 64; wk++) {
         int x = Square::getX(wk);
         int y = Square::getY(wk);
@@ -326,6 +336,8 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
                             if (wKingAttacked)
                                 continue;
                         }
+                        if (skipSymmetric && symTable && !white)
+                            continue;
                         pos.setWhiteMove(white);
 
                         U64 epSquares = epPossible ? getEPSquares(pos) : 0;
