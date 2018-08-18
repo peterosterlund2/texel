@@ -32,6 +32,7 @@
 #include <vector>
 #include <queue>
 #include <functional>
+#include <exception>
 
 
 /** A pool of threads to which tasks can be queued and results gotten back. */
@@ -64,6 +65,7 @@ private:
     std::vector<std::thread> threads;
     std::deque<std::function<Result(int)>> tasks;
     std::deque<Result> results;
+    std::deque<std::exception_ptr> exceptions;
 };
 
 template <typename Result>
@@ -96,10 +98,15 @@ void ThreadPool<Result>::addTask(Func func) {
 template <typename Result>
 bool ThreadPool<Result>::getResult(Result& result) {
     std::unique_lock<std::mutex> L(mutex);
-    while (results.empty()) {
+    while (results.empty() && exceptions.empty()) {
         if (nActive == 0 && tasks.empty())
             return false;
         completeCv.wait(L);
+    }
+    if (!exceptions.empty()) {
+        std::exception_ptr ex = exceptions.front();
+        exceptions.pop_front();
+        std::rethrow_exception(ex);
     }
     result = results.front();
     results.pop_front();
@@ -120,12 +127,19 @@ void ThreadPool<Result>::workerLoop(int workerNo) {
             tasks.pop_front();
             nActive++;
         }
-        Result result = task(workerNo);
-        {
+        try {
+            Result result = task(workerNo);
             std::unique_lock<std::mutex> L(mutex);
             nActive--;
-            bool empty = results.empty();
+            bool empty = results.empty() && exceptions.empty();
             results.push_back(result);
+            if (empty)
+                completeCv.notify_all();
+        } catch (...) {
+            std::unique_lock<std::mutex> L(mutex);
+            nActive--;
+            bool empty = results.empty() && exceptions.empty();
+            exceptions.push_back(std::current_exception());
             if (empty)
                 completeCv.notify_all();
         }
