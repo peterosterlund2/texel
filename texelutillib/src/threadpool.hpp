@@ -45,12 +45,13 @@ public:
     ~ThreadPool();
 
     /** Add a task to be executed. The function "func" must have signature:
-     *  Result func(int workerNo), where workerNo is between 0 and nThreads-1. */
+     *  Result func(int workerNo), where workerNo is between 0 and nThreads-1.
+     *  Task execution starts in the same order as the tasks were added. */
     template <typename Func>
     void addTask(Func func);
 
     /** Wait for and retrieve a result. Return false if there is no task to wait for.
-     *  The results are not necessarily returned in the same order the tasks as added. */
+     *  The results are not necessarily returned in the same order as the tasks were added. */
     bool getResult(Result& result);
 
 private:
