@@ -109,7 +109,7 @@ bool ThreadPool<Result>::getResult(Result& result) {
         exceptions.pop_front();
         std::rethrow_exception(ex);
     }
-    result = results.front();
+    result = std::move(results.front());
     results.pop_front();
     return true;
 }
