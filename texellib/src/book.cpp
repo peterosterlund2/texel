@@ -143,15 +143,13 @@ Book::getBookEntries(const Position& pos, std::vector<BookEntry>& bookMoves) con
         }
 
         // Read all entries with matching hash key
-        int entNo = hi;
-        while (entNo < numEntries) {
+        for (int entNo = hi; entNo < numEntries; entNo++) {
             readEntry(entNo, ent);
             PolyglotBook::deSerialize(ent, entHash, entMove, entWeight);
             if (entHash != key)
                 break;
             Move m = PolyglotBook::getMove(pos, entMove);
             bookMoves.push_back(BookEntry(m, entWeight));
-            entNo++;
         }
     } else {
         BookMap::iterator it = bookMap.find(pos.zobristHash());
