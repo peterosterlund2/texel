@@ -73,7 +73,7 @@ public:
     void assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& threadsChildren);
 
     /** Get/set the offset between node local thread number and global thread number.
-     *  globalThreadNo = globalThreadOffset + locaThreadNo */
+     *  globalThreadNo = globalThreadOffset + localThreadNo */
     int getGlobalThreadOffset() const;
     void setGlobalThreadOffset(int offs);
 
