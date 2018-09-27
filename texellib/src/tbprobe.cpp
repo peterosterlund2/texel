@@ -417,7 +417,7 @@ TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score,
     const int maxHalfMoveClock = std::abs(dtz) + pos.getHalfMoveClock();
     const int sgn = dtz > 0 ? 1 : -1;
     if ((maxHalfMoveClock == 100) && (pos.getHalfMoveClock() > 0) &&
-        (maxDTZ.find(pos.materialId())->second != 100)) // dtz can be off by one
+            approxDTZ(pos.materialId())) // DTZ can be off by one
         return false;
     if (abs(dtz) <= 2) {
         if (maxHalfMoveClock > 101) {
@@ -647,7 +647,6 @@ TBProbe::initWDLBounds() {
     }
 }
 
-/** Maximum DTZ value for a given material configuration. */
 int
 TBProbe::getMaxDTZ(int matId) {
     auto it = maxDTZ.find(matId);
@@ -658,6 +657,12 @@ TBProbe::getMaxDTZ(int matId) {
         return 0;
     else
         return std::min(val+2, 100); // RTB DTZ values are not exact
+}
+
+bool
+TBProbe::approxDTZ(int matId) {
+    auto it = maxDTZ.find(matId);
+    return it == maxDTZ.end() || it->second != 100;
 }
 
 static int
@@ -676,8 +681,6 @@ getMaxPawnMoves(const Position& pos) {
     return maxPawnMoves;
 }
 
-/** Get upper bound on longest mate in all possible material configurations
- * after the next zeroing move. */
 int
 TBProbe::getMaxSubMate(const Position& pos) {
     int maxPawnMoves = getMaxPawnMoves(pos);
@@ -928,11 +931,6 @@ TBProbe::initMaxDTM() {
 void
 TBProbe::initMaxDTZ() {
     using MI = MatId;
-    auto add = [](int id, int value) {
-        maxDTZ[id] = value;
-        maxDTZ[MatId::mirror(id)] = value;
-    };
-
     static int table[][2] = { { 0, -1 }, // 2-men
 
                               { MI::WQ, 20 }, // 3-men

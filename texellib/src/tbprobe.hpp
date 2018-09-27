@@ -137,9 +137,17 @@ private:
                         const int nPieces);
 
     static void initWDLBounds();
+
+    /** Maximum DTZ value for a given material configuration. */
     static int getMaxDTZ(int matId);
+    /** Return true if DTZ values are approximate for this material configuration. */
+    static bool approxDTZ(int matId);
+
+    /** Get upper bound on longest mate in all possible material configurations
+     *  after the next zeroing move. */
     static int getMaxSubMate(const Position& pos);
     static int getMaxSubMate(std::vector<int>& pieces, int pawnMoves);
+
     static void initMaxDTM();
     static void initMaxDTZ();
 
