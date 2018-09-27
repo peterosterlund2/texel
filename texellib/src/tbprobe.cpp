@@ -771,156 +771,158 @@ TBProbe::getMaxSubMate(std::vector<int>& pieces, int pawnMoves) {
 void
 TBProbe::initMaxDTM() {
     using MI = MatId;
-    auto add = [](int id, int value) {
+    static int table[][2] = { { MI::WQ, 31979 },
+                              { MI::WR, 31967 },
+                              { MI::WP, 31943 },
+
+                              { MI::WQ*2, 31979 },
+                              { MI::WQ+MI::WR, 31967 },
+                              { MI::WQ+MI::WB, 31979 },
+                              { MI::WQ+MI::WN, 31979 },
+                              { MI::WQ+MI::WP, 31943 },
+                              { MI::WR*2, 31967 },
+                              { MI::WR+MI::WB, 31967 },
+                              { MI::WR+MI::WN, 31967 },
+                              { MI::WR+MI::WP, 31943 },
+                              { MI::WB*2, 31961 },
+                              { MI::WB+MI::WN, 31933 },
+                              { MI::WB+MI::WP, 31937 },
+                              { MI::WN*2, 31998 },
+                              { MI::WN+MI::WP, 31943 },
+                              { MI::WP*2, 31935 },
+                              { MI::WQ+MI::BQ, 31974 },
+                              { MI::WR+MI::BQ, 31929 },
+                              { MI::WR+MI::BR, 31961 },
+                              { MI::WB+MI::BQ, 31965 },
+                              { MI::WB+MI::BR, 31941 },
+                              { MI::WB+MI::BB, 31998 },
+                              { MI::WN+MI::BQ, 31957 },
+                              { MI::WN+MI::BR, 31919 },
+                              { MI::WN+MI::BB, 31998 },
+                              { MI::WN+MI::BN, 31998 },
+                              { MI::WP+MI::BQ, 31942 },
+                              { MI::WP+MI::BR, 31914 },
+                              { MI::WP+MI::BB, 31942 },
+                              { MI::WP+MI::BN, 31942 },
+                              { MI::WP+MI::BP, 31933 },
+
+                              { MI::WQ*3, 31991 },
+                              { MI::WQ*2+MI::WR, 31987 },
+                              { MI::WQ*2+MI::WB, 31983 },
+                              { MI::WQ*2+MI::WN, 31981 },
+                              { MI::WQ*2+MI::WP, 31979 },
+                              { MI::WQ+MI::WR*2, 31985 },
+                              { MI::WQ+MI::WR+MI::WB, 31967 },
+                              { MI::WQ+MI::WR+MI::WN, 31967 },
+                              { MI::WQ+MI::WR+MI::WP, 31967 },
+                              { MI::WQ+MI::WB*2, 31961 },
+                              { MI::WQ+MI::WB+MI::WN, 31933 },
+                              { MI::WQ+MI::WB+MI::WP, 31937 },
+                              { MI::WQ+MI::WN*2, 31981 },
+                              { MI::WQ+MI::WN+MI::WP, 31945 },
+                              { MI::WQ+MI::WP*2, 31935 },
+                              { MI::WR*3, 31985 },
+                              { MI::WR*2+MI::WB, 31967 },
+                              { MI::WR*2+MI::WN, 31967 },
+                              { MI::WR*2+MI::WP, 31967 },
+                              { MI::WR+MI::WB*2, 31961 },
+                              { MI::WR+MI::WB+MI::WN, 31933 },
+                              { MI::WR+MI::WB+MI::WP, 31937 },
+                              { MI::WR+MI::WN*2, 31967 },
+                              { MI::WR+MI::WN+MI::WP, 31945 },
+                              { MI::WR+MI::WP*2, 31935 },
+                              { MI::WB*3, 31961 },
+                              { MI::WB*2+MI::WN, 31933 },
+                              { MI::WB*2+MI::WP, 31937 },
+                              { MI::WB+MI::WN*2, 31931 },
+                              { MI::WB+MI::WN+MI::WP, 31933 },
+                              { MI::WB+MI::WP*2, 31935 },
+                              { MI::WN*3, 31957 },
+                              { MI::WN*2+MI::WP, 31943 },
+                              { MI::WN+MI::WP*2, 31935 },
+                              { MI::WP*3, 31933 },
+                              { MI::WQ*2+MI::BQ, 31939 },
+                              { MI::WQ*2+MI::BR, 31929 },
+                              { MI::WQ*2+MI::BB, 31965 },
+                              { MI::WQ*2+MI::BN, 31957 },
+                              { MI::WQ*2+MI::BP, 31939 },
+                              { MI::WQ+MI::WR+MI::BQ, 31865 },
+                              { MI::WQ+MI::WR+MI::BR, 31929 },
+                              { MI::WQ+MI::WR+MI::BB, 31941 },
+                              { MI::WQ+MI::WR+MI::BN, 31919 },
+                              { MI::WQ+MI::WR+MI::BP, 31865 },
+                              { MI::WQ+MI::WB+MI::BQ, 31933 },
+                              { MI::WQ+MI::WB+MI::BR, 31919 },
+                              { MI::WQ+MI::WB+MI::BB, 31965 },
+                              { MI::WQ+MI::WB+MI::BN, 31957 },
+                              { MI::WQ+MI::WB+MI::BP, 31933 },
+                              { MI::WQ+MI::WN+MI::BQ, 31917 },
+                              { MI::WQ+MI::WN+MI::BR, 31918 },
+                              { MI::WQ+MI::WN+MI::BB, 31965 },
+                              { MI::WQ+MI::WN+MI::BN, 31957 },
+                              { MI::WQ+MI::WN+MI::BP, 31917 },
+                              { MI::WQ+MI::WP+MI::BQ, 31752 },
+                              { MI::WQ+MI::WP+MI::BR, 31913 },
+                              { MI::WQ+MI::WP+MI::BB, 31941 },
+                              { MI::WQ+MI::WP+MI::BN, 31939 },
+                              { MI::WQ+MI::WP+MI::BP, 31755 },
+                              { MI::WR*2+MI::BQ, 31901 },
+                              { MI::WR*2+MI::BR, 31937 },
+                              { MI::WR*2+MI::BB, 31941 },
+                              { MI::WR*2+MI::BN, 31919 },
+                              { MI::WR*2+MI::BP, 31900 },
+                              { MI::WR+MI::WB+MI::BQ, 31859 },
+                              { MI::WR+MI::WB+MI::BR, 31870 },
+                              { MI::WR+MI::WB+MI::BB, 31939 },
+                              { MI::WR+MI::WB+MI::BN, 31919 },
+                              { MI::WR+MI::WB+MI::BP, 31860 },
+                              { MI::WR+MI::WN+MI::BQ, 31861 },
+                              { MI::WR+MI::WN+MI::BR, 31918 },
+                              { MI::WR+MI::WN+MI::BB, 31937 },
+                              { MI::WR+MI::WN+MI::BN, 31919 },
+                              { MI::WR+MI::WN+MI::BP, 31864 },
+                              { MI::WR+MI::WP+MI::BQ, 31792 },
+                              { MI::WR+MI::WP+MI::BR, 31851 },
+                              { MI::WR+MI::WP+MI::BB, 31853 },
+                              { MI::WR+MI::WP+MI::BN, 31891 },
+                              { MI::WR+MI::WP+MI::BP, 31794 },
+                              { MI::WB*2+MI::BQ, 31837 },
+                              { MI::WB*2+MI::BR, 31938 },
+                              { MI::WB*2+MI::BB, 31955 },
+                              { MI::WB*2+MI::BN, 31843 },
+                              { MI::WB*2+MI::BP, 31834 },
+                              { MI::WB+MI::WN+MI::BQ, 31893 },
+                              { MI::WB+MI::WN+MI::BR, 31918 },
+                              { MI::WB+MI::WN+MI::BB, 31921 },
+                              { MI::WB+MI::WN+MI::BN, 31786 },
+                              { MI::WB+MI::WN+MI::BP, 31791 },
+                              { MI::WB+MI::WP+MI::BQ, 31899 },
+                              { MI::WB+MI::WP+MI::BR, 31910 },
+                              { MI::WB+MI::WP+MI::BB, 31898 },
+                              { MI::WB+MI::WP+MI::BN, 31800 },
+                              { MI::WB+MI::WP+MI::BP, 31865 },
+                              { MI::WN*2+MI::BQ, 31855 },
+                              { MI::WN*2+MI::BR, 31918 },
+                              { MI::WN*2+MI::BB, 31992 },
+                              { MI::WN*2+MI::BN, 31986 },
+                              { MI::WN*2+MI::BP, 31770 },
+                              { MI::WN+MI::WP+MI::BQ, 31875 },
+                              { MI::WN+MI::WP+MI::BR, 31866 },
+                              { MI::WN+MI::WP+MI::BB, 31914 },
+                              { MI::WN+MI::WP+MI::BN, 31805 },
+                              { MI::WN+MI::WP+MI::BP, 31884 },
+                              { MI::WP*2+MI::BQ, 31752 },
+                              { MI::WP*2+MI::BR, 31892 },
+                              { MI::WP*2+MI::BB, 31913 },
+                              { MI::WP*2+MI::BN, 31899 },
+                              { MI::WP*2+MI::BP, 31745 },
+    };
+    for (int i = 0; i < (int)COUNT_OF(table); i++) {
+        int id = table[i][0];
+        int value = table[i][1];
         maxDTM[id] = value;
         maxDTM[MatId::mirror(id)] = value;
-    };
-
-    add(MI::WQ, 31979);
-    add(MI::WR, 31967);
-    add(MI::WP, 31943);
-
-    add(MI::WQ*2, 31979);
-    add(MI::WQ+MI::WR, 31967);
-    add(MI::WQ+MI::WB, 31979);
-    add(MI::WQ+MI::WN, 31979);
-    add(MI::WQ+MI::WP, 31943);
-    add(MI::WR*2, 31967);
-    add(MI::WR+MI::WB, 31967);
-    add(MI::WR+MI::WN, 31967);
-    add(MI::WR+MI::WP, 31943);
-    add(MI::WB*2, 31961);
-    add(MI::WB+MI::WN, 31933);
-    add(MI::WB+MI::WP, 31937);
-    add(MI::WN*2, 31998);
-    add(MI::WN+MI::WP, 31943);
-    add(MI::WP*2, 31935);
-    add(MI::WQ+MI::BQ, 31974);
-    add(MI::WR+MI::BQ, 31929);
-    add(MI::WR+MI::BR, 31961);
-    add(MI::WB+MI::BQ, 31965);
-    add(MI::WB+MI::BR, 31941);
-    add(MI::WB+MI::BB, 31998);
-    add(MI::WN+MI::BQ, 31957);
-    add(MI::WN+MI::BR, 31919);
-    add(MI::WN+MI::BB, 31998);
-    add(MI::WN+MI::BN, 31998);
-    add(MI::WP+MI::BQ, 31942);
-    add(MI::WP+MI::BR, 31914);
-    add(MI::WP+MI::BB, 31942);
-    add(MI::WP+MI::BN, 31942);
-    add(MI::WP+MI::BP, 31933);
-
-    add(MI::WQ*3, 31991);
-    add(MI::WQ*2+MI::WR, 31987);
-    add(MI::WQ*2+MI::WB, 31983);
-    add(MI::WQ*2+MI::WN, 31981);
-    add(MI::WQ*2+MI::WP, 31979);
-    add(MI::WQ+MI::WR*2, 31985);
-    add(MI::WQ+MI::WR+MI::WB, 31967);
-    add(MI::WQ+MI::WR+MI::WN, 31967);
-    add(MI::WQ+MI::WR+MI::WP, 31967);
-    add(MI::WQ+MI::WB*2, 31961);
-    add(MI::WQ+MI::WB+MI::WN, 31933);
-    add(MI::WQ+MI::WB+MI::WP, 31937);
-    add(MI::WQ+MI::WN*2, 31981);
-    add(MI::WQ+MI::WN+MI::WP, 31945);
-    add(MI::WQ+MI::WP*2, 31935);
-    add(MI::WR*3, 31985);
-    add(MI::WR*2+MI::WB, 31967);
-    add(MI::WR*2+MI::WN, 31967);
-    add(MI::WR*2+MI::WP, 31967);
-    add(MI::WR+MI::WB*2, 31961);
-    add(MI::WR+MI::WB+MI::WN, 31933);
-    add(MI::WR+MI::WB+MI::WP, 31937);
-    add(MI::WR+MI::WN*2, 31967);
-    add(MI::WR+MI::WN+MI::WP, 31945);
-    add(MI::WR+MI::WP*2, 31935);
-    add(MI::WB*3, 31961);
-    add(MI::WB*2+MI::WN, 31933);
-    add(MI::WB*2+MI::WP, 31937);
-    add(MI::WB+MI::WN*2, 31931);
-    add(MI::WB+MI::WN+MI::WP, 31933);
-    add(MI::WB+MI::WP*2, 31935);
-    add(MI::WN*3, 31957);
-    add(MI::WN*2+MI::WP, 31943);
-    add(MI::WN+MI::WP*2, 31935);
-    add(MI::WP*3, 31933);
-    add(MI::WQ*2+MI::BQ, 31939);
-    add(MI::WQ*2+MI::BR, 31929);
-    add(MI::WQ*2+MI::BB, 31965);
-    add(MI::WQ*2+MI::BN, 31957);
-    add(MI::WQ*2+MI::BP, 31939);
-    add(MI::WQ+MI::WR+MI::BQ, 31865);
-    add(MI::WQ+MI::WR+MI::BR, 31929);
-    add(MI::WQ+MI::WR+MI::BB, 31941);
-    add(MI::WQ+MI::WR+MI::BN, 31919);
-    add(MI::WQ+MI::WR+MI::BP, 31865);
-    add(MI::WQ+MI::WB+MI::BQ, 31933);
-    add(MI::WQ+MI::WB+MI::BR, 31919);
-    add(MI::WQ+MI::WB+MI::BB, 31965);
-    add(MI::WQ+MI::WB+MI::BN, 31957);
-    add(MI::WQ+MI::WB+MI::BP, 31933);
-    add(MI::WQ+MI::WN+MI::BQ, 31917);
-    add(MI::WQ+MI::WN+MI::BR, 31918);
-    add(MI::WQ+MI::WN+MI::BB, 31965);
-    add(MI::WQ+MI::WN+MI::BN, 31957);
-    add(MI::WQ+MI::WN+MI::BP, 31917);
-    add(MI::WQ+MI::WP+MI::BQ, 31752);
-    add(MI::WQ+MI::WP+MI::BR, 31913);
-    add(MI::WQ+MI::WP+MI::BB, 31941);
-    add(MI::WQ+MI::WP+MI::BN, 31939);
-    add(MI::WQ+MI::WP+MI::BP, 31755);
-    add(MI::WR*2+MI::BQ, 31901);
-    add(MI::WR*2+MI::BR, 31937);
-    add(MI::WR*2+MI::BB, 31941);
-    add(MI::WR*2+MI::BN, 31919);
-    add(MI::WR*2+MI::BP, 31900);
-    add(MI::WR+MI::WB+MI::BQ, 31859);
-    add(MI::WR+MI::WB+MI::BR, 31870);
-    add(MI::WR+MI::WB+MI::BB, 31939);
-    add(MI::WR+MI::WB+MI::BN, 31919);
-    add(MI::WR+MI::WB+MI::BP, 31860);
-    add(MI::WR+MI::WN+MI::BQ, 31861);
-    add(MI::WR+MI::WN+MI::BR, 31918);
-    add(MI::WR+MI::WN+MI::BB, 31937);
-    add(MI::WR+MI::WN+MI::BN, 31919);
-    add(MI::WR+MI::WN+MI::BP, 31864);
-    add(MI::WR+MI::WP+MI::BQ, 31792);
-    add(MI::WR+MI::WP+MI::BR, 31851);
-    add(MI::WR+MI::WP+MI::BB, 31853);
-    add(MI::WR+MI::WP+MI::BN, 31891);
-    add(MI::WR+MI::WP+MI::BP, 31794);
-    add(MI::WB*2+MI::BQ, 31837);
-    add(MI::WB*2+MI::BR, 31938);
-    add(MI::WB*2+MI::BB, 31955);
-    add(MI::WB*2+MI::BN, 31843);
-    add(MI::WB*2+MI::BP, 31834);
-    add(MI::WB+MI::WN+MI::BQ, 31893);
-    add(MI::WB+MI::WN+MI::BR, 31918);
-    add(MI::WB+MI::WN+MI::BB, 31921);
-    add(MI::WB+MI::WN+MI::BN, 31786);
-    add(MI::WB+MI::WN+MI::BP, 31791);
-    add(MI::WB+MI::WP+MI::BQ, 31899);
-    add(MI::WB+MI::WP+MI::BR, 31910);
-    add(MI::WB+MI::WP+MI::BB, 31898);
-    add(MI::WB+MI::WP+MI::BN, 31800);
-    add(MI::WB+MI::WP+MI::BP, 31865);
-    add(MI::WN*2+MI::BQ, 31855);
-    add(MI::WN*2+MI::BR, 31918);
-    add(MI::WN*2+MI::BB, 31992);
-    add(MI::WN*2+MI::BN, 31986);
-    add(MI::WN*2+MI::BP, 31770);
-    add(MI::WN+MI::WP+MI::BQ, 31875);
-    add(MI::WN+MI::WP+MI::BR, 31866);
-    add(MI::WN+MI::WP+MI::BB, 31914);
-    add(MI::WN+MI::WP+MI::BN, 31805);
-    add(MI::WN+MI::WP+MI::BP, 31884);
-    add(MI::WP*2+MI::BQ, 31752);
-    add(MI::WP*2+MI::BR, 31892);
-    add(MI::WP*2+MI::BB, 31913);
-    add(MI::WP*2+MI::BN, 31899);
-    add(MI::WP*2+MI::BP, 31745);
+    }
 }
 
 void
@@ -931,524 +933,526 @@ TBProbe::initMaxDTZ() {
         maxDTZ[MatId::mirror(id)] = value;
     };
 
-    // 2-men
-    add(0, -1);
+    static int table[][2] = { { 0, -1 }, // 2-men
 
-    // 3-men
-    add(MI::WQ, 20);
-    add(MI::WR, 32);
-    add(MI::WB, -1);
-    add(MI::WN, -1);
-    add(MI::WP, 20);
+                              { MI::WQ, 20 }, // 3-men
+                              { MI::WR, 32 },
+                              { MI::WB, -1 },
+                              { MI::WN, -1 },
+                              { MI::WP, 20 },
 
-    // 4-men
-    add(MI::WQ+MI::BQ, 19);
-    add(MI::WN*2, 1);
-    add(MI::WQ*2, 6);
-    add(MI::WP*2, 14);
-    add(MI::WR*2, 10);
-    add(MI::WR+MI::BR, 7);
-    add(MI::WQ+MI::WB, 12);
-    add(MI::WQ+MI::WR, 8);
-    add(MI::WQ+MI::WN, 14);
-    add(MI::WR+MI::BB, 35);
-    add(MI::WB+MI::BB, 1);
-    add(MI::WQ+MI::WP, 6);
-    add(MI::WB*2, 37);
-    add(MI::WB+MI::BN, 2);
-    add(MI::WR+MI::WP, 6);
-    add(MI::WN+MI::BN, 1);
-    add(MI::WR+MI::BN, 53);
-    add(MI::WP+MI::BP, 21);
-    add(MI::WB+MI::BP, 7);
-    add(MI::WR+MI::WB, 24);
-    add(MI::WQ+MI::BN, 38);
-    add(MI::WR+MI::WN, 24);
-    add(MI::WB+MI::WP, 26);
-    add(MI::WN+MI::BP, 16);
-    add(MI::WN+MI::WP, 26);
-    add(MI::WQ+MI::BR, 62);
-    add(MI::WQ+MI::BB, 24);
-    add(MI::WR+MI::BP, 25);
-    add(MI::WQ+MI::BP, 52);
-    add(MI::WB+MI::WN, 65);
+                              { MI::WQ+MI::BQ, 19 }, // 4-men
+                              { MI::WN*2, 1 },
+                              { MI::WQ*2, 6 },
+                              { MI::WP*2, 14 },
+                              { MI::WR*2, 10 },
+                              { MI::WR+MI::BR, 7 },
+                              { MI::WQ+MI::WB, 12 },
+                              { MI::WQ+MI::WR, 8 },
+                              { MI::WQ+MI::WN, 14 },
+                              { MI::WR+MI::BB, 35 },
+                              { MI::WB+MI::BB, 1 },
+                              { MI::WQ+MI::WP, 6 },
+                              { MI::WB*2, 37 },
+                              { MI::WB+MI::BN, 2 },
+                              { MI::WR+MI::WP, 6 },
+                              { MI::WN+MI::BN, 1 },
+                              { MI::WR+MI::BN, 53 },
+                              { MI::WP+MI::BP, 21 },
+                              { MI::WB+MI::BP, 7 },
+                              { MI::WR+MI::WB, 24 },
+                              { MI::WQ+MI::BN, 38 },
+                              { MI::WR+MI::WN, 24 },
+                              { MI::WB+MI::WP, 26 },
+                              { MI::WN+MI::BP, 16 },
+                              { MI::WN+MI::WP, 26 },
+                              { MI::WQ+MI::BR, 62 },
+                              { MI::WQ+MI::BB, 24 },
+                              { MI::WR+MI::BP, 25 },
+                              { MI::WQ+MI::BP, 52 },
+                              { MI::WB+MI::WN, 65 },
 
-    // 5-men
-    add(MI::WQ*3, 6);
-    add(MI::WQ*2+MI::WR, 6);
-    add(MI::WR*3, 8);
-    add(MI::WQ*2+MI::WB, 6);
-    add(MI::WQ*2+MI::WN, 8);
-    add(MI::WQ*2+MI::WP, 6);
-    add(MI::WQ+MI::WR+MI::WN, 8);
-    add(MI::WQ+MI::WR*2, 8);
-    add(MI::WQ+MI::WR+MI::WB, 8);
-    add(MI::WQ+MI::WP*2, 6);
-    add(MI::WQ+MI::WB+MI::WN, 8);
-    add(MI::WR*2+MI::WP, 6);
-    add(MI::WQ+MI::WB*2, 12);
-    add(MI::WB*3, 20);
-    add(MI::WR*2+MI::WN, 10);
-    add(MI::WR*2+MI::WB, 10);
-    add(MI::WQ+MI::WR+MI::WP, 6);
-    add(MI::WQ+MI::WN*2, 14);
-    add(MI::WQ+MI::WB+MI::WP, 6);
-    add(MI::WQ+MI::WN+MI::WP, 6);
-    add(MI::WR+MI::WP*2, 6);
-    add(MI::WR+MI::WB*2, 20);
-    add(MI::WP*3, 14);
-    add(MI::WR+MI::WN*2, 20);
-    add(MI::WQ*2+MI::BQ, 50);
-    add(MI::WQ*2+MI::BN, 8);
-    add(MI::WQ*2+MI::BB, 8);
-    add(MI::WR+MI::WB+MI::WN, 14);
-    add(MI::WB+MI::WP*2, 18);
-    add(MI::WB*2+MI::WP, 24);
-    add(MI::WQ*2+MI::BR, 28);
-    add(MI::WB*2+MI::WN, 26);
-    add(MI::WN+MI::WP*2, 12);
-    add(MI::WQ+MI::WB+MI::BQ, 59);
-    add(MI::WB+MI::WN*2, 26);
-    add(MI::WN*2+MI::WP, 16);
-    add(MI::WQ*2+MI::BP, 6);
-    add(MI::WN*3, 41);
-    add(MI::WQ+MI::WN+MI::BQ, 69);
-    add(MI::WQ+MI::WR+MI::BQ, 100);
-    add(MI::WQ+MI::WR+MI::BN, 10);
-    add(MI::WQ+MI::WR+MI::BB, 10);
-    add(MI::WQ+MI::WR+MI::BR, 30);
-    add(MI::WR+MI::WB+MI::WP, 8);
-    add(MI::WQ+MI::WB+MI::BN, 14);
-    add(MI::WQ+MI::WB+MI::BR, 38);
-    add(MI::WQ+MI::WB+MI::BB, 16);
-    add(MI::WB+MI::WN+MI::WP, 10);
-    add(MI::WR+MI::WN+MI::WP, 8);
-    add(MI::WR*2+MI::BQ, 40);
-    add(MI::WQ+MI::WN+MI::BN, 18);
-    add(MI::WR+MI::WB+MI::BR, 100);
-    add(MI::WQ+MI::WN+MI::BB, 18);
-    add(MI::WQ+MI::WR+MI::BP, 6);
-    add(MI::WR+MI::WB+MI::BQ, 82);
-    add(MI::WQ+MI::WP+MI::BQ, 100);
-    add(MI::WQ+MI::WP+MI::BP, 10);
-    add(MI::WQ+MI::WB+MI::BP, 22);
-    add(MI::WR+MI::WN+MI::BR, 64);
-    add(MI::WR*2+MI::BN, 14);
-    add(MI::WR*2+MI::BP, 18);
-    add(MI::WQ+MI::WN+MI::BR, 44);
-    add(MI::WR+MI::WN+MI::BQ, 92);
-    add(MI::WR*2+MI::BB, 20);
-    add(MI::WQ+MI::WN+MI::BP, 34);
-    add(MI::WR*2+MI::BR, 50);
-    add(MI::WB*2+MI::BR, 16);
-    add(MI::WB*2+MI::BB, 11);
-    add(MI::WQ+MI::WP+MI::BN, 12);
-    add(MI::WR+MI::WB+MI::BN, 42);
-    add(MI::WQ+MI::WP+MI::BB, 10);
-    add(MI::WB+MI::WN+MI::BR, 24);
-    add(MI::WB+MI::WN+MI::BB, 24);
-    add(MI::WB*2+MI::BN, 100);
-    add(MI::WB+MI::WN+MI::BN, 100);
-    add(MI::WQ+MI::WP+MI::BR, 34);
-    add(MI::WR+MI::WP+MI::BP, 19);
-    add(MI::WR+MI::WP+MI::BR, 70);
-    add(MI::WR+MI::WB+MI::BB, 50);
-    add(MI::WB*2+MI::BP, 42);
-    add(MI::WB*2+MI::BQ, 100);
-    add(MI::WR+MI::WB+MI::BP, 22);
-    add(MI::WN*2+MI::BR, 20);
-    add(MI::WN*2+MI::BB, 6);
-    add(MI::WB+MI::WP+MI::BR, 36);
-    add(MI::WN*2+MI::BN, 12);
-    add(MI::WB+MI::WP+MI::BB, 50);
-    add(MI::WR+MI::WN+MI::BN, 48);
-    add(MI::WN+MI::WP+MI::BR, 78);
-    add(MI::WN*2+MI::BQ, 100);
-    add(MI::WR+MI::WN+MI::BB, 50);
-    add(MI::WR+MI::WN+MI::BP, 29);
-    add(MI::WB+MI::WP+MI::BN, 60);
-    add(MI::WB+MI::WN+MI::BQ, 84);
-    add(MI::WB+MI::WP+MI::BP, 74);
-    add(MI::WN*2+MI::BP, 100);
-    add(MI::WN+MI::WP+MI::BB, 48);
-    add(MI::WP*2+MI::BB, 24);
-    add(MI::WP*2+MI::BQ, 58);
-    add(MI::WP*2+MI::BP, 42);
-    add(MI::WP*2+MI::BN, 27);
-    add(MI::WP*2+MI::BR, 30);
-    add(MI::WN+MI::WP+MI::BN, 59);
-    add(MI::WN+MI::WP+MI::BP, 46);
-    add(MI::WR+MI::WP+MI::BN, 62);
-    add(MI::WR+MI::WP+MI::BB, 100);
-    add(MI::WN+MI::WP+MI::BQ, 86);
-    add(MI::WB+MI::WN+MI::BP, 40);
-    add(MI::WR+MI::WP+MI::BQ, 100);
-    add(MI::WB+MI::WP+MI::BQ, 84);
+                              { MI::WQ*3, 6 },         // 5-men
+                              { MI::WQ*2+MI::WR, 6 },
+                              { MI::WR*3, 8 },
+                              { MI::WQ*2+MI::WB, 6 },
+                              { MI::WQ*2+MI::WN, 8 },
+                              { MI::WQ*2+MI::WP, 6 },
+                              { MI::WQ+MI::WR+MI::WN, 8 },
+                              { MI::WQ+MI::WR*2, 8 },
+                              { MI::WQ+MI::WR+MI::WB, 8 },
+                              { MI::WQ+MI::WP*2, 6 },
+                              { MI::WQ+MI::WB+MI::WN, 8 },
+                              { MI::WR*2+MI::WP, 6 },
+                              { MI::WQ+MI::WB*2, 12 },
+                              { MI::WB*3, 20 },
+                              { MI::WR*2+MI::WN, 10 },
+                              { MI::WR*2+MI::WB, 10 },
+                              { MI::WQ+MI::WR+MI::WP, 6 },
+                              { MI::WQ+MI::WN*2, 14 },
+                              { MI::WQ+MI::WB+MI::WP, 6 },
+                              { MI::WQ+MI::WN+MI::WP, 6 },
+                              { MI::WR+MI::WP*2, 6 },
+                              { MI::WR+MI::WB*2, 20 },
+                              { MI::WP*3, 14 },
+                              { MI::WR+MI::WN*2, 20 },
+                              { MI::WQ*2+MI::BQ, 50 },
+                              { MI::WQ*2+MI::BN, 8 },
+                              { MI::WQ*2+MI::BB, 8 },
+                              { MI::WR+MI::WB+MI::WN, 14 },
+                              { MI::WB+MI::WP*2, 18 },
+                              { MI::WB*2+MI::WP, 24 },
+                              { MI::WQ*2+MI::BR, 28 },
+                              { MI::WB*2+MI::WN, 26 },
+                              { MI::WN+MI::WP*2, 12 },
+                              { MI::WQ+MI::WB+MI::BQ, 59 },
+                              { MI::WB+MI::WN*2, 26 },
+                              { MI::WN*2+MI::WP, 16 },
+                              { MI::WQ*2+MI::BP, 6 },
+                              { MI::WN*3, 41 },
+                              { MI::WQ+MI::WN+MI::BQ, 69 },
+                              { MI::WQ+MI::WR+MI::BQ, 100 },
+                              { MI::WQ+MI::WR+MI::BN, 10 },
+                              { MI::WQ+MI::WR+MI::BB, 10 },
+                              { MI::WQ+MI::WR+MI::BR, 30 },
+                              { MI::WR+MI::WB+MI::WP, 8 },
+                              { MI::WQ+MI::WB+MI::BN, 14 },
+                              { MI::WQ+MI::WB+MI::BR, 38 },
+                              { MI::WQ+MI::WB+MI::BB, 16 },
+                              { MI::WB+MI::WN+MI::WP, 10 },
+                              { MI::WR+MI::WN+MI::WP, 8 },
+                              { MI::WR*2+MI::BQ, 40 },
+                              { MI::WQ+MI::WN+MI::BN, 18 },
+                              { MI::WR+MI::WB+MI::BR, 100 },
+                              { MI::WQ+MI::WN+MI::BB, 18 },
+                              { MI::WQ+MI::WR+MI::BP, 6 },
+                              { MI::WR+MI::WB+MI::BQ, 82 },
+                              { MI::WQ+MI::WP+MI::BQ, 100 },
+                              { MI::WQ+MI::WP+MI::BP, 10 },
+                              { MI::WQ+MI::WB+MI::BP, 22 },
+                              { MI::WR+MI::WN+MI::BR, 64 },
+                              { MI::WR*2+MI::BN, 14 },
+                              { MI::WR*2+MI::BP, 18 },
+                              { MI::WQ+MI::WN+MI::BR, 44 },
+                              { MI::WR+MI::WN+MI::BQ, 92 },
+                              { MI::WR*2+MI::BB, 20 },
+                              { MI::WQ+MI::WN+MI::BP, 34 },
+                              { MI::WR*2+MI::BR, 50 },
+                              { MI::WB*2+MI::BR, 16 },
+                              { MI::WB*2+MI::BB, 11 },
+                              { MI::WQ+MI::WP+MI::BN, 12 },
+                              { MI::WR+MI::WB+MI::BN, 42 },
+                              { MI::WQ+MI::WP+MI::BB, 10 },
+                              { MI::WB+MI::WN+MI::BR, 24 },
+                              { MI::WB+MI::WN+MI::BB, 24 },
+                              { MI::WB*2+MI::BN, 100 },
+                              { MI::WB+MI::WN+MI::BN, 100 },
+                              { MI::WQ+MI::WP+MI::BR, 34 },
+                              { MI::WR+MI::WP+MI::BP, 19 },
+                              { MI::WR+MI::WP+MI::BR, 70 },
+                              { MI::WR+MI::WB+MI::BB, 50 },
+                              { MI::WB*2+MI::BP, 42 },
+                              { MI::WB*2+MI::BQ, 100 },
+                              { MI::WR+MI::WB+MI::BP, 22 },
+                              { MI::WN*2+MI::BR, 20 },
+                              { MI::WN*2+MI::BB, 6 },
+                              { MI::WB+MI::WP+MI::BR, 36 },
+                              { MI::WN*2+MI::BN, 12 },
+                              { MI::WB+MI::WP+MI::BB, 50 },
+                              { MI::WR+MI::WN+MI::BN, 48 },
+                              { MI::WN+MI::WP+MI::BR, 78 },
+                              { MI::WN*2+MI::BQ, 100 },
+                              { MI::WR+MI::WN+MI::BB, 50 },
+                              { MI::WR+MI::WN+MI::BP, 29 },
+                              { MI::WB+MI::WP+MI::BN, 60 },
+                              { MI::WB+MI::WN+MI::BQ, 84 },
+                              { MI::WB+MI::WP+MI::BP, 74 },
+                              { MI::WN*2+MI::BP, 100 },
+                              { MI::WN+MI::WP+MI::BB, 48 },
+                              { MI::WP*2+MI::BB, 24 },
+                              { MI::WP*2+MI::BQ, 58 },
+                              { MI::WP*2+MI::BP, 42 },
+                              { MI::WP*2+MI::BN, 27 },
+                              { MI::WP*2+MI::BR, 30 },
+                              { MI::WN+MI::WP+MI::BN, 59 },
+                              { MI::WN+MI::WP+MI::BP, 46 },
+                              { MI::WR+MI::WP+MI::BN, 62 },
+                              { MI::WR+MI::WP+MI::BB, 100 },
+                              { MI::WN+MI::WP+MI::BQ, 86 },
+                              { MI::WB+MI::WN+MI::BP, 40 },
+                              { MI::WR+MI::WP+MI::BQ, 100 },
+                              { MI::WB+MI::WP+MI::BQ, 84 },
 
-    // 6-men
-    add(MI::WB*4, 20);
-    add(MI::WB*3+MI::BB, 40);
-    add(MI::WB*3+MI::BN, 28);
-    add(MI::WB*3+MI::BP, 24);
-    add(MI::WB*3+MI::BQ, 100);
-    add(MI::WB*3+MI::BR, 100);
-    add(MI::WB*3+MI::WN, 26);
-    add(MI::WB*3+MI::WP, 24);
-    add(MI::WB*2+MI::BB*2, 11);
-    add(MI::WB*2+MI::BB+MI::BN, 40);
-    add(MI::WB*2+MI::BB+MI::BP, 69);
-    add(MI::WB*2+MI::BN*2, 56);
-    add(MI::WB*2+MI::BN+MI::BP, 100);
-    add(MI::WB*2+MI::BP*2, 39);
-    add(MI::WB*2+MI::WN+MI::BB, 72);
-    add(MI::WB*2+MI::WN+MI::BN, 62);
-    add(MI::WB*2+MI::WN+MI::BP, 32);
-    add(MI::WB*2+MI::WN+MI::BQ, 100);
-    add(MI::WB*2+MI::WN+MI::BR, 100);
-    add(MI::WB*2+MI::WN*2, 20);
-    add(MI::WB*2+MI::WN+MI::WP, 10);
-    add(MI::WB*2+MI::WP+MI::BB, 56);
-    add(MI::WB*2+MI::WP+MI::BN, 100);
-    add(MI::WB*2+MI::WP+MI::BP, 29);
-    add(MI::WB*2+MI::WP+MI::BQ, 100);
-    add(MI::WB*2+MI::WP+MI::BR, 100);
-    add(MI::WB*2+MI::WP*2, 12);
-    add(MI::WB+MI::WN+MI::BB+MI::BN, 17);
-    add(MI::WB+MI::WN+MI::BB+MI::BP, 56);
-    add(MI::WB+MI::WN+MI::BN*2, 24);
-    add(MI::WB+MI::WN+MI::BN+MI::BP, 98);
-    add(MI::WB+MI::WN+MI::BP*2, 48);
-    add(MI::WB+MI::WN*2+MI::BB, 76);
-    add(MI::WB+MI::WN*2+MI::BN, 58);
-    add(MI::WB+MI::WN*2+MI::BP, 33);
-    add(MI::WB+MI::WN*2+MI::BQ, 98);
-    add(MI::WB+MI::WN*2+MI::BR, 96);
-    add(MI::WB+MI::WN*3, 20);
-    add(MI::WB+MI::WN*2+MI::WP, 10);
-    add(MI::WB+MI::WN+MI::WP+MI::BB, 86);
-    add(MI::WB+MI::WN+MI::WP+MI::BN, 77);
-    add(MI::WB+MI::WN+MI::WP+MI::BP, 21);
-    add(MI::WB+MI::WN+MI::WP+MI::BQ, 100);
-    add(MI::WB+MI::WN+MI::WP+MI::BR, 100);
-    add(MI::WB+MI::WN+MI::WP*2, 10);
-    add(MI::WB+MI::WP+MI::BB+MI::BP, 65);
-    add(MI::WB+MI::WP+MI::BN*2, 48);
-    add(MI::WB+MI::WP+MI::BN+MI::BP, 62);
-    add(MI::WB+MI::WP+MI::BP*2, 75);
-    add(MI::WB+MI::WP*2+MI::BB, 86);
-    add(MI::WB+MI::WP*2+MI::BN, 100);
-    add(MI::WB+MI::WP*2+MI::BP, 61);
-    add(MI::WB+MI::WP*2+MI::BQ, 78);
-    add(MI::WB+MI::WP*2+MI::BR, 66);
-    add(MI::WB+MI::WP*3, 18);
-    add(MI::WN*2+MI::BN*2, 13);
-    add(MI::WN*2+MI::BN+MI::BP, 56);
-    add(MI::WN*2+MI::BP*2, 100);
-    add(MI::WN*3+MI::BB, 100);
-    add(MI::WN*3+MI::BN, 100);
-    add(MI::WN*3+MI::BP, 41);
-    add(MI::WN*3+MI::BQ, 70);
-    add(MI::WN*3+MI::BR, 22);
-    add(MI::WN*4, 22);
-    add(MI::WN*3+MI::WP, 12);
-    add(MI::WN*2+MI::WP+MI::BB, 100);
-    add(MI::WN*2+MI::WP+MI::BN, 100);
-    add(MI::WN*2+MI::WP+MI::BP, 33);
-    add(MI::WN*2+MI::WP+MI::BQ, 100);
-    add(MI::WN*2+MI::WP+MI::BR, 91);
-    add(MI::WN*2+MI::WP*2, 12);
-    add(MI::WN+MI::WP+MI::BN+MI::BP, 57);
-    add(MI::WN+MI::WP+MI::BP*2, 66);
-    add(MI::WN+MI::WP*2+MI::BB, 97);
-    add(MI::WN+MI::WP*2+MI::BN, 96);
-    add(MI::WN+MI::WP*2+MI::BP, 40);
-    add(MI::WN+MI::WP*2+MI::BQ, 78);
-    add(MI::WN+MI::WP*2+MI::BR, 81);
-    add(MI::WN+MI::WP*3, 10);
-    add(MI::WP*2+MI::BP*2, 31);
-    add(MI::WP*3+MI::BB, 36);
-    add(MI::WP*3+MI::BN, 42);
-    add(MI::WP*3+MI::BP, 40);
-    add(MI::WP*3+MI::BQ, 65);
-    add(MI::WP*3+MI::BR, 44);
-    add(MI::WP*4, 14);
-    add(MI::WQ+MI::WB*3, 12);
-    add(MI::WQ+MI::WB*2+MI::BB, 16);
-    add(MI::WQ+MI::WB*2+MI::BN, 14);
-    add(MI::WQ+MI::WB*2+MI::BP, 10);
-    add(MI::WQ+MI::WB*2+MI::BQ, 100);
-    add(MI::WQ+MI::WB*2+MI::BR, 40);
-    add(MI::WQ+MI::WB*2+MI::WN, 10);
-    add(MI::WQ+MI::WB*2+MI::WP, 6);
-    add(MI::WQ+MI::WB+MI::BB*2, 26);
-    add(MI::WQ+MI::WB+MI::BB+MI::BN, 32);
-    add(MI::WQ+MI::WB+MI::BB+MI::BP, 44);
-    add(MI::WQ+MI::WB+MI::BN*2, 26);
-    add(MI::WQ+MI::WB+MI::BN+MI::BP, 53);
-    add(MI::WQ+MI::WB+MI::BP*2, 34);
-    add(MI::WQ+MI::WB+MI::BQ+MI::BB, 91);
-    add(MI::WQ+MI::WB+MI::BQ+MI::BN, 72);
-    add(MI::WQ+MI::WB+MI::BQ+MI::BP, 100);
-    add(MI::WQ+MI::WB+MI::BR+MI::BB, 83);
-    add(MI::WQ+MI::WB+MI::BR+MI::BN, 54);
-    add(MI::WQ+MI::WB+MI::BR+MI::BP, 77);
-    add(MI::WQ+MI::WB+MI::BR*2, 100);
-    add(MI::WQ+MI::WB+MI::WN+MI::BB, 14);
-    add(MI::WQ+MI::WB+MI::WN+MI::BN, 12);
-    add(MI::WQ+MI::WB+MI::WN+MI::BP, 8);
-    add(MI::WQ+MI::WB+MI::WN+MI::BQ, 100);
-    add(MI::WQ+MI::WB+MI::WN+MI::BR, 44);
-    add(MI::WQ+MI::WB+MI::WN*2, 10);
-    add(MI::WQ+MI::WB+MI::WN+MI::WP, 6);
-    add(MI::WQ+MI::WB+MI::WP+MI::BB, 12);
-    add(MI::WQ+MI::WB+MI::WP+MI::BN, 12);
-    add(MI::WQ+MI::WB+MI::WP+MI::BP, 8);
-    add(MI::WQ+MI::WB+MI::WP+MI::BQ, 100);
-    add(MI::WQ+MI::WB+MI::WP+MI::BR, 62);
-    add(MI::WQ+MI::WB+MI::WP*2, 8);
-    add(MI::WQ+MI::WN+MI::BB*2, 30);
-    add(MI::WQ+MI::WN+MI::BB+MI::BN, 34);
-    add(MI::WQ+MI::WN+MI::BB+MI::BP, 67);
-    add(MI::WQ+MI::WN+MI::BN*2, 32);
-    add(MI::WQ+MI::WN+MI::BN+MI::BP, 62);
-    add(MI::WQ+MI::WN+MI::BP*2, 44);
-    add(MI::WQ+MI::WN+MI::BQ+MI::BN, 57);
-    add(MI::WQ+MI::WN+MI::BQ+MI::BP, 100);
-    add(MI::WQ+MI::WN+MI::BR+MI::BB, 52);
-    add(MI::WQ+MI::WN+MI::BR+MI::BN, 80);
-    add(MI::WQ+MI::WN+MI::BR+MI::BP, 83);
-    add(MI::WQ+MI::WN+MI::BR*2, 100);
-    add(MI::WQ+MI::WN*2+MI::BB, 22);
-    add(MI::WQ+MI::WN*2+MI::BN, 18);
-    add(MI::WQ+MI::WN*2+MI::BP, 20);
-    add(MI::WQ+MI::WN*2+MI::BQ, 100);
-    add(MI::WQ+MI::WN*2+MI::BR, 44);
-    add(MI::WQ+MI::WN*3, 10);
-    add(MI::WQ+MI::WN*2+MI::WP, 6);
-    add(MI::WQ+MI::WN+MI::WP+MI::BB, 12);
-    add(MI::WQ+MI::WN+MI::WP+MI::BN, 12);
-    add(MI::WQ+MI::WN+MI::WP+MI::BP, 12);
-    add(MI::WQ+MI::WN+MI::WP+MI::BQ, 100);
-    add(MI::WQ+MI::WN+MI::WP+MI::BR, 42);
-    add(MI::WQ+MI::WN+MI::WP*2, 10);
-    add(MI::WQ+MI::WP+MI::BB*2, 44);
-    add(MI::WQ+MI::WP+MI::BB+MI::BN, 36);
-    add(MI::WQ+MI::WP+MI::BB+MI::BP, 99);
-    add(MI::WQ+MI::WP+MI::BN*2, 92);
-    add(MI::WQ+MI::WP+MI::BN+MI::BP, 54);
-    add(MI::WQ+MI::WP+MI::BP*2, 35);
-    add(MI::WQ+MI::WP+MI::BQ+MI::BP, 100);
-    add(MI::WQ+MI::WP+MI::BR+MI::BB, 100);
-    add(MI::WQ+MI::WP+MI::BR+MI::BN, 100);
-    add(MI::WQ+MI::WP+MI::BR+MI::BP, 100);
-    add(MI::WQ+MI::WP+MI::BR*2, 100);
-    add(MI::WQ+MI::WP*2+MI::BB, 12);
-    add(MI::WQ+MI::WP*2+MI::BN, 12);
-    add(MI::WQ+MI::WP*2+MI::BP, 10);
-    add(MI::WQ+MI::WP*2+MI::BQ, 100);
-    add(MI::WQ+MI::WP*2+MI::BR, 42);
-    add(MI::WQ+MI::WP*3, 6);
-    add(MI::WQ*2+MI::WB*2, 6);
-    add(MI::WQ*2+MI::WB+MI::BB, 10);
-    add(MI::WQ*2+MI::WB+MI::BN, 10);
-    add(MI::WQ*2+MI::WB+MI::BP, 6);
-    add(MI::WQ*2+MI::WB+MI::BQ, 58);
-    add(MI::WQ*2+MI::WB+MI::BR, 52);
-    add(MI::WQ*2+MI::WB+MI::WN, 8);
-    add(MI::WQ*2+MI::WB+MI::WP, 6);
-    add(MI::WQ*2+MI::BB*2, 16);
-    add(MI::WQ*2+MI::BB+MI::BN, 16);
-    add(MI::WQ*2+MI::BB+MI::BP, 12);
-    add(MI::WQ*2+MI::BN*2, 14);
-    add(MI::WQ*2+MI::BN+MI::BP, 11);
-    add(MI::WQ*2+MI::BP*2, 6);
-    add(MI::WQ*2+MI::BQ+MI::BB, 100);
-    add(MI::WQ*2+MI::BQ+MI::BN, 100);
-    add(MI::WQ*2+MI::BQ+MI::BP, 79);
-    add(MI::WQ*2+MI::BQ*2, 87);
-    add(MI::WQ*2+MI::BQ+MI::BR, 100);
-    add(MI::WQ*2+MI::BR+MI::BB, 27);
-    add(MI::WQ*2+MI::BR+MI::BN, 28);
-    add(MI::WQ*2+MI::BR+MI::BP, 38);
-    add(MI::WQ*2+MI::BR*2, 36);
-    add(MI::WQ*2+MI::WN+MI::BB, 8);
-    add(MI::WQ*2+MI::WN+MI::BN, 10);
-    add(MI::WQ*2+MI::WN+MI::BP, 6);
-    add(MI::WQ*2+MI::WN+MI::BQ, 56);
-    add(MI::WQ*2+MI::WN+MI::BR, 48);
-    add(MI::WQ*2+MI::WN*2, 8);
-    add(MI::WQ*2+MI::WN+MI::WP, 6);
-    add(MI::WQ*2+MI::WP+MI::BB, 8);
-    add(MI::WQ*2+MI::WP+MI::BN, 10);
-    add(MI::WQ*2+MI::WP+MI::BP, 6);
-    add(MI::WQ*2+MI::WP+MI::BQ, 70);
-    add(MI::WQ*2+MI::WP+MI::BR, 48);
-    add(MI::WQ*2+MI::WP*2, 6);
-    add(MI::WQ*3+MI::WB, 6);
-    add(MI::WQ*3+MI::BB, 6);
-    add(MI::WQ*3+MI::BN, 8);
-    add(MI::WQ*3+MI::BP, 6);
-    add(MI::WQ*3+MI::BQ, 38);
-    add(MI::WQ*3+MI::BR, 40);
-    add(MI::WQ*3+MI::WN, 6);
-    add(MI::WQ*3+MI::WP, 6);
-    add(MI::WQ*4, 6);
-    add(MI::WQ*3+MI::WR, 6);
-    add(MI::WQ*2+MI::WR+MI::WB, 6);
-    add(MI::WQ*2+MI::WR+MI::BB, 8);
-    add(MI::WQ*2+MI::WR+MI::BN, 10);
-    add(MI::WQ*2+MI::WR+MI::BP, 6);
-    add(MI::WQ*2+MI::WR+MI::BQ, 56);
-    add(MI::WQ*2+MI::WR+MI::BR, 48);
-    add(MI::WQ*2+MI::WR+MI::WN, 8);
-    add(MI::WQ*2+MI::WR+MI::WP, 6);
-    add(MI::WQ*2+MI::WR*2, 6);
-    add(MI::WQ+MI::WR+MI::WB*2, 8);
-    add(MI::WQ+MI::WR+MI::WB+MI::BB, 10);
-    add(MI::WQ+MI::WR+MI::WB+MI::BN, 10);
-    add(MI::WQ+MI::WR+MI::WB+MI::BP, 6);
-    add(MI::WQ+MI::WR+MI::WB+MI::BQ, 98);
-    add(MI::WQ+MI::WR+MI::WB+MI::BR, 50);
-    add(MI::WQ+MI::WR+MI::WB+MI::WN, 8);
-    add(MI::WQ+MI::WR+MI::WB+MI::WP, 8);
-    add(MI::WQ+MI::WR+MI::BB*2, 24);
-    add(MI::WQ+MI::WR+MI::BB+MI::BN, 22);
-    add(MI::WQ+MI::WR+MI::BB+MI::BP, 28);
-    add(MI::WQ+MI::WR+MI::BN*2, 21);
-    add(MI::WQ+MI::WR+MI::BN+MI::BP, 26);
-    add(MI::WQ+MI::WR+MI::BP*2, 12);
-    add(MI::WQ+MI::WR+MI::BQ+MI::BB, 100);
-    add(MI::WQ+MI::WR+MI::BQ+MI::BN, 100);
-    add(MI::WQ+MI::WR+MI::BQ+MI::BP, 100);
-    add(MI::WQ+MI::WR+MI::BQ+MI::BR, 100);
-    add(MI::WQ+MI::WR+MI::BR+MI::BB, 42);
-    add(MI::WQ+MI::WR+MI::BR+MI::BN, 42);
-    add(MI::WQ+MI::WR+MI::BR+MI::BP, 44);
-    add(MI::WQ+MI::WR+MI::BR*2, 68);
-    add(MI::WQ+MI::WR+MI::WN+MI::BB, 8);
-    add(MI::WQ+MI::WR+MI::WN+MI::BN, 12);
-    add(MI::WQ+MI::WR+MI::WN+MI::BP, 7);
-    add(MI::WQ+MI::WR+MI::WN+MI::BQ, 100);
-    add(MI::WQ+MI::WR+MI::WN+MI::BR, 48);
-    add(MI::WQ+MI::WR+MI::WN*2, 8);
-    add(MI::WQ+MI::WR+MI::WN+MI::WP, 8);
-    add(MI::WQ+MI::WR+MI::WP+MI::BB, 8);
-    add(MI::WQ+MI::WR+MI::WP+MI::BN, 10);
-    add(MI::WQ+MI::WR+MI::WP+MI::BP, 7);
-    add(MI::WQ+MI::WR+MI::WP+MI::BQ, 100);
-    add(MI::WQ+MI::WR+MI::WP+MI::BR, 60);
-    add(MI::WQ+MI::WR+MI::WP*2, 6);
-    add(MI::WQ+MI::WR*2+MI::WB, 8);
-    add(MI::WQ+MI::WR*2+MI::BB, 8);
-    add(MI::WQ+MI::WR*2+MI::BN, 10);
-    add(MI::WQ+MI::WR*2+MI::BP, 6);
-    add(MI::WQ+MI::WR*2+MI::BQ, 82);
-    add(MI::WQ+MI::WR*2+MI::BR, 46);
-    add(MI::WQ+MI::WR*2+MI::WN, 8);
-    add(MI::WQ+MI::WR*2+MI::WP, 6);
-    add(MI::WQ+MI::WR*3, 8);
-    add(MI::WR+MI::WB*3, 20);
-    add(MI::WR+MI::WB*2+MI::BB, 36);
-    add(MI::WR+MI::WB*2+MI::BN, 23);
-    add(MI::WR+MI::WB*2+MI::BP, 24);
-    add(MI::WR+MI::WB*2+MI::BQ, 88);
-    add(MI::WR+MI::WB*2+MI::BR, 71);
-    add(MI::WR+MI::WB*2+MI::WN, 14);
-    add(MI::WR+MI::WB*2+MI::WP, 10);
-    add(MI::WR+MI::WB+MI::BB*2, 100);
-    add(MI::WR+MI::WB+MI::BB+MI::BN, 100);
-    add(MI::WR+MI::WB+MI::BB+MI::BP, 76);
-    add(MI::WR+MI::WB+MI::BN*2, 100);
-    add(MI::WR+MI::WB+MI::BN+MI::BP, 90);
-    add(MI::WR+MI::WB+MI::BP*2, 47);
-    add(MI::WR+MI::WB+MI::BR+MI::BB, 33);
-    add(MI::WR+MI::WB+MI::BR+MI::BN, 40);
-    add(MI::WR+MI::WB+MI::BR+MI::BP, 94);
-    add(MI::WR+MI::WB+MI::WN+MI::BB, 26);
-    add(MI::WR+MI::WB+MI::WN+MI::BN, 24);
-    add(MI::WR+MI::WB+MI::WN+MI::BP, 31);
-    add(MI::WR+MI::WB+MI::WN+MI::BQ, 100);
-    add(MI::WR+MI::WB+MI::WN+MI::BR, 72);
-    add(MI::WR+MI::WB+MI::WN*2, 14);
-    add(MI::WR+MI::WB+MI::WN+MI::WP, 10);
-    add(MI::WR+MI::WB+MI::WP+MI::BB, 20);
-    add(MI::WR+MI::WB+MI::WP+MI::BN, 20);
-    add(MI::WR+MI::WB+MI::WP+MI::BP, 21);
-    add(MI::WR+MI::WB+MI::WP+MI::BQ, 100);
-    add(MI::WR+MI::WB+MI::WP+MI::BR, 100);
-    add(MI::WR+MI::WB+MI::WP*2, 8);
-    add(MI::WR+MI::WN+MI::BB*2, 100);
-    add(MI::WR+MI::WN+MI::BB+MI::BN, 100);
-    add(MI::WR+MI::WN+MI::BB+MI::BP, 100);
-    add(MI::WR+MI::WN+MI::BN*2, 100);
-    add(MI::WR+MI::WN+MI::BN+MI::BP, 100);
-    add(MI::WR+MI::WN+MI::BP*2, 48);
-    add(MI::WR+MI::WN+MI::BR+MI::BN, 41);
-    add(MI::WR+MI::WN+MI::BR+MI::BP, 72);
-    add(MI::WR+MI::WN*2+MI::BB, 24);
-    add(MI::WR+MI::WN*2+MI::BN, 25);
-    add(MI::WR+MI::WN*2+MI::BP, 30);
-    add(MI::WR+MI::WN*2+MI::BQ, 81);
-    add(MI::WR+MI::WN*2+MI::BR, 78);
-    add(MI::WR+MI::WN*3, 14);
-    add(MI::WR+MI::WN*2+MI::WP, 8);
-    add(MI::WR+MI::WN+MI::WP+MI::BB, 26);
-    add(MI::WR+MI::WN+MI::WP+MI::BN, 20);
-    add(MI::WR+MI::WN+MI::WP+MI::BP, 27);
-    add(MI::WR+MI::WN+MI::WP+MI::BQ, 100);
-    add(MI::WR+MI::WN+MI::WP+MI::BR, 100);
-    add(MI::WR+MI::WN+MI::WP*2, 10);
-    add(MI::WR+MI::WP+MI::BB*2, 79);
-    add(MI::WR+MI::WP+MI::BB+MI::BN, 100);
-    add(MI::WR+MI::WP+MI::BB+MI::BP, 100);
-    add(MI::WR+MI::WP+MI::BN*2, 84);
-    add(MI::WR+MI::WP+MI::BN+MI::BP, 100);
-    add(MI::WR+MI::WP+MI::BP*2, 31);
-    add(MI::WR+MI::WP+MI::BR+MI::BP, 73);
-    add(MI::WR+MI::WP*2+MI::BB, 36);
-    add(MI::WR+MI::WP*2+MI::BN, 36);
-    add(MI::WR+MI::WP*2+MI::BP, 26);
-    add(MI::WR+MI::WP*2+MI::BQ, 100);
-    add(MI::WR+MI::WP*2+MI::BR, 90);
-    add(MI::WR+MI::WP*3, 6);
-    add(MI::WR*2+MI::WB*2, 12);
-    add(MI::WR*2+MI::WB+MI::BB, 14);
-    add(MI::WR*2+MI::WB+MI::BN, 12);
-    add(MI::WR*2+MI::WB+MI::BP, 8);
-    add(MI::WR*2+MI::WB+MI::BQ, 100);
-    add(MI::WR*2+MI::WB+MI::BR, 62);
-    add(MI::WR*2+MI::WB+MI::WN, 12);
-    add(MI::WR*2+MI::WB+MI::WP, 8);
-    add(MI::WR*2+MI::BB*2, 74);
-    add(MI::WR*2+MI::BB+MI::BN, 51);
-    add(MI::WR*2+MI::BB+MI::BP, 52);
-    add(MI::WR*2+MI::BN*2, 66);
-    add(MI::WR*2+MI::BN+MI::BP, 50);
-    add(MI::WR*2+MI::BP*2, 50);
-    add(MI::WR*2+MI::BR+MI::BB, 100);
-    add(MI::WR*2+MI::BR+MI::BN, 100);
-    add(MI::WR*2+MI::BR+MI::BP, 100);
-    add(MI::WR*2+MI::BR*2, 35);
-    add(MI::WR*2+MI::WN+MI::BB, 14);
-    add(MI::WR*2+MI::WN+MI::BN, 14);
-    add(MI::WR*2+MI::WN+MI::BP, 18);
-    add(MI::WR*2+MI::WN+MI::BQ, 100);
-    add(MI::WR*2+MI::WN+MI::BR, 66);
-    add(MI::WR*2+MI::WN*2, 12);
-    add(MI::WR*2+MI::WN+MI::WP, 8);
-    add(MI::WR*2+MI::WP+MI::BB, 14);
-    add(MI::WR*2+MI::WP+MI::BN, 12);
-    add(MI::WR*2+MI::WP+MI::BP, 22);
-    add(MI::WR*2+MI::WP+MI::BQ, 100);
-    add(MI::WR*2+MI::WP+MI::BR, 56);
-    add(MI::WR*2+MI::WP*2, 6);
-    add(MI::WR*3+MI::WB, 10);
-    add(MI::WR*3+MI::BB, 10);
-    add(MI::WR*3+MI::BN, 12);
-    add(MI::WR*3+MI::BP, 6);
-    add(MI::WR*3+MI::BQ, 100);
-    add(MI::WR*3+MI::BR, 42);
-    add(MI::WR*3+MI::WN, 10);
-    add(MI::WR*3+MI::WP, 8);
-    add(MI::WR*4, 8);
+                              { MI::WB*4, 20 },               // 6-men
+                              { MI::WB*3+MI::BB, 40 },
+                              { MI::WB*3+MI::BN, 28 },
+                              { MI::WB*3+MI::BP, 24 },
+                              { MI::WB*3+MI::BQ, 100 },
+                              { MI::WB*3+MI::BR, 100 },
+                              { MI::WB*3+MI::WN, 26 },
+                              { MI::WB*3+MI::WP, 24 },
+                              { MI::WB*2+MI::BB*2, 11 },
+                              { MI::WB*2+MI::BB+MI::BN, 40 },
+                              { MI::WB*2+MI::BB+MI::BP, 69 },
+                              { MI::WB*2+MI::BN*2, 56 },
+                              { MI::WB*2+MI::BN+MI::BP, 100 },
+                              { MI::WB*2+MI::BP*2, 39 },
+                              { MI::WB*2+MI::WN+MI::BB, 72 },
+                              { MI::WB*2+MI::WN+MI::BN, 62 },
+                              { MI::WB*2+MI::WN+MI::BP, 32 },
+                              { MI::WB*2+MI::WN+MI::BQ, 100 },
+                              { MI::WB*2+MI::WN+MI::BR, 100 },
+                              { MI::WB*2+MI::WN*2, 20 },
+                              { MI::WB*2+MI::WN+MI::WP, 10 },
+                              { MI::WB*2+MI::WP+MI::BB, 56 },
+                              { MI::WB*2+MI::WP+MI::BN, 100 },
+                              { MI::WB*2+MI::WP+MI::BP, 29 },
+                              { MI::WB*2+MI::WP+MI::BQ, 100 },
+                              { MI::WB*2+MI::WP+MI::BR, 100 },
+                              { MI::WB*2+MI::WP*2, 12 },
+                              { MI::WB+MI::WN+MI::BB+MI::BN, 17 },
+                              { MI::WB+MI::WN+MI::BB+MI::BP, 56 },
+                              { MI::WB+MI::WN+MI::BN*2, 24 },
+                              { MI::WB+MI::WN+MI::BN+MI::BP, 98 },
+                              { MI::WB+MI::WN+MI::BP*2, 48 },
+                              { MI::WB+MI::WN*2+MI::BB, 76 },
+                              { MI::WB+MI::WN*2+MI::BN, 58 },
+                              { MI::WB+MI::WN*2+MI::BP, 33 },
+                              { MI::WB+MI::WN*2+MI::BQ, 98 },
+                              { MI::WB+MI::WN*2+MI::BR, 96 },
+                              { MI::WB+MI::WN*3, 20 },
+                              { MI::WB+MI::WN*2+MI::WP, 10 },
+                              { MI::WB+MI::WN+MI::WP+MI::BB, 86 },
+                              { MI::WB+MI::WN+MI::WP+MI::BN, 77 },
+                              { MI::WB+MI::WN+MI::WP+MI::BP, 21 },
+                              { MI::WB+MI::WN+MI::WP+MI::BQ, 100 },
+                              { MI::WB+MI::WN+MI::WP+MI::BR, 100 },
+                              { MI::WB+MI::WN+MI::WP*2, 10 },
+                              { MI::WB+MI::WP+MI::BB+MI::BP, 65 },
+                              { MI::WB+MI::WP+MI::BN*2, 48 },
+                              { MI::WB+MI::WP+MI::BN+MI::BP, 62 },
+                              { MI::WB+MI::WP+MI::BP*2, 75 },
+                              { MI::WB+MI::WP*2+MI::BB, 86 },
+                              { MI::WB+MI::WP*2+MI::BN, 100 },
+                              { MI::WB+MI::WP*2+MI::BP, 61 },
+                              { MI::WB+MI::WP*2+MI::BQ, 78 },
+                              { MI::WB+MI::WP*2+MI::BR, 66 },
+                              { MI::WB+MI::WP*3, 18 },
+                              { MI::WN*2+MI::BN*2, 13 },
+                              { MI::WN*2+MI::BN+MI::BP, 56 },
+                              { MI::WN*2+MI::BP*2, 100 },
+                              { MI::WN*3+MI::BB, 100 },
+                              { MI::WN*3+MI::BN, 100 },
+                              { MI::WN*3+MI::BP, 41 },
+                              { MI::WN*3+MI::BQ, 70 },
+                              { MI::WN*3+MI::BR, 22 },
+                              { MI::WN*4, 22 },
+                              { MI::WN*3+MI::WP, 12 },
+                              { MI::WN*2+MI::WP+MI::BB, 100 },
+                              { MI::WN*2+MI::WP+MI::BN, 100 },
+                              { MI::WN*2+MI::WP+MI::BP, 33 },
+                              { MI::WN*2+MI::WP+MI::BQ, 100 },
+                              { MI::WN*2+MI::WP+MI::BR, 91 },
+                              { MI::WN*2+MI::WP*2, 12 },
+                              { MI::WN+MI::WP+MI::BN+MI::BP, 57 },
+                              { MI::WN+MI::WP+MI::BP*2, 66 },
+                              { MI::WN+MI::WP*2+MI::BB, 97 },
+                              { MI::WN+MI::WP*2+MI::BN, 96 },
+                              { MI::WN+MI::WP*2+MI::BP, 40 },
+                              { MI::WN+MI::WP*2+MI::BQ, 78 },
+                              { MI::WN+MI::WP*2+MI::BR, 81 },
+                              { MI::WN+MI::WP*3, 10 },
+                              { MI::WP*2+MI::BP*2, 31 },
+                              { MI::WP*3+MI::BB, 36 },
+                              { MI::WP*3+MI::BN, 42 },
+                              { MI::WP*3+MI::BP, 40 },
+                              { MI::WP*3+MI::BQ, 65 },
+                              { MI::WP*3+MI::BR, 44 },
+                              { MI::WP*4, 14 },
+                              { MI::WQ+MI::WB*3, 12 },
+                              { MI::WQ+MI::WB*2+MI::BB, 16 },
+                              { MI::WQ+MI::WB*2+MI::BN, 14 },
+                              { MI::WQ+MI::WB*2+MI::BP, 10 },
+                              { MI::WQ+MI::WB*2+MI::BQ, 100 },
+                              { MI::WQ+MI::WB*2+MI::BR, 40 },
+                              { MI::WQ+MI::WB*2+MI::WN, 10 },
+                              { MI::WQ+MI::WB*2+MI::WP, 6 },
+                              { MI::WQ+MI::WB+MI::BB*2, 26 },
+                              { MI::WQ+MI::WB+MI::BB+MI::BN, 32 },
+                              { MI::WQ+MI::WB+MI::BB+MI::BP, 44 },
+                              { MI::WQ+MI::WB+MI::BN*2, 26 },
+                              { MI::WQ+MI::WB+MI::BN+MI::BP, 53 },
+                              { MI::WQ+MI::WB+MI::BP*2, 34 },
+                              { MI::WQ+MI::WB+MI::BQ+MI::BB, 91 },
+                              { MI::WQ+MI::WB+MI::BQ+MI::BN, 72 },
+                              { MI::WQ+MI::WB+MI::BQ+MI::BP, 100 },
+                              { MI::WQ+MI::WB+MI::BR+MI::BB, 83 },
+                              { MI::WQ+MI::WB+MI::BR+MI::BN, 54 },
+                              { MI::WQ+MI::WB+MI::BR+MI::BP, 77 },
+                              { MI::WQ+MI::WB+MI::BR*2, 100 },
+                              { MI::WQ+MI::WB+MI::WN+MI::BB, 14 },
+                              { MI::WQ+MI::WB+MI::WN+MI::BN, 12 },
+                              { MI::WQ+MI::WB+MI::WN+MI::BP, 8 },
+                              { MI::WQ+MI::WB+MI::WN+MI::BQ, 100 },
+                              { MI::WQ+MI::WB+MI::WN+MI::BR, 44 },
+                              { MI::WQ+MI::WB+MI::WN*2, 10 },
+                              { MI::WQ+MI::WB+MI::WN+MI::WP, 6 },
+                              { MI::WQ+MI::WB+MI::WP+MI::BB, 12 },
+                              { MI::WQ+MI::WB+MI::WP+MI::BN, 12 },
+                              { MI::WQ+MI::WB+MI::WP+MI::BP, 8 },
+                              { MI::WQ+MI::WB+MI::WP+MI::BQ, 100 },
+                              { MI::WQ+MI::WB+MI::WP+MI::BR, 62 },
+                              { MI::WQ+MI::WB+MI::WP*2, 8 },
+                              { MI::WQ+MI::WN+MI::BB*2, 30 },
+                              { MI::WQ+MI::WN+MI::BB+MI::BN, 34 },
+                              { MI::WQ+MI::WN+MI::BB+MI::BP, 67 },
+                              { MI::WQ+MI::WN+MI::BN*2, 32 },
+                              { MI::WQ+MI::WN+MI::BN+MI::BP, 62 },
+                              { MI::WQ+MI::WN+MI::BP*2, 44 },
+                              { MI::WQ+MI::WN+MI::BQ+MI::BN, 57 },
+                              { MI::WQ+MI::WN+MI::BQ+MI::BP, 100 },
+                              { MI::WQ+MI::WN+MI::BR+MI::BB, 52 },
+                              { MI::WQ+MI::WN+MI::BR+MI::BN, 80 },
+                              { MI::WQ+MI::WN+MI::BR+MI::BP, 83 },
+                              { MI::WQ+MI::WN+MI::BR*2, 100 },
+                              { MI::WQ+MI::WN*2+MI::BB, 22 },
+                              { MI::WQ+MI::WN*2+MI::BN, 18 },
+                              { MI::WQ+MI::WN*2+MI::BP, 20 },
+                              { MI::WQ+MI::WN*2+MI::BQ, 100 },
+                              { MI::WQ+MI::WN*2+MI::BR, 44 },
+                              { MI::WQ+MI::WN*3, 10 },
+                              { MI::WQ+MI::WN*2+MI::WP, 6 },
+                              { MI::WQ+MI::WN+MI::WP+MI::BB, 12 },
+                              { MI::WQ+MI::WN+MI::WP+MI::BN, 12 },
+                              { MI::WQ+MI::WN+MI::WP+MI::BP, 12 },
+                              { MI::WQ+MI::WN+MI::WP+MI::BQ, 100 },
+                              { MI::WQ+MI::WN+MI::WP+MI::BR, 42 },
+                              { MI::WQ+MI::WN+MI::WP*2, 10 },
+                              { MI::WQ+MI::WP+MI::BB*2, 44 },
+                              { MI::WQ+MI::WP+MI::BB+MI::BN, 36 },
+                              { MI::WQ+MI::WP+MI::BB+MI::BP, 99 },
+                              { MI::WQ+MI::WP+MI::BN*2, 92 },
+                              { MI::WQ+MI::WP+MI::BN+MI::BP, 54 },
+                              { MI::WQ+MI::WP+MI::BP*2, 35 },
+                              { MI::WQ+MI::WP+MI::BQ+MI::BP, 100 },
+                              { MI::WQ+MI::WP+MI::BR+MI::BB, 100 },
+                              { MI::WQ+MI::WP+MI::BR+MI::BN, 100 },
+                              { MI::WQ+MI::WP+MI::BR+MI::BP, 100 },
+                              { MI::WQ+MI::WP+MI::BR*2, 100 },
+                              { MI::WQ+MI::WP*2+MI::BB, 12 },
+                              { MI::WQ+MI::WP*2+MI::BN, 12 },
+                              { MI::WQ+MI::WP*2+MI::BP, 10 },
+                              { MI::WQ+MI::WP*2+MI::BQ, 100 },
+                              { MI::WQ+MI::WP*2+MI::BR, 42 },
+                              { MI::WQ+MI::WP*3, 6 },
+                              { MI::WQ*2+MI::WB*2, 6 },
+                              { MI::WQ*2+MI::WB+MI::BB, 10 },
+                              { MI::WQ*2+MI::WB+MI::BN, 10 },
+                              { MI::WQ*2+MI::WB+MI::BP, 6 },
+                              { MI::WQ*2+MI::WB+MI::BQ, 58 },
+                              { MI::WQ*2+MI::WB+MI::BR, 52 },
+                              { MI::WQ*2+MI::WB+MI::WN, 8 },
+                              { MI::WQ*2+MI::WB+MI::WP, 6 },
+                              { MI::WQ*2+MI::BB*2, 16 },
+                              { MI::WQ*2+MI::BB+MI::BN, 16 },
+                              { MI::WQ*2+MI::BB+MI::BP, 12 },
+                              { MI::WQ*2+MI::BN*2, 14 },
+                              { MI::WQ*2+MI::BN+MI::BP, 11 },
+                              { MI::WQ*2+MI::BP*2, 6 },
+                              { MI::WQ*2+MI::BQ+MI::BB, 100 },
+                              { MI::WQ*2+MI::BQ+MI::BN, 100 },
+                              { MI::WQ*2+MI::BQ+MI::BP, 79 },
+                              { MI::WQ*2+MI::BQ*2, 87 },
+                              { MI::WQ*2+MI::BQ+MI::BR, 100 },
+                              { MI::WQ*2+MI::BR+MI::BB, 27 },
+                              { MI::WQ*2+MI::BR+MI::BN, 28 },
+                              { MI::WQ*2+MI::BR+MI::BP, 38 },
+                              { MI::WQ*2+MI::BR*2, 36 },
+                              { MI::WQ*2+MI::WN+MI::BB, 8 },
+                              { MI::WQ*2+MI::WN+MI::BN, 10 },
+                              { MI::WQ*2+MI::WN+MI::BP, 6 },
+                              { MI::WQ*2+MI::WN+MI::BQ, 56 },
+                              { MI::WQ*2+MI::WN+MI::BR, 48 },
+                              { MI::WQ*2+MI::WN*2, 8 },
+                              { MI::WQ*2+MI::WN+MI::WP, 6 },
+                              { MI::WQ*2+MI::WP+MI::BB, 8 },
+                              { MI::WQ*2+MI::WP+MI::BN, 10 },
+                              { MI::WQ*2+MI::WP+MI::BP, 6 },
+                              { MI::WQ*2+MI::WP+MI::BQ, 70 },
+                              { MI::WQ*2+MI::WP+MI::BR, 48 },
+                              { MI::WQ*2+MI::WP*2, 6 },
+                              { MI::WQ*3+MI::WB, 6 },
+                              { MI::WQ*3+MI::BB, 6 },
+                              { MI::WQ*3+MI::BN, 8 },
+                              { MI::WQ*3+MI::BP, 6 },
+                              { MI::WQ*3+MI::BQ, 38 },
+                              { MI::WQ*3+MI::BR, 40 },
+                              { MI::WQ*3+MI::WN, 6 },
+                              { MI::WQ*3+MI::WP, 6 },
+                              { MI::WQ*4, 6 },
+                              { MI::WQ*3+MI::WR, 6 },
+                              { MI::WQ*2+MI::WR+MI::WB, 6 },
+                              { MI::WQ*2+MI::WR+MI::BB, 8 },
+                              { MI::WQ*2+MI::WR+MI::BN, 10 },
+                              { MI::WQ*2+MI::WR+MI::BP, 6 },
+                              { MI::WQ*2+MI::WR+MI::BQ, 56 },
+                              { MI::WQ*2+MI::WR+MI::BR, 48 },
+                              { MI::WQ*2+MI::WR+MI::WN, 8 },
+                              { MI::WQ*2+MI::WR+MI::WP, 6 },
+                              { MI::WQ*2+MI::WR*2, 6 },
+                              { MI::WQ+MI::WR+MI::WB*2, 8 },
+                              { MI::WQ+MI::WR+MI::WB+MI::BB, 10 },
+                              { MI::WQ+MI::WR+MI::WB+MI::BN, 10 },
+                              { MI::WQ+MI::WR+MI::WB+MI::BP, 6 },
+                              { MI::WQ+MI::WR+MI::WB+MI::BQ, 98 },
+                              { MI::WQ+MI::WR+MI::WB+MI::BR, 50 },
+                              { MI::WQ+MI::WR+MI::WB+MI::WN, 8 },
+                              { MI::WQ+MI::WR+MI::WB+MI::WP, 8 },
+                              { MI::WQ+MI::WR+MI::BB*2, 24 },
+                              { MI::WQ+MI::WR+MI::BB+MI::BN, 22 },
+                              { MI::WQ+MI::WR+MI::BB+MI::BP, 28 },
+                              { MI::WQ+MI::WR+MI::BN*2, 21 },
+                              { MI::WQ+MI::WR+MI::BN+MI::BP, 26 },
+                              { MI::WQ+MI::WR+MI::BP*2, 12 },
+                              { MI::WQ+MI::WR+MI::BQ+MI::BB, 100 },
+                              { MI::WQ+MI::WR+MI::BQ+MI::BN, 100 },
+                              { MI::WQ+MI::WR+MI::BQ+MI::BP, 100 },
+                              { MI::WQ+MI::WR+MI::BQ+MI::BR, 100 },
+                              { MI::WQ+MI::WR+MI::BR+MI::BB, 42 },
+                              { MI::WQ+MI::WR+MI::BR+MI::BN, 42 },
+                              { MI::WQ+MI::WR+MI::BR+MI::BP, 44 },
+                              { MI::WQ+MI::WR+MI::BR*2, 68 },
+                              { MI::WQ+MI::WR+MI::WN+MI::BB, 8 },
+                              { MI::WQ+MI::WR+MI::WN+MI::BN, 12 },
+                              { MI::WQ+MI::WR+MI::WN+MI::BP, 7 },
+                              { MI::WQ+MI::WR+MI::WN+MI::BQ, 100 },
+                              { MI::WQ+MI::WR+MI::WN+MI::BR, 48 },
+                              { MI::WQ+MI::WR+MI::WN*2, 8 },
+                              { MI::WQ+MI::WR+MI::WN+MI::WP, 8 },
+                              { MI::WQ+MI::WR+MI::WP+MI::BB, 8 },
+                              { MI::WQ+MI::WR+MI::WP+MI::BN, 10 },
+                              { MI::WQ+MI::WR+MI::WP+MI::BP, 7 },
+                              { MI::WQ+MI::WR+MI::WP+MI::BQ, 100 },
+                              { MI::WQ+MI::WR+MI::WP+MI::BR, 60 },
+                              { MI::WQ+MI::WR+MI::WP*2, 6 },
+                              { MI::WQ+MI::WR*2+MI::WB, 8 },
+                              { MI::WQ+MI::WR*2+MI::BB, 8 },
+                              { MI::WQ+MI::WR*2+MI::BN, 10 },
+                              { MI::WQ+MI::WR*2+MI::BP, 6 },
+                              { MI::WQ+MI::WR*2+MI::BQ, 82 },
+                              { MI::WQ+MI::WR*2+MI::BR, 46 },
+                              { MI::WQ+MI::WR*2+MI::WN, 8 },
+                              { MI::WQ+MI::WR*2+MI::WP, 6 },
+                              { MI::WQ+MI::WR*3, 8 },
+                              { MI::WR+MI::WB*3, 20 },
+                              { MI::WR+MI::WB*2+MI::BB, 36 },
+                              { MI::WR+MI::WB*2+MI::BN, 23 },
+                              { MI::WR+MI::WB*2+MI::BP, 24 },
+                              { MI::WR+MI::WB*2+MI::BQ, 88 },
+                              { MI::WR+MI::WB*2+MI::BR, 71 },
+                              { MI::WR+MI::WB*2+MI::WN, 14 },
+                              { MI::WR+MI::WB*2+MI::WP, 10 },
+                              { MI::WR+MI::WB+MI::BB*2, 100 },
+                              { MI::WR+MI::WB+MI::BB+MI::BN, 100 },
+                              { MI::WR+MI::WB+MI::BB+MI::BP, 76 },
+                              { MI::WR+MI::WB+MI::BN*2, 100 },
+                              { MI::WR+MI::WB+MI::BN+MI::BP, 90 },
+                              { MI::WR+MI::WB+MI::BP*2, 47 },
+                              { MI::WR+MI::WB+MI::BR+MI::BB, 33 },
+                              { MI::WR+MI::WB+MI::BR+MI::BN, 40 },
+                              { MI::WR+MI::WB+MI::BR+MI::BP, 94 },
+                              { MI::WR+MI::WB+MI::WN+MI::BB, 26 },
+                              { MI::WR+MI::WB+MI::WN+MI::BN, 24 },
+                              { MI::WR+MI::WB+MI::WN+MI::BP, 31 },
+                              { MI::WR+MI::WB+MI::WN+MI::BQ, 100 },
+                              { MI::WR+MI::WB+MI::WN+MI::BR, 72 },
+                              { MI::WR+MI::WB+MI::WN*2, 14 },
+                              { MI::WR+MI::WB+MI::WN+MI::WP, 10 },
+                              { MI::WR+MI::WB+MI::WP+MI::BB, 20 },
+                              { MI::WR+MI::WB+MI::WP+MI::BN, 20 },
+                              { MI::WR+MI::WB+MI::WP+MI::BP, 21 },
+                              { MI::WR+MI::WB+MI::WP+MI::BQ, 100 },
+                              { MI::WR+MI::WB+MI::WP+MI::BR, 100 },
+                              { MI::WR+MI::WB+MI::WP*2, 8 },
+                              { MI::WR+MI::WN+MI::BB*2, 100 },
+                              { MI::WR+MI::WN+MI::BB+MI::BN, 100 },
+                              { MI::WR+MI::WN+MI::BB+MI::BP, 100 },
+                              { MI::WR+MI::WN+MI::BN*2, 100 },
+                              { MI::WR+MI::WN+MI::BN+MI::BP, 100 },
+                              { MI::WR+MI::WN+MI::BP*2, 48 },
+                              { MI::WR+MI::WN+MI::BR+MI::BN, 41 },
+                              { MI::WR+MI::WN+MI::BR+MI::BP, 72 },
+                              { MI::WR+MI::WN*2+MI::BB, 24 },
+                              { MI::WR+MI::WN*2+MI::BN, 25 },
+                              { MI::WR+MI::WN*2+MI::BP, 30 },
+                              { MI::WR+MI::WN*2+MI::BQ, 81 },
+                              { MI::WR+MI::WN*2+MI::BR, 78 },
+                              { MI::WR+MI::WN*3, 14 },
+                              { MI::WR+MI::WN*2+MI::WP, 8 },
+                              { MI::WR+MI::WN+MI::WP+MI::BB, 26 },
+                              { MI::WR+MI::WN+MI::WP+MI::BN, 20 },
+                              { MI::WR+MI::WN+MI::WP+MI::BP, 27 },
+                              { MI::WR+MI::WN+MI::WP+MI::BQ, 100 },
+                              { MI::WR+MI::WN+MI::WP+MI::BR, 100 },
+                              { MI::WR+MI::WN+MI::WP*2, 10 },
+                              { MI::WR+MI::WP+MI::BB*2, 79 },
+                              { MI::WR+MI::WP+MI::BB+MI::BN, 100 },
+                              { MI::WR+MI::WP+MI::BB+MI::BP, 100 },
+                              { MI::WR+MI::WP+MI::BN*2, 84 },
+                              { MI::WR+MI::WP+MI::BN+MI::BP, 100 },
+                              { MI::WR+MI::WP+MI::BP*2, 31 },
+                              { MI::WR+MI::WP+MI::BR+MI::BP, 73 },
+                              { MI::WR+MI::WP*2+MI::BB, 36 },
+                              { MI::WR+MI::WP*2+MI::BN, 36 },
+                              { MI::WR+MI::WP*2+MI::BP, 26 },
+                              { MI::WR+MI::WP*2+MI::BQ, 100 },
+                              { MI::WR+MI::WP*2+MI::BR, 90 },
+                              { MI::WR+MI::WP*3, 6 },
+                              { MI::WR*2+MI::WB*2, 12 },
+                              { MI::WR*2+MI::WB+MI::BB, 14 },
+                              { MI::WR*2+MI::WB+MI::BN, 12 },
+                              { MI::WR*2+MI::WB+MI::BP, 8 },
+                              { MI::WR*2+MI::WB+MI::BQ, 100 },
+                              { MI::WR*2+MI::WB+MI::BR, 62 },
+                              { MI::WR*2+MI::WB+MI::WN, 12 },
+                              { MI::WR*2+MI::WB+MI::WP, 8 },
+                              { MI::WR*2+MI::BB*2, 74 },
+                              { MI::WR*2+MI::BB+MI::BN, 51 },
+                              { MI::WR*2+MI::BB+MI::BP, 52 },
+                              { MI::WR*2+MI::BN*2, 66 },
+                              { MI::WR*2+MI::BN+MI::BP, 50 },
+                              { MI::WR*2+MI::BP*2, 50 },
+                              { MI::WR*2+MI::BR+MI::BB, 100 },
+                              { MI::WR*2+MI::BR+MI::BN, 100 },
+                              { MI::WR*2+MI::BR+MI::BP, 100 },
+                              { MI::WR*2+MI::BR*2, 35 },
+                              { MI::WR*2+MI::WN+MI::BB, 14 },
+                              { MI::WR*2+MI::WN+MI::BN, 14 },
+                              { MI::WR*2+MI::WN+MI::BP, 18 },
+                              { MI::WR*2+MI::WN+MI::BQ, 100 },
+                              { MI::WR*2+MI::WN+MI::BR, 66 },
+                              { MI::WR*2+MI::WN*2, 12 },
+                              { MI::WR*2+MI::WN+MI::WP, 8 },
+                              { MI::WR*2+MI::WP+MI::BB, 14 },
+                              { MI::WR*2+MI::WP+MI::BN, 12 },
+                              { MI::WR*2+MI::WP+MI::BP, 22 },
+                              { MI::WR*2+MI::WP+MI::BQ, 100 },
+                              { MI::WR*2+MI::WP+MI::BR, 56 },
+                              { MI::WR*2+MI::WP*2, 6 },
+                              { MI::WR*3+MI::WB, 10 },
+                              { MI::WR*3+MI::BB, 10 },
+                              { MI::WR*3+MI::BN, 12 },
+                              { MI::WR*3+MI::BP, 6 },
+                              { MI::WR*3+MI::BQ, 100 },
+                              { MI::WR*3+MI::BR, 42 },
+                              { MI::WR*3+MI::WN, 10 },
+                              { MI::WR*3+MI::WP, 8 },
+                              { MI::WR*4, 8 },
+    };
+    for (int i = 0; i < (int)COUNT_OF(table); i++) {
+        int id = table[i][0];
+        int value = table[i][1];
+        maxDTZ[id] = value;
+        maxDTZ[MatId::mirror(id)] = value;
+    }
 }
