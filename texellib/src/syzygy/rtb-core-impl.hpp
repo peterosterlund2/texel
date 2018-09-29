@@ -84,7 +84,7 @@ static void close_tb(FD fd)
 #endif
 }
 
-static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
+static uint8_t *map_file(const char *name, const char *suffix, uint64_t *mapping)
 {
     FD fd = open_tb(name, suffix);
     if (fd == FD_ERR)
@@ -93,9 +93,9 @@ static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
     struct stat statbuf;
     fstat(fd, &statbuf);
     *mapping = statbuf.st_size;
-    char *data = (char *)mmap(NULL, statbuf.st_size, PROT_READ,
-                              MAP_SHARED, fd, 0);
-    if (data == (char *)(-1)) {
+    uint8_t *data = (uint8_t *)mmap(NULL, statbuf.st_size, PROT_READ,
+                                    MAP_SHARED, fd, 0);
+    if (data == (uint8_t *)(-1)) {
         std::cout << "Could not mmap() " << name << std::endl;
         close_tb(fd);
         return NULL;
@@ -111,7 +111,7 @@ static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
         return NULL;
     }
     *mapping = (uint64_t)map;
-    char *data = (char *)MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
+    uint8_t *data = (uint8_t *)MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
     if (data == NULL) {
         std::cout << "MapViewOfFile() failed, name = " << name << suffix << ", error = " << GetLastError() << std::endl;
         close_tb(fd);
@@ -123,13 +123,13 @@ static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
 }
 
 #ifndef _WIN32
-static void unmap_file(char *data, uint64_t size)
+static void unmap_file(uint8_t *data, uint64_t size)
 {
     if (!data) return;
     munmap(data, size);
 }
 #else
-static void unmap_file(char *data, uint64_t mapping)
+static void unmap_file(uint8_t *data, uint64_t mapping)
 {
     if (!data) return;
     UnmapViewOfFile(data);
@@ -1072,7 +1072,7 @@ static int init_table_wdl(struct TBEntry *entry, const char *str)
         return 0;
     }
 
-    uint8_t *data = (uint8_t *)entry->data;
+    uint8_t *data = entry->data;
     if (((uint32_t *)data)[0] != WDL_MAGIC) {
         std::cout << "Corrupted table" << std::endl;
         unmap_file(entry->data, entry->mapping);
@@ -1174,7 +1174,7 @@ static int init_table_wdl(struct TBEntry *entry, const char *str)
 
 static int init_table_dtz(struct TBEntry *entry)
 {
-    uint8_t *data = (uint8_t *)entry->data;
+    uint8_t *data = entry->data;
     uint8_t *next;
     int f, s;
     uint64_t tb_size[4];

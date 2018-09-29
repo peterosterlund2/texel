@@ -45,7 +45,7 @@ struct PairsData {
 };
 
 struct TBEntry {
-    char *data;
+    uint8_t *data;
     uint64_t key;
     uint64_t mapping;
     std::atomic<uint8_t> ready;
@@ -55,7 +55,7 @@ struct TBEntry {
 } __attribute__((__may_alias__));
 
 struct TBEntry_piece {
-    char *data;
+    uint8_t *data;
     uint64_t key;
     uint64_t mapping;
     std::atomic<uint8_t> ready;
@@ -70,7 +70,7 @@ struct TBEntry_piece {
 };
 
 struct TBEntry_pawn {
-    char *data;
+    uint8_t *data;
     uint64_t key;
     uint64_t mapping;
     std::atomic<uint8_t> ready;
