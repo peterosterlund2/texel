@@ -103,7 +103,6 @@ static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
 #else
     DWORD size_low, size_high;
     size_low = GetFileSize(fd, &size_high);
-    //  *size = ((uint64_t)size_high) << 32 | ((uint64_t)size_low);
     HANDLE map = CreateFileMapping(fd, NULL, PAGE_READONLY, size_high, size_low,
                                    NULL);
     if (map == NULL) {
