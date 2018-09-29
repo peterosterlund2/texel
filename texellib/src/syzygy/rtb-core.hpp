@@ -20,7 +20,7 @@
 
 #define WDLSUFFIX ".rtbw"
 #define DTZSUFFIX ".rtbz"
-#define TBPIECES 6
+#define TBPIECES 7
 
 #define WDL_MAGIC 0x5d23e871
 #define DTZ_MAGIC 0xa50c66d7
@@ -67,7 +67,7 @@ struct TBEntry_piece {
     ubyte has_pawns;
     ubyte enc_type;
     struct PairsData *precomp[2];
-    int factor[2][TBPIECES];
+    uint64_t factor[2][TBPIECES];
     ubyte pieces[2][TBPIECES];
     ubyte norm[2][TBPIECES];
 };
@@ -83,7 +83,7 @@ struct TBEntry_pawn {
     ubyte pawns[2];
     struct {
         struct PairsData *precomp[2];
-        int factor[2][TBPIECES];
+        uint64_t factor[2][TBPIECES];
         ubyte pieces[2][TBPIECES];
         ubyte norm[2][TBPIECES];
     } file[4];
@@ -99,7 +99,7 @@ struct DTZEntry_piece {
     ubyte has_pawns;
     ubyte enc_type;
     struct PairsData *precomp;
-    int factor[TBPIECES];
+    uint64_t factor[TBPIECES];
     ubyte pieces[TBPIECES];
     ubyte norm[TBPIECES];
     ubyte flags; // accurate, mapped, side
@@ -118,7 +118,7 @@ struct DTZEntry_pawn {
     ubyte pawns[2];
     struct {
         struct PairsData *precomp;
-        int factor[TBPIECES];
+        uint64_t factor[TBPIECES];
         ubyte pieces[TBPIECES];
         ubyte norm[TBPIECES];
     } file[4];

@@ -22,9 +22,9 @@
 #include "rtb-core.hpp"
 
 
-#define TBMAX_PIECE 254
-#define TBMAX_PAWN 256
-#define HSHMAX 4
+#define TBMAX_PIECE 650
+#define TBMAX_PAWN 861
+#define HSHMAX 12
 
 #define Swap(a,b) {int tmp=a;a=b;b=tmp;}
 
@@ -264,7 +264,7 @@ static void init_tb(char *str)
 void Syzygy::init(const std::string& path)
 {
     char str[16];
-    int i, j, k, l;
+    int i, j, k, l, m;
 
     { // The probing code currently expects a little-endian architecture
         static_assert(sizeof(uint32_t) == 4, "Unsupported architecture");
@@ -390,6 +390,36 @@ void Syzygy::init(const std::string& path)
                         sprintf(str, "K%c%c%c%cvK", pchr[i], pchr[j], pchr[k], pchr[l]);
                         init_tb(str);
                     }
+
+        for (i = 1; i < 6; i ++)
+            for (j = i; j < 6; j++)
+                for (k = j; k < 6; k++)
+                    for (l = k; l < 6; l++)
+                        for (m = l; m < 6; m++) {
+                            sprintf(str, "K%c%c%c%c%cvK", pchr[i], pchr[j], pchr[k],
+                                    pchr[l], pchr[m]);
+                            init_tb(str);
+                        }
+
+        for (i = 1; i < 6; i++)
+            for (j = i; j < 6; j++)
+                for (k = j; k < 6; k++)
+                    for (l = k; l < 6; l++)
+                        for (m = 1; m < 6; m++) {
+                            sprintf(str, "K%c%c%c%cvK%c", pchr[i], pchr[j], pchr[k],
+                                    pchr[l], pchr[m]);
+                            init_tb(str);
+                        }
+
+        for (i = 1; i < 6; i++)
+            for (j = i; j < 6; j++)
+                for (k = j; k < 6; k++)
+                    for (l = 1; l < 6; l++)
+                        for (m = l; m < 6; m++) {
+                            sprintf(str, "K%c%c%cvK%c%c", pchr[i], pchr[j], pchr[k],
+                                    pchr[l], pchr[m]);
+                            init_tb(str);
+                        }
     }
 
     std::cout << "info string Found " << (TBnum_piece + TBnum_pawn) << " syzygy tablebases" << std::endl;
@@ -630,7 +660,7 @@ static void init_indices(void)
     }
 }
 
-static uint64_t encode_piece(struct TBEntry_piece *ptr, ubyte *norm, int *pos, int *factor)
+static uint64_t encode_piece(struct TBEntry_piece *ptr, ubyte *norm, int *pos, uint64_t *factor)
 {
     uint64_t idx = 0;
     int i, j, k, m, l, p;
@@ -701,7 +731,7 @@ static uint64_t encode_piece(struct TBEntry_piece *ptr, ubyte *norm, int *pos, i
                 j += (p > pos[l]);
             s += binomial[m - i][p - j];
         }
-        idx += ((uint64_t)s) * ((uint64_t)factor[i]);
+        idx += (uint64_t)s * factor[i];
         i += t;
     }
 
@@ -720,7 +750,7 @@ static int pawn_file(struct TBEntry_pawn *ptr, int *pos)
     return file_to_file[pos[0] & 0x07];
 }
 
-static uint64_t encode_pawn(struct TBEntry_pawn *ptr, ubyte *norm, int *pos, int *factor)
+static uint64_t encode_pawn(struct TBEntry_pawn *ptr, ubyte *norm, int *pos, uint64_t *factor)
 {
     uint64_t idx;
     int i, j, k, m, s, t;
@@ -755,7 +785,7 @@ static uint64_t encode_pawn(struct TBEntry_pawn *ptr, ubyte *norm, int *pos, int
                 j += (p > pos[k]);
             s += binomial[m - i][p - j - 8];
         }
-        idx += ((uint64_t)s) * ((uint64_t)factor[i]);
+        idx += (uint64_t)s * factor[i];
         i = t;
     }
 
@@ -771,7 +801,7 @@ static uint64_t encode_pawn(struct TBEntry_pawn *ptr, ubyte *norm, int *pos, int
                 j += (p > pos[k]);
             s += binomial[m - i][p - j];
         }
-        idx += ((uint64_t)s) * ((uint64_t)factor[i]);
+        idx += (uint64_t)s * factor[i];
         i += t;
     }
 
@@ -795,7 +825,7 @@ static int subfactor(int k, int n)
     return f / l;
 }
 
-static uint64_t calc_factors_piece(int *factor, int num, int order, ubyte *norm, ubyte enc_type)
+static uint64_t calc_factors_piece(uint64_t *factor, int num, int order, ubyte *norm, ubyte enc_type)
 {
     int i, k, n;
     uint64_t f;
@@ -819,7 +849,7 @@ static uint64_t calc_factors_piece(int *factor, int num, int order, ubyte *norm,
     return f;
 }
 
-static uint64_t calc_factors_pawn(int *factor, int num, int order, int order2, ubyte *norm, int file)
+static uint64_t calc_factors_pawn(uint64_t *factor, int num, int order, int order2, ubyte *norm, int file)
 {
     int i, k, n;
     uint64_t f;
@@ -1292,7 +1322,7 @@ static ubyte decompress_pairs(struct PairsData *d, uint64_t idx)
         bitcnt += l;
         if (bitcnt >= 32) {
             bitcnt -= 32;
-            code |= ((uint64_t)(bswap32(*ptr++))) << bitcnt;
+            code |= (uint64_t)(bswap32(*ptr++)) << bitcnt;
         }
     }
 
