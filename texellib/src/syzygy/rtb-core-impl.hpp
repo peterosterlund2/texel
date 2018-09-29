@@ -435,7 +435,7 @@ static const signed char offdiag[] = {
     1, 1, 1, 1, 1, 1, 1, 0
 };
 
-static const ubyte triangle[] = {
+static const uint8_t triangle[] = {
     6, 0, 1, 2, 2, 1, 0, 6,
     0, 7, 3, 4, 4, 3, 7, 0,
     1, 3, 8, 5, 5, 8, 3, 1,
@@ -446,16 +446,16 @@ static const ubyte triangle[] = {
     6, 0, 1, 2, 2, 1, 0, 6
 };
 
-static const ubyte invtriangle[] = {
+static const uint8_t invtriangle[] = {
     1, 2, 3, 10, 11, 19, 0, 9, 18, 27
 };
 
-static const ubyte invdiag[] = {
+static const uint8_t invdiag[] = {
     0, 9, 18, 27, 36, 45, 54, 63,
     7, 14, 21, 28, 35, 42, 49, 56
 };
 
-static const ubyte flipdiag[] = {
+static const uint8_t flipdiag[] = {
     0,  8, 16, 24, 32, 40, 48, 56,
     1,  9, 17, 25, 33, 41, 49, 57,
     2, 10, 18, 26, 34, 42, 50, 58,
@@ -466,7 +466,7 @@ static const ubyte flipdiag[] = {
     7, 15, 23, 31, 39, 47, 55, 63
 };
 
-static const ubyte lower[] = {
+static const uint8_t lower[] = {
     28,  0,  1,  2,  3,  4,  5,  6,
     0, 29,  7,  8,  9, 10, 11, 12,
     1,  7, 30, 13, 14, 15, 16, 17,
@@ -477,7 +477,7 @@ static const ubyte lower[] = {
     6, 12, 17, 21, 24, 26, 27, 35
 };
 
-static const ubyte diag[] = {
+static const uint8_t diag[] = {
     0,  0,  0,  0,  0,  0,  0,  8,
     0,  1,  0,  0,  0,  0,  9,  0,
     0,  0,  2,  0,  0, 10,  0,  0,
@@ -488,7 +488,7 @@ static const ubyte diag[] = {
     15,  0,  0,  0,  0,  0,  0,  7
 };
 
-static const ubyte flap[] = {
+static const uint8_t flap[] = {
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 6, 12, 18, 18, 12, 6, 0,
     1, 7, 13, 19, 19, 13, 7, 1,
@@ -499,7 +499,7 @@ static const ubyte flap[] = {
     0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static const ubyte ptwist[] = {
+static const uint8_t ptwist[] = {
     0, 0, 0, 0, 0, 0, 0, 0,
     47, 35, 23, 11, 10, 22, 34, 46,
     45, 33, 21, 9, 8, 20, 32, 44,
@@ -510,21 +510,21 @@ static const ubyte ptwist[] = {
     0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static const ubyte invflap[] = {
+static const uint8_t invflap[] = {
     8, 16, 24, 32, 40, 48,
     9, 17, 25, 33, 41, 49,
     10, 18, 26, 34, 42, 50,
     11, 19, 27, 35, 43, 51
 };
 
-static const ubyte invptwist[] = {
+static const uint8_t invptwist[] = {
     52, 51, 44, 43, 36, 35, 28, 27, 20, 19, 12, 11,
     53, 50, 45, 42, 37, 34, 29, 26, 21, 18, 13, 10,
     54, 49, 46, 41, 38, 33, 30, 25, 22, 17, 14, 9,
     55, 48, 47, 40, 39, 32, 31, 24, 23, 16, 15, 8
 };
 
-static const ubyte file_to_file[] = {
+static const uint8_t file_to_file[] = {
     0, 1, 2, 3, 3, 2, 1, 0
 };
 
@@ -659,7 +659,7 @@ static void init_indices(void)
     }
 }
 
-static uint64_t encode_piece(struct TBEntry_piece *ptr, ubyte *norm, int *pos, uint64_t *factor)
+static uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos, uint64_t *factor)
 {
     uint64_t idx = 0;
     int i, j, k, m, l, p;
@@ -749,7 +749,7 @@ static int pawn_file(struct TBEntry_pawn *ptr, int *pos)
     return file_to_file[pos[0] & 0x07];
 }
 
-static uint64_t encode_pawn(struct TBEntry_pawn *ptr, ubyte *norm, int *pos, uint64_t *factor)
+static uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, uint64_t *factor)
 {
     uint64_t idx;
     int i, j, k, m, s, t;
@@ -807,7 +807,7 @@ static uint64_t encode_pawn(struct TBEntry_pawn *ptr, ubyte *norm, int *pos, uin
     return idx;
 }
 
-static ubyte decompress_pairs(struct PairsData *d, uint64_t index);
+static uint8_t decompress_pairs(struct PairsData *d, uint64_t index);
 
 // place k like pieces on n squares
 static int subfactor(int k, int n)
@@ -824,7 +824,7 @@ static int subfactor(int k, int n)
     return f / l;
 }
 
-static uint64_t calc_factors_piece(uint64_t *factor, int num, int order, ubyte *norm, ubyte enc_type)
+static uint64_t calc_factors_piece(uint64_t *factor, int num, int order, uint8_t *norm, uint8_t enc_type)
 {
     int i, k, n;
     uint64_t f;
@@ -848,7 +848,7 @@ static uint64_t calc_factors_piece(uint64_t *factor, int num, int order, ubyte *
     return f;
 }
 
-static uint64_t calc_factors_pawn(uint64_t *factor, int num, int order, int order2, ubyte *norm, int file)
+static uint64_t calc_factors_pawn(uint64_t *factor, int num, int order, int order2, uint8_t *norm, int file)
 {
     int i, k, n;
     uint64_t f;
@@ -876,7 +876,7 @@ static uint64_t calc_factors_pawn(uint64_t *factor, int num, int order, int orde
     return f;
 }
 
-static void set_norm_piece(struct TBEntry_piece *ptr, ubyte *norm, ubyte *pieces)
+static void set_norm_piece(struct TBEntry_piece *ptr, uint8_t *norm, uint8_t *pieces)
 {
     int i, j;
 
@@ -900,7 +900,7 @@ static void set_norm_piece(struct TBEntry_piece *ptr, ubyte *norm, ubyte *pieces
             norm[i]++;
 }
 
-static void set_norm_pawn(struct TBEntry_pawn *ptr, ubyte *norm, ubyte *pieces)
+static void set_norm_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, uint8_t *pieces)
 {
     int i, j;
 
@@ -997,7 +997,7 @@ static void calc_symlen(struct PairsData *d, int s, char *tmp)
     tmp[s] = 1;
 }
 
-static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint64_t *size, unsigned char **next, ubyte *flags, int wdl)
+static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint64_t *size, unsigned char **next, uint8_t *flags, int wdl)
 {
     struct PairsData *d;
     int i;
@@ -1018,16 +1018,16 @@ static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint
     int blocksize = data[1];
     int idxbits = data[2];
     int real_num_blocks = *(uint32_t *)(&data[4]);
-    int num_blocks = real_num_blocks + *(ubyte *)(&data[3]);
+    int num_blocks = real_num_blocks + *(uint8_t *)(&data[3]);
     int max_len = data[8];
     int min_len = data[9];
     int h = max_len - min_len + 1;
-    int num_syms = *(ushort *)(&data[10 + 2 * h]);
+    int num_syms = *(uint16_t *)(&data[10 + 2 * h]);
     d = (struct PairsData *)malloc(sizeof(struct PairsData) + (h - 1) * sizeof(base_t) + num_syms);
     d->blocksize = blocksize;
     d->idxbits = idxbits;
-    d->offset = (ushort *)(&data[10]);
-    d->symlen = ((ubyte *)d) + sizeof(struct PairsData) + (h - 1) * sizeof(base_t);
+    d->offset = (uint16_t *)(&data[10]);
+    d->symlen = ((uint8_t *)d) + sizeof(struct PairsData) + (h - 1) * sizeof(base_t);
     d->sympat = &data[12 + 2 * h];
     d->min_len = min_len;
     *next = &data[12 + 2 * h + 3 * num_syms + (num_syms & 1)];
@@ -1058,11 +1058,11 @@ static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint
 
 static int init_table_wdl(struct TBEntry *entry, const char *str)
 {
-    ubyte *next;
+    uint8_t *next;
     int f, s;
     uint64_t tb_size[8];
     uint64_t size[8 * 3];
-    ubyte flags;
+    uint8_t flags;
 
     // first mmap the table into memory
 
@@ -1072,7 +1072,7 @@ static int init_table_wdl(struct TBEntry *entry, const char *str)
         return 0;
     }
 
-    ubyte *data = (ubyte *)entry->data;
+    uint8_t *data = (uint8_t *)entry->data;
     if (((uint32_t *)data)[0] != WDL_MAGIC) {
         std::cout << "Corrupted table" << std::endl;
         unmap_file(entry->data, entry->mapping);
@@ -1106,18 +1106,18 @@ static int init_table_wdl(struct TBEntry *entry, const char *str)
             data += size[3];
         }
 
-        ptr->precomp[0]->sizetable = (ushort *)data;
+        ptr->precomp[0]->sizetable = (uint16_t *)data;
         data += size[1];
         if (split) {
-            ptr->precomp[1]->sizetable = (ushort *)data;
+            ptr->precomp[1]->sizetable = (uint16_t *)data;
             data += size[4];
         }
 
-        data = (ubyte *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+        data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
         ptr->precomp[0]->data = data;
         data += size[2];
         if (split) {
-            data = (ubyte *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+            data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
             ptr->precomp[1]->data = data;
         }
     } else {
@@ -1149,20 +1149,20 @@ static int init_table_wdl(struct TBEntry *entry, const char *str)
         }
 
         for (f = 0; f < files; f++) {
-            ptr->file[f].precomp[0]->sizetable = (ushort *)data;
+            ptr->file[f].precomp[0]->sizetable = (uint16_t *)data;
             data += size[6 * f + 1];
             if (split) {
-                ptr->file[f].precomp[1]->sizetable = (ushort *)data;
+                ptr->file[f].precomp[1]->sizetable = (uint16_t *)data;
                 data += size[6 * f + 4];
             }
         }
 
         for (f = 0; f < files; f++) {
-            data = (ubyte *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+            data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
             ptr->file[f].precomp[0]->data = data;
             data += size[6 * f + 2];
             if (split) {
-                data = (ubyte *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+                data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
                 ptr->file[f].precomp[1]->data = data;
                 data += size[6 * f + 5];
             }
@@ -1174,8 +1174,8 @@ static int init_table_wdl(struct TBEntry *entry, const char *str)
 
 static int init_table_dtz(struct TBEntry *entry)
 {
-    ubyte *data = (ubyte *)entry->data;
-    ubyte *next;
+    uint8_t *data = (uint8_t *)entry->data;
+    uint8_t *next;
     int f, s;
     uint64_t tb_size[4];
     uint64_t size[4 * 3];
@@ -1214,10 +1214,10 @@ static int init_table_dtz(struct TBEntry *entry)
         ptr->precomp->indextable = (char *)data;
         data += size[0];
 
-        ptr->precomp->sizetable = (ushort *)data;
+        ptr->precomp->sizetable = (uint16_t *)data;
         data += size[1];
 
-        data = (ubyte *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+        data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
         ptr->precomp->data = data;
         data += size[2];
     } else {
@@ -1252,12 +1252,12 @@ static int init_table_dtz(struct TBEntry *entry)
         }
 
         for (f = 0; f < files; f++) {
-            ptr->file[f].precomp->sizetable = (ushort *)data;
+            ptr->file[f].precomp->sizetable = (uint16_t *)data;
             data += size[3 * f + 1];
         }
 
         for (f = 0; f < files; f++) {
-            data = (ubyte *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+            data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
             ptr->file[f].precomp->data = data;
             data += size[3 * f + 2];
         }
@@ -1282,7 +1282,7 @@ static inline uint32_t bswap32(uint32_t val) {
 #endif
 }
 
-static ubyte decompress_pairs(struct PairsData *d, uint64_t idx)
+static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
 {
     if (!d->idxbits)
         return d->min_len;
@@ -1290,7 +1290,7 @@ static ubyte decompress_pairs(struct PairsData *d, uint64_t idx)
     uint32_t mainidx = idx >> d->idxbits;
     int litidx = (idx & ((1 << d->idxbits) - 1)) - (1 << (d->idxbits - 1));
     uint32_t block = *(uint32_t *)(d->indextable + 6 * mainidx);
-    litidx += *(ushort *)(d->indextable + 6 * mainidx + 4);
+    litidx += *(uint16_t *)(d->indextable + 6 * mainidx + 4);
     if (litidx < 0) {
         do {
             litidx += d->sizetable[--block] + 1;
@@ -1303,9 +1303,9 @@ static ubyte decompress_pairs(struct PairsData *d, uint64_t idx)
     uint32_t *ptr = (uint32_t *)(d->data + (block << d->blocksize));
 
     int m = d->min_len;
-    ushort *offset = d->offset;
+    uint16_t *offset = d->offset;
     base_t *base = d->base - m;
-    ubyte *symlen = d->symlen;
+    uint8_t *symlen = d->symlen;
     int sym, bitcnt;
 
     uint64_t code = bswap64(*((uint64_t *)ptr));
@@ -1325,7 +1325,7 @@ static ubyte decompress_pairs(struct PairsData *d, uint64_t idx)
         }
     }
 
-    ubyte *sympat = d->sympat;
+    uint8_t *sympat = d->sympat;
     while (symlen[sym] != 0) {
         int w = *(int *)(sympat + 3 * sym);
         int s1 = w & 0x0fff;
@@ -1413,4 +1413,4 @@ static void free_dtz_entry(struct TBEntry *entry)
 }
 
 static int wdl_to_map[5] = { 1, 3, 0, 2, 0 };
-static ubyte pa_flags[5] = { 8, 0, 0, 0, 4 };
+static uint8_t pa_flags[5] = { 8, 0, 0, 0, 4 };
