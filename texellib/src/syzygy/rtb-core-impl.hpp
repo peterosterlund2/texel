@@ -612,16 +612,16 @@ static const short KK_idx[10][64] = {
      -1, -1, -1, -1, -1, -1, -1,461 }
 };
 
-static int binomial[5][64];
-static int pawnidx[5][24];
-static int pfactor[5][4];
+static int binomial[6][64];
+static int pawnidx[6][24];
+static int pfactor[6][4];
 
 static void init_indices(void)
 {
     int i, j, k;
 
     // binomial[k-1][n] = Bin(n, k)
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < 6; i++)
         for (j = 0; j < 64; j++) {
             int f = j;
             int l = 1;
@@ -632,7 +632,7 @@ static void init_indices(void)
             binomial[i][j] = f / l;
         }
 
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < 6; i++) {
         int s = 0;
         for (j = 0; j < 6; j++) {
             pawnidx[i][j] = s;
