@@ -639,11 +639,12 @@ TBProbe::initWDLBounds() {
     initMaxDTZ();
 
     // Pre-calculate all interesting maxSubDTM values
-    for (int wp = 0; wp <= 4; wp++) {
+    int nNonKings = 5;
+    for (int wp = 0; wp <= nNonKings; wp++) {
         std::vector<int> pieces(Piece::nPieceTypes);
         pieces[Piece::WPAWN] = wp;
-        pieces[Piece::BPAWN] = 4 - wp;
-        getMaxSubMate(pieces, 4*5);
+        pieces[Piece::BPAWN] = nNonKings - wp;
+        getMaxSubMate(pieces, nNonKings*5);
     }
 }
 

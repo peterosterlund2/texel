@@ -547,7 +547,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     int tbScore = illegalScore;
     if (tb && depth >= minProbeDepth && !singularSearch) {
         TranspositionTable::TTEntry tbEnt;
-        if (TBProbe::tbProbe(pos, ply, alpha, beta, tt.getTT(), tbEnt)) {
+        if (TBProbe::tbProbe(pos, ply, alpha, beta, depth, tt.getTT(), tbEnt)) {
             tbHits++;
             nodesToGo -= 100;
             int type = tbEnt.getType();

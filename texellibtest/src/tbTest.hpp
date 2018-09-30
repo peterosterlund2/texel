@@ -33,7 +33,8 @@ const int gtbDefaultCacheMB = 16;
 const std::string rtbDefaultPath("/home/petero/chess/rtb/wdl:"
                                  "/home/petero/chess/rtb/dtz:"
                                  "/home/petero/chess/rtb/6wdl:"
-                                 "/home/petero/chess/rtb/6dtz");
+                                 "/home/petero/chess/rtb/6dtz:"
+                                 "/home/petero/chess/rtb/7men");
 
 class TBTest : public SuiteBase {
 public:

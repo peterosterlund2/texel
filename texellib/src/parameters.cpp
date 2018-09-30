@@ -54,6 +54,8 @@ namespace UciParams {
     std::shared_ptr<Parameters::SpinParam> gtbCache(std::make_shared<Parameters::SpinParam>("GaviotaTbCache", 1, 2047, 1));
     std::shared_ptr<Parameters::StringParam> rtbPath(std::make_shared<Parameters::StringParam>("SyzygyPath", ""));
     std::shared_ptr<Parameters::SpinParam> minProbeDepth(std::make_shared<Parameters::SpinParam>("MinProbeDepth", 0, 100, 1));
+    std::shared_ptr<Parameters::SpinParam> minProbeDepth6(std::make_shared<Parameters::SpinParam>("MinProbeDepth6", 0, 100, 1));
+    std::shared_ptr<Parameters::SpinParam> minProbeDepth7(std::make_shared<Parameters::SpinParam>("MinProbeDepth7", 0, 100, 10));
 
     std::shared_ptr<Parameters::CheckParam> analysisAgeHash(std::make_shared<Parameters::CheckParam>("AnalysisAgeHash", true));
     std::shared_ptr<Parameters::ButtonParam> clearHash(std::make_shared<Parameters::ButtonParam>("Clear Hash"));
@@ -645,6 +647,8 @@ Parameters::Parameters() {
     addPar(UciParams::gtbCache);
     addPar(UciParams::rtbPath);
     addPar(UciParams::minProbeDepth);
+    addPar(UciParams::minProbeDepth6);
+    addPar(UciParams::minProbeDepth7);
     addPar(UciParams::analysisAgeHash);
     addPar(UciParams::clearHash);
 

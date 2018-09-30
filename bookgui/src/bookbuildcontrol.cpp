@@ -55,7 +55,8 @@ BookBuildControl::setupTB() {
     UciParams::rtbPath->set("/home/petero/chess/rtb/wdl:"
                             "/home/petero/chess/rtb/dtz:"
                             "/home/petero/chess/rtb/6wdl:"
-                            "/home/petero/chess/rtb/6dtz");
+                            "/home/petero/chess/rtb/6dtz:"
+                            "/home/petero/chess/rtb/7men");
 }
 
 void
