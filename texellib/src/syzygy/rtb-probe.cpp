@@ -285,8 +285,12 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
         idx = encode_piece((struct TBEntry_piece *)entry, entry->norm, p, entry->factor);
         res = decompress_pairs(entry->precomp, idx);
 
-        if (entry->flags & 2)
-            res = entry->map[entry->map_idx[wdl_to_map[wdl + 2]] + res];
+        if (entry->flags & 2) {
+            if (entry->flags & 16)
+                res = ((uint16_t*)entry->map)[entry->map_idx[wdl_to_map[wdl + 2]] + res];
+            else
+                res = entry->map[entry->map_idx[wdl_to_map[wdl + 2]] + res];
+        }
 
         if (!(entry->flags & pa_flags[wdl + 2]) || (wdl & 1))
             res *= 2;
