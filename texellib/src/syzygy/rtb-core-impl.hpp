@@ -528,7 +528,7 @@ static const uint8_t file_to_file[] = {
     0, 1, 2, 3, 3, 2, 1, 0
 };
 
-static const short KK_idx[10][64] = {
+static const int16_t KK_idx[10][64] = {
     { -1, -1, -1,  0,  1,  2,  3,  4,
       -1, -1, -1,  5,  6,  7,  8,  9,
       10, 11, 12, 13, 14, 15, 16, 17,
