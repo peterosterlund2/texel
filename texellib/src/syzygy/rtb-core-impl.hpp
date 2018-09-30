@@ -611,9 +611,9 @@ static const short KK_idx[10][64] = {
      -1, -1, -1, -1, -1, -1, -1,461 }
 };
 
-static int binomial[6][64];
-static int pawnidx[6][24];
-static int pfactor[6][4];
+static uint64_t binomial[6][64];
+static uint64_t pawnidx[6][24];
+static uint64_t pfactor[6][4];
 
 static void init_indices(void)
 {
@@ -632,7 +632,7 @@ static void init_indices(void)
         }
 
     for (i = 0; i < 6; i++) {
-        int s = 0;
+        uint64_t s = 0;
         for (j = 0; j < 6; j++) {
             pawnidx[i][j] = s;
             s += (i == 0) ? 1 : binomial[i - 1][ptwist[invflap[j]]];
@@ -723,14 +723,14 @@ static uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos,
         for (j = i; j < i + t; j++)
             for (k = j + 1; k < i + t; k++)
                 if (pos[j] > pos[k]) Swap(pos[j], pos[k]);
-        int s = 0;
+        uint64_t s = 0;
         for (m = i; m < i + t; m++) {
             p = pos[m];
             for (l = 0, j = 0; l < i; l++)
                 j += (p > pos[l]);
             s += binomial[m - i][p - j];
         }
-        idx += (uint64_t)s * factor[i];
+        idx += s * factor[i];
         i += t;
     }
 
@@ -752,7 +752,7 @@ static int pawn_file(struct TBEntry_pawn *ptr, int *pos)
 static uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, uint64_t *factor)
 {
     uint64_t idx;
-    int i, j, k, m, s, t;
+    int i, j, k, m, t;
     int n = ptr->num;
 
     if (pos[0] & 0x04)
@@ -777,14 +777,14 @@ static uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, u
         for (j = i; j < t; j++)
             for (k = j + 1; k < t; k++)
                 if (pos[j] > pos[k]) Swap(pos[j], pos[k]);
-        s = 0;
+        uint64_t s = 0;
         for (m = i; m < t; m++) {
             int p = pos[m];
             for (k = 0, j = 0; k < i; k++)
                 j += (p > pos[k]);
             s += binomial[m - i][p - j - 8];
         }
-        idx += (uint64_t)s * factor[i];
+        idx += s * factor[i];
         i = t;
     }
 
@@ -793,14 +793,14 @@ static uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, u
         for (j = i; j < i + t; j++)
             for (k = j + 1; k < i + t; k++)
                 if (pos[j] > pos[k]) Swap(pos[j], pos[k]);
-        s = 0;
+        uint64_t s = 0;
         for (m = i; m < i + t; m++) {
             int p = pos[m];
             for (k = 0, j = 0; k < i; k++)
                 j += (p > pos[k]);
             s += binomial[m - i][p - j];
         }
-        idx += (uint64_t)s * factor[i];
+        idx += s * factor[i];
         i += t;
     }
 
