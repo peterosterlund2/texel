@@ -28,6 +28,7 @@
 
 #include "transpositionTable.hpp"
 #include "position.hpp"
+#include "parameters.hpp"
 
 #include <string>
 
@@ -60,6 +61,9 @@ public:
      *             but is restored to original state before function returns.
      */
     static bool tbProbe(Position& pos, int ply, int alpha, int beta,
+                        const TranspositionTable& tt,
+                        TranspositionTable::TTEntry& ent);
+    static bool tbProbe(Position& pos, int ply, int alpha, int beta, int depth,
                         const TranspositionTable& tt,
                         TranspositionTable::TTEntry& ent);
 
@@ -183,5 +187,18 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
     return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces);
 }
 
+inline bool
+TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta, int depth,
+                 const TranspositionTable& tt,
+                 TranspositionTable::TTEntry& ent) {
+    const int nPieces = pos.nPieces();
+    if (nPieces > TBProbeData::maxPieces)
+        return false;
+    if (nPieces == 7 && depth < UciParams::minProbeDepth7->getIntPar())
+        return false;
+    if (nPieces == 6 && depth < UciParams::minProbeDepth6->getIntPar())
+        return false;
+    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces);
+}
 
 #endif /* TBPROBE_HPP_ */
