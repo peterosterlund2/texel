@@ -242,7 +242,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
             char str[16];
             bool mirror = (ptr2[i].ptr->key != key);
             prt_str(pos, str, mirror);
-            ptr = load_dtz_table(str, calc_key(pos, mirror), calc_key(pos, !mirror));
+            ptr = load_dtz_table(str, calc_key(pos, mirror));
             std::atomic_thread_fence(std::memory_order_release);
             dtzTabEnt->entry.store(ptr, std::memory_order_relaxed);
         }

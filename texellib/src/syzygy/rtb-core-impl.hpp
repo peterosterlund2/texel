@@ -1354,7 +1354,7 @@ static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
     return *(sympat + 3 * sym);
 }
 
-TBEntry* load_dtz_table(const char* str, uint64_t key1, uint64_t key2)
+TBEntry* load_dtz_table(const char* str, uint64_t key1)
 {
     int i;
     struct TBEntry *ptr, *ptr3;
