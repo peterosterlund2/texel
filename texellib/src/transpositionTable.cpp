@@ -32,8 +32,6 @@
 #include <iostream>
 #include <iomanip>
 
-using namespace std;
-
 
 TranspositionTable::TranspositionTable(U64 numEntries)
     : table(nullptr), ttStorage(*this) {
@@ -188,7 +186,6 @@ TranspositionTable::extractPVMoves(const Position& rootPos, const Move& mFirst, 
     }
 }
 
-/** Extract the PV starting from posIn, using hash entries, both exact scores and bounds. */
 std::string
 TranspositionTable::extractPV(const Position& posIn) {
     std::string ret;
@@ -258,7 +255,7 @@ TranspositionTable::printStats(int rootDepth) const {
     ss << std::fixed << "hstat: d:" << rootDepth << " size:" << tableSize
        << " unused:" << unused << " (" << (unused*w) << "%)"
        << " thisGen:" << thisGen << " (" << (thisGen*w) << "%)" << std::endl;
-    cout << ss.str();
+    std::cout << ss.str();
     for (size_t i = 0; i < depHist.size(); i++) {
         int c = depHist[i];
         if (c > 0) {

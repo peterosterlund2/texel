@@ -56,7 +56,7 @@ template <typename T> class AlignedAllocator;
 template <typename T>
 class vector_aligned : public std::vector<T, AlignedAllocator<T>> { };
 
-template <typename T, typename ...Args>
+template <typename T, typename... Args>
 inline std::unique_ptr<T>
 make_unique(Args&&... args) {
     return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
