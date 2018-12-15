@@ -57,7 +57,7 @@ public:
 private:
     struct BookLine {
         BookLine() = default;
-        BookLine(const std::vector<Move>& m) : moves(m) {}
+        explicit BookLine(const std::vector<Move>& m) : moves(m) {}
         std::vector<Move> moves;
         int score = 0;
     };
