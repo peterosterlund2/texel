@@ -109,7 +109,7 @@ Numa::getConcurrency(int& nodes, int& cores, int& threads) {
         }
     }
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX* ptr = buffer;
-    while ((ptr->Size > 0) && (byteOffset + ptr->Size <= returnLength)) {
+    while (byteOffset < returnLength) {
         switch (ptr->Relationship) {
         case RelationNumaNode:
             nodes++;
