@@ -753,7 +753,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             sti2.currentMoveNo = -1;
             sti2.nodeIdx = sti.nodeIdx;
             const S64 savedNodeIdx = sti.nodeIdx;
-            int newDepth = isPv ? depth  - 2 : depth * 3 / 8;
+            int newDepth = isPv ? depth - 2 : depth * 3 / 8;
             negaScout(tb, alpha, beta, ply, newDepth, -1, inCheck);
             sti.nodeIdx = savedNodeIdx;
             sti2.currentMove = savedMove;
