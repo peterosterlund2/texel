@@ -113,7 +113,7 @@ Book::getBookEntries(const Position& pos, std::vector<BookEntry>& bookMoves) con
         const int entSize = 16;
         int numEntries = fileLen / entSize;
 
-        auto readEntry = [&fs,entSize](int entNo, PolyglotBook::PGEntry& ent) {
+        auto readEntry = [&fs](int entNo, PolyglotBook::PGEntry& ent) {
             S64 offs = entNo * entSize;
             fs.seekg(offs, std::ios_base::beg);
             fs.read((char*)ent.data, entSize);

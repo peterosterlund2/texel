@@ -196,6 +196,7 @@ protected:
     };
     struct Command {
         Command() {}
+        virtual ~Command() {}
         Command(CommandType type, int jobId = -1, int resultScore = 0, bool clearHistory = false)
             : type(type), jobId(jobId),
               resultScore(resultScore), clearHistory(clearHistory) {}
