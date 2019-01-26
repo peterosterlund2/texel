@@ -34,10 +34,12 @@
 #include <fstream>
 #include <iostream>
 
-#ifdef NUMA
 #ifdef _WIN32
+#if (defined NUMA) || (defined CLUSTER)
 #include <windows.h>
+#endif
 #else
+#ifdef NUMA
 #include <numa.h>
 #endif
 #endif
