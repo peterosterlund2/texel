@@ -534,7 +534,7 @@ SearchTest::testTBSearch() {
         MoveGen::pseudoLegalMoves(sc.pos, moves);
         MoveGen::removeIllegal(sc.pos, moves);
         sc.scoreMoveList(moves, 0);
-        sc.timeLimit(10000, 20000); // Should take less than 2s to generate the TB
+        sc.timeLimit(20000, 40000); // Should take less than 2s to generate the TB
         Move bestM = sc.iterativeDeepening(moves, -1, -1, 1, false, -1);
         ASSERT_EQUAL(sc.pos.materialId(), PositionTest::computeMaterialId(sc.pos));
         ASSERT_EQUAL(mate0 - 33 * 2, bestM.score());
