@@ -321,9 +321,9 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
         }
 
         if ((dQ == 1) && (dR == -1) && (dB + dN == -1)) {
-            score += (nWR == 0) ? QvsRMBonus1 : QvsRMBonus2;
+            score += (nWR == 0) ? (int)QvsRMBonus1 : (int)QvsRMBonus2;
         } else if ((dQ == -1) && (dR == 1) && (dB + dN == 1)) {
-            score -= (nBR == 0) ? QvsRMBonus1 : QvsRMBonus2;
+            score -= (nBR == 0) ? (int)QvsRMBonus1 : (int)QvsRMBonus2;
         }
     }
     if (print) std::cout << "info string eval imbala :" << score << std::endl;
@@ -964,7 +964,7 @@ Evaluate::rookBonus(const Position& pos) {
         int sq = BitBoard::extractSquare(m);
         const int x = Square::getX(sq);
         if ((wPawns & BitBoard::maskFile[x]) == 0) // At least half-open file
-            score += (bPawns & BitBoard::maskFile[x]) == 0 ? rookOpenBonus : rookHalfOpenBonus;
+            score += (bPawns & BitBoard::maskFile[x]) == 0 ? (int)rookOpenBonus : (int)rookHalfOpenBonus;
         U64 atk = BitBoard::rookAttacks(sq, occupied);
         wAttacksBB |= atk;
         wContactSupport |= atk;
@@ -981,7 +981,7 @@ Evaluate::rookBonus(const Position& pos) {
         int sq = BitBoard::extractSquare(m);
         const int x = Square::getX(sq);
         if ((bPawns & BitBoard::maskFile[x]) == 0)
-            score -= (wPawns & BitBoard::maskFile[x]) == 0 ? rookOpenBonus : rookHalfOpenBonus;
+            score -= (wPawns & BitBoard::maskFile[x]) == 0 ? (int)rookOpenBonus : (int)rookHalfOpenBonus;
         U64 atk = BitBoard::rookAttacks(sq, occupied);
         bAttacksBB |= atk;
         bContactSupport |= atk;
@@ -1212,13 +1212,13 @@ Evaluate::kingSafety(const Position& pos) {
             ((pos.pieceTypeBB(Piece::WROOK) & BitBoard::sqMask(G1,H1)) != 0) &&
             ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[6]) != 0)) {
             score -= ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[7]) != 0) ?
-                     trappedRookPenalty1 : trappedRookPenalty2;
+                     (int)trappedRookPenalty1 : (int)trappedRookPenalty2;
         } else
         if (((pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(B1,C1)) != 0) &&
             ((pos.pieceTypeBB(Piece::WROOK) & BitBoard::sqMask(A1,B1)) != 0) &&
             ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[1]) != 0)) {
             score -= ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::maskFile[0]) != 0) ?
-                     trappedRookPenalty1 : trappedRookPenalty2;
+                     (int)trappedRookPenalty1 : (int)trappedRookPenalty2;
         }
     }
     if (Square::getY(bKing) == 7) {
@@ -1226,13 +1226,13 @@ Evaluate::kingSafety(const Position& pos) {
             ((pos.pieceTypeBB(Piece::BROOK) & BitBoard::sqMask(G8,H8)) != 0) &&
             ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[6]) != 0)) {
             score += ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[7]) != 0) ?
-                     trappedRookPenalty1 : trappedRookPenalty2;
+                     (int)trappedRookPenalty1 : (int)trappedRookPenalty2;
         } else
         if (((pos.pieceTypeBB(Piece::BKING) & BitBoard::sqMask(B8,C8)) != 0) &&
             ((pos.pieceTypeBB(Piece::BROOK) & BitBoard::sqMask(A8,B8)) != 0) &&
             ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[1]) != 0)) {
             score += ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::maskFile[0]) != 0) ?
-                     trappedRookPenalty1 : trappedRookPenalty2;
+                     (int)trappedRookPenalty1 : (int)trappedRookPenalty2;
         }
     }
 

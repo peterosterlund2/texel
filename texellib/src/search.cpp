@@ -620,7 +620,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         if (evalScore == UNKNOWN_SCORE) {
             evalScore = eval.evalPos(pos);
         }
-        const int razorMargin = (depth <= 1) ? razorMargin1 : razorMargin2;
+        const int razorMargin = (depth <= 1) ? (int)razorMargin1 : (int)razorMargin2;
         if (evalScore < beta - razorMargin) {
             q0Eval = evalScore;
             int score = quiesce(alpha-razorMargin, beta-razorMargin, ply, 0, inCheck);
