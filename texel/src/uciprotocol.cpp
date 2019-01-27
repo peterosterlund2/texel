@@ -299,7 +299,7 @@ UCIProtocol::handleCommand(const std::string& cmdLine, std::ostream& os) {
 void
 UCIProtocol::initEngine(std::ostream& os) {
     if (!engine)
-        engine = make_unique<EngineControl>(os, engineThread, searchListener);
+        engine = ::make_unique<EngineControl>(os, engineThread, searchListener);
 }
 
 /** Convert a string to tokens by splitting at whitespace characters. */

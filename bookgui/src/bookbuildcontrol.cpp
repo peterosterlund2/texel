@@ -91,9 +91,9 @@ void
 BookBuildControl::readFromFile(const std::string& newFileName) {
     std::lock_guard<std::mutex> L(mutex);
     filename = newFileName;
-    book = make_unique<BookBuild::Book>(filename + ".log", params.bookDepthCost,
-                                        params.ownPathErrorCost,
-                                        params.otherPathErrorCost);
+    book = ::make_unique<BookBuild::Book>(filename + ".log", params.bookDepthCost,
+                                          params.ownPathErrorCost,
+                                          params.otherPathErrorCost);
     auto f = [this]() {
         book->readFromFile(filename);
         {
