@@ -44,6 +44,10 @@ struct PairsData {
     base_t base[1]; // C++ complains about base[]...
 };
 
+#if _MSC_VER && !__INTEL_COMPILER
+#define __attribute__(a) /* nothing */
+#endif
+
 struct TBEntry {
     uint8_t *data;
     uint64_t key;
