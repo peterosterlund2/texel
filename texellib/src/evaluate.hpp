@@ -30,6 +30,10 @@
 #include "position.hpp"
 #include "util/alignedAlloc.hpp"
 
+#if _MSC_VER
+#include <xmmintrin.h>
+#endif
+
 class EvaluateTest;
 
 /** Position evaluation routines. */
@@ -247,7 +251,11 @@ Evaluate::EvalHashTables::EvalHashTables() {
 inline void
 Evaluate::prefetch(U64 key) {
 #ifdef HAS_PREFETCH
+#if _MSC_VER
+    _mm_prefetch((const char*)&getEvalHashEntry(evalHash, key), 3);
+#else
     __builtin_prefetch(&getEvalHashEntry(evalHash, key));
+#endif
 #endif
 }
 

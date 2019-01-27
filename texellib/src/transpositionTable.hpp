@@ -35,6 +35,10 @@
 #include <memory>
 #include <vector>
 
+#if _MSC_VER
+#include <xmmintrin.h>
+#endif
+
 class Position;
 class TranspositionTable;
 
@@ -461,7 +465,11 @@ TranspositionTable::prefetch(U64 key) {
 #ifdef HAS_PREFETCH
     key ^= contemptHash;
     size_t idx0 = getIndex(key);
+#if _MSC_VER
+    _mm_prefetch((const char*)&table[idx0], 3);
+#else
     __builtin_prefetch(&table[idx0]);
+#endif
 #endif
 }
 
