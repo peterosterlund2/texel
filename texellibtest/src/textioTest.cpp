@@ -34,7 +34,7 @@ testFENParseError(const std::string& fen) {
     bool wasError = false;
     try {
         TextIO::readFEN(fen);
-    } catch (const ChessParseError& err) {
+    } catch (const ChessParseError&) {
         wasError = true;
     }
     return wasError;

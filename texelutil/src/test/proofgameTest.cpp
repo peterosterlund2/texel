@@ -403,7 +403,7 @@ ProofGameTest::testValidPieceCount() {
         try {
             ProofGame::validatePieceCounts(pos);
             ok = true;
-        } catch (const ChessParseError& e) {
+        } catch (const ChessParseError&) {
         }
         return ok;
     };

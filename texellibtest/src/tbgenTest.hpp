@@ -28,7 +28,7 @@
 
 #include "suiteBase.hpp"
 
-class PieceCount;
+struct PieceCount;
 
 
 class TBGenTest : public SuiteBase {

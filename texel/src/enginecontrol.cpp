@@ -129,7 +129,7 @@ EngineMainThread::setupTT() {
                 break;
             tt.reSize(nEntries);
             break;
-        } catch (const std::bad_alloc& ex) {
+        } catch (const std::bad_alloc&) {
             nEntries /= 2;
         }
     }
@@ -425,7 +425,7 @@ void EngineControl::setOpponent() {
                 }
             }
         }
-    } catch (const std::regex_error& ex) {
+    } catch (const std::regex_error&) {
         os << "info string error parsing contempt file" << std::endl;
     }
 }

@@ -193,7 +193,7 @@ PgnScanner::nextToken() {
                 break;
             }
         }
-    } catch (const std::out_of_range& e) {
+    } catch (const std::out_of_range&) {
         ret.type = PgnToken::END;
     }
     return ret;
