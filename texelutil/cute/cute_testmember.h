@@ -1,28 +1,33 @@
 /*********************************************************************************
  * This file is part of CUTE.
  *
- * CUTE is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Copyright (c) 2006-2018 Peter Sommerlad, IFS
  *
- * CUTE is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with CUTE.  If not, see <http://www.gnu.org/licenses/>.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Copyright 2006 Peter Sommerlad
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
  *********************************************************************************/
 
 #ifndef CUTE_TESTMEMBER_H_
 #define CUTE_TESTMEMBER_H_
+
 #include "cute_test.h"
-#include "cute_determine_version.h"
-#include "cute_determine_library.h"
+
 namespace cute {
 	template <typename TestClass>
 	test makeMemberFunctionTest(TestClass &t,void (TestClass::*fun)(),char const *name){
@@ -51,6 +56,9 @@ namespace cute {
 		Context context;
 		incarnate_for_member_function_with_context_object(MemFun f,Context c)
 		:memfun(f),context(c){}
+		incarnate_for_member_function_with_context_object(incarnate_for_member_function_with_context_object const &other)
+		:memfun(other.memfun),context(other.context){} // provide copy-ctor for std::function ctor requirement should be =default on C++11
+
 		void operator()(){
 			TestClass t(context);
 			(t.*memfun)();
@@ -61,6 +69,7 @@ namespace cute {
 		return test(incarnate_for_member_function_with_context_object<TestClass,MemFun,Context>(fun,c),demangle(typeid(TestClass).name())+"::"+name);
 	}
 }
+
 #define CUTE_MEMFUN(testobject,TestClass,MemberFunctionName) \
 	cute::makeMemberFunctionTest(testobject,\
 		&TestClass::MemberFunctionName,\

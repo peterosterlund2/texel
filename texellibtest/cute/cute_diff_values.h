@@ -1,7 +1,7 @@
 /*********************************************************************************
  * This file is part of CUTE.
  *
- * Copyright (c) 2007-2018 Peter Sommerlad, IFS
+ * Copyright (c) 2013-2018 Peter Sommerlad, IFS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,25 +23,26 @@
  *
  *********************************************************************************/
 
-#ifndef CUTE_DETERMINE_LIBRARY_H_
-#define CUTE_DETERMINE_LIBRARY_H_
-#if defined(USE_TR1)
-#include <tr1/functional>
-// bind already given by <functional> in cute_test.h from cute_suite.h
-namespace boost_or_tr1 = std::tr1;
+#ifndef CUTE_DIFF_VALUES_H_
+#define CUTE_DIFF_VALUES_H_
+#include "cute_to_string.h"
 namespace cute {
-	using namespace boost_or_tr1::placeholders;
+	// you could provide your own overload for diff_values for your app-specific types
+	// be sure to use tabs as given below, then the CUTE eclipse plug-in will parse correctly
+	template <typename ExpectedValue, typename ActualValue>
+	std::string diff_values(ExpectedValue const &expected
+						, ActualValue const & actual
+						, char const *left="expected"
+						, char const *right="but was"){
+		// construct a simple message...to be parsed by IDE support
+		std::string res;
+		res += ' ';
+		res += left;
+		res+=":\t" + cute_to_string::backslashQuoteTabNewline(cute_to_string::to_string(expected))+'\t';
+		res += right;
+		res +=":\t"+cute_to_string::backslashQuoteTabNewline(cute_to_string::to_string(actual))+'\t';
+		return res;
+	}
 }
-#elif defined(USE_STD11)
-#include <functional>
-namespace boost_or_tr1 = std;
-namespace cute {
-	using namespace boost_or_tr1::placeholders;
-}
-#else
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-namespace boost_or_tr1 = boost;
-#endif
 
-#endif /*CUTE_DETERMINE_LIBRARY_H_*/
+#endif /* CUTE_DIFF_VALUES_H_ */

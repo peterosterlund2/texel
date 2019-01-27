@@ -1,7 +1,7 @@
 /*********************************************************************************
  * This file is part of CUTE.
  *
- * Copyright (c) 2007-2018 Peter Sommerlad, IFS
+ * Copyright (c) 2016-2018 Peter Sommerlad, IFS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,25 +23,24 @@
  *
  *********************************************************************************/
 
-#ifndef CUTE_DETERMINE_LIBRARY_H_
-#define CUTE_DETERMINE_LIBRARY_H_
-#if defined(USE_TR1)
-#include <tr1/functional>
-// bind already given by <functional> in cute_test.h from cute_suite.h
-namespace boost_or_tr1 = std::tr1;
-namespace cute {
-	using namespace boost_or_tr1::placeholders;
-}
-#elif defined(USE_STD11)
-#include <functional>
-namespace boost_or_tr1 = std;
-namespace cute {
-	using namespace boost_or_tr1::placeholders;
-}
+#ifndef CUTE_DEPRECATED_H_
+#define CUTE_DEPRECATED_H_
+
+#if __cplusplus >= 201402L
+#define DEPRECATE(orig, repl) [[deprecated ("Use "#repl" instead.")]] inline void orig() {}
+#elif defined(__GNUG__)
+#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#if GCC_VERSION >= 40500 || defined(__clang__)
+#define DEPRECATE(orig, repl) __attribute__((deprecated("Use "#repl" instead."))) inline void orig() {}
 #else
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-namespace boost_or_tr1 = boost;
+#define DEPRECATE(orig, repl) __attribute__((deprecated)) inline void orig() {}
+#endif
+#elif defined(_MSC_VER)
+#define DEPRECATE(orig, repl) __declspec(deprecated(#orig" is deprecated, use "#repl" instead.")) inline void orig() {}
 #endif
 
-#endif /*CUTE_DETERMINE_LIBRARY_H_*/
+#ifdef DEPRECATE
+#define DEPRECATED(name) name()
+#endif
+
+#endif /*CUTE_DEPRECATED_H_*/

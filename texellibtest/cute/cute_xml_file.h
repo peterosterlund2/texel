@@ -1,7 +1,7 @@
 /*********************************************************************************
  * This file is part of CUTE.
  *
- * Copyright (c) 2007-2018 Peter Sommerlad, IFS
+ * Copyright (c) 2013-2018 Peter Sommerlad, IFS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,25 +23,31 @@
  *
  *********************************************************************************/
 
-#ifndef CUTE_DETERMINE_LIBRARY_H_
-#define CUTE_DETERMINE_LIBRARY_H_
-#if defined(USE_TR1)
-#include <tr1/functional>
-// bind already given by <functional> in cute_test.h from cute_suite.h
-namespace boost_or_tr1 = std::tr1;
-namespace cute {
-	using namespace boost_or_tr1::placeholders;
-}
-#elif defined(USE_STD11)
-#include <functional>
-namespace boost_or_tr1 = std;
-namespace cute {
-	using namespace boost_or_tr1::placeholders;
-}
-#else
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-namespace boost_or_tr1 = boost;
-#endif
+#ifndef CUTE_XML_FILE_H_
+#define CUTE_XML_FILE_H_
 
-#endif /*CUTE_DETERMINE_LIBRARY_H_*/
+#include <fstream>
+#include <string>
+
+namespace cute {
+struct xml_file_opener {
+	std::string filename;
+	std::ofstream out;
+	xml_file_opener(int argc, char const *const* argv)
+	:filename(argc>0&&argv[0]?basename(argv[0]):"testresult.xml")
+	,out(filename.c_str()){}
+	std::string basename(std::string path){
+#if defined( _MSC_VER ) || defined(__MINGW32__)
+		char const sep='\\';
+#else
+		char const sep='/';
+#endif
+		std::string::size_type pos=path.find_last_of(sep,path.size()-1);
+		if (pos != std::string::npos) path.erase(0,pos+1);
+		path+=".xml";
+		return path;
+	}
+};
+}
+
+#endif /* CUTE_XML_FILE_H_ */

@@ -1,7 +1,7 @@
 /*********************************************************************************
  * This file is part of CUTE.
  *
- * Copyright (c) 2007-2018 Peter Sommerlad, IFS
+ * Copyright (c) 2013-2018 Peter Sommerlad, IFS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,25 +23,24 @@
  *
  *********************************************************************************/
 
-#ifndef CUTE_DETERMINE_LIBRARY_H_
-#define CUTE_DETERMINE_LIBRARY_H_
-#if defined(USE_TR1)
-#include <tr1/functional>
-// bind already given by <functional> in cute_test.h from cute_suite.h
-namespace boost_or_tr1 = std::tr1;
-namespace cute {
-	using namespace boost_or_tr1::placeholders;
-}
-#elif defined(USE_STD11)
-#include <functional>
-namespace boost_or_tr1 = std;
-namespace cute {
-	using namespace boost_or_tr1::placeholders;
-}
+#ifndef CUTE_DETERMINE_TRAITS_H_
+#define CUTE_DETERMINE_TRAITS_H_
+#include "cute_determine_version.h"
+#if defined(USE_STD11)
+#include <type_traits>
+#elif defined(USE_TR1)
+#include <tr1/type_traits>
 #else
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-namespace boost_or_tr1 = boost;
+#include <boost/type_traits/is_integral.hpp>
+#include <boost/type_traits/is_floating_point.hpp>
+#include <boost/type_traits/make_signed.hpp>
+#endif
+#if defined(USE_STD11)
+	namespace impl_place_for_traits = std;
+#elif defined(USE_TR1)
+	namespace impl_place_for_traits = std::tr1;
+#else
+	namespace impl_place_for_traits = boost;
 #endif
 
-#endif /*CUTE_DETERMINE_LIBRARY_H_*/
+#endif /* CUTE_DETERMINE_TRAITS_H_ */

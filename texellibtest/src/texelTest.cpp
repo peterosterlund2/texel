@@ -48,7 +48,7 @@
 void
 runSuite(const SuiteBase& suite, const std::vector<std::string>& suiteNames) {
     if (suiteNames.empty() || contains(suiteNames, suite.getName())) {
-        cute::ide_listener lis;
+        cute::ide_listener<> lis;
         cute::makeRunner(lis)(suite.getSuite(), suite.getName().c_str());
     }
 }

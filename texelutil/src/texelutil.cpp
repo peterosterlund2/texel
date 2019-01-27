@@ -224,7 +224,7 @@ getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
 static void
 runTests() {
     auto runSuite = [](const UtilSuiteBase& suite) {
-        cute::ide_listener lis;
+        cute::ide_listener<> lis;
         cute::makeRunner(lis)(suite.getSuite(), suite.getName().c_str());
     };
 
