@@ -35,13 +35,6 @@
 #include "computerPlayer.hpp"
 #include "textio.hpp"
 
-#include "cute.h"
-#include "ide_listener.h"
-#include "cute_runner.h"
-#include "test/bookBuildTest.hpp"
-#include "test/proofgameTest.hpp"
-#include "test/gameTreeTest.hpp"
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -84,7 +77,6 @@ usage() {
     std::cerr << " -s : Use search score instead of game result\n";
     std::cerr << " -moveorder : Optimize static move ordering\n";
     std::cerr << "cmd is one of:\n";
-    std::cerr << " test : Run CUTE tests\n";
     std::cerr << "\n";
     std::cerr << " p2f [n]  : Convert from PGN to FEN, using each position with probability 1/n.\n";
     std::cerr << " f2p      : Convert from FEN to PGN\n";
@@ -221,24 +213,10 @@ getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
         throw ChessParseError("Unexpected second set of parameters");
 }
 
-static void
-runTests() {
-    auto runSuite = [](const UtilSuiteBase& suite) {
-        cute::ide_listener<> lis;
-        cute::makeRunner(lis)(suite.getSuite(), suite.getName().c_str());
-    };
-
-    ComputerPlayer::initEngine();
-    runSuite(BookBuildTest());
-    runSuite(ProofGameTest());
-    runSuite(GameTreeTest());
-}
-
 int
 main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
 
-    bool testMode = false;
     try {
         ComputerPlayer::initEngine();
         bool useEntropyErrorFunction = false;
@@ -269,9 +247,7 @@ main(int argc, char* argv[]) {
 
         std::string cmd = argv[1];
         ChessTool chessTool(useEntropyErrorFunction, optimizeMoveOrdering, useSearchScore);
-        if (cmd == "test") {
-            testMode = true;
-        } else if (cmd == "p2f") {
+        if (cmd == "p2f") {
             int n = 1;
             if (argc > 3)
                 usage();
@@ -683,8 +659,6 @@ main(int argc, char* argv[]) {
     } catch (std::exception& ex) {
         std::cerr << "Error: " << ex.what() << std::endl;
     }
-    if (testMode)
-        runTests();
 
     return 0;
 }
