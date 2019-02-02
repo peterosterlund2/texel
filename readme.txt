@@ -5,7 +5,7 @@ Texel is a free software (GPL v3) chess engine written in C++11.
 
 More information about the program is available in the chess programming wiki:
 
-    http://chessprogramming.wikispaces.com/Texel
+    https://www.chessprogramming.org/Texel
 
 
 Pre-compiled executables
