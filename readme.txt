@@ -285,8 +285,8 @@ both computers, proceed as follows:
 Compiling
 ---------
 
-Texel is build using the CMake build system. To compile Texel follow these
-steps, assuming you have access to a terminal environment:
+Texel uses the CMake build system. To compile Texel follow these steps, assuming
+you have access to a terminal environment:
 
 1. cd <directory_where_texel_was_unpacked>
 2. mkdir build
