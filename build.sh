@@ -143,6 +143,8 @@ strip bin/texel64
 
 cp build/win64/texel.exe bin/texel64.exe
 x86_64-w64-mingw32-strip bin/texel64.exe
+cp build/win64/runcmd.exe bin/runcmd.exe
+x86_64-w64-mingw32-strip bin/runcmd.exe
 
 cp build/win64bmi/texel.exe bin/texel64bmi.exe
 x86_64-w64-mingw32-strip bin/texel64bmi.exe

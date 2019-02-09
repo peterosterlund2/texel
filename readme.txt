@@ -281,6 +281,20 @@ both computers, proceed as follows:
    cd /directory/where/texel/is/installed
    mpiexec -hosts 2 host1 host2 texel64cl.exe
 
+* Running the cluster version in a GUI
+
+To run the cluster version of Texel in a GUI, the engine should be defined as
+the mpiexec command with all parameters as given in the examples above. If the
+GUI does not support adding command line parameters to the engine you can use a
+wrapper program that passes the required parameters to mpiexec. If you are using
+Linux, creating a one-line shell script should be enough. If you are using
+Windows, you can use the included runcmd.exe program:
+
+1. Copy the runcmd.exe program to the directory where Texel is located.
+2. In the same directory create a text file called runcmd.txt that contains the
+   mpiexec command to run. Make sure the file ends with a newline character.
+3. Install the runcmd.exe program as a UCI engine in the GUI.
+
 
 Compiling
 ---------
