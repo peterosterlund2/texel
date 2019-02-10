@@ -31,12 +31,12 @@
 #include "textio.hpp"
 #include "gametree.hpp"
 #include "threadpool.hpp"
-#include "computerPlayer.hpp"
 #include "syzygy/rtb-probe.hpp"
 #include "tbprobe.hpp"
 #include "stloutput.hpp"
 #include "util/timeUtil.hpp"
 #include "util/logger.hpp"
+#include "util/random.hpp"
 
 #include <queue>
 #include <unordered_set>

@@ -28,7 +28,7 @@
 
 #include "util/util.hpp"
 #include "piece.hpp"
-#include "position.hpp"
+#include "square.hpp"
 
 #include <memory>
 #include <functional>
