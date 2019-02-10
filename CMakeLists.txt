@@ -23,7 +23,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_" OR
    CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
   option(USE_POPCNT "Use popcount CPU instructions" OFF)
 endif()
-option(USE_CTZ "Use CTZ CPU instructions" OFF)
+option(USE_CTZ "Use CTZ (BitScanForward) CPU instructions" OFF)
 option(USE_PREFETCH "Use prefetch CPU instructions" OFF)
 if(NOT ANDROID)
   option(USE_LARGE_PAGES "Use large pages when allocating memory" OFF)
@@ -31,7 +31,7 @@ if(NOT ANDROID)
   option(USE_CLUSTER "Use MPI to distribute search to several computers" OFF)
 endif()
 if(WIN32)
-  option(USE_WIN7 "Compile for Windows 7" OFF)
+  option(USE_WIN7 "Compile for Windows 7 and later" OFF)
 endif()
 
 
