@@ -14,47 +14,56 @@ set(src_gtb
   )
 
 set(src_syzygy
-  syzygy/rtb-probe.cpp
+  syzygy/rtb-probe.cpp    syzygy/rtb-probe.hpp
+                          syzygy/rtb-core-impl.hpp
   )
 
 set(src_util
-  util/logger.cpp
-  util/random.cpp
-  util/timeUtil.cpp
-  util/util.cpp
+                          util/alignedAlloc.hpp
+                          util/histogram.hpp
+  util/logger.cpp         util/logger.hpp
+  util/random.cpp         util/random.hpp
+  util/timeUtil.cpp       util/timeUtil.hpp
+  util/util.cpp           util/util.hpp
   )
 
 set(src_texellib
-  bitBoard.cpp
-  book.cpp
-  cluster.cpp
-  clustertt.cpp
-  computerPlayer.cpp
-  endGameEval.cpp
-  evaluate.cpp
-  game.cpp
-  history.cpp
-  humanPlayer.cpp
-  killerTable.cpp
+  bitBoard.cpp            bitBoard.hpp
+  book.cpp                book.hpp
+                          chessParseError.hpp
+  cluster.cpp             cluster.hpp
+  clustertt.cpp           clustertt.hpp
+  computerPlayer.cpp      computerPlayer.hpp
+                          constants.hpp
+  endGameEval.cpp         endGameEval.hpp
+  evaluate.cpp            evaluate.hpp
+  game.cpp                game.hpp
+  history.cpp             history.hpp
+  humanPlayer.cpp         humanPlayer.hpp
+  killerTable.cpp         killerTable.hpp
   kpkTable.cpp
   krkpTable.cpp
   krpkrTable.cpp
-  largePageAlloc.cpp
-  material.cpp
-  move.cpp
-  moveGen.cpp
-  numa.cpp
-  parallel.cpp
-  parameters.cpp
-  piece.cpp
-  polyglot.cpp
-  position.cpp
-  search.cpp
-  tbgen.cpp
-  tbprobe.cpp
-  textio.cpp
-  transpositionTable.cpp
-  treeLogger.cpp
+  largePageAlloc.cpp      largePageAlloc.hpp
+  material.cpp            material.hpp
+  move.cpp                move.hpp
+  moveGen.cpp             moveGen.hpp
+  numa.cpp                numa.hpp
+  parallel.cpp            parallel.hpp
+  parameters.cpp          parameters.hpp
+  piece.cpp               piece.hpp
+                          player.hpp
+  polyglot.cpp            polyglot.hpp
+  position.cpp            position.hpp
+  search.cpp              search.hpp
+                          searchUtil.hpp
+                          square.hpp
+  tbgen.cpp               tbgen.hpp
+  tbprobe.cpp             tbprobe.hpp
+  textio.cpp              textio.hpp
+  transpositionTable.cpp  transpositionTable.hpp
+  treeLogger.cpp          treeLogger.hpp
+  undoInfo.hpp
   )
 
 add_library(texellib STATIC

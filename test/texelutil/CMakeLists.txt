@@ -1,8 +1,9 @@
 set(src_texelutiltest
-  bookBuildTest.cpp
-  gameTreeTest.cpp
-  proofgameTest.cpp
+  bookBuildTest.cpp  bookBuildTest.hpp
+  gameTreeTest.cpp   gameTreeTest.hpp
+  proofgameTest.cpp  proofgameTest.hpp
   texelutiltest.cpp
+                     utilSuiteBase.hpp
   )
 
 add_executable(texelutiltest ${src_texelutiltest})

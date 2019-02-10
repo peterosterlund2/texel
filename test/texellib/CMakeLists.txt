@@ -1,25 +1,26 @@
 set(src_texellibtest
-  bitBoardTest.cpp
-  bookTest.cpp
-  computerPlayerTest.cpp
-  evaluateTest.cpp
-  gameTest.cpp
-  historyTest.cpp
-  killerTableTest.cpp
-  moveGenTest.cpp
-  moveTest.cpp
-  parallelTest.cpp
-  pieceTest.cpp
-  polyglotTest.cpp
-  positionTest.cpp
-  searchTest.cpp
-  tbTest.cpp
-  tbgenTest.cpp
+  bitBoardTest.cpp            bitBoardTest.hpp
+  bookTest.cpp                bookTest.hpp
+  computerPlayerTest.cpp      computerPlayerTest.hpp
+  evaluateTest.cpp            evaluateTest.hpp
+  gameTest.cpp                gameTest.hpp
+  historyTest.cpp             historyTest.hpp
+  killerTableTest.cpp         killerTableTest.hpp
+  moveGenTest.cpp             moveGenTest.hpp
+  moveTest.cpp                moveTest.hpp
+  parallelTest.cpp            parallelTest.hpp
+  pieceTest.cpp               pieceTest.hpp
+  polyglotTest.cpp            polyglotTest.hpp
+  positionTest.cpp            positionTest.hpp
+  searchTest.cpp              searchTest.hpp
+                              suiteBase.hpp
+  tbTest.cpp                  tbTest.hpp
+  tbgenTest.cpp               tbgenTest.hpp
   texelTest.cpp
-  textioTest.cpp
-  transpositionTableTest.cpp
-  treeLoggerTest.cpp
-  utilTest.cpp
+  textioTest.cpp              textioTest.hpp
+  transpositionTableTest.cpp  transpositionTableTest.hpp
+  treeLoggerTest.cpp          treeLoggerTest.hpp
+  utilTest.cpp                utilTest.hpp
   )
 
 add_executable(texellibtest ${src_texellibtest})

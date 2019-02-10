@@ -1,7 +1,10 @@
 set(src_texelutillib
-  bookbuild.cpp
-  gametree.cpp
-  proofgame.cpp
+                 assignment.hpp
+  bookbuild.cpp  bookbuild.hpp
+  gametree.cpp   gametree.hpp
+  proofgame.cpp  proofgame.hpp
+                 stloutput.hpp
+                 threadpool.hpp
   )
 
 add_library(texelutillib STATIC

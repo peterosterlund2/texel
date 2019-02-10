@@ -1,7 +1,7 @@
 set(src_bookgui
-  bookbuildcontrol.cpp
-  bookgui.cpp
-  chessboard.cpp
+  bookbuildcontrol.cpp  bookbuildcontrol.hpp
+  bookgui.cpp           bookgui.hpp
+  chessboard.cpp        chessboard.hpp
   )
 
 set(all_ok false)

@@ -1,8 +1,8 @@
 set(src_texelutil
-  chesstool.cpp
-  matchbookcreator.cpp
-  posgen.cpp
-  spsa.cpp
+  chesstool.cpp         chesstool.hpp
+  matchbookcreator.cpp  matchbookcreator.hpp
+  posgen.cpp            posgen.hpp
+  spsa.cpp              spsa.hpp
   texelutil.cpp
   )
 

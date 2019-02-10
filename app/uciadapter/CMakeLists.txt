@@ -1,6 +1,6 @@
 set(src_uciadapter
-  ctgbook.cpp
-  uciadapter.cpp
+  ctgbook.cpp     ctgbook.hpp
+  uciadapter.cpp  uciadapter.hpp
   )
 
 if(UNIX)
