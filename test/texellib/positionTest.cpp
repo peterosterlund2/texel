@@ -415,7 +415,7 @@ struct Mtrl {
 /** Tests if a series of integers are unique. */
 class UniqCheck {
 public:
-    UniqCheck(int nEntries) {
+    explicit UniqCheck(int nEntries) {
         int hSize = 1;
         while (hSize < nEntries*2)
             hSize *= 2;

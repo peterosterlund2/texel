@@ -64,7 +64,7 @@ public:
 
 class PgnScanner {
 public:
-    PgnScanner(std::istream& is);
+    explicit PgnScanner(std::istream& is);
 
     void putBack(const PgnToken& tok);
 
@@ -246,7 +246,7 @@ private:
 
 class PgnReader {
 public:
-    PgnReader(std::istream& is);
+    explicit PgnReader(std::istream& is);
 
     /** Read next game. Return false if no more games to read. */
     bool readPGN(GameTree& tree);

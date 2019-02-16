@@ -46,7 +46,7 @@ using namespace SearchConst;
 
 class NotifyCounter {
 public:
-    NotifyCounter(Notifier& notifier);
+    explicit NotifyCounter(Notifier& notifier);
     ~NotifyCounter();
 
     void setCommunicator(Communicator& comm) { this->comm = &comm; }
@@ -136,7 +136,7 @@ ParallelTest::testCommunicator() {
 
     class Handler : public Communicator::CommandHandler {
     public:
-        Handler(Communicator& comm) : comm(comm) {}
+        explicit Handler(Communicator& comm) : comm(comm) {}
 
         void initSearch(const Position& pos,
                         const std::vector<U64>& posHashList, int posHashListSize,

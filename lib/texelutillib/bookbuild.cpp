@@ -159,8 +159,6 @@ BookNode::getExpansionCost(const BookData& bookData, const BookNode* child,
             int moveError = negaMaxScore - searchScore;
             assert(moveError >= 0);
             bool wtm = getDepth() % 2 == 0;
-            int ownCost = bookData.ownPathErrorCost();
-            int otherCost = bookData.otherPathErrorCost();
             return moveError * (wtm == white ? ownCost : otherCost);
         }
     }

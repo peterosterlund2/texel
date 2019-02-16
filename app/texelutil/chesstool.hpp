@@ -39,7 +39,7 @@ class MoveList;
 class ScoreToProb {
 public:
     /** @param pawnAdvantage Rating advantage corresponding to score 100. */
-    ScoreToProb(double pawnAdvantage = 113);
+    explicit ScoreToProb(double pawnAdvantage = 113);
 
     /** Return win probability corresponding to score. */
     double getProb(int score) const;

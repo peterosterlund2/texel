@@ -154,7 +154,7 @@ BookBuildControl::startSearch() {
     std::lock_guard<std::mutex> L(mutex);
     class BookListener : public BookBuild::Book::Listener {
     public:
-        BookListener(BookBuildControl& bbc0) : bbc(bbc0) {}
+        explicit BookListener(BookBuildControl& bbc0) : bbc(bbc0) {}
         void queueSizeChanged(int nPendingBookTasks) override {
             {
                 std::lock_guard<std::mutex> L(bbc.mutex);

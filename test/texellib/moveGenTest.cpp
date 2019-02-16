@@ -35,7 +35,7 @@
 
 template <typename T>
 static bool
-containsAll(const std::vector<T> v, const std::vector<T>& e) {
+containsAll(const std::vector<T>& v, const std::vector<T>& e) {
     for (size_t i = 0; i < e.size(); i++)
         if (!contains(v, e[i]))
             return false;

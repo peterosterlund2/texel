@@ -133,12 +133,14 @@ GameTest::testDraw50() {
     ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());    // Draw claim invalid
     res = game.processString("e4");
+    ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(true, game.haveDrawOffer());   // Invalid claim converted to draw offer
 
     std::string cmd = "setpos 8/4k3/8/P7/8/8/8/1N2K2R w K - 99 83";
     res = game.processString(cmd);
     ASSERT_EQUAL(true, res);
     res = game.processString("draw 50");
+    ASSERT_EQUAL(true, res);
     ASSERT_EQUAL(Game::ALIVE, game.getGameState());      // Draw claim invalid
 
     game.processString(cmd);

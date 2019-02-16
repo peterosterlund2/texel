@@ -582,7 +582,7 @@ BookBuildTest::testSelector() {
         Book book(backupFile);
         class TestSelector : public Book::PositionSelector {
         public:
-            TestSelector(Book& b) : book(b) { }
+            explicit TestSelector(Book& b) : book(b) { }
             bool getNextPosition(Position& pos, Move& move) override {
                 nCalls++;
                 return false;
@@ -607,7 +607,7 @@ BookBuildTest::testSelector() {
         Book book(backupFile);
         class TestSelector : public Book::PositionSelector {
         public:
-            TestSelector(Book& b) : book(b) { }
+            explicit TestSelector(Book& b) : book(b) { }
             bool getNextPosition(Position& pos, Move& move) override {
                 nCalls++;
                 if (idx < (int)bookLine.size()) {

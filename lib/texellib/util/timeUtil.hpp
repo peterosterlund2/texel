@@ -62,7 +62,7 @@ private:
     /** Update tElapsed, tUseful, tSleep and increase t0 to current time. */
     void update();
 
-    double t0;          // Time stand for last update()
+    double t0;          // Time stamp for last update()
     double pUseful;     // Current CPU efficiency factor
 
     double tElapsed;    // Total elapsed time since reset()

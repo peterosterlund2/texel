@@ -33,7 +33,7 @@
 
 class BookGui : public BookBuildControl::ChangeListener {
 public:
-    BookGui(Glib::RefPtr<Gtk::Application> app);
+    explicit BookGui(Glib::RefPtr<Gtk::Application> app);
     BookGui(const BookGui& other) = delete;
     BookGui& operator=(const BookGui& other) = delete;
 

@@ -35,7 +35,7 @@
 class ProcessStarter {
 public:
     /** Constructor. Start child process and set up IO pipes. */
-    ProcessStarter(const std::vector<std::string>& progAndArgs);
+    explicit ProcessStarter(const std::vector<std::string>& progAndArgs);
 
     int getChildOutFd() const { return childOutFd; }
     int getChildInFd() const { return childInFd; }

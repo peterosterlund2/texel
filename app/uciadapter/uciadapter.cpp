@@ -230,14 +230,14 @@ IOAdapter::writeData(int fd, std::vector<char>& buf) {
 
 void
 IOAdapter::toParent(const std::string& line) {
-    for (char c: line)
+    for (char c : line)
         poBuf.push_back(c);
     poBuf.push_back('\n');
 }
 
 void
 IOAdapter::toChild(const std::string& line) {
-    for (char c: line)
+    for (char c : line)
         coBuf.push_back(c);
     coBuf.push_back('\n');
 }

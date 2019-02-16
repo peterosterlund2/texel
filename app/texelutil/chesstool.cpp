@@ -97,7 +97,7 @@ static bool strContains(const std::string& str, const std::string& sub) {
 }
 
 static int
-findLine(const std::string start, const std::string& contain, const std::vector<std::string>& lines) {
+findLine(const std::string& start, const std::string& contain, const std::vector<std::string>& lines) {
     for (int i = 0; i < (int)lines.size(); i++) {
         const std::string& line = lines[i];
         if (startsWith(line, start) && strContains(line, contain))
@@ -559,7 +559,6 @@ ChessTool::computeSearchScores(std::istream& is, const std::string& script, int 
                 break;
             int nScores = r.endIdx - r.beginIdx;
 
-            Position pos;
             for (int i = 0; i < nScores; i++) {
                 pos.deSerialize(positions[r.beginIdx + i].posData);
                 int c = pos.isWhiteMove() ? 1 : -1;
@@ -628,7 +627,7 @@ ChessTool::paramEvalRange(std::istream& is, ParamDomain& pd) {
 }
 
 struct PrioParam {
-    PrioParam(ParamDomain& pd0) : priority(1), pd(&pd0) {}
+    explicit PrioParam(ParamDomain& pd0) : priority(1), pd(&pd0) {}
     double priority;
     ParamDomain* pd;
     bool operator<(const PrioParam& o) const {

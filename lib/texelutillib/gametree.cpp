@@ -80,7 +80,7 @@ PgnScanner::getTokenChar() {
         }
     } catch (const std::out_of_range& e) {
         if (eofReached)
-            throw e;
+            throw;
         eofReached = true;
         return '\n'; // Terminating whitespace simplifies the tokenizer
     }

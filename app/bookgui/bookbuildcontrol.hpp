@@ -47,7 +47,7 @@ public:
     };
 
     /** Constructor. */
-    BookBuildControl(ChangeListener& listener);
+    explicit BookBuildControl(ChangeListener& listener);
     ~BookBuildControl();
 
     /** Changes that requires the GUI to be updated. */

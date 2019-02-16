@@ -446,7 +446,7 @@ GameScheduler::getResult(WorkUnit& wu) {
 class SpsaConfig {
 public:
     /** Constructor. Read configuration from a file. */
-    SpsaConfig(const std::string& filename);
+    explicit SpsaConfig(const std::string& filename);
 
     struct ParamData {
         std::string parName;

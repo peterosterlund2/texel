@@ -58,7 +58,7 @@ public:
     /**
      * Create a weighted assignment problem instance with weight matrix 'w'.
      */
-    Assignment(const Matrix<WeightType>& w);
+    explicit Assignment(const Matrix<WeightType>& w);
 
     /** Create an empty assignment problem instance. */
     Assignment();

@@ -95,14 +95,14 @@ private:
 
 class CtbFile {
 public:
-    CtbFile(std::fstream& f);
+    explicit CtbFile(std::fstream& f);
     int lowerPageBound;
     int upperPageBound;
 };
 
 class CtoFile {
 public:
-    CtoFile(std::fstream& f);
+    explicit CtoFile(std::fstream& f);
 
     static void getHashIndices(const std::vector<U8>& encodedPos, const CtbFile& ctb,
                                std::vector<int>& indices);
