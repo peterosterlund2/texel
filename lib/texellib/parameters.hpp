@@ -363,17 +363,22 @@ Parameters::set(const std::string& name, const std::string& value) {
 // UCI parameters
 
 namespace UciParams {
+    extern std::shared_ptr<Parameters::SpinParam> threads;
+
     extern std::shared_ptr<Parameters::SpinParam> hash;
-    extern std::shared_ptr<Parameters::CheckParam> ownBook;
-    extern std::shared_ptr<Parameters::StringParam> bookFile;
+    extern std::shared_ptr<Parameters::SpinParam> multiPV;
     extern std::shared_ptr<Parameters::CheckParam> ponder;
     extern std::shared_ptr<Parameters::CheckParam> analyseMode;
-    extern std::shared_ptr<Parameters::SpinParam> strength;
-    extern std::shared_ptr<Parameters::SpinParam> maxNPS;
-    extern std::shared_ptr<Parameters::SpinParam> threads;
-    extern std::shared_ptr<Parameters::SpinParam> multiPV;
+
+    extern std::shared_ptr<Parameters::CheckParam> ownBook;
+    extern std::shared_ptr<Parameters::StringParam> bookFile;
 
     extern std::shared_ptr<Parameters::CheckParam> useNullMove;
+    extern std::shared_ptr<Parameters::CheckParam> analysisAgeHash;
+    extern std::shared_ptr<Parameters::ButtonParam> clearHash;
+
+    extern std::shared_ptr<Parameters::SpinParam> strength;
+    extern std::shared_ptr<Parameters::SpinParam> maxNPS;
 
     extern std::shared_ptr<Parameters::SpinParam> contempt;
     extern std::shared_ptr<Parameters::SpinParam> analyzeContempt;
@@ -387,9 +392,6 @@ namespace UciParams {
     extern std::shared_ptr<Parameters::SpinParam> minProbeDepth;  // Generic min TB probe depth
     extern std::shared_ptr<Parameters::SpinParam> minProbeDepth6; // Min probe depth for 6-men
     extern std::shared_ptr<Parameters::SpinParam> minProbeDepth7; // Min probe depth for 7-men
-
-    extern std::shared_ptr<Parameters::CheckParam> analysisAgeHash;
-    extern std::shared_ptr<Parameters::ButtonParam> clearHash;
 }
 
 // ----------------------------------------------------------------------------

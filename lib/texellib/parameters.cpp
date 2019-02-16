@@ -27,38 +27,44 @@
 #include "computerPlayer.hpp"
 
 namespace UciParams {
-    std::shared_ptr<Parameters::SpinParam> hash(std::make_shared<Parameters::SpinParam>("Hash", 1, 1024*1024, 16));
-    std::shared_ptr<Parameters::CheckParam> ownBook(std::make_shared<Parameters::CheckParam>("OwnBook", false));
-    std::shared_ptr<Parameters::StringParam> bookFile(std::make_shared<Parameters::StringParam>("BookFile", ""));
-    std::shared_ptr<Parameters::CheckParam> ponder(std::make_shared<Parameters::CheckParam>("Ponder", false));
-    std::shared_ptr<Parameters::CheckParam> analyseMode(std::make_shared<Parameters::CheckParam>("UCI_AnalyseMode", false));
-    std::shared_ptr<Parameters::SpinParam> strength(std::make_shared<Parameters::SpinParam>("Strength", 0, 1000, 1000));
-    std::shared_ptr<Parameters::SpinParam> maxNPS(std::make_shared<Parameters::SpinParam>("MaxNPS", 0, 10000000, 0));
+    using SpinParam = Parameters::SpinParam;
+    using CheckParam = Parameters::CheckParam;
+    using StringParam = Parameters::StringParam;
+    using ButtonParam = Parameters::ButtonParam;
 #ifdef CLUSTER
     int maxThreads = 64*1024*1024;
 #else
     int maxThreads = 512;
 #endif
-    std::shared_ptr<Parameters::SpinParam> threads(std::make_shared<Parameters::SpinParam>("Threads", 1, maxThreads, 1));
-    std::shared_ptr<Parameters::SpinParam> multiPV(std::make_shared<Parameters::SpinParam>("MultiPV", 1, 256, 1));
+    std::shared_ptr<SpinParam> threads(std::make_shared<SpinParam>("Threads", 1, maxThreads, 1));
 
-    std::shared_ptr<Parameters::CheckParam> useNullMove(std::make_shared<Parameters::CheckParam>("UseNullMove", true));
+    std::shared_ptr<SpinParam> hash(std::make_shared<SpinParam>("Hash", 1, 1024*1024, 16));
+    std::shared_ptr<SpinParam> multiPV(std::make_shared<SpinParam>("MultiPV", 1, 256, 1));
+    std::shared_ptr<CheckParam> ponder(std::make_shared<CheckParam>("Ponder", false));
+    std::shared_ptr<CheckParam> analyseMode(std::make_shared<CheckParam>("UCI_AnalyseMode", false));
 
-    std::shared_ptr<Parameters::SpinParam> contempt(std::make_shared<Parameters::SpinParam>("Contempt", -2000, 2000, 0));
-    std::shared_ptr<Parameters::SpinParam> analyzeContempt(std::make_shared<Parameters::SpinParam>("AnalyzeContempt", -2000, 2000, 0));
-    std::shared_ptr<Parameters::CheckParam> autoContempt(std::make_shared<Parameters::CheckParam>("AutoContempt", false));
-    std::shared_ptr<Parameters::StringParam> contemptFile(std::make_shared<Parameters::StringParam>("ContemptFile", ""));
-    std::shared_ptr<Parameters::StringParam> opponent(std::make_shared<Parameters::StringParam>("UCI_Opponent", ""));
+    std::shared_ptr<CheckParam> ownBook(std::make_shared<CheckParam>("OwnBook", false));
+    std::shared_ptr<StringParam> bookFile(std::make_shared<StringParam>("BookFile", ""));
 
-    std::shared_ptr<Parameters::StringParam> gtbPath(std::make_shared<Parameters::StringParam>("GaviotaTbPath", ""));
-    std::shared_ptr<Parameters::SpinParam> gtbCache(std::make_shared<Parameters::SpinParam>("GaviotaTbCache", 1, 2047, 1));
-    std::shared_ptr<Parameters::StringParam> rtbPath(std::make_shared<Parameters::StringParam>("SyzygyPath", ""));
-    std::shared_ptr<Parameters::SpinParam> minProbeDepth(std::make_shared<Parameters::SpinParam>("MinProbeDepth", 0, 100, 1));
-    std::shared_ptr<Parameters::SpinParam> minProbeDepth6(std::make_shared<Parameters::SpinParam>("MinProbeDepth6", 0, 100, 1));
-    std::shared_ptr<Parameters::SpinParam> minProbeDepth7(std::make_shared<Parameters::SpinParam>("MinProbeDepth7", 0, 100, 10));
+    std::shared_ptr<CheckParam> useNullMove(std::make_shared<CheckParam>("UseNullMove", true));
+    std::shared_ptr<CheckParam> analysisAgeHash(std::make_shared<CheckParam>("AnalysisAgeHash", true));
+    std::shared_ptr<ButtonParam> clearHash(std::make_shared<ButtonParam>("Clear Hash"));
 
-    std::shared_ptr<Parameters::CheckParam> analysisAgeHash(std::make_shared<Parameters::CheckParam>("AnalysisAgeHash", true));
-    std::shared_ptr<Parameters::ButtonParam> clearHash(std::make_shared<Parameters::ButtonParam>("Clear Hash"));
+    std::shared_ptr<SpinParam> strength(std::make_shared<SpinParam>("Strength", 0, 1000, 1000));
+    std::shared_ptr<SpinParam> maxNPS(std::make_shared<SpinParam>("MaxNPS", 0, 10000000, 0));
+
+    std::shared_ptr<SpinParam> contempt(std::make_shared<SpinParam>("Contempt", -2000, 2000, 0));
+    std::shared_ptr<SpinParam> analyzeContempt(std::make_shared<SpinParam>("AnalyzeContempt", -2000, 2000, 0));
+    std::shared_ptr<CheckParam> autoContempt(std::make_shared<CheckParam>("AutoContempt", false));
+    std::shared_ptr<StringParam> contemptFile(std::make_shared<StringParam>("ContemptFile", ""));
+    std::shared_ptr<StringParam> opponent(std::make_shared<StringParam>("UCI_Opponent", ""));
+
+    std::shared_ptr<StringParam> gtbPath(std::make_shared<StringParam>("GaviotaTbPath", ""));
+    std::shared_ptr<SpinParam> gtbCache(std::make_shared<SpinParam>("GaviotaTbCache", 1, 2047, 1));
+    std::shared_ptr<StringParam> rtbPath(std::make_shared<StringParam>("SyzygyPath", ""));
+    std::shared_ptr<SpinParam> minProbeDepth(std::make_shared<SpinParam>("MinProbeDepth", 0, 100, 1));
+    std::shared_ptr<SpinParam> minProbeDepth6(std::make_shared<SpinParam>("MinProbeDepth6", 0, 100, 1));
+    std::shared_ptr<SpinParam> minProbeDepth7(std::make_shared<SpinParam>("MinProbeDepth7", 0, 100, 10));
 }
 
 int pieceValue[Piece::nPieceTypes];
@@ -626,17 +632,23 @@ Parameters::Parameters() {
                         " by Peter Osterlund, see https://github.com/peterosterlund2/texel";
     addPar(std::make_shared<StringParam>("UCI_EngineAbout", about));
 
+    addPar(UciParams::threads);
+
     addPar(UciParams::hash);
-    addPar(UciParams::ownBook);
-    addPar(UciParams::bookFile);
+    addPar(UciParams::multiPV);
     addPar(UciParams::ponder);
     addPar(UciParams::analyseMode);
-    addPar(UciParams::strength);
-    addPar(UciParams::maxNPS);
-    addPar(UciParams::threads);
-    addPar(UciParams::multiPV);
+
+    addPar(UciParams::ownBook);
+    addPar(UciParams::bookFile);
 
     addPar(UciParams::useNullMove);
+    addPar(UciParams::analysisAgeHash);
+    addPar(UciParams::clearHash);
+
+    addPar(UciParams::strength);
+    addPar(UciParams::maxNPS);
+
     addPar(UciParams::contempt);
     addPar(UciParams::analyzeContempt);
     addPar(UciParams::autoContempt);
@@ -649,8 +661,6 @@ Parameters::Parameters() {
     addPar(UciParams::minProbeDepth);
     addPar(UciParams::minProbeDepth6);
     addPar(UciParams::minProbeDepth7);
-    addPar(UciParams::analysisAgeHash);
-    addPar(UciParams::clearHash);
 
     // Evaluation parameters
     REGISTER_PARAM(pV, "PawnValue");
