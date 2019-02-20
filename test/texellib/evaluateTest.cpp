@@ -639,10 +639,10 @@ EvaluateTest::testEndGameCorrections() {
 
     int kbnk = evalEgFen("8/4k3/8/8/8/2BNK3/8/8 w - - 0 1");
     ASSERT(kbnk > 475);
-    ASSERT(kbnk < 625);
+    ASSERT(kbnk < 650);
     int kqkr = evalEgFen("8/3rk3/8/8/8/3QK3/8/8 w - - 0 1");
     ASSERT(kqkr > 475);
-    ASSERT(kqkr < 625);
+    ASSERT(kqkr < 675);
 
     ASSERT(kbbk > kbnk);
     ASSERT(kbbk > kqkr);
