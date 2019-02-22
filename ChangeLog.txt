@@ -1,0 +1,357 @@
+2017-09-30: Texel 1.07 (ELO: +35)
+Search:
+- More aggressive LMR in expected CUT nodes.
+- Don't use history and killer heuristics for captures.
+- Prevent q-search explosion in pathological cases.
+- Allow LMR for checking moves with negative SEE value.
+- Don't do internal iterative deepening when in check.
+- Don't do razoring when in check.
+- Don't check extend SEE<0 moves at depth<=3.
+- More LMR/LMP reduction if the evaluation score is worse than it was two plies
+  ago. Idea from stockfish.
+- More aggressive reverse futility parameters.
+- In hash replacement, prefer a deep bound over a shallow exact entry if the
+  depth difference is larger than 3.
+- Use history score to control LMR reductions.
+Parallel search:
+- Parallel search algorithm changed to hybrid lazy SMP / ABDADA.
+- Removed code that on NUMA avoids probing the TT at depth 0 for nodes > 0.
+Evaluation:
+- Removed the piece trade bonus.
+- Implemented fortress detection for KQvsKRM+pawns endgames.
+- Added endgame correction for KQKNNNN which is generally won by the knights.
+Speed:
+- Support for large and huge page allocations for the transposition table.
+- Added alpha/beta pruning to the SEE function.
+- Added support for sliding move generation using the PEXT BMI2 machine code
+  instruction.
+Other:
+- Include "hashfull" information in UCI output.
+- Added UCI option to control whether the transposition table is aged when
+  starting a new search in analysis mode.
+
+2016-07-10: Texel 1.06 (ELO: +56)
+Search:
+- Don't use ply-2 killers for move ordering.
+- Be more restrictive when extending losing (SEE<0) checks.
+- Don't do check extensions for moves that are reduced by LMR.
+- Don't do singular extensions if the unextended score is a mate score.
+- Don't do LMR for the first 2 pseudo-legal moves.
+- More aggressive LMR.
+- More aggressive null move searches.
+- Don't resolve a known loss score bound if there are other moves that are
+  potentially not losing.
+Parallel search:
+- Allow a helper thread that fails high to interrupt the master thread.
+- Changed MIN_SPLIT_DEPTH from 10 to 7 to make better use of multiple threads in
+  short time control games.
+- Changed maximum number of search threads to 512.
+- Added support for windows NUMA systems having more than 64 cores.
+Evaluation:
+- Evaluation term to encourage "pawn breaks".
+- Bonus for "latent" pawn attacks on enemy minor and major pieces.
+- Bonus for safe queen contact checks.
+- Only treat pawns on rank 2 and 3 as backwards pawns.
+- King safety bonus for pieces (except bishops) on the same side of the board as
+  the king.
+- Parameter tuning.
+Endgame:
+- More patterns for fortress detection in bishop endings.
+- On-demand tablebase generation for 4-men pawn-less positions.
+- Knowledge about KRKBNN endgame, which is generally a draw.
+- Better evaluation of KRBNKRB endgame.
+- Larger evaluation score in KRRMKRR endgames
+- Improved 50 move draw handling for TB probes.
+Speed:
+- Reduced TB probe overhead.
+- Implemented a small (512KB) per-thread evaluation hash table.
+- Removed support for fractional depth.
+- Made the transposition table 4-way set associative.
+Other:
+- Removed "64-bit" from the engine name. 64 bit is now considered standard.
+- UCI option to disable null moves.
+- Made "BufferTime" a UCI parameter to control time handling safety margin.
+- Don't start a new search iteration if it is unlikely that it can finish before
+  the allocated thinking time is up.
+- In analysis mode, don't age transposition table entries when starting a new
+  search.
+
+2015-01-24: Texel 1.05 (ELO: +57)
+- Added support for Gaviota and Syzygy tablebases.
+- Improved the built in opening book.
+- Implemented UCI option "Clear Hash".
+- Optimization for NUMA hardware.
+- Earlier transposition table prefetch.
+- Added evaluation of "semi-trapped" rooks.
+- Removed the guarded passed pawn evaluation.
+- Don't rely on the transposition table to communicate search results from helper to master thread.
+- Use more time early in sudden death and increment games.
+- Smaller delta in aspiration window loop.
+- Optimized history heuristic update formula.
+- Improved fortress detection for bishop and pawns vs pawns.
+- Detection of "16 pawn fortress positions".
+- Added bonus for pieces protected by pawns.
+- Fixed incorrect draw scores in multipv mode.
+- Made piece square tables have left/right asymmetry.
+- Detection of KQKRP fortress positions.
+- Disabled LMP in PV nodes.
+- Only do check extension for negative SEE moves if the remaining depth is small.
+- Implemented singular extensions.
+- More aggressive LMR.
+- Fixed makefile to make multi-threaded search work for Android.
+
+2014-05-29: Texel 1.04 (ELO: +72)
+- Added separate queen piece square tables for middle game and endgame.
+- Added recognition of some drawn endgames involving bishops and pawns.
+- Added evaluation corrections for QvsRR, QvsRM, RvsM, RvsMM.
+- Made bishop pair bonus depend on number of opponent minor pieces.
+- Added more evaluation terms for pawns (own and opponent) in front of the king.
+- Added evaluation terms for king assisting passed pawns.
+- Made king endgame piece square table contain 32 parameters.
+- Made the isolated and doubled pawn penalties file dependent.
+- Added file dependent passed pawn bonus.
+- Only use the protected passed pawn bonus when the non-pawn material is balanced.
+- Improved knight mobility evaluation.
+- Added bonus for a piece blocking an opponent passed pawn.
+- Added non-linear king safety and tuned other king safety parameters.
+- Improved KRKP evaluation.
+- Added evaluation of connected passed pawns.
+- Added drawishness factor to rook endgame evaluation, based on white/black pawn asymmetry.
+- Added endgame corrections for KRPKM.
+- Added square-dependent bonus for pawns protecting/attacking other pawns.
+- Added bonus for minor pieces protecting the king.
+- Added penalty for semi-backward pawns.
+- Reduce evaluation score when the halfmove clock is large.
+- Added bonus for rook behind passed pawn.
+- Optimized razor margins and delta pruning margin using CLOP.
+- Improved the built in opening book.
+
+2014-01-19: Texel 1.03 (ELO: +112)
+- Multi-threaded (SMP) search.
+- Remove moves before the last zeroing move from the repetition history list before starting search.
+- Removed bogus transposition table store in Search::iterativeDeepening().
+- Disable aspiration window logic when searching for a faster mate.
+- Added null move verification search.
+- Prefetch entries from the main transposition table.
+- Bonus for candidate passed pawns.
+- Skip move ordering after enough moves to trigger LMP have been searched.
+- Implemented pawn storm bonus for opposite castling positions.
+- Removed the Botvinnik-Markoff extension.
+- More aggressive LMR.
+- Added knowledge for KBpKB, KNpKB, KBpKN and KNpK endgames.
+- Store endgame flag in material hash table.
+- Optimized lots of evaluation function parameters.
+- More consistent evaluation of different classes of pawnless endgames. KQK, KRK, KQKM, KBBK, KBNK, KQKR, KQKMM, KMMKM (M = B or N).
+- MultiPV-support.
+- Mate distance pruning.
+- Evaluation correction for 7 knights vs 3 queens.
+- Display engine evaluation using "info string" when starting search in analysis mode.
+- Changed internal parameter handling to make it easier to switch between UCI parameters and compile-time constants.
+
+2013-06-08: Texel 1.02 (ELO: m=99 s=4.7)
+- Fixed KNNpK evaluation bug.
+- Fixed infinite loop when engine received EOF on standard input.
+- Only do one check in q-search.
+- Speeded up and improved the search tree log file analyzer.
+- Remember history information between searches.
+- Remember best move (for LMR threat detection) also when there is a
+  transposition table hit or when going into q-search on the next ply.
+- Cache line aligned the main transposition table and the pawn hash table.
+- Use cache-optimized magic bitboard constants.
+- Handle stalemate in kqkp endings with pawn on a2/h2 and king on a1/h1.
+- Detect illegal moves before playing them. Makes code look nicer.
+- Reduce aspiration window from 20cp to 15cp.
+- Gradually widen aspiration window after fail high/low at root.
+- Store stale-mate scores in transposition table.
+- Don't do LMP if best move so far is negative mate score.
+- Smaller razor margin at depth <= 1.
+- Support for SSE4.2 and POPCOUNT.
+- Added knight mobility evaluation.
+- Added KRPKR end game evaluation based on table base statistics.
+- Use different bishop piece square table in the end game.
+- Some speed optimizations.
+- Fixed castle bonus asymmetry.
+- Use an incrementally updated material identifier to simplify end game
+  classification.
+- When ordering root moves, use accumulated node counts instead of just last ply
+  counts.
+- Added evaluation term for bad bishops.
+- Rescale history counters before starting a search, so that they adapt faster
+  to the new situation, but still remember information from the previous search.
+- Use a material hash table with material score and interpolation factors for
+  other evaluation terms.
+- Added evaluation term for redundancy of major pieces.
+- Made history aging symmetric with respect to success/failure.
+- Implemented knight outpost evaluation.
+- Optimized pawn structure, major piece redundancy and knight outpost weights
+  using CLOP.
+- Disabled late move pruning in late end games.
+- Fixed crash if EOF is received on standard input while engine is thinking.
+- Better time management in "ponder on" games with increment.
+- When only one legal move is available, think slightly longer than 2 ply.
+
+2012-03-24: Texel 1.01
+- Ported from Java to C++. About twice as fast as a result. 
+- Made node counters 64-bit to avoid overflow in long searches. 
+- Fixed handling of UCI "searchmoves" command. 
+- Added evaluation term to avoid walking into wrong corner in KRKB
+  endings.
+- Implemented reverse futility pruning. 
+- Implemented late move pruning. 
+- Made strength setting between 0% and 10% even weaker. 0% now plays
+  random legal moves and 10% corresponds to the old 0% setting.
+- Replaced cuckoo hashing with a more cache-friendly alternative. 
+- Try harder not to lose on time in really short time control games. 
+- Implemented passed pawn race evaluation. 
+- Increased passed pawn bonus for pawns on rank 6 and 7. 
+
+2011-10-24: Version 1.12 (ELO: m=61 s=1.6)
+- Don't use aspiration window when mate score has been found.
+- Optimized the legal move generator. This has minimal effect on
+  playing strength, but improves perft speed a lot.
+- Added bishop back rank penalty.
+- Don't LMR reduce captures more than one ply.
+- Avoid array index out of bounds exception if the engine is asked to
+  search a position where there are no legal moves.
+- Optimized piece values using CLOP.
+- Store razoring results in the transposition table.
+- Use SEE sign and MVV/LVA to order moves in non-q-search nodes.
+- Try equal captures before non-captures in non-q-search nodes.
+- Update killer moves when a transposition table hit gives a beta
+  cutoff.
+- Implemented signSEE function that can be used when only the sign of
+  SEE is needed.
+- Ignore squares attacked by enemy pawns when computing mobility.
+- Added evaluation of KRKP end games, based on statistics gathered
+  from EGTB information.
+- Skip null-move search if the static score is below beta.
+- Update hash entry "generation" value after a transpositon table
+  hit.
+- Optimized bishop pair bonus using CLOP.
+- Optimized futility margins using CLOP.
+
+2011-06-12: Version 1.11 (ELO: m=47 s=4.8)
+- Do extended futility pruning also on depth 4.
+- Implemented razoring.
+- Added support for fractional ply extensions.
+- Use MVV/LVA ordering (but SEE pruning) in the q-search.
+- Some speed optimizations.
+- Use IID also at non-PV nodes.
+- Made aspiration window a bit smaller.
+- More aggressive futility pruning.
+- Increase beta in two steps when a root move fails high.
+- More accurate evaluation of end games with insufficient mating
+  material.
+
+2011-04-23: Version 1.10 (ELO: m=13 s=2.9)
+- More aggressive futility pruning.
+- Increased passed pawn bonus a little.
+- Added small penalty for non-developed bishops.
+- Implemented adjustable playing strength.
+
+2011-03-16: Version 1.09
+- Speeded up the SEE function by using bitboard techniques.
+- Use a lookup table to speed up castle bonus calculations.
+- Implemented specialized move generator function for check evasions.
+- Some speed optimizations.
+- Implemented specialized make/unmake move functions used by SEE.
+- Allow more time to resolve fail lows at the root.
+- Bug fix. Reset en passant square when making a null move.
+- Don't allow too much time to resolve a fail low if too close to the
+  next time control.
+- Stop searching immediately after a ponder hit if only one legal
+  move.
+- Store sucessful null-move prunings in the transposition table.
+- Give extra bonus to passed pawns if enemy king is outside "the
+  square".
+- Only try two hash slots when inserting in the transposition table.
+- Try harder to keep PV nodes in the transposition table.
+- Use a hash table to speed up king safety evaluation.
+- Adjusted the knight piece square tables.
+- Added code to dump the search tree to a binary file, and code to
+  browse and search the dump file.
+
+2011-01-30: Version 1.08
+- Modified the bishop piece square table.
+- Added penalty for bishop trapped behind pawn on a2/a7/h2/h7.
+- Added isolated pawn penalty.
+- Fixed race condition in UCI mode with quick ponder misses.
+- Added backward pawn penalty.
+- Modified the history heuristic calculations.
+
+2011-01-18: Version 1.07
+- Speed optimizations.
+- Only apply the "drawish factor" for opposite colored bishops if the
+  non-pawn material is balanced.
+- Added evaluation of KQKP end games.
+- Added evaluation term for two rooks on the 7:th rank.
+- Implemented delta pruning in the q-search.
+- Improved reduction logic. Don't allow reduction of hash moves and
+  killer moves, but allow larger reductions for other moves.
+- Fixed bug related to stalemate traps and the 50-move rule.
+- Allow null moves and LMR also in PV nodes.
+- Don't do futility pruning and LMR for passed pawn pushes to the 6:th
+  and 7:th ranks.
+- Added bonus in end games for having king close to opponents passed
+  pawn promotions squares.
+- Don't allow null moves when side to move doesn't have pawns. This
+  fixes problems in KQKR end games.
+- Extend the search one ply when going into a pawn end game.
+- Reduced queen mobility bonus.
+- Increased the passed pawn bonus and made it non-linear.
+- King safety adjustment.
+- Added a threat bonus evaluation term.
+- Penalize unmoved d/e pawns.
+- Undo LMR if the threat move slides through the LMR move "from
+  square". Idea from Stockfish.
+- Ponder even if there is only one valid move.
+- Allow LMR also at the root.
+
+2010-12-31: Version 1.06
+- Speed optimizations.
+- Implemented non-linear mobility scores.
+- Fixed bad interaction of futility pruning/hashing/fail soft.
+- Tweaked rook piece square table a little.
+- Order root moves according to search tree size on previous ply.
+- Don't trust mate scores from null move searches.
+- Increased the bishop pair bonus.
+- Tweaked king safety a bit.
+- Removed mate threat extension.
+- Only extend recaptures if the recapture is reasonable according to
+  SEE.
+- Use a built-in bitbase for KPK evaluation.
+- Reduced the aspiration window to 25 centipawns.
+- Prune checking moves with negative SEE score in q-search.
+- Allow reductions and pruning of losing (according to SEE) captures.
+- Added end game evaluation of rook pawn and wrong-colored bishop.
+- Added penalty for rook trapped behind non-castled king.
+- Don't allow double null moves.
+- Allow null move search to go directly into q-search.
+- More depth reduction in IID at large depths.
+- Implemented null move threat detection, to be able to undo unsafe
+  LMR reductions. Idea from Stockfish.
+- Don't overwrite a transposition table hash entry with inferior
+  information for the same position. Could happen in IID.
+- Added evaluation of unstoppable passed pawns in pawn end games.
+- Include attacked squares close to the king in king safety
+  evaluation.
+- Implemented magic bitboard move generator.
+- Use bitboard techniques for evaluation.
+- Created specialized move generator functions to generate checks.
+- Correctly handle pseudo-legal but not legal en passant squares.
+
+2010-07-04: Version 1.05
+- Speed optimizations.
+- Avoid dynamic memory allocations during search.
+- Don't do mate threat extensions too deep down in the search tree.
+  Fixes search tree explosion in WAC 21.
+- Incremental update of material scores.
+- Created specialized move generator functions to generate captures.
+- Created a function givesCheck that decides if making a move gives
+  check to the opponent.
+- Implemented a pawn hash table.
+- Store static evaluation scores in the tranposition table.
+- If there is only one legal move at the root, make that move
+  immediately.
+
+2010-06-12: Version 1.04
