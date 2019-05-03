@@ -156,9 +156,6 @@ public:
     void getPVInfo(std::string& pv);
 
 private:
-    /** Set up TB paths. */
-    void setupTB();
-
     /** Add change to set of unreported changes and notify the listener. */
     void notify(Change change);
 

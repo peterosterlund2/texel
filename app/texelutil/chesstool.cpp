@@ -33,6 +33,7 @@
 #include "threadpool.hpp"
 #include "syzygy/rtb-probe.hpp"
 #include "tbprobe.hpp"
+#include "tbpath.hpp"
 #include "stloutput.hpp"
 #include "util/timeUtil.hpp"
 #include "util/logger.hpp"
@@ -133,14 +134,7 @@ ChessTool::ChessTool(bool useEntropyErr, bool optMoveOrder, bool useSearchScore)
 
 void
 ChessTool::setupTB() {
-    UciParams::gtbPath->set("/home/petero/chess/gtb");
-    UciParams::gtbCache->set("2047");
-    UciParams::rtbPath->set("/home/petero/chess/rtb/wdl:"
-                            "/home/petero/chess/rtb/dtz:"
-                            "/home/petero/chess/rtb/6wdl:"
-                            "/home/petero/chess/rtb/6dtz:"
-                            "/home/petero/chess/rtb/7wdl:"
-                            "/home/petero/chess/rtb/7dtz");
+    TBPath::setDefaultTBPaths();
 }
 
 std::vector<std::string>

@@ -5,6 +5,7 @@ set(src_texelutillib
   proofgame.cpp  proofgame.hpp
                  stloutput.hpp
                  threadpool.hpp
+  tbpath.cpp     tbpath.hpp
   )
 
 add_library(texelutillib STATIC

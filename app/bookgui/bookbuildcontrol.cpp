@@ -29,13 +29,14 @@
 #include "clustertt.hpp"
 #include "computerPlayer.hpp"
 #include "gametree.hpp"
+#include "tbpath.hpp"
 
 
 BookBuildControl::BookBuildControl(ChangeListener& listener)
     : listener(listener), nPendingBookTasks(0), tt(128*1024*1024),
       comm(nullptr, tt, notifier, false) {
     ComputerPlayer::initEngine();
-    setupTB();
+    TBPath::setDefaultTBPaths();
     et = Evaluate::getEvalHashTables();
     newBook();
 }
@@ -46,18 +47,6 @@ BookBuildControl::~BookBuildControl() {
     std::unique_lock<std::mutex> L(mutex);
     while (bgThread || bgThread2)
         bgThreadCv.wait(L);
-}
-
-void
-BookBuildControl::setupTB() {
-    UciParams::gtbPath->set("/home/petero/chess/gtb");
-    UciParams::gtbCache->set("2047");
-    UciParams::rtbPath->set("/home/petero/chess/rtb/wdl:"
-                            "/home/petero/chess/rtb/dtz:"
-                            "/home/petero/chess/rtb/6wdl:"
-                            "/home/petero/chess/rtb/6dtz:"
-                            "/home/petero/chess/rtb/7wdl:"
-                            "/home/petero/chess/rtb/7dtz");
 }
 
 void
