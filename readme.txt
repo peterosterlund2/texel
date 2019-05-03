@@ -372,6 +372,9 @@ Source code for an interactive interface to the texel book building algorithm is
 provided in the app/bookgui directory. It depends on gtkmm-3.0 and probably only
 works in Linux.
 
+Some utilities require access to tablebases. Set the environment variables
+GTBPATH and RTBPATH to specify where the tablebase files are located.
+
 
 Copyright
 ---------

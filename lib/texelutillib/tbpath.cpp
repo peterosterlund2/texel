@@ -25,13 +25,23 @@
 
 #include "parameters.hpp"
 #include "tbpath.hpp"
+#include <cstdlib>
 
 namespace TBPath {
 
 void setDefaultTBPaths() {
-    UciParams::gtbPath->set("/home/petero/chess/gtb");
+    const char* gtbEnv = std::getenv("GTBPATH");
+    if (gtbEnv)
+        UciParams::gtbPath->set(gtbEnv);
+    else
+        UciParams::gtbPath->set("/home/petero/chess/gtb");
     UciParams::gtbCache->set("2047");
-    UciParams::rtbPath->set("/home/petero/chess/rtb/wdl:"
+
+    const char* rtbEnv = std::getenv("RTBPATH");
+    if (rtbEnv)
+        UciParams::rtbPath->set(rtbEnv);
+    else
+        UciParams::rtbPath->set("/home/petero/chess/rtb/wdl:"
                             "/home/petero/chess/rtb/dtz:"
                             "/home/petero/chess/rtb/6wdl:"
                             "/home/petero/chess/rtb/6dtz:"
