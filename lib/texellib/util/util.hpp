@@ -88,14 +88,7 @@ int floorLog2(U32 x);
 // ----------------------------------------------------------------------------
 
 /** Split a string using " " as delimiter. Append words to out. */
-inline void
-splitString(const std::string& str, std::vector<std::string>& out)
-{
-    std::string word;
-    std::istringstream iss(str, std::istringstream::in);
-    while (iss >> word)
-        out.push_back(word);
-}
+void splitString(const std::string& str, std::vector<std::string>& out);
 
 /** Convert a string to a number. */
 template <typename T>
@@ -160,28 +153,11 @@ toLowerCase(std::string str) {
   return str;
 }
 
-inline bool
-startsWith(const std::string& str, const std::string& startsWith) {
-    size_t N = startsWith.length();
-    if (str.length() < N)
-        return false;
-    for (size_t i = 0; i < N; i++)
-        if (str[i] != startsWith[i])
-            return false;
-    return true;
-}
+/** Return true if "str" starts with "startsWith". */
+bool startsWith(const std::string& str, const std::string& startsWith);
 
-inline bool
-endsWith(const std::string& str, const std::string& endsWith) {
-    size_t N = endsWith.length();
-    size_t sN = str.length();
-    if (sN < N)
-        return false;
-    for (size_t i = 0; i < N; i++)
-        if (str[sN - N + i] != endsWith[i])
-            return false;
-    return true;
-}
+/** Return true if "str" ends with "endsWith". */
+bool endsWith(const std::string& str, const std::string& endsWith);
 
 /** Return true if vector v contains element e. */
 template <typename T>
@@ -196,18 +172,8 @@ contains(const std::vector<std::string>& v, const char* e) {
     return contains(v, std::string(e));
 }
 
-inline std::string
-trim(const std::string& s) {
-    for (int i = 0; i < (int)s.length(); i++) {
-        if (!isspace(s[i])) {
-            for (int j = (int)s.length()-1; j >= i; j--)
-                if (!isspace(s[j]))
-                    return s.substr(i, j-i+1);
-            return "";
-        }
-    }
-    return "";
-}
+/** Remove leading and trailing whitespace. */
+std::string trim(const std::string& s);
 
 // ----------------------------------------------------------------------------
 

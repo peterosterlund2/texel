@@ -38,3 +38,47 @@ int floorLog2(U32 x) {
     x |= x >> 16;
     return firstBitTable[(x * (U32)0x07c4acdd) >> 27];
 }
+
+void
+splitString(const std::string& str, std::vector<std::string>& out) {
+    std::string word;
+    std::istringstream iss(str, std::istringstream::in);
+    while (iss >> word)
+        out.push_back(word);
+}
+
+bool
+startsWith(const std::string& str, const std::string& startsWith) {
+    size_t N = startsWith.length();
+    if (str.length() < N)
+        return false;
+    for (size_t i = 0; i < N; i++)
+        if (str[i] != startsWith[i])
+            return false;
+    return true;
+}
+
+bool
+endsWith(const std::string& str, const std::string& endsWith) {
+    size_t N = endsWith.length();
+    size_t sN = str.length();
+    if (sN < N)
+        return false;
+    for (size_t i = 0; i < N; i++)
+        if (str[sN - N + i] != endsWith[i])
+            return false;
+    return true;
+}
+
+std::string
+trim(const std::string& s) {
+    for (int i = 0; i < (int)s.length(); i++) {
+        if (!isspace(s[i])) {
+            for (int j = (int)s.length()-1; j >= i; j--)
+                if (!isspace(s[j]))
+                    return s.substr(i, j-i+1);
+            return "";
+        }
+    }
+    return "";
+}
