@@ -191,19 +191,19 @@ Other:
 - When only one legal move is available, think slightly longer than 2 ply.
 
 2012-03-24: Texel 1.01
-- Ported from Java to C++. About twice as fast as a result. 
-- Made node counters 64-bit to avoid overflow in long searches. 
-- Fixed handling of UCI "searchmoves" command. 
+- Ported from Java to C++. About twice as fast as a result.
+- Made node counters 64-bit to avoid overflow in long searches.
+- Fixed handling of UCI "searchmoves" command.
 - Added evaluation term to avoid walking into wrong corner in KRKB
   endings.
-- Implemented reverse futility pruning. 
-- Implemented late move pruning. 
+- Implemented reverse futility pruning.
+- Implemented late move pruning.
 - Made strength setting between 0% and 10% even weaker. 0% now plays
   random legal moves and 10% corresponds to the old 0% setting.
-- Replaced cuckoo hashing with a more cache-friendly alternative. 
-- Try harder not to lose on time in really short time control games. 
-- Implemented passed pawn race evaluation. 
-- Increased passed pawn bonus for pawns on rank 6 and 7. 
+- Replaced cuckoo hashing with a more cache-friendly alternative.
+- Try harder not to lose on time in really short time control games.
+- Implemented passed pawn race evaluation.
+- Increased passed pawn bonus for pawns on rank 6 and 7.
 
 2011-10-24: Version 1.12 (ELO: m=61 s=1.6)
 - Don't use aspiration window when mate score has been found.
@@ -225,7 +225,7 @@ Other:
 - Added evaluation of KRKP end games, based on statistics gathered
   from EGTB information.
 - Skip null-move search if the static score is below beta.
-- Update hash entry "generation" value after a transpositon table
+- Update hash entry "generation" value after a transposition table
   hit.
 - Optimized bishop pair bonus using CLOP.
 - Optimized futility margins using CLOP.
@@ -261,7 +261,7 @@ Other:
   next time control.
 - Stop searching immediately after a ponder hit if only one legal
   move.
-- Store sucessful null-move prunings in the transposition table.
+- Store successful null-move prunings in the transposition table.
 - Give extra bonus to passed pawns if enemy king is outside "the
   square".
 - Only try two hash slots when inserting in the transposition table.
@@ -284,14 +284,14 @@ Other:
 - Only apply the "drawish factor" for opposite colored bishops if the
   non-pawn material is balanced.
 - Added evaluation of KQKP end games.
-- Added evaluation term for two rooks on the 7:th rank.
+- Added evaluation term for two rooks on the 7th rank.
 - Implemented delta pruning in the q-search.
 - Improved reduction logic. Don't allow reduction of hash moves and
   killer moves, but allow larger reductions for other moves.
 - Fixed bug related to stalemate traps and the 50-move rule.
 - Allow null moves and LMR also in PV nodes.
-- Don't do futility pruning and LMR for passed pawn pushes to the 6:th
-  and 7:th ranks.
+- Don't do futility pruning and LMR for passed pawn pushes to the 6th
+  and 7th ranks.
 - Added bonus in end games for having king close to opponents passed
   pawn promotions squares.
 - Don't allow null moves when side to move doesn't have pawns. This
@@ -350,7 +350,7 @@ Other:
 - Created a function givesCheck that decides if making a move gives
   check to the opponent.
 - Implemented a pawn hash table.
-- Store static evaluation scores in the tranposition table.
+- Store static evaluation scores in the transposition table.
 - If there is only one legal move at the root, make that move
   immediately.
 
