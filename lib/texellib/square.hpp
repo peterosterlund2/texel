@@ -63,13 +63,11 @@ Square::getSquare(int x, int y) {
     return y * 8 + x;
 }
 
-/** Return x position (file) corresponding to a square. */
 inline int
 Square::getX(int square) {
     return square & 7;
 }
 
-/** Return y position (rank) corresponding to a square. */
 inline int
 Square::getY(int square) {
     return square >> 3;
@@ -85,7 +83,6 @@ Square::mirrorY(int square) {
     return square ^ 0x38;
 }
 
-/** Return true if (x,y) is a dark square. */
 inline bool
 Square::darkSquare(int x, int y) {
     return (x & 1) == (y & 1);
