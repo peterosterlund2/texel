@@ -310,9 +310,12 @@ public:
     /** Add all moves in a game tree up to ply maxPly to the book. */
     void addToBook(int maxPly, GameNode& gn, int& nAdded);
 
-    /** Convert the book to polyglot format. */
+    /** Convert the book to polyglot format.
+     * If "excludeFile" is non-empty, it specifies a pgn file where moves
+     * marked with '?' are excluded when building the opening book. */
     void exportPolyglot(const std::string& bookFile, const std::string& polyglotFile,
-                        int maxErrSelf, double errOtherExpConst, bool includeLeafNodes);
+                        int maxErrSelf, double errOtherExpConst, bool includeLeafNodes,
+                        const std::string& excludeFile);
 
     /** Query the book interactively, taking query commands from standard input. */
     void interactiveQuery(const std::string& bookFile, int maxErrSelf, double errOtherExpConst);

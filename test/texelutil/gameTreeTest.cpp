@@ -25,7 +25,7 @@
 
 #include "gameTreeTest.hpp"
 #include "textio.hpp"
-#include "gametree.hpp"
+#include "gametreeutil.hpp"
 
 #include "cute.h"
 
@@ -176,9 +176,29 @@ d4 Nc6 c4 d6 *
     }
 }
 
+void
+GameTreeTest::testIteratePgn() {
+    std::string pgn = R"raw(
+e4 e5 Nf3 Nc6 Bb5 (Bc4 Bc5 c3) (Nc3 Nf6) a6 Ba4
+)raw";
+    std::stringstream is(pgn);
+    PgnReader reader(is);
+    std::string result;
+    GameTreeUtil::iteratePgn(reader, [&](const Position& pos, const GameNode& node) {
+        std::stringstream ss;
+        if (!result.empty())
+            ss << ' ';
+        ss << pos.getFullMoveCounter() << ":"
+           << TextIO::moveToString(pos, node.getMove(), false);
+        result += ss.str();
+    });
+    ASSERT_EQUAL("1:e4 1:e5 2:Nf3 2:Nc6 3:Bb5 3:a6 4:Ba4 3:Bc4 3:Bc5 4:c3 3:Nc3 3:Nf6", result);
+}
+
 cute::suite
 GameTreeTest::getSuite() const {
     cute::suite s;
     s.push_back(CUTE(testReadInsert));
+    s.push_back(CUTE(testIteratePgn));
     return s;
 }

@@ -103,6 +103,7 @@ public:
     const UndoInfo& getUndoInfo() const { return ui; }
     const std::string& getPreComment() const { return preComment; }
     const std::string& getPostComment() const { return postComment; }
+    int getNag() const { return nag; }
 
     /** Add a child node given by move. */
     static void insertMove(Position& pos, std::shared_ptr<Node>& node, const Move& move);

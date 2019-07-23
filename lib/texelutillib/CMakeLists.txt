@@ -2,6 +2,7 @@ set(src_texelutillib
                  assignment.hpp
   bookbuild.cpp  bookbuild.hpp
   gametree.cpp   gametree.hpp
+                 gametreeutil.hpp
   proofgame.cpp  proofgame.hpp
                  stloutput.hpp
                  threadpool.hpp

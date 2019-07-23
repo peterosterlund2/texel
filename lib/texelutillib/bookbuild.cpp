@@ -25,7 +25,7 @@
 
 #include "bookbuild.hpp"
 #include "polyglot.hpp"
-#include "gametree.hpp"
+#include "gametreeutil.hpp"
 #include "moveGen.hpp"
 #include "search.hpp"
 #include "util/histogram.hpp"
@@ -392,9 +392,31 @@ Book::addToBook(int maxPly, GameNode& gn, int& nAdded) {
     addToBookInternal(0);
 }
 
+using ExcludedMove = std::pair<U64,U16>; // book hash key, compressed move
+
+static std::vector<ExcludedMove>
+getExcludedMoves(const std::string& pgnFile) {
+    std::vector<ExcludedMove> ret;
+    if (pgnFile.empty())
+        return ret;
+
+    std::ifstream is(pgnFile);
+    PgnReader reader(is);
+    GameTreeUtil::iteratePgn(reader, [&](const Position& parentPos, const GameNode& node) {
+        const int POOR_MOVE = 2;
+        if (node.getNode()->getNag() == POOR_MOVE)
+            ret.emplace_back(parentPos.bookHash(), node.getMove().getCompressedMove());
+    });
+    std::sort(ret.begin(), ret.end());
+    ret.erase(std::unique(ret.begin(), ret.end()), ret.end());
+
+    return ret;
+}
+
 void
 Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFile,
-                     int maxErrSelf, double errOtherExpConst, bool includeLeafNodes) {
+                     int maxErrSelf, double errOtherExpConst, bool includeLeafNodes,
+                     const std::string& excludeFile) {
     readFromFile(bookFile);
 
     WeightInfo weights;
@@ -439,6 +461,15 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
     };
     std::map<U64, BookMoves> pgBook;
 
+    std::vector<ExcludedMove> excludedMoves = getExcludedMoves(excludeFile);
+    std::cout << "nExcluded:" << excludedMoves.size() << std::endl;
+    auto isExcluded = [&excludedMoves](const Position& pos, const Move& move) {
+        U64 hash = pos.bookHash();
+        U16 cMove = move.getCompressedMove();
+        return std::binary_search(excludedMoves.begin(), excludedMoves.end(),
+                                  std::make_pair(hash, cMove));
+    };
+
     Position pos;
     std::vector<Move> moveList;
     for (auto& e : bookNodes) {
@@ -459,26 +490,30 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
             if (bookMoveOk(*node, cMove, maxErrSelf)) {
                 Move move;
                 move.setFromCompressed(cMove);
-                U16 pgMove = PolyglotBook::getPGMove(pos, move);
-                auto wi = weights.find(child->getHashKey());
-                assert(wi != weights.end());
-                double w = wtm ? wi->second.weightWhite : wi->second.weightBlack;
-                bm.addMove(pgMove, w);
+                if (!isExcluded(pos, move)) {
+                    U16 pgMove = PolyglotBook::getPGMove(pos, move);
+                    auto wi = weights.find(child->getHashKey());
+                    assert(wi != weights.end());
+                    double w = wtm ? wi->second.weightWhite : wi->second.weightBlack;
+                    bm.addMove(pgMove, w);
+                }
             }
         }
 
         if (bookMoveOk(*node, Move().getCompressedMove(), maxErrSelf)) {
             Move move = node->getBestNonBookMove();
-            U16 pgMove = PolyglotBook::getPGMove(pos, move);
-            int errW, errB;
-            getDropoutPathErrors(*node, errW, errB);
-            double wW = 0.0, wB = 0.0;
-            if (errW != INVALID_SCORE && errB != INVALID_SCORE) {
-                wW = errW <= maxErrSelf ? exp(-errB / errOtherExpConst) : 0.0;
-                wB = errB <= maxErrSelf ? exp(-errW / errOtherExpConst) : 0.0;
+            if (!isExcluded(pos, move)) {
+                U16 pgMove = PolyglotBook::getPGMove(pos, move);
+                int errW, errB;
+                getDropoutPathErrors(*node, errW, errB);
+                double wW = 0.0, wB = 0.0;
+                if (errW != INVALID_SCORE && errB != INVALID_SCORE) {
+                    wW = errW <= maxErrSelf ? exp(-errB / errOtherExpConst) : 0.0;
+                    wB = errB <= maxErrSelf ? exp(-errW / errOtherExpConst) : 0.0;
+                }
+                double w = wtm ? wW : wB;
+                bm.addMove(pgMove, w);
             }
-            double w = wtm ? wW : wB;
-            bm.addMove(pgMove, w);
         }
     }
 

@@ -129,7 +129,8 @@ usage() {
     std::cerr << " book improve bookFile searchTime nThreads \"startmoves\" [c1 c2 c3]\n";
     std::cerr << "                                            : Improve opening book\n";
     std::cerr << " book import bookFile pgnFile [maxPly]      : Import moves from PGN file\n";
-    std::cerr << " book export bookFile polyglotFile maxErrSelf errOtherExpConst [noleaf]\n";
+    std::cerr << " book export bookFile polyglotFile maxErrSelf errOtherExpConst \\\n";
+    std::cerr << "             [noleaf] [-e excludeFile.pgn]\n";
     std::cerr << "                                            : Export as polyglot book\n";
     std::cerr << " book query bookFile maxErrSelf errOtherExpConst : Interactive query mode\n";
     std::cerr << " book stats bookFile                        : Print book statistics\n";
@@ -307,7 +308,7 @@ doBookCmd(int argc, char* argv[]) {
         BookBuild::Book book(logFile);
         book.importPGN(bookFile, pgnFile, maxPly);
     } else if (bookCmd == "export") {
-        if (argc < 7 || argc > 8)
+        if (argc < 7)
             usage();
         std::string polyglotFile = argv[4];
         int maxErrSelf;
@@ -316,11 +317,19 @@ doBookCmd(int argc, char* argv[]) {
             !str2Num(argv[6], errOtherExpConst))
             usage();
         bool includeLeafNodes = true;
-        if (argc == 8 && std::string(argv[7]) == "noleaf")
-            includeLeafNodes = false;
+        std::string excludeFile;
+        for (int i = 7; i < argc; i++) {
+            if (std::string(argv[i]) == "noleaf") {
+                includeLeafNodes = false;
+            } else if (std::string(argv[i]) == "-e" && i + 1 < argc) {
+                excludeFile = argv[i+1];
+                i++;
+            } else
+                usage();
+        }
         BookBuild::Book book("");
         book.exportPolyglot(bookFile, polyglotFile, maxErrSelf, errOtherExpConst,
-                            includeLeafNodes);
+                            includeLeafNodes, excludeFile);
     } else if (bookCmd == "query") {
         if (argc != 6)
             usage();

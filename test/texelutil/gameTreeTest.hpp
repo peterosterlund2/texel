@@ -34,6 +34,7 @@ class GameTreeTest : public UtilSuiteBase {
     cute::suite getSuite() const override;
 private:
     static void testReadInsert();
+    static void testIteratePgn();
 };
 
 #endif /* GAMETREETEST_HPP_ */
