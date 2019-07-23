@@ -213,6 +213,134 @@ getParams(int argc, char* argv[], std::vector<ParamDomain>& params) {
         throw ChessParseError("Unexpected second set of parameters");
 }
 
+static void
+doFilterCmd(int argc, char* argv[], ChessTool& chessTool) {
+    if (argc < 3)
+        usage();
+    std::string type = argv[2];
+    if (type == "score") {
+        if (argc != 5)
+            usage();
+        int scLimit;
+        double prLimit;
+        if (!str2Num(argv[3], scLimit) || !str2Num(argv[4], prLimit))
+            usage();
+        chessTool.filterScore(std::cin, scLimit, prLimit);
+    } else if (type == "mtrldiff") {
+        if (argc != 8)
+            usage();
+        bool minorEqual = std::string(argv[3]) == "-m";
+        int first = minorEqual ? 4 : 3;
+        std::vector<std::pair<bool,int>> mtrlPattern;
+        for (int i = first; i < 8; i++) {
+            if (std::string(argv[i]) == "x")
+                mtrlPattern.push_back(std::make_pair(false, 0));
+            else {
+                int d;
+                if (!str2Num(argv[i], d))
+                    usage();
+                mtrlPattern.push_back(std::make_pair(true, d));
+            }
+        }
+        chessTool.filterMtrlBalance(std::cin, minorEqual, mtrlPattern);
+    } else if (type == "mtrl") {
+        if (argc < 4)
+            usage();
+        bool minorEqual = std::string(argv[3]) == "-m";
+        if (argc != (minorEqual ? 12 : 13))
+            usage();
+        int first = minorEqual ? 4 : 3;
+        std::vector<std::pair<bool,int>> mtrlPattern;
+        for (int i = first; i < argc; i++) {
+            if (std::string(argv[i]) == "x")
+                mtrlPattern.push_back(std::make_pair(false, 0));
+            else {
+                int d;
+                if (!str2Num(argv[i], d))
+                    usage();
+                mtrlPattern.push_back(std::make_pair(true, d));
+            }
+        }
+        chessTool.filterTotalMaterial(std::cin, minorEqual, mtrlPattern);
+    } else
+        usage();
+}
+
+static void
+doBookCmd(int argc, char* argv[]) {
+    if (argc < 4)
+        usage();
+    std::string bookCmd = argv[2];
+    std::string bookFile = argv[3];
+    std::string logFile = bookFile + ".log";
+    if (bookCmd == "improve") {
+        ChessTool::setupTB();
+        if ((argc < 6) || (argc > 10))
+            usage();
+        std::string startMoves;
+        if (argc >= 7)
+            startMoves = argv[6];
+        int searchTime, numThreads;
+        if (!str2Num(argv[4], searchTime) || (searchTime <= 0) ||
+            !str2Num(argv[5], numThreads) || (numThreads <= 0))
+            usage();
+        std::shared_ptr<BookBuild::Book> book;
+        if (argc == 10) {
+            int bookDepthCost, ownPErrCost, otherPErrCost;
+            if (!str2Num(argv[7], bookDepthCost) || (bookDepthCost <= 0) ||
+                !str2Num(argv[8], ownPErrCost)   || (ownPErrCost   <= 0) ||
+                !str2Num(argv[9], otherPErrCost) || (otherPErrCost <= 0))
+                usage();
+            book = std::make_shared<BookBuild::Book>(logFile, bookDepthCost,
+                                                     ownPErrCost, otherPErrCost);
+        } else {
+            book = std::make_shared<BookBuild::Book>(logFile);
+        }
+        book->improve(bookFile, searchTime, numThreads, startMoves);
+    } else if (bookCmd == "import") {
+        if (argc < 5 || argc > 6)
+            usage();
+        std::string pgnFile = argv[4];
+        int maxPly = INT_MAX;
+        if ((argc > 5) && !str2Num(argv[5], maxPly))
+            usage();
+        BookBuild::Book book(logFile);
+        book.importPGN(bookFile, pgnFile, maxPly);
+    } else if (bookCmd == "export") {
+        if (argc < 7 || argc > 8)
+            usage();
+        std::string polyglotFile = argv[4];
+        int maxErrSelf;
+        double errOtherExpConst;
+        if (!str2Num(argv[5], maxErrSelf) ||
+            !str2Num(argv[6], errOtherExpConst))
+            usage();
+        bool includeLeafNodes = true;
+        if (argc == 8 && std::string(argv[7]) == "noleaf")
+            includeLeafNodes = false;
+        BookBuild::Book book("");
+        book.exportPolyglot(bookFile, polyglotFile, maxErrSelf, errOtherExpConst,
+                            includeLeafNodes);
+    } else if (bookCmd == "query") {
+        if (argc != 6)
+            usage();
+        int maxErrSelf;
+        double errOtherExpConst;
+        if (!str2Num(argv[4], maxErrSelf) ||
+            !str2Num(argv[5], errOtherExpConst))
+            usage();
+        BookBuild::Book book("");
+        book.interactiveQuery(bookFile, maxErrSelf, errOtherExpConst);
+    } else if (bookCmd == "stats") {
+        if (argc != 4)
+            usage();
+        BookBuild::Book book("");
+        book.statistics(bookFile);
+    } else {
+        usage();
+    }
+}
+
 int
 main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
@@ -264,55 +392,7 @@ main(int argc, char* argv[]) {
         } else if (cmd == "pawnadv") {
             chessTool.pawnAdvTable(std::cin);
         } else if (cmd == "filter") {
-            if (argc < 3)
-                usage();
-            std::string type = argv[2];
-            if (type == "score") {
-                if (argc != 5)
-                    usage();
-                int scLimit;
-                double prLimit;
-                if (!str2Num(argv[3], scLimit) || !str2Num(argv[4], prLimit))
-                    usage();
-                chessTool.filterScore(std::cin, scLimit, prLimit);
-            } else if (type == "mtrldiff") {
-                if (argc != 8)
-                    usage();
-                bool minorEqual = std::string(argv[3]) == "-m";
-                int first = minorEqual ? 4 : 3;
-                std::vector<std::pair<bool,int>> mtrlPattern;
-                for (int i = first; i < 8; i++) {
-                    if (std::string(argv[i]) == "x")
-                        mtrlPattern.push_back(std::make_pair(false, 0));
-                    else {
-                        int d;
-                        if (!str2Num(argv[i], d))
-                            usage();
-                        mtrlPattern.push_back(std::make_pair(true, d));
-                    }
-                }
-                chessTool.filterMtrlBalance(std::cin, minorEqual, mtrlPattern);
-            } else if (type == "mtrl") {
-                if (argc < 4)
-                    usage();
-                bool minorEqual = std::string(argv[3]) == "-m";
-                if (argc != (minorEqual ? 12 : 13))
-                    usage();
-                int first = minorEqual ? 4 : 3;
-                std::vector<std::pair<bool,int>> mtrlPattern;
-                for (int i = first; i < argc; i++) {
-                    if (std::string(argv[i]) == "x")
-                        mtrlPattern.push_back(std::make_pair(false, 0));
-                    else {
-                        int d;
-                        if (!str2Num(argv[i], d))
-                            usage();
-                        mtrlPattern.push_back(std::make_pair(true, d));
-                    }
-                }
-                chessTool.filterTotalMaterial(std::cin, minorEqual, mtrlPattern);
-            } else
-                usage();
+            doFilterCmd(argc, argv, chessTool);
         } else if (cmd == "search") {
             if (argc != 4)
                 usage();
@@ -529,77 +609,7 @@ main(int argc, char* argv[]) {
                 tbTypes.push_back(argv[i]);
             PosGenerator::tbgenTest(tbTypes);
         } else if (cmd == "book") {
-            if (argc < 4)
-                usage();
-            std::string bookCmd = argv[2];
-            std::string bookFile = argv[3];
-            std::string logFile = bookFile + ".log";
-            if (bookCmd == "improve") {
-                ChessTool::setupTB();
-                if ((argc < 6) || (argc > 10))
-                    usage();
-                std::string startMoves;
-                if (argc >= 7)
-                    startMoves = argv[6];
-                int searchTime, numThreads;
-                if (!str2Num(argv[4], searchTime) || (searchTime <= 0) ||
-                    !str2Num(argv[5], numThreads) || (numThreads <= 0))
-                    usage();
-                std::shared_ptr<BookBuild::Book> book;
-                if (argc == 10) {
-                    int bookDepthCost, ownPErrCost, otherPErrCost;
-                    if (!str2Num(argv[7], bookDepthCost) || (bookDepthCost <= 0) ||
-                        !str2Num(argv[8], ownPErrCost)   || (ownPErrCost   <= 0) ||
-                        !str2Num(argv[9], otherPErrCost) || (otherPErrCost <= 0))
-                        usage();
-                    book = std::make_shared<BookBuild::Book>(logFile, bookDepthCost,
-                                                             ownPErrCost, otherPErrCost);
-                } else {
-                    book = std::make_shared<BookBuild::Book>(logFile);
-                }
-                book->improve(bookFile, searchTime, numThreads, startMoves);
-            } else if (bookCmd == "import") {
-                if (argc < 5 || argc > 6)
-                    usage();
-                std::string pgnFile = argv[4];
-                int maxPly = INT_MAX;
-                if ((argc > 5) && !str2Num(argv[5], maxPly))
-                    usage();
-                BookBuild::Book book(logFile);
-                book.importPGN(bookFile, pgnFile, maxPly);
-            } else if (bookCmd == "export") {
-                if (argc < 7 || argc > 8)
-                    usage();
-                std::string polyglotFile = argv[4];
-                int maxErrSelf;
-                double errOtherExpConst;
-                if (!str2Num(argv[5], maxErrSelf) ||
-                    !str2Num(argv[6], errOtherExpConst))
-                    usage();
-                bool includeLeafNodes = true;
-                if (argc == 8 && std::string(argv[7]) == "noleaf")
-                    includeLeafNodes = false;
-                BookBuild::Book book("");
-                book.exportPolyglot(bookFile, polyglotFile, maxErrSelf, errOtherExpConst,
-                                    includeLeafNodes);
-            } else if (bookCmd == "query") {
-                if (argc != 6)
-                    usage();
-                int maxErrSelf;
-                double errOtherExpConst;
-                if (!str2Num(argv[4], maxErrSelf) ||
-                    !str2Num(argv[5], errOtherExpConst))
-                    usage();
-                BookBuild::Book book("");
-                book.interactiveQuery(bookFile, maxErrSelf, errOtherExpConst);
-            } else if (bookCmd == "stats") {
-                if (argc != 4)
-                    usage();
-                BookBuild::Book book("");
-                book.statistics(bookFile);
-            } else {
-                usage();
-            }
+            doBookCmd(argc, argv);
         } else if (cmd == "creatematchbook") {
             if (argc != 4)
                 usage();
