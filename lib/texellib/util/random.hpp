@@ -50,4 +50,15 @@ private:
 };
 
 
+/** "Scrambles" a 64 bit number. The sequence hashU64(i) for i=1,2,3,...
+ *   passes "dieharder -a -Y 1". */
+inline U64 hashU64(U64 v) {
+    v *= 0x7CF9ADC6FE4A7653ULL;
+    v ^= v >> 37;
+    v *= 0xC25D3F49433E7607ULL;
+    v ^= v >> 43;
+    return v;
+}
+
+
 #endif /* RANDOM_HPP_ */

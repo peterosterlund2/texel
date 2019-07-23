@@ -33,6 +33,7 @@
 #include "treeLogger.hpp"
 #include "textio.hpp"
 #include "util/logger.hpp"
+#include "util/random.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -1109,8 +1110,7 @@ Search::getRootMoves(const MoveList& rootMovesIn,
 
 bool
 Search::weakPlaySkipMove(const Position& pos, const Move& m, int ply) const {
-    U64 rndL = pos.zobristHash() ^ Position::getHashKey(Piece::EMPTY, m.from()) ^
-               Position::getHashKey(Piece::EMPTY, m.to()) ^ randomSeed;
+    U64 rndL = pos.zobristHash() ^ hashU64(m.getCompressedMove()) ^ randomSeed;
     double rnd = ((rndL & 0x7fffffffffffffffULL) % 1000000000) / 1e9;
 
     double s = strength * 1e-3;
