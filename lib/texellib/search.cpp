@@ -800,7 +800,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         const S64 savedNodeIdx = sti.nodeIdx;
         sti.singularMove = hashMove;
         int newDepth = depth / 2;
-        int newBeta = ent.getScore(ply) - 25;
+        int newBeta = ent.getScore(ply) - depth * 2;
         int singScore = negaScout(tb, newBeta-1, newBeta, ply, newDepth,
                                   recaptureSquare, inCheck);
         sti.singularMove.setMove(A1,A1,0,0);
