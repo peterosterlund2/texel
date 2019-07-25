@@ -353,24 +353,6 @@ Search::passedPawnPush(const Position& pos, const Move& m) {
 }
 
 inline bool
-Search::defenseMove(const Position& pos, const Move& m) {
-    int p = pos.getPiece(m.from());
-    if (pos.isWhiteMove()) {
-        if (p == Piece::WPAWN)
-            return false;
-        if ((pos.pieceTypeBB(Piece::BPAWN) & BitBoard::wPawnAttacks(m.from())) == 0)
-            return false;
-        return (pos.pieceTypeBB(Piece::BPAWN) & BitBoard::wPawnAttacks(m.to())) == 0;
-    } else {
-        if (p == Piece::BPAWN)
-            return false;
-        if ((pos.pieceTypeBB(Piece::WPAWN) & BitBoard::bPawnAttacks(m.from())) == 0)
-            return false;
-        return (pos.pieceTypeBB(Piece::WPAWN) & BitBoard::bPawnAttacks(m.to())) == 0;
-    }
-}
-
-inline bool
 Search::isExpectedCutNode(int ply) const {
     int nFirst = 0;
     while (ply > 0) {

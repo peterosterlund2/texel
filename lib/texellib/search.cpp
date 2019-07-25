@@ -1127,6 +1127,58 @@ Search::weakPlaySkipMove(const Position& pos, const Move& m, int ply) const {
     return false;
 }
 
+template <Piece::Type piece>
+static inline bool
+attackedBy(const Position& pos, int sq) {
+    switch (piece) {
+    case Piece::WPAWN:
+        return (pos.pieceTypeBB(piece) & BitBoard::bPawnAttacks(sq)) != 0;
+    case Piece::BPAWN:
+        return (pos.pieceTypeBB(piece) & BitBoard::wPawnAttacks(sq)) != 0;
+    case Piece::WKNIGHT:
+    case Piece::BKNIGHT:
+        return (pos.pieceTypeBB(piece) & BitBoard::knightAttacks(sq)) != 0;
+    case Piece::WBISHOP:
+    case Piece::BBISHOP:
+        return (BitBoard::bishopAttacks(sq, pos.occupiedBB()) & pos.pieceTypeBB(piece)) != 0;
+    default:
+        return false;
+    }
+}
+
+bool
+Search::defenseMove(const Position& pos, const Move& m) {
+    int p = pos.getPiece(m.from());
+    switch (p) {
+    case Piece::WQUEEN:
+    case Piece::WROOK:
+        return (attackedBy<Piece::BPAWN>(pos, m.from()) ||
+                attackedBy<Piece::BKNIGHT>(pos, m.from()) ||
+                attackedBy<Piece::BBISHOP>(pos, m.from())) &&
+                !attackedBy<Piece::BPAWN>(pos, m.to()) &&
+                !attackedBy<Piece::BKNIGHT>(pos, m.to()) &&
+                !attackedBy<Piece::BBISHOP>(pos, m.to());
+    case Piece::WBISHOP:
+    case Piece::WKNIGHT:
+        return attackedBy<Piece::BPAWN>(pos, m.from()) &&
+               !attackedBy<Piece::BPAWN>(pos, m.to());
+    case Piece::BQUEEN:
+    case Piece::BROOK:
+        return (attackedBy<Piece::WPAWN>(pos, m.from()) ||
+                attackedBy<Piece::WKNIGHT>(pos, m.from()) ||
+                attackedBy<Piece::WBISHOP>(pos, m.from())) &&
+                !attackedBy<Piece::WPAWN>(pos, m.to()) &&
+                !attackedBy<Piece::WKNIGHT>(pos, m.to()) &&
+                !attackedBy<Piece::WBISHOP>(pos, m.to());
+    case Piece::BBISHOP:
+    case Piece::BKNIGHT:
+        return attackedBy<Piece::WPAWN>(pos, m.from()) &&
+               !attackedBy<Piece::WPAWN>(pos, m.to());
+    default:
+        return false;
+    }
+}
+
 int
 Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
     int score;
