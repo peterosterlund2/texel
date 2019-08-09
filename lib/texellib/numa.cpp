@@ -42,6 +42,7 @@
 #ifdef NUMA
 #include <numa.h>
 #endif
+#include <sys/stat.h>
 #endif
 
 Numa&
@@ -219,13 +220,16 @@ Numa::getNodeInfoMap(int maxNode, std::map<int, NodeInfo>& nodeInfo) {
     for (int i = 0; ; i++) {
         std::string cpuDir(baseDir + "/cpu" + num2Str(i));
         if (i > 0) {
-            std::ifstream is(cpuDir + "/online");
-            if (!is)
+            struct stat statBuf;
+            if (stat(cpuDir.c_str(), &statBuf) != 0)
                 break;
-            std::string line;
-            std::getline(is, line);
-            if (!is || is.eof() || (line != "1"))
-                continue;
+            std::ifstream is(cpuDir + "/online");
+            if (is) {
+                std::string line;
+                std::getline(is, line);
+                if (!is || is.eof() || (line != "1"))
+                    continue;
+            }
         }
 
         int node = -1;
@@ -254,6 +258,8 @@ Numa::getNodeInfoMap(int maxNode, std::map<int, NodeInfo>& nodeInfo) {
                         nodeInfo[node].numCores++;
                 }
             }
+        } else {
+            nodeInfo[node].numCores++;
         }
     }
 #endif
