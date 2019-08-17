@@ -163,7 +163,7 @@ Evaluate::evalPos(const Position& pos) {
     EvalHashData* ehd = nullptr;
     U64 key = pos.historyHash();
     if (useHashTable) {
-        ehd = &getEvalHashEntry(evalHash, key);
+        ehd = &getEvalHashEntry(key);
         if ((ehd->data ^ key) < (1 << 16))
             return (ehd->data & 0xffff) - (1 << 15);
     }
@@ -501,7 +501,7 @@ Evaluate::castleBonus(const Position& pos) {
 int
 Evaluate::pawnBonus(const Position& pos) {
     U64 key = pos.pawnZobristHash();
-    PawnHashData& phd = getPawnHashEntry(pawnHash, key);
+    PawnHashData& phd = getPawnHashEntry(key);
     if (phd.key != key)
         computePawnHashData(pos, phd);
     this->phd = &phd;
@@ -1292,7 +1292,7 @@ evalKingPawnShelter(const Position& pos) {
 int
 Evaluate::kingSafetyKPPart(const Position& pos) {
     const U64 key = pos.pawnZobristHash() ^ pos.kingZobristHash();
-    KingSafetyHashData& ksh = getKingSafetyHashEntry(kingSafetyHash, key);
+    KingSafetyHashData& ksh = getKingSafetyHashEntry(key);
     if (ksh.key != key) {
         int score = 0;
         const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);

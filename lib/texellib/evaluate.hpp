@@ -142,7 +142,7 @@ public:
 private:
     template <bool print> int evalPos(const Position& pos);
 
-    EvalHashData& getEvalHashEntry(EvalHashTables::EvalHashType& evalHash, U64 key);
+    EvalHashData& getEvalHashEntry(U64 key);
 
     /** Compute score based on piece square tables. Positive values are good for white. */
     int pieceSquareEval(const Position& pos);
@@ -159,7 +159,7 @@ private:
     /** Score castling ability. */
     int castleBonus(const Position& pos);
 
-    PawnHashData& getPawnHashEntry(std::vector<PawnHashData>& pawnHash, U64 key);
+    PawnHashData& getPawnHashEntry(U64 key);
     int pawnBonus(const Position& pos);
 
     /** Compute set of pawns that can not participate in "pawn breaks". */
@@ -189,7 +189,7 @@ private:
     /** Compute number of white contact checks minus number of black contact checks. */
     int getNContactChecks(const Position& pos) const;
 
-    KingSafetyHashData& getKingSafetyHashEntry(vector_aligned<KingSafetyHashData>& ksHash, U64 key);
+    KingSafetyHashData& getKingSafetyHashEntry(U64 key);
     int kingSafetyKPPart(const Position& pos);
 
     static int castleMaskFactor[256];
@@ -252,9 +252,9 @@ inline void
 Evaluate::prefetch(U64 key) {
 #ifdef HAS_PREFETCH
 #if _MSC_VER
-    _mm_prefetch((const char*)&getEvalHashEntry(evalHash, key), 3);
+    _mm_prefetch((const char*)&getEvalHashEntry(key), 3);
 #else
-    __builtin_prefetch(&getEvalHashEntry(evalHash, key));
+    __builtin_prefetch(&getEvalHashEntry(key));
 #endif
 #endif
 }
@@ -297,7 +297,7 @@ Evaluate::materialScore(const Position& pos, bool print) {
 }
 
 inline Evaluate::PawnHashData&
-Evaluate::getPawnHashEntry(std::vector<Evaluate::PawnHashData>& pawnHash, U64 key) {
+Evaluate::getPawnHashEntry(U64 key) {
     int e0 = (int)key & (pawnHash.size() - 2);
     int e1 = e0 + 1;
     if (pawnHash[e0].key == key) {
@@ -322,33 +322,33 @@ Evaluate::getPawnHashEntry(std::vector<Evaluate::PawnHashData>& pawnHash, U64 ke
 }
 
 inline Evaluate::EvalHashData&
-Evaluate::getEvalHashEntry(EvalHashTables::EvalHashType& evalHash, U64 key) {
+Evaluate::getEvalHashEntry(U64 key) {
     int e0 = (int)key & (evalHash.size() - 1);
     return evalHash[e0];
 }
 
 inline Evaluate::KingSafetyHashData&
-Evaluate::getKingSafetyHashEntry(vector_aligned<Evaluate::KingSafetyHashData>& ksHash, U64 key) {
-    int e0 = (int)key & (ksHash.size() - 2);
+Evaluate::getKingSafetyHashEntry(U64 key) {
+    int e0 = (int)key & (kingSafetyHash.size() - 2);
     int e1 = e0 + 1;
-    if (ksHash[e0].key == key) {
-        ksHash[e0].current = 1;
-        ksHash[e1].current = 0;
-        return ksHash[e0];
+    if (kingSafetyHash[e0].key == key) {
+        kingSafetyHash[e0].current = 1;
+        kingSafetyHash[e1].current = 0;
+        return kingSafetyHash[e0];
     }
-    if (ksHash[e1].key == key) {
-        ksHash[e1].current = 1;
-        ksHash[e0].current = 0;
-        return ksHash[e1];
+    if (kingSafetyHash[e1].key == key) {
+        kingSafetyHash[e1].current = 1;
+        kingSafetyHash[e0].current = 0;
+        return kingSafetyHash[e1];
     }
-    if (ksHash[e0].current) {
-        ksHash[e1].current = 1;
-        ksHash[e0].current = 0;
-        return ksHash[e1];
+    if (kingSafetyHash[e0].current) {
+        kingSafetyHash[e1].current = 1;
+        kingSafetyHash[e0].current = 0;
+        return kingSafetyHash[e1];
     } else {
-        ksHash[e0].current = 1;
-        ksHash[e1].current = 0;
-        return ksHash[e0];
+        kingSafetyHash[e0].current = 1;
+        kingSafetyHash[e1].current = 0;
+        return kingSafetyHash[e0];
     }
 }
 
