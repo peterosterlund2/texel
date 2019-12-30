@@ -508,20 +508,11 @@ testCheckEvasions() {
     pos = TextIO::readFEN("rn1qkbnr/pppB1ppp/3p4/4p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 0 1");
     getMoveList(pos, false);
 
-    // King captures must be included in check evasions
-    pos = TextIO::readFEN("r1bq2r1/pp3pbk/2p1p1P1/8/3P4/2PB1N2/PP3PPR/2KR4 b - - 0 1");
-    UndoInfo ui;
-    pos.makeMove(TextIO::uciStringToMove("g7h6"), ui);
-    getMoveList(pos, false);
-    std::vector<std::string> evList = getCheckEvasions(pos, false);
-    ASSERT(contains(evList, "g6h7"));
-
     pos = TextIO::readFEN("1R6/1brk2p1/2P1p2p/p3Pp2/P7/6P1/1P4P1/2R3K1 b - - 0 1");
     getMoveList(pos, false);
-    evList = getCheckEvasions(pos, false);
+    std::vector<std::string> evList = getCheckEvasions(pos, false);
     ASSERT(contains(evList, "b7c6"));
 }
-
 
 
 cute::suite

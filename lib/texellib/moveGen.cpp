@@ -165,7 +165,6 @@ MoveGen::checkEvasions(const Position& pos, MoveList& moveList) {
         int threatSq = BitBoard::firstSquare(kingThreats);
         validTargets = kingThreats | BitBoard::squaresBetween(kingSq, threatSq);
     }
-    validTargets |= pos.pieceTypeBB(OtherColor::KING);
     // Queen moves
     U64 squares = pos.pieceTypeBB(MyColor::QUEEN);
     while (squares != 0) {
