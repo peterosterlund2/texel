@@ -208,7 +208,7 @@ Evaluate::evalPos(const Position& pos) {
         int hiMtrl = (rV + bV*2 + nV*2) * 2;
         int piecePlay = interpolate(mtrl - mtrlPawns, 0, 64, hiMtrl, 128);
         score += whiteContempt * piecePlay / 128;
-        if (print) std::cout << "eval contemp:" << score << ' ' << piecePlay << std::endl;
+        if (print) std::cout << "info string eval contemp:" << score << ' ' << piecePlay << std::endl;
     }
     if (pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) {
         int hmc = clamp(pos.getHalfMoveClock() / 10, 0, 9);
