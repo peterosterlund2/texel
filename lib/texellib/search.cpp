@@ -518,7 +518,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         int score = ent.getScore(ply);
         evalScore = ent.getEvalScore();
         ent.getMove(hashMove);
-        if (((beta == alpha + 1) || (depth <= ply)) && ent.isCutOff(alpha, beta, ply, depth)) {
+        if (((beta == alpha + 1) || (depth*2 <= ply)) && ent.isCutOff(alpha, beta, ply, depth)) {
             if (score >= beta) {
                 if (!hashMove.isEmpty())
                     if (pos.getPiece(hashMove.to()) == Piece::EMPTY)
