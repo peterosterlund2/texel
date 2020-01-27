@@ -44,6 +44,7 @@ TranspositionTable::reSize(U64 numEntries) {
         numEntries = 4;
 
     tableV.clear();
+    tableV.shrink_to_fit();
     tableLP.reset();
     table = nullptr;
     tableSize = 0;
