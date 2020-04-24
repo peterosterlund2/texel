@@ -1093,11 +1093,11 @@ Search::getRootMoves(const MoveList& rootMovesIn,
     std::vector<bool> includedMoves(rootMoves.size);
     U64 rndL = pos.zobristHash() ^ randomSeed;
     includedMoves[(int)(rndL % rootMoves.size)] = true;
-    double pIncl = (strength < 100) ? strength * strength * 1e-4 : 1.0;
+    double pIncl = (strength < 200) ? strength * strength / (200.0 * 200.0) : 1.0;
     for (int mi = 0; mi < rootMoves.size; mi++) {
         rndL = 6364136223846793005ULL * rndL + 1442695040888963407ULL;
         double rnd = ((rndL & 0x7fffffffffffffffULL) % 1000000000) / 1e9;
-        if (!includedMoves[mi] && (rnd < pIncl))
+        if (rnd < pIncl)
             includedMoves[mi] = true;
     }
     for (int mi = 0; mi < rootMoves.size; mi++) {
