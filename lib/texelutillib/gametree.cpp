@@ -78,7 +78,7 @@ PgnScanner::getTokenChar() {
                 return c;
             }
         }
-    } catch (const std::out_of_range& e) {
+    } catch (const std::out_of_range&) {
         if (eofReached)
             throw;
         eofReached = true;
