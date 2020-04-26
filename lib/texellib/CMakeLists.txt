@@ -95,6 +95,30 @@ elseif(ANDROID)
     )
 endif()
 
+if(UNIX AND NOT ANDROID)
+  try_compile(ATOMIC_WITHOUT_LIB ${CMAKE_BINARY_DIR}
+    ${PROJECT_SOURCE_DIR}/cmake/checks/atomic.cpp
+    CXX_STANDARD 11
+    CXX_EXTENSIONS OFF
+    )
+  if(NOT ATOMIC_WITHOUT_LIB)
+    try_compile(ATOMIC_WITH_LIBATOMIC ${CMAKE_BINARY_DIR}
+      ${PROJECT_SOURCE_DIR}/cmake/checks/atomic.cpp
+      LINK_LIBRARIES atomic
+      CXX_STANDARD 11
+      CXX_EXTENSIONS OFF
+      )
+    if(ATOMIC_WITH_LIBATOMIC)
+      message(STATUS "Linking with -latomic")
+      target_link_libraries(texellib
+        PUBLIC atomic
+        )
+    else()
+      message(FATAL_ERROR "Cannot use std::atomic<T>")
+    endif()
+  endif()
+endif()
+
 if(USE_BMI2)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     require_compiler_flag("-mbmi2")
