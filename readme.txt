@@ -70,6 +70,12 @@ Strength
   Strength can be smoothly adjusted between playing random legal moves (0) and
   playing at full strength (1000).
 
+UCI_LimitStrength, UCI_Elo
+
+  These are standard UCI options to reduce the playing strength and should be
+  handled by the GUI. Internally the Elo value is converted to a Strength value,
+  so the Strength option has no effect when UCI_LimitStrength is enabled.
+
 MaxNPS
 
   If set to a value larger than 0, Texel will not search faster than this many
