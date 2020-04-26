@@ -173,6 +173,11 @@ private:
     /** Try to find a move to ponder from the transposition table. */
     Move getPonderMove(Position pos, const Move& m);
 
+    /** Get strength setting, possibly by interpolating in eloToStrength table. */
+    int getStrength() const;
+
+    /** Return adjusted maxNPS value if UCI_LimitStrength is enabled. */
+    int getMaxNPS() const;
 
     std::ostream& os;
 

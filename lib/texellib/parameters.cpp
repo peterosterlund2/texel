@@ -52,6 +52,8 @@ namespace UciParams {
 
     std::shared_ptr<SpinParam> strength(std::make_shared<SpinParam>("Strength", 0, 1000, 1000));
     std::shared_ptr<SpinParam> maxNPS(std::make_shared<SpinParam>("MaxNPS", 0, 10000000, 0));
+    std::shared_ptr<CheckParam> limitStrength(std::make_shared<CheckParam>("UCI_LimitStrength", false));
+    std::shared_ptr<SpinParam> elo(std::make_shared<SpinParam>("UCI_Elo", -625, 2540, 1500));
 
     std::shared_ptr<SpinParam> contempt(std::make_shared<SpinParam>("Contempt", -2000, 2000, 0));
     std::shared_ptr<SpinParam> analyzeContempt(std::make_shared<SpinParam>("AnalyzeContempt", -2000, 2000, 0));
@@ -648,6 +650,8 @@ Parameters::Parameters() {
 
     addPar(UciParams::strength);
     addPar(UciParams::maxNPS);
+    addPar(UciParams::limitStrength);
+    addPar(UciParams::elo);
 
     addPar(UciParams::contempt);
     addPar(UciParams::analyzeContempt);

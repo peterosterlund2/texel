@@ -44,6 +44,8 @@
 #include <chrono>
 #include <fstream>
 #include <regex>
+#include <climits>
+#include <cmath>
 
 
 EngineMainThread::EngineMainThread()
@@ -145,7 +147,8 @@ EngineMainThread::startSearch(EngineControl* engineControl,
                               std::atomic<bool>& ponder, std::atomic<bool>& infinite) {
     int nThreads = UciParams::threads->getIntPar();
     if ((UciParams::strength->getIntPar() < 1000) ||
-        (UciParams::maxNPS->getIntPar() > 0))
+        (UciParams::maxNPS->getIntPar() > 0) ||
+        UciParams::limitStrength->getBoolPar())
         nThreads = 1;
     int nThreadsThisNode;
     std::vector<int> nThreadsChildren;
@@ -450,8 +453,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
     Search::SearchTables st(comm->getCTT(), kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, *comm, treeLog);
     sc->setListener(listener);
-    sc->setStrength(UciParams::strength->getIntPar(), randomSeed,
-                    UciParams::maxNPS->getIntPar());
+    sc->setStrength(getStrength(), randomSeed, getMaxNPS());
     std::shared_ptr<MoveList> moves(std::make_shared<MoveList>());
     MoveGen::pseudoLegalMoves(pos, *moves);
     MoveGen::removeIllegal(pos, *moves);
@@ -608,4 +610,66 @@ void
 EngineControl::finishSearch(Position& pos, const Move& bestMove) {
     Move ponderMove = getPonderMove(pos, bestMove);
     listener.notifyPlayedMove(bestMove, ponderMove);
+}
+
+static int eloToStrength[][2] = {
+    {  -625,   0 },
+    {  -574,  15 },
+    {  -458,  30 },
+    {  -271,  45 },
+    {   -57,  60 },
+    {   140,  75 },
+    {   402, 100 },
+    {   602, 125 },
+    {   731, 150 },
+    {   942, 200 },
+    {  1010, 250 },
+    {  1136, 300 },
+    {  1336, 350 },
+    {  1578, 425 },
+    {  1773, 500 },
+    {  2016, 600 },
+    {  2209, 700 },
+    {  2355, 800 },
+    {  2438, 875 },
+    {  2512, 950 },
+    {  2533, 975 },
+    {  2540, 990 },
+};
+
+int
+EngineControl::getStrength() const {
+    if (!UciParams::limitStrength->getBoolPar())
+        return UciParams::strength->getIntPar();
+
+    const int elo = UciParams::elo->getIntPar();
+    if (elo <= eloToStrength[0][0])
+        return eloToStrength[0][1];
+    const int n = COUNT_OF(eloToStrength);
+    for (int i = 1; i < n; i++) {
+        if (elo <= eloToStrength[i][0]) {
+            double a  = eloToStrength[i-1][0];
+            double b  = eloToStrength[i  ][0];
+            double fa = eloToStrength[i-1][1];
+            double fb = eloToStrength[i  ][1];
+            return (int)round(fa + (elo - a) / (b - a) * (fb - fa));
+        }
+    }
+    return eloToStrength[n-1][1];
+}
+
+int
+EngineControl::getMaxNPS() const {
+    int maxNPS = UciParams::maxNPS->getIntPar();
+    int nps1 = maxNPS == 0 ? INT_MAX : maxNPS;
+    int nps2 = nps1;
+    if (UciParams::limitStrength->getBoolPar()) {
+        int elo = UciParams::elo->getIntPar();
+        if (elo < 1350)
+            nps2 = std::min(10000, nps2);
+        else if (elo < 2100)
+            nps2 = std::min(100000, nps2);
+    }
+    int nps = std::min(nps1, nps2);
+    return nps == INT_MAX ? 0 : nps;
 }

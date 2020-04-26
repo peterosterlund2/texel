@@ -379,6 +379,8 @@ namespace UciParams {
 
     extern std::shared_ptr<Parameters::SpinParam> strength;
     extern std::shared_ptr<Parameters::SpinParam> maxNPS;
+    extern std::shared_ptr<Parameters::CheckParam> limitStrength;
+    extern std::shared_ptr<Parameters::SpinParam> elo;
 
     extern std::shared_ptr<Parameters::SpinParam> contempt;
     extern std::shared_ptr<Parameters::SpinParam> analyzeContempt;
