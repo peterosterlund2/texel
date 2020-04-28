@@ -207,7 +207,7 @@ EngineMainThread::waitOptionsSet() {
 void
 EngineMainThread::doSearch() {
     Move m;
-    if (ownBook && !analyseMode) {
+    if (ownBook && !analyseMode && !*infinite) {
         Book book(false);
         book.getBookMove(pos, m);
     }
