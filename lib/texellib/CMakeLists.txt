@@ -168,20 +168,3 @@ if(USE_NUMA)
       )
   endif()
 endif()
-
-if(USE_CLUSTER)
-  target_compile_definitions(texellib
-    PUBLIC "CLUSTER")
-  find_package(MPI)
-  if(MPI_CXX_FOUND)
-    target_link_libraries(texellib
-      PUBLIC MPI::MPI_CXX)
-  elseif(MINGW AND DEFINED ENV{MINGW_MPI})
-    target_include_directories(texellib
-      PUBLIC "$ENV{MINGW_MPI}/include")
-    target_link_libraries(texellib
-      PUBLIC "$ENV{MINGW_MPI}/libmsmpi.a")
-  else()
-    message(FATAL_ERROR "MPI library not found")
-  endif()
-endif()

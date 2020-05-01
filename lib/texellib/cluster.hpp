@@ -36,6 +36,8 @@
 
 #ifdef CLUSTER
 
+#error "Deterministic cluster search not supported"
+
 class TTReceiver;
 class ClusterTTReceiver;
 
