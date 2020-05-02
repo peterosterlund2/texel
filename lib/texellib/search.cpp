@@ -427,11 +427,7 @@ Search::notifyStats() {
         S64 totNodes = getTotalNodes();
         S64 nps = (time > 0) ? (S64)(totNodes / (time / 1000.0)) : 0;
         S64 tbHits = getTbHits();
-        int hashFull;
-        {
-            ThreadOrderLock L(comm);
-            hashFull = tt.getHashFull();
-        }
+        int hashFull = tt.getHashFull();
         listener->notifyStats(totNodes, nps, hashFull, tbHits, time);
     }
     tLastStats = tNow;
