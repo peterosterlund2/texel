@@ -96,7 +96,7 @@ ComputerPlayer::getCommand(const Position& posIn, bool drawOffer, const std::vec
     History ht;
     TreeLogger treeLog;
     Notifier notifier;
-    ThreadCommunicator comm(nullptr, tt, notifier, false);
+    ThreadCommunicator comm(nullptr, tt, notifier, false, 0);
     Search::SearchTables st(comm.getCTT(), kt, ht, *et);
     Search sc(pos, posHashList, posHashListSize, st, comm, treeLog);
 
@@ -184,7 +184,7 @@ ComputerPlayer::searchPosition(Position& pos, int maxTimeMillis) {
     History ht;
     TreeLogger treeLog;
     Notifier notifier;
-    ThreadCommunicator comm(nullptr, tt, notifier, false);
+    ThreadCommunicator comm(nullptr, tt, notifier, false, 0);
     Search::SearchTables st(comm.getCTT(), kt, ht, *et);
     Search sc(pos, posHashList, 0, st, comm, treeLog);
 

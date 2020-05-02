@@ -51,7 +51,7 @@
 EngineMainThread::EngineMainThread()
     : tt(256) {
     Communicator* clusterParent = Cluster::instance().createParentCommunicator(tt);
-    comm = make_unique<ThreadCommunicator>(clusterParent, tt, notifier, true);
+    comm = make_unique<ThreadCommunicator>(clusterParent, tt, notifier, true, 0);
     Cluster::instance().createChildCommunicators(comm.get(), tt);
     Cluster::instance().connectAllReceivers(comm.get());
 }
@@ -154,6 +154,8 @@ EngineMainThread::startSearch(EngineControl* engineControl,
     std::vector<int> nThreadsChildren;
     Cluster::instance().assignThreads(nThreads, nThreadsThisNode, nThreadsChildren);
     comm->sendAssignThreads(nThreadsThisNode, nThreadsChildren);
+    WorkerThread::createWorkers(1, comm.get(), 0, tt, children);
+    comm->setThreadOrder(std::make_shared<ThreadOrder>(nThreadsThisNode));
     WorkerThread::createWorkers(1, comm.get(), nThreadsThisNode - 1, tt, children);
 
     {
@@ -228,7 +230,10 @@ EngineMainThread::doSearch() {
     engineControl->finishSearch(pos, m);
 
     if (waitForStop) {
-        comm->sendStopSearch();
+        {
+            ThreadOrderLock L(*comm);
+            comm->sendStopSearch();
+        }
         class Handler : public Communicator::CommandHandler {
         public:
             explicit Handler(Communicator* comm) : comm(comm) {}
@@ -237,15 +242,20 @@ EngineMainThread::doSearch() {
             Communicator* comm;
         };
         Handler handler(comm.get());
-        comm->sendStopAck(false);
+        {
+            ThreadOrderLock L(*comm);
+            comm->sendStopAck(false);
+        }
         while (true) {
             comm->poll(handler);
             if (comm->hasStopAck())
                 break;
-            notifierWait();
+            // Busy wait
         }
         notifier.notify();
     }
+
+    comm->threadOrderQuit();
 }
 
 void
@@ -535,7 +545,10 @@ EngineControl::getPonderMove(Position pos, const Move& m) {
     UndoInfo ui;
     pos.makeMove(m, ui);
     TranspositionTable::TTEntry ent;
-    engineThread.getTT().probe(pos.historyHash(), ent);
+    {
+        ThreadOrderLock L(*engineThread.getCommunicator());
+        engineThread.getTT().probe(pos.historyHash(), ent);
+    }
     if (ent.getType() != TType::T_EMPTY) {
         ent.getMove(ret);
         MoveList moves;

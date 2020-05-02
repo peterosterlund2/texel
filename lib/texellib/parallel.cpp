@@ -63,8 +63,9 @@ Notifier::wait(int timeOutMs) {
 
 // ----------------------------------------------------------------------------
 
-Communicator::Communicator(Communicator* parent, TranspositionTable& tt)
-    : parent(parent), ctt(make_unique<ClusterTT>(tt)) {
+Communicator::Communicator(Communicator* parent, TranspositionTable& tt,
+                           int threadNo)
+    : parent(parent), ctt(make_unique<ClusterTT>(tt)), threadNo(threadNo) {
     if (parent)
         parent->addChild(this);
 }
@@ -93,12 +94,49 @@ Communicator::removeChild(Communicator* child) {
 }
 
 void
+Communicator::setThreadOrder(const std::shared_ptr<ThreadOrder>& threadOrder) {
+    this->threadOrder = threadOrder;
+}
+
+std::shared_ptr<ThreadOrder>
+Communicator::getThreadOrder() const {
+    return threadOrder;
+}
+
+void
+Communicator::threadOrderLock() {
+    if (threadOrder) {
+        assert(!threadOrderIsLocked);
+        threadOrder->lock(threadNo);
+        threadOrderIsLocked = true;
+    }
+}
+
+void
+Communicator::threadOrderUnLock() {
+    if (threadOrder) {
+        assert(threadOrderIsLocked);
+        threadOrder->unLock(threadNo);
+        threadOrderIsLocked = false;
+    }
+}
+
+void
+Communicator::threadOrderQuit() {
+    if (threadOrder) {
+        threadOrder->quit(threadNo);
+        threadOrder.reset();
+    }
+}
+
+void
 Communicator::sendAssignThreads(int nThreadsThisNode,
                                 const std::vector<int>& nThreadsChildren) {
     int threadOffs = Cluster::instance().getGlobalThreadOffset() + nThreadsThisNode;
     for (auto& c : children) {
         int childNo = c->clusterChildNo();
         if (childNo >= 0) {
+            assert(!threadOrder || threadOrderIsLocked);
             int nt = nThreadsChildren[childNo];
             c->doSendAssignThreads(nt, threadOffs);
             threadOffs += nt;
@@ -116,6 +154,7 @@ void
 Communicator::sendInitSearch(const Position& pos,
                              const std::vector<U64>& posHashList, int posHashListSize,
                              bool clearHistory, int whiteContempt) {
+    assert(!threadOrder || threadOrderIsLocked);
     nodesSearched = 0;
     tbHits = 0;
     for (auto& c : children)
@@ -125,12 +164,14 @@ Communicator::sendInitSearch(const Position& pos,
 void
 Communicator::sendStartSearch(int jobId, const SearchTreeInfo& sti,
                               int alpha, int beta, int depth) {
+    assert(!threadOrder || threadOrderIsLocked);
     for (auto& c : children)
         c->doSendStartSearch(jobId, sti, alpha, beta, depth);
 }
 
 void
 Communicator::sendStopSearch() {
+    assert(!threadOrder || threadOrderIsLocked);
     stopAckWaitSelf = true;
     stopAckWaitChildren = children.size();
     notifyThread();
@@ -160,6 +201,7 @@ Communicator::sendQuit() {
 
 void
 Communicator::sendReportResult(int jobId, int score) {
+    assert(!threadOrder || threadOrderIsLocked);
     if (parent)
         parent->doSendReportResult(jobId, score);
 }
@@ -167,6 +209,7 @@ Communicator::sendReportResult(int jobId, int score) {
 void
 Communicator::sendReportStats(S64 nodesSearched, S64 tbHits, bool propagate) {
     if (parent && propagate) {
+        assert(!threadOrder || threadOrderIsLocked);
         retrieveStats(nodesSearched, tbHits);
         parent->doSendReportStats(nodesSearched, tbHits);
     } else {
@@ -174,17 +217,22 @@ Communicator::sendReportStats(S64 nodesSearched, S64 tbHits, bool propagate) {
     }
 }
 
-void
+bool
 Communicator::sendStopAck(bool child) {
+    assert(!threadOrder || threadOrderIsLocked);
+    bool ret = false;
     if (child) {
         stopAckWaitChildren--;
+        ret = true;
     } else {
         if (!stopAckWaitSelf)
-            return;
+            return false;
         stopAckWaitSelf = false;
+        ret = true;
     }
     if (hasStopAck() && parent)
         parent->doSendStopAck();
+    return ret;
 }
 
 void
@@ -215,6 +263,7 @@ Communicator::poll(CommandHandler& handler) {
             c->doPoll(pass);
     }
 
+    ThreadOrderLock tol(*this);
     while (true) {
         std::unique_lock<std::mutex> L(mutex);
         if (cmdQueue.empty())
@@ -430,8 +479,9 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
 // ----------------------------------------------------------------------------
 
 ThreadCommunicator::ThreadCommunicator(Communicator* parent, TranspositionTable& tt,
-                                       Notifier& notifier, bool createTTReceiver)
-    : Communicator(parent, tt), notifier(&notifier) {
+                                       Notifier& notifier, bool createTTReceiver,
+                                       int threadNo)
+    : Communicator(parent, tt, threadNo), notifier(&notifier) {
     if (createTTReceiver)
         ttReceiver = Cluster::instance().createLocalTTReceiver(tt);
 }
@@ -616,7 +666,9 @@ void
 WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
     Numa::instance().bindThread(threadNo);
     if (!cluster) {
-        comm = make_unique<ThreadCommunicator>(parentComm, tt, threadNotifier, threadNo == 0);
+        comm = make_unique<ThreadCommunicator>(parentComm, tt, threadNotifier,
+                                               threadNo == 0, threadNo);
+        comm->setThreadOrder(parentComm->getThreadOrder());
         Cluster::instance().connectClusterReceivers(comm.get());
         createWorkers(threadNo + 1, comm.get(), numWorkers - 1, tt, children);
     } else
@@ -626,9 +678,15 @@ WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
 
     CommHandler handler(*this);
 
+    bool hasBeenStopped = false;
+    bool stopAck = false;
     while (true) {
-        bool handleClusterComm = Cluster::instance().isEnabled() && threadNo == 0;
-        threadNotifier.wait(handleClusterComm ? 1 : -1);
+        if (hasBeenStopped) {
+            bool handleClusterComm = Cluster::instance().isEnabled() && threadNo == 0;
+            threadNotifier.wait(handleClusterComm ? 1 : -1);
+        } else {
+            // Busy wait
+        }
         if (terminate)
             break;
         comm->poll(handler);
@@ -636,7 +694,14 @@ WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
             break;
         if (jobId != -1)
             doSearch(handler);
-        comm->sendStopAck(false);
+        if (!stopAck) {
+            ThreadOrderLock L(*comm);
+            stopAck = comm->sendStopAck(false);
+        }
+        if (stopAck && comm->hasStopAck() && !hasBeenStopped) {
+            comm->threadOrderQuit();
+            hasBeenStopped = true;
+        }
     }
 }
 
@@ -731,6 +796,7 @@ WorkerThread::sendReportResult(int jobId, int score) {
 
 void
 WorkerThread::sendReportStats(S64 nodesSearched, S64 tbHits) {
+    ThreadOrderLock L(*comm);
     comm->sendReportStats(nodesSearched, tbHits, true);
 }
 
@@ -836,7 +902,10 @@ WorkerThread::doSearch(CommHandler& commHandler) {
             int searchDepth = std::min(depth + extraDepth, MAX_SEARCH_DEPTH);
             int captSquare = -1;
             int score = sc.negaScout(true, alpha, beta, ply, searchDepth, captSquare, inCheck);
-            sendReportResult(jobId, score);
+            {
+                ThreadOrderLock L(*comm);
+                sendReportResult(jobId, score);
+            }
             if (searchDepth >= MAX_SEARCH_DEPTH) {
                 jobId = -1;
                 break;

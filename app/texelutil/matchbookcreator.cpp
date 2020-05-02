@@ -98,7 +98,7 @@ MatchBookCreator::evaluateBookLines(std::vector<BookLine>& lines, int searchTime
     const int nLines = lines.size();
     TranspositionTable tt(256*1024*1024);
     Notifier notifier;
-    ThreadCommunicator comm(nullptr, tt, notifier, false);
+    ThreadCommunicator comm(nullptr, tt, notifier, false, 0);
     std::shared_ptr<Evaluate::EvalHashTables> et;
 
 #pragma omp parallel for schedule(dynamic) default(none) shared(lines,tt,comm,searchTime,os) private(et)

@@ -34,7 +34,7 @@
 
 BookBuildControl::BookBuildControl(ChangeListener& listener)
     : listener(listener), nPendingBookTasks(0), tt(128*1024*1024),
-      comm(nullptr, tt, notifier, false) {
+      comm(nullptr, tt, notifier, false, 0) {
     ComputerPlayer::initEngine();
     TBPath::setDefaultTBPaths();
     et = Evaluate::getEvalHashTables();

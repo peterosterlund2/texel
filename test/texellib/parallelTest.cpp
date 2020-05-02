@@ -101,22 +101,22 @@ ParallelTest::testCommunicator() {
     Notifier notifier0;
     NotifyCounter c0(notifier0);
     TranspositionTable& tt = SearchTest::tt;
-    ThreadCommunicator root(nullptr, tt, notifier0, false);
+    ThreadCommunicator root(nullptr, tt, notifier0, false, 0);
     c0.setCommunicator(root);
 
     Notifier notifier1;
     NotifyCounter c1(notifier1);
-    ThreadCommunicator child1(&root, tt, notifier1, false);
+    ThreadCommunicator child1(&root, tt, notifier1, false, 0);
     c1.setCommunicator(child1);
 
     Notifier notifier2;
     NotifyCounter c2(notifier2);
-    ThreadCommunicator child2(&root, tt, notifier2, false);
+    ThreadCommunicator child2(&root, tt, notifier2, false, 0);
     c2.setCommunicator(child2);
 
     Notifier notifier3;
     NotifyCounter c3(notifier3);
-    ThreadCommunicator child3(&child2, tt, notifier3, false);
+    ThreadCommunicator child3(&child2, tt, notifier3, false, 0);
     c3.setCommunicator(child3);
 
     ASSERT_EQUAL(0, c0.getCount());

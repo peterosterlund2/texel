@@ -61,6 +61,7 @@ set(src_texellib
   tbgen.cpp               tbgen.hpp
   tbprobe.cpp             tbprobe.hpp
   textio.cpp              textio.hpp
+  threadorder.cpp         threadorder.hpp
   transpositionTable.cpp  transpositionTable.hpp
   treeLogger.cpp          treeLogger.hpp
   undoInfo.hpp

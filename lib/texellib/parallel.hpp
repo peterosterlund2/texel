@@ -29,6 +29,7 @@
 #include "evaluate.hpp"
 #include "searchUtil.hpp"
 #include "constants.hpp"
+#include "threadorder.hpp"
 #include "util/timeUtil.hpp"
 
 #include <memory>
@@ -68,7 +69,8 @@ private:
 /** Handles communication with parent and child threads. */
 class Communicator {
 public:
-    explicit Communicator(Communicator* parent, TranspositionTable& tt);
+    Communicator(Communicator* parent, TranspositionTable& tt,
+                 int threadNo);
     Communicator(const Communicator&) = delete;
     Communicator& operator=(const Communicator&) = delete;
     virtual ~Communicator();
@@ -85,6 +87,17 @@ public:
      *         this node's parent has.
      *         Return -1 if this communicator does not represent a cluster child. */
     virtual int clusterChildNo() const = 0;
+
+    /** Set/get the ThreadOrder synchronizer object. */
+    void setThreadOrder(const std::shared_ptr<ThreadOrder>& threadOrder);
+    std::shared_ptr<ThreadOrder> getThreadOrder() const;
+
+    /** Lock/unlock access to shared state. */
+    void threadOrderLock();
+    void threadOrderUnLock();
+
+    /** Stop using ThreadOrder object. */
+    void threadOrderQuit();
 
     // Parent to child commands
 
@@ -112,7 +125,8 @@ public:
 
     void sendReportStats(S64 nodesSearched, S64 tbHits, bool propagate);
 
-    void sendStopAck(bool child);
+    /** Return true if an ack was processed. */
+    bool sendStopAck(bool child);
     /** Forward stop ack from cluster child. */
     void forwardStopAck();
 
@@ -281,6 +295,12 @@ protected:
 
     std::atomic<S64> nodesSearched{0};
     std::atomic<S64> tbHits{0};
+
+    bool threadOrderIsLocked = false;
+
+private:
+    const int threadNo;
+    std::shared_ptr<ThreadOrder> threadOrder;
 };
 
 
@@ -288,7 +308,8 @@ protected:
 class ThreadCommunicator : public Communicator {
 public:
     ThreadCommunicator(Communicator* parent, TranspositionTable& tt,
-                       Notifier& notifier, bool createTTReceiver);
+                       Notifier& notifier, bool createTTReceiver,
+                       int threadNo);
     ~ThreadCommunicator();
 
     TTReceiver* getTTReceiver() override;
@@ -427,6 +448,21 @@ private:
 };
 
 
+/**
+ * RAII class to simplify calling ThreadOrder::lock() and ThreadOrder::unLock().
+ */
+class ThreadOrderLock {
+public:
+    ThreadOrderLock(Communicator& comm);
+    ThreadOrderLock(const ThreadOrderLock& o) = delete;
+    ThreadOrderLock& operator=(const ThreadOrderLock& o) = delete;
+    ~ThreadOrderLock();
+
+private:
+    Communicator& comm;
+};
+
+
 inline bool
 Communicator::hasStopAck() const {
     return stopAckWaitChildren == 0 && !stopAckWaitSelf;
@@ -475,6 +511,17 @@ WorkerThread::poll(Communicator::CommandHandler& handler) {
 inline
 WorkerThread::CommHandler::CommHandler(WorkerThread& wt)
     : wt(wt) {
+}
+
+inline
+ThreadOrderLock::ThreadOrderLock(Communicator& comm)
+    : comm(comm) {
+    comm.threadOrderLock();
+}
+
+inline
+ThreadOrderLock::~ThreadOrderLock() {
+    comm.threadOrderUnLock();
 }
 
 #endif /* PARALLEL_HPP_ */

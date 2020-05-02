@@ -34,6 +34,7 @@
 #include "textio.hpp"
 #include "util/logger.hpp"
 #include "util/random.hpp"
+#include "threadorder.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -133,8 +134,11 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     const int evalScore = eval.evalPos(pos);
     initSearchTreeInfo();
     ht.reScale();
-    comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory,
-                        eval.getWhiteContempt());
+    {
+        ThreadOrderLock L(comm);
+        comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory,
+                            eval.getWhiteContempt());
+    }
 
     int posHashFirstNew0 = posHashFirstNew;
     bool knownLoss = false; // True if at least one of the first maxPV moves is a known loss
@@ -315,7 +319,10 @@ Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
                       const bool inCheck) {
     SearchTreeInfo sti = searchTreeInfo[ply-1];
     jobId++;
-    comm.sendStartSearch(jobId, sti, alpha, beta, depth);
+    {
+        ThreadOrderLock L(comm);
+        comm.sendStartSearch(jobId, sti, alpha, beta, depth);
+    }
     U64 nodeIdx = logFile.peekNextNodeIdx();
     Position pos0(pos);
     int posHashListSize0 = posHashListSize;
@@ -346,7 +353,10 @@ Search::storeSearchResult(std::vector<MoveInfo>& scMoves, int mi, int depth,
     scMoves[mi].beta = beta;
     scMoves[mi].move.setScore(score);
     scMoves[mi].pv.clear();
-    tt.extractPVMoves(pos, scMoves[mi].move, scMoves[mi].pv);
+    {
+        ThreadOrderLock L(comm);
+        tt.extractPVMoves(pos, scMoves[mi].move, scMoves[mi].pv);
+    }
     if ((maxTimeMillis < 0) && isWinScore(std::abs(score)))
         TBProbe::extendPV(pos, scMoves[mi].pv, tt.getTT());
 }
@@ -417,7 +427,11 @@ Search::notifyStats() {
         S64 totNodes = getTotalNodes();
         S64 nps = (time > 0) ? (S64)(totNodes / (time / 1000.0)) : 0;
         S64 tbHits = getTbHits();
-        int hashFull = tt.getHashFull();
+        int hashFull;
+        {
+            ThreadOrderLock L(comm);
+            hashFull = tt.getHashFull();
+        }
         listener->notifyStats(totNodes, nps, hashFull, tbHits, time);
     }
     tLastStats = tNow;
@@ -512,7 +526,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     TranspositionTable::TTEntry ent;
     const bool singularSearch = !sti.singularMove.isEmpty();
     const bool useTT = !singularSearch;
-    if (useTT) tt.probe(hKey, ent);
+    if (useTT) {
+        ThreadOrderLock L(comm);
+        tt.probe(hKey, ent);
+    }
     Move hashMove;
     if (ent.getType() != TType::T_EMPTY) {
         int score = ent.getScore(ply);
@@ -537,6 +554,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             return BUSY;
         }
         if (ent.getType() != TType::T_EMPTY) {
+            ThreadOrderLock L(comm);
             tt.setBusy(ent, ply);
         }
     }
@@ -587,7 +605,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             }
             if (cutOff) {
                 emptyMove.setScore(score);
-                if (useTT) tt.insert(hKey, emptyMove, tbEnt.getType(), ply, depth, evalScore);
+                if (useTT) {
+                    ThreadOrderLock L(comm);
+                    tt.insert(hKey, emptyMove, tbEnt.getType(), ply, depth, evalScore);
+                }
                 logFile.logNodeEnd(sti.nodeIdx, score, tbEnt.getType(), evalScore, hKey);
                 return score;
             }
@@ -610,7 +631,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             type = TType::T_GE;
         }
         sti.bestMove.setScore(score);
-        if (useTT) tt.insert(hKey, sti.bestMove, type, ply, depth, q0Eval);
+        if (useTT) {
+            ThreadOrderLock L(comm);
+            tt.insert(hKey, sti.bestMove, type, ply, depth, q0Eval);
+        }
         logFile.logNodeEnd(sti.nodeIdx, score, type, q0Eval, hKey);
         return score;
     }
@@ -627,7 +651,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             int score = quiesce(alpha-razorMargin, beta-razorMargin, ply, 0, inCheck);
             if (score <= alpha-razorMargin) {
                 emptyMove.setScore(score);
-                if (useTT) tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, q0Eval);
+                if (useTT) {
+                    ThreadOrderLock L(comm);
+                    tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, q0Eval);
+                }
                 logFile.logNodeEnd(sti.nodeIdx, score, TType::T_LE, q0Eval, hKey);
                 return score;
             }
@@ -652,7 +679,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 evalScore = eval.evalPos(pos);
             if (evalScore - margin >= beta) {
                 emptyMove.setScore(evalScore - margin);
-                if (useTT) tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
+                if (useTT) {
+                    ThreadOrderLock L(comm);
+                    tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
+                }
                 logFile.logNodeEnd(sti.nodeIdx, evalScore - margin, TType::T_GE, evalScore, hKey);
                 return evalScore - margin;
             }
@@ -720,7 +750,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 if (isWinScore(score))
                     score = beta;
                 emptyMove.setScore(score);
-                if (useTT) tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
+                if (useTT) {
+                    ThreadOrderLock L(comm);
+                    tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
+                }
                 logFile.logNodeEnd(sti.nodeIdx, score, TType::T_GE, evalScore, hKey);
                 return score;
             }
@@ -760,7 +793,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             sti2.currentMove = savedMove;
             sti2.currentMoveNo = savedMoveNo;
             sti2.nodeIdx = savedNodeIdx2;
-            tt.probe(hKey, ent);
+            {
+                ThreadOrderLock L(comm);
+                tt.probe(hKey, ent);
+            }
             if (ent.getType() != TType::T_EMPTY)
                 ent.getMove(hashMove);
         }
@@ -997,10 +1033,16 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                         (ent.getScore(ply) < beta) && isLoseScore(ent.getScore(ply))) {
                     score = ent.getScore(ply);
                     emptyMove.setScore(score);
-                    if (useTT) tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, evalScore);
+                    if (useTT) {
+                        ThreadOrderLock L(comm);
+                        tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, evalScore);
+                    }
                     logFile.logNodeEnd(sti.nodeIdx, score, TType::T_LE, evalScore, hKey);
                 } else {
-                    if (useTT) tt.insert(hKey, m, TType::T_GE, ply, depth, evalScore);
+                    if (useTT) {
+                        ThreadOrderLock L(comm);
+                        tt.insert(hKey, m, TType::T_GE, ply, depth, evalScore);
+                    }
                     logFile.logNodeEnd(sti.nodeIdx, alpha, TType::T_GE, evalScore, hKey);
                 }
                 return alpha;
@@ -1015,17 +1057,26 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             return alpha; // Only one legal move, fail low to trigger singular extension
         }
         emptyMove.setScore(0);
-        if (useTT) tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
+        if (useTT) {
+            ThreadOrderLock L(comm);
+            tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
+        }
         logFile.logNodeEnd(sti.nodeIdx, 0, TType::T_EXACT, evalScore, hKey);
         return 0;       // Stale-mate
     }
     if (tb && bestMove == -2) { // TB win, unknown move
         bestScore = tbScore;
         emptyMove.setScore(bestScore);
-        if (useTT) tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
+        if (useTT) {
+            ThreadOrderLock L(comm);
+            tt.insert(hKey, emptyMove, TType::T_EXACT, ply, depth, evalScore);
+        }
         logFile.logNodeEnd(sti.nodeIdx, bestScore, TType::T_EXACT, evalScore, hKey);
     } else if (bestMove >= 0) {
-        if (useTT) tt.insert(hKey, moves[bestMove], TType::T_EXACT, ply, depth, evalScore);
+        if (useTT) {
+            ThreadOrderLock L(comm);
+            tt.insert(hKey, moves[bestMove], TType::T_EXACT, ply, depth, evalScore);
+        }
         logFile.logNodeEnd(sti.nodeIdx, bestScore, TType::T_EXACT, evalScore, hKey);
     } else {
         if (((ent.getType() == TType::T_EXACT || ent.getType() == TType::T_GE)) &&
@@ -1033,11 +1084,17 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             bestScore = ent.getScore(ply);
             ent.getMove(hashMove);
             hashMove.setScore(bestScore);
-            if (useTT) tt.insert(hKey, hashMove, TType::T_GE, ply, depth, evalScore);
+            if (useTT) {
+                ThreadOrderLock L(comm);
+                tt.insert(hKey, hashMove, TType::T_GE, ply, depth, evalScore);
+            }
             logFile.logNodeEnd(sti.nodeIdx, bestScore, TType::T_GE, evalScore, hKey);
         } else {
             emptyMove.setScore(bestScore);
-            if (useTT) tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, evalScore);
+            if (useTT) {
+                ThreadOrderLock L(comm);
+                tt.insert(hKey, emptyMove, TType::T_LE, ply, depth, evalScore);
+            }
             logFile.logNodeEnd(sti.nodeIdx, bestScore, TType::T_LE, evalScore, hKey);
         }
     }

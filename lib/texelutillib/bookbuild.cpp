@@ -1411,7 +1411,7 @@ Book::getQueueData(QueueData& queueData) const {
 
 SearchRunner::SearchRunner(int instanceNo0, TranspositionTable& tt0)
     : instanceNo(instanceNo0), tt(tt0),
-      comm(nullptr, tt, notifier, false), aborted(false) {
+      comm(nullptr, tt, notifier, false, 0), aborted(false) {
 }
 
 Move
