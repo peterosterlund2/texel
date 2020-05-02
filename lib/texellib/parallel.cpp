@@ -873,6 +873,14 @@ WorkerThread::doSearch(CommHandler& commHandler) {
     if (!ht)
         ht = make_unique<History>();
 
+    // Delay different threads by a different amount, so that not all
+    // helper threads compute exactly the same search tree for low
+    // depths. For high depths the ABDADA logic will cause the threads
+    // to diverge anyway.
+    for (int i = 0; i < threadNo*2; i++) {
+        ThreadOrderLock L(*comm);
+    }
+
     using namespace SearchConst;
     int initExtraDepth = 0;
     for (int extraDepth = initExtraDepth; ; extraDepth++) {
