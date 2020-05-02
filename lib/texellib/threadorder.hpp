@@ -31,7 +31,14 @@
 
 #include <atomic>
 
+#ifdef HAS_X86
 #include <immintrin.h>
+#define cpu_relax() _mm_pause()
+#elif HAS_ARM
+#define cpu_relax() asm volatile("yield" ::: "memory")
+#else
+#define cpu_relax()
+#endif
 
 /**
  * The ThreadOrder class makes sure that a sequence of lock/unlock operations
@@ -100,7 +107,7 @@ inline void
 ThreadOrder::lock(int threadNo) {
     AtomicInt& flag = elem(threadNo);
     while (flag.load(std::memory_order_acquire) == 0) {
-        _mm_pause();
+        cpu_relax();
     }
 }
 

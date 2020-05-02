@@ -7,6 +7,19 @@ project(texel
   LANGUAGES CXX C)
 
 
+# Processor architecture
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
+    set(HAS_X86 TRUE)
+else()
+    set(HAS_X86 FALSE)
+endif()
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(aarch64)|(armv7-a)")
+    set(HAS_ARM TRUE)
+else()
+    set(HAS_ARM FALSE)
+endif()
+
+
 # Options
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
   set(CPU_TYPE "generic" CACHE STRING "Type of CPU to generate code for")

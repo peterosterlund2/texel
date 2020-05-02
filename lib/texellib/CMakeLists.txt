@@ -78,6 +78,15 @@ target_include_directories(texellib
   PRIVATE gtb/sysport gtb/compression gtb/compression/lzma
   )
 
+if(HAS_X86)
+  target_compile_definitions(texellib
+    PUBLIC "HAS_X86")
+endif()
+if(HAS_ARM)
+  target_compile_definitions(texellib
+    PUBLIC "HAS_ARM")
+endif()
+
 if(UNIX AND NOT ANDROID)
   find_library(RT_LIB rt)
   if(RT_LIB)
