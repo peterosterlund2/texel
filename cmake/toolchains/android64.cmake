@@ -2,6 +2,8 @@
 
 set(CMAKE_SYSTEM_NAME Android)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
+set(CMAKE_C_FLAGS_INIT "-fPIE -pie")
+set(CMAKE_CXX_FLAGS_INIT "-fPIE -pie")
 
 if(NOT DEFINED ENV{ANDROID_TOOLCHAIN_64})
   message(FATAL_ERROR "Environment variable ANDROID_TOOLCHAIN_64 not set")
