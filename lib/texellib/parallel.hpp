@@ -462,6 +462,23 @@ private:
     Communicator& comm;
 };
 
+/** Similar to ThreadOrderLock but does not lock in constructor
+ *  and only unlocks in destructor if currently locked. */
+class ThreadOrderLock2 {
+public:
+    ThreadOrderLock2(Communicator& comm);
+    ThreadOrderLock2(const ThreadOrderLock2& o) = delete;
+    ThreadOrderLock2& operator=(const ThreadOrderLock2& o) = delete;
+    ~ThreadOrderLock2();
+
+    void lock();
+    void unLock();
+
+private:
+    Communicator& comm;
+    bool isLocked;
+};
+
 
 inline bool
 Communicator::hasStopAck() const {
@@ -522,6 +539,34 @@ ThreadOrderLock::ThreadOrderLock(Communicator& comm)
 inline
 ThreadOrderLock::~ThreadOrderLock() {
     comm.threadOrderUnLock();
+}
+
+
+inline
+ThreadOrderLock2::ThreadOrderLock2(Communicator& comm)
+    : comm(comm), isLocked(false) {
+}
+
+inline
+ThreadOrderLock2::~ThreadOrderLock2() {
+    if (isLocked)
+        comm.threadOrderUnLock();
+}
+
+inline void
+ThreadOrderLock2::lock() {
+    if (!isLocked) {
+        comm.threadOrderLock();
+        isLocked = true;
+    }
+}
+
+inline void
+ThreadOrderLock2::unLock() {
+    if (isLocked) {
+        comm.threadOrderUnLock();
+        isLocked = false;
+    }
 }
 
 #endif /* PARALLEL_HPP_ */

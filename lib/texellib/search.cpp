@@ -526,9 +526,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     TranspositionTable::TTEntry ent;
     const bool singularSearch = !sti.singularMove.isEmpty();
     const bool useTT = !singularSearch;
+    ThreadOrderLock2 tol(comm);
     if (useTT) {
-        ThreadOrderLock L(comm);
+        tol.lock();
         tt.probe(hKey, ent);
+        if (depth < 7)
+            tol.unLock();
     }
     Move hashMove;
     if (ent.getType() != TType::T_EMPTY) {
@@ -554,9 +557,10 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             return BUSY;
         }
         if (ent.getType() != TType::T_EMPTY) {
-            ThreadOrderLock L(comm);
+            tol.lock();
             tt.setBusy(ent, ply);
         }
+        tol.unLock();
     }
     if (singularSearch)
         hashMove = sti.singularMove;
