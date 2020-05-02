@@ -1,3 +1,12 @@
+#!/bin/bash
+#
+# This script is used to build the Texel distribution.
+# It needs an environment where several cross compilers are available.
+#
+# To compile Texel for your computer, do not run this script.
+# Instead follow the instructions in readme.txt in the section "Compiling".
+#
+
 rm -rf build bin
 
 # Native Release build
@@ -123,17 +132,17 @@ wait
 
 # Build all
 para=8
-cmake --build build/Release -j ${para}
-cmake --build build/Debug   -j ${para}
-cmake --build build/win64 -j ${para}
-cmake --build build/win64bmi -j ${para}
-cmake --build build/win64cl -j ${para}
-cmake --build build/win64amd -j ${para}
-cmake --build build/win64old -j ${para}
-cmake --build build/win32 -j ${para}
-cmake --build build/win32old -j ${para}
-cmake --build build/android64 -j ${para}
-cmake --build build/android32 -j ${para}
+cmake --build build/Release   -j ${para} || exit 2
+cmake --build build/Debug     -j ${para} || exit 2
+cmake --build build/win64     -j ${para} || exit 2
+cmake --build build/win64bmi  -j ${para} || exit 2
+cmake --build build/win64cl   -j ${para} || exit 2
+cmake --build build/win64amd  -j ${para} || exit 2
+cmake --build build/win64old  -j ${para} || exit 2
+cmake --build build/win32     -j ${para} || exit 2
+cmake --build build/win32old  -j ${para} || exit 2
+cmake --build build/android64 -j ${para} || exit 2
+cmake --build build/android32 -j ${para} || exit 2
 
 # Copy to bin and strip executables
 mkdir -p bin
