@@ -1535,7 +1535,7 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
     PositionInfo pi;
     const int nLines = lines.size();
     std::atomic<bool> error(false);
-#pragma omp parallel for default(none) shared(data,error,lines,std::cerr) private(pos,pi)
+#pragma omp parallel for default(none) shared(data,error,lines,std::cerr) private(pos,pi) firstprivate(nLines)
     for (int i = 0; i < nLines; i++) {
         if (error)
             continue;
@@ -1647,7 +1647,7 @@ ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int 
 
     const int chunkSize = 5000;
 
-#pragma omp parallel for default(none) shared(positions,tt,comm) private(kt,ht,et,treeLog,pos) firstprivate(nullHist)
+#pragma omp parallel for default(none) shared(positions,tt,comm) private(kt,ht,et,treeLog,pos) firstprivate(nullHist,beg,end)
     for (int c = beg; c < end; c += chunkSize) {
         if (!et)
             et = Evaluate::getEvalHashTables();
@@ -1719,7 +1719,7 @@ ChessTool::computeMoveOrderObjective(std::vector<PositionInfo>& positions, const
 
     const int chunkSize = 5000;
 
-#pragma omp parallel for default(none) shared(positions,sp) private(et,pos)
+#pragma omp parallel for default(none) shared(positions,sp) private(et,pos) firstprivate(beg,end)
     for (int c = beg; c < end; c += chunkSize) {
         if (!et)
             et = Evaluate::getEvalHashTables();

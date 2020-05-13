@@ -101,7 +101,7 @@ MatchBookCreator::evaluateBookLines(std::vector<BookLine>& lines, int searchTime
     ThreadCommunicator comm(nullptr, tt, notifier, false);
     std::shared_ptr<Evaluate::EvalHashTables> et;
 
-#pragma omp parallel for schedule(dynamic) default(none) shared(lines,tt,comm,searchTime,os) private(et)
+#pragma omp parallel for schedule(dynamic) default(none) shared(lines,tt,comm,searchTime,os) private(et) firstprivate(nLines)
     for (int i = 0; i < nLines; i++) {
         BookLine& bl = lines[i];
 
