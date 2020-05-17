@@ -66,7 +66,7 @@ namespace UciParams {
     std::shared_ptr<StringParam> rtbPath(std::make_shared<StringParam>("SyzygyPath", ""));
     std::shared_ptr<SpinParam> minProbeDepth(std::make_shared<SpinParam>("MinProbeDepth", 0, 100, 1));
     std::shared_ptr<SpinParam> minProbeDepth6(std::make_shared<SpinParam>("MinProbeDepth6", 0, 100, 1));
-    std::shared_ptr<SpinParam> minProbeDepth7(std::make_shared<SpinParam>("MinProbeDepth7", 0, 100, 10));
+    std::shared_ptr<SpinParam> minProbeDepth7(std::make_shared<SpinParam>("MinProbeDepth7", 0, 100, 12));
 }
 
 int pieceValue[Piece::nPieceTypes];
