@@ -46,11 +46,12 @@ TBTest::initTB(const std::string& gtbPath, int cacheMB,
 /** Copy selected TB files to a temporary directory. */
 static void setupTBFiles(const std::vector<std::string>& tbFiles) {
     auto system = [](const std::string& cmd) {
-        ::system(cmd.c_str());
+        int ret = ::system(cmd.c_str());
+        ASSERT_EQUAL(0, ret);
     };
     std::string tmpDir = "/tmp/tbtest";
     system("mkdir -p " + tmpDir);
-    system("rm " + tmpDir + "/*");
+    system("rm -f " + tmpDir + "/*");
     for (const std::string& file : tbFiles) {
         if (endsWith(file, ".gtb.cp4")) {
             system("ln -s /home/petero/chess/gtb/" + file + " " + tmpDir + "/" + file);
