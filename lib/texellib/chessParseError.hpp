@@ -37,7 +37,7 @@ public:
     ChessParseError();
     explicit ChessParseError(const std::string& msg);
 
-    virtual const char* what() const noexcept override;
+    const char* what() const noexcept override;
 
 private:
     std::string msg_;
@@ -49,7 +49,7 @@ ChessParseError::ChessParseError(const std::string& msg)
 }
 
 inline const char*
-ChessParseError::what() const throw() {
+ChessParseError::what() const noexcept {
     return msg_.c_str();
 }
 

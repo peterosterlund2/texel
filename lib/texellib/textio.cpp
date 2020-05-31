@@ -230,7 +230,7 @@ TextIO::toFEN(const Position& pos) {
         if (r > 0)
             ret += '/';
     }
-    ret += (pos.isWhiteMove() ? " w " : " b ");
+    ret += pos.isWhiteMove() ? " w " : " b ";
 
     // Castling rights
     bool anyCastle = false;
@@ -462,15 +462,6 @@ TextIO::moveToString(const Position& pos, const Move& move, bool longForm) {
     return ::moveToString(tmpPos, move, longForm, moves);
 }
 
-namespace {
-    struct MoveInfo {
-        int piece = -1;             // -1 for unspecified
-        int fromX = -1, fromY = -1; // -1 for unspecified
-        int toX = -1, toY = -1;     // -1 for unspecified
-        int promPiece = -1;         // -1 for unspecified
-    };
-}
-
 Move
 TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
     std::string strMove;
@@ -492,6 +483,12 @@ TextIO::stringToMove(Position& pos, const std::string& strMoveIn) {
 
     const bool wtm = pos.isWhiteMove();
 
+    struct MoveInfo {
+        int piece = -1;             // -1 for unspecified
+        int fromX = -1, fromY = -1; // -1 for unspecified
+        int toX = -1, toY = -1;     // -1 for unspecified
+        int promPiece = -1;         // -1 for unspecified
+    };
     MoveInfo info;
     bool capture = false;
     if ((strMove == "O-O") || (strMove =="0-0") || (strMove == "o-o")) {
@@ -630,7 +627,7 @@ TextIO::asciiBoard(const Position& pos) {
             }
         }
 
-        ret += ("\n    +----+----+----+----+----+----+----+----+\n");
+        ret += "\n    +----+----+----+----+----+----+----+----+\n";
     }
 
     return ret;
