@@ -277,6 +277,7 @@ protected:
                          int* table, int* parNo, int N);
     void modifiedN(int* table, int* parNo, int N);
 
+private:
     const bool uci;
     const int minValue;
     const int maxValue;
@@ -297,6 +298,7 @@ public:
     void registerParams(const std::string& name, Parameters& pars) {
         registerParamsN(name, pars, table, parNo, N);
     }
+
 private:
     int table[N];
     int parNo[N];

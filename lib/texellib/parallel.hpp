@@ -173,9 +173,7 @@ protected:
     /** Notify corresponding search thread that something has happened. */
     virtual void notifyThread() = 0;
 
-    Communicator* const parent;
-    std::vector<Communicator*> children;
-    std::unique_ptr<ClusterTT> ctt;
+    Communicator* getParent() { return parent; }
 
     enum CommandType {
         ASSIGN_THREADS,
@@ -275,12 +273,18 @@ protected:
     std::deque<std::shared_ptr<Command>> cmdQueue;
 
     std::mutex mutex;
-    bool stopAckWaitSelf = false;
-    int stopAckWaitChildren = 0;
-    int quitAckWaitChildren = -1;
 
     std::atomic<S64> nodesSearched{0};
     std::atomic<S64> tbHits{0};
+
+private:
+    Communicator* const parent;
+    std::vector<Communicator*> children;
+    std::unique_ptr<ClusterTT> ctt;
+
+    bool stopAckWaitSelf = false;
+    int stopAckWaitChildren = 0;
+    int quitAckWaitChildren = -1;
 };
 
 

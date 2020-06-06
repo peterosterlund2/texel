@@ -465,7 +465,7 @@ MPICommunicator::mpiRecv() {
                     break;
                 case CommandType::REPORT_STATS: {
                     const ReportStatsCommand* rCmd = static_cast<const ReportStatsCommand*>(cmd.get());
-                    parent->sendReportStats(rCmd->nodesSearched, rCmd->tbHits, false);
+                    getParent()->sendReportStats(rCmd->nodesSearched, rCmd->tbHits, false);
                     break;
                 }
                 case CommandType::TT_DATA: {
