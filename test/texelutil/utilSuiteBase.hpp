@@ -32,8 +32,7 @@
 
 class UtilSuiteBase {
 public:
-
-    virtual ~UtilSuiteBase() {}
+    virtual ~UtilSuiteBase() = default;
 
     /** Get the test suite name. */
     virtual std::string getName() const = 0;

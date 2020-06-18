@@ -77,7 +77,7 @@ public:
     /** Interface for reporting search information during search. */
     class Listener {
     public:
-        virtual ~Listener() {}
+        virtual ~Listener() = default;
         virtual void notifyDepth(int depth) = 0;
         virtual void notifyCurrMove(const Move& m, int moveNr) = 0;
         virtual void notifyPV(int depth, int score, S64 time, S64 nodes, S64 nps,
@@ -95,7 +95,7 @@ public:
 
     class StopHandler {
     public:
-        virtual ~StopHandler() {}
+        virtual ~StopHandler() = default;
         virtual bool shouldStop() = 0;
     };
 

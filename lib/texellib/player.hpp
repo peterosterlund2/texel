@@ -36,7 +36,7 @@ class Position;
  */
 class Player {
 public:
-    virtual ~Player();
+    virtual ~Player() = default;
 
     /**
      * Get a command from a player.
@@ -71,10 +71,6 @@ public:
      */
     virtual void clearTT() = 0;
 };
-
-inline
-Player::~Player() {
-}
 
 
 #endif /* PLAYER_HPP_ */

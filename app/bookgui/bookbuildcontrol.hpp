@@ -44,6 +44,8 @@ public:
     public:
         /** Called when state has changed. */
         virtual void notify() = 0;
+    protected:
+        ~ChangeListener() = default;
     };
 
     /** Constructor. */

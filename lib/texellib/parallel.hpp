@@ -137,6 +137,8 @@ public:
         virtual void reportResult(int jobId, int score) {}
         virtual void stopAck() {}
         virtual void quitAck() {}
+    protected:
+        ~CommandHandler() = default;
     };
 
     /** Check if a command has been received. */
@@ -194,7 +196,7 @@ protected:
     };
     struct Command {
         Command() {}
-        virtual ~Command() {}
+        virtual ~Command() = default;
         Command(CommandType type, int jobId = -1, int resultScore = 0, bool clearHistory = false)
             : type(type), jobId(jobId),
               resultScore(resultScore), clearHistory(clearHistory) {}

@@ -45,7 +45,7 @@ class Game {
 public:
     Game(std::unique_ptr<Player>&& whitePlayer,
          std::unique_ptr<Player>&& blackPlayer);
-    virtual ~Game();
+    virtual ~Game() = default;
     Game(const Game& other) = delete;
     Game& operator=(const Game& other) = delete;
 
@@ -132,10 +132,6 @@ private:
     GameState drawState;
 
 };
-
-inline
-Game::~Game() {
-}
 
 inline const Position& Game::getPos() const {
     return pos;

@@ -53,10 +53,10 @@ public:
         using Func = std::function<void()>;
     public:
         int addListener(Func f, bool callNow = true);
-
         void removeListener(int id);
 
     protected:
+        ~Listener() = default;
         void notify();
 
     private:

@@ -340,7 +340,7 @@ public:
 
     class PositionSelector {
     public:
-        virtual ~PositionSelector() {}
+        virtual ~PositionSelector() = default;
         /** Retrieve position and move which can be used to extend the opening book.
          * If move is empty, don't extend book, only search non-book moves in pos.
          * Return true if a position was retrieved, false otherwise. */
