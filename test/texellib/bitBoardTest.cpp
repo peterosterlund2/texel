@@ -23,42 +23,37 @@
  *      Author: petero
  */
 
-#include "bitBoardTest.hpp"
 #include "bitBoard.hpp"
 #include "textio.hpp"
 
 #include <algorithm>
 
-#include "cute.h"
+#include "gtest/gtest.h"
 
-
-void
-BitBoardTest::testKingAttacks() {
-    ASSERT_EQUAL(5, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("g1"))));
-    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("h1"))));
-    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("a1"))));
-    ASSERT_EQUAL(5, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("a2"))));
-    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("h8"))));
-    ASSERT_EQUAL(5, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("a6"))));
-    ASSERT_EQUAL(8, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("b2"))));
+TEST(BitBoardTest, testKingAttacks) {
+    EXPECT_EQ(5, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("g1"))));
+    EXPECT_EQ(3, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("h1"))));
+    EXPECT_EQ(3, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("a1"))));
+    EXPECT_EQ(5, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("a2"))));
+    EXPECT_EQ(3, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("h8"))));
+    EXPECT_EQ(5, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("a6"))));
+    EXPECT_EQ(8, BitBoard::bitCount(BitBoard::kingAttacks(TextIO::getSquare("b2"))));
 }
 
-void
-BitBoardTest::testKnightAttacks() {
-    ASSERT_EQUAL(3, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("g1"))));
-    ASSERT_EQUAL(2, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("a1"))));
-    ASSERT_EQUAL(2, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("h1"))));
-    ASSERT_EQUAL(4, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("h6"))));
-    ASSERT_EQUAL(4, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("b7"))));
-    ASSERT_EQUAL(8, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("c6"))));
-    ASSERT_EQUAL((1ULL<<TextIO::getSquare("e2")) |
-                 (1ULL<<TextIO::getSquare("f3")) |
-                 (1ULL<<TextIO::getSquare("h3")),
-                 BitBoard::knightAttacks(TextIO::getSquare("g1")));
+TEST(BitBoardTest, testKnightAttacks) {
+    EXPECT_EQ(3, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("g1"))));
+    EXPECT_EQ(2, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("a1"))));
+    EXPECT_EQ(2, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("h1"))));
+    EXPECT_EQ(4, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("h6"))));
+    EXPECT_EQ(4, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("b7"))));
+    EXPECT_EQ(8, BitBoard::bitCount(BitBoard::knightAttacks(TextIO::getSquare("c6"))));
+    EXPECT_EQ((1ULL<<TextIO::getSquare("e2")) |
+              (1ULL<<TextIO::getSquare("f3")) |
+              (1ULL<<TextIO::getSquare("h3")),
+              BitBoard::knightAttacks(TextIO::getSquare("g1")));
 }
 
-void
-BitBoardTest::testPawnAttacks() {
+TEST(BitBoardTest, testPawnAttacks) {
     for (int sq = 0; sq < 64; sq++) {
         int x = Square::getX(sq);
         int y = Square::getY(sq);
@@ -70,7 +65,7 @@ BitBoardTest::testPawnAttacks() {
             if (x < 7)
                 expected |= 1ULL << (sq + 9);
         }
-        ASSERT_EQUAL(expected, atk);
+        EXPECT_EQ(expected, atk);
 
         atk = BitBoard::bPawnAttacksMask(1ULL << sq);
         expected = 0;
@@ -80,47 +75,46 @@ BitBoardTest::testPawnAttacks() {
             if (x < 7)
                 expected |= 1ULL << (sq - 7);
         }
-        ASSERT_EQUAL(expected, atk);
+        EXPECT_EQ(expected, atk);
     }
 
-    ASSERT_EQUAL(BitBoard::sqMask(A5,B5,C5),
-                 BitBoard::wPawnAttacksMask(BitBoard::sqMask(A4,B4)));
-    ASSERT_EQUAL(BitBoard::sqMask(A6,C6,E6),
-                 BitBoard::wPawnAttacksMask(BitBoard::sqMask(B5,D5)));
+    EXPECT_EQ(BitBoard::sqMask(A5,B5,C5),
+              BitBoard::wPawnAttacksMask(BitBoard::sqMask(A4,B4)));
+    EXPECT_EQ(BitBoard::sqMask(A6,C6,E6),
+              BitBoard::wPawnAttacksMask(BitBoard::sqMask(B5,D5)));
 
-    ASSERT_EQUAL(BitBoard::sqMask(B1,G1),
-                 BitBoard::bPawnAttacksMask(BitBoard::sqMask(A2,H2)));
-    ASSERT_EQUAL(BitBoard::sqMask(F3,H3,F2,H2),
-                 BitBoard::bPawnAttacksMask(BitBoard::sqMask(G4,G3)));
+    EXPECT_EQ(BitBoard::sqMask(B1,G1),
+              BitBoard::bPawnAttacksMask(BitBoard::sqMask(A2,H2)));
+    EXPECT_EQ(BitBoard::sqMask(F3,H3,F2,H2),
+              BitBoard::bPawnAttacksMask(BitBoard::sqMask(G4,G3)));
 }
 
-void
-BitBoardTest::testSquaresBetween() {
+TEST(BitBoardTest, testSquaresBetween) {
     // Tests that the set of nonzero elements is correct
     for (int sq1 = 0; sq1 < 64; sq1++) {
         for (int sq2 = 0; sq2 < 64; sq2++) {
             int d = BitBoard::getDirection(sq1, sq2);
             if (d == 0) {
-                ASSERT_EQUAL(0, BitBoard::squaresBetween(sq1, sq2));
+                ASSERT_EQ(0, BitBoard::squaresBetween(sq1, sq2));
             } else {
                 int dx = Square::getX(sq1) - Square::getX(sq2);
                 int dy = Square::getY(sq1) - Square::getY(sq2);
                 if (std::abs(dx * dy) == 2) { // Knight direction
-                    ASSERT_EQUAL(0, BitBoard::squaresBetween(sq1, sq2));
+                    ASSERT_EQ(0, BitBoard::squaresBetween(sq1, sq2));
                 } else {
                     if ((std::abs(dx) > 1) || (std::abs(dy) > 1)) {
-                        ASSERT(BitBoard::squaresBetween(sq1, sq2) != 0);
+                        ASSERT_TRUE(BitBoard::squaresBetween(sq1, sq2) != 0);
                     } else {
-                        ASSERT_EQUAL(0, BitBoard::squaresBetween(sq1, sq2));
+                        ASSERT_EQ(0, BitBoard::squaresBetween(sq1, sq2));
                     }
                 }
             }
         }
     }
 
-    ASSERT_EQUAL(0x0040201008040200ULL, BitBoard::squaresBetween(0, 63));
-    ASSERT_EQUAL(0x000000001C000000ULL, BitBoard::squaresBetween(TextIO::getSquare("b4"),
-                                                                 TextIO::getSquare("f4")));
+    ASSERT_EQ(0x0040201008040200ULL, BitBoard::squaresBetween(0, 63));
+    ASSERT_EQ(0x000000001C000000ULL, BitBoard::squaresBetween(TextIO::getSquare("b4"),
+                                                              TextIO::getSquare("f4")));
 }
 
 /**
@@ -143,11 +137,10 @@ static int computeDirection(int from, int to) {
     return 0;
 }
 
-void
-BitBoardTest::testGetDirection() {
+TEST(BitBoardTest, testGetDirection) {
     for (int from = 0; from < 64; from++)
         for (int to = 0; to < 64; to++)
-            ASSERT_EQUAL(computeDirection(from, to), BitBoard::getDirection(from, to));
+            ASSERT_EQ(computeDirection(from, to), BitBoard::getDirection(from, to));
 }
 
 static int computeDistance(int from, int to, bool taxi) {
@@ -159,32 +152,30 @@ static int computeDistance(int from, int to, bool taxi) {
         return std::max(std::abs(dx), std::abs(dy));
 }
 
-void
-BitBoardTest::testGetDistance() {
+TEST(BitBoardTest, testGetDistance) {
     for (int from = 0; from < 64; from++) {
         for (int to = 0; to < 64; to++) {
-            ASSERT_EQUAL(computeDistance(from, to, false), BitBoard::getKingDistance(from, to));
-            ASSERT_EQUAL(computeDistance(from, to, true ), BitBoard::getTaxiDistance(from, to));
+            ASSERT_EQ(computeDistance(from, to, false), BitBoard::getKingDistance(from, to));
+            ASSERT_EQ(computeDistance(from, to, true ), BitBoard::getTaxiDistance(from, to));
         }
     }
 }
 
-void
-BitBoardTest::testTrailingZeros() {
+TEST(BitBoardTest, testTrailingZeros) {
     for (int i = 0; i < 64; i++) {
         U64 mask = 1ULL << i;
-        ASSERT_EQUAL(i, BitBoard::firstSquare(mask));
+        ASSERT_EQ(i, BitBoard::firstSquare(mask));
         U64 mask2 = mask;
-        ASSERT_EQUAL(i, BitBoard::extractSquare(mask2));
-        ASSERT_EQUAL(0, mask2);
+        ASSERT_EQ(i, BitBoard::extractSquare(mask2));
+        ASSERT_EQ(0, mask2);
     }
     U64 mask = 0xffffffffffffffffULL;
     int cnt = 0;
     while (mask) {
-        ASSERT_EQUAL(cnt, BitBoard::extractSquare(mask));
+        ASSERT_EQ(cnt, BitBoard::extractSquare(mask));
         cnt++;
     }
-    ASSERT_EQUAL(64, cnt);
+    ASSERT_EQ(64, cnt);
 }
 
 static U64 mirrorXSlow(U64 mask) {
@@ -211,189 +202,172 @@ static U64 mirrorYSlow(U64 mask) {
     return ret;
 }
 
-void
-BitBoardTest::testMaskAndMirror() {
-    ASSERT_EQUAL(BitBoard::sqMask(A1,H1,A8,H8), BitBoard::maskCorners);
-    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,C1,D1,E1,F1,G1,H1), BitBoard::maskRow1);
-    ASSERT_EQUAL(BitBoard::sqMask(A2,B2,C2,D2,E2,F2,G2,H2), BitBoard::maskRow2);
-    ASSERT_EQUAL(BitBoard::sqMask(A3,B3,C3,D3,E3,F3,G3,H3), BitBoard::maskRow3);
-    ASSERT_EQUAL(BitBoard::sqMask(A4,B4,C4,D4,E4,F4,G4,H4), BitBoard::maskRow4);
-    ASSERT_EQUAL(BitBoard::sqMask(A5,B5,C5,D5,E5,F5,G5,H5), BitBoard::maskRow5);
-    ASSERT_EQUAL(BitBoard::sqMask(A6,B6,C6,D6,E6,F6,G6,H6), BitBoard::maskRow6);
-    ASSERT_EQUAL(BitBoard::sqMask(A7,B7,C7,D7,E7,F7,G7,H7), BitBoard::maskRow7);
-    ASSERT_EQUAL(BitBoard::sqMask(A8,B8,C8,D8,E8,F8,G8,H8), BitBoard::maskRow8);
+TEST(BitBoardTest, testMaskAndMirror) {
+    EXPECT_EQ(BitBoard::sqMask(A1,H1,A8,H8), BitBoard::maskCorners);
+    EXPECT_EQ(BitBoard::sqMask(A1,B1,C1,D1,E1,F1,G1,H1), BitBoard::maskRow1);
+    EXPECT_EQ(BitBoard::sqMask(A2,B2,C2,D2,E2,F2,G2,H2), BitBoard::maskRow2);
+    EXPECT_EQ(BitBoard::sqMask(A3,B3,C3,D3,E3,F3,G3,H3), BitBoard::maskRow3);
+    EXPECT_EQ(BitBoard::sqMask(A4,B4,C4,D4,E4,F4,G4,H4), BitBoard::maskRow4);
+    EXPECT_EQ(BitBoard::sqMask(A5,B5,C5,D5,E5,F5,G5,H5), BitBoard::maskRow5);
+    EXPECT_EQ(BitBoard::sqMask(A6,B6,C6,D6,E6,F6,G6,H6), BitBoard::maskRow6);
+    EXPECT_EQ(BitBoard::sqMask(A7,B7,C7,D7,E7,F7,G7,H7), BitBoard::maskRow7);
+    EXPECT_EQ(BitBoard::sqMask(A8,B8,C8,D8,E8,F8,G8,H8), BitBoard::maskRow8);
 
-    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,C1,D1,E1,F1,G1,H1,
+    EXPECT_EQ(BitBoard::sqMask(A1,B1,C1,D1,E1,F1,G1,H1,
                                   A8,B8,C8,D8,E8,F8,G8,H8), BitBoard::maskRow1Row8);
-    ASSERT_EQUAL(BitBoard::mirrorX(BitBoard::maskRow1Row8), BitBoard::maskRow1Row8);
-    ASSERT_EQUAL(BitBoard::mirrorY(BitBoard::maskRow1Row8), BitBoard::maskRow1Row8);
+    EXPECT_EQ(BitBoard::mirrorX(BitBoard::maskRow1Row8), BitBoard::maskRow1Row8);
+    EXPECT_EQ(BitBoard::mirrorY(BitBoard::maskRow1Row8), BitBoard::maskRow1Row8);
 
-    ASSERT_EQUAL(BitBoard::mirrorX(BitBoard::maskDarkSq), BitBoard::maskLightSq);
-    ASSERT_EQUAL(BitBoard::mirrorY(BitBoard::maskDarkSq), BitBoard::maskLightSq);
-    ASSERT_EQUAL(BitBoard::mirrorX(BitBoard::maskLightSq), BitBoard::maskDarkSq);
-    ASSERT_EQUAL(BitBoard::mirrorY(BitBoard::maskLightSq), BitBoard::maskDarkSq);
+    EXPECT_EQ(BitBoard::mirrorX(BitBoard::maskDarkSq), BitBoard::maskLightSq);
+    EXPECT_EQ(BitBoard::mirrorY(BitBoard::maskDarkSq), BitBoard::maskLightSq);
+    EXPECT_EQ(BitBoard::mirrorX(BitBoard::maskLightSq), BitBoard::maskDarkSq);
+    EXPECT_EQ(BitBoard::mirrorY(BitBoard::maskLightSq), BitBoard::maskDarkSq);
 
-    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,C1), 7);
-    ASSERT_EQUAL(BitBoard::sqMask(B1,C1,D1,F1,G1), 0x6E);
-    ASSERT_EQUAL(BitBoard::sqMask(F1,G1), 0x60L);
-    ASSERT_EQUAL(BitBoard::sqMask(B1,C1,D1), 0xEL);
-    ASSERT_EQUAL(BitBoard::sqMask(G1,H1), 0xC0L);
-    ASSERT_EQUAL(BitBoard::sqMask(B1,C1), 0x6L);
-    ASSERT_EQUAL(BitBoard::sqMask(A1,B1), 0x3L);
-    ASSERT_EQUAL(BitBoard::sqMask(F8,G8), 0x6000000000000000L);
-    ASSERT_EQUAL(BitBoard::sqMask(G8,H8), 0xC000000000000000L);
-    ASSERT_EQUAL(BitBoard::sqMask(B8,C8), 0x600000000000000L);
-    ASSERT_EQUAL(BitBoard::sqMask(A8,B8), 0x300000000000000L);
+    EXPECT_EQ(BitBoard::sqMask(A1,B1,C1), 7);
+    EXPECT_EQ(BitBoard::sqMask(B1,C1,D1,F1,G1), 0x6E);
+    EXPECT_EQ(BitBoard::sqMask(F1,G1), 0x60L);
+    EXPECT_EQ(BitBoard::sqMask(B1,C1,D1), 0xEL);
+    EXPECT_EQ(BitBoard::sqMask(G1,H1), 0xC0L);
+    EXPECT_EQ(BitBoard::sqMask(B1,C1), 0x6L);
+    EXPECT_EQ(BitBoard::sqMask(A1,B1), 0x3L);
+    EXPECT_EQ(BitBoard::sqMask(F8,G8), 0x6000000000000000L);
+    EXPECT_EQ(BitBoard::sqMask(G8,H8), 0xC000000000000000L);
+    EXPECT_EQ(BitBoard::sqMask(B8,C8), 0x600000000000000L);
+    EXPECT_EQ(BitBoard::sqMask(A8,B8), 0x300000000000000L);
 
-    ASSERT_EQUAL(BitBoard::sqMask(C2,B3,F2,G3,B6,C7,G6,F7), 0x24420000422400ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(A8,B8,A7,B7), 0x0303000000000000ULL);
+    EXPECT_EQ(BitBoard::sqMask(C2,B3,F2,G3,B6,C7,G6,F7), 0x24420000422400ULL);
+    EXPECT_EQ(BitBoard::sqMask(A8,B8,A7,B7), 0x0303000000000000ULL);
 
-    ASSERT_EQUAL(BitBoard::sqMask(G8,H8,G7,H7), 0xC0C0000000000000ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,A2,B2), 0x0303ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(G1,H1,G2,H2), 0xC0C0ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(A8,B8,A7), 0x0301000000000000ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(G8,H8,H7), 0xC080000000000000ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,A2), 0x0103ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(G1,H1,H2), 0x80C0ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(A8,B8,C8,D8,D7), 0x0F08000000000000ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(A8,B8,A7), 0x0301000000000000ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(E8,F8,G8,H8,E7), 0xF010000000000000ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(G8,H8,H7), 0xC080000000000000ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,C1,D1,D2), 0x080FULL);
-    ASSERT_EQUAL(BitBoard::sqMask(A1,B1,A2), 0x0103ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(E1,F1,G1,H1,E2), 0x10F0ULL);
-    ASSERT_EQUAL(BitBoard::sqMask(G1,H1,H2), 0x80C0ULL);
+    EXPECT_EQ(BitBoard::sqMask(G8,H8,G7,H7), 0xC0C0000000000000ULL);
+    EXPECT_EQ(BitBoard::sqMask(A1,B1,A2,B2), 0x0303ULL);
+    EXPECT_EQ(BitBoard::sqMask(G1,H1,G2,H2), 0xC0C0ULL);
+    EXPECT_EQ(BitBoard::sqMask(A8,B8,A7), 0x0301000000000000ULL);
+    EXPECT_EQ(BitBoard::sqMask(G8,H8,H7), 0xC080000000000000ULL);
+    EXPECT_EQ(BitBoard::sqMask(A1,B1,A2), 0x0103ULL);
+    EXPECT_EQ(BitBoard::sqMask(G1,H1,H2), 0x80C0ULL);
+    EXPECT_EQ(BitBoard::sqMask(A8,B8,C8,D8,D7), 0x0F08000000000000ULL);
+    EXPECT_EQ(BitBoard::sqMask(A8,B8,A7), 0x0301000000000000ULL);
+    EXPECT_EQ(BitBoard::sqMask(E8,F8,G8,H8,E7), 0xF010000000000000ULL);
+    EXPECT_EQ(BitBoard::sqMask(G8,H8,H7), 0xC080000000000000ULL);
+    EXPECT_EQ(BitBoard::sqMask(A1,B1,C1,D1,D2), 0x080FULL);
+    EXPECT_EQ(BitBoard::sqMask(A1,B1,A2), 0x0103ULL);
+    EXPECT_EQ(BitBoard::sqMask(E1,F1,G1,H1,E2), 0x10F0ULL);
+    EXPECT_EQ(BitBoard::sqMask(G1,H1,H2), 0x80C0ULL);
 
     for (int sq = 0; sq < 64; sq++) {
         U64 m = 1ULL << sq;
         switch (Square::getX(sq)) {
         case 0:
-            ASSERT((m & BitBoard::maskFileA) != 0);
-            ASSERT((m & BitBoard::maskFileB) == 0);
-            ASSERT((m & BitBoard::maskFileC) == 0);
-            ASSERT((m & BitBoard::maskFileD) == 0);
-            ASSERT((m & BitBoard::maskFileE) == 0);
-            ASSERT((m & BitBoard::maskFileF) == 0);
-            ASSERT((m & BitBoard::maskFileG) == 0);
-            ASSERT((m & BitBoard::maskFileH) == 0);
-            ASSERT((m & BitBoard::maskAToDFiles) != 0);
-            ASSERT((m & BitBoard::maskEToHFiles) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileA) != 0);
+            ASSERT_TRUE((m & BitBoard::maskFileB) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileC) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileD) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileE) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileF) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileG) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileH) == 0);
+            ASSERT_TRUE((m & BitBoard::maskAToDFiles) != 0);
+            ASSERT_TRUE((m & BitBoard::maskEToHFiles) == 0);
             break;
         case 1:
-            ASSERT((m & BitBoard::maskFileA) == 0);
-            ASSERT((m & BitBoard::maskFileB) != 0);
-            ASSERT((m & BitBoard::maskFileC) == 0);
-            ASSERT((m & BitBoard::maskFileD) == 0);
-            ASSERT((m & BitBoard::maskFileE) == 0);
-            ASSERT((m & BitBoard::maskFileF) == 0);
-            ASSERT((m & BitBoard::maskFileG) == 0);
-            ASSERT((m & BitBoard::maskFileH) == 0);
-            ASSERT((m & BitBoard::maskAToDFiles) != 0);
-            ASSERT((m & BitBoard::maskEToHFiles) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileA) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileB) != 0);
+            ASSERT_TRUE((m & BitBoard::maskFileC) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileD) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileE) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileF) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileG) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileH) == 0);
+            ASSERT_TRUE((m & BitBoard::maskAToDFiles) != 0);
+            ASSERT_TRUE((m & BitBoard::maskEToHFiles) == 0);
             break;
         case 2:
-            ASSERT((m & BitBoard::maskFileA) == 0);
-            ASSERT((m & BitBoard::maskFileB) == 0);
-            ASSERT((m & BitBoard::maskFileC) != 0);
-            ASSERT((m & BitBoard::maskFileD) == 0);
-            ASSERT((m & BitBoard::maskFileE) == 0);
-            ASSERT((m & BitBoard::maskFileF) == 0);
-            ASSERT((m & BitBoard::maskFileG) == 0);
-            ASSERT((m & BitBoard::maskFileH) == 0);
-            ASSERT((m & BitBoard::maskAToDFiles) != 0);
-            ASSERT((m & BitBoard::maskEToHFiles) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileA) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileB) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileC) != 0);
+            ASSERT_TRUE((m & BitBoard::maskFileD) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileE) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileF) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileG) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileH) == 0);
+            ASSERT_TRUE((m & BitBoard::maskAToDFiles) != 0);
+            ASSERT_TRUE((m & BitBoard::maskEToHFiles) == 0);
             break;
         case 3:
-            ASSERT((m & BitBoard::maskFileA) == 0);
-            ASSERT((m & BitBoard::maskFileB) == 0);
-            ASSERT((m & BitBoard::maskFileC) == 0);
-            ASSERT((m & BitBoard::maskFileD) != 0);
-            ASSERT((m & BitBoard::maskFileE) == 0);
-            ASSERT((m & BitBoard::maskFileF) == 0);
-            ASSERT((m & BitBoard::maskFileG) == 0);
-            ASSERT((m & BitBoard::maskFileH) == 0);
-            ASSERT((m & BitBoard::maskAToDFiles) != 0);
-            ASSERT((m & BitBoard::maskEToHFiles) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileA) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileB) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileC) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileD) != 0);
+            ASSERT_TRUE((m & BitBoard::maskFileE) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileF) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileG) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileH) == 0);
+            ASSERT_TRUE((m & BitBoard::maskAToDFiles) != 0);
+            ASSERT_TRUE((m & BitBoard::maskEToHFiles) == 0);
             break;
         case 4:
-            ASSERT((m & BitBoard::maskFileA) == 0);
-            ASSERT((m & BitBoard::maskFileB) == 0);
-            ASSERT((m & BitBoard::maskFileC) == 0);
-            ASSERT((m & BitBoard::maskFileD) == 0);
-            ASSERT((m & BitBoard::maskFileE) != 0);
-            ASSERT((m & BitBoard::maskFileF) == 0);
-            ASSERT((m & BitBoard::maskFileG) == 0);
-            ASSERT((m & BitBoard::maskFileH) == 0);
-            ASSERT((m & BitBoard::maskAToDFiles) == 0);
-            ASSERT((m & BitBoard::maskEToHFiles) != 0);
+            ASSERT_TRUE((m & BitBoard::maskFileA) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileB) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileC) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileD) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileE) != 0);
+            ASSERT_TRUE((m & BitBoard::maskFileF) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileG) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileH) == 0);
+            ASSERT_TRUE((m & BitBoard::maskAToDFiles) == 0);
+            ASSERT_TRUE((m & BitBoard::maskEToHFiles) != 0);
             break;
         case 5:
-            ASSERT((m & BitBoard::maskFileA) == 0);
-            ASSERT((m & BitBoard::maskFileB) == 0);
-            ASSERT((m & BitBoard::maskFileC) == 0);
-            ASSERT((m & BitBoard::maskFileD) == 0);
-            ASSERT((m & BitBoard::maskFileE) == 0);
-            ASSERT((m & BitBoard::maskFileF) != 0);
-            ASSERT((m & BitBoard::maskFileG) == 0);
-            ASSERT((m & BitBoard::maskFileH) == 0);
-            ASSERT((m & BitBoard::maskAToDFiles) == 0);
-            ASSERT((m & BitBoard::maskEToHFiles) != 0);
+            ASSERT_TRUE((m & BitBoard::maskFileA) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileB) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileC) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileD) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileE) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileF) != 0);
+            ASSERT_TRUE((m & BitBoard::maskFileG) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileH) == 0);
+            ASSERT_TRUE((m & BitBoard::maskAToDFiles) == 0);
+            ASSERT_TRUE((m & BitBoard::maskEToHFiles) != 0);
             break;
         case 6:
-            ASSERT((m & BitBoard::maskFileA) == 0);
-            ASSERT((m & BitBoard::maskFileB) == 0);
-            ASSERT((m & BitBoard::maskFileC) == 0);
-            ASSERT((m & BitBoard::maskFileD) == 0);
-            ASSERT((m & BitBoard::maskFileE) == 0);
-            ASSERT((m & BitBoard::maskFileF) == 0);
-            ASSERT((m & BitBoard::maskFileG) != 0);
-            ASSERT((m & BitBoard::maskFileH) == 0);
-            ASSERT((m & BitBoard::maskAToDFiles) == 0);
-            ASSERT((m & BitBoard::maskEToHFiles) != 0);
+            ASSERT_TRUE((m & BitBoard::maskFileA) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileB) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileC) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileD) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileE) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileF) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileG) != 0);
+            ASSERT_TRUE((m & BitBoard::maskFileH) == 0);
+            ASSERT_TRUE((m & BitBoard::maskAToDFiles) == 0);
+            ASSERT_TRUE((m & BitBoard::maskEToHFiles) != 0);
             break;
         case 7:
-            ASSERT((m & BitBoard::maskFileA) == 0);
-            ASSERT((m & BitBoard::maskFileB) == 0);
-            ASSERT((m & BitBoard::maskFileC) == 0);
-            ASSERT((m & BitBoard::maskFileD) == 0);
-            ASSERT((m & BitBoard::maskFileE) == 0);
-            ASSERT((m & BitBoard::maskFileF) == 0);
-            ASSERT((m & BitBoard::maskFileG) == 0);
-            ASSERT((m & BitBoard::maskFileH) != 0);
-            ASSERT((m & BitBoard::maskAToDFiles) == 0);
-            ASSERT((m & BitBoard::maskEToHFiles) != 0);
+            ASSERT_TRUE((m & BitBoard::maskFileA) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileB) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileC) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileD) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileE) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileF) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileG) == 0);
+            ASSERT_TRUE((m & BitBoard::maskFileH) != 0);
+            ASSERT_TRUE((m & BitBoard::maskAToDFiles) == 0);
+            ASSERT_TRUE((m & BitBoard::maskEToHFiles) != 0);
             break;
         }
     }
 
     for (int sq = 0; sq < 64; sq++) {
         U64 m = 1ULL << sq;
-        ASSERT_EQUAL(mirrorXSlow(m), BitBoard::mirrorX(m));
-        ASSERT_EQUAL(mirrorYSlow(m), BitBoard::mirrorY(m));
+        ASSERT_EQ(mirrorXSlow(m), BitBoard::mirrorX(m));
+        ASSERT_EQ(mirrorYSlow(m), BitBoard::mirrorY(m));
         m = ~m;
-        ASSERT_EQUAL(mirrorXSlow(m), BitBoard::mirrorX(m));
-        ASSERT_EQUAL(mirrorYSlow(m), BitBoard::mirrorY(m));
+        ASSERT_EQ(mirrorXSlow(m), BitBoard::mirrorX(m));
+        ASSERT_EQ(mirrorYSlow(m), BitBoard::mirrorY(m));
     }
 }
 
-void
-BitBoardTest::testSliders() {
+TEST(BitBoardTest, testSliders) {
     Position pos = TextIO::readFEN("4k3/8/8/8/8/8/8/R3K3 w Q - 0 1");
-    ASSERT_EQUAL(BitBoard::sqMask(B1,C1,D1,E1,A2,A3,A4,A5,A6,A7,A8),
-                 BitBoard::rookAttacks(A1, pos.occupiedBB()));
-}
-
-cute::suite
-BitBoardTest::getSuite() const {
-    cute::suite s;
-    s.push_back(CUTE(testKingAttacks));
-    s.push_back(CUTE(testKnightAttacks));
-    s.push_back(CUTE(testPawnAttacks));
-    s.push_back(CUTE(testSquaresBetween));
-    s.push_back(CUTE(testGetDirection));
-    s.push_back(CUTE(testGetDistance));
-    s.push_back(CUTE(testTrailingZeros));
-    s.push_back(CUTE(testMaskAndMirror));
-    s.push_back(CUTE(testSliders));
-    return s;
+    ASSERT_EQ(BitBoard::sqMask(B1,C1,D1,E1,A2,A3,A4,A5,A6,A7,A8),
+              BitBoard::rookAttacks(A1, pos.occupiedBB()));
 }

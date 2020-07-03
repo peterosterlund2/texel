@@ -26,15 +26,8 @@
 #ifndef TREELOGGERTEST_HPP_
 #define TREELOGGERTEST_HPP_
 
-#include "suiteBase.hpp"
-
-class TreeLoggerTest : public SuiteBase {
+class TreeLoggerTest {
 public:
-    std::string getName() const override { return "TreeLoggerTest"; }
-
-    cute::suite getSuite() const override;
-
-private:
     static void testSerialize();
     static void testLoggerData();
 };

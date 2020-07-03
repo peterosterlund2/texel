@@ -26,16 +26,10 @@
 #ifndef POSITIONTEST_HPP_
 #define POSITIONTEST_HPP_
 
-#include "suiteBase.hpp"
-
 class Position;
 
-class PositionTest : public SuiteBase {
+class PositionTest {
 public:
-    std::string getName() const override { return "PositionTest"; }
-
-    cute::suite getSuite() const override;
-
     static int computeMaterialId(const Position& pos);
 };
 

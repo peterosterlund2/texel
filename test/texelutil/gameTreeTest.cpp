@@ -23,11 +23,10 @@
  *      Author: petero
  */
 
-#include "gameTreeTest.hpp"
 #include "textio.hpp"
 #include "gametreeutil.hpp"
 
-#include "cute.h"
+#include "gtest/gtest.h"
 
 struct RExpected {
     int b;
@@ -38,23 +37,22 @@ struct RExpected {
 static void
 checkPosToNodes(GameTree& gt, const std::set<GameTree::RangeToNode>& posToNodes,
                 const std::vector<RExpected>& expected) {
-    ASSERT_EQUAL(posToNodes.size(), expected.size());
+    ASSERT_EQ(posToNodes.size(), expected.size());
     int i = 0;
     for (const GameTree::RangeToNode& rangeInfo : posToNodes) {
-        ASSERT_EQUAL(expected[i].b, rangeInfo.begin);
-        ASSERT_EQUAL(expected[i].e, rangeInfo.end);
+        ASSERT_EQ(expected[i].b, rangeInfo.begin);
+        ASSERT_EQ(expected[i].e, rangeInfo.end);
         GameNode gn = gt.getNode(rangeInfo.node);
         Move m = gn.getMove();
         bool result = gn.goBack();
-        ASSERT(result);
+        ASSERT_TRUE(result);
         std::string s = TextIO::moveToString(gn.getPos(), m, false);
-        ASSERT_EQUAL(expected[i].m, s);
+        ASSERT_EQ(expected[i].m, s);
         i++;
     }
 }
 
-void
-GameTreeTest::testReadInsert() {
+TEST(GameTreeTest, testReadInsert) {
     std::string pgn = R"raw(
 [Event "event01"]
 [Site "site02"]
@@ -74,27 +72,27 @@ d5  4. Nc3 dxc4 5. e4  Bb4  6. Bg5  c5  7. dxc5
     GameTree gt, gt3;
     PgnReader reader(is);
     bool result = reader.readPGN(gt);
-    ASSERT(result);
+    ASSERT_TRUE(result);
     result = reader.readPGN(gt3);
-    ASSERT(!result);
+    ASSERT_TRUE(!result);
     std::string str;
     std::set<GameTree::RangeToNode> posToNodes;
     gt.getGameTreeString(str, posToNodes);
-    ASSERT_EQUAL("d4 Nf6 c4 e6 Nf3 d5 Nc3 dxc4 e4 Bb4 Bg5 c5 dxc5", str);
+    ASSERT_EQ("d4 Nf6 c4 e6 Nf3 d5 Nc3 dxc4 e4 Bb4 Bg5 c5 dxc5", str);
 
     gt.insertMoves({
         TextIO::uciStringToMove("d2d4"), TextIO::uciStringToMove("g8f6"),
         TextIO::uciStringToMove("g1f3"), TextIO::uciStringToMove("d7d5")
     });
     gt.getGameTreeString(str, posToNodes);
-    ASSERT_EQUAL("d4 Nf6 c4 (Nf3 d5) e6 Nf3 d5 Nc3 dxc4 e4 Bb4 Bg5 c5 dxc5", str);
+    ASSERT_EQ("d4 Nf6 c4 (Nf3 d5) e6 Nf3 d5 Nc3 dxc4 e4 Bb4 Bg5 c5 dxc5", str);
 
     gt.insertMoves({
         TextIO::uciStringToMove("d2d4"), TextIO::uciStringToMove("g8f6"),
         TextIO::uciStringToMove("g1f3"), TextIO::uciStringToMove("c7c6")
     });
     gt.getGameTreeString(str, posToNodes);
-    ASSERT_EQUAL("d4 Nf6 c4 (Nf3 d5 (c6)) e6 Nf3 d5 Nc3 dxc4 e4 Bb4 Bg5 c5 dxc5", str);
+    ASSERT_EQ("d4 Nf6 c4 (Nf3 d5 (c6)) e6 Nf3 d5 Nc3 dxc4 e4 Bb4 Bg5 c5 dxc5", str);
     std::vector<RExpected> expected {
         { 0,  2, "d4"},
         { 3,  6, "Nf6"},
@@ -122,17 +120,17 @@ e4 e5 Nf3 Nc6 Bb5 (Bc4 Bc5 c3) (Nc3 Nf6) a6 Ba4
     GameTree gt2;
     PgnReader reader2(is2);
     result = reader2.readPGN(gt2);
-    ASSERT(result);
+    ASSERT_TRUE(result);
     result = reader.readPGN(gt3);
-    ASSERT(!result);
+    ASSERT_TRUE(!result);
     gt2.getGameTreeString(str, posToNodes);
-    ASSERT_EQUAL("e4 e5 Nf3 Nc6 Bb5 (Bc4 Bc5 c3) (Nc3 Nf6) a6 Ba4", str);
+    ASSERT_EQ("e4 e5 Nf3 Nc6 Bb5 (Bc4 Bc5 c3) (Nc3 Nf6) a6 Ba4", str);
 
     gt.insertTree(gt2, -1);
     gt2.getGameTreeString(str, posToNodes);
-    ASSERT_EQUAL("e4 e5 Nf3 Nc6 Bb5 (Bc4 Bc5 c3) (Nc3 Nf6) a6 Ba4", str);
+    ASSERT_EQ("e4 e5 Nf3 Nc6 Bb5 (Bc4 Bc5 c3) (Nc3 Nf6) a6 Ba4", str);
     gt.getGameTreeString(str, posToNodes);
-    ASSERT_EQUAL("d4 (e4 e5 Nf3 Nc6 Bb5 (Bc4 Bc5 c3) (Nc3 Nf6) a6 Ba4) "
+    ASSERT_EQ("d4 (e4 e5 Nf3 Nc6 Bb5 (Bc4 Bc5 c3) (Nc3 Nf6) a6 Ba4) "
                  "Nf6 c4 (Nf3 d5 (c6)) e6 Nf3 d5 Nc3 dxc4 e4 Bb4 Bg5 c5 dxc5", str);
 
     {
@@ -163,21 +161,20 @@ d4 Nc6 c4 d6 *
         std::stringstream is(pgn);
         PgnReader reader(is);
         result = reader.readPGN(gt);
-        ASSERT(result);
+        ASSERT_TRUE(result);
         gt.getGameTreeString(str, posToNodes);
-        ASSERT_EQUAL("e4 e5 Nf3 Nc6", str);
+        ASSERT_EQ("e4 e5 Nf3 Nc6", str);
         gt2 = GameTree();
         result = reader.readPGN(gt2);
-        ASSERT(result);
+        ASSERT_TRUE(result);
         gt2.getGameTreeString(str, posToNodes);
-        ASSERT_EQUAL("d4 Nc6 c4 d6", str);
+        ASSERT_EQ("d4 Nc6 c4 d6", str);
         result = reader.readPGN(gt3);
-        ASSERT(!result);
+        ASSERT_TRUE(!result);
     }
 }
 
-void
-GameTreeTest::testIteratePgn() {
+TEST(GameTreeTest, testIteratePgn) {
     std::string pgn = R"raw(
 e4 e5 Nf3 Nc6 Bb5 (Bc4 Bc5 c3) (Nc3 Nf6) a6 Ba4
 )raw";
@@ -192,13 +189,5 @@ e4 e5 Nf3 Nc6 Bb5 (Bc4 Bc5 c3) (Nc3 Nf6) a6 Ba4
            << TextIO::moveToString(pos, node.getMove(), false);
         result += ss.str();
     });
-    ASSERT_EQUAL("1:e4 1:e5 2:Nf3 2:Nc6 3:Bb5 3:a6 4:Ba4 3:Bc4 3:Bc5 4:c3 3:Nc3 3:Nf6", result);
-}
-
-cute::suite
-GameTreeTest::getSuite() const {
-    cute::suite s;
-    s.push_back(CUTE(testReadInsert));
-    s.push_back(CUTE(testIteratePgn));
-    return s;
+    ASSERT_EQ("1:e4 1:e5 2:Nf3 2:Nc6 3:Bb5 3:a6 4:Ba4 3:Bc4 3:Bc5 4:c3 3:Nc3 3:Nf6", result);
 }

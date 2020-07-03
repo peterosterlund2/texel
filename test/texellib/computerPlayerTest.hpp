@@ -26,18 +26,11 @@
 #ifndef COMPUTERPLAYERTEST_HPP_
 #define COMPUTERPLAYERTEST_HPP_
 
-#include "suiteBase.hpp"
 
-class ComputerPlayerTest : public SuiteBase {
+class ComputerPlayerTest {
 public:
-    std::string getName() const override { return "ComputerPlayerTest"; }
-
-    cute::suite getSuite() const override;
-
-private:
     static void testGetCommand();
     static void testDrawRep();
-
 };
 
 #endif /* COMPUTERPLAYERTEST_HPP_ */

@@ -26,7 +26,7 @@
 #ifndef TBTEST_HPP_
 #define TBTEST_HPP_
 
-#include "suiteBase.hpp"
+#include <string>
 
 const std::string gtbDefaultPath("/home/petero/chess/gtb");
 const int gtbDefaultCacheMB = 16;
@@ -37,16 +37,11 @@ const std::string rtbDefaultPath("/home/petero/chess/rtb/wdl:"
                                  "/home/petero/chess/rtb/7wdl:"
                                  "/home/petero/chess/rtb/7dtz");
 
-class TBTest : public SuiteBase {
+class TBTest {
 public:
-    std::string getName() const override { return "tbTest"; }
-
-    cute::suite getSuite() const override;
-
     static void initTB(const std::string& gtbPath, int cacheMB,
                        const std::string& rtbPath);
 
-private:
     static void dtmTest();
     static void kpkTest();
     static void rtbTest();

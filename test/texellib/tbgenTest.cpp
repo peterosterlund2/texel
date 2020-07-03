@@ -29,55 +29,59 @@
 #include "textio.hpp"
 #include "tbprobe.hpp"
 
-#include "cute.h"
+#include "gtest/gtest.h"
+
+TEST(TBGenTest, testPositionValue) {
+    TBGenTest::testPositionValue();
+}
 
 void
 TBGenTest::testPositionValue() {
     PositionValue pv;
 
-    ASSERT(pv.isUnInitialized());
-    ASSERT(!pv.isRemainingN());
+    ASSERT_TRUE(pv.isUnInitialized());
+    ASSERT_TRUE(!pv.isRemainingN());
     for (int n = 0; n < 50; n++)
-        ASSERT(!pv.isMatedInN(n));
-    ASSERT(!pv.isComputed());
-    ASSERT(!pv.isRemainingN());
+        ASSERT_TRUE(!pv.isMatedInN(n));
+    ASSERT_TRUE(!pv.isComputed());
+    ASSERT_TRUE(!pv.isRemainingN());
 
     for (int n = 0; n < 50; n++) {
         pv.setMateInN(n);
-        ASSERT(!pv.isUnInitialized());
+        ASSERT_TRUE(!pv.isUnInitialized());
         for (int n2 = 0; n2 < 50; n2++)
-            ASSERT(!pv.isMatedInN(n2));
-        ASSERT(pv.isComputed());
-        ASSERT(!pv.isRemainingN());
+            ASSERT_TRUE(!pv.isMatedInN(n2));
+        ASSERT_TRUE(pv.isComputed());
+        ASSERT_TRUE(!pv.isRemainingN());
 
         pv.setMatedInN(n);
-        ASSERT(!pv.isUnInitialized());
+        ASSERT_TRUE(!pv.isUnInitialized());
         for (int n2 = 0; n2 < 50; n2++)
-            ASSERT_EQUAL(n==n2, pv.isMatedInN(n2));
-        ASSERT(pv.isComputed());
-        ASSERT(!pv.isRemainingN());
+            ASSERT_EQ(n==n2, pv.isMatedInN(n2));
+        ASSERT_TRUE(pv.isComputed());
+        ASSERT_TRUE(!pv.isRemainingN());
 
         pv.setRemaining(n);
         for (int n2 = 0; n2 < n; n2++) {
-            ASSERT(pv.isRemainingN());
+            ASSERT_TRUE(pv.isRemainingN());
             pv.decRemaining();
         }
-        ASSERT(!pv.isRemainingN());
+        ASSERT_TRUE(!pv.isRemainingN());
     }
 
     pv.setDraw();
-    ASSERT(!pv.isUnInitialized());
+    ASSERT_TRUE(!pv.isUnInitialized());
     for (int n = 0; n < 50; n++)
-        ASSERT(!pv.isMatedInN(n));
-    ASSERT(pv.isComputed());
-    ASSERT(!pv.isRemainingN());
+        ASSERT_TRUE(!pv.isMatedInN(n));
+    ASSERT_TRUE(pv.isComputed());
+    ASSERT_TRUE(!pv.isRemainingN());
 
     pv.setInvalid();
-    ASSERT(!pv.isUnInitialized());
+    ASSERT_TRUE(!pv.isUnInitialized());
     for (int n = 0; n < 50; n++)
-        ASSERT(!pv.isMatedInN(n));
-    ASSERT(pv.isComputed());
-    ASSERT(!pv.isRemainingN());
+        ASSERT_TRUE(!pv.isMatedInN(n));
+    ASSERT_TRUE(pv.isComputed());
+    ASSERT_TRUE(!pv.isRemainingN());
 }
 
 static PieceCount
@@ -95,37 +99,45 @@ pieceCount(int nwq, int nwr, int nwb, int nwn,
     return pc;
 }
 
+TEST(TBGenTest, testTBIndex) {
+    TBGenTest::testTBIndex();
+}
+
 void
 TBGenTest::testTBIndex() {
     TBIndex idx(1, 1, 17);
-    ASSERT_EQUAL(17, idx.getIndex());
+    ASSERT_EQ(17, idx.getIndex());
 
     idx.setIndex(0);
-    ASSERT_EQUAL(0, idx.getIndex());
-    ASSERT(!idx.whiteMove());
-    ASSERT_EQUAL(0, idx.getSquare(0));
-    ASSERT_EQUAL(0, idx.getSquare(1));
+    ASSERT_EQ(0, idx.getIndex());
+    ASSERT_TRUE(!idx.whiteMove());
+    ASSERT_EQ(0, idx.getSquare(0));
+    ASSERT_EQ(0, idx.getSquare(1));
 
     idx.swapSide();
-    ASSERT(idx.whiteMove());
+    ASSERT_TRUE(idx.whiteMove());
 
     idx.setSquare(1, 17);
 
-    ASSERT(idx.whiteMove());
-    ASSERT_EQUAL(0, idx.getSquare(0));
-    ASSERT_EQUAL(17, idx.getSquare(1));
+    ASSERT_TRUE(idx.whiteMove());
+    ASSERT_EQ(0, idx.getSquare(0));
+    ASSERT_EQ(17, idx.getSquare(1));
 
     std::vector<int> pieceTypes { Piece::WKING, Piece::BKING };
     idx.canonize(pieceTypes, false);
-    ASSERT(idx.whiteMove());
-    ASSERT_EQUAL(0, idx.getSquare(0));
-    ASSERT_EQUAL(10, idx.getSquare(1));
+    ASSERT_TRUE(idx.whiteMove());
+    ASSERT_EQ(0, idx.getSquare(0));
+    ASSERT_EQ(10, idx.getSquare(1));
+}
+
+TEST(TBGenTest, testTBPosition) {
+    TBGenTest::testTBPosition();
 }
 
 void
 TBGenTest::testTBPosition() {
     TBPosition tbPos(pieceCount(0,0,0,0, 0,0,0,0));
-    ASSERT_EQUAL(2*10*64, tbPos.nPositions());
+    ASSERT_EQ(2*10*64, tbPos.nPositions());
     int nValid = 0;
     for (U32 idx = 0; idx < tbPos.nPositions(); idx++) {
         tbPos.setIndex(idx);
@@ -134,14 +146,18 @@ TBGenTest::testTBPosition() {
         if (!tbPos.canTakeKing())
             nValid++;
     }
-    ASSERT_EQUAL(2*(1*33+3*(64-6)+3*(64-9)+3*(36-6)), nValid);
+    ASSERT_EQ(2*(1*33+3*(64-6)+3*(64-9)+3*(36-6)), nValid);
+}
+
+TEST(TBGenTest, testMoveGen) {
+    TBGenTest::testMoveGen();
 }
 
 void
 TBGenTest::testMoveGen() {
     {
         TBPosition tbPos(pieceCount(1,0,0,0, 0,0,0,0));
-        ASSERT_EQUAL(2*10*64*64, tbPos.nPositions());
+        ASSERT_EQ(2*10*64*64, tbPos.nPositions());
         Position pos;
 
         for (U32 idx = 0; idx < tbPos.nPositions(); idx++) {
@@ -149,14 +165,14 @@ TBGenTest::testMoveGen() {
             if (!tbPos.indexValid())
                 continue;
             tbPos.getPos(pos);
-            ASSERT_EQUAL(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::WKING)));
-            ASSERT_EQUAL(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::BKING)));
-            ASSERT(BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)) <= 1);
+            ASSERT_EQ(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::WKING)));
+            ASSERT_EQ(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::BKING)));
+            ASSERT_TRUE(BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)) <= 1);
             if (tbPos.canTakeKing()) {
-                ASSERT(MoveGen::canTakeKing(pos));
+                ASSERT_TRUE(MoveGen::canTakeKing(pos));
                 continue;
             } else {
-                ASSERT(!MoveGen::canTakeKing(pos));
+                ASSERT_TRUE(!MoveGen::canTakeKing(pos));
             }
 
             TbMoveList tbMoves;
@@ -171,12 +187,12 @@ TBGenTest::testMoveGen() {
 
             if (moves.size != nMoves)
                 std::cout << "idx:" << idx << " fen:" << TextIO::toFEN(pos) << std::endl;
-            ASSERT_EQUAL(moves.size, nMoves);
+            ASSERT_EQ(moves.size, nMoves);
         }
     }
     {
         TBPosition tbPos(pieceCount(1,0,0,0, 0,1,0,0));
-        ASSERT_EQUAL(2*10*64*64*64, tbPos.nPositions());
+        ASSERT_EQ(2*10*64*64*64, tbPos.nPositions());
         Position pos;
 
         for (U32 idx = 0; idx < tbPos.nPositions(); idx++) {
@@ -184,14 +200,14 @@ TBGenTest::testMoveGen() {
             if (!tbPos.indexValid())
                 continue;
             tbPos.getPos(pos);
-            ASSERT_EQUAL(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::WKING)));
-            ASSERT_EQUAL(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::BKING)));
-            ASSERT(BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)) <= 1);
+            ASSERT_EQ(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::WKING)));
+            ASSERT_EQ(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::BKING)));
+            ASSERT_TRUE(BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)) <= 1);
             if (tbPos.canTakeKing()) {
-                ASSERT(MoveGen::canTakeKing(pos));
+                ASSERT_TRUE(MoveGen::canTakeKing(pos));
                 continue;
             } else {
-                ASSERT(!MoveGen::canTakeKing(pos));
+                ASSERT_TRUE(!MoveGen::canTakeKing(pos));
             }
 
             TbMoveList tbMoves;
@@ -204,7 +220,7 @@ TBGenTest::testMoveGen() {
             if (pos.pieceTypeBB(Piece::WKING) & BitBoard::sqMask(A1,B2,C3,D4,E5,F6,G7,H8))
                 continue; // Too hard to compare because of symmetry handling
 
-            ASSERT_EQUAL(moves.size, nMoves);
+            ASSERT_EQ(moves.size, nMoves);
         }
     }
 }
@@ -223,7 +239,7 @@ TBGenTest::testGenerateInternal(const PieceCount& pc) {
     tbGen.generate(maxTimeMillis, true);
 
     TBPosition tbPos(pc);
-    ASSERT_EQUAL(2*10*64*64*64, tbPos.nPositions());
+    ASSERT_EQ(2*10*64*64*64, tbPos.nPositions());
     Position pos;
 
     int minMateFail = 1000;
@@ -234,13 +250,13 @@ TBGenTest::testGenerateInternal(const PieceCount& pc) {
             continue;
         tbPos.getPos(pos);
         if (MoveGen::canTakeKing(pos)) {
-            ASSERT_EQUAL((int)PositionValue::State::MATE_IN_0, tbGen.getValue(tbPos));
+            ASSERT_EQ((int)PositionValue::State::MATE_IN_0, tbGen.getValue(tbPos));
             continue;
         }
 
         int score;
         bool result = TBProbe::gtbProbeDTM(pos, 0, score);
-        ASSERT(result);
+        ASSERT_TRUE(result);
 
         int score2 = tbGen.getValue(tbPos);
         if (score == 0) {
@@ -248,7 +264,7 @@ TBGenTest::testGenerateInternal(const PieceCount& pc) {
                 std::cout << "idx:" << idx << " s2:" << score2
                           << " fen:" << TextIO::toFEN(pos) << std::endl;
             }
-            ASSERT_EQUAL(0, score2);
+            ASSERT_EQ(0, score2);
         } else if (score > 0) {
             int mateN = (SearchConst::MATE0 - score) / 2;
             if (mateN + (int)PositionValue::State::MATE_IN_0 != score2) {
@@ -269,8 +285,12 @@ TBGenTest::testGenerateInternal(const PieceCount& pc) {
             }
         }
     }
-    ASSERT_EQUAL(1000, minMateFail);
-    ASSERT_EQUAL(1000, minMatedFail);
+    ASSERT_EQ(1000, minMateFail);
+    ASSERT_EQ(1000, minMatedFail);
+}
+
+TEST(TBGenTest, testGenerate) {
+    TBGenTest::testGenerate();
 }
 
 void
@@ -300,15 +320,4 @@ TBGenTest::testGenerate() {
     } else { // Quick test, just check KBNK
         testGenerateInternal(pieceCount(0,0,1,1, 0,0,0,0));
     }
-}
-
-cute::suite
-TBGenTest::getSuite() const {
-    cute::suite s;
-    s.push_back(CUTE(testPositionValue));
-    s.push_back(CUTE(testTBIndex));
-    s.push_back(CUTE(testTBPosition));
-    s.push_back(CUTE(testMoveGen));
-    s.push_back(CUTE(testGenerate));
-    return s;
 }

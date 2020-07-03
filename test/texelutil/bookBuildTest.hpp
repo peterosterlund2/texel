@@ -26,13 +26,8 @@
 #ifndef BOOKBUILDTEST_HPP_
 #define BOOKBUILDTEST_HPP_
 
-#include "utilSuiteBase.hpp"
-
-class BookBuildTest : public UtilSuiteBase {
-    std::string getName() const override { return "BookBuildTest"; }
-
-    cute::suite getSuite() const override;
-private:
+class BookBuildTest {
+public:
     static void testBookNode();
     static void testShortestDepth();
     static void testBookNodeDAG();

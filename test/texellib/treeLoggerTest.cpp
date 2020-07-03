@@ -30,7 +30,12 @@
 #include <iostream>
 #include <cstring>
 
-#include "cute.h"
+#include "gtest/gtest.h"
+
+
+TEST(TreeLoggerTest, testSerialize) {
+    TreeLoggerTest::testSerialize();
+}
 
 void
 TreeLoggerTest::testSerialize() {
@@ -43,7 +48,7 @@ TreeLoggerTest::testSerialize() {
 
     U8 buffer[14];
     U8* ptr = Serializer::serialize<sizeof(buffer)>(&buffer[0], a, b, c, d, e, f);
-    ASSERT_EQUAL(sizeof(buffer), ptr - buffer);
+    EXPECT_EQ(sizeof(buffer), ptr - buffer);
 
     U32 a1;
     S32 b1;
@@ -53,13 +58,17 @@ TreeLoggerTest::testSerialize() {
     S8  f1;
 
     const U8* ptr2 = Serializer::deSerialize<sizeof(buffer)>(&buffer[0], a1, b1, c1, d1, e1, f1);
-    ASSERT_EQUAL(sizeof(buffer), ptr2 - buffer);
-    ASSERT_EQUAL(a, a1);
-    ASSERT_EQUAL(b, b1);
-    ASSERT_EQUAL(c, c1);
-    ASSERT_EQUAL(d, d1);
-    ASSERT_EQUAL(e, e1);
-    ASSERT_EQUAL(f, f1);
+    EXPECT_EQ(sizeof(buffer), ptr2 - buffer);
+    EXPECT_EQ(a, a1);
+    EXPECT_EQ(b, b1);
+    EXPECT_EQ(c, c1);
+    EXPECT_EQ(d, d1);
+    EXPECT_EQ(e, e1);
+    EXPECT_EQ(f, f1);
+}
+
+TEST(TreeLoggerTest, testLoggerData) {
+    TreeLoggerTest::testLoggerData();
 }
 
 void
@@ -75,9 +84,9 @@ TreeLoggerTest::testLoggerData() {
         e.serialize(buffer);
         TB::Entry e2;
         e2.deSerialize(buffer);
-        ASSERT_EQUAL(e.type, e2.type);
-        ASSERT_EQUAL(e.p0.nextIndex, e2.p0.nextIndex);
-        ASSERT_EQUAL(e.p0.word0,     e2.p0.word0);
+        EXPECT_EQ(e.type, e2.type);
+        EXPECT_EQ(e.p0.nextIndex, e2.p0.nextIndex);
+        EXPECT_EQ(e.p0.word0,     e2.p0.word0);
     }
     {
         TB::Entry e;
@@ -89,9 +98,9 @@ TreeLoggerTest::testLoggerData() {
         e.serialize(buffer);
         TB::Entry e2;
         e2.deSerialize(buffer);
-        ASSERT_EQUAL(e.type, e2.type);
-        ASSERT_EQUAL(e.p0.nextIndex, e2.p0.nextIndex);
-        ASSERT_EQUAL(e.p0.word0,     e2.p0.word0);
+        EXPECT_EQ(e.type, e2.type);
+        EXPECT_EQ(e.p0.nextIndex, e2.p0.nextIndex);
+        EXPECT_EQ(e.p0.word0,     e2.p0.word0);
     }
     {
         TB::Entry e;
@@ -103,9 +112,9 @@ TreeLoggerTest::testLoggerData() {
         e.serialize(buffer);
         TB::Entry e2;
         e2.deSerialize(buffer);
-        ASSERT_EQUAL(e.type, e2.type);
-        ASSERT_EQUAL(e.p1.word1,   e2.p1.word1);
-        ASSERT_EQUAL(e.p1.word2,   e2.p1.word2);
+        EXPECT_EQ(e.type, e2.type);
+        EXPECT_EQ(e.p1.word1,   e2.p1.word1);
+        EXPECT_EQ(e.p1.word2,   e2.p1.word2);
     }
     {
         TB::Entry e;
@@ -117,9 +126,9 @@ TreeLoggerTest::testLoggerData() {
         e.serialize(buffer);
         TB::Entry e2;
         e2.deSerialize(buffer);
-        ASSERT_EQUAL(e.type, e2.type);
-        ASSERT_EQUAL(e.p2.word3,        e2.p2.word3);
-        ASSERT_EQUAL(e.p2.word4,        e2.p2.word4);
+        EXPECT_EQ(e.type, e2.type);
+        EXPECT_EQ(e.p2.word3,        e2.p2.word3);
+        EXPECT_EQ(e.p2.word4,        e2.p2.word4);
     }
     {
         TB::Entry e;
@@ -136,14 +145,14 @@ TreeLoggerTest::testLoggerData() {
         e.serialize(buffer);
         TB::Entry e2;
         e2.deSerialize(buffer);
-        ASSERT_EQUAL(e.type, e2.type);
-        ASSERT_EQUAL(e.se.endIndex,    e2.se.endIndex);
-        ASSERT_EQUAL(e.se.parentIndex, e2.se.parentIndex);
-        ASSERT_EQUAL(e.se.move,        e2.se.move);
-        ASSERT_EQUAL(e.se.alpha,       e2.se.alpha);
-        ASSERT_EQUAL(e.se.beta,        e2.se.beta);
-        ASSERT_EQUAL(e.se.ply,         e2.se.ply);
-        ASSERT_EQUAL(e.se.depth,       e2.se.depth);
+        EXPECT_EQ(e.type, e2.type);
+        EXPECT_EQ(e.se.endIndex,    e2.se.endIndex);
+        EXPECT_EQ(e.se.parentIndex, e2.se.parentIndex);
+        EXPECT_EQ(e.se.move,        e2.se.move);
+        EXPECT_EQ(e.se.alpha,       e2.se.alpha);
+        EXPECT_EQ(e.se.beta,        e2.se.beta);
+        EXPECT_EQ(e.se.ply,         e2.se.ply);
+        EXPECT_EQ(e.se.depth,       e2.se.depth);
     }
     {
         TB::Entry e;
@@ -158,19 +167,11 @@ TreeLoggerTest::testLoggerData() {
         e.serialize(buffer);
         TB::Entry e2;
         e2.deSerialize(buffer);
-        ASSERT_EQUAL(e.type, e2.type);
-        ASSERT_EQUAL(e.ee.startIndex, e2.ee.startIndex);
-        ASSERT_EQUAL(e.ee.score,      e2.ee.score);
-        ASSERT_EQUAL(e.ee.scoreType,  e2.ee.scoreType);
-        ASSERT_EQUAL(e.ee.evalScore,  e2.ee.evalScore);
-        ASSERT_EQUAL(e.ee.hashKey,    e2.ee.hashKey);
+        EXPECT_EQ(e.type, e2.type);
+        EXPECT_EQ(e.ee.startIndex, e2.ee.startIndex);
+        EXPECT_EQ(e.ee.score,      e2.ee.score);
+        EXPECT_EQ(e.ee.scoreType,  e2.ee.scoreType);
+        EXPECT_EQ(e.ee.evalScore,  e2.ee.evalScore);
+        EXPECT_EQ(e.ee.hashKey,    e2.ee.hashKey);
     }
-}
-
-cute::suite
-TreeLoggerTest::getSuite() const {
-    cute::suite s;
-    s.push_back(CUTE(testSerialize));
-    s.push_back(CUTE(testLoggerData));
-    return s;
 }

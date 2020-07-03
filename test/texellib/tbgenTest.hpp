@@ -26,23 +26,17 @@
 #ifndef TBGENTEST_HPP_
 #define TBGENTEST_HPP_
 
-#include "suiteBase.hpp"
-
 struct PieceCount;
 
-
-class TBGenTest : public SuiteBase {
+class TBGenTest {
 public:
-    std::string getName() const override { return "tbgenTest"; }
-
-    cute::suite getSuite() const override;
-
-private:
     static void testPositionValue();
     static void testTBIndex();
     static void testTBPosition();
     static void testMoveGen();
     static void testGenerate();
+
+private:
     static void testGenerateInternal(const PieceCount& pc);
 };
 

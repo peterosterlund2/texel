@@ -26,24 +26,14 @@
 #ifndef PROOFGAMETEST_HPP_
 #define PROOFGAMETEST_HPP_
 
-#include "utilSuiteBase.hpp"
 #include "piece.hpp"
 #include "util/util.hpp"
 
 class Position;
 class ProofGame;
 
-class ProofGameTest : public UtilSuiteBase {
+class ProofGameTest {
 public:
-    std::string getName() const override { return "ProofGameTest"; }
-
-    cute::suite getSuite() const override;
-private:
-    static void checkBlockedConsistency(ProofGame& ps, Position& pos);
-    static int hScore(ProofGame& ps, const std::string& fen, bool testMirrorY = true);
-    static void comparePaths(Piece::Type p, int sq, U64 blocked, int maxMoves,
-                             const std::vector<int>& expected, bool testColorReversed = true);
-
     static void testMaterial();
     static void testNeighbors();
     static void testShortestPath();
@@ -56,6 +46,12 @@ private:
     static void testSearch();
     static void testEnPassant();
     static void testCaptureSquares();
+
+private:
+    static void checkBlockedConsistency(ProofGame& ps, Position& pos);
+    static int hScore(ProofGame& ps, const std::string& fen, bool testMirrorY = true);
+    static void comparePaths(Piece::Type p, int sq, U64 blocked, int maxMoves,
+                             const std::vector<int>& expected, bool testColorReversed = true);
 };
 
 #endif /* PROOFGAMETEST_HPP_ */

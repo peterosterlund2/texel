@@ -23,40 +23,29 @@
  *      Author: petero
  */
 
-#include "pieceTest.hpp"
-
-#include "cute.h"
-
 #include "move.hpp"
 #include "piece.hpp"
 
-static void
-testIsWhite() {
-    ASSERT_EQUAL(false, Piece::isWhite(Piece::BBISHOP));
-    ASSERT_EQUAL(true , Piece::isWhite(Piece::WBISHOP));
-    ASSERT_EQUAL(true , Piece::isWhite(Piece::WKING));
-    ASSERT_EQUAL(false, Piece::isWhite(Piece::BKING));
+#include "gtest/gtest.h"
+
+
+TEST(PieceTest, testIsWhite) {
+    EXPECT_EQ(false, Piece::isWhite(Piece::BBISHOP));
+    EXPECT_EQ(true , Piece::isWhite(Piece::WBISHOP));
+    EXPECT_EQ(true , Piece::isWhite(Piece::WKING));
+    EXPECT_EQ(false, Piece::isWhite(Piece::BKING));
 }
 
-static void
-testMakeWhiteBlack() {
+TEST(PieceTest, testMakeWhiteBlack) {
     for (int p = 0; p < Piece::nPieceTypes; p++) {
         if (p == Piece::EMPTY)
             continue;
-        ASSERT(Piece::isWhite(Piece::makeWhite(p)));
-        ASSERT(!Piece::isWhite(Piece::makeBlack(p)));
+        EXPECT_TRUE(Piece::isWhite(Piece::makeWhite(p)));
+        EXPECT_FALSE(Piece::isWhite(Piece::makeBlack(p)));
         if (Piece::isWhite(p)) {
-            ASSERT_EQUAL(p, Piece::makeWhite(Piece::makeBlack(p)));
+            EXPECT_EQ(p, Piece::makeWhite(Piece::makeBlack(p)));
         } else {
-            ASSERT_EQUAL(p, Piece::makeBlack(Piece::makeWhite(p)));
+            EXPECT_EQ(p, Piece::makeBlack(Piece::makeWhite(p)));
         }
     }
-}
-
-cute::suite
-PieceTest::getSuite() const {
-    cute::suite s;
-    s.push_back(CUTE(testIsWhite));
-    s.push_back(CUTE(testMakeWhiteBlack));
-    return s;
 }

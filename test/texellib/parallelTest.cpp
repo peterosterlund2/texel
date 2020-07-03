@@ -25,7 +25,6 @@
 
 #define _GLIBCXX_USE_NANOSLEEP
 
-#include "parallelTest.hpp"
 #include "searchTest.hpp"
 #include "parallel.hpp"
 #include "clustertt.hpp"
@@ -39,7 +38,7 @@
 #include <thread>
 #include <chrono>
 
-#include "cute.h"
+#include "gtest/gtest.h"
 
 using namespace SearchConst;
 
@@ -96,8 +95,7 @@ getCount(NotifyCounter& nc, int expected) {
     return c;
 }
 
-void
-ParallelTest::testCommunicator() {
+TEST(ParallelTest, testCommunicator) {
     Notifier notifier0;
     NotifyCounter c0(notifier0);
     TranspositionTable& tt = SearchTest::tt;
@@ -119,20 +117,20 @@ ParallelTest::testCommunicator() {
     ThreadCommunicator child3(&child2, tt, notifier3, false);
     c3.setCommunicator(child3);
 
-    ASSERT_EQUAL(0, c0.getCount());
-    ASSERT_EQUAL(0, c1.getCount());
-    ASSERT_EQUAL(0, c2.getCount());
-    ASSERT_EQUAL(0, c3.getCount());
+    ASSERT_EQ(0, c0.getCount());
+    ASSERT_EQ(0, c1.getCount());
+    ASSERT_EQ(0, c2.getCount());
+    ASSERT_EQ(0, c3.getCount());
 
     Position pos;
     SearchTreeInfo sti;
     std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2);
     int posHashListSize = 0;
     root.sendInitSearch(pos, posHashList, posHashListSize, false, 0);
-    ASSERT_EQUAL(0, getCount(c0, 0));
-    ASSERT_EQUAL(1, getCount(c1, 1));
-    ASSERT_EQUAL(1, getCount(c2, 1));
-    ASSERT_EQUAL(0, getCount(c3, 0));
+    ASSERT_EQ(0, getCount(c0, 0));
+    ASSERT_EQ(1, getCount(c1, 1));
+    ASSERT_EQ(1, getCount(c2, 1));
+    ASSERT_EQ(0, getCount(c3, 0));
 
     class Handler : public Communicator::CommandHandler {
     public:
@@ -183,81 +181,81 @@ ParallelTest::testCommunicator() {
     Handler h3(child3);
 
     child1.poll(h1);
-    ASSERT_EQUAL(0, getCount(c0, 0));
-    ASSERT_EQUAL(1, getCount(c1, 1));
-    ASSERT_EQUAL(1, getCount(c2, 1));
-    ASSERT_EQUAL(0, getCount(c3, 0));
-    ASSERT_EQUAL(1, h1.getNInit());
-    ASSERT_EQUAL(0, h2.getNInit());
+    ASSERT_EQ(0, getCount(c0, 0));
+    ASSERT_EQ(1, getCount(c1, 1));
+    ASSERT_EQ(1, getCount(c2, 1));
+    ASSERT_EQ(0, getCount(c3, 0));
+    ASSERT_EQ(1, h1.getNInit());
+    ASSERT_EQ(0, h2.getNInit());
 
     child2.poll(h2);
-    ASSERT_EQUAL(0, getCount(c0, 0));
-    ASSERT_EQUAL(1, getCount(c1, 1));
-    ASSERT_EQUAL(1, getCount(c2, 1));
-    ASSERT_EQUAL(1, getCount(c3, 1));
-    ASSERT_EQUAL(1, h1.getNInit());
-    ASSERT_EQUAL(1, h2.getNInit());
+    ASSERT_EQ(0, getCount(c0, 0));
+    ASSERT_EQ(1, getCount(c1, 1));
+    ASSERT_EQ(1, getCount(c2, 1));
+    ASSERT_EQ(1, getCount(c3, 1));
+    ASSERT_EQ(1, h1.getNInit());
+    ASSERT_EQ(1, h2.getNInit());
 
     int jobId = 1;
     root.sendStartSearch(jobId, sti, -100, 100, 3);
-    ASSERT_EQUAL(2, getCount(c1, 2));
-    ASSERT_EQUAL(2, getCount(c2, 2));
+    ASSERT_EQ(2, getCount(c1, 2));
+    ASSERT_EQ(2, getCount(c2, 2));
     child2.poll(h2);
-    ASSERT_EQUAL(1, h2.getNStart());
-    ASSERT_EQUAL(2, getCount(c3, 2));
+    ASSERT_EQ(1, h2.getNStart());
+    ASSERT_EQ(2, getCount(c3, 2));
 
     child3.sendReportResult(jobId, 17);
-    ASSERT_EQUAL(3, getCount(c2, 3));
-    ASSERT_EQUAL(0, getCount(c0, 0));
+    ASSERT_EQ(3, getCount(c2, 3));
+    ASSERT_EQ(0, getCount(c0, 0));
 
     child2.poll(h2);
-    ASSERT_EQUAL(1, h2.getNReport());
-    ASSERT_EQUAL(1, getCount(c0, 1));
+    ASSERT_EQ(1, h2.getNReport());
+    ASSERT_EQ(1, getCount(c0, 1));
     root.poll(h0);
-    ASSERT_EQUAL(1, h0.getNReport());
+    ASSERT_EQ(1, h0.getNReport());
 
-    ASSERT_EQUAL(2, getCount(c1, 2));
-    ASSERT_EQUAL(0, h1.getNReport());
+    ASSERT_EQ(2, getCount(c1, 2));
+    ASSERT_EQ(0, h1.getNReport());
 
     // Node counters
-    ASSERT_EQUAL(0, root.getNumSearchedNodes());
-    ASSERT_EQUAL(0, child1.getNumSearchedNodes());
-    ASSERT_EQUAL(0, child2.getNumSearchedNodes());
-    ASSERT_EQUAL(0, child3.getNumSearchedNodes());
-    ASSERT_EQUAL(0, root.getTbHits());
-    ASSERT_EQUAL(0, child1.getTbHits());
-    ASSERT_EQUAL(0, child2.getTbHits());
-    ASSERT_EQUAL(0, child3.getTbHits());
+    ASSERT_EQ(0, root.getNumSearchedNodes());
+    ASSERT_EQ(0, child1.getNumSearchedNodes());
+    ASSERT_EQ(0, child2.getNumSearchedNodes());
+    ASSERT_EQ(0, child3.getNumSearchedNodes());
+    ASSERT_EQ(0, root.getTbHits());
+    ASSERT_EQ(0, child1.getTbHits());
+    ASSERT_EQ(0, child2.getTbHits());
+    ASSERT_EQ(0, child3.getTbHits());
 
     child3.sendReportStats(100, 10, true);
-    ASSERT_EQUAL(0, root.getNumSearchedNodes());
-    ASSERT_EQUAL(100, child2.getNumSearchedNodes());
-    ASSERT_EQUAL(0, child3.getNumSearchedNodes());
-    ASSERT_EQUAL(0, root.getTbHits());
-    ASSERT_EQUAL(10, child2.getTbHits());
-    ASSERT_EQUAL(0, child3.getTbHits());
-    ASSERT_EQUAL(3, getCount(c2, 3));
-    ASSERT_EQUAL(2, getCount(c3, 2));
+    ASSERT_EQ(0, root.getNumSearchedNodes());
+    ASSERT_EQ(100, child2.getNumSearchedNodes());
+    ASSERT_EQ(0, child3.getNumSearchedNodes());
+    ASSERT_EQ(0, root.getTbHits());
+    ASSERT_EQ(10, child2.getTbHits());
+    ASSERT_EQ(0, child3.getTbHits());
+    ASSERT_EQ(3, getCount(c2, 3));
+    ASSERT_EQ(2, getCount(c3, 2));
 
     child2.poll(h2);
-    ASSERT_EQUAL(0, root.getNumSearchedNodes());
-    ASSERT_EQUAL(0, child3.getNumSearchedNodes());
-    ASSERT_EQUAL(100, child2.getNumSearchedNodes());
-    ASSERT_EQUAL(0, root.getTbHits());
-    ASSERT_EQUAL(0, child3.getTbHits());
-    ASSERT_EQUAL(10, child2.getTbHits());
-    ASSERT_EQUAL(3, getCount(c2, 3));
-    ASSERT_EQUAL(2, getCount(c3, 2));
+    ASSERT_EQ(0, root.getNumSearchedNodes());
+    ASSERT_EQ(0, child3.getNumSearchedNodes());
+    ASSERT_EQ(100, child2.getNumSearchedNodes());
+    ASSERT_EQ(0, root.getTbHits());
+    ASSERT_EQ(0, child3.getTbHits());
+    ASSERT_EQ(10, child2.getTbHits());
+    ASSERT_EQ(3, getCount(c2, 3));
+    ASSERT_EQ(2, getCount(c3, 2));
 
     child2.sendReportStats(200, 30, true);
-    ASSERT_EQUAL(300, root.getNumSearchedNodes());
-    ASSERT_EQUAL(0, child3.getNumSearchedNodes());
-    ASSERT_EQUAL(0, child2.getNumSearchedNodes());
-    ASSERT_EQUAL(40, root.getTbHits());
-    ASSERT_EQUAL(0, child3.getTbHits());
-    ASSERT_EQUAL(0, child2.getTbHits());
-    ASSERT_EQUAL(3, getCount(c2, 3));
-    ASSERT_EQUAL(2, getCount(c3, 2));
+    ASSERT_EQ(300, root.getNumSearchedNodes());
+    ASSERT_EQ(0, child3.getNumSearchedNodes());
+    ASSERT_EQ(0, child2.getNumSearchedNodes());
+    ASSERT_EQ(40, root.getTbHits());
+    ASSERT_EQ(0, child3.getTbHits());
+    ASSERT_EQ(0, child2.getTbHits());
+    ASSERT_EQ(3, getCount(c2, 3));
+    ASSERT_EQ(2, getCount(c3, 2));
 
     // Stop ack
     c0.resetCount();
@@ -265,47 +263,40 @@ ParallelTest::testCommunicator() {
     c2.resetCount();
     c3.resetCount();
     root.sendStopSearch();
-    ASSERT_EQUAL(1, getCount(c0, 1));
-    ASSERT_EQUAL(1, getCount(c1, 1));
-    ASSERT_EQUAL(1, getCount(c2, 1));
-    ASSERT_EQUAL(0, getCount(c3, 0));
+    ASSERT_EQ(1, getCount(c0, 1));
+    ASSERT_EQ(1, getCount(c1, 1));
+    ASSERT_EQ(1, getCount(c2, 1));
+    ASSERT_EQ(0, getCount(c3, 0));
 
     child2.poll(h2);
-    ASSERT_EQUAL(1, h2.getNStop());
-    ASSERT_EQUAL(0, h2.getNStopAck());
-    ASSERT_EQUAL(1, getCount(c3, 1));
-    ASSERT_EQUAL(2, getCount(c2, 2));
-    ASSERT_EQUAL(1, getCount(c0, 1));
+    ASSERT_EQ(1, h2.getNStop());
+    ASSERT_EQ(0, h2.getNStopAck());
+    ASSERT_EQ(1, getCount(c3, 1));
+    ASSERT_EQ(2, getCount(c2, 2));
+    ASSERT_EQ(1, getCount(c0, 1));
 
     child1.poll(h1);
-    ASSERT_EQUAL(1, h1.getNStop());
-    ASSERT_EQUAL(0, h1.getNStopAck());
-    ASSERT_EQUAL(2, getCount(c0, 2));
-    ASSERT_EQUAL(0, h0.getNStopAck());
+    ASSERT_EQ(1, h1.getNStop());
+    ASSERT_EQ(0, h1.getNStopAck());
+    ASSERT_EQ(2, getCount(c0, 2));
+    ASSERT_EQ(0, h0.getNStopAck());
 
     root.poll(h0);
-    ASSERT_EQUAL(1, h0.getNStopAck());
-    ASSERT_EQUAL(2, getCount(c0, 2));
+    ASSERT_EQ(1, h0.getNStopAck());
+    ASSERT_EQ(2, getCount(c0, 2));
 
     child3.poll(h3);
-    ASSERT_EQUAL(1, h3.getNStop());
-    ASSERT_EQUAL(0, h3.getNStopAck());
-    ASSERT_EQUAL(3, getCount(c2, 3));
-    ASSERT_EQUAL(0, h2.getNStopAck());
-    ASSERT_EQUAL(1, h0.getNStopAck());
+    ASSERT_EQ(1, h3.getNStop());
+    ASSERT_EQ(0, h3.getNStopAck());
+    ASSERT_EQ(3, getCount(c2, 3));
+    ASSERT_EQ(0, h2.getNStopAck());
+    ASSERT_EQ(1, h0.getNStopAck());
 
     child2.poll(h2);
-    ASSERT_EQUAL(1, h0.getNStopAck());
-    ASSERT_EQUAL(1, h2.getNStopAck());
-    ASSERT_EQUAL(3, getCount(c0, 3));
+    ASSERT_EQ(1, h0.getNStopAck());
+    ASSERT_EQ(1, h2.getNStopAck());
+    ASSERT_EQ(3, getCount(c0, 3));
 
     root.poll(h0);
-    ASSERT_EQUAL(2, h0.getNStopAck());
-}
-
-cute::suite
-ParallelTest::getSuite() const {
-    cute::suite s;
-    s.push_back(CUTE(testCommunicator));
-    return s;
+    ASSERT_EQ(2, h0.getNStopAck());
 }

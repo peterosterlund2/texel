@@ -23,42 +23,31 @@
  *      Author: petero
  */
 
-#include "moveTest.hpp"
-
-#include "cute.h"
-
 #include "position.hpp"
 #include "move.hpp"
 #include "piece.hpp"
 
-static void
-testMoveConstructor() {
+#include "gtest/gtest.h"
+
+
+TEST(MoveTest, testMoveConstructor) {
     int f = Square::getSquare(4, 1);
     int t = Square::getSquare(4, 3);
     int p = Piece::WROOK;
     Move move(f, t, p);
-    ASSERT_EQUAL(move.from(), f);
-    ASSERT_EQUAL(move.to(), t);
-    ASSERT_EQUAL(move.promoteTo(), p);
+    EXPECT_EQ(move.from(), f);
+    EXPECT_EQ(move.to(), t);
+    EXPECT_EQ(move.promoteTo(), p);
 }
 
-static void
-testEquals() {
+TEST(MoveTest, testEquals) {
     Move m1(Square::getSquare(0, 6), Square::getSquare(1, 7), Piece::WROOK);
     Move m2(Square::getSquare(0, 6), Square::getSquare(0, 7), Piece::WROOK);
     Move m3(Square::getSquare(1, 6), Square::getSquare(1, 7), Piece::WROOK);
     Move m4(Square::getSquare(0, 6), Square::getSquare(1, 7), Piece::WKNIGHT);
     Move m5(Square::getSquare(0, 6), Square::getSquare(1, 7), Piece::WROOK);
-    ASSERT(!(m1 == m2));
-    ASSERT(!(m1 == m3));
-    ASSERT(!(m1 == m4));
-    ASSERT(m1 == m5);
-}
-
-cute::suite
-MoveTest::getSuite() const {
-    cute::suite s;
-    s.push_back(CUTE(testMoveConstructor));
-    s.push_back(CUTE(testEquals));
-    return s;
+    EXPECT_FALSE(m1 == m2);
+    EXPECT_FALSE(m1 == m3);
+    EXPECT_FALSE(m1 == m4);
+    EXPECT_EQ(m1, m5);
 }

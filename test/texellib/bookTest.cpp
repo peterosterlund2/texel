@@ -23,17 +23,16 @@
  *      Author: petero
  */
 
-#include "bookTest.hpp"
 #include "book.hpp"
 #include "textio.hpp"
 #include "moveGen.hpp"
 
-#include "cute.h"
+#include "gtest/gtest.h"
 
 /** Check that move is a legal move in position pos. */
 static void
 checkValid(Position& pos, const Move& move) {
-    ASSERT(!move.isEmpty());
+    ASSERT_FALSE(move.isEmpty());
     MoveList moveList;
     MoveGen::pseudoLegalMoves(pos, moveList);
     MoveGen::removeIllegal(pos, moveList);
@@ -43,11 +42,12 @@ checkValid(Position& pos, const Move& move) {
             contains = true;
             break;
         }
-    ASSERT(contains);
+    ASSERT_TRUE(contains) << "Illegal move: " << TextIO::moveToUCIString(move) << '\n'
+                          << TextIO::asciiBoard(pos)
+                          << "fen:" << TextIO::toFEN(pos);
 }
 
-static void
-testGetBookMove() {
+TEST(BookTest, testGetBookMove) {
     Position pos(TextIO::readFEN(TextIO::startPosFEN));
     Book book(true);
     Move move;
@@ -55,30 +55,20 @@ testGetBookMove() {
     checkValid(pos, move);
 }
 
-static void
-testGetAllBookMoves() {
+TEST(BookTest, testGetAllBookMoves) {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     Book book(true);
     std::string moveListString = book.getAllBookMoves(pos);
     std::vector<std::string> strMoves;
     splitString(moveListString, strMoves);
-    ASSERT(strMoves.size() > 1);
+    EXPECT_GT(strMoves.size(), 1);
     for (size_t i = 0; i < strMoves.size(); i++) {
         std::string strMove = strMoves[i];
         size_t idx = strMove.find_first_of('(');
-        ASSERT(idx != strMove.npos);
-        ASSERT(idx > 0);
+        ASSERT_NE(idx, strMove.npos);
+        ASSERT_GT(idx, 0);
         strMove = strMove.substr(0, idx);
         Move m = TextIO::stringToMove(pos, strMove);
         checkValid(pos, m);
     }
-}
-
-
-cute::suite
-BookTest::getSuite() const {
-    cute::suite s;
-    s.push_back(CUTE(testGetBookMove));
-    s.push_back(CUTE(testGetAllBookMoves));
-    return s;
 }

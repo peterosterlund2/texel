@@ -23,7 +23,6 @@
  *      Author: petero
  */
 
-#include "moveGenTest.hpp"
 #include "moveGen.hpp"
 #include "evaluateTest.hpp"
 #include "textio.hpp"
@@ -31,7 +30,7 @@
 #include <vector>
 #include <iostream>
 
-#include "cute.h"
+#include "gtest/gtest.h"
 
 template <typename T>
 static bool
@@ -50,7 +49,7 @@ static void removeIllegal(Position& pos, MoveList& moveList) {
             ml2.addMove(m.from(), m.to(), m.promoteTo());
     }
     MoveGen::removeIllegal(pos, moveList);
-    ASSERT_EQUAL(moveList.size, ml2.size);
+    ASSERT_EQ(moveList.size, ml2.size);
 }
 
 static std::vector<std::string>
@@ -102,15 +101,16 @@ getMoveList0(Position& pos, bool onlyLegal) {
     }
 
     std::vector<std::string> capList1 = getCaptureList(pos, false, onlyLegal);
-    ASSERT(containsAll(strMoves, capList1));
+    EXPECT_TRUE(containsAll(strMoves, capList1));
 
     std::vector<std::string> capList2 = getCaptureList(pos, true, onlyLegal);
-    ASSERT(containsAll(strMoves, capList2));
+    EXPECT_TRUE(containsAll(strMoves, capList2));
 
     bool inCheck = MoveGen::inCheck(pos);
     std::vector<std::string> evList = getCheckEvasions(pos, onlyLegal);
-    if (inCheck)
-        ASSERT(containsAll(strMoves, evList));
+    if (inCheck) {
+        EXPECT_TRUE(containsAll(strMoves, evList));
+    }
     for (size_t i = 0; i < strMoves.size(); i++) {
         const std::string& sm = strMoves[i];
         Move m = TextIO::uciStringToMove(sm);
@@ -129,31 +129,33 @@ getMoveList0(Position& pos, bool onlyLegal) {
             break;
         }
         if (!MoveGen::canTakeKing(pos) && MoveGen::givesCheck(pos, m)) {
-            if (qProm)
-                ASSERT(contains(capList2, sm));
+            if (qProm) {
+                EXPECT_TRUE(contains(capList2, sm));
+            }
         } else {
             switch (m.promoteTo()) {
             case Piece::WQUEEN: case Piece::BQUEEN:
             case Piece::WKNIGHT: case Piece::BKNIGHT:
-                ASSERT(contains(capList1, sm)); // All queen/knight promotions
-                ASSERT(contains(capList2, sm)); // All queen/knight promotions
+                EXPECT_TRUE(contains(capList1, sm)); // All queen/knight promotions
+                EXPECT_TRUE(contains(capList2, sm)); // All queen/knight promotions
                 break;
             case Piece::EMPTY:
                 break;
             default:
-                ASSERT(!contains(capList1, sm)); // No rook/bishop promotions
-                ASSERT(!contains(capList2, sm)); // No rook/bishop promotions
+                EXPECT_TRUE(!contains(capList1, sm)); // No rook/bishop promotions
+                EXPECT_TRUE(!contains(capList2, sm)); // No rook/bishop promotions
                 break;
             }
         }
         if (pos.getPiece(m.to()) != Piece::EMPTY) {
             if (qProm) {
-                ASSERT(contains(capList1, sm));
-                ASSERT(contains(capList2, sm));
+                EXPECT_TRUE(contains(capList1, sm));
+                EXPECT_TRUE(contains(capList2, sm));
             }
         }
-        if (inCheck)
-            ASSERT(contains(evList, sm));
+        if (inCheck) {
+            EXPECT_TRUE(contains(evList, sm));
+        }
     }
 
     return strMoves;
@@ -164,7 +166,7 @@ getMoveList(Position& pos, bool onlyLegal) {
     Position swap = swapColors(pos);
     std::vector<std::string> swapList = getMoveList0(swap, onlyLegal);
     std::vector<std::string> ret = getMoveList0(pos, onlyLegal);
-    ASSERT_EQUAL(swapList.size(), ret.size());
+    EXPECT_EQ(swapList.size(), ret.size());
 
     std::vector<std::string> retSwapped;
     for (const auto& ms : ret) {
@@ -181,303 +183,297 @@ getMoveList(Position& pos, bool onlyLegal) {
     std::sort(swapList.begin(), swapList.end());
     std::sort(retSwapped.begin(), retSwapped.end());
     for (size_t i = 0; i < swapList.size(); i++)
-        ASSERT_EQUAL(swapList[i], retSwapped[i]);
+        EXPECT_EQ(swapList[i], retSwapped[i]);
 
     return ret;
 }
 
-static void
-testPseudoLegalMoves() {
+TEST(MoveGenTest, testPseudoLegalMoves) {
     std::string fen = "8/3k4/8/2n2pP1/1P6/1NB5/2QP4/R3K2R w KQ f6 0 2";
     Position pos = TextIO::readFEN(fen);
-    ASSERT_EQUAL(fen, TextIO::toFEN(pos));
+    EXPECT_EQ(fen, TextIO::toFEN(pos));
     std::vector<std::string> strMoves = getMoveList(pos, false);
-    ASSERT(contains(strMoves, "a1d1"));
-    ASSERT(!contains(strMoves, "a1e1"));
-    ASSERT(!contains(strMoves, "a1f1"));
-    ASSERT(contains(strMoves, "a1a7"));
-    ASSERT(contains(strMoves, "e1f2"));
-    ASSERT(!contains(strMoves, "e1g3"));
-    ASSERT(contains(strMoves, "c3f6"));
-    ASSERT(!contains(strMoves, "b3d2"));
+    EXPECT_TRUE(contains(strMoves, "a1d1"));
+    EXPECT_TRUE(!contains(strMoves, "a1e1"));
+    EXPECT_TRUE(!contains(strMoves, "a1f1"));
+    EXPECT_TRUE(contains(strMoves, "a1a7"));
+    EXPECT_TRUE(contains(strMoves, "e1f2"));
+    EXPECT_TRUE(!contains(strMoves, "e1g3"));
+    EXPECT_TRUE(contains(strMoves, "c3f6"));
+    EXPECT_TRUE(!contains(strMoves, "b3d2"));
 
     // Test castling
-    ASSERT(contains(strMoves, "e1g1"));
-    ASSERT(contains(strMoves, "e1c1"));
-    ASSERT_EQUAL(49, strMoves.size());
+    EXPECT_TRUE(contains(strMoves, "e1g1"));
+    EXPECT_TRUE(contains(strMoves, "e1c1"));
+    EXPECT_EQ(49, strMoves.size());
 
     pos.setPiece(Square::getSquare(4,3), Piece::BROOK);
     strMoves = getMoveList(pos, false);
-    ASSERT(!contains(strMoves, "e1g1"));      // In check, no castling possible
-    ASSERT(!contains(strMoves, "e1c1"));
+    EXPECT_TRUE(!contains(strMoves, "e1g1"));      // In check, no castling possible
+    EXPECT_TRUE(!contains(strMoves, "e1c1"));
 
     pos.setPiece(Square::getSquare(4, 3), Piece::EMPTY);
     pos.setPiece(Square::getSquare(5, 3), Piece::BROOK);
     strMoves = getMoveList(pos, false);
-    ASSERT(!contains(strMoves, "e1g1"));      // f1 attacked, short castle not possible
-    ASSERT(contains(strMoves, "e1c1"));
+    EXPECT_TRUE(!contains(strMoves, "e1g1"));      // f1 attacked, short castle not possible
+    EXPECT_TRUE(contains(strMoves, "e1c1"));
 
     pos.setPiece(Square::getSquare(5, 3), Piece::EMPTY);
     pos.setPiece(Square::getSquare(6, 3), Piece::BBISHOP);
     strMoves = getMoveList(pos, false);
-    ASSERT(contains(strMoves, "e1g1"));      // d1 attacked, long castle not possible
-    ASSERT(!contains(strMoves, "e1c1"));
+    EXPECT_TRUE(contains(strMoves, "e1g1"));      // d1 attacked, long castle not possible
+    EXPECT_TRUE(!contains(strMoves, "e1c1"));
 
     pos.setPiece(Square::getSquare(6, 3), Piece::EMPTY);
     pos.setCastleMask(1 << Position::A1_CASTLE);
     strMoves = getMoveList(pos, false);
-    ASSERT(!contains(strMoves, "e1g1"));      // short castle right has been lost
-    ASSERT(contains(strMoves, "e1c1"));
+    EXPECT_TRUE(!contains(strMoves, "e1g1"));      // short castle right has been lost
+    EXPECT_TRUE(contains(strMoves, "e1c1"));
 }
 
-static void
-testPawnMoves() {
+TEST(MoveGenTest, testPawnMoves) {
     std::string fen = "1r2k3/P1pppp1p/8/1pP3p1/1nPp2P1/n4p1P/1P2PP2/4KBNR w K b6 0 1";
     Position pos = TextIO::readFEN(fen);
-    ASSERT_EQUAL(fen, TextIO::toFEN(pos));
+    EXPECT_EQ(fen, TextIO::toFEN(pos));
     std::vector<std::string> strMoves = getMoveList(pos, false);
-    ASSERT(contains(strMoves, "c5b6"));     // En passant capture
-    ASSERT(contains(strMoves, "a7a8q"));    // promotion
-    ASSERT(contains(strMoves, "a7a8n"));    // under promotion
-    ASSERT(contains(strMoves, "a7b8r"));    // capture promotion
-    ASSERT(contains(strMoves, "b2b3"));     // pawn single move
-    ASSERT(contains(strMoves, "b2a3"));     // pawn capture to the left
-    ASSERT(contains(strMoves, "e2e4"));     // pawn double move
-    ASSERT(contains(strMoves, "e2f3"));     // pawn capture to the right
-    ASSERT_EQUAL(22, strMoves.size());
+    EXPECT_TRUE(contains(strMoves, "c5b6"));     // En passant capture
+    EXPECT_TRUE(contains(strMoves, "a7a8q"));    // promotion
+    EXPECT_TRUE(contains(strMoves, "a7a8n"));    // under promotion
+    EXPECT_TRUE(contains(strMoves, "a7b8r"));    // capture promotion
+    EXPECT_TRUE(contains(strMoves, "b2b3"));     // pawn single move
+    EXPECT_TRUE(contains(strMoves, "b2a3"));     // pawn capture to the left
+    EXPECT_TRUE(contains(strMoves, "e2e4"));     // pawn double move
+    EXPECT_TRUE(contains(strMoves, "e2f3"));     // pawn capture to the right
+    EXPECT_EQ(22, strMoves.size());
 
     pos.setEpSquare(-1);
     strMoves = getMoveList(pos, false);
-    ASSERT_EQUAL(21, strMoves.size());          // No ep, one less move possible
+    EXPECT_EQ(21, strMoves.size());          // No ep, one less move possible
 
     // Check black pawn moves
     pos.setWhiteMove(false);
     strMoves = getMoveList(pos, false);
-    ASSERT(contains(strMoves, "f3e2"));
-    ASSERT(contains(strMoves, "d4d3"));
-    ASSERT(contains(strMoves, "e7e6"));
-    ASSERT(contains(strMoves, "e7e5"));
-    ASSERT_EQUAL(28, strMoves.size());
+    EXPECT_TRUE(contains(strMoves, "f3e2"));
+    EXPECT_TRUE(contains(strMoves, "d4d3"));
+    EXPECT_TRUE(contains(strMoves, "e7e6"));
+    EXPECT_TRUE(contains(strMoves, "e7e5"));
+    EXPECT_EQ(28, strMoves.size());
 
     // Check black pawn promotion
     pos.setPiece(Square::getSquare(0,1), Piece::BPAWN);
     strMoves = getMoveList(pos, false);
-    ASSERT(contains(strMoves, "a2a1q"));
-    ASSERT(contains(strMoves, "a2a1r"));
-    ASSERT(contains(strMoves, "a2a1n"));
-    ASSERT(contains(strMoves, "a2a1b"));
+    EXPECT_TRUE(contains(strMoves, "a2a1q"));
+    EXPECT_TRUE(contains(strMoves, "a2a1r"));
+    EXPECT_TRUE(contains(strMoves, "a2a1n"));
+    EXPECT_TRUE(contains(strMoves, "a2a1b"));
 }
 
-static void
-testInCheck() {
+TEST(MoveGenTest, testInCheck) {
     Position pos;
     pos.setPiece(Square::getSquare(4,2), Piece::WKING);
     pos.setPiece(Square::getSquare(4,7), Piece::BKING);
-    ASSERT_EQUAL(false, MoveGen::inCheck(pos));
+    EXPECT_EQ(false, MoveGen::inCheck(pos));
 
     pos.setPiece(Square::getSquare(3,3), Piece::BQUEEN);
-    ASSERT_EQUAL(true, MoveGen::inCheck(pos));
+    EXPECT_EQ(true, MoveGen::inCheck(pos));
     pos.setPiece(Square::getSquare(3,3), Piece::BROOK);
-    ASSERT_EQUAL(false, MoveGen::inCheck(pos));
+    EXPECT_EQ(false, MoveGen::inCheck(pos));
     pos.setPiece(Square::getSquare(3,3), Piece::BPAWN);
-    ASSERT_EQUAL(true, MoveGen::inCheck(pos));
+    EXPECT_EQ(true, MoveGen::inCheck(pos));
 
     pos.setPiece(Square::getSquare(3,3), Piece::EMPTY);
     pos.setPiece(Square::getSquare(5,3), Piece::WQUEEN);
-    ASSERT_EQUAL(false, MoveGen::inCheck(pos));
+    EXPECT_EQ(false, MoveGen::inCheck(pos));
 
     pos.setPiece(Square::getSquare(4, 6), Piece::BROOK);
-    ASSERT_EQUAL(true, MoveGen::inCheck(pos));
+    EXPECT_EQ(true, MoveGen::inCheck(pos));
     pos.setPiece(Square::getSquare(4, 4), Piece::WPAWN);
-    ASSERT_EQUAL(false, MoveGen::inCheck(pos));
+    EXPECT_EQ(false, MoveGen::inCheck(pos));
 
     pos.setPiece(Square::getSquare(2, 3), Piece::BKNIGHT);
-    ASSERT_EQUAL(true, MoveGen::inCheck(pos));
+    EXPECT_EQ(true, MoveGen::inCheck(pos));
 
     pos.setPiece(Square::getSquare(2, 3), Piece::EMPTY);
     pos.setPiece(Square::getSquare(0, 4), Piece::BKNIGHT);
-    ASSERT_EQUAL(false, MoveGen::inCheck(pos));
+    EXPECT_EQ(false, MoveGen::inCheck(pos));
 }
 
-static void
-testGivesCheck() {
+TEST(MoveGenTest, testGivesCheck) {
     Position pos;
     UndoInfo ui;
     pos.setPiece(TextIO::getSquare("e3"), Piece::WKING);
     pos.setPiece(TextIO::getSquare("e8"), Piece::BKING);
     pos.setPiece(TextIO::getSquare("c2"), Piece::WROOK);
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Rc8")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Rc6")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Rc7")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Re2")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Rc8")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Rc6")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Rc7")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Re2")));
 
     pos.setPiece(TextIO::getSquare("c2"), Piece::EMPTY);
     pos.setPiece(TextIO::getSquare("e2"), Piece::WROOK);
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Kd3")));
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Kd4")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Ke4")));
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Kf2")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Kd3")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Kd4")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Ke4")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Kf2")));
 
     pos.setPiece(TextIO::getSquare("e4"), Piece::WBISHOP);
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Bd5")));
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Bc6")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Kd3")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Re1")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Bd5")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Bc6")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Kd3")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Re1")));
 
     pos = TextIO::readFEN("4k3/3p4/8/8/4B3/2K5/4R3/8 w - - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Bc6")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Bc6")));
     pos = TextIO::readFEN("4k3/8/5K2/8/6N1/8/8/8 w - - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Ke6")));
-    ASSERT(!MoveGen::givesCheck(pos, Move(TextIO::getSquare("f6"),
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Ke6")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, Move(TextIO::getSquare("f6"),
                                           TextIO::getSquare("e7"),
                                           Piece::EMPTY)));
 
     pos = TextIO::readFEN("8/2k5/8/4N3/8/2K3B1/8/8 w - - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Kc4")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Kc4")));
     pos.setPiece(TextIO::getSquare("g3"), Piece::WROOK);
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
     pos.setPiece(TextIO::getSquare("g3"), Piece::WQUEEN);
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
     pos.setPiece(TextIO::getSquare("g3"), Piece::WKNIGHT);
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
     pos.setPiece(TextIO::getSquare("g3"), Piece::WPAWN);
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
     pos.setPiece(TextIO::getSquare("c3"), Piece::EMPTY);
     pos.setPiece(TextIO::getSquare("g3"), Piece::WKING);
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
 
     pos = TextIO::readFEN("8/2k5/3p4/4N3/8/2K3B1/8/8 w - - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
 
     pos = TextIO::readFEN("8/2k5/8/4N3/8/6q1/2K5/8 w - - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
     pos = TextIO::readFEN("8/2k5/8/4N3/8/8/2K5/8 w - - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "Nf7")));
     pos = TextIO::readFEN("2nk4/3P4/8/8/3R4/8/2K5/8 w - - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc8N")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc8N")));
 
     pos = TextIO::readFEN("8/2k5/2p5/1P1P4/8/2K5/8/8 w - - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "d6")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "bxc6")));
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "b6")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "d6")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "bxc6")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "b6")));
 
     pos = TextIO::readFEN("8/8/R1PkP2R/8/8/2K5/8/8 w - - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c7")));
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "e7")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c7")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "e7")));
 
     // Test pawn promotion
     pos = TextIO::readFEN("8/1P6/2kP4/8/8/2K5/8/8 w - - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "d7")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "b8Q")));
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "b8N")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "b8R")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "b8B")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "d7")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "b8Q")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "b8N")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "b8R")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "b8B")));
 
     pos = TextIO::readFEN("8/2P1P3/2k5/8/8/2K5/8/8 w - - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "e8Q")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "e8N")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "e8R")));
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "e8B")));
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c8Q")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c8N")));
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c8R")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c8B")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "e8Q")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "e8N")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "e8R")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "e8B")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c8Q")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c8N")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c8R")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c8B")));
 
     // Test castling
     pos = TextIO::readFEN("8/8/8/8/5k2/8/8/R3K2R w KQ - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
     pos = TextIO::readFEN("8/8/8/8/6k1/8/8/R3K2R w KQ - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
     pos = TextIO::readFEN("8/8/8/8/3k4/8/8/R3K2R w KQ - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
     pos = TextIO::readFEN("8/8/8/8/5k2/8/5P2/R3K2R w KQ - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
     pos = TextIO::readFEN("8/8/8/8/8/8/8/R3K2k w Q - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
     pos = TextIO::readFEN("8/8/8/8/8/8/8/2k1K2R w K - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
     pos.setPiece(TextIO::getSquare("d1"), Piece::WKNIGHT);
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
 
     // Test en passant
     pos = TextIO::readFEN("8/1kp5/8/3P4/8/8/8/4K3 b - - 0 1");
     pos.makeMove(TextIO::stringToMove(pos, "c5"), ui);
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
 
     pos = TextIO::readFEN("3k4/2p5/8/3P4/8/8/3R4/4K3 b - - 0 1");
     pos.makeMove(TextIO::stringToMove(pos, "c5"), ui);
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
 
     pos = TextIO::readFEN("5k2/2p5/8/3P4/8/B7/8/4K3 b - - 0 1");
     pos.makeMove(TextIO::stringToMove(pos, "c5"), ui);
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
 
     pos = TextIO::readFEN("5k2/2p5/8/3P4/1P6/B7/8/4K3 b - - 0 1");
     pos.makeMove(TextIO::stringToMove(pos, "c5"), ui);
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
 
     pos = TextIO::readFEN("8/2p5/8/R2P1k2/8/8/8/4K3 b - - 0 1");
     pos.makeMove(TextIO::stringToMove(pos, "c5"), ui);
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "dxc6")));
 
     // Black pawn moves
     pos = TextIO::readFEN("8/2p5/8/R4k2/1K6/8/8/8 b - - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c5")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c5")));
     pos = TextIO::readFEN("8/2p5/8/R4k2/2K5/8/8/8 b - - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c5")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c5")));
     pos = TextIO::readFEN("8/2p5/8/R4k2/3K4/8/8/8 b - - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c5")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "c5")));
 
     // Black castling
     pos = TextIO::readFEN("r3k2r/8/8/5K2/8/8/8/8 b kq - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
     pos = TextIO::readFEN("r3k2r/8/8/6K1/8/8/8/8 b kq - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O")));
     pos = TextIO::readFEN("r3k2r/8/8/2K5/8/8/8/8 b kq - 0 1");
-    ASSERT(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
+    EXPECT_TRUE(!MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
     pos = TextIO::readFEN("r3k2r/8/8/3K4/8/8/8/8 b kq - 0 1");
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "O-O-O")));
 
     // Black en passant
     pos = TextIO::readFEN("8/8/4k3/8/4p3/8/5PK1/8 w - - 0 1");
     pos.makeMove(TextIO::stringToMove(pos, "f4"), ui);
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "exf3")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "exf3")));
 
     pos = TextIO::readFEN("8/8/4k3/8/K3p1r1/8/5P2/8 w - - 0 1");
     pos.makeMove(TextIO::stringToMove(pos, "f4"), ui);
-    ASSERT(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "exf3")));
+    EXPECT_TRUE(MoveGen::givesCheck(pos, TextIO::stringToMove(pos, "exf3")));
 }
 
-static void
-testRemoveIllegal() {
+TEST(MoveGenTest, testRemoveIllegal) {
     Position pos = TextIO::readFEN("8/3k4/8/2n1rpP1/1P6/1NB5/2QP4/R3K2R w KQ f6 0 1");
     std::vector<std::string> strMoves = getMoveList(pos, true);
-    ASSERT(contains(strMoves, "c2e4"));
-    ASSERT(contains(strMoves, "c3e5"));
-    ASSERT(contains(strMoves, "e1d1"));
-    ASSERT(contains(strMoves, "e1f1"));
-    ASSERT(contains(strMoves, "e1f2"));
-    ASSERT_EQUAL(5, strMoves.size());
+    EXPECT_TRUE(contains(strMoves, "c2e4"));
+    EXPECT_TRUE(contains(strMoves, "c3e5"));
+    EXPECT_TRUE(contains(strMoves, "e1d1"));
+    EXPECT_TRUE(contains(strMoves, "e1f1"));
+    EXPECT_TRUE(contains(strMoves, "e1f2"));
+    EXPECT_EQ(5, strMoves.size());
 
     pos = TextIO::readFEN("4k3/8/8/2KPp1r1/8/8/8/8 w - e6 0 2");
     strMoves = getMoveList(pos, true);
-    ASSERT(!contains(strMoves, "d5e6"));
-    ASSERT_EQUAL(7, strMoves.size());
+    EXPECT_TRUE(!contains(strMoves, "d5e6"));
+    EXPECT_EQ(7, strMoves.size());
 
     pos = TextIO::readFEN("8/6p1/4p3/2k1Pp1B/4KP1p/6rP/8/8 w - f6 0 55");
     strMoves = getMoveList(pos, true);
-    ASSERT(contains(strMoves, "e5f6"));
-    ASSERT_EQUAL(1, strMoves.size());
+    EXPECT_TRUE(contains(strMoves, "e5f6"));
+    EXPECT_EQ(1, strMoves.size());
 }
 
 /** Test that captureList and captureAndcheckList are generated correctly. */
-static void
-testCaptureList() {
+TEST(MoveGenTest, testCaptureList) {
     Position pos = TextIO::readFEN("rnbqkbnr/ppp2ppp/3p1p2/R7/4N3/8/PPPPQPPP/2B1KB1R w Kkq - 0 1");
     getMoveList(pos, false);
 
@@ -500,8 +496,7 @@ testCaptureList() {
     getMoveList(pos, false);
 }
 
-static void
-testCheckEvasions() {
+TEST(MoveGenTest, testCheckEvasions) {
     Position pos = TextIO::readFEN("n7/8/8/7k/5pP1/5K2/8/8 b - g3 0 1");
     getMoveList(pos, false);
 
@@ -511,19 +506,5 @@ testCheckEvasions() {
     pos = TextIO::readFEN("1R6/1brk2p1/2P1p2p/p3Pp2/P7/6P1/1P4P1/2R3K1 b - - 0 1");
     getMoveList(pos, false);
     std::vector<std::string> evList = getCheckEvasions(pos, false);
-    ASSERT(contains(evList, "b7c6"));
-}
-
-
-cute::suite
-MoveGenTest::getSuite() const {
-    cute::suite s;
-    s.push_back(CUTE(testPseudoLegalMoves));
-    s.push_back(CUTE(testPawnMoves));
-    s.push_back(CUTE(testInCheck));
-    s.push_back(CUTE(testGivesCheck));
-    s.push_back(CUTE(testRemoveIllegal));
-    s.push_back(CUTE(testCaptureList));
-    s.push_back(CUTE(testCheckEvasions));
-    return s;
+    EXPECT_TRUE(contains(evList, "b7c6"));
 }

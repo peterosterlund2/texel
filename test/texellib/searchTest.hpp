@@ -29,16 +29,10 @@
 #include "transpositionTable.hpp"
 #include "search.hpp"
 
-#include "suiteBase.hpp"
-
 class Move;
 
-class SearchTest : public SuiteBase {
+class SearchTest {
 public:
-    std::string getName() const override { return "SearchTest"; }
-
-    cute::suite getSuite() const override;
-
     static Move idSearch(Search& sc, int maxDepth, int minProbeDepth = 100);
 
     static std::vector<U64> nullHist;
@@ -47,7 +41,6 @@ public:
     static Search::SearchTables st;
     static TreeLogger treeLog;
 
-private:
     static void testNegaScout();
     static void testDraw50();
     static void testDrawRep();
@@ -56,11 +49,13 @@ private:
     static void testCheckEvasion();
     static void testStalemateTrap();
     static void testKQKRNullMove();
-    static int getSEE(Search& sc, const Move& m);
     static void testSEE();
     static void testScoreMoveList();
     static void testTBSearch();
     static void testFortress();
+
+private:
+    static int getSEE(Search& sc, const Move& m);
 };
 
 #endif /* SEARCHTEST_HPP_ */

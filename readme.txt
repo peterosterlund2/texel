@@ -398,4 +398,4 @@ Syzygy tablebases probing code, Copyright 2011-2013 Ronald de Man.
 Chess Cases font by Matthieu Leschemelle, used by the opening book builder
 graphical user interface.
 
-CUTE unit testing framework, Copyright Peter Sommerlad and Emanuel Graf.
+Google Test framework, Copyright 2008, Google Inc.

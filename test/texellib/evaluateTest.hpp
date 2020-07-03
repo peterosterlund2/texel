@@ -26,15 +26,11 @@
 #ifndef EVALUATETEST_HPP_
 #define EVALUATETEST_HPP_
 
-#include "suiteBase.hpp"
+#include <string>
 
-class EvaluateTest : public SuiteBase {
+
+class EvaluateTest {
 public:
-    std::string getName() const override { return "EvaluateTest"; }
-
-    cute::suite getSuite() const override;
-
-private:
     static void testEvalPos();
     static void testPieceSquareEval();
     static void testTradeBonus();
@@ -65,8 +61,10 @@ private:
     static void testUciParamTable();
     static void testSwindleScore();
     static void testStalePawns();
-    static int getNContactChecks(const std::string& fen);
     static void testContactChecks();
+
+private:
+    static int getNContactChecks(const std::string& fen);
 };
 
 class Position;

@@ -26,19 +26,13 @@
 #ifndef GAMETEST_HPP_
 #define GAMETEST_HPP_
 
-#include "suiteBase.hpp"
 #include "util/util.hpp"
 
 class Position;
 class Evaluate;
 
-class GameTest : public SuiteBase {
+class GameTest {
 public:
-    std::string getName() const override { return "GameTest"; }
-
-    cute::suite getSuite() const override;
-
-private:
     static void testHaveDrawOffer();
     static void testDraw50();
     static void testDrawRep();
@@ -46,10 +40,12 @@ private:
     static void testProcessString();
     static void testGetGameState();
     static void testInsufficientMaterial();
+    static void testPerfT();
+
+private:
     static void doTestPerfTFast(Position& pos, int maxDepth, U64 expectedNodeCounts[]);
     static void doTestPerfTExtensive(Position& pos, int maxDepth, U64 expectedNodeCounts[]);
     static U64 perfT(Position& pos, int depth, Evaluate& eval);
-    static void testPerfT();
 };
 
 #endif /* GAMETEST_HPP_ */

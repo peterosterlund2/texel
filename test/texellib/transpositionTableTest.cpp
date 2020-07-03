@@ -23,19 +23,17 @@
  *      Author: petero
  */
 
-#include "transpositionTableTest.hpp"
 #include "transpositionTable.hpp"
 #include "position.hpp"
 #include "textio.hpp"
 #include "searchTest.hpp"
 #include <iostream>
 
-#include "cute.h"
+#include "gtest/gtest.h"
 
 using TTEntry = TranspositionTable::TTEntry;
 
-static void
-testTTEntry() {
+TEST(TranspositionTableTest, testTTEntry) {
     const int mate0 = SearchConst::MATE0;
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     Move move = TextIO::stringToMove(pos, "e4");
@@ -53,10 +51,10 @@ testTTEntry() {
     ent1.setType(TType::T_EXACT);
     Move tmpMove;
     ent1.getMove(tmpMove);
-    ASSERT_EQUAL(move, tmpMove);
-    ASSERT_EQUAL(score, ent1.getScore(ply));
-    ASSERT_EQUAL(score, ent1.getScore(ply + 3));    // Non-mate score, should be ply-independent
-    ASSERT_EQUAL(false, ent1.getBusy());
+    EXPECT_EQ(move, tmpMove);
+    EXPECT_EQ(score, ent1.getScore(ply));
+    EXPECT_EQ(score, ent1.getScore(ply + 3));    // Non-mate score, should be ply-independent
+    EXPECT_EQ(false, ent1.getBusy());
 
     // Test positive mate score
     TTEntry ent2;
@@ -71,26 +69,26 @@ testTTEntry() {
     ent2.setGeneration(0);
     ent2.setType(TType::T_EXACT);
     ent2.getMove(tmpMove);
-    ASSERT_EQUAL(move, tmpMove);
-    ASSERT_EQUAL(score, ent2.getScore(ply));
-    ASSERT_EQUAL(score + 2, ent2.getScore(ply - 2));
-    ASSERT_EQUAL(true, ent2.getBusy());
+    EXPECT_EQ(move, tmpMove);
+    EXPECT_EQ(score, ent2.getScore(ply));
+    EXPECT_EQ(score + 2, ent2.getScore(ply - 2));
+    EXPECT_EQ(true, ent2.getBusy());
 
     // Compare ent1 and ent2
-    ASSERT(!ent1.betterThan(ent2, 0));  // More depth is good
-    ASSERT(ent2.betterThan(ent1, 0));
+    EXPECT_TRUE(!ent1.betterThan(ent2, 0));  // More depth is good
+    EXPECT_TRUE(ent2.betterThan(ent1, 0));
 
     ent2.setGeneration(1);
-    ASSERT(!ent2.betterThan(ent1, 0));  // ent2 has wrong generation
-    ASSERT(ent2.betterThan(ent1, 1));   // ent1 has wrong generation
+    EXPECT_TRUE(!ent2.betterThan(ent1, 0));  // ent2 has wrong generation
+    EXPECT_TRUE(ent2.betterThan(ent1, 1));   // ent1 has wrong generation
 
     ent2.setGeneration(0);
     ent1.setDepth(7); ent2.setDepth(7);
     ent1.setType(TType::T_GE);
-    ASSERT(ent2.betterThan(ent1, 0));
+    EXPECT_TRUE(ent2.betterThan(ent1, 0));
     ent2.setType(TType::T_LE);
-    ASSERT(!ent2.betterThan(ent1, 0));  // T_GE is equally good as T_LE
-    ASSERT(!ent1.betterThan(ent2, 0));
+    EXPECT_TRUE(!ent2.betterThan(ent1, 0));  // T_GE is equally good as T_LE
+    EXPECT_TRUE(!ent1.betterThan(ent2, 0));
 
     // Test negative mate score
     TTEntry ent3;
@@ -104,9 +102,9 @@ testTTEntry() {
     ent3.setGeneration(0);
     ent3.setType(TType::T_EXACT);
     ent3.getMove(tmpMove);
-    ASSERT_EQUAL(move, tmpMove);
-    ASSERT_EQUAL(score, ent3.getScore(ply));
-    ASSERT_EQUAL(score - 2, ent3.getScore(ply - 2));
+    EXPECT_EQ(move, tmpMove);
+    EXPECT_EQ(score, ent3.getScore(ply));
+    EXPECT_EQ(score - 2, ent3.getScore(ply - 2));
 
     // PV is better than bound if depth similar, but deep bound is better than shallow PV
     ent1.clear();
@@ -115,18 +113,17 @@ testTTEntry() {
     ent2.clear();
     ent2.setDepth(10);
     ent2.setType(TType::T_GE);
-    ASSERT(ent1.betterThan(ent2, 0));
-    ASSERT(!ent2.betterThan(ent1, 0));
+    EXPECT_TRUE( ent1.betterThan(ent2, 0));
+    EXPECT_TRUE(!ent2.betterThan(ent1, 0));
     ent1.setDepth(9);
-    ASSERT(ent1.betterThan(ent2, 0));
-    ASSERT(!ent2.betterThan(ent1, 0));
+    EXPECT_TRUE( ent1.betterThan(ent2, 0));
+    EXPECT_TRUE(!ent2.betterThan(ent1, 0));
     ent1.setDepth(3);
-    ASSERT(!ent1.betterThan(ent2, 0));
-    ASSERT(ent2.betterThan(ent1, 0));
+    EXPECT_TRUE(!ent1.betterThan(ent2, 0));
+    EXPECT_TRUE( ent2.betterThan(ent1, 0));
 }
 
-static void
-testInsert() {
+TEST(TranspositionTableTest, testInsert) {
     TranspositionTable tt(64*1024);
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     std::string moves[] = {
@@ -155,30 +152,29 @@ testInsert() {
         pos.makeMove(m, ui);
         TranspositionTable::TTEntry ent;
         tt.probe(pos.historyHash(), ent);
-        ASSERT_EQUAL(TType::T_EXACT, ent.getType());
+        EXPECT_EQ(TType::T_EXACT, ent.getType());
         int score = i * 17 + 3;
         int ply = i + 1;
         int depth = (i * 2 + 5);
-        ASSERT_EQUAL(score, ent.getScore(ply));
-        ASSERT_EQUAL(depth, ent.getDepth());
-        ASSERT_EQUAL(score * 2 + 3, ent.getEvalScore());
+        EXPECT_EQ(score, ent.getScore(ply));
+        EXPECT_EQ(depth, ent.getDepth());
+        EXPECT_EQ(score * 2 + 3, ent.getEvalScore());
         Move tmpMove;
         ent.getMove(tmpMove);
-        ASSERT_EQUAL(m, tmpMove);
-        ASSERT_EQUAL((i % 2) == 0 || (i == 7), ent.getBusy());
+        EXPECT_EQ(m, tmpMove);
+        EXPECT_EQ((i % 2) == 0 || (i == 7), ent.getBusy());
     }
 }
 
 /**
  * Test special depth logic for mate scores.
  */
-static void
-testMateDepth() {
+TEST(TranspositionTableTest, testMateDepth) {
     TranspositionTable& tt(SearchTest::tt);
     Position pos = TextIO::readFEN("rnbqkbnr/pppp1ppp/8/4p3/8/5P1P/PPPPP1P1/RNBQKBNR b KQkq - 0 2");
     Search sc(pos, SearchTest::nullHist, 0, SearchTest::st, SearchTest::comm, SearchTest::treeLog);
     Move m = SearchTest::idSearch(sc, 2, 100);
-    ASSERT_EQUAL("d8h4", TextIO::moveToUCIString(m));
+    ASSERT_EQ("d8h4", TextIO::moveToUCIString(m));
     UndoInfo ui;
     pos.makeMove(m, ui);
 
@@ -186,19 +182,19 @@ testMateDepth() {
     const int mate0 = SearchConst::MATE0;
     int ply = 5;
     tt.probe(pos.historyHash(), ent);
-    ASSERT_EQUAL(TType::T_EXACT, ent.getType());
-    ASSERT_EQUAL(-(mate0 - 3 - ply), ent.getScore(ply));
-    ASSERT_EQUAL(1, ent.getDepth());
-    ASSERT(ent.isCutOff(-mate0, mate0, ply, 1));
-    ASSERT(!ent.isCutOff(-mate0, mate0, ply, 2));
+    ASSERT_EQ(TType::T_EXACT, ent.getType());
+    ASSERT_EQ(-(mate0 - 3 - ply), ent.getScore(ply));
+    ASSERT_EQ(1, ent.getDepth());
+    ASSERT_TRUE( ent.isCutOff(-mate0, mate0, ply, 1));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0, ply, 2));
 
     ent.setDepth(2);
-    ASSERT(ent.isCutOff(-mate0, mate0, ply, 2));
-    ASSERT(!ent.isCutOff(-mate0, mate0, ply, 3));
+    ASSERT_TRUE( ent.isCutOff(-mate0, mate0, ply, 2));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0, ply, 3));
 
     ent.setDepth(3);
-    ASSERT(ent.isCutOff(-mate0, mate0, ply, 3));
-    ASSERT(ent.isCutOff(-mate0, mate0, ply, 4));
+    ASSERT_TRUE(ent.isCutOff(-mate0, mate0, ply, 3));
+    ASSERT_TRUE(ent.isCutOff(-mate0, mate0, ply, 4));
 
     // A mate score outside the alpha/beta window should always cause a cutoff
     ply = 0;
@@ -206,55 +202,54 @@ testMateDepth() {
     ent.setDepth(3);
     ent.setType(TType::T_EXACT);
     ent.setScore(mate0 - 100, ply);
-    ASSERT(!ent.isCutOff(-mate0, mate0      , ply, 4));
-    ASSERT(!ent.isCutOff(-mate0, mate0 -  99, ply, 4));
-    ASSERT( ent.isCutOff(-mate0, mate0 -  99, ply, 3));
-    ASSERT( ent.isCutOff(-mate0, mate0 - 100, ply, 4));
-    ASSERT( ent.isCutOff(-mate0, mate0 - 110, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0      , ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0 -  99, ply, 4));
+    ASSERT_TRUE( ent.isCutOff(-mate0, mate0 -  99, ply, 3));
+    ASSERT_TRUE( ent.isCutOff(-mate0, mate0 - 100, ply, 4));
+    ASSERT_TRUE( ent.isCutOff(-mate0, mate0 - 110, ply, 4));
 
     ent.setType(TType::T_GE);
-    ASSERT(!ent.isCutOff(-mate0, mate0      , ply, 4));
-    ASSERT(!ent.isCutOff(-mate0, mate0 -  99, ply, 4));
-    ASSERT(!ent.isCutOff(-mate0, mate0 -  99, ply, 3));
-    ASSERT( ent.isCutOff(-mate0, mate0 - 100, ply, 4));
-    ASSERT( ent.isCutOff(-mate0, mate0 - 110, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0      , ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0 -  99, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0 -  99, ply, 3));
+    ASSERT_TRUE( ent.isCutOff(-mate0, mate0 - 100, ply, 4));
+    ASSERT_TRUE( ent.isCutOff(-mate0, mate0 - 110, ply, 4));
 
     ent.setType(TType::T_LE);
-    ASSERT(!ent.isCutOff(-mate0, mate0      , ply, 4));
-    ASSERT(!ent.isCutOff(-mate0, mate0 -  99, ply, 4));
-    ASSERT(!ent.isCutOff(-mate0, mate0 -  99, ply, 3));
-    ASSERT(!ent.isCutOff(-mate0, mate0 - 100, ply, 4));
-    ASSERT(!ent.isCutOff(-mate0, mate0 - 110, ply, 4));
-    ASSERT(!ent.isCutOff(mate0-70, mate0 - 60, ply, 4));
-    ASSERT( ent.isCutOff(mate0-70, mate0 - 60, ply, 3));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0      , ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0 -  99, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0 -  99, ply, 3));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0 - 100, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0 - 110, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(mate0-70, mate0 - 60, ply, 4));
+    ASSERT_TRUE( ent.isCutOff(mate0-70, mate0 - 60, ply, 3));
 
     ent.setType(TType::T_EXACT);
     ent.setScore(-(mate0 - 100), ply);
-    ASSERT(!ent.isCutOff(-mate0        , mate0, ply, 4));
-    ASSERT(!ent.isCutOff(-(mate0 -  99), mate0, ply, 4));
-    ASSERT( ent.isCutOff(-(mate0 -  99), mate0, ply, 3));
-    ASSERT( ent.isCutOff(-(mate0 - 100), mate0, ply, 4));
-    ASSERT( ent.isCutOff(-(mate0 - 110), mate0, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-mate0        , mate0, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-(mate0 -  99), mate0, ply, 4));
+    ASSERT_TRUE( ent.isCutOff(-(mate0 -  99), mate0, ply, 3));
+    ASSERT_TRUE( ent.isCutOff(-(mate0 - 100), mate0, ply, 4));
+    ASSERT_TRUE( ent.isCutOff(-(mate0 - 110), mate0, ply, 4));
 
     ent.setType(TType::T_LE);
-    ASSERT(!ent.isCutOff(-mate0        , mate0, ply, 4));
-    ASSERT(!ent.isCutOff(-(mate0 -  99), mate0, ply, 4));
-    ASSERT(!ent.isCutOff(-(mate0 -  99), mate0, ply, 3));
-    ASSERT( ent.isCutOff(-(mate0 - 100), mate0, ply, 4));
-    ASSERT( ent.isCutOff(-(mate0 - 110), mate0, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-mate0        , mate0, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-(mate0 -  99), mate0, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-(mate0 -  99), mate0, ply, 3));
+    ASSERT_TRUE( ent.isCutOff(-(mate0 - 100), mate0, ply, 4));
+    ASSERT_TRUE( ent.isCutOff(-(mate0 - 110), mate0, ply, 4));
 
     ent.setType(TType::T_GE);
-    ASSERT(!ent.isCutOff(-mate0        , mate0, ply, 4));
-    ASSERT(!ent.isCutOff(-(mate0 -  99), mate0, ply, 4));
-    ASSERT(!ent.isCutOff(-(mate0 -  99), mate0, ply, 3));
-    ASSERT(!ent.isCutOff(-(mate0 - 100), mate0, ply, 4));
-    ASSERT(!ent.isCutOff(-(mate0 - 110), mate0, ply, 4));
-    ASSERT(!ent.isCutOff(-(mate0 - 60), -(mate0 - 70), ply, 4));
-    ASSERT( ent.isCutOff(-(mate0 - 60), -(mate0 - 70), ply, 3));
+    ASSERT_TRUE(!ent.isCutOff(-mate0        , mate0, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-(mate0 -  99), mate0, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-(mate0 -  99), mate0, ply, 3));
+    ASSERT_TRUE(!ent.isCutOff(-(mate0 - 100), mate0, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-(mate0 - 110), mate0, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-(mate0 - 60), -(mate0 - 70), ply, 4));
+    ASSERT_TRUE( ent.isCutOff(-(mate0 - 60), -(mate0 - 70), ply, 3));
 }
 
-static void
-testHashFuncBackComp() {
+TEST(TranspositionTableTest, testHashFuncBackComp) {
     U64 hash1 = 0;
     U64 hash2 = 0;
     auto addToHash = [&](const Position& pos) {
@@ -274,20 +269,20 @@ testHashFuncBackComp() {
             addToHash(pos);
         }
     }
-    ASSERT_EQUAL(0x5BBFE2B3AFB006C2ULL, hash1);
-    ASSERT_EQUAL(0xAD4B1EC702331510ULL, hash2);
+    EXPECT_EQ(0x5BBFE2B3AFB006C2ULL, hash1);
+    EXPECT_EQ(0xAD4B1EC702331510ULL, hash2);
 
     addFenToHash("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1");
-    ASSERT_EQUAL(0x75822BCC01D378C6ULL, hash1);
-    ASSERT_EQUAL(0x1673E04BA881DF7EULL, hash2);
+    EXPECT_EQ(0x75822BCC01D378C6ULL, hash1);
+    EXPECT_EQ(0x1673E04BA881DF7EULL, hash2);
 
     for (int i = 0; i < 16; i++) {
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
         pos.setCastleMask(i);
         addToHash(pos);
     }
-    ASSERT_EQUAL(0x3701B8575EB511B2ULL, hash1);
-    ASSERT_EQUAL(0xE966E3BD5C3A5538ULL, hash2);
+    EXPECT_EQ(0x3701B8575EB511B2ULL, hash1);
+    EXPECT_EQ(0xE966E3BD5C3A5538ULL, hash2);
 
     for (int i = 0; i < 110; i++) {
         Position pos = TextIO::readFEN(TextIO::startPosFEN);
@@ -297,8 +292,8 @@ testHashFuncBackComp() {
         pos.setHalfMoveClock(i);
         addToHash(pos);
     }
-    ASSERT_EQUAL(0x557086EB66B28115ULL, hash1);
-    ASSERT_EQUAL(0xB7D0875484983968ULL, hash2);
+    EXPECT_EQ(0x557086EB66B28115ULL, hash1);
+    EXPECT_EQ(0xB7D0875484983968ULL, hash2);
 
     addFenToHash("rnbqkbnr/p1pppppp/8/8/Pp6/8/1PPPPPPP/RNBQKBNR b KQkq a3 0 2");
     addFenToHash("rnbqkbnr/pp1ppppp/8/8/1Pp5/8/P1PPPPPP/RNBQKBNR b KQkq b3 0 1");
@@ -308,16 +303,6 @@ testHashFuncBackComp() {
     addFenToHash("rnbqkbnr/pppp1ppp/8/8/4pP2/8/PPPPP1PP/RNBQKBNR b KQkq f3 0 1");
     addFenToHash("rnbqkbnr/ppppp1pp/8/8/5pP1/8/PPPPPP1P/RNBQKBNR b KQkq g3 0 1");
     addFenToHash("rnbqkbnr/pppppp1p/8/8/6pP/8/PPPPPPP1/RNBQKBNR b KQkq h3 0 1");
-    ASSERT_EQUAL(0xFE05FCA83AC9EF47ULL, hash1);
-    ASSERT_EQUAL(0x9CCCE083C803D732ULL, hash2);
-}
-
-cute::suite
-TranspositionTableTest::getSuite() const {
-    cute::suite s;
-    s.push_back(CUTE(testTTEntry));
-    s.push_back(CUTE(testInsert));
-    s.push_back(CUTE(testMateDepth));
-    s.push_back(CUTE(testHashFuncBackComp));
-    return s;
+    EXPECT_EQ(0xFE05FCA83AC9EF47ULL, hash1);
+    EXPECT_EQ(0x9CCCE083C803D732ULL, hash2);
 }
