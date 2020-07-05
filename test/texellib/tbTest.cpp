@@ -37,6 +37,14 @@
 
 #include "gtest/gtest.h"
 
+#define ASSERT_EQt(v1, v2) \
+    do { \
+        EXPECT_EQ(v1, v2); \
+        if (!(v1 == v2)) \
+            throw std::runtime_error("Aborting test"); \
+    } while(false)
+
+
 void
 TBTest::initTB(const std::string& gtbPath, int cacheMB,
                const std::string& rtbPath) {
@@ -45,6 +53,9 @@ TBTest::initTB(const std::string& gtbPath, int cacheMB,
 
 /** Copy selected TB files to a temporary directory. */
 static void setupTBFiles(const std::vector<std::string>& tbFiles) {
+#ifdef _WIN32
+    throw std::runtime_error("Test not implemented for Windows");
+#endif
     auto system = [](const std::string& cmd) {
         int ret = ::system(cmd.c_str());
         ASSERT_EQ(0, ret);
@@ -73,17 +84,17 @@ static int probeCompare(const Position& pos, int ply, int& score) {
     TranspositionTable::TTEntry ent;
     Position pos2(pos);
     int resDTM = TBProbe::gtbProbeDTM(pos2, ply, dtm);
-    EXPECT_EQ(pos, pos2);
+    ASSERT_EQt(pos, pos2);
     int resWDL = TBProbe::gtbProbeWDL(pos2, ply, wdl);
-    EXPECT_EQ(pos, pos2);
+    ASSERT_EQt(pos, pos2);
     int resWDL2 = TBProbe::rtbProbeWDL(pos2, ply, wdl2, ent);
-    EXPECT_EQ(pos, pos2);
+    ASSERT_EQt(pos, pos2);
     int resDTZ = TBProbe::rtbProbeDTZ(pos2, ply, dtz, ent);
-    EXPECT_EQ(pos, pos2);
+    ASSERT_EQt(pos, pos2);
 
-    EXPECT_EQ(resDTM, resWDL);
-    EXPECT_EQ(resWDL, resWDL2);
-    EXPECT_EQ(resWDL2, resDTZ);
+    ASSERT_EQt(resDTM, resWDL);
+    ASSERT_EQt(resWDL, resWDL2);
+    ASSERT_EQt(resWDL2, resDTZ);
 
     if (!resDTM)
         return false;
@@ -105,9 +116,9 @@ static int probeCompare(const Position& pos, int ply, int& score) {
         EXPECT_GE(dtz, dtm);
         EXPECT_LE(dtz, wdl2);
     } else {
-        EXPECT_EQ(0, wdl);
-        EXPECT_EQ(0, wdl2);
-        EXPECT_EQ(0, dtz);
+        ASSERT_EQt(0, wdl);
+        ASSERT_EQt(0, wdl2);
+        ASSERT_EQt(0, dtz);
     }
 
     score = dtm;
@@ -118,6 +129,7 @@ static int probeCompare(const Position& pos, int ply, int& score) {
 static int
 probeDTM(const Position& pos, int ply, int& score) {
     std::string fen = TextIO::toFEN(pos);
+    SCOPED_TRACE(fen);
     int ret = probeCompare(pos, ply, score);
     Position symPos = swapColors(pos);
     int score2;
@@ -256,7 +268,7 @@ TBTest::kpkTest() {
     }
 }
 
-TEST(TBTtest, rtbTest) {
+TEST(TBTest, rtbTest) {
     TBTest::rtbTest();
 }
 
