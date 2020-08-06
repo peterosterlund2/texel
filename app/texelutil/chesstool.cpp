@@ -521,7 +521,6 @@ ChessTool::computeSearchScores(std::istream& is, const std::string& script, int 
                     std::cerr << "Not a number: " << lines[i] << std::endl;
                     return r;
                 }
-
             }
             return r;
         };
