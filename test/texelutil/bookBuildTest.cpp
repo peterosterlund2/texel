@@ -609,16 +609,14 @@ BookBuildTest::testSelector() {
         Book book(backupFile);
         class TestSelector : public Book::PositionSelector {
         public:
-            explicit TestSelector(Book& b) : book(b) { }
+            explicit TestSelector() { }
             bool getNextPosition(Position& pos, Move& move) override {
                 nCalls++;
                 return false;
             }
             int nCalls = 0;
-        private:
-            Book& book;
         };
-        TestSelector selector(book);
+        TestSelector selector;
         int searchTime = 10;
         int nThreads = 1;
         book.extendBook(selector, searchTime, nThreads, tt);
@@ -634,7 +632,7 @@ BookBuildTest::testSelector() {
         Book book(backupFile);
         class TestSelector : public Book::PositionSelector {
         public:
-            explicit TestSelector(Book& b) : book(b) { }
+            TestSelector() { }
             bool getNextPosition(Position& pos, Move& move) override {
                 nCalls++;
                 if (idx < (int)bookLine.size()) {
@@ -650,12 +648,11 @@ BookBuildTest::testSelector() {
             }
             int nCalls = 0;
         private:
-            Book& book;
             Position currPos = TextIO::readFEN(TextIO::startPosFEN);
             std::vector<std::string> bookLine { "e4", "e5", "Nf3", "Nc6", "Bb5", "a6", "Ba4", "b5" };
             int idx = 0;
         };
-        TestSelector selector(book);
+        TestSelector selector;
         int searchTime = 10;
         int nThreads = 1;
         book.extendBook(selector, searchTime, nThreads, tt);
