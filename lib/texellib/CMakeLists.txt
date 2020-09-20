@@ -120,7 +120,8 @@ if(UNIX AND NOT ANDROID)
 endif()
 
 if(USE_BMI2)
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+      CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     require_compiler_flag("-mbmi2")
     target_compile_options(texellib
       PUBLIC "-mbmi2")
@@ -130,7 +131,8 @@ if(USE_BMI2)
 endif()
 
 if(USE_POPCNT)
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+      CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     require_compiler_flag("-mpopcnt")
     target_compile_options(texellib
       PUBLIC "-mpopcnt")
