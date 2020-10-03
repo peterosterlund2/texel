@@ -51,7 +51,7 @@ public:
 
 private:
     static const int MAX_MOVES = 256;
-    int buf[sizeof(Move[MAX_MOVES])/sizeof(int)];
+    alignas(Move) int buf[sizeof(Move[MAX_MOVES])/sizeof(int)];
 };
 
 /**
@@ -149,6 +149,7 @@ MoveList::operator[](int i) const {
 
 inline void
 MoveList::addMove(int from, int to, int promoteTo) {
+    static_assert(sizeof(Move) % sizeof(int) == 0, "Unsupported sizeof(Move) value");
     Move& m = (*this)[size++];
     new (&m) Move(from, to, promoteTo, 0);
 }
