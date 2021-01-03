@@ -33,11 +33,12 @@
 #include "textio.hpp"
 #include "gametree.hpp"
 #include "clustertt.hpp"
+#include "threadpool.hpp"
 #include <unordered_set>
 #include <random>
 
-MatchBookCreator::MatchBookCreator() {
-
+MatchBookCreator::MatchBookCreator(int nWorkers)
+    : nWorkers(nWorkers) {
 }
 
 void
@@ -99,56 +100,68 @@ MatchBookCreator::evaluateBookLines(std::vector<BookLine>& lines, int searchTime
     TranspositionTable tt(256*1024*1024);
     Notifier notifier;
     ThreadCommunicator comm(nullptr, tt, notifier, false);
-    std::shared_ptr<Evaluate::EvalHashTables> et;
+    struct ThreadData {
+        std::shared_ptr<Evaluate::EvalHashTables> et;
+    };
+    std::vector<ThreadData> tdVec(nWorkers);
+    std::mutex mutex;
 
-#pragma omp parallel for schedule(dynamic) default(none) shared(lines,tt,comm,searchTime,os) private(et) firstprivate(nLines)
+    ThreadPool<int> pool(nWorkers);
     for (int i = 0; i < nLines; i++) {
-        BookLine& bl = lines[i];
+        auto func = [&lines,&tt,&comm,searchTime,&os,tdVec,&mutex,i](int workerNo) mutable {
+            ThreadData& td = tdVec[workerNo];
+            BookLine& bl = lines[i];
 
-        KillerTable kt;
-        History ht;
-        TreeLogger treeLog;
-        if (!et)
-            et = Evaluate::getEvalHashTables();
+            KillerTable kt;
+            History ht;
+            TreeLogger treeLog;
+            if (!td.et)
+                td.et = Evaluate::getEvalHashTables();
 
-        Position pos = TextIO::readFEN(TextIO::startPosFEN);
-        UndoInfo ui;
-        std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2 + bl.moves.size());
-        int posHashListSize = 0;
-        for (const Move& m : bl.moves) {
-            posHashList[posHashListSize++] = pos.zobristHash();
-            pos.makeMove(m, ui);
-            if (pos.getHalfMoveClock() == 0)
-                posHashListSize = 0;
-        }
+            Position pos = TextIO::readFEN(TextIO::startPosFEN);
+            UndoInfo ui;
+            std::vector<U64> posHashList(SearchConst::MAX_SEARCH_DEPTH * 2 + bl.moves.size());
+            int posHashListSize = 0;
+            for (const Move& m : bl.moves) {
+                posHashList[posHashListSize++] = pos.zobristHash();
+                pos.makeMove(m, ui);
+                if (pos.getHalfMoveClock() == 0)
+                    posHashListSize = 0;
+            }
 
-        MoveList legalMoves;
-        MoveGen::pseudoLegalMoves(pos, legalMoves);
-        MoveGen::removeIllegal(pos, legalMoves);
+            MoveList legalMoves;
+            MoveGen::pseudoLegalMoves(pos, legalMoves);
+            MoveGen::removeIllegal(pos, legalMoves);
 
-        Search::SearchTables st(comm.getCTT(), kt, ht, *et);
-        Search sc(pos, posHashList, posHashListSize, st, comm, treeLog);
-        sc.timeLimit(searchTime, searchTime);
+            Search::SearchTables st(comm.getCTT(), kt, ht, *td.et);
+            Search sc(pos, posHashList, posHashListSize, st, comm, treeLog);
+            sc.timeLimit(searchTime, searchTime);
 
-        int maxDepth = -1;
-        S64 maxNodes = -1;
-        int maxPV = 1;
-        bool onlyExact = true;
-        int minProbeDepth = 1;
-        Move bestMove = sc.iterativeDeepening(legalMoves, maxDepth, maxNodes, maxPV,
-                                              onlyExact, minProbeDepth);
-        int score = bestMove.score();
-        if (!pos.isWhiteMove())
-            score = -score;
-        bl.score = score;
-#pragma omp critical
-        {
-            os << std::setw(5) << i << ' ' << std::setw(6) << score;
-            for (Move m : bl.moves)
-                os << ' ' << TextIO::moveToUCIString(m);
-            os << std::endl;
-        }
+            int maxDepth = -1;
+            S64 maxNodes = -1;
+            int maxPV = 1;
+            bool onlyExact = true;
+            int minProbeDepth = 1;
+            Move bestMove = sc.iterativeDeepening(legalMoves, maxDepth, maxNodes, maxPV,
+                                                  onlyExact, minProbeDepth);
+            int score = bestMove.score();
+            if (!pos.isWhiteMove())
+                score = -score;
+            bl.score = score;
+            {
+                std::lock_guard<std::mutex> L(mutex);
+                os << std::setw(5) << i << ' ' << std::setw(6) << score;
+                for (Move m : bl.moves)
+                    os << ' ' << TextIO::moveToUCIString(m);
+                os << std::endl;
+            }
+            return 0;
+        };
+        pool.addTask(func);
     }
+    int dummy;
+    while (pool.getResult(dummy))
+        ;
 }
 
 void

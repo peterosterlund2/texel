@@ -631,13 +631,13 @@ main(int argc, char* argv[]) {
             if (!str2Num(argv[2], depth) || (depth < 0) ||
                 !str2Num(argv[3], searchTime) || (searchTime <= 0))
                 usage();
-            MatchBookCreator mbc;
+            MatchBookCreator mbc(nWorkers);
             mbc.createBook(depth, searchTime, std::cout);
         } else if (cmd == "countuniq") {
             if (argc != 3)
                 usage();
             std::string pgnFile = argv[2];
-            MatchBookCreator mbc;
+            MatchBookCreator mbc(nWorkers);
             mbc.countUniq(pgnFile, std::cout);
         } else if (cmd == "pgnstat") {
             if (argc < 3 || argc > 4)
@@ -650,7 +650,7 @@ main(int argc, char* argv[]) {
                     usage();
             }
             std::string pgnFile = argv[2];
-            MatchBookCreator mbc;
+            MatchBookCreator mbc(nWorkers);
             mbc.pgnStat(pgnFile, pairMode, std::cout);
         } else if (cmd == "proofgame") {
             std::string initFen, goalFen;

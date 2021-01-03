@@ -38,7 +38,7 @@ class Position;
 class MatchBookCreator {
 public:
     /** Constructor. */
-    MatchBookCreator();
+    MatchBookCreator(int nWorkers);
 
     /** Create match book consisting of all unique positions after
      * playing "depth" half-moves from the starting position. A score
@@ -79,6 +79,7 @@ private:
 
 
     std::map<U64, BookLine> bookLines;
+    const int nWorkers;
 };
 
 
