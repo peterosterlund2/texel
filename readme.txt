@@ -371,8 +371,8 @@ Additional source code
 Source code for Texel's automatic test suite is provided in the test directory.
 
 Source code for various tools used during Texel development is provided in the
-app/texelutil directory. Note that this program uses OpenMP and depends on the
-libraries Armadillo and GSL.
+app/texelutil directory. Note that this program depends on the libraries
+Armadillo and GSL.
 
 Source code for an interactive interface to the texel book building algorithm is
 provided in the app/bookgui directory. It depends on gtkmm-3.0 and probably only

@@ -20,12 +20,6 @@ if(NOT GSL_FOUND)
   set(all_found false)
 endif()
 
-find_package(OpenMP)
-if(NOT OpenMP_CXX_FOUND)
-  message(STATUS "OpenMP not found")
-  set(all_found false)
-endif()
-
 if(all_found)
   add_executable(texelutil ${src_texelutil})
   target_include_directories(texelutil
@@ -34,7 +28,6 @@ if(all_found)
     PUBLIC texelutillib
     PUBLIC ${ARMADILLO_LIBRARIES}
     PUBLIC GSL::gsl
-    PUBLIC OpenMP::OpenMP_CXX
     )
 else()
   message("Not building texelutil")
