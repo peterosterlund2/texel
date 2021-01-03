@@ -214,7 +214,7 @@ private:
     double computeMoveOrderObjective(std::vector<PositionInfo>& positions, const ScoreToProb& sp);
 
     /** Score moves (for move ordering) based on static rules. */
-    void staticScoreMoveListQuiet(Position& pos, Evaluate& eval, MoveList& moves);
+    static void staticScoreMoveListQuiet(Position& pos, Evaluate& eval, MoveList& moves);
 
     bool useEntropyErrorFunction;
     bool optimizeMoveOrdering;

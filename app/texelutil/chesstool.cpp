@@ -1744,52 +1744,64 @@ ChessTool::computeMoveOrderObjective(std::vector<PositionInfo>& positions, const
     const int beg = 0;
     const int end = positions.size();
 
-    std::shared_ptr<Evaluate::EvalHashTables> et;
-    Position pos;
+    struct ThreadData {
+        std::shared_ptr<Evaluate::EvalHashTables> et;
+        Position pos;
+    };
+    std::vector<ThreadData> tdVec(nWorkers);
 
     const int chunkSize = 5000;
 
-#pragma omp parallel for default(none) shared(positions,sp) private(et,pos) firstprivate(beg,end)
+    ThreadPool<int> pool(nWorkers);
     for (int c = beg; c < end; c += chunkSize) {
-        if (!et)
-            et = Evaluate::getEvalHashTables();
-        Evaluate eval(*et);
+        int beginIndex = c;
+        int endIndex = std::min(c + chunkSize, end);
+        auto func = [&positions,&sp,&tdVec,beginIndex,endIndex](int workerNo) mutable {
+            ThreadData& td = tdVec[workerNo];
+            if (!td.et)
+                td.et = Evaluate::getEvalHashTables();
+            Evaluate eval(*td.et);
+            Position& pos = td.pos;
 
-        for (int i = 0; i < chunkSize; i++) {
-            if (c + i >= end)
-                break;
-            PositionInfo& pi = positions[c + i];
-            pos.deSerialize(pi.posData);
+            for (int i = beginIndex; i < endIndex; i++) {
+                PositionInfo& pi = positions[i];
+                pos.deSerialize(pi.posData);
 
-            MoveList moves;
-            MoveGen::pseudoLegalMoves(pos, moves);
-            MoveGen::removeIllegal(pos, moves);
+                MoveList moves;
+                MoveGen::pseudoLegalMoves(pos, moves);
+                MoveGen::removeIllegal(pos, moves);
 
-            staticScoreMoveListQuiet(pos, eval, moves);
+                staticScoreMoveListQuiet(pos, eval, moves);
 
-            double probSum = 0;
-            for (int mi = 0; mi < moves.size; mi++) {
-                Move& m = moves[mi];
-                if (pos.getPiece(m.to()) != Piece::EMPTY)
-                    continue;
-                probSum += sp.getProb(m.score());
+                double probSum = 0;
+                for (int mi = 0; mi < moves.size; mi++) {
+                    Move& m = moves[mi];
+                    if (pos.getPiece(m.to()) != Piece::EMPTY)
+                        continue;
+                    probSum += sp.getProb(m.score());
+                }
+                double probFactor = probSum <= 0 ? 1 : 1 / probSum;
+                double errSum = 0;
+                int errCnt = 0;
+                for (int mi = 0; mi < moves.size; mi++) {
+                    Move& m = moves[mi];
+                    if (pos.getPiece(m.to()) != Piece::EMPTY)
+                        continue;
+                    double p = sp.getProb(m.score()) * probFactor;
+                    double expectedP = m.getCompressedMove() == pi.cMove ? 1 : 0;
+                    double err = p - expectedP;
+                    errSum += err * err;
+                    errCnt++;
+                }
+                pi.result = errCnt > 0 ? errSum / errCnt : -1;
             }
-            double probFactor = probSum <= 0 ? 1 : 1 / probSum;
-            double errSum = 0;
-            int errCnt = 0;
-            for (int mi = 0; mi < moves.size; mi++) {
-                Move& m = moves[mi];
-                if (pos.getPiece(m.to()) != Piece::EMPTY)
-                    continue;
-                double p = sp.getProb(m.score()) * probFactor;
-                double expectedP = m.getCompressedMove() == pi.cMove ? 1 : 0;
-                double err = p - expectedP;
-                errSum += err * err;
-                errCnt++;
-            }
-            pi.result = errCnt > 0 ? errSum / errCnt : -1;
-        }
+            return 0;
+        };
+        pool.addTask(func);
     }
+    int dummy;
+    while (pool.getResult(dummy))
+        ;
 
     double errSum = 0;
     int errCnt = 0;
