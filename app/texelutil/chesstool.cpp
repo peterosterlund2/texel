@@ -158,6 +158,19 @@ ChessTool::readStream(std::istream& is) {
 
 const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 
+static void writeFEN(std::ostream& os, const std::string& fen,
+                     double result, int searchScore, int qScore, int gameNo,
+                     const std::string& extra = "") {
+    os << fen << " : "
+       << result << " : "
+       << searchScore << " : "
+       << qScore << " : "
+       << gameNo;
+    if (!extra.empty())
+        os << " : " << extra;
+    os << '\n';
+}
+
 void
 ChessTool::pgnToFen(std::istream& is, int everyNth) {
     static std::vector<U64> nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
@@ -213,8 +226,7 @@ ChessTool::pgnToFen(std::istream& is, int everyNth) {
                 score = -score;
                 commentScore = -commentScore;
             }
-            std::cout << fen << " : " << rScore << " : " << commentScore << " : " << score
-                      << " : " << gameNo << " : " << move << '\n';
+            writeFEN(std::cout, fen, rScore, commentScore, score, gameNo, move);
         }
     }
     std::cout << std::flush;
@@ -465,8 +477,7 @@ ChessTool::outliers(std::istream& is, int threshold) {
             ((pi.qScore <= -threshold) && (pi.result > 0.0))) {
             pos.deSerialize(pi.posData);
             std::string fen = TextIO::toFEN(pos);
-            std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore
-                      << " : " << pi.gameNo << '\n';
+            writeFEN(std::cout, fen, pi.result, pi.searchScore, pi.qScore, pi.gameNo);
         }
     }
     std::cout << std::flush;
@@ -538,8 +549,7 @@ ChessTool::computeSearchScores(std::istream& is, const std::string& script, int 
                 const PositionInfo& pi = positions[i];
                 pos.deSerialize(pi.posData);
                 std::string fen = TextIO::toFEN(pos);
-                std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore
-                          << " : " << pi.gameNo << '\n';
+                writeFEN(std::cout, fen, pi.result, pi.searchScore, pi.qScore, pi.gameNo);
             }
             std::cout << std::flush;
         } else {
@@ -593,8 +603,7 @@ ChessTool::evalEffect(std::istream& is, const std::vector<ParamValue>& parValues
 
         pos.deSerialize(pi.posData);
         std::string fen = TextIO::toFEN(pos);
-        std::cout << fen << " : " << pi.result << " : " << pi.searchScore << " : " << pi.qScore
-                  << " : " << pi.gameNo << " : " << ss.str() << '\n';
+        writeFEN(std::cout, fen, pi.result, pi.searchScore, pi.qScore, pi.gameNo, ss.str());
     }
     std::cout << std::flush;
 }
