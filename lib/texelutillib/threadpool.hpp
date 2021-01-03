@@ -54,6 +54,10 @@ public:
      *  The results are not necessarily returned in the same order as the tasks were added. */
     bool getResult(Result& result);
 
+    /** Wait for all results and call func(result) for each result. */
+    template <typename Func>
+    void getAllResults(Func func);
+
 private:
     void workerLoop(int workerNo);
 
@@ -145,6 +149,14 @@ void ThreadPool<Result>::workerLoop(int workerNo) {
                 completeCv.notify_all();
         }
     }
+}
+
+template <typename Result>
+template <typename Func>
+void ThreadPool<Result>::getAllResults(Func func) {
+    Result res;
+    while (getResult(res))
+        func(res);
 }
 
 #endif

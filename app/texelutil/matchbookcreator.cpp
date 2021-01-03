@@ -159,9 +159,7 @@ MatchBookCreator::evaluateBookLines(std::vector<BookLine>& lines, int searchTime
         };
         pool.addTask(func);
     }
-    int dummy;
-    while (pool.getResult(dummy))
-        ;
+    pool.getAllResults([](int){});
 }
 
 void

@@ -1598,9 +1598,7 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
         };
         pool.addTask(func);
     }
-    int dummy;
-    while (pool.getResult(dummy))
-        ;
+    pool.getAllResults([](int){});
 
     if (error)
         throw ChessParseError("Invalid file format");
@@ -1696,9 +1694,7 @@ ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int 
         };
         pool.addTask(func);
     }
-    int dummy;
-    while (pool.getResult(dummy))
-        ;
+    pool.getAllResults([](int){});
 }
 
 double
@@ -1799,9 +1795,7 @@ ChessTool::computeMoveOrderObjective(std::vector<PositionInfo>& positions, const
         };
         pool.addTask(func);
     }
-    int dummy;
-    while (pool.getResult(dummy))
-        ;
+    pool.getAllResults([](int){});
 
     double errSum = 0;
     int errCnt = 0;
