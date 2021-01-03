@@ -248,14 +248,6 @@ getEPSquares(const Position& pos) {
     }
 }
 
-/** Call func(pos) for all positions in a given tablebase.
- * func() must not modify pos. */
-template <typename Func>
-static void
-iteratePositions(const std::string& tbType, Func func) {
-    iteratePositions(tbType, true, func);
-}
-
 template <typename Func>
 static void
 iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
@@ -392,6 +384,14 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
             }
         }
     }
+}
+
+/** Call func(pos) for all positions in a given tablebase.
+ * func() must not modify pos. */
+template <typename Func>
+static void
+iteratePositions(const std::string& tbType, Func func) {
+    iteratePositions(tbType, true, func);
 }
 
 void
