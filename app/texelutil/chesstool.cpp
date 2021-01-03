@@ -1657,37 +1657,48 @@ ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int 
     Notifier notifier;
     ThreadCommunicator comm(nullptr, tt, notifier, false);
 
-    std::vector<U64> nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
-    KillerTable kt;
-    History ht;
-    std::shared_ptr<Evaluate::EvalHashTables> et;
-    TreeLogger treeLog;
-    Position pos;
+    struct ThreadData {
+        std::vector<U64> nullHist = std::vector<U64>(SearchConst::MAX_SEARCH_DEPTH * 2);
+        KillerTable kt;
+        History ht;
+        std::shared_ptr<Evaluate::EvalHashTables> et;
+        TreeLogger treeLog;
+        Position pos;
+    };
+    std::vector<ThreadData> tdVec(nWorkers);
 
     const int chunkSize = 5000;
-
-#pragma omp parallel for default(none) shared(positions,tt,comm) private(kt,ht,et,treeLog,pos) firstprivate(nullHist,beg,end)
+    ThreadPool<int> pool(nWorkers);
     for (int c = beg; c < end; c += chunkSize) {
-        if (!et)
-            et = Evaluate::getEvalHashTables();
-        Search::SearchTables st(comm.getCTT(), kt, ht, *et);
+        int beginIndex = c;
+        int endIndex = std::min(c + chunkSize, end);
+        auto func = [&comm,&positions,&tdVec,beginIndex,endIndex](int workerNo) mutable {
+            ThreadData& td = tdVec[workerNo];
+            if (!td.et)
+                td.et = Evaluate::getEvalHashTables();
+            Search::SearchTables st(comm.getCTT(), td.kt, td.ht, *td.et);
 
-        const int mate0 = SearchConst::MATE0;
-        Search sc(pos, nullHist, 0, st, comm, treeLog);
+            const int mate0 = SearchConst::MATE0;
+            Position& pos = td.pos;
+            Search sc(pos, td.nullHist, 0, st, comm, td.treeLog);
 
-        for (int i = 0; i < chunkSize; i++) {
-            if (c + i >= end)
-                break;
-            PositionInfo& pi = positions[c + i];
-            pos.deSerialize(pi.posData);
-            sc.init(pos, nullHist, 0);
-            sc.q0Eval = UNKNOWN_SCORE;
-            int score = sc.quiesce(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
-            if (!pos.isWhiteMove())
-                score = -score;
-            pi.qScore = score;
-        }
+            for (int i = beginIndex; i < endIndex; i++) {
+                PositionInfo& pi = positions[i];
+                pos.deSerialize(pi.posData);
+                sc.init(pos, td.nullHist, 0);
+                sc.q0Eval = UNKNOWN_SCORE;
+                int score = sc.quiesce(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
+                if (!pos.isWhiteMove())
+                    score = -score;
+                pi.qScore = score;
+            }
+            return 0;
+        };
+        pool.addTask(func);
     }
+    int dummy;
+    while (pool.getResult(dummy))
+        ;
 }
 
 double
