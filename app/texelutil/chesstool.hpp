@@ -81,9 +81,10 @@ public:
      * @param optmizeMoveOrdering  If true, optimize static move ordering parameters
      *                             instead of evaluation function parameters.
      * @param useSearchScore       If true, use the search score instead of
-     *                             the game result when optimizing. */
+     *                             the game result when optimizing.
+     * @param nWorkers             Number of worker threads to use. */
     ChessTool(bool useEntropyErrorFunction, bool optimizeMoveOrdering,
-              bool useSearchScore);
+              bool useSearchScore, int nWorkers);
 
     /** Setup tablebase directory paths. */
     static void setupTB();
@@ -126,9 +127,8 @@ public:
     /** Print positions where abs(qScore) >= threshold and game result != (1+sign(qScore))/2. */
     void outliers(std::istream& is, int threshold);
 
-    /** In a FEN file, update the search score in each line by running a script to get the new score.
-     *  Use "nWorkers" worker threads. */
-    void computeSearchScores(std::istream& is, const std::string& script, int nWorkers);
+    /** In a FEN file, update the search score in each line by running a script to get the new score. */
+    void computeSearchScores(std::istream& is, const std::string& script);
 
     /** Print how much position evaluation improves when parValues are applied to evaluation function.
      * Positions with no change are not printed. */
@@ -219,6 +219,7 @@ private:
     bool useEntropyErrorFunction;
     bool optimizeMoveOrdering;
     bool useSearchScore;
+    const int nWorkers;
 };
 
 

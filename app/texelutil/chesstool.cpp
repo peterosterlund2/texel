@@ -121,11 +121,12 @@ static std::vector<std::string> splitLines(const std::string& lines) {
 
 // --------------------------------------------------------------------------------
 
-ChessTool::ChessTool(bool useEntropyErr, bool optMoveOrder, bool useSearchScore)
+ChessTool::ChessTool(bool useEntropyErr, bool optMoveOrder, bool useSearchScore,
+                     int nWorkers)
     : useEntropyErrorFunction(useEntropyErr),
       optimizeMoveOrdering(optMoveOrder),
-      useSearchScore(useSearchScore) {
-
+      useSearchScore(useSearchScore),
+      nWorkers(nWorkers) {
     moEvalWeight.registerParam("MoveOrderEvalWeight", Parameters::instance());
     moHangPenalty1.registerParam("MoveOrderHangPenalty1", Parameters::instance());
     moHangPenalty2.registerParam("MoveOrderHangPenalty2", Parameters::instance());
@@ -484,7 +485,7 @@ ChessTool::outliers(std::istream& is, int threshold) {
 }
 
 void
-ChessTool::computeSearchScores(std::istream& is, const std::string& script, int nWorkers) {
+ChessTool::computeSearchScores(std::istream& is, const std::string& script) {
     std::vector<PositionInfo> positions;
     readFENFile(is, positions);
     int nPos = positions.size();
@@ -1539,58 +1540,68 @@ void
 ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
     std::vector<std::string> lines = readStream(is);
     data.resize(lines.size());
-    Position pos;
-    PositionInfo pi;
     const int nLines = lines.size();
     std::atomic<bool> error(false);
-#pragma omp parallel for default(none) shared(data,error,lines,std::cerr) private(pos,pi) firstprivate(nLines)
-    for (int i = 0; i < nLines; i++) {
-        if (error)
-            continue;
-        const std::string& line = lines[i];
-        std::vector<std::string> fields;
-        splitString(line, " : ", fields);
-        bool localError = false;
-        if ((fields.size() < 4) || (fields.size() > 6))
-            localError = true;
-        if (!localError) {
-            try {
-                pos = TextIO::readFEN(fields[0]);
-            } catch (ChessParseError& cpe) {
-                localError = true;
-            }
-        }
-        if (!localError) {
-            pos.serialize(pi.posData);
-            if (!str2Num(fields[1], pi.result) ||
-                !str2Num(fields[2], pi.searchScore) ||
-                !str2Num(fields[3], pi.qScore)) {
-                localError = true;
-            }
-        }
-        if (!localError) {
-            pi.gameNo = -1;
-            if (fields.size() >= 5)
-                if (!str2Num(fields[4], pi.gameNo))
-                    localError = true;
-        }
-        if (!localError) {
-            pi.cMove = Move().getCompressedMove();
-            if (fields.size() >= 6)
-                pi.cMove = TextIO::uciStringToMove(fields[5]).getCompressedMove();
-        }
-        if (!localError)
-            data[i] = pi;
 
-        if (localError) {
-#pragma omp critical
-            if (!error) {
-                std::cerr << "line:" << line << std::endl;
-                std::cerr << "fields:" << fields << std::endl;
-                error = true;
+    const int batchSize = std::max(1000, nLines / (nWorkers * 10));
+    ThreadPool<int> pool(nWorkers);
+    for (int i = 0; i < nLines; i += batchSize) {
+        int beginIndex = i;
+        int endIndex = std::min(i + batchSize, nLines);
+        auto func = [beginIndex,endIndex,&lines,&data,&error](int workerNo) mutable {
+            Position pos;
+            PositionInfo pi;
+            for (int i = beginIndex; i < endIndex; i++) {
+                if (error)
+                    continue;
+                const std::string& line = lines[i];
+                std::vector<std::string> fields;
+                splitString(line, " : ", fields);
+                bool localError = false;
+                if ((fields.size() < 4) || (fields.size() > 6))
+                    localError = true;
+                if (!localError) {
+                    try {
+                        pos = TextIO::readFEN(fields[0]);
+                    } catch (ChessParseError& cpe) {
+                        localError = true;
+                    }
+                }
+                if (!localError) {
+                    pos.serialize(pi.posData);
+                    if (!str2Num(fields[1], pi.result) ||
+                        !str2Num(fields[2], pi.searchScore) ||
+                        !str2Num(fields[3], pi.qScore)) {
+                        localError = true;
+                    }
+                }
+                if (!localError) {
+                    pi.gameNo = -1;
+                    if (fields.size() >= 5)
+                        if (!str2Num(fields[4], pi.gameNo))
+                            localError = true;
+                }
+                if (!localError) {
+                    pi.cMove = Move().getCompressedMove();
+                    if (fields.size() >= 6)
+                        pi.cMove = TextIO::uciStringToMove(fields[5]).getCompressedMove();
+                }
+                if (!localError)
+                    data[i] = pi;
+
+                if (localError && !error.exchange(true)) {
+                    std::cerr << "line:" << line << std::endl;
+                    std::cerr << "fields:" << fields << std::endl;
+                }
             }
-        }
+            return 0;
+        };
+        pool.addTask(func);
     }
+    int dummy;
+    while (pool.getResult(dummy))
+        ;
+
     if (error)
         throw ChessParseError("Invalid file format");
 

@@ -367,7 +367,7 @@ main(int argc, char* argv[]) {
                 argc -= 2;
                 argv += 2;
             } else if ((argc >= 2) && (std::string(argv[1]) == "-j")) {
-                if (!str2Num(argv[2], nWorkers))
+                if (!str2Num(argv[2], nWorkers) || nWorkers <= 0)
                     usage();
                 argc -= 2;
                 argv += 2;
@@ -390,7 +390,8 @@ main(int argc, char* argv[]) {
             usage();
 
         std::string cmd = argv[1];
-        ChessTool chessTool(useEntropyErrorFunction, optimizeMoveOrdering, useSearchScore);
+        ChessTool chessTool(useEntropyErrorFunction, optimizeMoveOrdering, useSearchScore,
+                            nWorkers);
         if (cmd == "p2f") {
             int n = 1;
             if (argc > 3)
@@ -413,7 +414,7 @@ main(int argc, char* argv[]) {
             if (argc != 3)
                 usage();
             std::string script = argv[2];
-            chessTool.computeSearchScores(std::cin, script, nWorkers);
+            chessTool.computeSearchScores(std::cin, script);
         } else if (cmd == "outliers") {
             int threshold;
             if ((argc < 3) || !str2Num(argv[2], threshold))
