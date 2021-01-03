@@ -38,6 +38,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <thread>
 
 void
 parseParValues(const std::string& fname, std::vector<ParamValue>& parValues) {
@@ -73,6 +74,7 @@ void
 usage() {
     std::cerr << "Usage: texelutil [-iv file] [-e] [-moveorder] cmd params\n";
     std::cerr << " -iv file : Set initial parameter values\n";
+    std::cerr << " -j n : Use n worker threads\n";
     std::cerr << " -e : Use cross entropy error function\n";
     std::cerr << " -s : Use search score instead of game result\n";
     std::cerr << " -moveorder : Optimize static move ordering\n";
@@ -87,8 +89,7 @@ usage() {
     std::cerr << "                                     -m treat bishop and knight as same type\n";
     std::cerr << "        mtrl [-m] wQ wR wB [wN] wP bQ bR bB [bN] bP : material satisfies pattern\n";
     std::cerr << "                                     -m treat bishop and knight as same type\n";
-    std::cerr << " search script nWorkers: Update search score in FEN file by running script\n";
-    std::cerr << "                         on all lines. Run nWorkers scripts in parallel\n";
+    std::cerr << " search script : Update search score in FEN file by running script on all lines.\n";
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
     std::cerr << " evaleffect evalfile : Print eval improvement when parameters are changed\n";
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage\n";
@@ -353,6 +354,7 @@ doBookCmd(int argc, char* argv[]) {
 int
 main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
+    int nWorkers = std::thread::hardware_concurrency();
 
     try {
         ComputerPlayer::initEngine();
@@ -362,6 +364,11 @@ main(int argc, char* argv[]) {
         while (true) {
             if ((argc >= 3) && (std::string(argv[1]) == "-iv")) {
                 setInitialValues(argv[2]);
+                argc -= 2;
+                argv += 2;
+            } else if ((argc >= 2) && (std::string(argv[1]) == "-j")) {
+                if (!str2Num(argv[2], nWorkers))
+                    usage();
                 argc -= 2;
                 argv += 2;
             } else if ((argc >= 2) && (std::string(argv[1]) == "-e")) {
@@ -403,12 +410,9 @@ main(int argc, char* argv[]) {
         } else if (cmd == "filter") {
             doFilterCmd(argc, argv, chessTool);
         } else if (cmd == "search") {
-            if (argc != 4)
+            if (argc != 3)
                 usage();
             std::string script = argv[2];
-            int nWorkers;
-            if (!str2Num(argv[3], nWorkers))
-                usage();
             chessTool.computeSearchScores(std::cin, script, nWorkers);
         } else if (cmd == "outliers") {
             int threshold;
