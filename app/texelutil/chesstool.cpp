@@ -575,6 +575,69 @@ ChessTool::computeSearchScores(std::istream& is, const std::string& script) {
 }
 
 void
+ChessTool::computeQSearchPos(std::istream& is) {
+    std::vector<PositionInfo> positions;
+    readFENFile(is, positions);
+    int nPos = positions.size();
+
+    TranspositionTable tt(512*1024);
+    Notifier notifier;
+    ThreadCommunicator comm(nullptr, tt, notifier, false);
+
+    struct ThreadData {
+        std::vector<U64> nullHist = std::vector<U64>(SearchConst::MAX_SEARCH_DEPTH * 2);
+        KillerTable kt;
+        History ht;
+        std::shared_ptr<Evaluate::EvalHashTables> et;
+        TreeLogger treeLog;
+        Position pos;
+    };
+    std::vector<ThreadData> tdVec(nWorkers);
+
+    const int batchSize = 5000;
+    ThreadPool<int> pool(nWorkers);
+    for (int i = 0; i < nPos; i += batchSize) {
+        int beginIdx = i;
+        int endIdx = std::min(i + batchSize, nPos);
+        auto func = [&positions,&comm,&tdVec,beginIdx,endIdx](int workerNo) mutable {
+            ThreadData& td = tdVec[workerNo];
+            if (!td.et)
+                td.et = Evaluate::getEvalHashTables();
+            Search::SearchTables st(comm.getCTT(), td.kt, td.ht, *td.et);
+
+            const int mate0 = SearchConst::MATE0;
+            Position& pos = td.pos;
+            Search sc(pos, td.nullHist, 0, st, comm, td.treeLog);
+
+            for (int i = beginIdx; i < endIdx; i++) {
+                PositionInfo& pi = positions[i];
+                pos.deSerialize(pi.posData);
+                sc.init(pos, td.nullHist, 0);
+                sc.q0Eval = UNKNOWN_SCORE;
+                auto ret = sc.quiescePos(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
+                int score = ret.first;
+                if (!pos.isWhiteMove())
+                    score = -score;
+                pi.qScore = score;
+                pi.posData = ret.second;
+                pi.searchScore = 0; // Original search score was for a possibly different position
+            }
+            return 0;
+        };
+        pool.addTask(func);
+    }
+    pool.getAllResults([](int){});
+
+    Position pos;
+    for (int i = 0; i < nPos; i++) {
+        const PositionInfo& pi = positions[i];
+        pos.deSerialize(pi.posData);
+        std::string fen = TextIO::toFEN(pos);
+        writeFEN(std::cout, fen, pi.result, pi.searchScore, pi.qScore, pi.gameNo);
+    }
+}
+
+void
 ChessTool::evalEffect(std::istream& is, const std::vector<ParamValue>& parValues) {
     std::vector<PositionInfo> positions;
     readFENFile(is, positions);

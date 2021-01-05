@@ -157,6 +157,10 @@ public:
      */
     static int SEE(Position& pos, const Move& m, int alpha, int beta);
 
+    /** Return the quiescence search score and corresponding position. */
+    std::pair<int,Position::SerializeData>
+    quiescePos(int alpha, int beta, int ply, int depth, const bool inCheck);
+
 private:
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
               int posHashListSize0);

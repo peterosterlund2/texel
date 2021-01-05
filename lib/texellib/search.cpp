@@ -1295,6 +1295,126 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
     return bestScore;
 }
 
+std::pair<int,Position::SerializeData>
+Search::quiescePos(int alpha, int beta, int ply, int depth, const bool inCheck) {
+    int score;
+    if (inCheck) {
+        score = -(MATE0 - (ply+1));
+    } else {
+        if ((depth == 0) && (q0Eval != UNKNOWN_SCORE)) {
+            score = q0Eval;
+        } else {
+            score = eval.evalPos(pos);
+            if (depth == 0)
+                q0Eval = score;
+        }
+    }
+    int bestScore = score;
+    Position::SerializeData bestPos;
+    pos.serialize(bestPos);
+    if (score >= beta)
+        return std::make_pair(bestScore, bestPos);
+    const int evalScore = score;
+    if (score > alpha)
+        alpha = score;
+    const bool tryChecks = (depth > -1);
+    MoveList moves;
+    if (inCheck) {
+        MoveGen::checkEvasions(pos, moves);
+    } else if (tryChecks) {
+        MoveGen::pseudoLegalCapturesAndChecks(pos, moves);
+    } else {
+        MoveGen::pseudoLegalCaptures(pos, moves);
+    }
+
+    bool realInCheckComputed = false;
+    bool realInCheck = false;
+    if (depth > -2) {
+        realInCheckComputed = true;
+        realInCheck = inCheck;
+    }
+    scoreMoveListMvvLva(moves);
+    UndoInfo ui;
+    for (int mi = 0; mi < moves.size; mi++) {
+        if (mi < quiesceMaxSortMoves) {
+            // If the first N moves didn't fail high this is probably an ALL-node,
+            // so spending more effort on move ordering is probably wasted time.
+            selectBest(moves, mi);
+        }
+        const Move& m = moves[mi];
+        bool givesCheck = false;
+        bool givesCheckComputed = false;
+        if (inCheck) {
+            // Allow all moves
+        } else {
+            if ((pos.getPiece(m.to()) == Piece::EMPTY) && (m.promoteTo() == Piece::EMPTY)) {
+                // Non-capture
+                if (!tryChecks)
+                    continue;
+                givesCheck = MoveGen::givesCheck(pos, m);
+                givesCheckComputed = true;
+                if (!givesCheck)
+                    continue;
+                if (negSEE(m)) // Needed because m.score() is not computed for non-captures
+                    continue;
+            } else {
+                if (negSEE(m))
+                    continue;
+                int capt = ::pieceValue[pos.getPiece(m.to())];
+                int prom = ::pieceValue[m.promoteTo()];
+                int optimisticScore = evalScore + capt + prom + deltaPruningMargin;
+                if (optimisticScore < alpha) { // Delta pruning
+                    if ((pos.wMtrlPawns() > 0) && (pos.wMtrl() > capt + pos.wMtrlPawns()) &&
+                        (pos.bMtrlPawns() > 0) && (pos.bMtrl() > capt + pos.bMtrlPawns())) {
+                        if (depth -1 > -2) {
+                            givesCheck = MoveGen::givesCheck(pos, m);
+                            givesCheckComputed = true;
+                        }
+                        if (!givesCheck) {
+                            if (optimisticScore > bestScore)
+                                bestScore = optimisticScore;
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+        if (depth < -6 && mi >= 2)
+            continue;
+        if (!realInCheckComputed) {
+            realInCheck = MoveGen::inCheck(pos);
+            realInCheckComputed = true;
+        }
+        if (!MoveGen::isLegal(pos, m, realInCheck))
+            continue;
+
+        if (!givesCheckComputed && (depth - 1 > -2))
+            givesCheck = MoveGen::givesCheck(pos, m);
+        const bool nextInCheck = (depth - 1) > -2 ? givesCheck : false;
+
+        pos.makeMove(m, ui);
+        totalNodes++;
+        nodesToGo--;
+        auto ret = quiescePos(-beta, -alpha, ply + 1, depth - 1, nextInCheck);
+        score = -ret.first;
+        pos.unMakeMove(m, ui);
+        if (score > bestScore) {
+            bestScore = score;
+            bestPos = ret.second;
+            if (score > alpha) {
+                if (depth == 0) {
+                    SearchTreeInfo& sti = searchTreeInfo[ply];
+                    sti.bestMove.setMove(m.from(), m.to(), m.promoteTo(), score);
+                }
+                alpha = score;
+                if (alpha >= beta)
+                    return std::make_pair(bestScore, bestPos);
+            }
+        }
+    }
+    return std::make_pair(bestScore, bestPos);
+}
+
 int
 Search::SEE(Position& pos, const Move& m, int alpha, int beta) {
     int captures[64];   // Value of captured pieces

@@ -130,6 +130,9 @@ public:
     /** In a FEN file, update the search score in each line by running a script to get the new score. */
     void computeSearchScores(std::istream& is, const std::string& script);
 
+    /** In a FEN file, update the positions to the position at the end of q-search. */
+    void computeQSearchPos(std::istream& is);
+
     /** Print how much position evaluation improves when parValues are applied to evaluation function.
      * Positions with no change are not printed. */
     void evalEffect(std::istream& is, const std::vector<ParamValue>& parValues);
