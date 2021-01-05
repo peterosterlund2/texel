@@ -80,7 +80,7 @@ usage() {
     std::cerr << " -moveorder : Optimize static move ordering\n";
     std::cerr << "cmd is one of:\n";
     std::cerr << "\n";
-    std::cerr << " p2f [n]  : Convert from PGN to FEN, using each position with probability 1/n.\n";
+    std::cerr << " p2f [n]  : Convert from PGN to FEN, using each position with probability 1/n\n";
     std::cerr << " f2p      : Convert from FEN to PGN\n";
     std::cerr << " m2f      : For each line, convert sequence of moves to fen\n";
     std::cerr << " filter type pars : Keep positions that satisfy a condition\n";
@@ -89,7 +89,7 @@ usage() {
     std::cerr << "                                     -m treat bishop and knight as same type\n";
     std::cerr << "        mtrl [-m] wQ wR wB [wN] wP bQ bR bB [bN] bP : material satisfies pattern\n";
     std::cerr << "                                     -m treat bishop and knight as same type\n";
-    std::cerr << " search script : Update search score in FEN file by running script on all lines.\n";
+    std::cerr << " search script : Update search score in FEN file by running script on all lines\n";
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
     std::cerr << " evaleffect evalfile : Print eval improvement when parameters are changed\n";
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage\n";
@@ -138,8 +138,8 @@ usage() {
     std::cerr << "\n";
     std::cerr << " creatematchbook depth searchTime : Analyze  positions in perft(depth)\n";
     std::cerr << " countuniq pgnFile : Count number of unique positions as function of depth\n";
-    std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file.\n";
-    std::cerr << "           -p : Consider game pairs when computing standard deviation.\n";
+    std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file\n";
+    std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
     std::cerr << " proofgame [-w a:b] [-i \"initFen\"] \"goalFen\"\n";
     std::cerr << std::flush;
