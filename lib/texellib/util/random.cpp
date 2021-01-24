@@ -44,8 +44,3 @@ Random::nextInt(int modulo) {
     std::uniform_int_distribution<int> dist(0, modulo-1);
     return dist(gen);
 }
-
-U64
-Random::nextU64() {
-    return gen();
-}

@@ -30,9 +30,7 @@
 
 #include <random>
 
-/**
- * Pseudo-random number generator.
- */
+/** Pseudo-random number generator. */
 class Random {
 public:
     Random();
@@ -60,5 +58,10 @@ inline U64 hashU64(U64 v) {
     return v;
 }
 
+
+inline U64
+Random::nextU64() {
+    return gen();
+}
 
 #endif /* RANDOM_HPP_ */
