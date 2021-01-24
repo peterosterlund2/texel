@@ -4,9 +4,10 @@ set(src_book
   )
 
 set(src_debug
-                          debug/histogram.hpp
-  debug/logger.cpp        debug/logger.hpp
-  debug/treeLogger.cpp    debug/treeLogger.hpp
+                              debug/histogram.hpp
+  debug/logger.cpp            debug/logger.hpp
+  debug/searchTreeSampler.cpp debug/searchTreeSampler.hpp
+  debug/treeLogger.cpp        debug/treeLogger.hpp
   )
 
 set(src_hw

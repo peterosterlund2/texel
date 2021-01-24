@@ -41,6 +41,7 @@
 
 class SearchTest;
 class ChessTool;
+class SearchTreeSamplerReal;
 class PosGenerator;
 class ClusterTT;
 class History;
@@ -51,6 +52,7 @@ class KillerTable;
 class Search {
     friend class SearchTest;
     friend class ChessTool;
+    friend class SearchTreeSamplerReal;
     friend class PosGenerator;
 public:
     /** Help tables used by the search. */

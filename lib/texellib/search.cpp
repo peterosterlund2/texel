@@ -31,6 +31,7 @@
 #include "clustertt.hpp"
 #include "tbprobe.hpp"
 #include "treeLogger.hpp"
+#include "searchTreeSampler.hpp"
 #include "textio.hpp"
 #include "logger.hpp"
 #include "random.hpp"
@@ -41,6 +42,8 @@
 #include <limits>
 
 using namespace SearchConst;
+
+static SearchTreeSampler sampler;
 
 
 Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
@@ -253,6 +256,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
                 }
             }
         }
+        sampler.writeToFile(rootMoves[0].score() * (pos.isWhiteMove() ? 1 : -1));
         S64 tNow = currentTimeMillis();
         {
             double f = rootMoves[0].nodes / (double)totalNodes;
@@ -1194,6 +1198,8 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
                 q0Eval = score;
         }
     }
+    if (depth == 0)
+        sampler.sample(pos, eval, q0Eval, randomSeed + totalNodes);
     if (score >= beta)
         return score;
     const int evalScore = score;
