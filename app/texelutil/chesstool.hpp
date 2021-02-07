@@ -172,8 +172,7 @@ public:
     static void probeDTZ(const std::string& fen);
 
 private:
-    /** Read score from a PGN comment, assuming cutechess-cli comment format.
-     * Does not handle mate scores. */
+    /** Read score from a PGN comment, assuming cutechess-cli comment format. */
     static bool getCommentScore(const std::string& comment, int& score);
 
     struct PositionInfo {
@@ -219,9 +218,9 @@ private:
     /** Score moves (for move ordering) based on static rules. */
     static void staticScoreMoveListQuiet(Position& pos, Evaluate& eval, MoveList& moves);
 
-    bool useEntropyErrorFunction;
-    bool optimizeMoveOrdering;
-    bool useSearchScore;
+    const bool useEntropyErrorFunction;
+    const bool optimizeMoveOrdering;
+    const bool useSearchScore;
     const int nWorkers;
 };
 

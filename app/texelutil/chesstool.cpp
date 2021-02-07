@@ -174,15 +174,15 @@ static void writeFEN(std::ostream& os, const std::string& fen,
 
 void
 ChessTool::pgnToFen(std::istream& is, int everyNth) {
-    static std::vector<U64> nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
-    static TranspositionTable tt(512*1024);
+    std::vector<U64> nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
+    TranspositionTable tt(512*1024);
     Notifier notifier;
     ThreadCommunicator comm(nullptr, tt, notifier, false);
-    static KillerTable kt;
-    static History ht;
-    static auto et = Evaluate::getEvalHashTables();
-    static Search::SearchTables st(comm.getCTT(), kt, ht, *et);
-    static TreeLogger treeLog;
+    KillerTable kt;
+    History ht;
+    auto et = Evaluate::getEvalHashTables();
+    Search::SearchTables st(comm.getCTT(), kt, ht, *et);
+    TreeLogger treeLog;
     Random rnd;
 
     Position pos;
