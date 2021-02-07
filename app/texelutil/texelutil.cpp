@@ -83,7 +83,8 @@ usage() {
     std::cerr << " -moveorder : Optimize static move ordering\n";
     std::cerr << "cmd is one of:\n";
     std::cerr << "\n";
-    std::cerr << " p2f [n]  : Convert from PGN to FEN, using each position with probability 1/n\n";
+    std::cerr << " p2f [n [us]] : Convert from PGN to FEN, using each position with probability\n";
+    std::cerr << "                1/n. If us is 1, also include UnScored moves\n";
     std::cerr << " f2p      : Convert from FEN to PGN\n";
     std::cerr << " m2f      : For each line, convert sequence of moves to fen\n";
     std::cerr << " filter type pars : Keep positions that satisfy a condition\n";
@@ -574,14 +575,15 @@ main(int argc, char* argv[]) {
                             nWorkers);
         if (cmd == "p2f") {
             int n = 1;
-            if (argc > 3)
+            if (argc > 4)
                 usage();
             if (argc > 2)
-                if (!str2Num(argv[2], n))
+                if (!str2Num(argv[2], n) || n < 1)
                     usage();
-            if (n < 1)
-                usage();
-            chessTool.pgnToFen(std::cin, n);
+            bool includeUnScored = false;
+            if (argc > 3)
+                includeUnScored = argv[3] == std::string("1");
+            chessTool.pgnToFen(std::cin, n, includeUnScored);
         } else if (cmd == "f2p") {
             chessTool.fenToPgn(std::cin);
         } else if (cmd == "m2f") {

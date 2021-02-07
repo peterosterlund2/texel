@@ -171,7 +171,7 @@ static void writeFEN(std::ostream& os, const std::string& fen,
 }
 
 void
-ChessTool::pgnToFen(std::istream& is, int everyNth) {
+ChessTool::pgnToFen(std::istream& is, int everyNth, bool includeUnScored) {
     std::vector<U64> nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
     TranspositionTable tt(512*1024);
     Notifier notifier;
@@ -211,8 +211,8 @@ ChessTool::pgnToFen(std::istream& is, int everyNth) {
             gn.goForward(0);
             std::string move = TextIO::moveToUCIString(gn.getMove());
             std::string comment = gn.getComment();
-            int commentScore;
-            if (!getCommentScore(comment, commentScore))
+            int commentScore = 0;
+            if (!getCommentScore(comment, commentScore) && !includeUnScored)
                 continue;
 
             if (everyNth > 1 && rnd.nextInt(everyNth) != 0)
