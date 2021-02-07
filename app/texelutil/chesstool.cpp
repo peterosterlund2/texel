@@ -157,8 +157,6 @@ ChessTool::readStream(std::istream& is) {
     return ret;
 }
 
-const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
-
 static void writeFEN(std::ostream& os, const std::string& fen,
                      double result, int searchScore, int qScore, int gameNo,
                      const std::string& extra = "") {
@@ -221,7 +219,6 @@ ChessTool::pgnToFen(std::istream& is, int everyNth) {
                 continue;
 
             sc.init(pos, nullHist, 0);
-            sc.q0Eval = UNKNOWN_SCORE;
             int score = sc.quiesce(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
             if (!pos.isWhiteMove()) {
                 score = -score;
@@ -586,7 +583,6 @@ ChessTool::computeQSearchPos(std::istream& is) {
                 PositionInfo& pi = positions[i];
                 pos.deSerialize(pi.posData);
                 sc.init(pos, td.nullHist, 0);
-                sc.q0Eval = UNKNOWN_SCORE;
                 auto ret = sc.quiescePos(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
                 int score = ret.first;
                 if (!pos.isWhiteMove())
@@ -1735,7 +1731,6 @@ ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int 
                 PositionInfo& pi = positions[i];
                 pos.deSerialize(pi.posData);
                 sc.init(pos, td.nullHist, 0);
-                sc.q0Eval = UNKNOWN_SCORE;
                 int score = sc.quiesce(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
                 if (!pos.isWhiteMove())
                     score = -score;

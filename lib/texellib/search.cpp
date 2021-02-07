@@ -70,6 +70,7 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     totalNodes = 0;
     tbHits = 0;
     nodesToGo = 0;
+    q0Eval = UNKNOWN_SCORE;
 }
 
 void

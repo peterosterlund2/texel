@@ -532,7 +532,6 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
     Search::SearchTables st(comm.getCTT(), kt, ht, *et);
     TreeLogger treeLog;
     TranspositionTable::TTEntry ent;
-    const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
 
     struct ScoreStat { U64 whiteWin = 0, draw = 0, blackWin = 0; };
     std::map<std::vector<int>, ScoreStat> stat; // sequence of squares -> wdl statistics
@@ -546,7 +545,6 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
             const int mate0 = SearchConst::MATE0;
             Search sc(pos, nullHist, 0, st, comm, treeLog);
             sc.init(pos, nullHist, 0);
-            sc.q0Eval = UNKNOWN_SCORE;
             qScore = sc.quiesce(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
             Evaluate ev(*et);
             evScore = ev.evalPos(pos);
