@@ -119,6 +119,20 @@ static std::vector<std::string> splitLines(const std::string& lines) {
     return ret;
 }
 
+static void
+splitString(const std::string& line, const std::string& delim, std::vector<std::string>& fields) {
+    size_t start = 0;
+    while (true) {
+        size_t n = line.find(delim, start);
+        if (n == std::string::npos)
+            break;
+        fields.push_back(line.substr(start, n - start));
+        start = n + delim.length();
+    }
+    if (start < line.length())
+        fields.push_back(line.substr(start));
+}
+
 // --------------------------------------------------------------------------------
 
 ChessTool::ChessTool(bool useEntropyErr, bool optMoveOrder, bool useSearchScore,
@@ -604,6 +618,82 @@ ChessTool::computeQSearchPos(std::istream& is) {
         std::string fen = TextIO::toFEN(pos);
         writeFEN(std::cout, fen, pi.result, pi.searchScore, pi.qScore, pi.gameNo);
     }
+}
+
+void
+ChessTool::searchPositions(std::istream& is, int baseTime, int increment) {
+    std::mutex mutex;
+    std::atomic<bool> abort;
+    ThreadPool<int> pool(nWorkers);
+    int nLines = 0;
+    for (int i = 0; i < nWorkers; i++) {
+        auto func = [&is, baseTime, increment, &mutex, &abort, &nLines](int workerNo) mutable {
+            TranspositionTable tt(8*1024*1024);
+            Notifier notifier;
+            ThreadCommunicator comm(nullptr, tt, notifier, false);
+            std::vector<U64> nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
+            KillerTable kt;
+            History ht;
+            Evaluate::EvalHashTables et;
+            TreeLogger treeLog;
+            Search::SearchTables st(comm.getCTT(), kt, ht, et);
+            Position pos;
+            int minProbeDepth = UciParams::minProbeDepth->getIntPar();
+
+            while (true) {
+                if (abort)
+                    break;
+                { // Read one line from "is"
+                    std::string line;
+                    {
+                        std::lock_guard<std::mutex> L(mutex);
+                        std::getline(is, line);
+                        if (!is || is.eof())
+                            break;
+                        nLines++;
+                        std::cout << "nLines: " << nLines << std::endl;
+                    }
+                    std::vector<std::string> fields;
+                    splitString(line, " : ", fields);
+                    try {
+                        pos = TextIO::readFEN(fields[0]);
+                    } catch (ChessParseError& cpe) {
+                        abort = true;
+                        throw;
+                    }
+                }
+
+                MoveList moves;
+                MoveGen::pseudoLegalMoves(pos, moves);
+                MoveGen::removeIllegal(pos, moves);
+                if (moves.size == 0)
+                    continue;
+
+                tt.nextGeneration();
+                ht.init();
+
+                const int movesToGo = 35;
+                int timeLeft = baseTime;
+                int searchTime;
+                int i = 0;
+                do {
+                    searchTime = (timeLeft + increment * (movesToGo - 1)) / movesToGo;
+                    timeLeft += increment - searchTime;
+                } while (++i < pos.getFullMoveCounter());
+
+                U64 seed = hashU64(currentTimeMillis() + hashU64(workerNo));
+
+                Search sc(pos, nullHist, 0, st, comm, treeLog);
+                sc.init(pos, nullHist, 0);
+                sc.setStrength(1000, seed, 0);
+                sc.timeLimit(searchTime, 3*searchTime, -1);
+                sc.iterativeDeepening(moves, -1, -1, 1, false, minProbeDepth);
+            }
+            return 0;
+        };
+        pool.addTask(func);
+    }
+    pool.getAllResults([](int){});
 }
 
 void
@@ -1567,20 +1657,6 @@ ChessTool::getCommentScore(const std::string& comment, int& score) {
         return true;
     }
     return false;
-}
-
-void
-splitString(const std::string& line, const std::string& delim, std::vector<std::string>& fields) {
-    size_t start = 0;
-    while (true) {
-        size_t n = line.find(delim, start);
-        if (n == std::string::npos)
-            break;
-        fields.push_back(line.substr(start, n - start));
-        start = n + delim.length();
-    }
-    if (start < line.length())
-        fields.push_back(line.substr(start));
 }
 
 void

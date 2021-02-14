@@ -97,6 +97,7 @@ usage() {
     std::cerr << " search script : Update search score in FEN file by running script on all lines\n";
 #endif
     std::cerr << " qsearch : Update positions in FEN file to position at end of q-search\n";
+    std::cerr << " searchfens time inc : Search all positions in FEN file\n";
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
     std::cerr << " evaleffect evalfile : Print eval improvement when parameters are changed\n";
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage\n";
@@ -603,6 +604,14 @@ main(int argc, char* argv[]) {
             if (argc != 2)
                 usage();
             chessTool.computeQSearchPos(std::cin);
+        } else if (cmd == "searchfens") {
+            if (argc != 4)
+                usage();
+            int baseTime = 0, increment = 0;
+            if (!str2Num(argv[2], baseTime) || (baseTime < 0) ||
+                !str2Num(argv[3], increment) || (increment < 0))
+                usage();
+            chessTool.searchPositions(std::cin, baseTime, increment);
         } else if (cmd == "outliers") {
             int threshold;
             if ((argc < 3) || !str2Num(argv[2], threshold))

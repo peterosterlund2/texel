@@ -140,6 +140,11 @@ public:
     /** In a FEN file, update the positions to the position at the end of q-search. */
     void computeQSearchPos(std::istream& is);
 
+    /** Search all positions in a FEN file. The time to search each position is determined
+     *  from the move number and the time control parameters. Note that this function does
+     *  not generate any output, but it is still useful if the SearchTreeSampler is enabled. */
+    void searchPositions(std::istream& is, int baseTime, int increment);
+
     /** Print how much position evaluation improves when parValues are applied to evaluation function.
      * Positions with no change are not printed. */
     void evalEffect(std::istream& is, const std::vector<ParamValue>& parValues);
