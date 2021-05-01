@@ -30,10 +30,11 @@
 #include "position.hpp"
 #include "moveGen.hpp"
 #include "constants.hpp"
+#include "util/timeUtil.hpp"
+
+#include <limits>
 #include <unordered_map>
 #include <cassert>
-
-#include "util/timeUtil.hpp"
 
 static std::string currentGtbPath;
 static int currentGtbCacheMB;

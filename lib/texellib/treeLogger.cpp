@@ -29,6 +29,7 @@
 #include "position.hpp"
 #include "constants.hpp"
 
+#include <limits>
 #include <iostream>
 #include <iomanip>
 #include <cassert>
