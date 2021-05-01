@@ -51,7 +51,7 @@ public:
 
 private:
     static const int MAX_MOVES = 256;
-    alignas(Move) int buf[sizeof(Move[MAX_MOVES])/sizeof(int)];
+    alignas(Move) int buf[sizeof(Move[MAX_MOVES])/(sizeof(int))];
 };
 
 /**
