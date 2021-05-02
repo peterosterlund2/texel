@@ -70,6 +70,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options("-Wall")
 endif()
 add_compiler_flag_if_supported("-Wno-misleading-indentation")
+add_compiler_flag_if_supported("-Wno-unused-result")
 add_compiler_flag_if_supported("-Wno-psabi")
 
 # Use -O3 instead of -O2, remove -DNDEBUG
