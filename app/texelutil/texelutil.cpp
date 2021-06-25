@@ -367,7 +367,7 @@ main(int argc, char* argv[]) {
                 setInitialValues(argv[2]);
                 argc -= 2;
                 argv += 2;
-            } else if ((argc >= 2) && (std::string(argv[1]) == "-j")) {
+            } else if ((argc >= 3) && (std::string(argv[1]) == "-j")) {
                 if (!str2Num(argv[2], nWorkers) || nWorkers <= 0)
                     usage();
                 argc -= 2;
