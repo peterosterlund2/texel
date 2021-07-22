@@ -269,8 +269,9 @@ BitBoard::firstSquare(U64 mask) {
     else if (sizeof(U64) == sizeof(long long))
         return __builtin_ctzll(mask);
 #endif
-#endif
+#else
     return trailingZ[(int)(((mask & -mask) * 0x07EDD5E59A4E28C2ULL) >> 58)];
+#endif
 }
 
 inline int
@@ -292,7 +293,7 @@ BitBoard::bitCount(U64 mask) {
         return __builtin_popcountl(mask >> 32) +
                __builtin_popcountl(mask & 0xffffffffULL);
 #endif
-#endif
+#else
     const U64 k1 = 0x5555555555555555ULL;
     const U64 k2 = 0x3333333333333333ULL;
     const U64 k4 = 0x0f0f0f0f0f0f0f0fULL;
@@ -303,6 +304,7 @@ BitBoard::bitCount(U64 mask) {
     t = (t + (t >> 4)) & k4;
     t = (t * kf) >> 56;
     return (int)t;
+#endif
 }
 
 #endif /* BITBOARD_HPP_ */
