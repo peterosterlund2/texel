@@ -389,7 +389,7 @@ The core Texel chess engine is developed by Peter Österlund, but Texel also
 contains auxiliary code written by other people:
 
 Gaviota Tablebases Probing Code, Copyright 2010 Miguel A. Ballicora.
-See lib/texelutil/gtb/readme.txt for more information.
+See lib/texellib/gtb/readme.txt for more information.
 
 LZMA compression by Igor Pavlov, used by the Gaviota Tablebases Probing code.
 
