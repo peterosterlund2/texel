@@ -26,6 +26,8 @@
 #ifndef SPSA_HPP_
 #define SPSA_HPP_
 
+#ifdef USE_GSL
+
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <memory>
@@ -122,5 +124,7 @@ inline double
 ResultSimulation::eloToResult(double elo) {
     return 1 / (1 + pow(10, -elo/400));
 }
+
+#endif
 
 #endif /* SPSA_HPP_ */

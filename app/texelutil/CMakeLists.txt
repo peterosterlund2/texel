@@ -6,29 +6,24 @@ set(src_texelutil
   texelutil.cpp
   )
 
-set(all_found true)
+add_executable(texelutil ${src_texelutil})
+target_link_libraries(texelutil
+  PUBLIC texelutillib)
 
 find_package(Armadillo)
-if(NOT ARMADILLO_FOUND)
-  message(STATUS "Armadillo library not found")
-  set(all_found false)
-endif()
-
-find_package(GSL)
-if(NOT GSL_FOUND)
-  message(STATUS "GSL library not found")
-  set(all_found false)
-endif()
-
-if(all_found)
-  add_executable(texelutil ${src_texelutil})
+if(ARMADILLO_FOUND)
+  target_compile_definitions(texellib
+    PUBLIC "USE_ARMADILLO")
   target_include_directories(texelutil
     PUBLIC ${ARMADILLO_INCLUDE_DIRS})
   target_link_libraries(texelutil
-    PUBLIC texelutillib
-    PUBLIC ${ARMADILLO_LIBRARIES}
-    PUBLIC GSL::gsl
-    )
-else()
-  message("Not building texelutil")
+    PUBLIC ${ARMADILLO_LIBRARIES})
+endif()
+
+find_package(GSL)
+if(GSL_FOUND)
+  target_compile_definitions(texellib
+    PUBLIC "USE_GSL")
+  target_link_libraries(texelutil
+    PUBLIC GSL::gsl)
 endif()

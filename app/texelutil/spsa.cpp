@@ -33,6 +33,7 @@
 #include <iostream>
 #include <limits>
 
+#ifdef USE_GSL
 
 template<class T>
 std::ostream& operator<<(std::ostream& s, const std::vector<T>& v)
@@ -750,3 +751,5 @@ SimulatedEnginePair::getElo(const std::vector<double>& params) {
     return elo;
 #endif
 }
+
+#endif

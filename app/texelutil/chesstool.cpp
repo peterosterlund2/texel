@@ -703,6 +703,7 @@ struct PrioParam {
 
 // --------------------------------------------------------------------------------
 
+#ifdef USE_ARMADILLO
 void
 ChessTool::accumulateATA(std::vector<PositionInfo>& positions, int beg, int end,
                          const ScoreToProb& sp,
@@ -792,7 +793,7 @@ ChessTool::gnOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
         for (double alpha = 1.0; alpha >= 0.25; alpha /= 2) {
             arma::mat newP = bestP - delta * alpha;
             for (int i = 0; i < N; i++)
-                newP.at(i, 0) = clamp((int)std::round(newP.at(i, 0)), pdVec[i].minV, pdVec[i].maxV);
+                newP.at(i, 0) = clamp((int)round(newP.at(i, 0)), pdVec[i].minV, pdVec[i].maxV);
             double avgErr = computeAvgError(positions, sp, pdVec, newP);
             for (int i = 0; i < N; i++) {
                 ParamDomain& pd = pdVec[i];
@@ -814,6 +815,20 @@ ChessTool::gnOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
     ::usleep(100000);
     std::cerr << "Elapsed time: " << t1 - t0 << std::endl;
 }
+
+double
+ChessTool::computeAvgError(std::vector<PositionInfo>& positions, const ScoreToProb& sp,
+                           const std::vector<ParamDomain>& pdVec, arma::mat& pdVal) {
+    assert(pdVal.n_rows == pdVec.size());
+    assert(pdVal.n_cols == 1);
+
+    Parameters& uciPars = Parameters::instance();
+    for (int i = 0; i < (int)pdVal.n_rows; i++)
+        uciPars.set(pdVec[i].name, num2Str(pdVal.at(i, 0)));
+    qEval(positions);
+    return computeAvgError(positions, sp);
+}
+#endif
 
 // --------------------------------------------------------------------------------
 
@@ -1571,7 +1586,7 @@ bool
 ChessTool::getCommentScore(const std::string& comment, int& score) {
     double fScore;
     if (str2Num(comment, fScore)) {
-        score = (int)std::round(fScore * 100);
+        score = (int)round(fScore * 100);
         return true;
     }
     if (startsWith(comment, "+M")) {
@@ -1758,19 +1773,6 @@ ChessTool::qEval(std::vector<PositionInfo>& positions, const int beg, const int 
         pool.addTask(func);
     }
     pool.getAllResults([](int){});
-}
-
-double
-ChessTool::computeAvgError(std::vector<PositionInfo>& positions, const ScoreToProb& sp,
-                           const std::vector<ParamDomain>& pdVec, arma::mat& pdVal) {
-    assert(pdVal.n_rows == pdVec.size());
-    assert(pdVal.n_cols == 1);
-
-    Parameters& uciPars = Parameters::instance();
-    for (int i = 0; i < (int)pdVal.n_rows; i++)
-        uciPars.set(pdVec[i].name, num2Str(pdVal.at(i, 0)));
-    qEval(positions);
-    return computeAvgError(positions, sp);
 }
 
 double

@@ -96,7 +96,9 @@ usage() {
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage\n";
     std::cerr << " score2prob : Compute table of expected score as function of centipawns\n";
     std::cerr << " parrange p a b c    : Compare evaluation error for different parameter values\n";
+#ifdef USE_ARMADILLO
     std::cerr << " gnopt p1 p2 ...     : Optimize parameters using Gauss-Newton method\n";
+#endif
     std::cerr << " localopt p1 p2 ...  : Optimize parameters using local search\n";
     std::cerr << " localopt2 p1 p2 ... : Optimize parameters using local search with big jumps\n";
     std::cerr << " printpar : Print evaluation tables and parameters\n";
@@ -119,12 +121,14 @@ usage() {
     std::cerr << " dtz fen                   : Retrieve DTZ value for a position\n";
     std::cerr << " wdldump type1 [type2 ...] : Dump RTB WDL data to out.bin\n";
     std::cerr << "\n";
+#ifdef USE_GSL
     std::cerr << " gamesim meanResult drawProb nGames nSimul : Simulate game results\n";
     std::cerr << " enginesim nGames p1 p2 ... : Simulate engine with parameters p1, p2, ...\n";
     std::cerr << " tourneysim nSimul nRounds elo1 elo2 ... : Simulate tournament\n";
     std::cerr << " spsasim nSimul nIter gamesPerIter a c param1 ... : Simulate SPSA optimization\n";
     std::cerr << " spsa spsafile.conf : Run SPSA optimization using the given configuration file\n";
     std::cerr << "\n";
+#endif
     std::cerr << " tbgen wq wr wb wn bq br bb bn : Generate pawn-less tablebase in memory\n";
     std::cerr << " tbgentest type1 [type2 ...]   : Compare pawnless tablebase against GTB\n";
     std::cerr << "\n";
@@ -437,12 +441,14 @@ main(int argc, char* argv[]) {
             if (params.size() != 1)
                 usage();
             chessTool.paramEvalRange(std::cin, params[0]);
+#ifdef USE_ARMADILLO
         } else if (cmd == "gnopt") {
             if (useEntropyErrorFunction)
                 usage();
             std::vector<ParamDomain> params;
             getParams(argc, argv, params);
             chessTool.gnOptimize(std::cin, params);
+#endif
         } else if (cmd == "localopt") {
             std::vector<ParamDomain> params;
             getParams(argc, argv, params);
@@ -532,6 +538,7 @@ main(int argc, char* argv[]) {
             ScoreToProb sp;
             for (int i = -100; i <= 100; i++)
                 std::cout << "i:" << i << " p:" << sp.getProb(i) << std::endl;
+#ifdef USE_GSL
         } else if (cmd == "gamesim") {
             if (argc != 6)
                 usage();
@@ -597,6 +604,7 @@ main(int argc, char* argv[]) {
                 usage();
             std::string filename = argv[2];
             Spsa::spsa(filename);
+#endif
         } else if (cmd == "tbgen") {
             if (argc != 10)
                 usage();
