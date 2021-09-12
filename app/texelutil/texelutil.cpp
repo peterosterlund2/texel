@@ -33,6 +33,7 @@
 #include "parameters.hpp"
 #include "chessParseError.hpp"
 #include "computerPlayer.hpp"
+#include "gametree.hpp"
 #include "textio.hpp"
 
 #include <iostream>
@@ -146,7 +147,7 @@ usage() {
     std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file\n";
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
-    std::cerr << " proofgame [-w a:b] [-i \"initFen\"] \"goalFen\"\n";
+    std::cerr << " proofgame [-w a:b] [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -354,6 +355,57 @@ doBookCmd(int argc, char* argv[]) {
     } else {
         usage();
     }
+}
+
+static void
+doProofGameCmd(int argc, char* argv[]) {
+    std::string initFen, initPgnFile, goalFen;
+    int a = 1, b = 1;
+    int arg = 2;
+    if (argc >= arg+2 && argv[arg] == std::string("-w")) {
+        std::string s(argv[arg+1]);
+        size_t idx = s.find(':');
+        if ((idx == std::string::npos) ||
+            !str2Num(s.substr(0, idx), a) ||
+            !str2Num(s.substr(idx+1), b))
+            usage();
+        arg += 2;
+    }
+    if (argc >= arg+2 && argv[arg] == std::string("-i")) {
+        initFen = argv[arg+1];
+        arg += 2;
+    } else {
+        initFen = TextIO::startPosFEN;
+    }
+    if (argc >= arg+2 && argv[arg] == std::string("-ipgn")) {
+        initPgnFile = argv[arg+1];
+        arg += 2;
+    }
+    if (arg+1 != argc)
+        usage();
+    goalFen = argv[arg];
+
+    std::vector<Move> initPath;
+    if (!initPgnFile.empty()) {
+        std::ifstream is(initPgnFile);
+        if (!is.good())
+            throw ChessParseError("Failed to open file");
+        PgnReader reader(is);
+        GameTree gt;
+        while (reader.readPGN(gt))
+            ;
+        GameNode gn = gt.getRootNode();
+        if (TextIO::toFEN(gn.getPos()) != initFen)
+            throw ChessParseError("Incorrect PGN start position");
+        while (gn.nChildren() > 0) {
+            gn.goForward(0);
+            initPath.push_back(gn.getMove());
+        }
+    }
+
+    ProofGame ps(goalFen, a, b);
+    std::vector<Move> movePath;
+    ps.search(initFen, initPath, movePath);
 }
 
 int
@@ -666,30 +718,7 @@ main(int argc, char* argv[]) {
             MatchBookCreator mbc(nWorkers);
             mbc.pgnStat(pgnFile, pairMode, std::cout);
         } else if (cmd == "proofgame") {
-            std::string initFen, goalFen;
-            int a = 1, b = 1;
-            int arg = 2;
-            if (argc >= arg+2 && argv[arg] == std::string("-w")) {
-                std::string s(argv[arg+1]);
-                size_t idx = s.find(':');
-                if ((idx == std::string::npos) ||
-                    !str2Num(s.substr(0, idx), a) ||
-                    !str2Num(s.substr(idx+1), b))
-                    usage();
-                arg += 2;
-            }
-            if (argc >= arg+2 && argv[arg] == std::string("-i")) {
-                initFen = argv[arg+1];
-                arg += 2;
-            } else {
-                initFen = TextIO::startPosFEN;
-            }
-            if (arg+1 != argc)
-                usage();
-            goalFen = argv[arg];
-            ProofGame ps(goalFen, a, b);
-            std::vector<Move> movePath;
-            ps.search(initFen, movePath);
+            doProofGameCmd(argc, argv);
         } else {
             usage();
         }

@@ -148,10 +148,21 @@ ProofGame::validatePieceCounts(const Position& pos) {
 }
 
 int
-ProofGame::search(const std::string& initialFen, std::vector<Move>& movePath) {
+ProofGame::search(const std::string& initialFen, const std::vector<Move>& initialPath,
+                  std::vector<Move>& movePath) {
     Position startPos = TextIO::readFEN(initialFen);
     validatePieceCounts(startPos);
-    addPosition(startPos, 0, true);
+    addPosition(startPos, 0, true, false);
+    {
+        Position pos(startPos);
+        UndoInfo ui;
+        for (Move m : initialPath) {
+            U32 idx = queue.top();
+            queue.pop();
+            pos.makeMove(m, ui);
+            addPosition(pos, idx, false, false);
+        }
+    }
 
     double t0 = currentTime();
     Position pos;
@@ -198,7 +209,7 @@ ProofGame::search(const std::string& initialFen, std::vector<Move>& movePath) {
             if (((1ULL << moves[i].from()) | (1ULL << moves[i].to())) & blocked)
                 continue;
             pos.makeMove(moves[i], ui);
-            addPosition(pos, idx, false);
+            addPosition(pos, idx, false, true);
             pos.unMakeMove(moves[i], ui);
         }
     }
@@ -211,7 +222,7 @@ ProofGame::search(const std::string& initialFen, std::vector<Move>& movePath) {
 }
 
 void
-ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot) {
+ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkBound) {
     const int ply = isRoot ? 0 : nodes[parent].ply + 1;
     auto it = nodeHash.find(pos.zobristHash());
     if ((it != nodeHash.end()) && (it->second <= ply))
@@ -222,7 +233,7 @@ ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot) {
     tn.parent = parent;
     tn.ply = ply;
     int bound = distLowerBound(pos);
-    if (bound < INT_MAX) {
+    if (!checkBound || bound < INT_MAX) {
         tn.bound = bound;
         U32 idx = nodes.size();
         nodes.push_back(tn);

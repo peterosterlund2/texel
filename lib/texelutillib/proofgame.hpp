@@ -48,9 +48,9 @@ public:
     ProofGame(const std::string& goal, int a = 1, int b = 1);
 
     /** Search for shortest solution. Print solutions to standard output.
-     * Return length of shortest path found.
-     */
-    int search(const std::string& initialFen, std::vector<Move>& movePath);
+     * Return length of shortest path found. */
+    int search(const std::string& initialFen, const std::vector<Move>& initialPath,
+               std::vector<Move>& movePath);
 
     /** Return goal position. */
     const Position& getGoalPos() const;
@@ -62,8 +62,13 @@ private:
     /** Check that there are not too many pieces present. */
     static void validatePieceCounts(const Position& pos);
 
+    /** Get moves from a PGN file. Only solutions starting with
+     *  this move sequence will be considered during search. */
+    static void getInitialPath(const std::string& initialPgnFile, Position& startPos,
+                               std::vector<Move>& initialPath);
+
     /** Queue a new position to be searched. */
-    void addPosition(const Position& pos, U32 parent, bool isRoot);
+    void addPosition(const Position& pos, U32 parent, bool isRoot, bool checkBound);
 
     /** Return true if pos is equal to the goal position. */
     bool isSolution(const Position& pos) const;

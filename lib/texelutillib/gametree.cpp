@@ -637,7 +637,6 @@ PgnReader::readPGN(GameTree& tree) {
         if (tPairs[i].tagName == "FEN")
             fen = tPairs[i].tagValue;
     Position startPos(TextIO::readFEN(fen));
-    tree.setStartPos(startPos);
 
     // Parse move section
     std::shared_ptr<Node> gameRoot(std::make_shared<Node>());
@@ -646,6 +645,7 @@ PgnReader::readPGN(GameTree& tree) {
     if ((tPairs.size() == 0) && (gameRoot->getChildren().size() == 0))
         return false;
 
+    tree.setStartPos(startPos);
     tree.setTagPairs(tPairs);
     tree.setRootNode(gameRoot);
 
