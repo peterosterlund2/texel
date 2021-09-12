@@ -41,7 +41,6 @@
 
 #include <queue>
 #include <unordered_set>
-#include <unistd.h>
 #include <stdio.h>
 
 
@@ -484,6 +483,7 @@ ChessTool::outliers(std::istream& is, int threshold) {
     std::cout << std::flush;
 }
 
+#if !_MSC_VER
 void
 ChessTool::computeSearchScores(std::istream& is, const std::string& script) {
     std::vector<PositionInfo> positions;
@@ -573,6 +573,7 @@ ChessTool::computeSearchScores(std::istream& is, const std::string& script) {
         }
     }
 }
+#endif
 
 void
 ChessTool::computeQSearchPos(std::istream& is) {
@@ -812,7 +813,7 @@ ChessTool::gnOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
             break;
     }
     double t1 = currentTime();
-    ::usleep(100000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::cerr << "Elapsed time: " << t1 - t0 << std::endl;
 }
 
@@ -895,7 +896,7 @@ ChessTool::localOptimize(std::istream& is, std::vector<ParamDomain>& pdVec) {
     }
 
     double t1 = currentTime();
-    ::usleep(100000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::cerr << "Elapsed time: " << t1 - t0 << std::endl;
 }
 
@@ -1009,7 +1010,7 @@ ChessTool::localOptimize2(std::istream& is, std::vector<ParamDomain>& pdVec) {
     }
 
     double t1 = currentTime();
-    ::usleep(100000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::cerr << "Elapsed time: " << t1 - t0 << std::endl;
 }
 
@@ -1100,7 +1101,7 @@ ChessTool::simplify(std::istream& is, std::vector<ParamDomain>& zeroPars,
     }
 
     double t1 = currentTime();
-    ::usleep(100000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::cerr << "Elapsed time: " << t1 - t0 << std::endl;
 }
 

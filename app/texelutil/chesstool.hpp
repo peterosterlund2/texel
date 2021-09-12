@@ -130,8 +130,10 @@ public:
     /** Print positions where abs(qScore) >= threshold and game result != (1+sign(qScore))/2. */
     void outliers(std::istream& is, int threshold);
 
+#if !_MSC_VER
     /** In a FEN file, update the search score in each line by running a script to get the new score. */
     void computeSearchScores(std::istream& is, const std::string& script);
+#endif
 
     /** In a FEN file, update the positions to the position at the end of q-search. */
     void computeQSearchPos(std::istream& is);

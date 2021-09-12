@@ -90,7 +90,9 @@ usage() {
     std::cerr << "                                     -m treat bishop and knight as same type\n";
     std::cerr << "        mtrl [-m] wQ wR wB [wN] wP bQ bR bB [bN] bP : material satisfies pattern\n";
     std::cerr << "                                     -m treat bishop and knight as same type\n";
+#if !_MSC_VER
     std::cerr << " search script : Update search score in FEN file by running script on all lines\n";
+#endif
     std::cerr << " qsearch : Update positions in FEN file to position at end of q-search\n";
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
     std::cerr << " evaleffect evalfile : Print eval improvement when parameters are changed\n";
@@ -467,11 +469,13 @@ main(int argc, char* argv[]) {
             chessTool.pawnAdvTable(std::cin);
         } else if (cmd == "filter") {
             doFilterCmd(argc, argv, chessTool);
+#if !_MSC_VER
         } else if (cmd == "search") {
             if (argc != 3)
                 usage();
             std::string script = argv[2];
             chessTool.computeSearchScores(std::cin, script);
+#endif
         } else if (cmd == "qsearch") {
             if (argc != 2)
                 usage();
