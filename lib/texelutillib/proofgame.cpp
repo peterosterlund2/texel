@@ -184,8 +184,11 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
         }
 
         numNodes++;
-
         pos.deSerialize(tn.psd);
+
+        if (numNodes == 1)
+            showPieceStats(pos);
+
         if (tn.ply < best && isSolution(pos)) {
             getSolution(startPos, idx, movePath);
             best = tn.ply;
@@ -372,6 +375,44 @@ ProofGame::enoughRemainingPieces(int pieceCnt[]) const {
     if (bProm < 0)
         return false;
     return true;
+}
+
+void
+ProofGame::showPieceStats(const Position& pos) const {
+    int currCnt[Piece::nPieceTypes];
+    for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
+        currCnt[p] = BitBoard::bitCount(pos.pieceTypeBB((Piece::Type)p));
+
+    auto print = [this,&currCnt](int piece, const std::string& pieceName) -> int {
+        int cnt = goalPieceCnt[piece] - currCnt[piece];
+        std::cout << pieceName << ':' << cnt << ' ';
+        return cnt;
+    };
+    auto printB = [this,&pos](int piece, const std::string& pieceName, bool dark) -> int {
+        U64 mask = dark ? BitBoard::maskDarkSq : BitBoard::maskLightSq;
+        int cnt = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)piece) & mask);
+        cnt -=    BitBoard::bitCount(pos.pieceTypeBB((Piece::Type)piece) & mask);
+        std::cout << pieceName << ':' << cnt << ' ';
+        return cnt;
+    };
+
+    int spare = 0;
+    spare -= std::max(0, print (Piece::WQUEEN,  "Q"));
+    spare -= std::max(0, print (Piece::WROOK,   "R"));
+    spare -= std::max(0, printB(Piece::WBISHOP, "Bd", true));
+    spare -= std::max(0, printB(Piece::WBISHOP, "Bl", false));
+    spare -= std::max(0, print (Piece::WKNIGHT, "N"));
+    spare -= std::min(0, print (Piece::WPAWN,   "P"));
+    std::cout << "sP:" << spare << std::endl;
+
+    spare = 0;
+    spare -= std::max(0, print (Piece::BQUEEN,  "q"));
+    spare -= std::max(0, print (Piece::BROOK,   "r"));
+    spare -= std::max(0, printB(Piece::BBISHOP, "bd", true));
+    spare -= std::max(0, printB(Piece::BBISHOP, "bl", false));
+    spare -= std::max(0, print (Piece::BKNIGHT, "n"));
+    spare -= std::min(0, print (Piece::BPAWN,   "p"));
+    std::cout << "sp:" << spare << std::endl;
 }
 
 bool

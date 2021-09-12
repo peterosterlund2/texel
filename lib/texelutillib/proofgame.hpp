@@ -85,6 +85,9 @@ private:
     /** Return true if there are enough remaining pieces to reach goalPos. */
     bool enoughRemainingPieces(int pieceCnt[]) const;
 
+    /** Print required piece count changes to standard output. */
+    void showPieceStats(const Position& pos) const;
+
     /** Compute number of required captures to get pawns into correct files.
      * Check that excess material can satisfy both required captures and
      * required pawn promotions. */
