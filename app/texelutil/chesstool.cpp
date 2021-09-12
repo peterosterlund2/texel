@@ -1642,7 +1642,7 @@ ChessTool::readFENFile(std::istream& is, std::vector<PositionInfo>& data) {
                 if (!localError) {
                     try {
                         pos = TextIO::readFEN(fields[0]);
-                    } catch (ChessParseError& cpe) {
+                    } catch (ChessParseError&) {
                         localError = true;
                     }
                 }
