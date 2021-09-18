@@ -183,6 +183,9 @@ private:
     int goalPieceCnt[Piece::nPieceTypes];
     Move epMove; // Move that sets up the EP square to get to the original goalPos
 
+    const int weightA; // Weight for length of current partial solution
+    const int weightB; // Weight for heuristic lower bound of length to goalPos
+
     struct TreeNode {
         Position::SerializeData psd; // Position
         U32 parent;                  // Parent index, not used for root position

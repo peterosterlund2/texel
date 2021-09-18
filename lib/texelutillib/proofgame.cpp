@@ -79,7 +79,7 @@ ProofGame::staticInit() {
 }
 
 ProofGame::ProofGame(const std::string& goal, int a, int b)
-    : queue(TreeNodeCompare(nodes, a, b)) {
+    : weightA(a), weightB(b), queue(TreeNodeCompare(nodes, a, b)) {
     goalPos = TextIO::readFEN(goal);
     validatePieceCounts(goalPos);
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
@@ -179,8 +179,8 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
         if (tn.ply + tn.bound > minCost) {
             minCost = tn.ply + tn.bound;
             std::cout << "min cost: " << minCost << " queue: " << queue.size()
-                      << " nodes:" << numNodes
-                      << " time:" << (currentTime() - t0) << std::endl;
+                      << " nodes: " << numNodes
+                      << " time: " << (currentTime() - t0) << std::endl;
         }
 
         numNodes++;
@@ -190,6 +190,8 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
             showPieceStats(pos);
 
         if (tn.ply < best && isSolution(pos)) {
+            std::cout << tn.ply << " -w " << weightA << ":" << weightB
+                      << " time: " << (currentTime() - t0) << std::endl;
             getSolution(startPos, idx, movePath);
             best = tn.ply;
         }
@@ -275,7 +277,6 @@ ProofGame::getSolution(const Position& startPos, int idx, std::vector<Move>& mov
     getMoves(idx);
     if (!epMove.isEmpty())
         movePath.push_back(epMove);
-    std::cout << nodes[idx].ply << ": ";
     Position pos = startPos;
     UndoInfo ui;
     for (size_t i = 0; i < movePath.size(); i++) {
