@@ -361,31 +361,32 @@ doBookCmd(int argc, char* argv[]) {
 
 static void
 doProofGameCmd(int argc, char* argv[]) {
-    std::string initFen, initPgnFile, goalFen;
+    std::string initFen = TextIO::startPosFEN;
+    std::string initPgnFile;
     int a = 1, b = 1;
     int arg = 2;
-    if (argc >= arg+2 && argv[arg] == std::string("-w")) {
-        std::string s(argv[arg+1]);
-        size_t idx = s.find(':');
-        if ((idx == std::string::npos) ||
-            !str2Num(s.substr(0, idx), a) ||
-            !str2Num(s.substr(idx+1), b))
-            usage();
-        arg += 2;
-    }
-    if (argc >= arg+2 && argv[arg] == std::string("-i")) {
-        initFen = argv[arg+1];
-        arg += 2;
-    } else {
-        initFen = TextIO::startPosFEN;
-    }
-    if (argc >= arg+2 && argv[arg] == std::string("-ipgn")) {
-        initPgnFile = argv[arg+1];
-        arg += 2;
+    while (arg+1 < argc) {
+        if (argv[arg] == std::string("-w")) {
+            std::string s(argv[arg+1]);
+            size_t idx = s.find(':');
+            if ((idx == std::string::npos) ||
+                    !str2Num(s.substr(0, idx), a) ||
+                    !str2Num(s.substr(idx+1), b))
+                usage();
+            arg += 2;
+        } else  if (argv[arg] == std::string("-i")) {
+            initFen = argv[arg+1];
+            arg += 2;
+        } else if (argv[arg] == std::string("-ipgn")) {
+            initPgnFile = argv[arg+1];
+            arg += 2;
+        } else {
+            break;
+        }
     }
     if (arg+1 != argc)
         usage();
-    goalFen = argv[arg];
+    std::string goalFen = argv[arg];
 
     std::vector<Move> initPath;
     if (!initPgnFile.empty()) {
