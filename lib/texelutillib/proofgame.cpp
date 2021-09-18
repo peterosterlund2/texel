@@ -78,8 +78,8 @@ ProofGame::staticInit() {
     staticInitDone = true;
 }
 
-ProofGame::ProofGame(const std::string& goal, int a, int b)
-    : weightA(a), weightB(b), queue(TreeNodeCompare(nodes, a, b)) {
+ProofGame::ProofGame(const std::string& goal, int a, int b, bool dynamic)
+    : weightA(a), weightB(b), dynamic(dynamic) {
     goalPos = TextIO::readFEN(goal);
     validatePieceCounts(goalPos);
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
@@ -151,14 +151,19 @@ int
 ProofGame::search(const std::string& initialFen, const std::vector<Move>& initialPath,
                   std::vector<Move>& movePath) {
     Position startPos = TextIO::readFEN(initialFen);
+    {
+        int N = dynamic ? distLowerBound(startPos) * 2 : 0;
+        queue = make_unique<Queue>(TreeNodeCompare(nodes, weightA, weightB, N));
+    }
+
     validatePieceCounts(startPos);
     addPosition(startPos, 0, true, false);
     {
         Position pos(startPos);
         UndoInfo ui;
         for (Move m : initialPath) {
-            U32 idx = queue.top();
-            queue.pop();
+            U32 idx = queue->top();
+            queue->pop();
             pos.makeMove(m, ui);
             addPosition(pos, idx, false, false);
         }
@@ -170,15 +175,15 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
     int minCost = -1;
     int best = INT_MAX;
     UndoInfo ui;
-    while (!queue.empty()) {
-        const U32 idx = queue.top();
-        queue.pop();
+    while (!queue->empty()) {
+        const U32 idx = queue->top();
+        queue->pop();
         const TreeNode& tn = nodes[idx];
         if (tn.ply + tn.bound >= best)
             continue;
         if (tn.ply + tn.bound > minCost) {
             minCost = tn.ply + tn.bound;
-            std::cout << "min cost: " << minCost << " queue: " << queue.size()
+            std::cout << "min cost: " << minCost << " queue: " << queue->size()
                       << " nodes: " << numNodes
                       << " time: " << (currentTime() - t0) << std::endl;
         }
@@ -243,7 +248,7 @@ ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkB
         U32 idx = nodes.size();
         nodes.push_back(tn);
         nodeHash[pos.zobristHash()] = ply;
-        queue.push(idx);
+        queue->push(idx);
     }
 }
 

@@ -44,8 +44,11 @@ public:
     /** Create object to find a move path to a goal position.
      * A position is considered to match the goal position even if move
      * numbers, en passant square, and/or castling flags are different.
-     * Use scale a for ply and scale b for bound when ordering nodes to search. */
-    ProofGame(const std::string& goal, int a = 1, int b = 1);
+     * Use scale a for ply and scale b for bound when ordering nodes to search.
+     * If "dynamic" is true, dynamic weighting A* search is used. */
+    ProofGame(const std::string& goal, int a = 1, int b = 1, bool dynamic = false);
+    ProofGame(const ProofGame&) = delete;
+    ProofGame& operator=(const ProofGame&) = delete;
 
     /** Search for shortest solution. Print solutions to standard output.
      * Return length of shortest path found. */
@@ -185,6 +188,7 @@ private:
 
     const int weightA; // Weight for length of current partial solution
     const int weightB; // Weight for heuristic lower bound of length to goalPos
+    const bool dynamic; // If true, use dynamic weighting algorithm
 
     struct TreeNode {
         Position::SerializeData psd; // Position
@@ -192,7 +196,14 @@ private:
         U16 ply;                     // Number of moves already made, 0 for root node
         U16 bound;                   // Lower bound on number of moves to a solution
 
-        int sortWeight(int a, int b) const { return a * ply + b * bound; }
+        int sortWeight(int a, int b, int N) const {
+            if (N == 0) {
+                return a * ply + b * bound;
+            } else {
+                int p = std::min((int)ply, N);
+                return a*N * ply + (a*N + (b-a)*(N-p)) * bound;
+            }
+        }
     };
 
     // All nodes encountered so far
@@ -203,13 +214,13 @@ private:
 
     class TreeNodeCompare {
     public:
-        TreeNodeCompare(const std::vector<TreeNode>& nodes0, int a0, int b0)
-            : nodes(nodes0), k0(a0), k1(b0) {}
+        TreeNodeCompare(const std::vector<TreeNode>& nodes0, int a0, int b0, int N0)
+            : nodes(nodes0), k0(a0), k1(b0), N(N0) {}
         bool operator()(int a, int b) const {
             const TreeNode& n1 = nodes[a];
             const TreeNode& n2 = nodes[b];
-            int min1 = n1.sortWeight(k0, k1);
-            int min2 = n2.sortWeight(k0, k1);
+            int min1 = n1.sortWeight(k0, k1, N);
+            int min2 = n2.sortWeight(k0, k1, N);
             if (min1 != min2)
                 return min1 > min2;
             if (n1.ply != n2.ply)
@@ -219,10 +230,12 @@ private:
     private:
         const std::vector<TreeNode>& nodes;
         int k0, k1;
+        int N;
     };
 
     // Nodes ordered by "ply+bound". Elements are indices in the nodes vector.
-    std::priority_queue<int, std::vector<int>, TreeNodeCompare> queue;
+    using Queue = std::priority_queue<int, std::vector<int>, TreeNodeCompare>;
+    std::unique_ptr<Queue> queue;
 
     // Cache of recently used ShortestPathData objects
     static const int PathCacheSize = 1024*1024;

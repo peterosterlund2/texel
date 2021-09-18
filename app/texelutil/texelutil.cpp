@@ -149,7 +149,7 @@ usage() {
     std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file\n";
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
-    std::cerr << " proofgame [-w a:b] [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
+    std::cerr << " proofgame [-w a:b] [-d] [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -364,9 +364,10 @@ doProofGameCmd(int argc, char* argv[]) {
     std::string initFen = TextIO::startPosFEN;
     std::string initPgnFile;
     int a = 1, b = 1;
+    bool dynamic = false;
     int arg = 2;
-    while (arg+1 < argc) {
-        if (argv[arg] == std::string("-w")) {
+    while (arg < argc) {
+        if (arg+1 < argc && argv[arg] == std::string("-w")) {
             std::string s(argv[arg+1]);
             size_t idx = s.find(':');
             if ((idx == std::string::npos) ||
@@ -374,12 +375,15 @@ doProofGameCmd(int argc, char* argv[]) {
                     !str2Num(s.substr(idx+1), b))
                 usage();
             arg += 2;
-        } else  if (argv[arg] == std::string("-i")) {
+        } else  if (arg + 1 < argc && argv[arg] == std::string("-i")) {
             initFen = argv[arg+1];
             arg += 2;
-        } else if (argv[arg] == std::string("-ipgn")) {
+        } else if (arg + 1 < argc && argv[arg] == std::string("-ipgn")) {
             initPgnFile = argv[arg+1];
             arg += 2;
+        } else if (argv[arg] == std::string("-d")) {
+            dynamic = true;
+            arg++;
         } else {
             break;
         }
@@ -406,7 +410,7 @@ doProofGameCmd(int argc, char* argv[]) {
         }
     }
 
-    ProofGame ps(goalFen, a, b);
+    ProofGame ps(goalFen, a, b, dynamic);
     std::vector<Move> movePath;
     ps.search(initFen, initPath, movePath);
 }
