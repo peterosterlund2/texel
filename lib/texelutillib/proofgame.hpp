@@ -53,7 +53,7 @@ public:
     /** Search for shortest solution. Print solutions to standard output.
      * Return length of shortest path found. */
     int search(const std::string& initialFen, const std::vector<Move>& initialPath,
-               std::vector<Move>& movePath);
+               std::vector<Move>& movePath, bool verbose = false);
 
     /** Return goal position. */
     const Position& getGoalPos() const;
@@ -70,8 +70,8 @@ private:
     static void getInitialPath(const std::string& initialPgnFile, Position& startPos,
                                std::vector<Move>& initialPath);
 
-    /** Queue a new position to be searched. */
-    void addPosition(const Position& pos, U32 parent, bool isRoot, bool checkBound);
+    /** Queue a new position to be searched. Return true if position was queued. */
+    bool addPosition(const Position& pos, U32 parent, bool isRoot, bool checkBound);
 
     /** Return true if pos is equal to the goal position. */
     bool isSolution(const Position& pos) const;

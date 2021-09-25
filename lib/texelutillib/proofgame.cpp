@@ -149,7 +149,7 @@ ProofGame::validatePieceCounts(const Position& pos) {
 
 int
 ProofGame::search(const std::string& initialFen, const std::vector<Move>& initialPath,
-                  std::vector<Move>& movePath) {
+                  std::vector<Move>& movePath, bool verbose) {
     Position startPos = TextIO::readFEN(initialFen);
     {
         int N = dynamic ? distLowerBound(startPos) * 2 : 0;
@@ -174,6 +174,7 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
     U64 numNodes = 0;
     int minCost = -1;
     int best = INT_MAX;
+    int smallestBound = INT_MAX;
     UndoInfo ui;
     while (!queue->empty()) {
         const U32 idx = queue->top();
@@ -196,6 +197,7 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
 
         if (tn.ply < best && isSolution(pos)) {
             std::cout << tn.ply << " -w " << weightA << ":" << weightB
+                      << " queue: " << queue->size() << " nodes: " << numNodes
                       << " time: " << (currentTime() - t0) << std::endl;
             getMoves(startPos, idx, movePath);
             best = tn.ply;
@@ -212,6 +214,7 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
                       << TextIO::toFEN(pos) << std::endl;
 #endif
 
+        bool anyChildren = false;
         MoveList moves;
         MoveGen::pseudoLegalMoves(pos, moves);
         MoveGen::removeIllegal(pos, moves);
@@ -219,8 +222,19 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
             if (((1ULL << moves[i].from()) | (1ULL << moves[i].to())) & blocked)
                 continue;
             pos.makeMove(moves[i], ui);
-            addPosition(pos, idx, false, true);
+            anyChildren |= addPosition(pos, idx, false, true);
             pos.unMakeMove(moves[i], ui);
+        }
+        if (verbose && anyChildren) {
+            const TreeNode& tn = nodes[idx]; // Old "tn" no longer valid
+            if (tn.bound > 0 && tn.bound < smallestBound) {
+                smallestBound = tn.bound;
+                std::cout << "bound: " << tn.bound << " -w " << weightA << ":" << weightB
+                          << " queue: " << queue->size() << " nodes: " << numNodes
+                          << " time: " << (currentTime() - t0) << std::endl;
+                std::vector<Move> path;
+                getMoves(startPos, idx, path);
+            }
         }
     }
     double t1 = currentTime();
@@ -231,12 +245,12 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
     return best + epCost;
 }
 
-void
+bool
 ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkBound) {
     const int ply = isRoot ? 0 : nodes[parent].ply + 1;
     auto it = nodeHash.find(pos.zobristHash());
     if ((it != nodeHash.end()) && (it->second <= ply))
-        return;
+        return false;
 
     TreeNode tn;
     pos.serialize(tn.psd);
@@ -249,7 +263,9 @@ ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkB
         nodes.push_back(tn);
         nodeHash[pos.zobristHash()] = ply;
         queue->push(idx);
+        return true;
     }
+    return false;
 }
 
 void

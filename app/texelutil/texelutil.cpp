@@ -149,7 +149,7 @@ usage() {
     std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file\n";
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
-    std::cerr << " proofgame [-w a:b] [-d] [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
+    std::cerr << " proofgame [-w a:b] [-d] [-v] [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -365,6 +365,7 @@ doProofGameCmd(int argc, char* argv[]) {
     std::string initPgnFile;
     int a = 1, b = 1;
     bool dynamic = false;
+    bool verbose = false;
     int arg = 2;
     while (arg < argc) {
         if (arg+1 < argc && argv[arg] == std::string("-w")) {
@@ -383,6 +384,9 @@ doProofGameCmd(int argc, char* argv[]) {
             arg += 2;
         } else if (argv[arg] == std::string("-d")) {
             dynamic = true;
+            arg++;
+        } else if (argv[arg] == std::string("-v")) {
+            verbose = true;
             arg++;
         } else {
             break;
@@ -412,7 +416,7 @@ doProofGameCmd(int argc, char* argv[]) {
 
     ProofGame ps(goalFen, a, b, dynamic);
     std::vector<Move> movePath;
-    ps.search(initFen, initPath, movePath);
+    ps.search(initFen, initPath, movePath, verbose);
 }
 
 int
