@@ -197,7 +197,7 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
         if (tn.ply < best && isSolution(pos)) {
             std::cout << tn.ply << " -w " << weightA << ":" << weightB
                       << " time: " << (currentTime() - t0) << std::endl;
-            getSolution(startPos, idx, movePath);
+            getMoves(startPos, idx, movePath);
             best = tn.ply;
         }
 
@@ -253,7 +253,7 @@ ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkB
 }
 
 void
-ProofGame::getSolution(const Position& startPos, int idx, std::vector<Move>& movePath) const {
+ProofGame::getMoves(const Position& startPos, int idx, std::vector<Move>& movePath) const {
     std::function<void(int)> getMoves = [this,&movePath,&getMoves](U32 idx) {
         const TreeNode& tn = nodes[idx];
         if (tn.ply == 0)

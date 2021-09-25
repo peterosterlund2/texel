@@ -78,7 +78,7 @@ private:
 
     /** Get move sequence leading to position given by index "idx".
      * Also print move sequence to standard output. */
-    void getSolution(const Position& startPos, int idx, std::vector<Move>& movePath) const;
+    void getMoves(const Position& startPos, int idx, std::vector<Move>& movePath) const;
 
     /** Compute a lower bound for the minimum number of plies from position pos
      * to position goalPos. If INT_MAX is returned, it means that goalPos can not be
