@@ -191,7 +191,7 @@ private:
     const bool dynamic; // If true, use dynamic weighting algorithm
 
     struct TreeNode {
-        Position::SerializeData psd; // Position
+        Position::SerializeData psd; // Position data
         U32 parent;                  // Parent index, not used for root position
         U16 ply;                     // Number of moves already made, 0 for root node
         U16 bound;                   // Lower bound on number of moves to a solution
@@ -221,17 +221,7 @@ private:
         }
     private:
         /** Return true if node "a" has higher priority than node "b". */
-        bool higherPrio(int a, int b) const {
-            const TreeNode& n1 = nodes[a];
-            const TreeNode& n2 = nodes[b];
-            int min1 = n1.sortWeight(k0, k1, N);
-            int min2 = n2.sortWeight(k0, k1, N);
-            if (min1 != min2)
-                return min1 < min2;
-            if (n1.ply != n2.ply)
-                return n1.ply > n2.ply;
-            return n1.parent > n2.parent;
-        }
+        bool higherPrio(int a, int b) const;
 
         const std::vector<TreeNode>& nodes;
         int k0, k1;

@@ -1196,3 +1196,55 @@ ProofGame::computeNeighbors(Piece::Type p, U64 toSquares, U64 blocked) {
     }
     return ret & ~blocked;
 }
+
+/** Return the sum of all pawn advances for both white and black. */
+static int nPawnAdvances(const Position& pos) {
+    int adv = 0;
+
+    U64 m = pos.pieceTypeBB(Piece::WPAWN);
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        adv += Square::getY(sq) - 1;
+    }
+
+    m = pos.pieceTypeBB(Piece::BPAWN);
+    while (m != 0) {
+        int sq = BitBoard::extractSquare(m);
+        adv += 6 - Square::getY(sq);
+    }
+
+    return adv;
+}
+
+bool ProofGame::TreeNodeCompare::higherPrio(int a, int b) const {
+    const TreeNode& n1 = nodes[a];
+    const TreeNode& n2 = nodes[b];
+    int min1 = n1.sortWeight(k0, k1, N);
+    int min2 = n2.sortWeight(k0, k1, N);
+    if (min1 != min2)
+        return min1 < min2;
+    if (n1.ply != n2.ply)
+        return n1.ply > n2.ply;
+
+    Position pos1;
+    pos1.deSerialize(n1.psd);
+    Position pos2;
+    pos2.deSerialize(n2.psd);
+
+    int nPiece1 = BitBoard::bitCount(pos1.occupiedBB());
+    int nPiece2 = BitBoard::bitCount(pos2.occupiedBB());
+    if (nPiece1 != nPiece2)
+        return nPiece1 < nPiece2; // Fewer pieces hopefully closer to the goal
+
+    int nP1 = BitBoard::bitCount(pos1.pieceTypeBB(Piece::WPAWN, Piece::BPAWN));
+    int nP2 = BitBoard::bitCount(pos2.pieceTypeBB(Piece::WPAWN, Piece::BPAWN));
+    if (nP1 != nP2)
+        return nP1 < nP2; // More promoted pawns hopefully closer to the goal
+
+    int nPAdv1 = nPawnAdvances(pos1);
+    int nPAdv2 = nPawnAdvances(pos2);
+    if (nPAdv1 != nPAdv2)
+        return nPAdv1 > nPAdv2; // More advanced pawns hopefully closer to the goal
+
+    return n1.parent > n2.parent;
+}
