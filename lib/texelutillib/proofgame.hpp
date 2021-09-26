@@ -217,17 +217,22 @@ private:
         TreeNodeCompare(const std::vector<TreeNode>& nodes0, int a0, int b0, int N0)
             : nodes(nodes0), k0(a0), k1(b0), N(N0) {}
         bool operator()(int a, int b) const {
+            return higherPrio(b, a);
+        }
+    private:
+        /** Return true if node "a" has higher priority than node "b". */
+        bool higherPrio(int a, int b) const {
             const TreeNode& n1 = nodes[a];
             const TreeNode& n2 = nodes[b];
             int min1 = n1.sortWeight(k0, k1, N);
             int min2 = n2.sortWeight(k0, k1, N);
             if (min1 != min2)
-                return min1 > min2;
+                return min1 < min2;
             if (n1.ply != n2.ply)
-                return n1.ply < n2.ply;
-            return n1.parent < n2.parent;
+                return n1.ply > n2.ply;
+            return n1.parent > n2.parent;
         }
-    private:
+
         const std::vector<TreeNode>& nodes;
         int k0, k1;
         int N;
