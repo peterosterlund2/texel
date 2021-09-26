@@ -46,6 +46,7 @@ public:
     static void testSearch();
     static void testEnPassant();
     static void testCaptureSquares();
+    static void testKingPawnsTrap();
 
 private:
     static void checkBlockedConsistency(ProofGame& ps, Position& pos);

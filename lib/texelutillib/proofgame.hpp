@@ -168,6 +168,10 @@ private:
      *  If false is returned, it is impossible to reach goalPos from pos. */
     bool computeBlocked(const Position& pos, U64& blocked) const;
 
+    /** Compute blocked pieces caused by a king on the first rank trapped by
+     *  two enemy pawns on the second and third ranks.
+     *  If false is returned, it is impossible to reach goalPos from pos. */
+    bool computeKingPawnsTrapBlocked(const Position& pos, U64& blocked) const;
 
     /** Compute shortest path for a piece p to toSq from all possible start squares,
      *  taking blocked squares into account. For squares that can not reach toSq,
@@ -187,7 +191,7 @@ private:
     Move epMove; // Move that sets up the EP square to get to the original goalPos
 
     const int weightA; // Weight for length of current partial solution
-    const int weightB; // Weight for heuristic lower bound of length to goalPos
+    const int weightB; // Weight for heuristic lower bound for length to goalPos
     const bool dynamic; // If true, use dynamic weighting algorithm
 
     struct TreeNode {

@@ -927,6 +927,9 @@ ProofGame::solveAssignment(Assignment<int>& as) {
 
 bool
 ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
+    if (!computeKingPawnsTrapBlocked(pos, blocked))
+        return false;
+
     const U64 wGoalPawns = goalPos.pieceTypeBB(Piece::WPAWN);
     const U64 bGoalPawns = goalPos.pieceTypeBB(Piece::BPAWN);
     const U64 wCurrPawns = pos.pieceTypeBB(Piece::WPAWN);
@@ -936,7 +939,7 @@ ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
     U64 currUnMovedPawns = (wCurrPawns & BitBoard::maskRow2) | (bCurrPawns & BitBoard::maskRow7);
     if (goalUnMovedPawns & ~currUnMovedPawns)
         return false;
-    blocked = goalUnMovedPawns;
+    blocked |= goalUnMovedPawns;
 
     U64 wUsefulPawnSquares = 0;
     // Compute pawns that are blocked because advancing them would leave too few
@@ -1006,6 +1009,71 @@ ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
         blocked |= BitBoard::sqMask(E8,H8);
     if (goalPos.a8Castle())
         blocked |= BitBoard::sqMask(E8,A8);
+
+    return true;
+}
+
+bool
+ProofGame::computeKingPawnsTrapBlocked(const Position& pos, U64& blocked) const {
+    blocked = 0;
+
+    {
+        int wkSq = pos.wKingSq();
+        if (Square::getY(wkSq) == 0) {
+            U64 kingMask = 1ULL << wkSq;
+            U64 pMask = (kingMask << 8) | (kingMask << 16);
+            if ((pos.pieceTypeBB(Piece::BPAWN) & pMask) == pMask) {
+                int pieceCnt[Piece::nPieceTypes];
+                for (int p = Piece::BQUEEN; p <= Piece::BPAWN; p++)
+                    pieceCnt[p] = BitBoard::bitCount(pos.pieceTypeBB((Piece::Type)p));
+                auto nExtra = [this,&pieceCnt](int piece) {
+                    return pieceCnt[piece] - goalPieceCnt[piece];
+                };
+                int spare = nExtra(Piece::BPAWN);
+                spare += std::min(0, nExtra(Piece::BQUEEN));
+                spare += std::min(0, nExtra(Piece::BROOK));
+                spare += std::min(0, nExtra(Piece::BBISHOP));
+                spare += std::min(0, nExtra(Piece::BKNIGHT));
+                if (spare < 0)
+                    return false;
+                if (spare == 0) { // No spare promotions => pieces cannot move
+                    if (goalPos.wKingSq() != wkSq ||
+                            ((goalPos.pieceTypeBB(Piece::BPAWN) & pMask) != pMask))
+                        return false;
+                    blocked |= kingMask | pMask;
+                }
+            }
+        }
+    }
+
+    {
+        int bkSq = pos.bKingSq();
+        if (Square::getY(bkSq) == 7) {
+            U64 kingMask = 1ULL << bkSq;
+            U64 pMask = (kingMask >> 8) | (kingMask >> 16);
+            if ((pos.pieceTypeBB(Piece::WPAWN) & pMask) == pMask) {
+                int pieceCnt[Piece::nPieceTypes];
+                for (int p = Piece::WQUEEN; p <= Piece::WPAWN; p++)
+                    pieceCnt[p] = BitBoard::bitCount(pos.pieceTypeBB((Piece::Type)p));
+                auto nExtra = [this,&pieceCnt](int piece) {
+                    return pieceCnt[piece] - goalPieceCnt[piece];
+                };
+                int spare = nExtra(Piece::WPAWN);
+                spare += std::min(0, nExtra(Piece::WQUEEN));
+                spare += std::min(0, nExtra(Piece::WROOK));
+                spare += std::min(0, nExtra(Piece::WBISHOP));
+                spare += std::min(0, nExtra(Piece::WKNIGHT));
+                if (spare < 0)
+                    return false;
+                if (spare == 0) { // No spare promotions => pieces cannot move
+                    if (goalPos.bKingSq() != bkSq ||
+                            ((goalPos.pieceTypeBB(Piece::WPAWN) & pMask) != pMask))
+                        return false;
+                    blocked |= kingMask | pMask;
+                }
+            }
+        }
+    }
 
     return true;
 }

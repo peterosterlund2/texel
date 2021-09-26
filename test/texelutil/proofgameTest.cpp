@@ -914,3 +914,70 @@ ProofGameTest::testCaptureSquares() {
         ASSERT_EQ(INT_MAX, hScore(ps, startFen));
     }
 }
+
+TEST(ProofGameTest, testKingPawnsTrap) {
+    ProofGameTest::testKingPawnsTrap();
+}
+
+void
+ProofGameTest::testKingPawnsTrap() {
+    {
+        std::string goalFen  = "1k6/1Pb4b/1P6/8/8/8/8/4K3 w - - 0 1";
+        std::string startFen = "1k6/bP5b/1P6/8/8/8/8/4K3 w - - 0 1";
+        ProofGame ps(goalFen);
+        ASSERT_EQ(INT_MAX, hScore(ps, startFen));
+        startFen = "1k6/1Pb2b2/1P6/8/8/2K5/8/8 w - - 0 1";
+        ASSERT_EQ(4, hScore(ps, startFen));
+    }
+    {
+        std::string startFen = "4k3/2b1P3/4P3/8/8/2K1P3/8/8 w - - 0 1";
+        std::string goalFen  = "4k3/2b1P3/4P3/8/8/2K1Q3/8/8 w - - 0 1";
+        ProofGame ps(goalFen);
+        ASSERT_EQ(INT_MAX, hScore(ps, startFen));
+    }
+    {
+        std::string startFen = "4k3/2b1P3/4P3/8/P7/2K5/8/8 w - - 0 1";
+        std::string goalFen  = "2k5/2b1P3/4P3/8/N7/2K5/8/8 w - - 0 1";
+        ProofGame ps(goalFen);
+        ASSERT_EQ(INT_MAX, hScore(ps, startFen));
+    }
+    {
+        std::string startFen = "4k3/2b1P3/4P3/8/P7/2K5/8/8 w - - 0 1";
+        std::string goalFen  = "8/2b5/3k4/8/B3B3/2K5/8/8 w - - 0 1";
+        ProofGame ps(goalFen);
+        ASSERT_GE(hScore(ps, startFen), 12);
+        ASSERT_LE(hScore(ps, startFen), 16);
+    }
+
+    {
+        std::string startFen = "3k4/b2P4/3P4/3P4/3p4/3p3B/3p4/3K4 w - - 0 1";
+        std::string goalFen  = "3k4/b2P4/3P4/3P4/1B1p4/3p4/3p4/3K4 w - - 0 1";
+        ProofGame ps(goalFen);
+        ASSERT_EQ(INT_MAX, hScore(ps, startFen));
+        Position pos = TextIO::readFEN(startFen);
+        U64 blocked;
+        ps.computeBlocked(pos, blocked);
+        U64 expected = BitBoard::maskFileD;
+        ASSERT_EQ(expected, blocked);
+    }
+    {
+        std::string startFen = "4k3/b3p3/4p3/8/1B6/5P2/5P2/5K2 w - - 0 1";
+        std::string goalFen  = "4k3/4p3/1b2p3/8/8/B4P2/5P2/5K2 w - - 0 1";
+        ProofGame ps(goalFen);
+        ASSERT_EQ(2, hScore(ps, startFen));
+        Position pos = TextIO::readFEN(startFen);
+        U64 blocked;
+        ps.computeBlocked(pos, blocked);
+        ASSERT_EQ(BitBoard::sqMask(F2, F3, E6, E7), blocked);
+    }
+    {
+        std::string startFen = "3k4/b2P4/3P4/2P5/1P6/P7/8/4K3 w - - 0 1";
+        std::string goalFen  = "3k4/3P2b1/3P4/2P5/1P6/P7/8/4K3 w - - 0 1";
+        ProofGame ps(goalFen);
+        ASSERT_EQ(INT_MAX, hScore(ps, startFen));
+        U64 blocked;
+        Position pos = TextIO::readFEN(startFen);
+        ps.computeBlocked(pos, blocked);
+        ASSERT_EQ(BitBoard::sqMask(A3, B4, C5, D6, D7, D8), blocked);
+    }
+}
