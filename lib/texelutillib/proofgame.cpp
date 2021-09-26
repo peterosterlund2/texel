@@ -153,7 +153,7 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
     Position startPos = TextIO::readFEN(initialFen);
     {
         int N = dynamic ? distLowerBound(startPos) * 2 : 0;
-        queue = make_unique<Queue>(TreeNodeCompare(nodes, weightA, weightB, N));
+        queue = make_unique<Queue>(TreeNodeCompare(goalPos, nodes, weightA, weightB, N));
     }
 
     validatePieceCounts(startPos);
@@ -1197,6 +1197,13 @@ ProofGame::computeNeighbors(Piece::Type p, U64 toSquares, U64 blocked) {
     return ret & ~blocked;
 }
 
+/** Return penalty for white/black kings far away from their goal positions. */
+static int kingDistPenalty(const Position& pos, const Position& goalPos) {
+    int dw = std::max(1, BitBoard::getKingDistance(pos.wKingSq(), goalPos.wKingSq()));
+    int db = std::max(1, BitBoard::getKingDistance(pos.bKingSq(), goalPos.bKingSq()));
+    return dw + db;
+}
+
 /** Return the sum of all pawn advances for both white and black. */
 static int nPawnAdvances(const Position& pos) {
     int adv = 0;
@@ -1235,6 +1242,11 @@ bool ProofGame::TreeNodeCompare::higherPrio(int a, int b) const {
     int nPiece2 = BitBoard::bitCount(pos2.occupiedBB());
     if (nPiece1 != nPiece2)
         return nPiece1 < nPiece2; // Fewer pieces hopefully closer to the goal
+
+    int kp1 = kingDistPenalty(pos1, goalPos);
+    int kp2 = kingDistPenalty(pos2, goalPos);
+    if (kp1 != kp2)
+        return kp1 < kp2; // Kings closer to goal position hopefully closer to the goal
 
     int nP1 = BitBoard::bitCount(pos1.pieceTypeBB(Piece::WPAWN, Piece::BPAWN));
     int nP2 = BitBoard::bitCount(pos2.pieceTypeBB(Piece::WPAWN, Piece::BPAWN));

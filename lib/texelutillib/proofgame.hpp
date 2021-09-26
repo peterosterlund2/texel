@@ -214,8 +214,9 @@ private:
 
     class TreeNodeCompare {
     public:
-        TreeNodeCompare(const std::vector<TreeNode>& nodes0, int a0, int b0, int N0)
-            : nodes(nodes0), k0(a0), k1(b0), N(N0) {}
+        TreeNodeCompare(const Position& goalPos0, const std::vector<TreeNode>& nodes0,
+                        int a0, int b0, int N0)
+            : goalPos(goalPos0), nodes(nodes0), k0(a0), k1(b0), N(N0) {}
         bool operator()(int a, int b) const {
             return higherPrio(b, a);
         }
@@ -223,6 +224,7 @@ private:
         /** Return true if node "a" has higher priority than node "b". */
         bool higherPrio(int a, int b) const;
 
+        const Position& goalPos;
         const std::vector<TreeNode>& nodes;
         int k0, k1;
         int N;
