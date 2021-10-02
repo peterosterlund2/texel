@@ -34,6 +34,7 @@
 #include <vector>
 #include <unordered_map>
 #include <queue>
+#include <iostream>
 
 /**
  * Search for a sequence of legal moves leading from a start to an end position.
@@ -57,6 +58,10 @@ public:
 
     /** Return goal position. */
     const Position& getGoalPos() const;
+
+    /** Read a list of FENs from a stream and classify them as legal/illegal/unknown
+     *  with regards to reachability from the starting position. */
+    static void filterFens(std::istream& is, std::ostream& os);
 
 private:
     /** Initialize static data if not already done. */

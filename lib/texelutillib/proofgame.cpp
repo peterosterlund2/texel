@@ -1328,3 +1328,26 @@ bool ProofGame::TreeNodeCompare::higherPrio(int a, int b) const {
 
     return n1.parent > n2.parent;
 }
+
+void ProofGame::filterFens(std::istream& is, std::ostream& os) {
+    Position startPos = TextIO::readFEN(TextIO::startPosFEN);
+    while (true) {
+        std::string line;
+        std::getline(is, line);
+        if (!is || is.eof())
+            break;
+
+        std::string status;
+        try {
+            ProofGame pg(line);
+            int minCost = pg.distLowerBound(startPos);
+            if (minCost == INT_MAX)
+                status = "illegal, other";
+            else
+                status = "unknown";
+        } catch (ChessParseError& e) {
+            status = std::string("illegal, ") + e.what();
+        }
+        os << line << " " << status << std::endl;
+    }
+}

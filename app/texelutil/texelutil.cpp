@@ -149,7 +149,7 @@ usage() {
     std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file\n";
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
-    std::cerr << " proofgame [-w a:b] [-d] [-v] [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
+    std::cerr << " proofgame [-w a:b] [-d] [-v] [-f] [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -366,6 +366,7 @@ doProofGameCmd(int argc, char* argv[]) {
     int a = 1, b = 1;
     bool dynamic = false;
     bool verbose = false;
+    bool filter = false;
     int arg = 2;
     while (arg < argc) {
         if (arg+1 < argc && argv[arg] == std::string("-w")) {
@@ -388,35 +389,42 @@ doProofGameCmd(int argc, char* argv[]) {
         } else if (argv[arg] == std::string("-v")) {
             verbose = true;
             arg++;
+        } else if (argv[arg] == std::string("-f")) {
+            filter = true;
+            arg++;
         } else {
             break;
         }
     }
-    if (arg+1 != argc)
-        usage();
-    std::string goalFen = argv[arg];
+    if (filter) {
+        ProofGame::filterFens(std::cin, std::cout);
+    } else {
+        if (arg+1 != argc)
+            usage();
+        std::string goalFen = argv[arg];
 
-    std::vector<Move> initPath;
-    if (!initPgnFile.empty()) {
-        std::ifstream is(initPgnFile);
-        if (!is.good())
-            throw ChessParseError("Failed to open file");
-        PgnReader reader(is);
-        GameTree gt;
-        while (reader.readPGN(gt))
-            ;
-        GameNode gn = gt.getRootNode();
-        if (TextIO::toFEN(gn.getPos()) != initFen)
-            throw ChessParseError("Incorrect PGN start position");
-        while (gn.nChildren() > 0) {
-            gn.goForward(0);
-            initPath.push_back(gn.getMove());
+        std::vector<Move> initPath;
+        if (!initPgnFile.empty()) {
+            std::ifstream is(initPgnFile);
+            if (!is.good())
+                throw ChessParseError("Failed to open file");
+            PgnReader reader(is);
+            GameTree gt;
+            while (reader.readPGN(gt))
+                ;
+            GameNode gn = gt.getRootNode();
+            if (TextIO::toFEN(gn.getPos()) != initFen)
+                throw ChessParseError("Incorrect PGN start position");
+            while (gn.nChildren() > 0) {
+                gn.goForward(0);
+                initPath.push_back(gn.getMove());
+            }
         }
-    }
 
-    ProofGame ps(goalFen, a, b, dynamic);
-    std::vector<Move> movePath;
-    ps.search(initFen, initPath, movePath, verbose);
+        ProofGame ps(goalFen, a, b, dynamic);
+        std::vector<Move> movePath;
+        ps.search(initFen, initPath, movePath, verbose);
+    }
 }
 
 int

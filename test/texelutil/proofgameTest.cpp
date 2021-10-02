@@ -981,3 +981,35 @@ ProofGameTest::testKingPawnsTrap() {
         ASSERT_EQ(BitBoard::sqMask(A3, B4, C5, D6, D7, D8), blocked);
     }
 }
+
+TEST(ProofGameTest, testFilter) {
+    ProofGameTest::testFilter();
+}
+
+void ProofGameTest::testFilter() {
+    auto contains = [](const std::string& str, const std::string value) {
+        return str.find(value) != std::string::npos;
+    };
+    struct Data {
+        std::string fen;
+        std::string status;
+        bool value;
+    };
+    std::vector<Data> v = {
+        { TextIO::startPosFEN, "illegal", false },
+        { "rnbqkbnr/p1pppppp/p7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "illegal", true }, // invalid pawn capture
+        { "rnbqkbnr/p1pppppp/p7/8/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1", "illegal", false }, // a4 Nf6 a5 Ng8 a6 bxa6
+        { "nnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk - 0 1", "illegal", true }, // Too many black knights
+        { "8/8/8/8/8/8/8/Kk6 w - - 0 1", "illegal", true }, // King capture possible
+        { "8/8/8/8/8/8/8/KRk5 w - - 0 1", "illegal", true }, // King capture possible
+        { "8/8/8/8/8/8/8/KRk5 b - - 0 1", "illegal", false }, // King in check
+    };
+    for (const Data& d : v) {
+        std::stringstream in;
+        in << d.fen << std::endl;
+        std::stringstream out;
+        ProofGame::filterFens(in, out);
+        ASSERT_EQ(d.value, contains(out.str(), d.status))
+            << (d.value ? "" : "!")  << d.status << ": " << d.fen;
+    }
+}
