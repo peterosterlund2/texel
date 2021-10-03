@@ -126,7 +126,7 @@ public:
     int getCastleMask() const;
     void setCastleMask(int castleMask);
 
-    /** En passant square, or -1 if no en passant possible. */
+    /** En passant square (on 3rd/6th rank), or -1 if no en passant possible. */
     int getEpSquare() const;
 
     void setEpSquare(int epSquare);
