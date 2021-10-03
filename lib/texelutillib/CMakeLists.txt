@@ -5,6 +5,7 @@ set(src_texelutillib
                  gametreeutil.hpp
   posutil.cpp    posutil.hpp
   proofgame.cpp  proofgame.hpp
+  revmovegen.cpp revmovegen.hpp
                  stloutput.hpp
                  threadpool.hpp
   tbpath.cpp     tbpath.hpp

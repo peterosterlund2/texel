@@ -149,10 +149,21 @@ TextIO::charToPiece(bool white, char c) {
     return -1;
 }
 
-inline
-std::ostream& operator<<(std::ostream& os, const Move& m) {
+inline std::ostream&
+operator<<(std::ostream& os, const Move& m) {
     os << TextIO::moveToUCIString(m);
     return os;
 }
+
+inline std::ostream&
+operator<<(std::ostream& os, const UndoInfo& ui) {
+    os << "(" << ui.capturedPiece << ", " << ui.castleMask << ", ";
+    if (ui.epSquare == -1)
+        os << -1;
+    else
+        os << TextIO::squareToString(ui.epSquare);
+    os << ", " << ui.halfMoveClock << ")";
+    return os;
+};
 
 #endif /* TEXTIO_HPP_ */

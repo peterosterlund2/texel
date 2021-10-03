@@ -40,12 +40,7 @@ PosUtil::swapColors(const Position& pos) {
         }
     }
 
-    int castleMask = 0;
-    if (pos.a1Castle()) castleMask |= 1 << Position::A8_CASTLE;
-    if (pos.h1Castle()) castleMask |= 1 << Position::H8_CASTLE;
-    if (pos.a8Castle()) castleMask |= 1 << Position::A1_CASTLE;
-    if (pos.h8Castle()) castleMask |= 1 << Position::H1_CASTLE;
-    sym.setCastleMask(castleMask);
+    sym.setCastleMask(swapCastleMask(pos.getCastleMask()));
 
     if (pos.getEpSquare() >= 0)
         sym.setEpSquare(Square::mirrorY(pos.getEpSquare()));
@@ -54,6 +49,21 @@ PosUtil::swapColors(const Position& pos) {
     sym.setFullMoveCounter(pos.getFullMoveCounter());
 
     return sym;
+}
+
+int
+PosUtil::swapCastleMask(int mask) {
+    const int a1 = 1 << Position::A1_CASTLE;
+    const int h1 = 1 << Position::H1_CASTLE;
+    const int a8 = 1 << Position::A8_CASTLE;
+    const int h8 = 1 << Position::H8_CASTLE;
+
+    int ret = 0;
+    if (mask & a1) ret |= a8;
+    if (mask & h1) ret |= h8;
+    if (mask & a8) ret |= a1;
+    if (mask & h8) ret |= h1;
+    return ret;
 }
 
 Position

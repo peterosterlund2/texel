@@ -37,4 +37,11 @@ struct UndoInfo {
     int halfMoveClock;
 };
 
+inline bool operator==(const UndoInfo& ui1, const UndoInfo& ui2) {
+    return ui1.capturedPiece == ui2.capturedPiece &&
+           ui1.castleMask == ui2.castleMask &&
+           ui1.epSquare == ui2.epSquare &&
+           ui1.halfMoveClock == ui2.halfMoveClock;
+}
+
 #endif /* UNDOINFO_HPP_ */

@@ -17,39 +17,30 @@
 */
 
 /*
- * posutil.hpp
+ * revmovegenTest.hpp
  *
  *  Created on: Oct 3, 2021
  *      Author: petero
  */
 
-#ifndef POSUTIL_HPP_
-#define POSUTIL_HPP_
+#ifndef REVMOVEGENTEST_HPP_
+#define REVMOVEGENTEST_HPP_
 
-#include "piece.hpp"
+#include <vector>
 
 class Position;
+class UnMove;
 
-class PosUtil {
+class RevMoveGenTest {
 public:
-    /** Swap white/black pieces, creating a mirrored position with the
-     *  same game-theoretical value as the original. */
-    static Position swapColors(const Position& pos);
+    static void testMoves();
+    static void testCastleMask();
+    static void testEpSquare();
+    static void testInvalidMoves();
 
-    /** Swap white/black castle rights. */
-    static int swapCastleMask(int mask);
-
-    /** Mirror position in X direction, remove castling rights. */
-    static Position mirrorX(const Position& pos);
-
-    /** Change color of a piece. */
-    static int swapPieceColor(int p);
+private:
+    /** Call RevMoveGen::genMoves() and validate all generated moves. */
+    static void genMoves(const Position& pos, std::vector<UnMove>& unMoves, bool includeEpSquare);
 };
 
-inline int
-PosUtil::swapPieceColor(int p) {
-    return Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
-}
-
-
-#endif /* POSUTIL_HPP_ */
+#endif /* REVMOVEGENTEST_HPP_ */

@@ -28,10 +28,11 @@
 
 #include <iostream>
 #include <vector>
+#include <set>
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& v) {
-    os << "[";
+    os << "[ ";
     bool first = true;
     for (const T& e : v) {
         if (!first)
@@ -40,6 +41,20 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& v) {
         first = false;
     }
     os << " ]";
+    return os;
+}
+
+template <typename T, typename Comp>
+std::ostream& operator<<(std::ostream& os, const std::set<T, Comp>& c) {
+    os << "{";
+    bool first = true;
+    for (const T& e : c) {
+        if (!first)
+            os << ", ";
+        os << e;
+        first = false;
+    }
+    os << " }";
     return os;
 }
 
