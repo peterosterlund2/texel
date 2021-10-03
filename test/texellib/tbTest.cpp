@@ -24,7 +24,6 @@
  */
 
 #include "tbTest.hpp"
-#include "evaluateTest.hpp"
 #include "searchTest.hpp"
 #include "position.hpp"
 #include "moveGen.hpp"
@@ -32,6 +31,7 @@
 #include "textio.hpp"
 #include "tbprobe.hpp"
 #include "constants.hpp"
+#include "posutil.hpp"
 
 #include "syzygy/rtb-probe.hpp"
 
@@ -131,7 +131,7 @@ probeDTM(const Position& pos, int ply, int& score) {
     std::string fen = TextIO::toFEN(pos);
     SCOPED_TRACE(fen);
     int ret = probeCompare(pos, ply, score);
-    Position symPos = swapColors(pos);
+    Position symPos = PosUtil::swapColors(pos);
     int score2;
     int ret2 = probeCompare(symPos, ply, score2);
     std::string fen2 = TextIO::toFEN(symPos);
@@ -141,7 +141,7 @@ probeDTM(const Position& pos, int ply, int& score) {
     }
 
     if (pos.getCastleMask() == 0) {
-        symPos = mirrorX(pos);
+        symPos = PosUtil::mirrorX(pos);
         fen2 = TextIO::toFEN(symPos);
         ret2 = probeCompare(symPos, ply, score2);
         EXPECT_EQ(ret, ret2) << (fen + " == " + fen2);
@@ -149,7 +149,7 @@ probeDTM(const Position& pos, int ply, int& score) {
             EXPECT_EQ(score, score2) << (fen + " == " + fen2);
         }
 
-        symPos = swapColors(mirrorX(pos));
+        symPos = PosUtil::swapColors(PosUtil::mirrorX(pos));
         fen2 = TextIO::toFEN(symPos);
         ret2 = probeCompare(symPos, ply, score2);
         EXPECT_EQ(ret, ret2) << (fen + " == " + fen2);

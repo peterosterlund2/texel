@@ -23,4 +23,4 @@ set(src_texellibtest
   )
 
 add_executable(texellibtest ${src_texellibtest})
-target_link_libraries(texellibtest texellib gtest)
+target_link_libraries(texellibtest texellib texelutillib gtest)

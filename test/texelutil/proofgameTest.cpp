@@ -27,46 +27,10 @@
 #include "proofgame.hpp"
 #include "moveGen.hpp"
 #include "textio.hpp"
+#include "posutil.hpp"
 #include <climits>
 
 #include "gtest/gtest.h"
-
-
-static int
-swapSquareY(int square) {
-    int x = Square::getX(square);
-    int y = Square::getY(square);
-    return Square::getSquare(x, 7-y);
-}
-
-static Position
-swapColors(const Position& pos) {
-    Position sym;
-    sym.setWhiteMove(!pos.isWhiteMove());
-    for (int x = 0; x < 8; x++) {
-        for (int y = 0; y < 8; y++) {
-            int sq = Square::getSquare(x, y);
-            int p = pos.getPiece(sq);
-            p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
-            sym.setPiece(swapSquareY(sq), p);
-        }
-    }
-
-    int castleMask = 0;
-    if (pos.a1Castle()) castleMask |= 1 << Position::A8_CASTLE;
-    if (pos.h1Castle()) castleMask |= 1 << Position::H8_CASTLE;
-    if (pos.a8Castle()) castleMask |= 1 << Position::A1_CASTLE;
-    if (pos.h8Castle()) castleMask |= 1 << Position::H1_CASTLE;
-    sym.setCastleMask(castleMask);
-
-    if (pos.getEpSquare() >= 0)
-        sym.setEpSquare(swapSquareY(pos.getEpSquare()));
-
-    sym.setHalfMoveClock(pos.getHalfMoveClock());
-    sym.setFullMoveCounter(pos.getFullMoveCounter());
-
-    return sym;
-}
 
 
 void
@@ -100,8 +64,8 @@ ProofGameTest::hScore(ProofGame& ps, const std::string& fen, bool testMirrorY) {
     EXPECT_GE(score, 0);
 
     if (testMirrorY) {
-        Position posSym = swapColors(pos);
-        Position goalPosSym = swapColors(ps.getGoalPos());
+        Position posSym = PosUtil::swapColors(pos);
+        Position goalPosSym = PosUtil::swapColors(ps.getGoalPos());
         ProofGame psSym(TextIO::toFEN(goalPosSym));
         int score2 = hScore(psSym, TextIO::toFEN(posSym), false);
         EXPECT_EQ(score, score2);

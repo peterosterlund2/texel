@@ -24,8 +24,8 @@
  */
 
 #include "moveGen.hpp"
-#include "evaluateTest.hpp"
 #include "textio.hpp"
+#include "posutil.hpp"
 
 #include <vector>
 #include <iostream>
@@ -163,7 +163,7 @@ getMoveList0(Position& pos, bool onlyLegal) {
 
 static std::vector<std::string>
 getMoveList(Position& pos, bool onlyLegal) {
-    Position swap = swapColors(pos);
+    Position swap = PosUtil::swapColors(pos);
     std::vector<std::string> swapList = getMoveList0(swap, onlyLegal);
     std::vector<std::string> ret = getMoveList0(pos, onlyLegal);
     EXPECT_EQ(swapList.size(), ret.size());
@@ -176,7 +176,7 @@ getMoveList(Position& pos, bool onlyLegal) {
             promoteTo = Piece::isWhite(promoteTo) ?
                         Piece::makeBlack(promoteTo) :
                         Piece::makeWhite(promoteTo);
-        m.setMove(swapSquareY(m.from()), swapSquareY(m.to()), promoteTo, 0);
+        m.setMove(Square::mirrorY(m.from()), Square::mirrorY(m.to()), promoteTo, 0);
         std::string msSwapped = TextIO::moveToUCIString(m);
         retSwapped.push_back(msSwapped);
     }

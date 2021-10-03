@@ -29,70 +29,9 @@
 #include "position.hpp"
 #include "textio.hpp"
 #include "parameters.hpp"
+#include "posutil.hpp"
 
 #include "gtest/gtest.h"
-
-int swapSquareX(int square) {
-    int x = Square::getX(square);
-    int y = Square::getY(square);
-    return Square::getSquare(7-x, y);
-}
-
-int swapSquareY(int square) {
-    int x = Square::getX(square);
-    int y = Square::getY(square);
-    return Square::getSquare(x, 7-y);
-}
-
-Position
-swapColors(const Position& pos) {
-    Position sym;
-    sym.setWhiteMove(!pos.isWhiteMove());
-    for (int x = 0; x < 8; x++) {
-        for (int y = 0; y < 8; y++) {
-            int sq = Square::getSquare(x, y);
-            int p = pos.getPiece(sq);
-            p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
-            sym.setPiece(swapSquareY(sq), p);
-        }
-    }
-
-    int castleMask = 0;
-    if (pos.a1Castle()) castleMask |= 1 << Position::A8_CASTLE;
-    if (pos.h1Castle()) castleMask |= 1 << Position::H8_CASTLE;
-    if (pos.a8Castle()) castleMask |= 1 << Position::A1_CASTLE;
-    if (pos.h8Castle()) castleMask |= 1 << Position::H1_CASTLE;
-    sym.setCastleMask(castleMask);
-
-    if (pos.getEpSquare() >= 0)
-        sym.setEpSquare(swapSquareY(pos.getEpSquare()));
-
-    sym.setHalfMoveClock(pos.getHalfMoveClock());
-    sym.setFullMoveCounter(pos.getFullMoveCounter());
-
-    return sym;
-}
-
-/** Mirror position in X direction, remove castling rights. */
-Position mirrorX(const Position& pos) {
-    Position mir;
-    mir.setWhiteMove(pos.isWhiteMove());
-    for (int x = 0; x < 8; x++) {
-        for (int y = 0; y < 8; y++) {
-            int sq = Square::getSquare(x, y);
-            int p = pos.getPiece(sq);
-            mir.setPiece(swapSquareX(sq), p);
-        }
-    }
-
-    if (pos.getEpSquare() >= 0)
-        mir.setEpSquare(swapSquareX(pos.getEpSquare()));
-
-    mir.setHalfMoveClock(pos.getHalfMoveClock());
-    mir.setFullMoveCounter(pos.getFullMoveCounter());
-
-    return mir;
-}
 
 /** Evaluation position and check position serialization. */
 static int
@@ -118,7 +57,7 @@ evalPos(Evaluate& eval, const Position& pos, bool evalMirror, bool testMirror) {
     int evalScore = eval.evalPos(pos);
 
     if (evalMirror) {
-        Position mir = mirrorX(pos);
+        Position mir = PosUtil::mirrorX(pos);
         int mirrorEval = evalPos(eval, mir, false, false);
         if (testMirror) {
             EXPECT_LE(std::abs(evalScore - mirrorEval), 2);
@@ -144,7 +83,7 @@ int
 evalWhite(Evaluate& eval, const Position& pos, bool testMirror) {
     int ret = evalPos(eval, pos, true, testMirror);
     std::string fen = TextIO::toFEN(pos);
-    Position symPos = swapColors(pos);
+    Position symPos = PosUtil::swapColors(pos);
     std::string symFen = TextIO::toFEN(symPos);
     int symScore = evalPos(eval, symPos, true, testMirror);
     EXPECT_EQ(ret, symScore) << (fen + " == " + symFen);
@@ -1546,7 +1485,7 @@ EvaluateTest::testStalePawns() {
 int
 EvaluateTest::getNContactChecks(const std::string& fen) {
     Position pos = TextIO::readFEN(fen);
-    Position symPos = swapColors(pos);
+    Position symPos = PosUtil::swapColors(pos);
     std::string symFen = TextIO::toFEN(symPos);
 
     static std::shared_ptr<Evaluate::EvalHashTables> et;

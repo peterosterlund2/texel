@@ -38,6 +38,7 @@
 #include "util/timeUtil.hpp"
 #include "util/logger.hpp"
 #include "util/random.hpp"
+#include "posutil.hpp"
 
 #include <queue>
 #include <unordered_set>
@@ -309,35 +310,6 @@ ChessTool::filterScore(std::istream& is, int scLimit, double prLimit) {
     std::cout << std::flush;
 }
 
-static Position
-swapColors(const Position& pos) {
-    Position sym;
-    sym.setWhiteMove(!pos.isWhiteMove());
-    for (int x = 0; x < 8; x++) {
-        for (int y = 0; y < 8; y++) {
-            int sq = Square::getSquare(x, y);
-            int p = pos.getPiece(sq);
-            p = Piece::isWhite(p) ? Piece::makeBlack(p) : Piece::makeWhite(p);
-            sym.setPiece(Square::mirrorY(sq), p);
-        }
-    }
-
-    int castleMask = 0;
-    if (pos.a1Castle()) castleMask |= 1 << Position::A8_CASTLE;
-    if (pos.h1Castle()) castleMask |= 1 << Position::H8_CASTLE;
-    if (pos.a8Castle()) castleMask |= 1 << Position::A1_CASTLE;
-    if (pos.h8Castle()) castleMask |= 1 << Position::H1_CASTLE;
-    sym.setCastleMask(castleMask);
-
-    if (pos.getEpSquare() >= 0)
-        sym.setEpSquare(Square::mirrorY(pos.getEpSquare()));
-
-    sym.setHalfMoveClock(pos.getHalfMoveClock());
-    sym.setFullMoveCounter(pos.getFullMoveCounter());
-
-    return sym;
-}
-
 static int nPieces(const Position& pos, Piece::Type piece) {
     return BitBoard::bitCount(pos.pieceTypeBB(piece));
 }
@@ -378,7 +350,7 @@ ChessTool::filterMtrlBalance(std::istream& is, bool minorEqual,
         }
         int sign = 1;
         if (inc2 && !inc1) {
-            pos = swapColors(pos);
+            pos = PosUtil::swapColors(pos);
             sign = -1;
         }
         if (inc1 || inc2) {
@@ -453,7 +425,7 @@ ChessTool::filterTotalMaterial(std::istream& is, bool minorEqual,
         }
         int sign = 1;
         if (inc2 && !inc1) {
-            pos = swapColors(pos);
+            pos = PosUtil::swapColors(pos);
             sign = -1;
         }
         if (inc1 || inc2) {

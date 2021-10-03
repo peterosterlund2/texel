@@ -3,6 +3,7 @@ set(src_texelutillib
   bookbuild.cpp  bookbuild.hpp
   gametree.cpp   gametree.hpp
                  gametreeutil.hpp
+  posutil.cpp    posutil.hpp
   proofgame.cpp  proofgame.hpp
                  stloutput.hpp
                  threadpool.hpp
