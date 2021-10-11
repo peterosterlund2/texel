@@ -25,6 +25,7 @@
 
 #include "proofgame.hpp"
 #include "moveGen.hpp"
+#include "revmovegen.hpp"
 #include "textio.hpp"
 #include "util/timeUtil.hpp"
 
@@ -82,29 +83,27 @@ ProofGame::ProofGame(const std::string& goal, int a, int b, bool dynamic)
     : weightA(a), weightB(b), dynamic(dynamic) {
     goalPos = TextIO::readFEN(goal);
     validatePieceCounts(goalPos);
+
+    while (true) {
+        std::vector<UnMove> unMoves;
+        RevMoveGen::genMoves(goalPos, unMoves, false);
+        if (unMoves.empty()) {
+            throw ChessParseError("No possible last move");
+        } else if (unMoves.size() == 1) {
+            const UnMove& um = unMoves[0];
+            std::cout << "Forced last move: " << um << std::endl;
+            goalPos.unMakeMove(um.move, um.ui);
+            goalPos.setFullMoveCounter(1);
+            lastMoves.push_back(um.move);
+            std::cout << "New goalPos: " << TextIO::toFEN(goalPos) << std::endl;
+        } else {
+            std::reverse(lastMoves.begin(), lastMoves.end());
+            break;
+        }
+    }
+
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
         goalPieceCnt[p] = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)p));
-
-    // Handle en passant square by solving for the position before the
-    // the forced pawn move that set up the en passant square.
-    int epSq = goalPos.getEpSquare();
-    if (epSq != -1) {
-        int f, t, p;
-        if (goalPos.isWhiteMove()) {
-            f = epSq + 8;
-            t = epSq - 8;
-            p = Piece::BPAWN;
-        } else {
-            f = epSq - 8;
-            t = epSq + 8;
-            p = Piece::WPAWN;
-        }
-        epMove = Move(f, t, Piece::EMPTY);
-        goalPos.setPiece(f, p);
-        goalPos.setPiece(t, Piece::EMPTY);
-        goalPos.setEpSquare(-1);
-        goalPos.setWhiteMove(!goalPos.isWhiteMove());
-    }
 
     // Set up caches
     pathDataCache.resize(PathCacheSize);
@@ -199,7 +198,7 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
             std::cout << tn.ply << " -w " << weightA << ":" << weightB
                       << " queue: " << queue->size() << " nodes: " << numNodes
                       << " time: " << (currentTime() - t0) << std::endl;
-            getMoves(startPos, idx, movePath);
+            getMoves(startPos, idx, true, movePath);
             best = tn.ply;
         }
 
@@ -233,7 +232,7 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
                           << " queue: " << queue->size() << " nodes: " << numNodes
                           << " time: " << (currentTime() - t0) << std::endl;
                 std::vector<Move> path;
-                getMoves(startPos, idx, path);
+                getMoves(startPos, idx, false, path);
             }
         }
     }
@@ -241,8 +240,7 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
     std::cout << "nodes: " << numNodes
               << " time: " << t1 - t0 <<  std::endl;
 
-    int epCost = epMove.isEmpty() ? 0 : 1;
-    return best + epCost;
+    return best + lastMoves.size();
 }
 
 bool
@@ -269,7 +267,8 @@ ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkB
 }
 
 void
-ProofGame::getMoves(const Position& startPos, int idx, std::vector<Move>& movePath) const {
+ProofGame::getMoves(const Position& startPos, int idx, bool includeLastMoves,
+                    std::vector<Move>& movePath) const {
     std::function<void(int)> getMoves = [this,&movePath,&getMoves](U32 idx) {
         const TreeNode& tn = nodes[idx];
         if (tn.ply == 0)
@@ -296,8 +295,8 @@ ProofGame::getMoves(const Position& startPos, int idx, std::vector<Move>& movePa
     };
     movePath.clear();
     getMoves(idx);
-    if (!epMove.isEmpty())
-        movePath.push_back(epMove);
+    if (includeLastMoves)
+        movePath.insert(movePath.end(), lastMoves.begin(), lastMoves.end());
     Position pos = startPos;
     UndoInfo ui;
     for (size_t i = 0; i < movePath.size(); i++) {

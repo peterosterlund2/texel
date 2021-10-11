@@ -83,7 +83,8 @@ private:
 
     /** Get move sequence leading to position given by index "idx".
      * Also print move sequence to standard output. */
-    void getMoves(const Position& startPos, int idx, std::vector<Move>& movePath) const;
+    void getMoves(const Position& startPos, int idx, bool includeLastMoves,
+                  std::vector<Move>& movePath) const;
 
     /** Compute a lower bound for the minimum number of plies from position pos
      * to position goalPos. If INT_MAX is returned, it means that goalPos can not be
@@ -193,7 +194,7 @@ private:
 
     Position goalPos;
     int goalPieceCnt[Piece::nPieceTypes];
-    Move epMove; // Move that sets up the EP square to get to the original goalPos
+    std::vector<Move> lastMoves; // Forced moves after reaching goalPos to reach original goalPos
 
     const int weightA; // Weight for length of current partial solution
     const int weightB; // Weight for heuristic lower bound for length to goalPos

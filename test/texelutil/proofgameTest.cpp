@@ -703,6 +703,11 @@ ProofGameTest::testEnPassant() {
         ASSERT_EQ(5, movePath.size());
         ASSERT_EQ("e2e4", TextIO::moveToUCIString(movePath[4]));
     }
+    {
+        EXPECT_THROW({
+            ProofGame ps("4k3/8/8/1pP5/B7/1P6/8/4K3 w - b6 0 1");
+        }, ChessParseError);
+    }
 }
 
 TEST(ProofGameTest, testCaptureSquares) {
