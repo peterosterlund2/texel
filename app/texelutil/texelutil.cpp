@@ -28,6 +28,7 @@
 #include "spsa.hpp"
 #include "bookbuild.hpp"
 #include "proofgame.hpp"
+#include "revmovegen.hpp"
 #include "matchbookcreator.hpp"
 #include "tbgen.hpp"
 #include "parameters.hpp"
@@ -150,6 +151,7 @@ usage() {
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
     std::cerr << " proofgame [-w a:b] [-d] [-v] [-f] [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
+    std::cerr << " revmoves \"fen\"\n";
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -424,6 +426,37 @@ doProofGameCmd(int argc, char* argv[]) {
         ProofGame ps(goalFen, a, b, dynamic);
         std::vector<Move> movePath;
         ps.search(initFen, initPath, movePath, verbose);
+    }
+}
+
+static void
+doRevMoves(const std::string& fen) {
+    Position pos = TextIO::readFEN(fen);
+    std::vector<UnMove> revMoves;
+    RevMoveGen::genMoves(pos, revMoves, true);
+
+    for (const UnMove& um : revMoves) {
+        char captP;
+        switch (um.ui.capturedPiece) {
+        case Piece::WQUEEN : case Piece::BQUEEN : captP = 'Q'; break;
+        case Piece::WROOK  : case Piece::BROOK  : captP = 'R'; break;
+        case Piece::WBISHOP: case Piece::BBISHOP: captP = 'B'; break;
+        case Piece::WKNIGHT: case Piece::BKNIGHT: captP = 'N'; break;
+        case Piece::WPAWN  : case Piece::BPAWN  : captP = 'P'; break;
+        default: captP = '-'; break;
+        }
+        int castleMask = um.ui.castleMask;
+        std::string castle;
+        if (castleMask & (1 << Position::H1_CASTLE)) castle += "K";
+        if (castleMask & (1 << Position::A1_CASTLE)) castle += "Q";
+        if (castleMask & (1 << Position::H8_CASTLE)) castle += "k";
+        if (castleMask & (1 << Position::A8_CASTLE)) castle += "q";
+        if (castle.empty()) castle += "-";
+        int epSq = um.ui.epSquare;
+        std::string ep = epSq == -1 ? "-" : TextIO::squareToString(epSq);
+
+        std::cout << um.move << " captP: " << captP << " castle: " << castle
+                  << " ep: " << ep << std::endl;
     }
 }
 
@@ -740,6 +773,11 @@ main(int argc, char* argv[]) {
             mbc.pgnStat(pgnFile, pairMode, std::cout);
         } else if (cmd == "proofgame") {
             doProofGameCmd(argc, argv);
+        } else if (cmd == "revmoves") {
+            if (argc != 3)
+                usage();
+            std::string fen = argv[2];
+            doRevMoves(fen);
         } else {
             usage();
         }
