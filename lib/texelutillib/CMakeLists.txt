@@ -1,14 +1,15 @@
 set(src_texelutillib
-                 assignment.hpp
-  bookbuild.cpp  bookbuild.hpp
-  gametree.cpp   gametree.hpp
-                 gametreeutil.hpp
-  posutil.cpp    posutil.hpp
-  proofgame.cpp  proofgame.hpp
-  revmovegen.cpp revmovegen.hpp
-                 stloutput.hpp
-                 threadpool.hpp
-  tbpath.cpp     tbpath.hpp
+                  assignment.hpp
+  bookbuild.cpp   bookbuild.hpp
+  gametree.cpp    gametree.hpp
+                  gametreeutil.hpp
+  posutil.cpp     posutil.hpp
+  proofgame.cpp   proofgame.hpp
+  proofkernel.cpp proofkernel.hpp
+  revmovegen.cpp  revmovegen.hpp
+                  stloutput.hpp
+                  threadpool.hpp
+  tbpath.cpp      tbpath.hpp
   )
 
 add_library(texelutillib STATIC
