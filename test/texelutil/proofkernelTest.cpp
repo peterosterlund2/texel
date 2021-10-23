@@ -103,3 +103,55 @@ ProofKernelTest::testPawnColumn() {
         ASSERT_EQ(WHITE, col.getPawn(3));
     }
 }
+
+TEST(ProofKernelTest, testPawnColPromotion) {
+    ProofKernelTest::testPawnColPromotion();
+}
+
+void
+ProofKernelTest::testPawnColPromotion() {
+    using PawnColumn = ProofKernel::PawnColumn;
+    auto WHITE = ProofKernel::WHITE;
+    auto BLACK = ProofKernel::BLACK;
+
+    auto setPawns = [](PawnColumn& col,
+                       const std::vector<ProofKernel::PieceColor>& v) {
+        while (col.nPawns() > 0)
+            col.removePawn(0);
+        for (auto c : v)
+            col.addPawn(col.nPawns(), c);
+    };
+
+    PawnColumn col;
+    setPawns(col, {WHITE, BLACK});
+    ASSERT_EQ(0, col.nPromotions(WHITE));
+    ASSERT_EQ(0, col.nPromotions(BLACK));
+
+    setPawns(col, {BLACK, WHITE});
+    ASSERT_EQ(1, col.nPromotions(WHITE));
+    ASSERT_EQ(1, col.nPromotions(BLACK));
+
+    setPawns(col, {WHITE});
+    ASSERT_EQ(1, col.nPromotions(WHITE));
+    ASSERT_EQ(0, col.nPromotions(BLACK));
+
+    setPawns(col, {BLACK});
+    ASSERT_EQ(0, col.nPromotions(WHITE));
+    ASSERT_EQ(1, col.nPromotions(BLACK));
+
+    setPawns(col, {BLACK, WHITE, WHITE});
+    ASSERT_EQ(2, col.nPromotions(WHITE));
+    ASSERT_EQ(1, col.nPromotions(BLACK));
+
+    setPawns(col, {BLACK, WHITE, BLACK, WHITE, WHITE});
+    ASSERT_EQ(2, col.nPromotions(WHITE));
+    ASSERT_EQ(1, col.nPromotions(BLACK));
+
+    setPawns(col, {WHITE, WHITE});
+    ASSERT_EQ(2, col.nPromotions(WHITE));
+    ASSERT_EQ(0, col.nPromotions(BLACK));
+
+    setPawns(col, {BLACK, BLACK});
+    ASSERT_EQ(0, col.nPromotions(WHITE));
+    ASSERT_EQ(2, col.nPromotions(BLACK));
+}

@@ -30,6 +30,7 @@
 class ProofKernelTest {
 public:
     static void testPawnColumn();
+    static void testPawnColPromotion();
 
 private:
 };

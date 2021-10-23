@@ -33,3 +33,25 @@ ProofKernel::PawnColumn::PawnColumn(int x) {
     promSquare[WHITE] = even ? SquareColor::LIGHT : SquareColor::DARK;
     promSquare[BLACK] = even ? SquareColor::DARK  : SquareColor::LIGHT;
 }
+
+int
+ProofKernel::PawnColumn::nPromotions(PieceColor c) const {
+    int np = nPawns();
+    if (c == WHITE) {
+        int cnt = 0;
+        for (int i = np - 1; i >= 0; i--) {
+            if (getPawn(i) == BLACK)
+                break;
+            cnt++;
+        }
+        return cnt;
+    } else {
+        int cnt = 0;
+        for (int i = 0; i < np; i++) {
+            if (getPawn(i) == WHITE)
+                break;
+            cnt++;
+        }
+        return cnt;
+    }
+}

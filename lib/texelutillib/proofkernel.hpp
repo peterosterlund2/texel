@@ -119,6 +119,9 @@ private:
         /** Remove the i:th pawn. 0 <= i < nPawns(). */
         void removePawn(int i);
 
+        /** Current number of possible pawn promotions for color "c". */
+        int nPromotions(PieceColor c) const;
+
         // State that does not change during search
         /** True if a pawn can promote in a given direction from this file. */
         bool canPromote(PieceColor c, Direction d) const;
@@ -136,6 +139,7 @@ private:
     int goalCnt[2][nPieceTypes];
     int excessCnt[2][nPieceTypes];  // pieceCnt - goalCnt
 
+    /** Extract pawn structure and piece counts from a position. */
     static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
                            int (&pieceCnt)[2][nPieceTypes]);
 };
