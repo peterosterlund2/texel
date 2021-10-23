@@ -17,19 +17,21 @@
 */
 
 /*
- * proofkernel.cpp
+ * proofkernelTest.hpp
  *
- *  Created on: Oct 16, 2021
+ *  Created on: Oct 23, 2021
  *      Author: petero
  */
 
-#include "proofkernel.hpp"
+#ifndef PROOFKERNELTEST_HPP_
+#define PROOFKERNELTEST_HPP_
 
 
+class ProofKernelTest {
+public:
+    static void testPawnColumn();
 
+private:
+};
 
-ProofKernel::PawnColumn::PawnColumn(int x) {
-    bool even = (x % 2) == 0;
-    promSquare[WHITE] = even ? SquareColor::LIGHT : SquareColor::DARK;
-    promSquare[BLACK] = even ? SquareColor::DARK  : SquareColor::LIGHT;
-}
+#endif /* PROOFKERNELTEST_HPP_ */

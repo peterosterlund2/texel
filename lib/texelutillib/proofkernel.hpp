@@ -30,6 +30,7 @@
 #include <array>
 
 class Position;
+class ProofKernelTest;
 
 
 /** The ProofKerrnel class is used for finding a sequence of captures and promotions
@@ -39,6 +40,7 @@ class Position;
  *  The existence of a proof kernel does not mean a corresponding proof game exists, but
  *  hopefully most of the time a proof game does exist in this case. */
 class ProofKernel {
+    friend class ProofKernelTest;
 public:
     /** Constructor. */
     ProofKernel(const Position& initialPos, const Position& goalPos);
@@ -102,17 +104,20 @@ private:
     /** Represents all pawns (0 - 6) on a file.*/
     class PawnColumn {
     public:
+        /** Constructor. */
+        PawnColumn(int x = 0);
+
         /** Number of pawns in the column. */
         int nPawns() const;
         /** Get color of the i:th pawn. 0 <= i < nPawns(). */
         PieceColor getPawn(int i) const;
 
+        /** Sets the i:th pawn to color "c". 0 <= i < nPawns(). */
+        void setPawn(int i, PieceColor c);
         /** Insert a pawn at position "i". 0 <= i <= nPawns(). */
         void addPawn(int i, PieceColor c);
         /** Remove the i:th pawn. 0 <= i < nPawns(). */
         void removePawn(int i);
-        /** Sets the i:th pawn to color "c". 0 <= i < nPawns(). */
-        void setPawn(int i, PieceColor c);
 
         // State that does not change during search
         /** True if a pawn can promote in a given direction from this file. */
@@ -122,7 +127,7 @@ private:
         /** Color of promotion square. */
         SquareColor promotionSquareType(PieceColor c) const;
     private:
-        U8 data;
+        U8 data = 1;
         SquareColor promSquare[2]; // Color of promotion square for white/black
     };
     std::array<PawnColumn, 8> columns;
@@ -130,6 +135,42 @@ private:
     int pieceCnt[2][nPieceTypes];
     int goalCnt[2][nPieceTypes];
     int excessCnt[2][nPieceTypes];  // pieceCnt - goalCnt
+
+    static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
+                           int (&pieceCnt)[2][nPieceTypes]);
 };
+
+
+inline int
+ProofKernel::PawnColumn::nPawns() const {
+    return floorLog2(data);
+}
+
+inline ProofKernel::PieceColor
+ProofKernel::PawnColumn::getPawn(int i) const {
+    return (data & (1 << i)) ? BLACK : WHITE;
+}
+
+inline void
+ProofKernel::PawnColumn::setPawn(int i, PieceColor c) {
+    if (c == WHITE)
+        data &= ~(1 << i);
+    else
+        data |= (1 << i);
+}
+
+inline void
+ProofKernel::PawnColumn::addPawn(int i, PieceColor c) {
+    U8 mask = (1 << i) - 1;
+    data = (data & mask) | ((data & ~mask) << 1);
+    setPawn(i, c);
+}
+
+inline void
+ProofKernel::PawnColumn::removePawn(int i) {
+    U8 mask = (1 << i) - 1;
+    data = (data & mask) | ((data >> 1) & ~mask);
+}
+
 
 #endif /* PROOFKERNEL_HPP_ */

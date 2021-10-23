@@ -1,8 +1,9 @@
 set(src_texelutiltest
-  bookBuildTest.cpp  bookBuildTest.hpp
+  bookBuildTest.cpp   bookBuildTest.hpp
   gameTreeTest.cpp
-  proofgameTest.cpp  proofgameTest.hpp
-  revmovegenTest.cpp revmovegenTest.hpp
+  proofgameTest.cpp   proofgameTest.hpp
+  proofkernelTest.cpp proofkernelTest.hpp
+  revmovegenTest.cpp  revmovegenTest.hpp
   texelutiltest.cpp
   )
 
