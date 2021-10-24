@@ -147,6 +147,9 @@ private:
     /** Return true if current state is a goal state. */
     bool isGoal() const;
 
+    /** Return false if it is known to not be possible to reach a goal state from this state. */
+    bool goalPossible() const;
+
     /** Extract pawn structure and piece counts from a position. */
     static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
                            int (&pieceCnt)[2][nPieceTypes]);

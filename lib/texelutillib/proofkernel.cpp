@@ -174,3 +174,18 @@ ProofKernel::isGoal() const {
     }
     return true;
 }
+
+bool
+ProofKernel::goalPossible() const {
+    for (int c = 0; c < 2; c++) {
+        int sparePawns = excessCnt[c][PAWN];
+        sparePawns += std::min(0, excessCnt[c][QUEEN]);
+        sparePawns += std::min(0, excessCnt[c][ROOK]);
+        sparePawns += std::min(0, excessCnt[c][DARK_BISHOP]);
+        sparePawns += std::min(0, excessCnt[c][LIGHT_BISHOP]);
+        sparePawns += std::min(0, excessCnt[c][KNIGHT]);
+        if (sparePawns < 0)
+            return false;
+    }
+    return true;
+}
