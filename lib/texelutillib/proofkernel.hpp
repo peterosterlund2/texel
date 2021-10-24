@@ -125,13 +125,18 @@ private:
         // State that does not change during search
         /** True if a pawn can promote in a given direction from this file. */
         bool canPromote(PieceColor c, Direction d) const;
-        /** True if promotion to rook/queen is possible. */
+        /** True if capture promotion to rook/queen is possible. */
         bool rookQueenPromotePossible(PieceColor c) const;
+        /** Set whether promotion is possible for a color in left/forward/right directions. */
+        void setCanPromote(PieceColor c, bool pLeft, bool pForward, bool pRight, bool pRookQueen);
+
         /** Color of promotion square. */
         SquareColor promotionSquareType(PieceColor c) const;
     private:
         U8 data = 1;
         SquareColor promSquare[2]; // Color of promotion square for white/black
+        bool canProm[2][3] { { true, true, true}, {true, true, true} };
+        bool canRQProm[2] { true, true };
     };
     std::array<PawnColumn, 8> columns;
     static const int nPieceTypes = EMPTY;
@@ -177,6 +182,16 @@ inline void
 ProofKernel::PawnColumn::removePawn(int i) {
     U8 mask = (1 << i) - 1;
     data = (data & mask) | ((data >> 1) & ~mask);
+}
+
+inline bool
+ProofKernel::PawnColumn::canPromote(PieceColor c, Direction d) const {
+    return canProm[(int)c][(int)d];
+}
+
+inline bool
+ProofKernel::PawnColumn::rookQueenPromotePossible(PieceColor c) const {
+    return canRQProm[(int)c];
 }
 
 inline ProofKernel::SquareColor

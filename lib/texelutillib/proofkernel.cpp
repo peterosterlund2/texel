@@ -25,6 +25,8 @@
 
 #include "proofkernel.hpp"
 #include "position.hpp"
+#include "proofgame.hpp"
+#include "textio.hpp"
 
 
 ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
@@ -35,6 +37,40 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
 
     std::array<PawnColumn,8> goalColumns;
     posToState(goalPos, goalColumns, goalCnt);
+
+    U64 blocked;
+    ProofGame pg(TextIO::toFEN(goalPos));
+    if (!pg.computeBlocked(initialPos, blocked))
+        blocked = 0xffffffffffffffffULL; // If goalPos not reachable, consider all pieces blocked
+    auto isBlocked = [blocked](int x, int y) -> bool {
+        int sq = Square::getSquare(x, y);
+        return blocked & (1ULL << sq);
+    };
+    auto getPiece = [&goalPos](int x, int y) -> int {
+        return goalPos.getPiece(Square::getSquare(x, y));
+    };
+    auto blockedByKing = [&](int x, int y, PieceColor c) -> bool {
+        if (x < 0 || x > 7)
+            return false;
+        int oKing = c == PieceColor::WHITE ? Piece::BKING : Piece::WKING;
+        return isBlocked(x, y) && getPiece(x, y) == oKing;
+    };
+
+    for (int ci = 0; ci < 2; ci++) {
+        PieceColor c = static_cast<PieceColor>(ci);
+        int promY = c == PieceColor::WHITE ? 7 : 0;
+        int yDir  = c == PieceColor::WHITE ? 1 : -1;
+        for (int x = 0; x < 8; x++) {
+            PawnColumn& col = columns[x];
+            bool promForward = !isBlocked(x, promY) && !isBlocked(x, promY - yDir);
+            bool kingDiagBlock = blockedByKing(x-1, promY, c) || blockedByKing(x+1, promY, c);
+            promForward &= !kingDiagBlock;
+            bool promLeft = !kingDiagBlock && x > 0 && !isBlocked(x-1, promY);
+            bool promRight = !kingDiagBlock && x < 7 && !isBlocked(x+1, promY);
+            bool rqPromote = !blockedByKing(x, promY, c);
+            col.setCanPromote(c, promLeft, promForward, promRight, rqPromote);
+        }
+    }
 
     for (int c = 0; c < 2; c++)
         for (int p = 0; p < nPieceTypes; p++)
@@ -74,6 +110,9 @@ ProofKernel::PawnColumn::PawnColumn(int x) {
 
 int
 ProofKernel::PawnColumn::nPromotions(PieceColor c) const {
+    if (!canPromote(c, Direction::FORWARD))
+        return 0;
+
     int np = nPawns();
     if (c == WHITE) {
         int cnt = 0;
@@ -92,6 +131,15 @@ ProofKernel::PawnColumn::nPromotions(PieceColor c) const {
         }
         return cnt;
     }
+}
+
+void
+ProofKernel::PawnColumn::setCanPromote(PieceColor c, bool pLeft, bool pForward, bool pRight,
+                                       bool pRookQueen) {
+    canProm[(int)c][(int)Direction::LEFT]    = pLeft;
+    canProm[(int)c][(int)Direction::FORWARD] = pForward;
+    canProm[(int)c][(int)Direction::RIGHT]   = pRight;
+    canRQProm[(int)c] = pRookQueen;
 }
 
 bool

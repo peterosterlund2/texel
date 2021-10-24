@@ -59,6 +59,11 @@ public:
     /** Return goal position. */
     const Position& getGoalPos() const;
 
+    /** Compute blocked pieces in a position. A blocked piece is a piece that
+     *  can not move without making it impossible to reach the goal position.
+     *  If false is returned, it is impossible to reach goalPos from pos. */
+    bool computeBlocked(const Position& pos, U64& blocked) const;
+
     /** Read a list of FENs from a stream and classify them as legal/illegal/unknown
      *  with regards to reachability from the starting position. */
     static void filterFens(std::istream& is, std::ostream& os);
@@ -168,11 +173,6 @@ private:
      * be proved that the weight can not be part of *any* solution. Weights that can
      * be part of a non-optimal solution are not modified. */
     static int solveAssignment(Assignment<int>& as);
-
-    /** Compute blocked pieces in a position. A block piece is a piece that
-     *  can not move without making it impossible to reach the goal position.
-     *  If false is returned, it is impossible to reach goalPos from pos. */
-    bool computeBlocked(const Position& pos, U64& blocked) const;
 
     /** Compute blocked pieces caused by a king on the first rank trapped by
      *  two enemy pawns on the second and third ranks.
