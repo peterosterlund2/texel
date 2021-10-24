@@ -107,6 +107,9 @@ private:
         /** Constructor. */
         PawnColumn(int x = 0);
 
+        /** Set the goal configuration for this column. */
+        void setGoal(const PawnColumn& goal);
+
         /** Number of pawns in the column. */
         int nPawns() const;
         /** Get color of the i:th pawn. 0 <= i < nPawns(). */
@@ -122,6 +125,11 @@ private:
         /** Current number of possible pawn promotions for color "c". */
         int nPromotions(PieceColor c) const;
 
+        /** Current number of possible pawn promotions for color "c", while still
+         *  leaving the goal position pawns in place. Return -1 if goal position
+         *  pawns are not in place even with no promotions. */
+        int nAllowedPromotions(PieceColor c) const;
+
         // State that does not change during search
         /** True if a pawn can promote in a given direction from this file. */
         bool canPromote(PieceColor c, Direction d) const;
@@ -132,11 +140,13 @@ private:
 
         /** Color of promotion square. */
         SquareColor promotionSquareType(PieceColor c) const;
+
     private:
         U8 data = 1;
         SquareColor promSquare[2]; // Color of promotion square for white/black
         bool canProm[2][3] { { true, true, true}, {true, true, true} };
         bool canRQProm[2] { true, true };
+        std::array<S8,128> nProm[2];
     };
     std::array<PawnColumn, 8> columns;
     static const int nPieceTypes = EMPTY;
@@ -200,6 +210,11 @@ ProofKernel::PawnColumn::rookQueenPromotePossible(PieceColor c) const {
 inline ProofKernel::SquareColor
 ProofKernel::PawnColumn::promotionSquareType(PieceColor c) const {
     return promSquare[c];
+}
+
+inline int
+ProofKernel::PawnColumn::nAllowedPromotions(PieceColor c) const {
+    return nProm[c][data];
 }
 
 #endif /* PROOFKERNEL_HPP_ */

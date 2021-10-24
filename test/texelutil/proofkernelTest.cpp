@@ -232,4 +232,49 @@ ProofKernelTest::testGoal() {
          "rnbqkbnr/pppp1ppp/8/8/8/8/PPPP1PPP/RNBQKNNR w KQk - 0 1", false);
     test("rnbqkbnr/pppp1ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
          "rnbqkbnr/pppp1ppp/8/8/8/8/PPPP1PPP/RNBQKNNR w KQ - 0 1", true);
+
+    // Enough number of pawns but in wrong files or wrong order within files
+    test(TextIO::startPosFEN, "rnbqkbnr/p1pppppp/8/8/8/1P6/1PPPPPPP/RNBQKBNR w KQkq - 0 1", false);
+    test(TextIO::startPosFEN, "rnbqkbnr/p1ppppp1/8/8/8/1P6/1PPPPPPP/RNBQKBNR w KQkq - 0 1", false);
+    test(TextIO::startPosFEN, "rnbqkbnr/p1ppppp1/8/8/8/1P6/1PPPPPP1/RNBQKBNR w Qq - 0 1", false);
+    test("rnbqkbnr/ppppppp1/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "rnbqkbnr/p1ppppp1/8/8/8/1P6/1PPPPPP1/RNBQKBNR w Qq - 0 1", false);
+    test("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1",
+         "rnbqkbnr/p1ppppp1/8/8/8/1P6/1PPPPPP1/RNBQKBNR w Qq - 0 1", false);
+    test("rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPP1/RNBQKBNR w - - 0 1",
+         "rnbqkbnr/p1ppp1p1/8/8/8/1P6/1PPPP1P1/RNBQKBNR w - - 0 1", false);
+
+    // No unique match on b file
+    test("r2qk2r/2pp1ppp/4p3/1P6/1p6/1P2P3/1pPP1PPP/R2QK2R w KQkq - 0 1",
+         "r2q1k1r/2pp1ppp/4p3/1P6/1p6/4P3/2PP1PPP/R2Q1K1R w - - 0 1", false);
+
+    // No unique match on b file, but same promotions for both matches
+    test("r2qk2r/2pp1ppp/4p3/1p6/1P6/1p2P3/1PPP1PPP/R2QK2R w KQkq - 0 1",
+         "r2q1k1r/2pp1ppp/4p3/1p6/1P6/4P3/2PP1PPP/R2Q1K1R w - - 0 1", true);
+    test("r2qk2r/2pp1ppp/1p2p3/1P6/1p6/1P2P3/2PP1PPP/R2QK2R w KQkq - 0 1",
+         "r2q1k1r/2pp1ppp/4p3/1p6/1P6/4P3/2PP1PPP/R2Q1K1R w - - 0 1", true);
+
+    // Doubled passed pawn, but cannot promote both pawns because required in goal position
+    test("rnbqkbnr/p1pppppp/8/8/8/1P6/1PPPPPPP/R1BQKBNR w KQkq - 0 1",
+         "rnbqkbnr/p1pppppp/8/8/8/1P6/1PPPPP1P/RNBQKBNR w KQkq - 0 1", false);
+    test("rnbqkbnr/p1pppppp/8/8/8/1P6/1PPPPPPP/R1BQKBNR w KQkq - 0 1",
+         "rnbqkbnr/p1pppppp/8/8/8/1P6/1PPPPP1P/R1BQKBNR w KQkq - 0 1", true);
+    test("rnbqkbnr/p1pppp1p/8/8/8/1P6/1PPPPPPP/R1BQKBNR w KQkq - 0 1",
+         "rnbqkbnr/p1pppp1p/8/8/8/1P6/1PPPPP1P/RNBQKBNR w KQkq - 0 1", true);
+
+    test("rnbqkbnr/p1pppppp/8/8/8/1P6/1PPPPPPP/R1BQKBNR w KQkq - 0 1",
+         "rnbqkbnr/p1pppppp/8/8/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1", true);
+    test("rnbqkbnr/p1pppppp/8/8/8/1P6/1PPPPPPP/R1BQKB1R w KQkq - 0 1",
+         "rnbqkbnr/p1pppppp/8/8/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1", false);
+    test("rnbqkbnr/p1pppppp/8/8/8/1P6/1PPPPPPP/R1BQKBNR w KQkq - 0 1",
+         "rnbqkbnr/p1pppppp/8/8/8/1P6/2PPPPPP/RNBQKBNR w KQkq - 0 1", true);
+    test("rnbqkbnr/p1pppppp/8/8/8/1P6/1PPPPPPP/R1BQKB1R w KQkq - 0 1",
+         "rnbqkbnr/p1pppppp/8/8/8/1P6/2PPPPPP/RNBQKBNR w KQkq - 0 1", false);
+
+    // One example from the 100k file in the ChessPositionRanking project
+    // Manually constructed proof kernel, one correct and one with wrong bishop promotion
+    test("rnbqkbnr/1pp1ppp1/8/8/1p2p1pP/2P2P2/P2P4/RNBQKBNR w KQkq - 0 7",
+         "2b1RBr1/1Bp2r2/nNrbbkr1/1K2qpNQ/1n2p3/2P1RP2/r2P4/4BQ1n w - - 0 1", true);
+    test("rnbqkbnr/1pp1pp1p/8/8/1p2p1Pp/2P2P2/P2P4/RNBQKBNR w KQkq - 0 7",
+         "2b1RBr1/1Bp2r2/nNrbbkr1/1K2qpNQ/1n2p3/2P1RP2/r2P4/4BQ1n w - - 0 1", false);
 }

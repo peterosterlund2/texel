@@ -32,14 +32,13 @@
 ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
     for (int i = 0; i < 8; i++)
         columns[i] = PawnColumn(i);
-
     posToState(initialPos, columns, pieceCnt);
 
     std::array<PawnColumn,8> goalColumns;
     posToState(goalPos, goalColumns, goalCnt);
 
     U64 blocked;
-    ProofGame pg(TextIO::toFEN(goalPos));
+    ProofGame pg(TextIO::toFEN(goalPos), 1, 1, false, true);
     if (!pg.computeBlocked(initialPos, blocked))
         blocked = 0xffffffffffffffffULL; // If goalPos not reachable, consider all pieces blocked
     auto isBlocked = [blocked](int x, int y) -> bool {
@@ -71,6 +70,9 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
             col.setCanPromote(c, promLeft, promForward, promRight, rqPromote);
         }
     }
+
+    for (int i = 0; i < 8; i++)
+        columns[i].setGoal(goalColumns[i]);
 
     for (int c = 0; c < 2; c++)
         for (int p = 0; p < nPieceTypes; p++)
@@ -106,6 +108,70 @@ ProofKernel::PawnColumn::PawnColumn(int x) {
     bool even = (x % 2) == 0;
     promSquare[WHITE] = even ? SquareColor::LIGHT : SquareColor::DARK;
     promSquare[BLACK] = even ? SquareColor::DARK  : SquareColor::LIGHT;
+}
+
+void
+ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
+    const int goalPawns = goal.nPawns();
+    const U8 oldData = data;
+    for (int d = 1; d < 128; d++) {
+        data = d;
+        const int pawns = nPawns();
+
+        // Compute number of possible white/black promotions if the pawns
+        // starting at "offs" match the goal pawns.
+        auto computePromotions = [this,&goal,goalPawns,pawns](int offs, int& wp, int& bp) {
+            bool match = true;
+            for (int i = 0; i < goalPawns; i++) {
+                if (getPawn(offs + i) != goal.getPawn(i)) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                wp = 0;
+                for (int i = pawns - 1; i >= offs + goalPawns; i--) {
+                    if (getPawn(i) == BLACK)
+                        break;
+                    wp++;
+                }
+                bp = 0;
+                for (int i = 0; i < offs; i++) {
+                    if (getPawn(i) == WHITE)
+                        break;
+                    bp++;
+                }
+            } else {
+                wp = -1;
+                bp = -1;
+            }
+        };
+
+        int whiteProm = -1;
+        int blackProm = -1;
+        for (int offs = 0; offs + goalPawns <= pawns; offs++) {
+            int wp, bp;
+            computePromotions(offs, wp, bp);
+            if (wp + bp > whiteProm + blackProm) {
+                whiteProm = wp;
+                blackProm = bp;
+            }
+        }
+        bool uniqueBest = true;
+        for (int offs = 0; offs + goalPawns <= pawns; offs++) {
+            int wp, bp;
+            computePromotions(offs, wp, bp);
+            if (wp > whiteProm || bp > blackProm) {
+                uniqueBest = false;
+                break;
+            }
+        }
+        whiteProm = std::min(whiteProm, nPromotions(WHITE));
+        blackProm = std::min(blackProm, nPromotions(BLACK));
+        nProm[WHITE][data] = uniqueBest ? whiteProm : -1;
+        nProm[BLACK][data] = uniqueBest ? blackProm : -1;
+    }
+    data = oldData;
 }
 
 int
@@ -159,7 +225,9 @@ ProofKernel::isGoal() const {
         int promAvailDark = 0;
         int promAvailLight = 0;
         for (int i = 0; i < 8; i++) {
-            int nProm = columns[i].nPromotions(c);
+            int nProm = columns[i].nAllowedPromotions(c);
+            if (nProm < 0)
+                return false;
             promAvail += nProm;
             if (columns[i].promotionSquareType(c) == SquareColor::DARK)
                 promAvailDark += nProm;

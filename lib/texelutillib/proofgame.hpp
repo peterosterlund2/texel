@@ -47,7 +47,8 @@ public:
      * numbers, en passant square, and/or castling flags are different.
      * Use scale a for ply and scale b for bound when ordering nodes to search.
      * If "dynamic" is true, dynamic weighting A* search is used. */
-    ProofGame(const std::string& goal, int a = 1, int b = 1, bool dynamic = false);
+    ProofGame(const std::string& goal, int a = 1, int b = 1, bool dynamic = false,
+              bool smallCache = false);
     ProofGame(const ProofGame&) = delete;
     ProofGame& operator=(const ProofGame&) = delete;
 

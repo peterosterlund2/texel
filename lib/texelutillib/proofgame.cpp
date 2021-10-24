@@ -79,7 +79,7 @@ ProofGame::staticInit() {
     staticInitDone = true;
 }
 
-ProofGame::ProofGame(const std::string& goal, int a, int b, bool dynamic)
+ProofGame::ProofGame(const std::string& goal, int a, int b, bool dynamic, bool smallCache)
     : weightA(a), weightB(b), dynamic(dynamic) {
     goalPos = TextIO::readFEN(goal);
     validatePieceCounts(goalPos);
@@ -106,7 +106,7 @@ ProofGame::ProofGame(const std::string& goal, int a, int b, bool dynamic)
         goalPieceCnt[p] = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)p));
 
     // Set up caches
-    pathDataCache.resize(PathCacheSize);
+    pathDataCache.resize(smallCache ? 1 : PathCacheSize);
 
     Matrix<int> m(8, 8);
     captureAP[0] = Assignment<int>(m);
