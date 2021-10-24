@@ -139,6 +139,9 @@ private:
     int goalCnt[2][nPieceTypes];
     int excessCnt[2][nPieceTypes];  // pieceCnt - goalCnt
 
+    /** Return true if current state is a goal state. */
+    bool isGoal() const;
+
     /** Extract pawn structure and piece counts from a position. */
     static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
                            int (&pieceCnt)[2][nPieceTypes]);
@@ -176,5 +179,9 @@ ProofKernel::PawnColumn::removePawn(int i) {
     data = (data & mask) | ((data >> 1) & ~mask);
 }
 
+inline ProofKernel::SquareColor
+ProofKernel::PawnColumn::promotionSquareType(PieceColor c) const {
+    return promSquare[c];
+}
 
 #endif /* PROOFKERNEL_HPP_ */
