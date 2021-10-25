@@ -233,6 +233,12 @@ ProofKernelTest::testGoal() {
     test("rnbqkbnr/pppp1ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
          "rnbqkbnr/pppp1ppp/8/8/8/8/PPPP1PPP/RNBQKNNR w KQ - 0 1", true);
 
+    // Blocked bishop
+    test("rnbqkbnr/pp1ppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "rnbqkbnr/pp1ppppp/8/8/8/8/PPRPPPPP/RNBQKBNR w KQkq - 0 1", false);
+    test("rnbqkbnr/p2ppppp/8/8/8/8/P1PPPPPP/RNBQKBNR w KQkq - 0 1",
+         "rnbqkbnr/p2ppppp/8/8/8/8/P1RPPPPP/RNBQKBNR w KQkq - 0 1", true);
+
     // Enough number of pawns but in wrong files or wrong order within files
     test(TextIO::startPosFEN, "rnbqkbnr/p1pppppp/8/8/8/1P6/1PPPPPPP/RNBQKBNR w KQkq - 0 1", false);
     test(TextIO::startPosFEN, "rnbqkbnr/p1ppppp1/8/8/8/1P6/1PPPPPPP/RNBQKBNR w KQkq - 0 1", false);

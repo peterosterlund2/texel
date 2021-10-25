@@ -41,7 +41,7 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
     ProofGame pg(TextIO::toFEN(goalPos), 1, 1, false, true);
     if (!pg.computeBlocked(initialPos, blocked))
         blocked = 0xffffffffffffffffULL; // If goalPos not reachable, consider all pieces blocked
-    auto isBlocked = [blocked](int x, int y) -> bool {
+    auto isBlocked = [&blocked](int x, int y) -> bool {
         int sq = Square::getSquare(x, y);
         return blocked & (1ULL << sq);
     };
@@ -54,6 +54,14 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
         int oKing = c == PieceColor::WHITE ? Piece::BKING : Piece::WKING;
         return isBlocked(x, y) && getPiece(x, y) == oKing;
     };
+    for (int x = 0; x < 8; x++) {
+        if (getPiece(x, 7) == Piece::BBISHOP)
+            if ((x == 0 || isBlocked(x-1, 6)) && (x == 7 || isBlocked(x+1, 6)))
+                blocked |= 1ULL << Square::getSquare(x, 7);
+        if (getPiece(x, 0) == Piece::WBISHOP)
+            if ((x == 0 || isBlocked(x-1, 1)) && (x == 7 || isBlocked(x+1, 1)))
+                blocked |= 1ULL << Square::getSquare(x, 0);
+    }
 
     for (int ci = 0; ci < 2; ci++) {
         PieceColor c = static_cast<PieceColor>(ci);
