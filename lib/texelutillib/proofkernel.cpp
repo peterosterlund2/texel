@@ -79,8 +79,10 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
         }
     }
 
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 8; i++) {
         columns[i].setGoal(goalColumns[i]);
+        columns[i].calcMaxBishopProm(initialPos, goalPos, blocked, i);
+    }
 
     for (int c = 0; c < 2; c++)
         for (int p = 0; p < nPieceTypes; p++)
@@ -176,10 +178,51 @@ ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
         }
         whiteProm = std::min(whiteProm, nPromotions(WHITE));
         blackProm = std::min(blackProm, nPromotions(BLACK));
-        nProm[WHITE][data] = uniqueBest ? whiteProm : -1;
-        nProm[BLACK][data] = uniqueBest ? blackProm : -1;
+        nProm[WHITE][false][data] = uniqueBest ? whiteProm : -1;
+        nProm[BLACK][false][data] = uniqueBest ? blackProm : -1;
     }
     data = oldData;
+}
+
+void
+ProofKernel::PawnColumn::calcMaxBishopProm(const Position& initialPos,
+                                           const Position& goalPos,
+                                           U64 blocked, int x) {
+    auto isBlocked = [blocked](int x, int y) -> bool {
+        int sq = Square::getSquare(x, y);
+        return blocked & (1ULL << sq);
+    };
+    auto promBlocked = [blocked,x,&isBlocked](int y) -> bool {
+        return (x == 0 || isBlocked(x-1, y)) && (x == 7 || isBlocked(x+1, y));
+    };
+    auto getPiece = [](const Position& pos, int x, int y) {
+        return pos.getPiece(Square::getSquare(x, y));
+    };
+
+    S8 nWhiteBishopProm = 6;
+    if (promBlocked(6)) {
+        if (getPiece(goalPos, x, 7) == Piece::WBISHOP &&
+            getPiece(initialPos, x, 7) != Piece::WBISHOP) {
+            nWhiteBishopProm = 1;
+        } else {
+            nWhiteBishopProm = 0;
+        }
+    }
+
+    S8 nBlackBishopProm = 6;
+    if (promBlocked(1)) {
+        if (getPiece(goalPos, x, 0) == Piece::BBISHOP &&
+            getPiece(initialPos, x, 0) != Piece::BBISHOP) {
+            nBlackBishopProm = 1;
+        } else {
+            nBlackBishopProm = 0;
+        }
+    }
+
+    for (int d = 1; d < 128; d++) {
+        nProm[WHITE][true][d] = std::min(nProm[WHITE][false][d], nWhiteBishopProm);
+        nProm[BLACK][true][d] = std::min(nProm[BLACK][false][d], nBlackBishopProm);
+    }
 }
 
 int
@@ -233,10 +276,11 @@ ProofKernel::isGoal() const {
         int promAvailDark = 0;
         int promAvailLight = 0;
         for (int i = 0; i < 8; i++) {
-            int nProm = columns[i].nAllowedPromotions(c);
+            int nProm = columns[i].nAllowedPromotions(c, false);
             if (nProm < 0)
                 return false;
             promAvail += nProm;
+            nProm = columns[i].nAllowedPromotions(c, true);
             if (columns[i].promotionSquareType(c) == SquareColor::DARK)
                 promAvailDark += nProm;
             else

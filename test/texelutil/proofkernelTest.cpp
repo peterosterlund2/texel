@@ -283,4 +283,37 @@ ProofKernelTest::testGoal() {
          "2b1RBr1/1Bp2r2/nNrbbkr1/1K2qpNQ/1n2p3/2P1RP2/r2P4/4BQ1n w - - 0 1", true);
     test("rnbqkbnr/1pp1pp1p/8/8/1p2p1Pp/2P2P2/P2P4/RNBQKBNR w KQkq - 0 7",
          "2b1RBr1/1Bp2r2/nNrbbkr1/1K2qpNQ/1n2p3/2P1RP2/r2P4/4BQ1n w - - 0 1", false);
+
+    // Bishop promotion not possible, bishop blocked after promotion
+    test("rnbqkbnr/1ppppppp/8/8/8/P7/P1PPPPPP/RNBQKBNR w - - 0 1",
+         "rnbqkbnr/1ppppppp/8/8/2B5/8/P1PPPPPP/RNBQKBNR w - - 0 1", false);
+    test("rnbqkbnr/1ppppppp/8/8/8/P7/P1PPPPPP/RNBQKBNR w - - 0 1",
+         "Bnbqkbnr/1ppppppp/8/8/8/8/P1PPPPPP/RNBQKBNR w - - 0 1", true);
+    test("rnbqkbnr/1ppppppp/8/8/8/P7/P1PPPPPP/RNBQKBNR w - - 0 1",
+         "Bnbqkbnr/1ppppppp/8/3B4/8/8/2PPPPPP/RNBQKBNR w - - 0 1", false);
+    test("rnbqkbnr/1ppppppp/8/8/8/P7/P1PPPPPP/RNBQKBNR w - - 0 1",
+         "Bnbqkbnr/2pppppp/1p6/3B4/8/8/2PPPPPP/RNBQKBNR w - - 0 1", true);
+
+    test("rnbqkbnr/pp1ppppp/8/8/8/2P5/P1PPPPPP/RNBQKBNR w - - 0 1",
+         "rn1qkbnr/pp1ppppp/8/8/8/5B2/P1PPPPPP/RNBQKBNR w - - 0 1", false);
+    test("rnbqkbnr/pp1ppppp/8/8/8/2P5/P1PPPPPP/RNBQKBNR w - - 0 1",
+         "rnBqkbnr/pp1ppppp/8/8/8/8/P1PPPPPP/RNBQKBNR w - - 0 1", true);
+    test("rnbqkbnr/pp1ppppp/8/8/8/2P5/P1PPPPPP/RNBQKBNR w - - 0 1",
+         "rnBqkbnr/pp1ppppp/8/8/4B3/8/P2PPPPP/RNBQKBNR w - - 0 1", false);
+    test("rnbqkbnr/pp1ppppp/8/8/8/2P5/P1PPPPPP/RNBQKBNR w - - 0 1",
+         "rnBqkbnr/p2ppppp/1p6/8/4B3/8/P2PPPPP/RNBQKBNR w - - 0 1", true);
+    test("rnbqkbnr/pp1ppppp/8/8/8/2P5/P1PPPPPP/RNBQKBNR w - - 0 1",
+         "rnBqkbnr/pp2pppp/8/3p4/4B3/8/P2PPPPP/RNBQKBNR w - - 0 1", true);
+
+    test("rnbqkbnr/ppppppp1/8/8/8/7P/PPPPPP1P/RNBQKBNR w - - 0 1",
+         "rnbqkbnr/ppppppp1/8/8/5B2/8/PPPPPP1P/RNBQKBNR w - - 0 1", false);
+    test("rnbqkbnr/ppppppp1/8/8/8/7P/PPPPPP1P/RNBQKBNR w - - 0 1",
+         "rnbqkbnB/ppppppp1/8/8/8/8/PPPPPP1P/RNBQKBNR w - - 0 1", true);
+    test("rnbqkbnr/ppppppp1/8/8/8/7P/PPPPPP1P/RNBQKBNR w - - 0 1",
+         "rnbqkbnB/ppppppp1/8/8/1B6/8/PPPPPP2/RNBQKBNR w - - 0 1", false);
+    test("rnbqkbnr/ppppppp1/8/8/8/7P/PPPPPP1P/RNBQKBNR w - - 0 1",
+         "rnbqkbnB/pppppp2/6p1/8/1B6/8/PPPPPP2/RNBQKBNR w - - 0 1", true);
+
+    test("r1bqkb1B/ppppppp1/8/8/8/7P/PPPPP2P/RNBQKBNR w - - 0 1",
+         "r1bqkb1B/ppppppp1/8/8/3B4/8/PPPPP2P/RNBQKBNR w - - 0 1", false);
 }
