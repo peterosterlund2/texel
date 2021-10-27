@@ -320,4 +320,9 @@ ProofKernelTest::testGoal() {
     // Bishop promotion possible, but cannot reach goal square after promotion
     test("r1bqkbn1/p1pppp2/6p1/8/8/8/PPPPPPPP/RNBQKBNR w KQ - 0 1",
          "rBbqkbn1/p1pppp2/6p1/8/8/8/PPPPPPP1/RNBQKBNR w KQ - 0 1", false);
+
+    // Endgame positions
+    test(TextIO::startPosFEN, "8/8/4kr2/8/8/4PP2/2RRKR2/8 w - - 0 1", false);
+    test("rnbqkbnr/ppp1pppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "8/8/4kr2/8/8/4PP2/2RRKR2/8 w - - 0 1", true);
 }
