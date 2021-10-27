@@ -81,7 +81,7 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
 
     for (int i = 0; i < 8; i++) {
         columns[i].setGoal(goalColumns[i]);
-        columns[i].calcMaxBishopProm(initialPos, goalPos, blocked, i);
+        columns[i].calcBishopPromotions(initialPos, goalPos, blocked, i);
     }
 
     for (int c = 0; c < 2; c++)
@@ -185,9 +185,9 @@ ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
 }
 
 void
-ProofKernel::PawnColumn::calcMaxBishopProm(const Position& initialPos,
-                                           const Position& goalPos,
-                                           U64 blocked, int x) {
+ProofKernel::PawnColumn::calcBishopPromotions(const Position& initialPos,
+                                              const Position& goalPos,
+                                              U64 blocked, int x) {
     auto isBlocked = [blocked](int x, int y) -> bool {
         int sq = Square::getSquare(x, y);
         return blocked & (1ULL << sq);
@@ -204,6 +204,7 @@ ProofKernel::PawnColumn::calcMaxBishopProm(const Position& initialPos,
         if (getPiece(goalPos, x, 7) == Piece::WBISHOP &&
             getPiece(initialPos, x, 7) != Piece::WBISHOP) {
             nWhiteBishopProm = 1;
+            bishopPromRequired[WHITE] = true;
         } else {
             nWhiteBishopProm = 0;
         }
@@ -214,6 +215,7 @@ ProofKernel::PawnColumn::calcMaxBishopProm(const Position& initialPos,
         if (getPiece(goalPos, x, 0) == Piece::BBISHOP &&
             getPiece(initialPos, x, 0) != Piece::BBISHOP) {
             nBlackBishopProm = 1;
+            bishopPromRequired[BLACK] = true;
         } else {
             nBlackBishopProm = 0;
         }
@@ -281,6 +283,8 @@ ProofKernel::isGoal() const {
                 return false;
             promAvail += nProm;
             nProm = columns[i].nAllowedPromotions(c, true);
+            if (nProm == 0 && columns[i].bishopPromotionRequired(c))
+                return false;
             if (columns[i].promotionSquareType(c) == SquareColor::DARK)
                 promAvailDark += nProm;
             else

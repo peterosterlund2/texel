@@ -109,9 +109,9 @@ private:
 
         /** Set the goal configuration for this column. */
         void setGoal(const PawnColumn& goal);
-        /** Calculate maximum number of bishop promotions for this column. */
-        void calcMaxBishopProm(const Position& initialPos, const Position& goalPos,
-                               U64 blocked, int x);
+        /** Calculate allowed/required number of bishop promotions for this column. */
+        void calcBishopPromotions(const Position& initialPos, const Position& goalPos,
+                                  U64 blocked, int x);
 
         /** Number of pawns in the column. */
         int nPawns() const;
@@ -132,6 +132,8 @@ private:
          *  leaving the goal position pawns in place. Return -1 if goal position
          *  pawns are not in place even with no promotions. */
         int nAllowedPromotions(PieceColor c, bool toBishop) const;
+        /** True if bishop promotion required on this file. */
+        bool bishopPromotionRequired(PieceColor c) const;
 
         // State that does not change during search
         /** True if a pawn can promote in a given direction from this file. */
@@ -150,6 +152,7 @@ private:
         bool canProm[2][3] { { true, true, true}, {true, true, true} };
         bool canRQProm[2] { true, true };
         std::array<S8,128> nProm[2][2]; // [color][toBishop][pawnPattern]
+        bool bishopPromRequired[2] = { false, false }; // [color]
     };
     std::array<PawnColumn, 8> columns;
     static const int nPieceTypes = EMPTY;
@@ -218,6 +221,11 @@ ProofKernel::PawnColumn::promotionSquareType(PieceColor c) const {
 inline int
 ProofKernel::PawnColumn::nAllowedPromotions(PieceColor c, bool toBishop) const {
     return nProm[c][toBishop][data];
+}
+
+inline bool
+ProofKernel::PawnColumn::bishopPromotionRequired(PieceColor c) const {
+    return bishopPromRequired[c];
 }
 
 #endif /* PROOFKERNEL_HPP_ */
