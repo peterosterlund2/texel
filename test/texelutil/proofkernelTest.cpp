@@ -343,3 +343,32 @@ ProofKernelTest::testGoal() {
     test(startFEN, "r1q2QR1/6N1/N2bp1P1/k2p2pK/1n2R1B1/Nb1nqp2/3PB3/1nBR3n w - - 0 1", false, 4);
     test(startFEN, "3K4/3p2RB/Q1pP1Nbp/4pR2/1PQ1Pr1k/b1bnN3/Q1Pr3N/b1n2B1q b - - 0 3", false, 3);
 }
+
+TEST(ProofKernelTest, testGoalPossible) {
+    ProofKernelTest::testGoalPossible();
+}
+
+void
+ProofKernelTest::testGoalPossible() {
+    auto test = [](const std::string& start, const std::string& goal, bool expected,
+                   int minMoves) {
+        Position startPos = TextIO::readFEN(start);
+        Position goalPos = TextIO::readFEN(goal);
+        ProofKernel pk1(startPos, goalPos);
+        ASSERT_EQ(expected, pk1.goalPossible()) << "start: " << start << "\ngoal: " << goal;
+        ASSERT_EQ(minMoves, pk1.minMovesToGoal()) << "start: " << start << "\ngoal: " << goal;
+
+        startPos = PosUtil::swapColors(startPos);
+        goalPos = PosUtil::swapColors(goalPos);
+        ProofKernel pk2(startPos, goalPos);
+        ASSERT_EQ(expected, pk2.goalPossible())
+            << "start: " << TextIO::toFEN(startPos) << "\ngoal: " << TextIO::toFEN(goalPos);
+        ASSERT_EQ(minMoves, pk2.minMovesToGoal()) << "start: " << start << "\ngoal: " << goal;
+    };
+
+    const std::string startFEN = TextIO::startPosFEN;
+    test(startFEN, startFEN, true, 0);
+    test(startFEN, "2K1Nbk1/p3N1Nr/2PR2p1/2R2R1P/P3rb1B/1brQ2n1/p1q3P1/Nq2nB2 b - - 0 1", false, 4);
+    test(startFEN, "2Qr2Bq/1n1K1N1P/1qpnN1kp/5N1q/3B2p1/3b1BP1/R2bb1B1/3rrn2 w - - 0 1 ", true, 4);
+    test(startFEN, "rnbqkbnr/n2pp2n/6pp/4p3/2P4P/6P1/N2P1P1N/RNBQKBNR w KQkq - 0 1", false, 3);
+}

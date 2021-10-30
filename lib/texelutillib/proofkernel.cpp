@@ -38,7 +38,7 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
     posToState(goalPos, goalColumns, goalCnt);
 
     U64 blocked;
-    ProofGame pg(TextIO::toFEN(goalPos), 1, 1, false, true);
+    ProofGame pg(std::cerr, TextIO::toFEN(goalPos), 1, 1, false, true);
     if (!pg.computeBlocked(initialPos, blocked))
         blocked = 0xffffffffffffffffULL; // If goalPos not reachable, consider all pieces blocked
     auto isBlocked = [&blocked](int x, int y) -> bool {
@@ -84,9 +84,14 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
         columns[i].calcBishopPromotions(initialPos, goalPos, blocked, i);
     }
 
-    for (int c = 0; c < 2; c++)
-        for (int p = 0; p < nPieceTypes; p++)
-            excessCnt[c][p] = pieceCnt[c][p] - goalCnt[c][p];
+    remainingMoves = 0;
+    for (int c = 0; c < 2; c++) {
+        for (int p = 0; p < nPieceTypes; p++) {
+            int tmp = pieceCnt[c][p] - goalCnt[c][p];
+            excessCnt[c][p] = tmp;
+            remainingMoves += tmp;
+        }
+    }
 }
 
 void ProofKernel::posToState(const Position& pos, std::array<PawnColumn,8>& columns,
@@ -112,6 +117,16 @@ void ProofKernel::posToState(const Position& pos, std::array<PawnColumn,8>& colu
             }
         }
     }
+}
+
+bool
+ProofKernel::findProofKernel(std::vector<PkMove>& result) {
+    if (!goalPossible())
+        return false;
+
+    // FIXME!! Implement
+    result.clear();
+    return true;
 }
 
 ProofKernel::PawnColumn::PawnColumn(int x) {
@@ -306,6 +321,9 @@ ProofKernel::isGoal() const {
 
 bool
 ProofKernel::goalPossible() const {
+    if (remainingMoves < minMovesToGoal())
+        return false;
+
     for (int c = 0; c < 2; c++) {
         int sparePawns = excessCnt[c][PAWN];
         sparePawns += std::min(0, excessCnt[c][QUEEN]);

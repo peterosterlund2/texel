@@ -32,6 +32,7 @@ public:
     static void testPawnColumn();
     static void testPawnColPromotion();
     static void testGoal();
+    static void testGoalPossible();
 
 private:
 };

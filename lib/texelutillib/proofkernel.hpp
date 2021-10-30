@@ -163,6 +163,7 @@ private:
     int pieceCnt[2][nPieceTypes];
     int goalCnt[2][nPieceTypes];
     int excessCnt[2][nPieceTypes];  // pieceCnt - goalCnt
+    int remainingMoves;
 
     /** Return true if current state is a goal state. */
     bool isGoal() const;

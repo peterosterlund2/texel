@@ -26,6 +26,7 @@
 #include "proofgame.hpp"
 #include "moveGen.hpp"
 #include "revmovegen.hpp"
+#include "proofkernel.hpp"
 #include "textio.hpp"
 #include "util/timeUtil.hpp"
 
@@ -1347,10 +1348,16 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
         try {
             ProofGame pg(std::cerr, line, 1, 1, false, true);
             int minCost = pg.distLowerBound(startPos);
-            if (minCost == INT_MAX)
+            if (minCost == INT_MAX) {
                 status = "illegal, other";
-            else
-                status = "unknown";
+            } else {
+                ProofKernel pk(startPos, TextIO::readFEN(line));
+                std::vector<ProofKernel::PkMove> kernel;
+                if (!pk.findProofKernel(kernel))
+                    status = "illegal, no proof kernel";
+                else
+                    status = "unknown";
+            }
         } catch (ChessParseError& e) {
             status = std::string("illegal, ") + e.what();
         }
