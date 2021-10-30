@@ -49,6 +49,8 @@ public:
      * If "dynamic" is true, dynamic weighting A* search is used. */
     ProofGame(const std::string& goal, int a = 1, int b = 1, bool dynamic = false,
               bool smallCache = false);
+    ProofGame(std::ostream& log, const std::string& goal, int a = 1, int b = 1,
+              bool dynamic = false, bool smallCache = false);
     ProofGame(const ProofGame&) = delete;
     ProofGame& operator=(const ProofGame&) = delete;
 
@@ -267,6 +269,8 @@ private:
     static U64 wPawnReachable[64];
     static U64 bPawnReachable[64];
     static bool staticInitDone;
+
+    std::ostream& log;
 };
 
 

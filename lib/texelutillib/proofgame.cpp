@@ -80,7 +80,12 @@ ProofGame::staticInit() {
 }
 
 ProofGame::ProofGame(const std::string& goal, int a, int b, bool dynamic, bool smallCache)
-    : weightA(a), weightB(b), dynamic(dynamic) {
+    : ProofGame(std::cout, goal, a, b, dynamic, smallCache) {
+}
+
+ProofGame::ProofGame(std::ostream& log, const std::string& goal, int a, int b,
+                     bool dynamic, bool smallCache)
+    : weightA(a), weightB(b), dynamic(dynamic), log(log) {
     goalPos = TextIO::readFEN(goal);
     validatePieceCounts(goalPos);
 
@@ -91,11 +96,11 @@ ProofGame::ProofGame(const std::string& goal, int a, int b, bool dynamic, bool s
             throw ChessParseError("No possible last move");
         } else if (unMoves.size() == 1) {
             const UnMove& um = unMoves[0];
-            std::cout << "Forced last move: " << um << std::endl;
+            log << "Forced last move: " << um << std::endl;
             goalPos.unMakeMove(um.move, um.ui);
             goalPos.setFullMoveCounter(1);
             lastMoves.push_back(um.move);
-            std::cout << "New goalPos: " << TextIO::toFEN(goalPos) << std::endl;
+            log << "New goalPos: " << TextIO::toFEN(goalPos) << std::endl;
         } else {
             std::reverse(lastMoves.begin(), lastMoves.end());
             break;
@@ -185,9 +190,9 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
             continue;
         if (tn.ply + tn.bound > minCost) {
             minCost = tn.ply + tn.bound;
-            std::cout << "min cost: " << minCost << " queue: " << queue->size()
-                      << " nodes: " << numNodes
-                      << " time: " << (currentTime() - t0) << std::endl;
+            log << "min cost: " << minCost << " queue: " << queue->size()
+                << " nodes: " << numNodes
+                << " time: " << (currentTime() - t0) << std::endl;
         }
 
         numNodes++;
@@ -197,9 +202,9 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
             showPieceStats(pos);
 
         if (tn.ply < best && isSolution(pos)) {
-            std::cout << tn.ply << " -w " << weightA << ":" << weightB
-                      << " queue: " << queue->size() << " nodes: " << numNodes
-                      << " time: " << (currentTime() - t0) << std::endl;
+            log << tn.ply << " -w " << weightA << ":" << weightB
+                << " queue: " << queue->size() << " nodes: " << numNodes
+                << " time: " << (currentTime() - t0) << std::endl;
             getMoves(startPos, idx, true, movePath);
             best = tn.ply;
         }
@@ -211,8 +216,8 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
 #if 0
         static int cnt = 0;
         if (((++cnt) % 10000) == 0)
-            std::cout << "ply:" << tn.ply << " bound:" << tn.bound << " "
-                      << TextIO::toFEN(pos) << std::endl;
+            log << "ply:" << tn.ply << " bound:" << tn.bound << " "
+                << TextIO::toFEN(pos) << std::endl;
 #endif
 
         bool anyChildren = false;
@@ -230,17 +235,17 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
             const TreeNode& tn = nodes[idx]; // Old "tn" no longer valid
             if (tn.bound > 0 && tn.bound < smallestBound) {
                 smallestBound = tn.bound;
-                std::cout << "bound: " << tn.bound << " -w " << weightA << ":" << weightB
-                          << " queue: " << queue->size() << " nodes: " << numNodes
-                          << " time: " << (currentTime() - t0) << std::endl;
+                log << "bound: " << tn.bound << " -w " << weightA << ":" << weightB
+                    << " queue: " << queue->size() << " nodes: " << numNodes
+                    << " time: " << (currentTime() - t0) << std::endl;
                 std::vector<Move> path;
                 getMoves(startPos, idx, false, path);
             }
         }
     }
     double t1 = currentTime();
-    std::cout << "nodes: " << numNodes
-              << " time: " << t1 - t0 <<  std::endl;
+    log << "nodes: " << numNodes
+        << " time: " << t1 - t0 <<  std::endl;
 
     return best + lastMoves.size();
 }
@@ -303,11 +308,11 @@ ProofGame::getMoves(const Position& startPos, int idx, bool includeLastMoves,
     UndoInfo ui;
     for (size_t i = 0; i < movePath.size(); i++) {
         if (i > 0)
-            std::cout << ' ';
-        std::cout << TextIO::moveToString(pos, movePath[i], false);
+            log << ' ';
+        log << TextIO::moveToString(pos, movePath[i], false);
         pos.makeMove(movePath[i], ui);
     }
-    std::cout << std::endl;
+    log << std::endl;
 }
 
 
@@ -408,14 +413,14 @@ ProofGame::showPieceStats(const Position& pos) const {
 
     auto print = [this,&currCnt](int piece, const std::string& pieceName) -> int {
         int cnt = goalPieceCnt[piece] - currCnt[piece];
-        std::cout << pieceName << ':' << cnt << ' ';
+        log << pieceName << ':' << cnt << ' ';
         return cnt;
     };
     auto printB = [this,&pos](int piece, const std::string& pieceName, bool dark) -> int {
         U64 mask = dark ? BitBoard::maskDarkSq : BitBoard::maskLightSq;
         int cnt = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)piece) & mask);
         cnt -=    BitBoard::bitCount(pos.pieceTypeBB((Piece::Type)piece) & mask);
-        std::cout << pieceName << ':' << cnt << ' ';
+        log << pieceName << ':' << cnt << ' ';
         return cnt;
     };
 
@@ -426,7 +431,7 @@ ProofGame::showPieceStats(const Position& pos) const {
     spare -= std::max(0, printB(Piece::WBISHOP, "Bl", false));
     spare -= std::max(0, print (Piece::WKNIGHT, "N"));
     spare -= std::min(0, print (Piece::WPAWN,   "P"));
-    std::cout << "sP:" << spare << std::endl;
+    log << "sP:" << spare << std::endl;
 
     spare = 0;
     spare -= std::max(0, print (Piece::BQUEEN,  "q"));
@@ -435,7 +440,7 @@ ProofGame::showPieceStats(const Position& pos) const {
     spare -= std::max(0, printB(Piece::BBISHOP, "bl", false));
     spare -= std::max(0, print (Piece::BKNIGHT, "n"));
     spare -= std::min(0, print (Piece::BPAWN,   "p"));
-    std::cout << "sp:" << spare << std::endl;
+    log << "sp:" << spare << std::endl;
 }
 
 bool
@@ -1340,7 +1345,7 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
 
         std::string status;
         try {
-            ProofGame pg(line, 1, 1, false, true);
+            ProofGame pg(std::cerr, line, 1, 1, false, true);
             int minCost = pg.distLowerBound(startPos);
             if (minCost == INT_MAX)
                 status = "illegal, other";
