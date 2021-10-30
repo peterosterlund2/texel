@@ -246,7 +246,7 @@ private:
     std::unique_ptr<Queue> queue;
 
     // Cache of recently used ShortestPathData objects
-    static const int PathCacheSize = 1024*1024;
+    int pathCacheSize = 1024*1024;
     struct PathCacheEntry {
         PathCacheEntry() : piece(-1), toSq(-1), maxCapt(-1), blocked(0) {}
         U8 piece;

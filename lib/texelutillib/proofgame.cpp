@@ -106,7 +106,9 @@ ProofGame::ProofGame(const std::string& goal, int a, int b, bool dynamic, bool s
         goalPieceCnt[p] = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)p));
 
     // Set up caches
-    pathDataCache.resize(smallCache ? 1 : PathCacheSize);
+    if (smallCache)
+        pathCacheSize = 1;
+    pathDataCache.resize(pathCacheSize);
 
     Matrix<int> m(8, 8);
     captureAP[0] = Assignment<int>(m);
@@ -1096,7 +1098,7 @@ ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
         maxCapt = 6;
     U64 h = blocked * 0x9e3779b97f4a7c55ULL + (int)p * 0x9e3779b97f51ULL +
             toSq * 0x9e3779cdULL + maxCapt * 0x964e55ULL;
-    h &= PathCacheSize - 1;
+    h &= pathCacheSize - 1;
     PathCacheEntry& entry = pathDataCache[h];
     if (entry.blocked == blocked && entry.toSq == toSq &&
         entry.piece == (int)p && entry.maxCapt == maxCapt)
@@ -1338,7 +1340,7 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
 
         std::string status;
         try {
-            ProofGame pg(line);
+            ProofGame pg(line, 1, 1, false, true);
             int minCost = pg.distLowerBound(startPos);
             if (minCost == INT_MAX)
                 status = "illegal, other";
