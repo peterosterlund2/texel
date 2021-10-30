@@ -159,6 +159,7 @@ ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
 
         int whiteProm = -1;
         int blackProm = -1;
+        bool isComplete = false;
         for (int offs = 0; offs + goalPawns <= pawns; offs++) {
             int wp, bp;
             computePromotions(offs, wp, bp);
@@ -166,6 +167,9 @@ ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
                 whiteProm = wp;
                 blackProm = bp;
             }
+            if (wp >= 0 && bp >= 0 &&
+                std::min(wp, nPromotions(WHITE)) + std::min(bp, nPromotions(BLACK)) + goalPawns == pawns)
+                isComplete = true;
         }
         bool uniqueBest = true;
         for (int offs = 0; offs + goalPawns <= pawns; offs++) {
@@ -180,6 +184,7 @@ ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
         blackProm = std::min(blackProm, nPromotions(BLACK));
         nProm[WHITE][false][data] = uniqueBest ? whiteProm : -1;
         nProm[BLACK][false][data] = uniqueBest ? blackProm : -1;
+        complete[data] = isComplete;
     }
     data = oldData;
 }
@@ -312,4 +317,18 @@ ProofKernel::goalPossible() const {
             return false;
     }
     return true;
+}
+
+int
+ProofKernel::minMovesToGoal() const {
+    // A move can in the best case make two adjacent columns "complete", meaning
+    // the required pawn structure can be obtained by performing only promotions.
+    int minMoves = 0;
+    for (int i = 0; i < 8; i++) {
+        if (!columns[i].isComplete()) {
+            minMoves++; // Not complete, one more move required
+            i++;        // The next column could be completed by the same move
+        }
+    }
+    return minMoves;
 }

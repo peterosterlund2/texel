@@ -134,6 +134,9 @@ private:
         int nAllowedPromotions(PieceColor c, bool toBishop) const;
         /** True if bishop promotion required on this file. */
         bool bishopPromotionRequired(PieceColor c) const;
+        /** True if pawn column can be turned into the goal pawn pattern
+         *  by only performing promotions. */
+        bool isComplete() const;
 
         // State that does not change during search
         /** True if a pawn can promote in a given direction from this file. */
@@ -149,10 +152,11 @@ private:
     private:
         U8 data = 1;
         SquareColor promSquare[2]; // Color of promotion square for white/black
-        bool canProm[2][3] { { true, true, true}, {true, true, true} };
-        bool canRQProm[2] { true, true };
-        std::array<S8,128> nProm[2][2]; // [color][toBishop][pawnPattern]
-        bool bishopPromRequired[2] = { false, false }; // [color]
+        bool canProm[2][3] { { true, true, true}, {true, true, true} }; // [color][dir]
+        bool canRQProm[2] { true, true };                               // [color]
+        std::array<S8,128> nProm[2][2];                                 // [color][toBishop][pawnPattern]
+        bool bishopPromRequired[2] = { false, false };                  // [color]
+        std::array<bool,128> complete;                                  // [pawnPattern]
     };
     std::array<PawnColumn, 8> columns;
     static const int nPieceTypes = EMPTY;
@@ -165,6 +169,9 @@ private:
 
     /** Return false if it is known to not be possible to reach a goal state from this state. */
     bool goalPossible() const;
+
+    /** Return a lower bound on the number of moves required to reach a goal position. */
+    int minMovesToGoal() const;
 
     /** Extract pawn structure and piece counts from a position. */
     static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
@@ -226,6 +233,11 @@ ProofKernel::PawnColumn::nAllowedPromotions(PieceColor c, bool toBishop) const {
 inline bool
 ProofKernel::PawnColumn::bishopPromotionRequired(PieceColor c) const {
     return bishopPromRequired[c];
+}
+
+inline bool
+ProofKernel::PawnColumn::isComplete() const {
+    return complete[data];
 }
 
 #endif /* PROOFKERNEL_HPP_ */
