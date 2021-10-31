@@ -25,6 +25,7 @@
 
 #include "proofkernelTest.hpp"
 #include "proofkernel.hpp"
+#include "proofgame.hpp"
 #include "position.hpp"
 #include "textio.hpp"
 #include "posutil.hpp"
@@ -162,19 +163,27 @@ TEST(ProofKernelTest, testGoal) {
     ProofKernelTest::testGoal();
 }
 
+static U64 computeBlocked(const Position& startPos, const Position& goalPos) {
+    U64 blocked;
+    ProofGame pg(std::cerr, TextIO::toFEN(goalPos), 1, 1, false, true);
+    if (!pg.computeBlocked(startPos, blocked))
+        blocked = 0xffffffffffffffffULL; // If goal not reachable, consider all pieces blocked
+    return blocked;
+}
+
 void
 ProofKernelTest::testGoal() {
     auto test = [](const std::string& start, const std::string& goal, bool expected,
                    int minMoves) {
         Position startPos = TextIO::readFEN(start);
         Position goalPos = TextIO::readFEN(goal);
-        ProofKernel pk1(startPos, goalPos);
+        ProofKernel pk1(startPos, goalPos, computeBlocked(startPos, goalPos));
         ASSERT_EQ(expected, pk1.isGoal()) << "start: " << start << "\ngoal: " << goal;
         ASSERT_EQ(minMoves, pk1.minMovesToGoal()) << "start: " << start << "\ngoal: " << goal;
 
         startPos = PosUtil::swapColors(startPos);
         goalPos = PosUtil::swapColors(goalPos);
-        ProofKernel pk2(startPos, goalPos);
+        ProofKernel pk2(startPos, goalPos, computeBlocked(startPos, goalPos));
         ASSERT_EQ(expected, pk2.isGoal())
             << "start: " << TextIO::toFEN(startPos) << "\ngoal: " << TextIO::toFEN(goalPos);
         ASSERT_EQ(minMoves, pk2.minMovesToGoal()) << "start: " << start << "\ngoal: " << goal;
@@ -354,13 +363,13 @@ ProofKernelTest::testGoalPossible() {
                    int minMoves) {
         Position startPos = TextIO::readFEN(start);
         Position goalPos = TextIO::readFEN(goal);
-        ProofKernel pk1(startPos, goalPos);
+        ProofKernel pk1(startPos, goalPos, computeBlocked(startPos, goalPos));
         ASSERT_EQ(expected, pk1.goalPossible()) << "start: " << start << "\ngoal: " << goal;
         ASSERT_EQ(minMoves, pk1.minMovesToGoal()) << "start: " << start << "\ngoal: " << goal;
 
         startPos = PosUtil::swapColors(startPos);
         goalPos = PosUtil::swapColors(goalPos);
-        ProofKernel pk2(startPos, goalPos);
+        ProofKernel pk2(startPos, goalPos, computeBlocked(startPos, goalPos));
         ASSERT_EQ(expected, pk2.goalPossible())
             << "start: " << TextIO::toFEN(startPos) << "\ngoal: " << TextIO::toFEN(goalPos);
         ASSERT_EQ(minMoves, pk2.minMovesToGoal()) << "start: " << start << "\ngoal: " << goal;

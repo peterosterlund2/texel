@@ -1351,7 +1351,10 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
             if (minCost == INT_MAX) {
                 status = "illegal, other";
             } else {
-                ProofKernel pk(startPos, TextIO::readFEN(line));
+                U64 blocked;
+                if (!pg.computeBlocked(startPos, blocked))
+                    blocked = 0xffffffffffffffffULL; // If goal not reachable, consider all pieces blocked
+                ProofKernel pk(startPos, TextIO::readFEN(line), blocked);
                 std::vector<ProofKernel::PkMove> kernel;
                 if (!pk.findProofKernel(kernel))
                     status = "illegal, no proof kernel";

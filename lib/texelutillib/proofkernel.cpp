@@ -25,11 +25,10 @@
 
 #include "proofkernel.hpp"
 #include "position.hpp"
-#include "proofgame.hpp"
 #include "textio.hpp"
 
 
-ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
+ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked) {
     for (int i = 0; i < 8; i++)
         columns[i] = PawnColumn(i);
     posToState(initialPos, columns, pieceCnt);
@@ -37,10 +36,6 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos) {
     std::array<PawnColumn,8> goalColumns;
     posToState(goalPos, goalColumns, goalCnt);
 
-    U64 blocked;
-    ProofGame pg(std::cerr, TextIO::toFEN(goalPos), 1, 1, false, true);
-    if (!pg.computeBlocked(initialPos, blocked))
-        blocked = 0xffffffffffffffffULL; // If goalPos not reachable, consider all pieces blocked
     auto isBlocked = [&blocked](int x, int y) -> bool {
         int sq = Square::getSquare(x, y);
         return blocked & (1ULL << sq);

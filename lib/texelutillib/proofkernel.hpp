@@ -43,7 +43,7 @@ class ProofKernel {
     friend class ProofKernelTest;
 public:
     /** Constructor. */
-    ProofKernel(const Position& initialPos, const Position& goalPos);
+    ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked);
 
     enum PieceColor {
         WHITE,
