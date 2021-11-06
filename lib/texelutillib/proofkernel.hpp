@@ -67,6 +67,7 @@ public:
      *  pawn takes piece         wPc0xRb0  First c pawn takes rook on b file. Pawn placed at index 0 in b file
      *                           wPc0xRbQ  First c pawn takes rook on b file and promotes to queen
      *  pawn takes promoted pawn wPc0xfb0  First c pawn takes piece on b file coming from promotion on f file
+     *                           wPc0xfbR  Like above and promoting to a rook
      *  piece takes pawn         bxPc0     Black piece takes first pawn on c file
      *  piece takes piece        bxR       Black piece takes white rook */
     struct PkMove {
@@ -77,9 +78,21 @@ public:
         PieceType takenPiece;    // Cannot be EMPTY. Always set to KNIGHT if promoted piece taken
         int otherPromotionFile;  // File where other pawn promoted, or -1
 
-        int toFile;              // File of taken piece
+        int toFile;              // File of taken piece, or -1 if not pawn move
         int toIdx;               // Index in pawn column. Insertion index if takenPiece != PAWN. -1 if promotion
         PieceType promotedPiece; // Promoted piece, or EMPTY
+
+        static PkMove pawnXPawn(PieceColor c, int fromFile, int fromIdx, int toFile, int toIdx);
+        static PkMove pawnXPiece(PieceColor c, int fromFile, int fromIdx, int toFile, int toIdx,
+                                 PieceType taken);
+        static PkMove pawnXPieceProm(PieceColor c, int fromFile, int fromIdx, int toFile,
+                                     PieceType taken, PieceType promoted);
+        static PkMove pawnXPromPawn(PieceColor c, int fromFile, int fromIdx, int toFile, int toIdx,
+                                    int otherPromFile);
+        static PkMove pawnXPromPawnProm(PieceColor c, int fromFile, int fromIdx, int toFile,
+                                        int otherPromFile, PieceType promoted);
+        static PkMove pieceXPawn(PieceColor c, int toFile, int toIdx);
+        static PkMove pieceXPiece(PieceColor c, PieceType taken);
     };
 
     /** Computes a proof kernel, as a sequence of PkMoves, for the given initial and goal positions.
@@ -179,6 +192,102 @@ private:
                            int (&pieceCnt)[2][nPieceTypes]);
 };
 
+/** Convert a PkMove to human readable string representation. */
+std::string toString(const ProofKernel::PkMove& m);
+
+
+inline ProofKernel::PkMove
+ProofKernel::PkMove::pawnXPawn(PieceColor c, int fromFile, int fromIdx, int toFile, int toIdx) {
+    return pawnXPiece(c, fromFile, fromIdx, toFile, toIdx, PAWN);
+}
+
+inline ProofKernel::PkMove
+ProofKernel::PkMove::pawnXPiece(PieceColor c, int fromFile, int fromIdx, int toFile, int toIdx,
+                                PieceType taken) {
+    PkMove m;
+    m.color = c;
+    m.fromFile = fromFile;
+    m.fromIdx = fromIdx;
+    m.takenPiece = taken;
+    m.otherPromotionFile = -1;
+    m.toFile = toFile;
+    m.toIdx = toIdx;
+    m.promotedPiece = EMPTY;
+    return m;
+}
+
+inline ProofKernel::PkMove
+ProofKernel::PkMove::pawnXPieceProm(PieceColor c, int fromFile, int fromIdx, int toFile,
+                                    PieceType taken, PieceType promoted) {
+    PkMove m;
+    m.color = c;
+    m.fromFile = fromFile;
+    m.fromIdx = fromIdx;
+    m.takenPiece = taken;
+    m.otherPromotionFile = -1;
+    m.toFile = toFile;
+    m.toIdx = -1;
+    m.promotedPiece = promoted;
+    return m;
+}
+
+inline ProofKernel::PkMove
+ProofKernel::PkMove::pawnXPromPawn(PieceColor c, int fromFile, int fromIdx, int toFile, int toIdx,
+                                   int otherPromFile) {
+    PkMove m;
+    m.color = c;
+    m.fromFile = fromFile;
+    m.fromIdx = fromIdx;
+    m.takenPiece = KNIGHT;
+    m.otherPromotionFile = otherPromFile;
+    m.toFile = toFile;
+    m.toIdx = toIdx;
+    m.promotedPiece = EMPTY;
+    return m;
+}
+
+inline ProofKernel::PkMove
+ProofKernel::PkMove::pawnXPromPawnProm(PieceColor c, int fromFile, int fromIdx, int toFile,
+                                       int otherPromFile, PieceType promoted) {
+    PkMove m;
+    m.color = c;
+    m.fromFile = fromFile;
+    m.fromIdx = fromIdx;
+    m.takenPiece = KNIGHT;
+    m.otherPromotionFile = otherPromFile;
+    m.toFile = toFile;
+    m.toIdx = -1;
+    m.promotedPiece = promoted;
+    return m;
+}
+
+inline ProofKernel::PkMove
+ProofKernel::PkMove::pieceXPawn(PieceColor c, int toFile, int toIdx) {
+    PkMove m;
+    m.color = c;
+    m.fromFile = -1;
+    m.fromIdx = -1;
+    m.takenPiece = PAWN;
+    m.otherPromotionFile = -1;
+    m.toFile = toFile;
+    m.toIdx = toIdx;
+    m.promotedPiece = EMPTY;
+    return m;
+}
+
+inline ProofKernel::PkMove
+ProofKernel::PkMove::pieceXPiece(PieceColor c, PieceType taken) {
+    PkMove m;
+    m.color = c;
+    m.fromFile = -1;
+    m.fromIdx = -1;
+    m.takenPiece = taken;
+    m.otherPromotionFile = -1;
+    m.toFile = -1;
+    m.toIdx = -1;
+    m.promotedPiece = EMPTY;
+    return m;
+}
 
 inline int
 ProofKernel::PawnColumn::nPawns() const {

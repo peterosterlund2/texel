@@ -26,6 +26,7 @@
 #include "proofkernel.hpp"
 #include "position.hpp"
 #include "textio.hpp"
+#include <cassert>
 
 
 ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked) {
@@ -344,4 +345,59 @@ ProofKernel::minMovesToGoal() const {
         }
     }
     return minMoves;
+}
+
+std::string toString(const ProofKernel::PkMove& m) {
+    std::string ret;
+    ret += m.color == ProofKernel::WHITE ? "w" : "b";
+
+    auto fileToChar = [](int f) -> char {
+        return (char)('a' + f);
+    };
+    auto idxToChar = [](int idx) -> char {
+        return (char)('0' + idx);
+    };
+
+    if (m.fromFile != -1) {
+        ret += "P";
+        ret += fileToChar(m.fromFile);
+        ret += idxToChar(m.fromIdx);
+    }
+
+    ret += "x";
+
+    auto pieceName = [&ret](ProofKernel::PieceType p) -> std::string {
+        switch (p) {
+        case ProofKernel::QUEEN:
+            return "Q";
+        case ProofKernel::ROOK:
+            return "R";
+        case ProofKernel::DARK_BISHOP: case ProofKernel::LIGHT_BISHOP:
+            return "B";
+        case ProofKernel::KNIGHT:
+            return "N";
+        case ProofKernel::PAWN:
+            return "P";
+        default:
+            assert(false);
+        };
+    };
+
+    if (m.otherPromotionFile == -1) {
+        ret += pieceName(m.takenPiece);
+    } else {
+        ret += fileToChar(m.otherPromotionFile);
+    }
+
+    if (m.toFile != -1) {
+        ret += fileToChar(m.toFile);
+
+        if (m.toIdx != -1) {
+            ret += idxToChar(m.toIdx);
+        } else {
+            ret += pieceName(m.promotedPiece);
+        }
+    }
+
+    return ret;
 }

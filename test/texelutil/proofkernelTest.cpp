@@ -381,3 +381,38 @@ ProofKernelTest::testGoalPossible() {
     test(startFEN, "2Qr2Bq/1n1K1N1P/1qpnN1kp/5N1q/3B2p1/3b1BP1/R2bb1B1/3rrn2 w - - 0 1 ", true, 4);
     test(startFEN, "rnbqkbnr/n2pp2n/6pp/4p3/2P4P/6P1/N2P1P1N/RNBQKBNR w KQkq - 0 1", false, 3);
 }
+
+TEST(ProofKernelTest, testMoveToString) {
+    ProofKernelTest::testMoveToString();
+}
+
+void
+ProofKernelTest::testMoveToString() {
+    using PkMove = ProofKernel::PkMove;
+    using PieceColor = ProofKernel::PieceColor;
+    using PieceType = ProofKernel::PieceType;
+
+    ASSERT_EQ("wPa0xPb1", toString(PkMove::pawnXPawn(PieceColor::WHITE, 0, 0, 1, 1)));
+    ASSERT_EQ("bPc3xPb2", toString(PkMove::pawnXPawn(PieceColor::BLACK, 2, 3, 1, 2)));
+
+    ASSERT_EQ("bPf1xQe0", toString(PkMove::pawnXPiece(PieceColor::BLACK, 5, 1, 4, 0, PieceType::QUEEN)));
+    ASSERT_EQ("wPh0xRg2", toString(PkMove::pawnXPiece(PieceColor::WHITE, 7, 0, 6, 2, PieceType::ROOK)));
+    ASSERT_EQ("wPc1xBd1", toString(PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::LIGHT_BISHOP)));
+    ASSERT_EQ("wPc1xBd1", toString(PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::DARK_BISHOP)));
+    ASSERT_EQ("wPc1xNd1", toString(PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::KNIGHT)));
+
+    ASSERT_EQ("wPg0xBfQ", toString(PkMove::pawnXPieceProm(PieceColor::WHITE, 6, 0, 5,
+                                                          PieceType::DARK_BISHOP, PieceType::QUEEN)));
+
+    ASSERT_EQ("bPa1xhb1", toString(PkMove::pawnXPromPawn(PieceColor::BLACK, 0, 1, 1, 1, 7)));
+    ASSERT_EQ("wPb0xga2", toString(PkMove::pawnXPromPawn(PieceColor::WHITE, 1, 0, 0, 2, 6)));
+
+    ASSERT_EQ("wPb0xgaB", toString(PkMove::pawnXPromPawnProm(PieceColor::WHITE, 1, 0, 0, 6,
+                                                             PieceType::LIGHT_BISHOP)));
+
+    ASSERT_EQ("bxPc1", toString(PkMove::pieceXPawn(PieceColor::BLACK, 2, 1)));
+    ASSERT_EQ("wxPf2", toString(PkMove::pieceXPawn(PieceColor::WHITE, 5, 2)));
+
+    ASSERT_EQ("wxN", toString(PkMove::pieceXPiece(PieceColor::WHITE, PieceType::KNIGHT)));
+    ASSERT_EQ("bxR", toString(PkMove::pieceXPiece(PieceColor::BLACK, PieceType::ROOK)));
+}
