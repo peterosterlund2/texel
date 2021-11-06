@@ -187,6 +187,10 @@ private:
     /** Return a lower bound on the number of moves required to reach a goal position. */
     int minMovesToGoal() const;
 
+    /** Generate a list of moves. Moves that are known to be futile are not necessarily generated.
+     *  "Piece takes piece" moves are not generated. */
+    void genMoves(std::vector<PkMove>& moves);
+
     /** Extract pawn structure and piece counts from a position. */
     static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
                            int (&pieceCnt)[2][nPieceTypes]);

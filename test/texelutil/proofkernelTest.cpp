@@ -416,3 +416,58 @@ ProofKernelTest::testMoveToString() {
     ASSERT_EQ("wxN", toString(PkMove::pieceXPiece(PieceColor::WHITE, PieceType::KNIGHT)));
     ASSERT_EQ("bxR", toString(PkMove::pieceXPiece(PieceColor::BLACK, PieceType::ROOK)));
 }
+
+TEST(ProofKernelTest, testMoveGen) {
+    ProofKernelTest::testMoveGen();
+}
+
+void
+ProofKernelTest::testMoveGen() {
+    using PkMove = ProofKernel::PkMove;
+
+    auto test = [](const std::string& start, const std::string& goal,
+                   std::vector<std::string> expected) {
+        Position startPos = TextIO::readFEN(start);
+        Position goalPos = TextIO::readFEN(goal);
+        ProofKernel pk(startPos, goalPos, computeBlocked(startPos, goalPos));
+        std::vector<PkMove> moves;
+        pk.genMoves(moves);
+        std::vector<std::string> strMoves;
+        for (const PkMove& m : moves)
+            strMoves.push_back(toString(m));
+        std::sort(strMoves.begin(), strMoves.end());
+        std::sort(expected.begin(), expected.end());
+        ASSERT_EQ(expected, strMoves)
+            << "start: " << TextIO::toFEN(startPos) << "\ngoal: " << TextIO::toFEN(goalPos);
+    };
+
+    test("1n2k3/4p3/8/8/8/8/4P3/4K3 w - - 0 1", "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
+         {"wPe0xNd0", "wPe0xNf0", "wxPe1", "bxPe0"});
+    test("1n2k3/4p3/8/8/8/8/4P3/4K1B1 w - - 0 1", "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
+         {"wPe0xNd0", "wPe0xNf0", "wxPe1", "bxPe0", "bPe1xBd0", "bPe1xBf0"});
+
+    // XXX No need to generate promotion moves when there is a move that creates
+    // a passed pawn on the same file, since promotion of a passed pawn can be
+    // handled in the next ply.
+    test("4k3/4p3/8/8/8/8/2P5/4K3 w - - 0 1", "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
+         { "wPc0xeb0", "wPc0xebQ", "wPc0xebR", "wPc0xebB", "wPc0xebN",
+           "wPc0xed0", "wPc0xedQ", "wPc0xedR", "wPc0xedB", "wPc0xedN",
+           "bPe0xcd0", "bPe0xcdQ", "bPe0xcdR", "bPe0xcdB", "bPe0xcdN",
+           "bPe0xcf0", "bPe0xcfQ", "bPe0xcfR", "bPe0xcfB", "bPe0xcfN",
+           "bxPc0", "wxPe0"
+         });
+    test("4k3/4p3/8/8/8/8/3P4/4K3 w - - 0 1", "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
+         { "wPd0xPe0", "bPe0xPd0",
+           "wPd0xec0", "wPd0xecQ", "wPd0xecR", "wPd0xecB", "wPd0xecN",
+           "wPd0xee0", "wPd0xeeQ", "wPd0xeeR", "wPd0xeeB", "wPd0xeeN",
+           "bPe0xdd0", "bPe0xddQ", "bPe0xddR", "bPe0xddB", "bPe0xddN",
+           "bPe0xdf0", "bPe0xdfQ", "bPe0xdfR", "bPe0xdfB", "bPe0xdfN",
+           "bxPd0", "wxPe0"
+         });
+
+    test("4k3/4pp2/4p3/8/8/4P3/4PP2/4K3 w - - 0 1", "1n2k1n1/8/8/8/8/8/8/1N2K1N1 w - - 0 1",
+         { "wPe0xPf1", "wPe1xPf1", "bPe2xPf0", "bPe3xPf0",
+           "wPf0xPe2", "wPf0xPe3", "bPf1xPe0", "bPf1xPe1",
+           "bxPe0", "bxPe1", "wxPe2", "wxPe3", "bxPf0", "wxPf1"
+         });
+}

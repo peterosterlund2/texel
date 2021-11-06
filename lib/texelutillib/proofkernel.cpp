@@ -347,6 +347,117 @@ ProofKernel::minMovesToGoal() const {
     return minMoves;
 }
 
+
+void
+ProofKernel::genMoves(std::vector<PkMove>& moves) {
+    moves.clear();
+
+    // Pawn takes pawn moves
+    for (int x = 0; x < 8; x++) {
+        PawnColumn& col = columns[x];
+        for (int dir = -1; dir <= 1; dir += 2) {
+            if ((x == 0 && dir == -1) || (x == 7 && dir == 1))
+                continue;
+            PawnColumn oCol = columns[x + dir];
+            for (int fromIdx = 0; fromIdx < col.nPawns(); fromIdx++) {
+                PieceColor c = col.getPawn(fromIdx);
+                for (int toIdx = 0; toIdx < oCol.nPawns(); toIdx++) {
+                    if (c == oCol.getPawn(toIdx))
+                        continue; // Cannot capture own pawn
+                    moves.push_back(PkMove::pawnXPawn(c, x, fromIdx, x + dir, toIdx));
+                }
+            }
+        }
+    }
+
+    auto canPromote = [](const PawnColumn& col, PieceColor c, int prom) -> bool {
+        if (!col.rookQueenPromotePossible(c) && (prom == QUEEN || prom == ROOK))
+            return false;
+        if ((prom == DARK_BISHOP && col.promotionSquareType(c) == SquareColor::DARK) ||
+            (prom == LIGHT_BISHOP && col.promotionSquareType(c) == SquareColor::LIGHT))
+            return false;
+        return true;
+    };
+
+    // Pawn takes piece moves
+    for (int x = 0; x < 8; x++) {
+        PawnColumn& col = columns[x];
+        for (int dir = -1; dir <= 1; dir += 2) {
+            if ((x == 0 && dir == -1) || (x == 7 && dir == 1))
+                continue;
+            PawnColumn oCol = columns[x + dir];
+            for (int fromIdx = 0; fromIdx < col.nPawns(); fromIdx++) {
+                PieceColor c = col.getPawn(fromIdx);
+                PieceColor oc = c == WHITE ? BLACK : WHITE;
+                for (int t = QUEEN; t < PAWN; t++) {
+                    PieceType taken = (PieceType)t;
+                    if (pieceCnt[oc][taken] == 0)
+                        continue;
+                    for (int toIdx = 0; toIdx <= oCol.nPawns(); toIdx++)
+                        moves.push_back(PkMove::pawnXPiece(c, x, fromIdx, x + dir, toIdx, taken));
+
+                    // Promotion
+                    if ((c == WHITE && fromIdx != col.nPawns() - 1) ||
+                        (c == BLACK && fromIdx != 0))
+                        continue; // Only most advanced pawn can promote
+                    if (!col.canPromote(c, dir == -1 ? Direction::LEFT : Direction::RIGHT))
+                        continue;
+                    for (int prom = QUEEN; prom < PAWN; prom++)
+                        if (canPromote(col, c, prom))
+                            moves.push_back(PkMove::pawnXPieceProm(c, x, fromIdx, x + dir,
+                                                                   taken, (PieceType)prom));
+                }
+            }
+        }
+    }
+
+    // Pawn takes promoted pawn moves
+    for (int x = 0; x < 8; x++) {
+        PawnColumn& col = columns[x];
+        for (int dir = -1; dir <= 1; dir += 2) {
+            if ((x == 0 && dir == -1) || (x == 7 && dir == 1))
+                continue;
+            PawnColumn oCol = columns[x + dir];
+            for (int fromIdx = 0; fromIdx < col.nPawns(); fromIdx++) {
+                PieceColor c = col.getPawn(fromIdx);
+                PieceColor oc = c == WHITE ? BLACK : WHITE;
+                for (int promFile = 0; promFile < 8; promFile++) {
+                    if (!columns[promFile].nAllowedPromotions(oc, false))
+                        continue;
+                    if (promFile == x && fromIdx == col.nPawns() - 1)
+                        continue; // Promotion from file x, one less pawn available
+                    for (int toIdx = 0; toIdx <= oCol.nPawns(); toIdx++) {
+                        if (promFile == x + dir && toIdx == oCol.nPawns())
+                            continue; // Promotion from file x+dir, one less pawn available
+                        moves.push_back(PkMove::pawnXPromPawn(c, x, fromIdx, x + dir, toIdx, promFile));
+                    }
+
+                    // Promotion
+                    if ((c == WHITE && fromIdx != col.nPawns() - (promFile == x ? 2 : 1)) ||
+                        (c == BLACK && fromIdx != 0))
+                        continue; // Only most advanced pawn can promote
+                    if (!col.canPromote(c, dir == -1 ? Direction::LEFT : Direction::RIGHT))
+                        continue;
+                    for (int prom = QUEEN; prom < PAWN; prom++)
+                        if (canPromote(col, c, prom))
+                            moves.push_back(PkMove::pawnXPromPawnProm(c, x, fromIdx, x + dir,
+                                                                      promFile, (PieceType)prom));
+                }
+            }
+        }
+    }
+
+    // Piece takes pawn moves
+    for (int x = 0; x < 8; x++) {
+        PawnColumn& col = columns[x];
+        for (int toIdx = 0; toIdx < col.nPawns(); toIdx++) {
+            PieceColor oc = col.getPawn(toIdx);
+            PieceColor c = oc == WHITE ? BLACK : WHITE;
+            moves.push_back(PkMove::pieceXPawn(c, x, toIdx));
+        }
+    }
+}
+
 std::string toString(const ProofKernel::PkMove& m) {
     std::string ret;
     ret += m.color == ProofKernel::WHITE ? "w" : "b";
