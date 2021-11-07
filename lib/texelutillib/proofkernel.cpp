@@ -479,6 +479,67 @@ ProofKernel::genMoves(std::vector<PkMove>& moves) {
     }
 }
 
+void
+ProofKernel::makeMove(const PkMove& m, PkUndoInfo& ui) {
+    PieceType taken;
+    if (m.otherPromotionFile != -1) {
+        PawnColumn& col = columns[m.otherPromotionFile];
+        ui.addColData(m.otherPromotionFile, col.getData());
+        if (m.color == WHITE)
+            col.removePawn(0);
+        else
+            col.removePawn(col.nPawns() - 1);
+        taken = PieceType::PAWN;
+    } else {
+        taken = m.takenPiece;
+    }
+
+    if (m.fromFile != -1) {
+        PawnColumn& col = columns[m.fromFile];
+        ui.addColData(m.fromFile, col.getData());
+        col.removePawn(m.fromIdx);
+    }
+
+    PieceColor oc = m.color == WHITE ? BLACK : WHITE;
+    ui.addCntData(oc, taken, -1);
+    pieceCnt[oc][taken]--;
+    excessCnt[oc][taken]--;
+
+    if (m.toFile != -1) {
+        PawnColumn& col = columns[m.toFile];
+        ui.addColData(m.toFile, col.getData());
+        if (m.promotedPiece == PieceType::EMPTY) {
+            if (m.fromFile != -1) {
+                if (m.takenPiece == PieceType::PAWN)
+                    col.setPawn(m.toIdx, m.color);
+                else
+                    col.addPawn(m.toIdx, m.color);
+            } else {
+                if (m.takenPiece == PieceType::PAWN)
+                    col.removePawn(m.toIdx);
+            }
+        } else {
+            ui.addCntData(m.color, m.promotedPiece, 1);
+            pieceCnt[m.color][m.promotedPiece]++;
+            excessCnt[m.color][m.promotedPiece]++;
+            ui.addCntData(m.color, PieceType::PAWN, -1);
+            pieceCnt[m.color][PieceType::PAWN]--;
+            excessCnt[m.color][PieceType::PAWN]--;
+        }
+    }
+}
+
+void
+ProofKernel::unMakeMove(const PkMove& m, PkUndoInfo& ui) {
+    for (int i = ui.nColData-1; i >= 0; i--)
+        columns[ui.colData[i].colNo].setData(ui.colData[i].data);
+    for (int i = ui.nCntData-1; i >= 0; i--) {
+        const PkUndoInfo::CntData& d = ui.cntData[i];
+        pieceCnt[d.color][d.piece] -= d.delta;
+        excessCnt[d.color][d.piece] -= d.delta;
+    }
+}
+
 std::string toString(const ProofKernel::PkMove& m) {
     std::string ret;
     ret += m.color == ProofKernel::WHITE ? "w" : "b";

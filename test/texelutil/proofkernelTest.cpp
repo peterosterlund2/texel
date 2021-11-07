@@ -534,3 +534,116 @@ ProofKernelTest::testMoveGen() {
            "bxPe0", "bxPe1", "wxPe2", "wxPe3", "bxPf0", "wxPf1"
          });
 }
+
+TEST(ProofKernelTest, testMakeMove) {
+    ProofKernelTest::testMakeMove();
+}
+
+void
+ProofKernelTest::testMakeMove() {
+    auto WHITE = ProofKernel::WHITE;
+    auto BLACK = ProofKernel::BLACK;
+    using PieceType = ProofKernel::PieceType;
+    using PkMove = ProofKernel::PkMove;
+    using PkUndoInfo = ProofKernel::PkUndoInfo;
+
+    auto test = [](const std::string& start, const std::string& goal,
+                   const PkMove& move) {
+        Position startPos = TextIO::readFEN(start);
+        Position goalPos = TextIO::readFEN(goal);
+
+        ProofKernel pk0(startPos, goalPos, computeBlocked(startPos, goalPos));
+        ProofKernel pk (startPos, goalPos, computeBlocked(startPos, goalPos));
+        ProofKernel pkG(goalPos , goalPos, computeBlocked(goalPos, goalPos));
+
+        ASSERT_EQ(pk0, pk);
+        ASSERT_NE(pkG, pk);
+        testMove(startPos, pk, move);
+        ASSERT_TRUE(pk.goalPossible());
+
+        PkUndoInfo ui;
+        pk.makeMove(move, ui);
+
+        ASSERT_TRUE(pk.isGoal()) << "start: " << start << " goal: " << goal << " move: " << toString(move);
+        ASSERT_TRUE(pk.goalPossible());
+        ASSERT_NE(pk0, pk);
+        ASSERT_EQ(pkG, pk) << "start: " << start << " goal: " << goal << " move: " << toString(move);
+
+        pk.unMakeMove(move, ui);
+        ASSERT_EQ(pk0, pk) << "start: " << start << " goal: " << goal << " move: " << toString(move);
+        ASSERT_NE(pkG, pk);
+    };
+
+    test("4k3/4p3/4p3/8/8/5P2/5P2/4K3 w - - 0 1", "4k3/4p3/8/4P3/8/8/5P2/4K3 w - - 0 1",
+         PkMove::pawnXPawn(WHITE, 5, 1, 4, 0));
+    test("4k3/4p3/4p3/8/8/5P2/5P2/4K3 w - - 0 1", "4k3/4p3/8/4P3/8/8/5P2/4K3 w - - 0 1",
+         PkMove::pawnXPawn(WHITE, 5, 0, 4, 0));
+    test("4k3/4p3/4p3/8/8/5P2/5P2/4K3 w - - 0 1", "4k3/4P3/8/4p3/8/8/5P2/4K3 w - - 0 1",
+         PkMove::pawnXPawn(WHITE, 5, 1, 4, 1));
+    test("4k3/4p3/4p3/8/8/5P2/5P2/4K3 w - - 0 1", "4k3/4P3/8/4p3/8/8/5P2/4K3 w - - 0 1",
+         PkMove::pawnXPawn(WHITE, 5, 0, 4, 1));
+    test("1n2k3/4p3/6p1/5P2/5P2/6p1/8/1N2K3 w - - 0 1", "1n2k3/4p3/6P1/6p1/5P2/8/8/1N2K3 w - - 0 1",
+         PkMove::pawnXPawn(WHITE, 5, 1, 6, 1));
+    test("1n2k3/4p3/6p1/5PP1/5P2/6p1/8/1N2K3 w - - 0 1", "1n2k3/4p3/6P1/6P1/5P2/6p1/8/1N2K3 w - - 0 1",
+         PkMove::pawnXPawn(WHITE, 5, 1, 6, 2));
+
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "4k3/4p3/4p3/8/4P3/8/5P2/1N2K3 w - - 0 1",
+         PkMove::pawnXPiece(WHITE, 5, 1, 4, 0, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "4k3/4p3/4p3/8/4P3/8/5P2/1N2K3 w - - 0 1",
+         PkMove::pawnXPiece(WHITE, 5, 0, 4, 0, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "4k3/4p3/8/8/4P3/4p3/5P2/1N2K3 w - - 0 1",
+         PkMove::pawnXPiece(WHITE, 5, 1, 4, 1, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "4k3/4p3/8/8/4P3/4p3/5P2/1N2K3 w - - 0 1",
+         PkMove::pawnXPiece(WHITE, 5, 0, 4, 1, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "4k3/8/8/4P3/4p3/4p3/5P2/1N2K3 w - - 0 1",
+         PkMove::pawnXPiece(WHITE, 5, 0, 4, 2, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "4k3/8/8/4P3/4p3/4p3/5P2/1N2K3 w - - 0 1",
+         PkMove::pawnXPiece(WHITE, 5, 1, 4, 2, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n2k3/4p3/8/5p2/8/5P2/5P2/4K3 w - - 0 1",
+         PkMove::pawnXPiece(BLACK, 4, 0, 5, 2, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n2k3/4p3/8/5p2/8/5P2/5P2/4K3 w - - 0 1",
+         PkMove::pawnXPiece(BLACK, 4, 1, 5, 2, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n2k3/4p3/5P2/5p2/8/8/5P2/4K3 w - - 0 1",
+         PkMove::pawnXPiece(BLACK, 4, 0, 5, 1, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n2k3/4p3/5P2/5p2/8/8/5P2/4K3 w - - 0 1",
+         PkMove::pawnXPiece(BLACK, 4, 1, 5, 1, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n2k3/4p3/5P2/8/5P2/5p2/8/4K3 w - - 0 1",
+         PkMove::pawnXPiece(BLACK, 4, 0, 5, 0, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n2k3/4p3/5P2/8/5P2/5p2/8/4K3 w - - 0 1",
+         PkMove::pawnXPiece(BLACK, 4, 1, 5, 0, PieceType::KNIGHT));
+
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "4R3/1k2p3/4p3/8/8/8/1K3P2/1N6 w - - 0 1",
+         PkMove::pawnXPieceProm(WHITE, 5, 1, 4, PieceType::KNIGHT, PieceType::ROOK));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n6/1k2p3/8/8/8/5P2/1K3P2/5b2 w - - 0 1",
+         PkMove::pawnXPieceProm(BLACK, 4, 0, 5, PieceType::KNIGHT, PieceType::LIGHT_BISHOP));
+
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n6/1k2p3/6P1/8/8/5P2/8/1N2K3 w - - 0 1",
+         PkMove::pawnXPromPawn(WHITE, 5, 0, 6, 0, 4));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n6/1k2p3/6P1/8/8/5P2/8/1N2K3 w - - 0 1",
+         PkMove::pawnXPromPawn(WHITE, 5, 1, 6, 0, 4));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n6/1k2p3/8/8/3p4/K4P2/8/1N6 w - - 0 1",
+         PkMove::pawnXPromPawn(BLACK, 4, 0, 3, 0, 5));
+    test("1n2k3/4p3/8/5P2/5P2/5p2/8/1N2K3 w - - 0 1", "1n2k3/4p3/6P1/8/5P2/8/8/1N2K3 w - - 0 1",
+         PkMove::pawnXPromPawn(WHITE, 5, 1, 6, 0, 5));
+    test("1n2k3/4p3/6p1/5P2/5P2/6p1/8/1N2K3 w - - 0 1", "1n2k3/4p3/6P1/6p1/5P2/8/8/1N2K3 w - - 0 1",
+         PkMove::pawnXPromPawn(WHITE, 5, 1, 6, 1, 6));
+    test("1n2k3/4p3/6p1/5PP1/5P2/6p1/8/1N2K3 w - - 0 1", "1n2k3/4p1P1/6p1/6P1/5P2/8/8/1N2K3 w - - 0 1",
+         PkMove::pawnXPromPawn(WHITE, 5, 1, 6, 2, 6));
+    test("1n2k3/4p3/8/5P2/5p2/5p2/8/1N2K3 w - - 0 1", "1n2k3/4p3/8/8/5p2/8/6p1/1N2K3 w - - 0 1",
+         PkMove::pawnXPromPawn(BLACK, 5, 0, 6, 0, 5));
+
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n4Q1/1k2p3/8/8/8/5P2/8/1N2K3 w - - 0 1",
+         PkMove::pawnXPromPawnProm(WHITE, 5, 1, 6, 4, PieceType::QUEEN));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n6/1k2p3/8/8/8/K4P2/8/1N1n4 w - - 0 1",
+         PkMove::pawnXPromPawnProm(BLACK, 4, 0, 3, 5, PieceType::KNIGHT));
+
+    test("4k3/4p3/8/8/8/8/2P5/4K3 w - - 0 1", "4k3/4p3/8/8/8/8/8/4K3 w - - 0 1",
+         PkMove::pieceXPawn(BLACK, 2, 0));
+    test("4k3/4p3/8/8/8/8/2P5/4K3 w - - 0 1", "4k3/8/8/8/8/8/2P5/4K3 w - - 0 1",
+         PkMove::pieceXPawn(WHITE, 4, 0));
+
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "1n2k3/4p3/4p3/8/8/5P2/5P2/4K3 w - - 0 1",
+         PkMove::pieceXPiece(BLACK, PieceType::KNIGHT));
+    test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "4k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1",
+         PkMove::pieceXPiece(WHITE, PieceType::KNIGHT));
+}

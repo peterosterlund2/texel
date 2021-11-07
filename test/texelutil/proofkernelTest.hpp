@@ -36,6 +36,7 @@ public:
     static void testGoalPossible();
     static void testMoveToString();
     static void testMoveGen();
+    static void testMakeMove();
 
 private:
     static void testMove(const Position& pos, const ProofKernel& pk,

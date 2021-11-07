@@ -169,6 +169,10 @@ private:
         /** Color of promotion square. */
         SquareColor promotionSquareType(PieceColor c) const;
 
+        /** Get/set internal data. For unMakeMove(). */
+        U8 getData() const { return data; }
+        void setData(U8 d) { data = d; }
+
     private:
         U8 data = 1;
         SquareColor promSquare[2]; // Color of promotion square for white/black
@@ -202,6 +206,30 @@ private:
      *  "Piece takes piece" moves are not generated. */
     void genMoves(std::vector<PkMove>& moves);
 
+    struct PkUndoInfo {
+        void addColData(int x, U8 data) { colData[nColData++] = { x, data }; }
+        void addCntData(int c, int p, int delta) { cntData[nCntData++] = { c, p, delta }; }
+
+        struct ColData {
+            int colNo;
+            U8 data;
+        };
+        std::array<ColData, 3> colData;
+        int nColData = 0;
+
+        struct CntData {
+            int color;
+            int piece;
+            int delta;
+        };
+        std::array<CntData, 3> cntData;
+        int nCntData = 0;
+    };
+
+    /** Make a move and store undo information in "ui". */
+    void makeMove(const PkMove& m, PkUndoInfo& ui);
+    /** Undo a move previously made by makeMove(). */
+    void unMakeMove(const PkMove& m, PkUndoInfo& ui);
 };
 
 /** Convert a PkMove to human readable string representation. */
