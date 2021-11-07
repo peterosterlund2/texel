@@ -178,6 +178,10 @@ private:
     int excessCnt[2][nPieceTypes];  // pieceCnt - goalCnt
     int remainingMoves;
 
+    /** Extract pawn structure and piece counts from a position. */
+    static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
+                           int (&pieceCnt)[2][nPieceTypes]);
+
     /** Return true if current state is a goal state. */
     bool isGoal() const;
 
@@ -191,9 +195,6 @@ private:
      *  "Piece takes piece" moves are not generated. */
     void genMoves(std::vector<PkMove>& moves);
 
-    /** Extract pawn structure and piece counts from a position. */
-    static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
-                           int (&pieceCnt)[2][nPieceTypes]);
 };
 
 /** Convert a PkMove to human readable string representation. */

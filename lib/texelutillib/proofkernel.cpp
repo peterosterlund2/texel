@@ -65,11 +65,12 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U6
         int yDir  = c == PieceColor::WHITE ? 1 : -1;
         for (int x = 0; x < 8; x++) {
             PawnColumn& col = columns[x];
-            bool promForward = !isBlocked(x, promY) && !isBlocked(x, promY - yDir);
+            bool blocked7 = isBlocked(x, promY - yDir);
+            bool promForward = !blocked7 && !isBlocked(x, promY);
             bool kingDiagBlock = blockedByKing(x-1, promY, c) || blockedByKing(x+1, promY, c);
             promForward &= !kingDiagBlock;
-            bool promLeft = !kingDiagBlock && x > 0 && !isBlocked(x-1, promY);
-            bool promRight = !kingDiagBlock && x < 7 && !isBlocked(x+1, promY);
+            bool promLeft = !blocked7 && !kingDiagBlock && x > 0 && !isBlocked(x-1, promY);
+            bool promRight = !blocked7 && !kingDiagBlock && x < 7 && !isBlocked(x+1, promY);
             bool rqPromote = !blockedByKing(x, promY, c);
             col.setCanPromote(c, promLeft, promForward, promRight, rqPromote);
         }
