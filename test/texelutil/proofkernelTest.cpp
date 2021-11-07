@@ -24,7 +24,6 @@
  */
 
 #include "proofkernelTest.hpp"
-#include "proofkernel.hpp"
 #include "proofgame.hpp"
 #include "position.hpp"
 #include "textio.hpp"
@@ -422,6 +421,68 @@ TEST(ProofKernelTest, testMoveGen) {
 }
 
 void
+ProofKernelTest::testMove(const Position& pos, const ProofKernel& pk,
+                          const ProofKernel::PkMove& m) {
+    using PieceColor = ProofKernel::PieceColor;
+    using PieceType = ProofKernel::PieceType;
+    using PawnColumn = ProofKernel::PawnColumn;
+    using SquareColor = ProofKernel::SquareColor;
+
+    std::string fen = TextIO::toFEN(pos);
+    PieceType taken;
+    if (m.otherPromotionFile != -1) {
+        ASSERT_TRUE(m.otherPromotionFile >= 0);
+        ASSERT_TRUE(m.otherPromotionFile < 8);
+        const PawnColumn& col = pk.columns[m.otherPromotionFile];
+        ASSERT_TRUE(col.nPawns() > 0);
+        if (m.color == PieceColor::WHITE) {
+            ASSERT_EQ(PieceColor::BLACK, col.getPawn(0));
+        } else {
+            ASSERT_EQ(PieceColor::WHITE, col.getPawn(col.nPawns() - 1));
+        }
+        taken = PieceType::PAWN;
+    } else {
+        taken = m.takenPiece;
+    }
+    if (m.fromFile != -1) {
+        ASSERT_TRUE(m.fromFile >= 0);
+        ASSERT_TRUE(m.fromFile < 8);
+        const PawnColumn& col = pk.columns[m.fromFile];
+        ASSERT_TRUE(m.fromIdx >= 0);
+        ASSERT_TRUE(m.fromIdx < col.nPawns());
+    }
+    PieceColor oc = m.color == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE;
+    ASSERT_TRUE(pk.pieceCnt[oc][taken] > 0) << "fen: " << fen << " move: " << toString(m);
+    if (m.toFile != -1) {
+        ASSERT_TRUE(m.toFile >= 0);
+        ASSERT_TRUE(m.toFile < 8);
+        const PawnColumn& col = pk.columns[m.toFile];
+        if (m.promotedPiece == PieceType::EMPTY) {
+            ASSERT_TRUE(m.toIdx >= 0);
+            if (m.takenPiece == PieceType::PAWN) {
+                ASSERT_TRUE(m.toIdx < col.nPawns());
+            } else {
+                ASSERT_TRUE(m.toIdx <= col.nPawns());
+            }
+        } else {
+            if (m.color == PieceColor::WHITE) {
+                ASSERT_EQ(pk.columns[m.fromFile].nPawns()-1, m.fromIdx);
+            } else {
+                ASSERT_EQ(0, m.fromIdx);
+            }
+            ASSERT_TRUE(m.promotedPiece >= PieceType::QUEEN);
+            ASSERT_TRUE(m.promotedPiece <= PieceType::KNIGHT);
+            if (m.promotedPiece == PieceType::DARK_BISHOP) {
+                ASSERT_EQ(SquareColor::DARK, col.promotionSquareType(m.color));
+            } else if (m.promotedPiece == PieceType::LIGHT_BISHOP) {
+                ASSERT_EQ(SquareColor::LIGHT, col.promotionSquareType(m.color));
+            }
+            ASSERT_TRUE(pk.pieceCnt[m.color][PieceType::PAWN] > 0);
+        }
+    }
+}
+
+void
 ProofKernelTest::testMoveGen() {
     using PkMove = ProofKernel::PkMove;
 
@@ -433,8 +494,10 @@ ProofKernelTest::testMoveGen() {
         std::vector<PkMove> moves;
         pk.genMoves(moves);
         std::vector<std::string> strMoves;
-        for (const PkMove& m : moves)
+        for (const PkMove& m : moves) {
+            testMove(startPos, pk, m);
             strMoves.push_back(toString(m));
+        }
         std::sort(strMoves.begin(), strMoves.end());
         std::sort(expected.begin(), expected.end());
         ASSERT_EQ(expected, strMoves)

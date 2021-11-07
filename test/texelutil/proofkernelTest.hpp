@@ -26,6 +26,7 @@
 #ifndef PROOFKERNELTEST_HPP_
 #define PROOFKERNELTEST_HPP_
 
+#include "proofkernel.hpp"
 
 class ProofKernelTest {
 public:
@@ -33,10 +34,12 @@ public:
     static void testPawnColPromotion();
     static void testGoal();
     static void testGoalPossible();
-    static void testMoveGen();
     static void testMoveToString();
+    static void testMoveGen();
 
 private:
+    static void testMove(const Position& pos, const ProofKernel& pk,
+                         const ProofKernel::PkMove& m);
 };
 
 #endif /* PROOFKERNELTEST_HPP_ */
