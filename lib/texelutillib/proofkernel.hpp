@@ -45,6 +45,9 @@ public:
     /** Constructor. */
     ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked);
 
+    bool operator==(const ProofKernel& other) const;
+    bool operator!=(const ProofKernel& other) const;
+
     enum PieceColor {
         WHITE,
         BLACK,
@@ -119,6 +122,10 @@ private:
     public:
         /** Constructor. */
         PawnColumn(int x = 0);
+
+        /** Return true if the state that can change during search is equal. */
+        bool operator==(const PawnColumn& other) const;
+        bool operator!=(const PawnColumn& other) const;
 
         /** Set the goal configuration for this column. */
         void setGoal(const PawnColumn& goal);
@@ -200,6 +207,11 @@ private:
 /** Convert a PkMove to human readable string representation. */
 std::string toString(const ProofKernel::PkMove& m);
 
+
+inline bool
+ProofKernel::operator!=(const ProofKernel& other) const {
+    return !(*this == other);
+}
 
 inline ProofKernel::PkMove
 ProofKernel::PkMove::pawnXPawn(PieceColor c, int fromFile, int fromIdx, int toFile, int toIdx) {
@@ -292,6 +304,16 @@ ProofKernel::PkMove::pieceXPiece(PieceColor c, PieceType taken) {
     m.toIdx = -1;
     m.promotedPiece = EMPTY;
     return m;
+}
+
+inline bool
+ProofKernel::PawnColumn::operator==(const ProofKernel::PawnColumn& other) const {
+    return data == other.data;
+}
+
+inline bool
+ProofKernel::PawnColumn::operator!=(const ProofKernel::PawnColumn& other) const {
+    return !(*this == other);
 }
 
 inline int

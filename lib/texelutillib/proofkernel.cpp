@@ -117,6 +117,26 @@ void ProofKernel::posToState(const Position& pos, std::array<PawnColumn,8>& colu
 }
 
 bool
+ProofKernel::operator==(const ProofKernel& other) const {
+    for (int i = 0; i < 8; i++)
+        if (columns[i] != other.columns[i])
+            return false;
+
+    for (int c = 0; c < 2; c++) {
+        for (int p = 0; p < nPieceTypes; p++) {
+            if (pieceCnt[c][p] != other.pieceCnt[c][p])
+                return false;
+            if (goalCnt[c][p] != other.goalCnt[c][p])
+                return false;
+            if (excessCnt[c][p] != other.excessCnt[c][p])
+                return false;
+        }
+    }
+
+    return true;
+}
+
+bool
 ProofKernel::findProofKernel(std::vector<PkMove>& result) {
     if (!goalPossible())
         return false;
