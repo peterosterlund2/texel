@@ -443,26 +443,26 @@ ProofKernel::genMoves(std::vector<PkMove>& moves) {
                 PieceColor c = col.getPawn(fromIdx);
                 PieceColor oc = c == WHITE ? BLACK : WHITE;
                 for (int promFile = 0; promFile < 8; promFile++) {
-                    if (!columns[promFile].nAllowedPromotions(oc, false))
+                    if (columns[promFile].nAllowedPromotions(oc, false) <= 0)
                         continue;
-                    if (promFile == x && fromIdx == col.nPawns() - 1)
-                        continue; // Promotion from file x, one less pawn available
+                    int fromIdxDelta = (promFile == x && c == WHITE) ? -1 : 0;
                     for (int toIdx = 0; toIdx <= oCol.nPawns(); toIdx++) {
                         if (promFile == x + dir && toIdx == oCol.nPawns())
                             continue; // Promotion from file x+dir, one less pawn available
-                        moves.push_back(PkMove::pawnXPromPawn(c, x, fromIdx, x + dir, toIdx, promFile));
+                        moves.push_back(PkMove::pawnXPromPawn(c, x, fromIdx + fromIdxDelta,
+                                                              x + dir, toIdx, promFile));
                     }
 
                     // Promotion
-                    if ((c == WHITE && fromIdx != col.nPawns() - (promFile == x ? 2 : 1)) ||
+                    if ((c == WHITE && fromIdx != col.nPawns() - 1) ||
                         (c == BLACK && fromIdx != 0))
                         continue; // Only most advanced pawn can promote
                     if (!col.canPromote(c, dir == -1 ? Direction::LEFT : Direction::RIGHT))
                         continue;
                     for (int prom = QUEEN; prom < PAWN; prom++)
                         if (canPromote(col, c, prom))
-                            moves.push_back(PkMove::pawnXPromPawnProm(c, x, fromIdx, x + dir,
-                                                                      promFile, (PieceType)prom));
+                            moves.push_back(PkMove::pawnXPromPawnProm(c, x, fromIdx + fromIdxDelta,
+                                                                      x + dir, promFile, (PieceType)prom));
                 }
             }
         }

@@ -434,7 +434,7 @@ ProofKernelTest::testMove(const Position& pos, const ProofKernel& pk,
         ASSERT_TRUE(m.otherPromotionFile >= 0);
         ASSERT_TRUE(m.otherPromotionFile < 8);
         const PawnColumn& col = pk.columns[m.otherPromotionFile];
-        ASSERT_TRUE(col.nPawns() > 0);
+        ASSERT_TRUE(col.nPawns() > 0) << "fen: " << fen << " move: " << toString(m);
         if (m.color == PieceColor::WHITE) {
             ASSERT_EQ(PieceColor::BLACK, col.getPawn(0));
         } else {
@@ -466,7 +466,8 @@ ProofKernelTest::testMove(const Position& pos, const ProofKernel& pk,
             }
         } else {
             if (m.color == PieceColor::WHITE) {
-                ASSERT_EQ(pk.columns[m.fromFile].nPawns()-1, m.fromIdx);
+                int d = (m.otherPromotionFile == m.fromFile) ? 2 : 1;
+                ASSERT_EQ(pk.columns[m.fromFile].nPawns()-d, m.fromIdx);
             } else {
                 ASSERT_EQ(0, m.fromIdx);
             }
@@ -527,12 +528,89 @@ ProofKernelTest::testMoveGen() {
            "bPe0xdf0", "bPe0xdfQ", "bPe0xdfR", "bPe0xdfB", "bPe0xdfN",
            "bxPd0", "wxPe0"
          });
+    test("4k3/p6p/8/8/8/8/P7/4K3 w - - 0 1", "4k3/n7/8/8/1P6/8/8/4K3 w - - 0 1",
+         {"wPa0xhb0", "wxPa1", "wxPh0", "bxPa0"});
+    test("4k3/p6p/8/8/8/8/7P/4K3 w - - 0 1", "4k3/7n/8/6P1/8/8/8/4K3 w - - 0 1",
+         {"wPh0xag0", "wxPa0", "wxPh1", "bxPh0"});
 
     test("4k3/4pp2/4p3/8/8/4P3/4PP2/4K3 w - - 0 1", "1n2k1n1/8/8/8/8/8/8/1N2K1N1 w - - 0 1",
          { "wPe0xPf1", "wPe1xPf1", "bPe2xPf0", "bPe3xPf0",
            "wPf0xPe2", "wPf0xPe3", "bPf1xPe0", "bPf1xPe1",
            "bxPe0", "bxPe1", "wxPe2", "wxPe3", "bxPf0", "wxPf1"
          });
+
+    test("4k3/pp6/8/8/8/8/PP6/4K3 w - - 0 1", "1n2k3/8/8/8/8/8/8/1NN1K3 w - - 0 1",
+         { "wPa0xPb1", "wPb0xPa1", "bPa1xPb0", "bPb1xPa0", "wxPa1", "wxPb1", "bxPa0", "bxPb0" });
+    test("4k3/6pp/8/8/8/8/6PP/4K3 w - - 0 1", "1n2k3/8/8/8/8/8/8/1NN1K3 w - - 0 1",
+         { "wPg0xPh1", "wPh0xPg1", "bPg1xPh0", "bPh1xPg0", "wxPg1", "wxPh1", "bxPg0", "bxPh0" });
+
+    test("4k3/2p5/1p6/1p6/2P5/2P5/1PP5/4K3 w - - 0 1", "1n2k3/8/8/8/8/8/8/1NN1K3 w - - 0 1",
+         { "wPb0xPc3", "wPc0xPb1", "wPc0xPb2", "wPc1xPb1", "wPc1xPb2", "wPc2xPb1", "wPc2xPb2",
+           "bPc3xPb0", "bPb1xPc0", "bPb2xPc0", "bPb1xPc1", "bPb2xPc1", "bPb1xPc2", "bPb2xPc2",
+           "wxPb1", "wxPb2", "wxPc3", "bxPb0", "bxPc0", "bxPc1", "bxPc2"
+         });
+
+    test("1n2k3/p6p/8/8/8/8/P6P/1N2K3 w - - 0 1", "4k3/p7/8/6p1/1P6/8/7P/4K3 w - - 0 1",
+         {"wPa0xNb0", "wPh0xNg0", "wxPa1", "wxPh1", "bPa1xNb0", "bPh1xNg0", "bxPa0", "bxPh0"});
+
+    test("1nbqkr2/8/8/8/8/8/P7/4K3 w - - 0 1", "4k3/8/8/8/1P6/8/8/4K3 w - - 0 1",
+         {"wPa0xNb0", "wPa0xNbN",  "wPa0xNbB", "wPa0xNbR", "wPa0xNbQ",
+          "wPa0xBb0", "wPa0xBbN",  "wPa0xBbB", "wPa0xBbR", "wPa0xBbQ",
+          "wPa0xRb0", "wPa0xRbN",  "wPa0xRbB", "wPa0xRbR", "wPa0xRbQ",
+          "wPa0xQb0", "wPa0xQbN",  "wPa0xQbB", "wPa0xQbR", "wPa0xQbQ",
+          "bxPa0"
+         });
+
+    test("4k3/p1p5/8/P7/p7/p7/P7/4K3 w - - 0 1", "4k3/p7/1P6/8/p7/p7/P7/4K3 w - - 0 1",
+         {"wPa0xcb0", "wPa3xcb0", "wxPa1", "wxPa2", "wxPa4", "wxPc0", "bxPa0", "bxPa3"});
+
+    test("4k3/1p6/8/8/1P6/1p6/8/4K3 w - - 0 1", "4k3/1p6/8/2P5/8/8/8/4K3 w - - 0 1",
+         {"wPb0xba0", "wPb0xbc0", "wxPb0", "wxPb2", "bxPb1"});
+    test("4k3/8/8/8/1P6/1p6/8/4K3 w - - 0 1", "4k3/8/8/2P5/8/8/8/4K3 w - - 0 1",
+         {"wPb0xba0", "wPb0xbaN", "wPb0xbaB", "wPb0xbaR", "wPb0xbaQ",
+          "wPb0xbc0", "wPb0xbcN", "wPb0xbcB", "wPb0xbcR", "wPb0xbcQ",
+          "bPb0xba0", "bPb0xbaN", "bPb0xbaB", "bPb0xbaR", "bPb0xbaQ",
+          "bPb0xbc0", "bPb0xbcN", "bPb0xbcB", "bPb0xbcR", "bPb0xbcQ",
+          "wxPb0", "bxPb1"
+         });
+
+    test("4k3/8/8/1P6/1p6/1p6/8/4K3 w - - 0 1", "4k3/8/2P5/8/8/8/8/4K3 w - - 0 1",
+         {"wPb1xba0", "wPb1xbaN", "wPb1xbaB", "wPb1xbaR", "wPb1xbaQ",
+          "wPb1xbc0", "wPb1xbcN", "wPb1xbcB", "wPb1xbcR", "wPb1xbcQ",
+          "bPb0xba0", "bPb0xbaN", "bPb0xbaB", "bPb0xbaR", "bPb0xbaQ",
+          "bPb0xbc0", "bPb0xbcN", "bPb0xbcB", "bPb0xbcR", "bPb0xbcQ",
+          "bPb1xba0", "bPb1xbc0", "wxPb0", "wxPb1", "bxPb2"
+         });
+
+    test("r3k1r1/7p/8/1P6/8/8/8/4K3 w q - 0 1", "r3k3/8/8/1N5p/8/8/8/4K3 w q - 0 1",
+         {"wPb0xRa0",
+          "wPb0xRc0", "wPb0xRcN", "wPb0xRcB", "wPb0xRcR", "wPb0xRcQ",
+          "bPh0xbg0", "bPh0xbgN", "bPh0xbgB", "bPh0xbgR", "bPh0xbgQ", 
+          "wxPh0", "bxPb0"
+         });
+    test("1r2k2r/p7/8/6P1/8/8/8/4K3 w k - 0 1", "1r2k2r/8/8/6N1/8/8/8/4K3 w k - 0 1",
+         {"wPg0xRh0", "wPg0xah0",
+          "wPg0xRf0", "wPg0xRfN", "wPg0xRfB", "wPg0xRfR", "wPg0xRfQ",
+          "wPg0xaf0", "wPg0xafN", "wPg0xafB", "wPg0xafR", "wPg0xafQ",
+          "bPa0xgb0", "bPa0xgbN", "bPa0xgbB", "bPa0xgbR", "bPa0xgbQ",
+          "wxPa0", "bxPg0"
+         });
+
+    test("r3k1r1/7p/8/8/4P3/8/8/4K3 w q - 0 1", "r3k3/8/8/1N5p/8/8/8/4K3 w q - 0 1",
+         {"wPe0xRd0", "wPe0xRdN", "wPe0xRdB",
+          "wPe0xRf0", "wPe0xRfN", "wPe0xRfB",
+          "wxPh0", "bxPe0"
+         });
+    test("4k3/8/8/4p3/8/8/7P/R3K1R1 w Q - 0 1", "4k3/8/8/4n3/7P/8/8/R3K1R1 w Q - 0 1",
+         {"bPe0xRd0", "bPe0xRdN", "bPe0xRdB",
+          "bPe0xRf0", "bPe0xRfN", "bPe0xRfB",
+          "bxPh0", "wxPe0"
+         });
+
+    test("r3k1r1/7p/8/8/3P4/8/8/4K3 w q - 0 1", "r3k1r1/8/8/8/8/2N5/8/4K3 w q - 0 1",
+         {"wPd0xRc0", "wPd0xRe0", "wPd0xhc0", "wPd0xhe0", "wxPh0", "bxPd0"});
+    test("4k3/8/8/3p4/8/8/7P/R3K1R1 w Q - 0 1", "4k3/8/8/4n3/8/8/8/R3K1R1 w Q - 0 1",
+         {"bPd0xRc0", "bPd0xRe0", "bPd0xhc0", "bPd0xhe0", "wxPd0", "bxPh0"});
 }
 
 TEST(ProofKernelTest, testMakeMove) {
