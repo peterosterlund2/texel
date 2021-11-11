@@ -189,9 +189,15 @@ private:
     int excessCnt[2][nPieceTypes];  // pieceCnt - goalCnt
     int remainingMoves;
 
+    std::vector<std::vector<PkMove>> moveStack;
+    U64 nodes; // Number of visited search nodes
+
     /** Extract pawn structure and piece counts from a position. */
     static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
                            int (&pieceCnt)[2][nPieceTypes]);
+
+    /** Recursive search function used by findProofKernel(). */
+    bool search(int ply, std::vector<PkMove>& path);
 
     /** Return true if current state is a goal state. */
     bool isGoal() const;

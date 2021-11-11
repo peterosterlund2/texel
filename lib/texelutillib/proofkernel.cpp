@@ -138,12 +138,57 @@ ProofKernel::operator==(const ProofKernel& other) const {
 
 bool
 ProofKernel::findProofKernel(std::vector<PkMove>& result) {
+    result.clear();
+
+    // FIXME!! Handle forced moves
+
     if (!goalPossible())
         return false;
 
-    // FIXME!! Implement
-    result.clear();
+    nodes = 0;
+    moveStack.resize(remainingMoves);
+
+    std::vector<PkMove> path;
+    bool found = search(0, path);
+    std::cerr << "found:" << (found?1:0) << " nodes:" << nodes << std::endl;
+    if (!found)
+        return false;
+
+    result.insert(result.end(), path.begin(), path.end());
+
+
     return true;
+}
+
+bool
+ProofKernel::search(int ply, std::vector<PkMove>& path) {
+    nodes++;
+
+    if (isGoal())
+        return true;
+    if (remainingMoves <= 0 || !goalPossible())
+        return false;
+
+    std::vector<PkMove>& moves = moveStack[ply];
+    genMoves(moves);
+    for (const PkMove& m : moves) {
+        PkUndoInfo ui;
+
+        makeMove(m, ui);
+        path.push_back(m);
+        remainingMoves--;
+
+        bool found = search(ply + 1, path);
+
+        remainingMoves++;
+        unMakeMove(m, ui);
+
+        if (found)
+            return true;
+
+        path.pop_back();
+    }
+    return false;
 }
 
 ProofKernel::PawnColumn::PawnColumn(int x) {

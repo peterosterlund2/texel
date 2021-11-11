@@ -725,3 +725,50 @@ ProofKernelTest::testMakeMove() {
     test("1n2k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1", "4k3/4p3/4p3/8/8/5P2/5P2/1N2K3 w - - 0 1",
          PkMove::pieceXPiece(WHITE, PieceType::KNIGHT));
 }
+
+TEST(ProofKernelTest, testSearch) {
+    ProofKernelTest::testSearch();
+}
+
+void
+ProofKernelTest::testSearch() {
+    using PkMove = ProofKernel::PkMove;
+
+    auto test = [](const std::string& start, const std::string& goal,
+                   bool hasSolution, const std::string& expectedPath) {
+        Position startPos = TextIO::readFEN(start);
+        Position goalPos = TextIO::readFEN(goal);
+
+        ProofKernel pk (startPos, goalPos, computeBlocked(startPos, goalPos));
+
+        std::vector<PkMove> moves;
+        bool found = pk.findProofKernel(moves);
+        ASSERT_EQ(hasSolution, found);
+
+        if (found) {
+            std::string path;
+            for (const PkMove& m : moves) {
+                if (!path.empty())
+                    path += ' ';
+                path += toString(m);
+            }
+            std::cout << "moves: " << path << std::endl;
+            if (expectedPath != "*") {
+                ASSERT_EQ(expectedPath, path);
+            }
+        }
+    };
+
+    test("4k3/pp6/8/8/8/8/PP6/4K3 w - - 0 1", "1b2k3/8/8/8/8/8/8/BN2K3 w - - 0 1",
+         true, "wPa0xPb1");
+    test("4k3/pp6/8/8/8/8/PP6/4K3 w - - 0 1", "1b2k3/8/8/8/8/8/8/NB2K3 w - - 0 1",
+         false, "");
+    test("4k3/pp6/8/8/8/8/PP6/4K3 w - - 0 1", "b3k3/8/8/8/8/8/8/NB2K3 w - - 0 1",
+         true, "wPb0xPa1");
+
+    const std::string startFEN = TextIO::startPosFEN;
+    test(startFEN, "1r1n4/1N1qb2N/kr2r1r1/1RpN1K2/1R2B1Q1/bP3Q1B/B1n2Q2/1r1Bb1b1 w - - 0 1",
+         false, "");
+    test(startFEN, "1Q1nkbr1/4b1Qq/2pn2N1/r1P2R1b/r2NqP2/Q2R4/r1n5/1RK1qb2 w - - 0 1",
+         true, "*");
+}

@@ -37,6 +37,7 @@ public:
     static void testMoveToString();
     static void testMoveGen();
     static void testMakeMove();
+    static void testSearch();
 
 private:
     static void testMove(const Position& pos, const ProofKernel& pk,
