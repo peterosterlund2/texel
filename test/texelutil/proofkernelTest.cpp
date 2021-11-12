@@ -396,18 +396,18 @@ ProofKernelTest::testMoveToString() {
 
     ASSERT_EQ("bPf1xQe0", toString(PkMove::pawnXPiece(PieceColor::BLACK, 5, 1, 4, 0, PieceType::QUEEN)));
     ASSERT_EQ("wPh0xRg2", toString(PkMove::pawnXPiece(PieceColor::WHITE, 7, 0, 6, 2, PieceType::ROOK)));
-    ASSERT_EQ("wPc1xBd1", toString(PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::LIGHT_BISHOP)));
-    ASSERT_EQ("wPc1xBd1", toString(PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::DARK_BISHOP)));
+    ASSERT_EQ("wPc1xLBd1", toString(PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::LIGHT_BISHOP)));
+    ASSERT_EQ("wPc1xDBd1", toString(PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::DARK_BISHOP)));
     ASSERT_EQ("wPc1xNd1", toString(PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::KNIGHT)));
 
-    ASSERT_EQ("wPg0xBfQ", toString(PkMove::pawnXPieceProm(PieceColor::WHITE, 6, 0, 5,
-                                                          PieceType::DARK_BISHOP, PieceType::QUEEN)));
+    ASSERT_EQ("wPg0xDBfQ", toString(PkMove::pawnXPieceProm(PieceColor::WHITE, 6, 0, 5,
+                                                           PieceType::DARK_BISHOP, PieceType::QUEEN)));
 
     ASSERT_EQ("bPa1xhb1", toString(PkMove::pawnXPromPawn(PieceColor::BLACK, 0, 1, 1, 1, 7)));
     ASSERT_EQ("wPb0xga2", toString(PkMove::pawnXPromPawn(PieceColor::WHITE, 1, 0, 0, 2, 6)));
 
-    ASSERT_EQ("wPb0xgaB", toString(PkMove::pawnXPromPawnProm(PieceColor::WHITE, 1, 0, 0, 6,
-                                                             PieceType::LIGHT_BISHOP)));
+    ASSERT_EQ("wPb0xgaLB", toString(PkMove::pawnXPromPawnProm(PieceColor::WHITE, 1, 0, 0, 6,
+                                                              PieceType::LIGHT_BISHOP)));
 
     ASSERT_EQ("bxPc1", toString(PkMove::pieceXPawn(PieceColor::BLACK, 2, 1)));
     ASSERT_EQ("wxPf2", toString(PkMove::pieceXPawn(PieceColor::WHITE, 5, 2)));
@@ -508,24 +508,24 @@ ProofKernelTest::testMoveGen() {
     test("1n2k3/4p3/8/8/8/8/4P3/4K3 w - - 0 1", "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
          {"wPe0xNd0", "wPe0xNf0", "wxPe1", "bxPe0"});
     test("1n2k3/4p3/8/8/8/8/4P3/4K1B1 w - - 0 1", "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
-         {"wPe0xNd0", "wPe0xNf0", "wxPe1", "bxPe0", "bPe1xBd0", "bPe1xBf0"});
+         {"wPe0xNd0", "wPe0xNf0", "wxPe1", "bxPe0", "bPe1xDBd0", "bPe1xDBf0"});
 
     // XXX No need to generate promotion moves when there is a move that creates
     // a passed pawn on the same file, since promotion of a passed pawn can be
     // handled in the next ply.
     test("4k3/4p3/8/8/8/8/2P5/4K3 w - - 0 1", "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
-         { "wPc0xeb0", "wPc0xebQ", "wPc0xebR", "wPc0xebB", "wPc0xebN",
-           "wPc0xed0", "wPc0xedQ", "wPc0xedR", "wPc0xedB", "wPc0xedN",
-           "bPe0xcd0", "bPe0xcdQ", "bPe0xcdR", "bPe0xcdB", "bPe0xcdN",
-           "bPe0xcf0", "bPe0xcfQ", "bPe0xcfR", "bPe0xcfB", "bPe0xcfN",
+         { "wPc0xeb0", "wPc0xebQ", "wPc0xebR", "wPc0xebDB", "wPc0xebN",
+           "wPc0xed0", "wPc0xedQ", "wPc0xedR", "wPc0xedDB", "wPc0xedN",
+           "bPe0xcd0", "bPe0xcdQ", "bPe0xcdR", "bPe0xcdLB", "bPe0xcdN",
+           "bPe0xcf0", "bPe0xcfQ", "bPe0xcfR", "bPe0xcfLB", "bPe0xcfN",
            "bxPc0", "wxPe0"
          });
     test("4k3/4p3/8/8/8/8/3P4/4K3 w - - 0 1", "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
          { "wPd0xPe0", "bPe0xPd0",
-           "wPd0xec0", "wPd0xecQ", "wPd0xecR", "wPd0xecB", "wPd0xecN",
-           "wPd0xee0", "wPd0xeeQ", "wPd0xeeR", "wPd0xeeB", "wPd0xeeN",
-           "bPe0xdd0", "bPe0xddQ", "bPe0xddR", "bPe0xddB", "bPe0xddN",
-           "bPe0xdf0", "bPe0xdfQ", "bPe0xdfR", "bPe0xdfB", "bPe0xdfN",
+           "wPd0xec0", "wPd0xecQ", "wPd0xecR", "wPd0xecLB", "wPd0xecN",
+           "wPd0xee0", "wPd0xeeQ", "wPd0xeeR", "wPd0xeeLB", "wPd0xeeN",
+           "bPe0xdd0", "bPe0xddQ", "bPe0xddR", "bPe0xddLB", "bPe0xddN",
+           "bPe0xdf0", "bPe0xdfQ", "bPe0xdfR", "bPe0xdfLB", "bPe0xdfN",
            "bxPd0", "wxPe0"
          });
     test("4k3/p6p/8/8/8/8/P7/4K3 w - - 0 1", "4k3/n7/8/8/1P6/8/8/4K3 w - - 0 1",
@@ -554,10 +554,10 @@ ProofKernelTest::testMoveGen() {
          {"wPa0xNb0", "wPh0xNg0", "wxPa1", "wxPh1", "bPa1xNb0", "bPh1xNg0", "bxPa0", "bxPh0"});
 
     test("1nbqkr2/8/8/8/8/8/P7/4K3 w - - 0 1", "4k3/8/8/8/1P6/8/8/4K3 w - - 0 1",
-         {"wPa0xNb0", "wPa0xNbN",  "wPa0xNbB", "wPa0xNbR", "wPa0xNbQ",
-          "wPa0xBb0", "wPa0xBbN",  "wPa0xBbB", "wPa0xBbR", "wPa0xBbQ",
-          "wPa0xRb0", "wPa0xRbN",  "wPa0xRbB", "wPa0xRbR", "wPa0xRbQ",
-          "wPa0xQb0", "wPa0xQbN",  "wPa0xQbB", "wPa0xQbR", "wPa0xQbQ",
+         {"wPa0xNb0",  "wPa0xNbN",  "wPa0xNbDB",  "wPa0xNbR",  "wPa0xNbQ",
+          "wPa0xLBb0", "wPa0xLBbN", "wPa0xLBbDB", "wPa0xLBbR", "wPa0xLBbQ",
+          "wPa0xRb0",  "wPa0xRbN",  "wPa0xRbDB",  "wPa0xRbR",  "wPa0xRbQ",
+          "wPa0xQb0",  "wPa0xQbN",  "wPa0xQbDB",  "wPa0xQbR",  "wPa0xQbQ",
           "bxPa0"
          });
 
@@ -567,43 +567,43 @@ ProofKernelTest::testMoveGen() {
     test("4k3/1p6/8/8/1P6/1p6/8/4K3 w - - 0 1", "4k3/1p6/8/2P5/8/8/8/4K3 w - - 0 1",
          {"wPb0xba0", "wPb0xbc0", "wxPb0", "wxPb2", "bxPb1"});
     test("4k3/8/8/8/1P6/1p6/8/4K3 w - - 0 1", "4k3/8/8/2P5/8/8/8/4K3 w - - 0 1",
-         {"wPb0xba0", "wPb0xbaN", "wPb0xbaB", "wPb0xbaR", "wPb0xbaQ",
-          "wPb0xbc0", "wPb0xbcN", "wPb0xbcB", "wPb0xbcR", "wPb0xbcQ",
-          "bPb0xba0", "bPb0xbaN", "bPb0xbaB", "bPb0xbaR", "bPb0xbaQ",
-          "bPb0xbc0", "bPb0xbcN", "bPb0xbcB", "bPb0xbcR", "bPb0xbcQ",
+         {"wPb0xba0", "wPb0xbaN", "wPb0xbaLB", "wPb0xbaR", "wPb0xbaQ",
+          "wPb0xbc0", "wPb0xbcN", "wPb0xbcLB", "wPb0xbcR", "wPb0xbcQ",
+          "bPb0xba0", "bPb0xbaN", "bPb0xbaDB", "bPb0xbaR", "bPb0xbaQ",
+          "bPb0xbc0", "bPb0xbcN", "bPb0xbcDB", "bPb0xbcR", "bPb0xbcQ",
           "wxPb0", "bxPb1"
          });
 
     test("4k3/8/8/1P6/1p6/1p6/8/4K3 w - - 0 1", "4k3/8/2P5/8/8/8/8/4K3 w - - 0 1",
-         {"wPb1xba0", "wPb1xbaN", "wPb1xbaB", "wPb1xbaR", "wPb1xbaQ",
-          "wPb1xbc0", "wPb1xbcN", "wPb1xbcB", "wPb1xbcR", "wPb1xbcQ",
-          "bPb0xba0", "bPb0xbaN", "bPb0xbaB", "bPb0xbaR", "bPb0xbaQ",
-          "bPb0xbc0", "bPb0xbcN", "bPb0xbcB", "bPb0xbcR", "bPb0xbcQ",
+         {"wPb1xba0", "wPb1xbaN", "wPb1xbaLB", "wPb1xbaR", "wPb1xbaQ",
+          "wPb1xbc0", "wPb1xbcN", "wPb1xbcLB", "wPb1xbcR", "wPb1xbcQ",
+          "bPb0xba0", "bPb0xbaN", "bPb0xbaDB", "bPb0xbaR", "bPb0xbaQ",
+          "bPb0xbc0", "bPb0xbcN", "bPb0xbcDB", "bPb0xbcR", "bPb0xbcQ",
           "bPb1xba0", "bPb1xbc0", "wxPb0", "wxPb1", "bxPb2"
          });
 
     test("r3k1r1/7p/8/1P6/8/8/8/4K3 w q - 0 1", "r3k3/8/8/1N5p/8/8/8/4K3 w q - 0 1",
          {"wPb0xRa0",
-          "wPb0xRc0", "wPb0xRcN", "wPb0xRcB", "wPb0xRcR", "wPb0xRcQ",
-          "bPh0xbg0", "bPh0xbgN", "bPh0xbgB", "bPh0xbgR", "bPh0xbgQ", 
+          "wPb0xRc0", "wPb0xRcN", "wPb0xRcLB", "wPb0xRcR", "wPb0xRcQ",
+          "bPh0xbg0", "bPh0xbgN", "bPh0xbgDB", "bPh0xbgR", "bPh0xbgQ", 
           "wxPh0", "bxPb0"
          });
     test("1r2k2r/p7/8/6P1/8/8/8/4K3 w k - 0 1", "1r2k2r/8/8/6N1/8/8/8/4K3 w k - 0 1",
          {"wPg0xRh0", "wPg0xah0",
-          "wPg0xRf0", "wPg0xRfN", "wPg0xRfB", "wPg0xRfR", "wPg0xRfQ",
-          "wPg0xaf0", "wPg0xafN", "wPg0xafB", "wPg0xafR", "wPg0xafQ",
-          "bPa0xgb0", "bPa0xgbN", "bPa0xgbB", "bPa0xgbR", "bPa0xgbQ",
+          "wPg0xRf0", "wPg0xRfN", "wPg0xRfDB", "wPg0xRfR", "wPg0xRfQ",
+          "wPg0xaf0", "wPg0xafN", "wPg0xafDB", "wPg0xafR", "wPg0xafQ",
+          "bPa0xgb0", "bPa0xgbN", "bPa0xgbLB", "bPa0xgbR", "bPa0xgbQ",
           "wxPa0", "bxPg0"
          });
 
     test("r3k1r1/7p/8/8/4P3/8/8/4K3 w q - 0 1", "r3k3/8/8/1N5p/8/8/8/4K3 w q - 0 1",
-         {"wPe0xRd0", "wPe0xRdN", "wPe0xRdB",
-          "wPe0xRf0", "wPe0xRfN", "wPe0xRfB",
+         {"wPe0xRd0", "wPe0xRdN", "wPe0xRdDB",
+          "wPe0xRf0", "wPe0xRfN", "wPe0xRfDB",
           "wxPh0", "bxPe0"
          });
     test("4k3/8/8/4p3/8/8/7P/R3K1R1 w Q - 0 1", "4k3/8/8/4n3/7P/8/8/R3K1R1 w Q - 0 1",
-         {"bPe0xRd0", "bPe0xRdN", "bPe0xRdB",
-          "bPe0xRf0", "bPe0xRfN", "bPe0xRfB",
+         {"bPe0xRd0", "bPe0xRdN", "bPe0xRdLB",
+          "bPe0xRf0", "bPe0xRfN", "bPe0xRfLB",
           "bxPh0", "wxPe0"
          });
 

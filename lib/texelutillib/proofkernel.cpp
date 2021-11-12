@@ -606,18 +606,13 @@ std::string toString(const ProofKernel::PkMove& m) {
 
     auto pieceName = [&ret](ProofKernel::PieceType p) -> std::string {
         switch (p) {
-        case ProofKernel::QUEEN:
-            return "Q";
-        case ProofKernel::ROOK:
-            return "R";
-        case ProofKernel::DARK_BISHOP: case ProofKernel::LIGHT_BISHOP:
-            return "B";
-        case ProofKernel::KNIGHT:
-            return "N";
-        case ProofKernel::PAWN:
-            return "P";
-        default:
-            assert(false);
+        case ProofKernel::QUEEN:        return "Q";
+        case ProofKernel::ROOK:         return "R";
+        case ProofKernel::DARK_BISHOP:  return "DB";
+        case ProofKernel::LIGHT_BISHOP: return "LB";
+        case ProofKernel::KNIGHT:       return "N";
+        case ProofKernel::PAWN:         return "P";
+        default:                        assert(false);
         };
     };
 
