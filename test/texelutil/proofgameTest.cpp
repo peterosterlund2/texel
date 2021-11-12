@@ -708,6 +708,11 @@ ProofGameTest::testEnPassant() {
             ProofGame ps("4k3/8/8/1pP5/B7/1P6/8/4K3 w - b6 0 1");
         }, ChessParseError);
     }
+    {
+        EXPECT_THROW({
+            ProofGame ps("1r2N1B1/1Np2K1R/pq2rQn1/nN4pr/k3bBpP/8/BN4N1/b4Qq1 b - h3 0 1");
+        }, ChessParseError);
+    }
 }
 
 TEST(ProofGameTest, testCaptureSquares) {

@@ -88,6 +88,8 @@ ProofGame::ProofGame(std::ostream& log, const std::string& goal, int a, int b,
                      bool dynamic, bool smallCache)
     : weightA(a), weightB(b), dynamic(dynamic), log(log) {
     goalPos = TextIO::readFEN(goal);
+    if (TextIO::toFEN(goalPos) != goal)
+        throw ChessParseError("Lossy FEN conversion");
     validatePieceCounts(goalPos);
 
     while (true) {

@@ -432,6 +432,10 @@ doProofGameCmd(int argc, char* argv[]) {
 static void
 doRevMoves(const std::string& fen) {
     Position pos = TextIO::readFEN(fen);
+    std::string correctedFen = TextIO::toFEN(pos);
+    if (correctedFen != fen)
+        std::cout << "Corrected FEN: " << correctedFen << std::endl;
+
     std::vector<UnMove> revMoves;
     RevMoveGen::genMoves(pos, revMoves, true);
 
