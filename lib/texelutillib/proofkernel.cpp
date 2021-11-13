@@ -167,6 +167,7 @@ ProofKernel::findProofKernel(std::vector<PkMove>& result) {
 
     nodes = 0;
     moveStack.resize(remainingMoves);
+    visited.resize(1 << 20);
 
     bool found = search(0, path);
     std::cerr << "found:" << (found?1:0) << " nodes:" << nodes << std::endl;
@@ -184,6 +185,13 @@ ProofKernel::search(int ply, std::vector<PkMove>& path) {
         return true;
     if (remainingMoves <= 0 || !goalPossible())
         return false;
+
+    State myState;
+    getState(myState);
+    U64 idx = myState.hashKey() & (visited.size() - 1);
+    if (visited[idx] == myState)
+        return false; // Already searched
+    visited[idx] = myState;
 
     std::vector<PkMove>& moves = moveStack[ply];
     genMoves(moves);
@@ -656,4 +664,18 @@ std::string toString(const ProofKernel::PkMove& m) {
     }
 
     return ret;
+}
+
+void
+ProofKernel::getState(State& state) const {
+    U64 pawns = 0;
+    for (int i = 0; i < 8; i++)
+        pawns = (pawns << 8) | columns[i].getData();
+    state.pawnColumns = pawns;
+
+    U64 counts = 0;
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < nPieceTypes; j++)
+            counts = (counts << 4) | pieceCnt[i][j];
+    state.pieceCounts = counts;
 }

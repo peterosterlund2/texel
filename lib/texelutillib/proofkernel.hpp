@@ -27,6 +27,7 @@
 #define PROOFKERNEL_HPP_
 
 #include "util/util.hpp"
+#include "util/random.hpp"
 #include <array>
 
 class Position;
@@ -194,6 +195,17 @@ private:
 
     std::vector<std::vector<PkMove>> moveStack;
     U64 nodes; // Number of visited search nodes
+
+    /** Uniquely identifies the search state. */
+    struct State {
+        U64 pawnColumns = 0;
+        U64 pieceCounts = 0;
+        U64 hashKey() const;
+        bool operator==(const State& other) const;
+    };
+    void getState(State& state) const;
+
+    std::vector<State> visited;
 
     /** Extract pawn structure and piece counts from a position. */
     static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
@@ -412,6 +424,20 @@ ProofKernel::PawnColumn::bishopPromotionRequired(PieceColor c) const {
 inline bool
 ProofKernel::PawnColumn::isComplete() const {
     return complete[data];
+}
+
+inline U64
+ProofKernel::State::hashKey() const {
+    return hashU64(hashU64(pawnColumns) ^ pieceCounts);
+}
+
+inline bool
+ProofKernel::State::operator==(const State& other) const {
+    if (pawnColumns != other.pawnColumns)
+        return false;
+    if (pieceCounts != other.pieceCounts)
+        return false;
+    return true;
 }
 
 #endif /* PROOFKERNEL_HPP_ */
