@@ -55,9 +55,15 @@ public:
     ProofGame& operator=(const ProofGame&) = delete;
 
     /** Search for shortest solution. Print solutions to standard output.
-     * Return length of shortest path found. */
+     * @param initialFen   Position to start searching from.
+     * @param initialPath  Only search for solutions starting with this path.
+     * @param movePath     Set to shortest found path.
+     * @param maxNodes     Maximum number of search nodes before giving up,
+     *                     or -1 to never give up.
+     * @param verbose      If true, print path every time distance to goal decreases.
+     * @return             Length of shortest path found. */
     int search(const std::string& initialFen, const std::vector<Move>& initialPath,
-               std::vector<Move>& movePath, bool verbose = false);
+               std::vector<Move>& movePath, S64 maxNodes = -1, bool verbose = false);
 
     /** Return goal position. */
     const Position& getGoalPos() const;

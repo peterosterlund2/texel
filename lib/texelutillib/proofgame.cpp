@@ -158,7 +158,7 @@ ProofGame::validatePieceCounts(const Position& pos) {
 
 int
 ProofGame::search(const std::string& initialFen, const std::vector<Move>& initialPath,
-                  std::vector<Move>& movePath, bool verbose) {
+                  std::vector<Move>& movePath, S64 maxNodes, bool verbose) {
     Position startPos = TextIO::readFEN(initialFen);
     {
         int N = dynamic ? distLowerBound(startPos) * 2 : 0;
@@ -180,12 +180,12 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
 
     double t0 = currentTime();
     Position pos;
-    U64 numNodes = 0;
+    S64 numNodes = 0;
     int minCost = -1;
     int best = INT_MAX;
     int smallestBound = INT_MAX;
     UndoInfo ui;
-    while (!queue->empty()) {
+    while (!queue->empty() && (maxNodes == -1 || numNodes < maxNodes)) {
         const U32 idx = queue->top();
         queue->pop();
         const TreeNode& tn = nodes[idx];
@@ -217,8 +217,7 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
             continue;
 
 #if 0
-        static int cnt = 0;
-        if (((++cnt) % 10000) == 0)
+        if ((nodes % 10000) == 0)
             log << "ply:" << tn.ply << " bound:" << tn.bound << " "
                 << TextIO::toFEN(pos) << std::endl;
 #endif
