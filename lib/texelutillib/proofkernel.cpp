@@ -50,14 +50,24 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U6
         int oKing = c == PieceColor::WHITE ? Piece::BKING : Piece::WKING;
         return isBlocked(x, y) && getPiece(x, y) == oKing;
     };
+    U64 dead = 0;
     for (int x = 0; x < 8; x++) {
-        if (getPiece(x, 7) == Piece::BBISHOP)
-            if ((x == 0 || isBlocked(x-1, 6)) && (x == 7 || isBlocked(x+1, 6)))
+        if ((x == 0 || isBlocked(x-1, 6)) && (x == 7 || isBlocked(x+1, 6))) {
+            if (getPiece(x, 7) == Piece::BBISHOP)
                 blocked |= 1ULL << Square::getSquare(x, 7);
-        if (getPiece(x, 0) == Piece::WBISHOP)
-            if ((x == 0 || isBlocked(x-1, 1)) && (x == 7 || isBlocked(x+1, 1)))
+            if (initialPos.getPiece(Square::getSquare(x, 7)) == Piece::BBISHOP &&
+                getPiece(x, 7) != Piece::BBISHOP)
+                dead |= 1ULL << Square::getSquare(x, 7);
+        }
+        if ((x == 0 || isBlocked(x-1, 1)) && (x == 7 || isBlocked(x+1, 1))) {
+            if (getPiece(x, 0) == Piece::WBISHOP)
                 blocked |= 1ULL << Square::getSquare(x, 0);
+            if (initialPos.getPiece(Square::getSquare(x, 0)) == Piece::WBISHOP &&
+                getPiece(x, 0) != Piece::WBISHOP)
+                dead |= 1ULL << Square::getSquare(x, 0);
+        }
     }
+    deadBishops = dead;
 
     for (int ci = 0; ci < 2; ci++) {
         PieceColor c = static_cast<PieceColor>(ci);
@@ -140,7 +150,17 @@ bool
 ProofKernel::findProofKernel(std::vector<PkMove>& result) {
     result.clear();
 
-    // FIXME!! Handle forced moves
+    std::vector<PkMove> path;
+    while (deadBishops) {
+        int sq = BitBoard::extractSquare(deadBishops);
+        int x = Square::getX(sq);
+        int y = Square::getY(sq);
+        PieceColor color = (y == 0) ? BLACK : WHITE;
+        PieceType bishop = Square::darkSquare(x, y) ? DARK_BISHOP : LIGHT_BISHOP;
+        path.push_back(PkMove::pieceXPiece(color, bishop));
+        PkUndoInfo ui;
+        makeMove(path.back(), ui);
+    }
 
     if (!goalPossible())
         return false;
@@ -148,16 +168,12 @@ ProofKernel::findProofKernel(std::vector<PkMove>& result) {
     nodes = 0;
     moveStack.resize(remainingMoves);
 
-    std::vector<PkMove> path;
     bool found = search(0, path);
     std::cerr << "found:" << (found?1:0) << " nodes:" << nodes << std::endl;
-    if (!found)
-        return false;
 
     result.insert(result.end(), path.begin(), path.end());
 
-
-    return true;
+    return found;
 }
 
 bool

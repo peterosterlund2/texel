@@ -743,7 +743,7 @@ ProofKernelTest::testSearch() {
 
         std::vector<PkMove> moves;
         bool found = pk.findProofKernel(moves);
-        ASSERT_EQ(hasSolution, found);
+        ASSERT_EQ(hasSolution, found) << "start: " << start << " goal: " << goal;
 
         if (found) {
             std::string path;
@@ -766,9 +766,15 @@ ProofKernelTest::testSearch() {
     test("4k3/pp6/8/8/8/8/PP6/4K3 w - - 0 1", "b3k3/8/8/8/8/8/8/NB2K3 w - - 0 1",
          true, "wPb0xPa1");
 
+    test("2b1k3/1p1p4/8/8/3P4/8/8/4K3 w - - 0 1", "4k3/1p1p4/8/8/3N4/8/8/4K3 w - - 0 1",
+         false, "");
+
     const std::string startFEN = TextIO::startPosFEN;
     test(startFEN, "1r1n4/1N1qb2N/kr2r1r1/1RpN1K2/1R2B1Q1/bP3Q1B/B1n2Q2/1r1Bb1b1 w - - 0 1",
          false, "");
     test(startFEN, "1Q1nkbr1/4b1Qq/2pn2N1/r1P2R1b/r2NqP2/Q2R4/r1n5/1RK1qb2 w - - 0 1",
          true, "*");
+
+    test(startFEN, "3rRQ2/1P2q1q1/NK2brn1/1q3b2/B3k3/1BB4N/RbrrP1Pq/n2br3 w - - 0 1",
+         false, "");
 }

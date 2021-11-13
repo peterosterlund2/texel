@@ -102,7 +102,8 @@ public:
      *  A proof kernel, when applied to the initial position, results in a position that has the
      *  same number of white and black pieces as the goal position, and where promotions can
      *  be performed to get the same number of pieces as the goal position for each piece type.
-     *  @param result  Computed if true is returned.
+     *  @param result  If true is returned, set to path to a goal position
+     *                 If false is returned, set to initial sequence of forced moves
      *  @return        True if a proof kernel exists, false otherwise. */
     bool findProofKernel(std::vector<PkMove>& result);
 
@@ -188,6 +189,8 @@ private:
     int goalCnt[2][nPieceTypes];
     int excessCnt[2][nPieceTypes];  // pieceCnt - goalCnt
     int remainingMoves;
+
+    U64 deadBishops;  // Mask of bishops initially trapped on first/last row and not present in goal position
 
     std::vector<std::vector<PkMove>> moveStack;
     U64 nodes; // Number of visited search nodes
