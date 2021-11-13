@@ -1358,10 +1358,22 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
                     blocked = 0xffffffffffffffffULL; // If goal not reachable, consider all pieces blocked
                 ProofKernel pk(startPos, TextIO::readFEN(line), blocked);
                 std::vector<ProofKernel::PkMove> kernel;
-                if (!pk.findProofKernel(kernel))
+                if (!pk.findProofKernel(kernel)) {
                     status = "illegal, no proof kernel";
-                else
-                    status = "unknown";
+                    if (!kernel.empty()) {
+                        status += ", forced:";
+                        for (const auto& m : kernel) {
+                            status += ' ';
+                            status += toString(m);
+                        }
+                    }
+                } else {
+                    status = "unknown, kernel:";
+                    for (const auto& m : kernel) {
+                        status += ' ';
+                        status += toString(m);
+                    }
+                }
             }
         } catch (ChessParseError& e) {
             status = std::string("illegal, ") + e.what();
