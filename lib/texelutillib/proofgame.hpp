@@ -61,7 +61,9 @@ public:
      * @param maxNodes     Maximum number of search nodes before giving up,
      *                     or -1 to never give up.
      * @param verbose      If true, print path every time distance to goal decreases.
-     * @return             Length of shortest path found. */
+     * @return             Length of shortest path found,
+     *                     or INT_MAX if no solution exists,
+     *                     or -1 if unknown whether a solution exists. */
     int search(const std::string& initialFen, const std::vector<Move>& initialPath,
                std::vector<Move>& movePath, S64 maxNodes = -1, bool verbose = false);
 

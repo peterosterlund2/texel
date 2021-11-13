@@ -249,7 +249,11 @@ ProofGame::search(const std::string& initialFen, const std::vector<Move>& initia
     log << "nodes: " << numNodes
         << " time: " << t1 - t0 <<  std::endl;
 
-    return best + lastMoves.size();
+    if (best < INT_MAX)
+        return best + lastMoves.size(); // Return best found solution length
+    if (numNodes == maxNodes)
+        return -1;                      // Gave up, unknown if solution exists
+    return INT_MAX;                     // No solution exists
 }
 
 bool
@@ -1348,9 +1352,19 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
         std::string status;
         try {
             ProofGame pg(std::cerr, line, 1, 1, false, true);
-            int minCost = pg.distLowerBound(startPos);
+            std::vector<Move> movePath;
+            int minCost = pg.search(TextIO::startPosFEN, {}, movePath, 2, false);
             if (minCost == INT_MAX) {
                 status = "illegal, other";
+            } else if (minCost >= 0) {
+                status = "legal, proof:";
+                Position pos = startPos;
+                UndoInfo ui;
+                for (size_t i = 0; i < movePath.size(); i++) {
+                    status += ' ';
+                    status += TextIO::moveToString(pos, movePath[i], false);
+                    pos.makeMove(movePath[i], ui);
+                }
             } else {
                 U64 blocked;
                 if (!pg.computeBlocked(startPos, blocked))

@@ -679,6 +679,12 @@ ProofGameTest::testSearch() {
         ASSERT_EQ("b1a3", TextIO::moveToUCIString(movePath[4]));
         ASSERT_EQ("h6g7", TextIO::moveToUCIString(movePath[5]));
     }
+    {
+        ProofGame ps("rnbqkbnr/p1pppppp/p7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        std::vector<Move> movePath;
+        int best = ps.search(TextIO::startPosFEN, {}, movePath);
+        ASSERT_EQ(INT_MAX, best);
+    }
 }
 
 TEST(ProofGameTest, testEnPassant) {
