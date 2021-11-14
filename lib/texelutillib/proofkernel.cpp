@@ -643,7 +643,7 @@ std::string toString(const ProofKernel::PkMove& m) {
         case ProofKernel::LIGHT_BISHOP: return "LB";
         case ProofKernel::KNIGHT:       return "N";
         case ProofKernel::PAWN:         return "P";
-        default:                        assert(false);
+        default:                        assert(false); return "";
         };
     };
 

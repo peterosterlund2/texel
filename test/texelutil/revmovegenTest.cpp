@@ -348,7 +348,7 @@ RevMoveGenTest::testEpSquare() {
     const int bpawn = Piece::BPAWN;
 
     std::vector<Data> v = {
-        { TextIO::startPosFEN, G8, { } },
+        { TextIO::startPosFEN, G8, -1, both, { } },
         { "4k3/8/1P6/8/8/8/8/4K3 b - - 0 1", -1, B6, both, { UM("a5b6", empty, 0, B6), UM("c5b6", empty, 0, B6) } },
         { "4k3/8/P7/8/8/8/8/4K3 b - - 0 1", -1, A6, both, { UM("b5a6", empty, 0, A6) } },
         { "4k3/8/7P/8/8/8/8/4K3 b - - 0 1", -1, H6, both, { UM("g5h6", empty, 0, H6) } },
