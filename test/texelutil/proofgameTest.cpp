@@ -950,6 +950,11 @@ void ProofGameTest::testFilter() {
         { "8/8/8/8/8/8/8/Kk6 w - - 0 1", "illegal", true }, // King capture possible
         { "8/8/8/8/8/8/8/KRk5 w - - 0 1", "illegal", true }, // King capture possible
         { "8/8/8/8/8/8/8/KRk5 b - - 0 1", "illegal", false }, // King in check
+
+        // All possible captures for last move rejected
+        { "k1bBrR2/1B1rbN2/p2BN1Q1/2n3bP/p2bNR1p/2R1n3/P4b2/1K3b2 b - - 0 1", "illegal", true },
+        { "nB1kr3/pbnBR3/P2PpQ1Q/2N2K2/r1r1r3/qPr5/qR2P2q/1N5r w - - 1 2", "illegal", true },
+        { "4B2n/Bqp2Nbr/r1r2p1B/5b2/n3bN2/1QR1q1b1/3kr2B/QKb2B1R w - - 0 1", "illegal", true },
     };
     for (const Data& d : v) {
         std::stringstream in;

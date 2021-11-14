@@ -88,6 +88,7 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
 ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::string& goal,
                      int a, int b, bool dynamic, bool smallCache)
     : initialFen(start), weightA(a), weightB(b), dynamic(dynamic), log(log) {
+    Position startPos = TextIO::readFEN(initialFen);
     goalPos = TextIO::readFEN(goal);
     if (TextIO::toFEN(goalPos) != goal)
         throw ChessParseError("Lossy FEN conversion");
@@ -96,9 +97,44 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
     while (true) {
         std::vector<UnMove> unMoves;
         RevMoveGen::genMoves(goalPos, unMoves, false);
+
+        std::vector<UnMove> quiets, captures;
+        for (const UnMove& um : unMoves)
+            ((um.ui.capturedPiece == Piece::EMPTY) ? quiets : captures).push_back(um);
+
+        bool capturesRejected = false;
+        if (quiets.size() <= 1) { // Check if all captures are invalid
+            bool validCapture = false;
+            for (const UnMove& um : captures) {
+                log << "Checking capture: " << um << std::endl;
+                Position tmpPos(goalPos);
+                tmpPos.unMakeMove(um.move, um.ui);
+                tmpPos.setFullMoveCounter(1);
+
+                U64 blocked;
+                if (!computeBlocked(startPos, blocked))
+                    blocked = 0xffffffffffffffffULL;
+                ProofKernel pk(startPos, tmpPos, blocked);
+                std::vector<ProofKernel::PkMove> kernel;
+                if (pk.findProofKernel(kernel)) {
+                    validCapture = true;
+                    break;
+                }
+            }
+            if (!captures.empty() && !validCapture) {
+                capturesRejected = true;
+                unMoves = quiets;
+            }
+        }
+
         if (unMoves.empty()) {
-            throw ChessParseError("No possible last move");
-        } else if (unMoves.size() == 1) {
+            if (capturesRejected)
+                throw ChessParseError("No possible last move, all captures rejected");
+            else
+                throw ChessParseError("No possible last move");
+        }
+
+        if (unMoves.size() == 1) {
             const UnMove& um = unMoves[0];
             log << "Forced last move: " << um << std::endl;
             goalPos.unMakeMove(um.move, um.ui);
