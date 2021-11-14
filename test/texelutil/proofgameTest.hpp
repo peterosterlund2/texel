@@ -51,7 +51,7 @@ public:
 
 private:
     static void checkBlockedConsistency(ProofGame& ps, Position& pos);
-    static int hScore(ProofGame& ps, const std::string& fen, bool testMirrorY = true);
+    static int hScore(const std::string& initFen, const std::string& goalFen, bool testMirrorY = true);
     static void comparePaths(Piece::Type p, int sq, U64 blocked, int maxMoves,
                              const std::vector<int>& expected, bool testColorReversed = true);
 };

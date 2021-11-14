@@ -52,22 +52,27 @@ ProofGameTest::checkBlockedConsistency(ProofGame& ps, Position& pos) {
     }
 }
 
+static std::string
+mirrorFenY(const std::string& fen) {
+    Position pos = TextIO::readFEN(fen);
+    pos = PosUtil::swapColors(pos);
+    return TextIO::toFEN(pos);
+}
+
 int
-ProofGameTest::hScore(ProofGame& ps, const std::string& fen, bool testMirrorY) {
+ProofGameTest::hScore(const std::string& initFen, const std::string& goalFen, bool testMirrorY) {
+    Position initPos = TextIO::readFEN(initFen);
+    ProofGame ps(initFen, goalFen);
     {
         Position pos0 = TextIO::readFEN(TextIO::startPosFEN);
         checkBlockedConsistency(ps, pos0);
     }
-    Position pos = TextIO::readFEN(fen);
-    checkBlockedConsistency(ps, pos);
-    const int score = ps.distLowerBound(pos);
+    checkBlockedConsistency(ps, initPos);
+    const int score = ps.distLowerBound(initPos);
     EXPECT_GE(score, 0);
 
     if (testMirrorY) {
-        Position posSym = PosUtil::swapColors(pos);
-        Position goalPosSym = PosUtil::swapColors(ps.getGoalPos());
-        ProofGame psSym(TextIO::toFEN(goalPosSym));
-        int score2 = hScore(psSym, TextIO::toFEN(posSym), false);
+        int score2 = hScore(mirrorFenY(initFen), mirrorFenY(goalFen), false);
         EXPECT_EQ(score, score2);
     }
 
@@ -81,47 +86,35 @@ TEST(ProofGameTest, testMaterial) {
 void
 ProofGameTest::testMaterial() {
     {
-        ProofGame ps(TextIO::startPosFEN);
-        ASSERT_EQ(0, hScore(ps, TextIO::startPosFEN));
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1"));
-        ASSERT_LE(hScore(ps, "r1bqkbnr/pppppppp/n7/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1"), 1);
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1"));
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"));
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/1NBQKBNR w Kkq - 0 1"));
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RN1QKBNR w KQkq - 0 1"));
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNB1KBNR w KQkq - 0 1"));
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"));
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pp1ppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"));
-        ASSERT_EQ(INT_MAX, hScore(ps, "rn1qkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"));
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkb1r/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"));
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbn1/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQq - 0 1"));
+        std::string goalFen = TextIO::startPosFEN;
+        ASSERT_EQ(0, hScore(goalFen, TextIO::startPosFEN));
+        ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1", goalFen));
+        ASSERT_LE(hScore("r1bqkbnr/pppppppp/n7/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1", goalFen), 1);
+        ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1", goalFen));
+        ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1", goalFen));
+        ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/1NBQKBNR w Kkq - 0 1", goalFen));
+        ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RN1QKBNR w KQkq - 0 1", goalFen));
+        ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNB1KBNR w KQkq - 0 1", goalFen));
+        ASSERT_EQ(INT_MAX, hScore("rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", goalFen));
+        ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pp1ppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", goalFen));
+        ASSERT_EQ(INT_MAX, hScore("rn1qkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", goalFen));
+        ASSERT_EQ(INT_MAX, hScore("rnbqkb1r/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", goalFen));
+        ASSERT_EQ(INT_MAX, hScore("rnbqkbn1/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQq - 0 1", goalFen));
     }
     {
         std::string goal("1nbqkbnr/1ppppppp/8/8/8/8/1PPPPPPP/RNBQKBNR w KQk - 0 1");
-        ProofGame ps(goal);
-        ASSERT_EQ(0, hScore(ps, goal));
-        ASSERT_LE(hScore(ps, "1nbqkbnr/1ppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQk - 0 1"), 40);
+        ASSERT_EQ(0, hScore(goal, goal));
+        ASSERT_LE(hScore("1nbqkbnr/1ppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQk - 0 1", goal), 40);
     }
+    ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1",
+                              "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNNQKBNR w KQkq - 0 1"));
+    ASSERT_LE(hScore(TextIO::startPosFEN, "1nbqkbnr/p1pppppp/8/8/8/8/1PPPPPPP/RNNQKBNR w KQk - 0 1"), 20);
+    ASSERT_LE(hScore(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1"), 4);
+    ASSERT_LE(hScore(TextIO::startPosFEN, "rnbqk1nr/b1pp1ppp/1p6/4p3/8/5N2/PPPPPPPP/R1BQKB1R w KQkq - 0 1"), 8);
     {
-        ProofGame ps("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNNQKBNR w KQkq - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1"));
-    }
-    {
-        ProofGame ps("1nbqkbnr/p1pppppp/8/8/8/8/1PPPPPPP/RNNQKBNR w KQk - 0 1");
-        ASSERT_LE(hScore(ps, TextIO::startPosFEN), 20);
-    }
-    {
-        ProofGame ps("rnbqkbnr/pppppppp/8/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
-        ASSERT_LE(hScore(ps, TextIO::startPosFEN), 4);
-    }
-    {
-        ProofGame ps("rnbqk1nr/b1pp1ppp/1p6/4p3/8/5N2/PPPPPPPP/R1BQKB1R w KQkq - 0 1");
-        ASSERT_LE(hScore(ps, TextIO::startPosFEN), 8);
-    }
-    {
-        ProofGame ps("rnbqkbnr/ppp2ppp/8/8/8/8/PPP2PPP/RNBQKBNR w KQkq - 0 1");
-        ASSERT_GE(hScore(ps, TextIO::startPosFEN), 4);
-        ASSERT_LE(hScore(ps, TextIO::startPosFEN), 10);
+        std::string goal("rnbqkbnr/ppp2ppp/8/8/8/8/PPP2PPP/RNBQKBNR w KQkq - 0 1");
+        ASSERT_GE(hScore(TextIO::startPosFEN, goal), 4);
+        ASSERT_LE(hScore(TextIO::startPosFEN, goal), 10);
     }
 }
 
@@ -229,7 +222,7 @@ ProofGameTest::testNeighbors() {
 void
 ProofGameTest::comparePaths(Piece::Type p, int sq, U64 blocked, int maxMoves,
                              const std::vector<int>& expected, bool testColorReversed) {
-    ProofGame ps(TextIO::startPosFEN);
+    ProofGame ps(TextIO::startPosFEN, TextIO::startPosFEN);
     auto spd = ps.shortestPaths(p, sq, blocked, maxMoves);
     for (int i = 0; i < 64; i++) {
         ASSERT_EQ(expected[Square::mirrorY(i)], (int)spd->pathLen[i]);
@@ -257,7 +250,7 @@ TEST(ProofGameTest, testShortestPath) {
 
 void
 ProofGameTest::testShortestPath() {
-    ProofGame ps(TextIO::startPosFEN);
+    ProofGame ps(TextIO::startPosFEN, TextIO::startPosFEN);
     std::shared_ptr<ProofGame::ShortestPathData> spd;
     spd = ps.shortestPaths(Piece::WKING, H8,
                            BitBoard::sqMask(G2,G3,G4,G5,G6,G7,F7,E7,D7,C7,B7), 8);
@@ -404,12 +397,12 @@ TEST(ProofGameTest, testPawnReachable) {
 void
 ProofGameTest::testPawnReachable() {
     {
-        ProofGame ps("rnbqkbnr/pppppppp/8/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
         ASSERT_EQ(BitBoard::sqMask(A1), ProofGame::bPawnReachable[A1]);
         ASSERT_EQ(BitBoard::sqMask(A2,A1,B1), ProofGame::bPawnReachable[A2]);
-        Position pos = TextIO::readFEN(TextIO::startPosFEN);
+        std::string start(TextIO::startPosFEN);
+        ProofGame ps(start, "rnbqkbnr/pppppppp/8/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
         U64 blocked;
-        bool res = ps.computeBlocked(pos, blocked);
+        bool res = ps.computeBlocked(TextIO::readFEN(start), blocked);
         ASSERT_TRUE(res);
         ASSERT_EQ(BitBoard::sqMask(   B2,C2,D2,E2,F2,G2,H2,
                                       A7,B7,C7,D7,E7,F7,G7,H7,
@@ -417,60 +410,52 @@ ProofGameTest::testPawnReachable() {
                      blocked);
     }
     {
-        ProofGame ps("4k3/1p6/2P5/3P4/B3P3/3P1P2/2P3P1/4K3 w - - 0 1");
-        Position pos = TextIO::readFEN("4k3/1p6/2P5/3P4/4P1B1/3P4/2P2PP1/4K3 w - - 0 1");
+        std::string start("4k3/1p6/2P5/3P4/4P1B1/3P4/2P2PP1/4K3 w - - 0 1");
+        std::string goal("4k3/1p6/2P5/3P4/B3P3/3P1P2/2P3P1/4K3 w - - 0 1");
+        Position pos = TextIO::readFEN(start);
+        ProofGame ps(start, goal);
         U64 blocked;
         bool res = ps.computeBlocked(pos, blocked);
         ASSERT_TRUE(res);
         ASSERT_EQ(BitBoard::sqMask(C2,G2,D3,E4,D5,C6,B7), blocked);
-        ASSERT_EQ(INT_MAX, hScore(ps, TextIO::toFEN(pos)));
+        ASSERT_EQ(INT_MAX, hScore(start, goal));
     }
     {
-        ProofGame ps("rnbqkbnr/pppppppp/8/8/5P2/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, TextIO::startPosFEN));
-        ASSERT_EQ(2, hScore(ps, "r1bqkbnr/pppppppp/n7/8/8/5P2/PPPP1PPP/RNBQKBNR w KQkq - 0 1"));
-        ASSERT_LE(hScore(ps, "r1bqkbnr/pppppppp/n7/8/8/5P2/PPPP1PPP/RNBQKBNR b KQkq - 0 1"), 9);
-        ASSERT_GE(hScore(ps, "r1bqkbnr/pppppppp/n7/8/8/5P2/PPPP1PPP/RNBQKBNR b KQkq - 0 1"), 3);
+        std::string goal("rnbqkbnr/pppppppp/8/8/5P2/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
+        ASSERT_EQ(INT_MAX, hScore(TextIO::startPosFEN, goal));
+        ASSERT_EQ(2, hScore("r1bqkbnr/pppppppp/n7/8/8/5P2/PPPP1PPP/RNBQKBNR w KQkq - 0 1", goal));
+        ASSERT_LE(hScore("r1bqkbnr/pppppppp/n7/8/8/5P2/PPPP1PPP/RNBQKBNR b KQkq - 0 1", goal), 9);
+        ASSERT_GE(hScore("r1bqkbnr/pppppppp/n7/8/8/5P2/PPPP1PPP/RNBQKBNR b KQkq - 0 1", goal), 3);
     }
+    ASSERT_LE(hScore(TextIO::startPosFEN, "r1bqkbnr/pppppppp/8/8/8/5P2/PPPP1PPP/RNBQKBNR w KQkq - 3 6"), 10);
+    ASSERT_LE(hScore(TextIO::startPosFEN, "2b1kqr1/p2p3p/3p4/p2PpP2/PpP2p2/6P1/8/RRB1KQ1N w - - 0 1"), 62);
+    ASSERT_EQ(INT_MAX, hScore("r2qk2r/ppp3pp/8/8/8/8/PPPPPPPP/R2QKBNR w KQkq - 0 1",
+                              "r2qk2r/1pp3p1/1p4p1/8/8/8/PPP3PP/RNBQKBNR w KQkq - 0 1"));
     {
-        ProofGame ps("r1bqkbnr/pppppppp/8/8/8/5P2/PPPP1PPP/RNBQKBNR w KQkq - 3 6");
-        ASSERT_LE(hScore(ps, TextIO::startPosFEN), 10);
-    }
-    {
-        ProofGame ps("2b1kqr1/p2p3p/3p4/p2PpP2/PpP2p2/6P1/8/RRB1KQ1N w - - 0 1");
-        ASSERT_LE(hScore(ps, TextIO::startPosFEN), 62);
-    }
-    {
-        ProofGame ps("r2qk2r/1pp3p1/1p4p1/8/8/8/PPP3PP/RNBQKBNR w KQkq - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, "r2qk2r/ppp3pp/8/8/8/8/PPPPPPPP/R2QKBNR w KQkq - 0 1"));
-    }
-    {
-        ProofGame ps("8/rnbqkbnr/pppppppp/8/8/PPPPPPPP/RNBQKBNR/8 w - - 0 1");
-        Position pos = TextIO::readFEN("rnbqkbnr/pppppppp/8/8/8/3P4/PPP1PPPP/RNBQKBNR w KQkq - 0 1");
+        std::string start("rnbqkbnr/pppppppp/8/8/8/3P4/PPP1PPPP/RNBQKBNR w KQkq - 0 1");
+        std::string goal("8/rnbqkbnr/pppppppp/8/8/PPPPPPPP/RNBQKBNR/8 w - - 0 1");
+        Position pos = TextIO::readFEN(start);
+        ProofGame ps(start, goal);
         U64 blocked;
         bool res = ps.computeBlocked(pos, blocked);
         ASSERT_TRUE(res);
         ASSERT_EQ(BitBoard::sqMask(D3), blocked);
-        ASSERT_EQ(44, hScore(ps, TextIO::toFEN(pos)));
+        ASSERT_EQ(44, hScore(start, goal));
     }
 
-    { // Reachable, pawn can not reach goal square, but can be promoted to piece that can
-        ProofGame ps("rnbqkbnr/ppp1ppp1/2p5/8/8/8/PPPPPPP1/RNBQKBNR w KQq - 0 1");
-        ASSERT_LE(hScore(ps, TextIO::startPosFEN), 24);
-    }
-    { // Not reachable, white pawn can not reach square where it needs to be captured
-        ProofGame ps("rnbqkbnr/ppp1pppp/2p5/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, TextIO::startPosFEN));
-    }
-    { // Not reachable, white c1 bishop can not reach required capture square a6.
-        ProofGame ps("rnbqkbnr/p1pppppp/p7/8/8/3P4/PPP1PPPP/RN1QKBNR w KQkq - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, TextIO::startPosFEN));
-    }
+    // Reachable, pawn can not reach goal square, but can be promoted to piece that can
+    ASSERT_LE(hScore(TextIO::startPosFEN, "rnbqkbnr/ppp1ppp1/2p5/8/8/8/PPPPPPP1/RNBQKBNR w KQq - 0 1"), 24);
+
+    // Not reachable, white pawn can not reach square where it needs to be captured
+    ASSERT_EQ(INT_MAX, hScore(TextIO::startPosFEN, "rnbqkbnr/ppp1pppp/2p5/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1"));
+
+    // Not reachable, white c1 bishop can not reach required capture square a6.
+    ASSERT_EQ(INT_MAX, hScore(TextIO::startPosFEN, "rnbqkbnr/p1pppppp/p7/8/8/3P4/PPP1PPPP/RN1QKBNR w KQkq - 0 1"));
+
 #if 0
-    { // Reachable by en passant capture
-        ProofGame ps("rnbqkbnr/p1pppppp/8/8/8/2p5/PP1PPPPP/RNBQKBNR w KQkq - 0 1");
-        ASSERT_LE(hScore(ps, "rnbqkbnr/p1pppppp/8/8/1pP5/8/PP1PPPPP/RNBQKBNR b KQkq c3 0 1"), 1);
-    }
+    // Reachable by en passant capture
+    ASSERT_LE(hScore("rnbqkbnr/p1pppppp/8/8/1pP5/8/PP1PPPPP/RNBQKBNR b KQkq c3 0 1",
+                     "rnbqkbnr/p1pppppp/8/8/8/2p5/PP1PPPPP/RNBQKBNR w KQkq - 0 1"), 1);
 #endif
 }
 
@@ -481,13 +466,14 @@ TEST(ProofGameTest, testBlocked) {
 void
 ProofGameTest::testBlocked() {
     {
-        ProofGame ps("2r2rk1/1bPn1pp1/4pq1p/p7/1p2PBPb/P4P2/1PQNB2P/R2K3R w - - 1 21");
-        Position pos = TextIO::readFEN("5Nkr/1bpnbpp1/2P1pq1p/p7/1p2PBP1/P2P1P2/1PQ1B2P/RN1K3R b - - 0 20");
+        std::string start("5Nkr/1bpnbpp1/2P1pq1p/p7/1p2PBP1/P2P1P2/1PQ1B2P/RN1K3R b - - 0 20");
+        std::string goal("2r2rk1/1bPn1pp1/4pq1p/p7/1p2PBPb/P4P2/1PQNB2P/R2K3R w - - 1 21");
+        ProofGame ps(start, goal);
         U64 blocked;
-        bool res = ps.computeBlocked(pos, blocked);
+        bool res = ps.computeBlocked(TextIO::readFEN(start), blocked);
         ASSERT_TRUE(res);
         ASSERT_EQ(BitBoard::sqMask(B2,H2,A3,F3,G4,E6,H6,F7,G7), blocked);
-        int s = hScore(ps, TextIO::toFEN(pos));
+        int s = hScore(start, goal);
         ASSERT_LE(s, 35);
         ASSERT_GE(s, 15);
     }
@@ -500,42 +486,42 @@ TEST(ProofGameTest, testCastling) {
 void
 ProofGameTest::testCastling() {
     {
-        ProofGame ps("rnbqkbnr/4p3/pppp1ppp/8/8/PPPP1PPP/4P3/RNBQKBNR w KQkq - 0 1");
-        Position pos = TextIO::readFEN(TextIO::startPosFEN);
+        std::string start(TextIO::startPosFEN);
+        ProofGame ps(start, "rnbqkbnr/4p3/pppp1ppp/8/8/PPPP1PPP/4P3/RNBQKBNR w KQkq - 0 1");
         U64 blocked;
-        bool res = ps.computeBlocked(pos, blocked);
+        bool res = ps.computeBlocked(TextIO::readFEN(start), blocked);
         ASSERT_TRUE(res);
         ASSERT_EQ(BitBoard::sqMask(E2,E7,A1,E1,H1,A8,E8,H8), blocked);
     }
     {
-        ProofGame ps("rnbqkbnr/4p3/pppp1ppp/8/8/PPPP1PPP/4P3/RNBQKBNR w K - 0 1");
-        Position pos = TextIO::readFEN(TextIO::startPosFEN);
+        std::string start(TextIO::startPosFEN);
+        ProofGame ps(start, "rnbqkbnr/4p3/pppp1ppp/8/8/PPPP1PPP/4P3/RNBQKBNR w K - 0 1");
         U64 blocked;
-        bool res = ps.computeBlocked(pos, blocked);
+        bool res = ps.computeBlocked(TextIO::readFEN(start), blocked);
         ASSERT_TRUE(res);
         ASSERT_EQ(BitBoard::sqMask(E2,E7,E1,H1), blocked);
     }
     {
-        ProofGame ps("rnbqkbnr/4p3/pppp1ppp/8/8/PPPP1PPP/4P3/RNBQKBNR w Q - 0 1");
-        Position pos = TextIO::readFEN(TextIO::startPosFEN);
+        std::string start(TextIO::startPosFEN);
+        ProofGame ps(start, "rnbqkbnr/4p3/pppp1ppp/8/8/PPPP1PPP/4P3/RNBQKBNR w Q - 0 1");
         U64 blocked;
-        bool res = ps.computeBlocked(pos, blocked);
+        bool res = ps.computeBlocked(TextIO::readFEN(start), blocked);
         ASSERT_TRUE(res);
         ASSERT_EQ(BitBoard::sqMask(E2,E7,E1,A1), blocked);
     }
     {
-        ProofGame ps("rnbqkbnr/4p3/pppp1ppp/8/8/PPPP1PPP/4P3/RNBQKBNR w k - 0 1");
-        Position pos = TextIO::readFEN(TextIO::startPosFEN);
+        std::string start(TextIO::startPosFEN);
+        ProofGame ps(start, "rnbqkbnr/4p3/pppp1ppp/8/8/PPPP1PPP/4P3/RNBQKBNR w k - 0 1");
         U64 blocked;
-        bool res = ps.computeBlocked(pos, blocked);
+        bool res = ps.computeBlocked(TextIO::readFEN(start), blocked);
         ASSERT_TRUE(res);
         ASSERT_EQ(BitBoard::sqMask(E2,E7,E8,H8), blocked);
     }
     {
-        ProofGame ps("rnbqkbnr/4p3/pppp1ppp/8/8/PPPP1PPP/4P3/RNBQKBNR w q - 0 1");
-        Position pos = TextIO::readFEN(TextIO::startPosFEN);
+        std::string start(TextIO::startPosFEN);
+        ProofGame ps(start, "rnbqkbnr/4p3/pppp1ppp/8/8/PPPP1PPP/4P3/RNBQKBNR w q - 0 1");
         U64 blocked;
-        bool res = ps.computeBlocked(pos, blocked);
+        bool res = ps.computeBlocked(TextIO::readFEN(start), blocked);
         ASSERT_TRUE(res);
         ASSERT_EQ(BitBoard::sqMask(E2,E7,E8,A8), blocked);
     }
@@ -547,57 +533,50 @@ TEST(ProofGameTest, testReachable) {
 
 void
 ProofGameTest::testReachable() {
-    { // Queen is trapped, can not reach d3
-        ProofGame ps("rnbqkbnr/pppppppp/8/8/8/2Q5/1PPPPPPP/1NB1KBNR w Kkq - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, TextIO::startPosFEN));
-    }
-    { // Queen is trapped, can not reach d3
-        ProofGame ps("rnbqkbnr/pppppppp/8/8/8/2Q5/1PPPPPP1/1NB1KBN1 w kq - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, TextIO::startPosFEN));
-    }
-    { // Unreachable, 2 promotions required, only 1 available
-        ProofGame ps("B3k2B/1pppppp1/8/8/8/8/PPPP1PPP/RN1QK1NR w KQ - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, TextIO::startPosFEN));
-    }
-    { // Unreachable, only 1 pawn promotion available, but need to promote to
-      // both knight (to satisfy piece counts) and bishop (existing bishops can
-      // not reach target square).
-        ProofGame ps("Nn1qk2B/1pppppp1/8/8/8/8/PPPP1PPP/RN1QK1NR w KQ - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, TextIO::startPosFEN));
-    }
-    { // Unreachable, too many captures needed to be able to promote pawn to knight.
-        ProofGame ps("rnbqk1nr/pppp1ppp/8/2b5/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"));
-    }
+    // Queen is trapped, can not reach d3
+    ASSERT_EQ(INT_MAX, hScore(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/8/2Q5/1PPPPPPP/1NB1KBNR w Kkq - 0 1"));
+
+    // Queen is trapped, can not reach d3
+    ASSERT_EQ(INT_MAX, hScore(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/8/2Q5/1PPPPPP1/1NB1KBN1 w kq - 0 1"));
+
+    // Unreachable, 2 promotions required, only 1 available
+    ASSERT_EQ(INT_MAX, hScore(TextIO::startPosFEN, "B3k2B/1pppppp1/8/8/8/8/PPPP1PPP/RN1QK1NR w KQ - 0 1"));
+
+    // Unreachable, only 1 pawn promotion available, but need to promote to
+    // both knight (to satisfy piece counts) and bishop (existing bishops can
+    // not reach target square).
+    ASSERT_EQ(INT_MAX, hScore(TextIO::startPosFEN, "Nn1qk2B/1pppppp1/8/8/8/8/PPPP1PPP/RN1QK1NR w KQ - 0 1"));
+
+    // Unreachable, too many captures needed to be able to promote pawn to knight.
+    ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1",
+                              "rnbqk1nr/pppp1ppp/8/2b5/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1"));
+
     { // Reachable, use promotion to get bishop through blocking boundary
-        ProofGame ps("r1bqkbnr/B1pppppp/1p6/8/8/1P6/2PPPPPP/RN1QKBNR w KQkq - 0 1");
-        ASSERT_GE(hScore(ps, "rnbqkbnr/2pppppp/1p6/8/8/1P6/P1PPPPPP/RNBQKBNR w KQkq - 0 1"), 12);
-        ASSERT_LE(hScore(ps, "rnbqkbnr/2pppppp/1p6/8/8/1P6/P1PPPPPP/RNBQKBNR w KQkq - 0 1"), 16);
+        std::string goal("r1bqkbnr/B1pppppp/1p6/8/8/1P6/2PPPPPP/RN1QKBNR w KQkq - 0 1");
+        ASSERT_GE(hScore("rnbqkbnr/2pppppp/1p6/8/8/1P6/P1PPPPPP/RNBQKBNR w KQkq - 0 1", goal), 12);
+        ASSERT_LE(hScore("rnbqkbnr/2pppppp/1p6/8/8/1P6/P1PPPPPP/RNBQKBNR w KQkq - 0 1", goal), 16);
     }
-    { // Reachable, capture blocked bishop and promote a new bishop on the same square
-        ProofGame ps("B3k3/1ppppppp/3r4/8/8/8/1PPPPPPP/4K3 w - - 0 1");
-        ASSERT_LE(hScore(ps, "B2rk3/1ppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1"), 12);
-    }
-    { // Not reachable, bishop can not reach goal square, no promotion possible
-        ProofGame ps("B3k3/1ppppppp/3r4/8/8/8/1PPPPPPP/4K3 w - - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, "3rk3/1ppppppp/B7/8/8/8/1PPPPPPP/4K3 w - - 0 1"));
-    }
-    { // Reachable, one promotion needed and available
-        ProofGame ps("rnbqkbnB/pp1pppp1/1p6/8/8/1P6/P1PPPPP1/RN1QKBNR w KQq - 0 1");
-        ASSERT_LE(hScore(ps, TextIO::startPosFEN), 20);
-    }
-    { // Unreachable, no promotion possible, can not reach capture square
-        ProofGame ps("rnbqkbn1/p1ppppp1/p4r2/8/8/8/PPPP1PP1/RNBQK1NR w KQq - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPB/RNBQK1NR w KQkq - 0 1"));
-    }
-    { // Unreachable, too many captures needed to be able to promote pawn to knight.
-        ProofGame ps("rnbq2nr/pppkb1pp/3pp3/8/8/8/PPPPPPP1/RNBQKBNR w KQ - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"));
-    }
-    {
-        ProofGame ps("rnbqkbn1/p1ppppp1/p7/8/8/8/PPP1PPP1/RNBQK1NR w KQq - 0 1");
-        ASSERT_EQ(INT_MAX, hScore(ps, "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPB/RNBQK1NR w KQkq - 0 1"));
-    }
+    // Reachable, capture blocked bishop and promote a new bishop on the same square
+    ASSERT_LE(hScore("B2rk3/1ppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1",
+                     "B3k3/1ppppppp/3r4/8/8/8/1PPPPPPP/4K3 w - - 0 1"), 12);
+
+    // Not reachable, bishop can not reach goal square, no promotion possible
+    ASSERT_EQ(INT_MAX, hScore("3rk3/1ppppppp/B7/8/8/8/1PPPPPPP/4K3 w - - 0 1",
+                              "B3k3/1ppppppp/3r4/8/8/8/1PPPPPPP/4K3 w - - 0 1"));
+
+    // Reachable, one promotion needed and available
+    ASSERT_LE(hScore(TextIO::startPosFEN, "rnbqkbnB/pp1pppp1/1p6/8/8/1P6/P1PPPPP1/RN1QKBNR w KQq - 0 1"), 20);
+
+    // Unreachable, no promotion possible, can not reach capture square
+    ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPB/RNBQK1NR w KQkq - 0 1",
+                              "rnbqkbn1/p1ppppp1/p4r2/8/8/8/PPPP1PP1/RNBQK1NR w KQq - 0 1"));
+
+    // Unreachable, too many captures needed to be able to promote pawn to knight.
+    ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1",
+                              "rnbq2nr/pppkb1pp/3pp3/8/8/8/PPPPPPP1/RNBQKBNR w KQ - 0 1"));
+
+    ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPB/RNBQK1NR w KQkq - 0 1",
+                              "rnbqkbn1/p1ppppp1/p7/8/8/8/PPP1PPP1/RNBQK1NR w KQq - 0 1"));
 }
 
 TEST(ProofGameTest, testRemainingMoves) {
@@ -606,18 +585,13 @@ TEST(ProofGameTest, testRemainingMoves) {
 
 void
 ProofGameTest::testRemainingMoves() {
-    {
-        ProofGame ps("rnbqkbnr/pppppppp/8/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
-        ASSERT_EQ(4, hScore(ps, TextIO::startPosFEN));
-    }
-    {
-        ProofGame ps("rnbqk1nr/b1pp1ppp/1p6/4p3/8/5N2/PPPPPPPP/R1BQKB1R w KQkq - 0 1");
-        ASSERT_EQ(8, hScore(ps, TextIO::startPosFEN));
-    }
+    ASSERT_EQ(4, hScore(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1"));
+    ASSERT_EQ(8, hScore(TextIO::startPosFEN, "rnbqk1nr/b1pp1ppp/1p6/4p3/8/5N2/PPPPPPPP/R1BQKB1R w KQkq - 0 1"));
+
     { // Reachable, 2 promotions required and available, 6 captured required and available
-        ProofGame ps("B3k2B/1pppppp1/8/8/8/8/PPP2PPP/RN1QK1NR w KQ - 0 1");
-        ASSERT_GE(hScore(ps, TextIO::startPosFEN), 20);
-        ASSERT_LE(hScore(ps, TextIO::startPosFEN), 76);
+        std::string goal("B3k2B/1pppppp1/8/8/8/8/PPP2PPP/RN1QK1NR w KQ - 0 1");
+        ASSERT_GE(hScore(TextIO::startPosFEN, goal), 20);
+        ASSERT_LE(hScore(TextIO::startPosFEN, goal), 76);
     }
 }
 
@@ -628,21 +602,22 @@ TEST(ProofGameTest, testSearch) {
 void
 ProofGameTest::testSearch() {
     { // Start position without castling rights
-        ProofGame ps("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1");
+        ProofGame ps(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1");
         std::vector<Move> movePath;
-        int best = ps.search(TextIO::startPosFEN, {}, movePath);
+        int best = ps.search({}, movePath);
         ASSERT_EQ(16, best);
     }
     { // Start position without castling rights
-        ProofGame ps("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1", 1, 9);
+        ProofGame ps(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1", 1, 9);
         std::vector<Move> movePath;
-        int best = ps.search(TextIO::startPosFEN, {}, movePath);
+        int best = ps.search({}, movePath);
         ASSERT_EQ(16, best);
     }
     {
-        ProofGame ps("rnbqk1nr/ppppppbp/6p1/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
+        ProofGame ps(TextIO::startPosFEN,
+                     "rnbqk1nr/ppppppbp/6p1/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
         std::vector<Move> movePath;
-        int best = ps.search(TextIO::startPosFEN, {}, movePath);
+        int best = ps.search({}, movePath);
         ASSERT_EQ(4, best);
         ASSERT_EQ(4, movePath.size());
         ASSERT_EQ("a2a4", TextIO::moveToUCIString(movePath[0]));
@@ -654,10 +629,11 @@ ProofGameTest::testSearch() {
         return TextIO::uciStringToMove(s);
     };
     {
-        ProofGame ps("rnbqk1nr/ppppppbp/6p1/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
+        ProofGame ps(TextIO::startPosFEN,
+                     "rnbqk1nr/ppppppbp/6p1/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
         std::vector<Move> initPath { toM("a2a4"), toM("g7g6") };
         std::vector<Move> movePath;
-        int best = ps.search(TextIO::startPosFEN, initPath, movePath);
+        int best = ps.search(initPath, movePath);
         ASSERT_EQ(4, best);
         ASSERT_EQ(4, movePath.size());
         ASSERT_EQ("a2a4", TextIO::moveToUCIString(movePath[0]));
@@ -666,10 +642,11 @@ ProofGameTest::testSearch() {
         ASSERT_EQ("f8g7", TextIO::moveToUCIString(movePath[3]));
     }
     {
-        ProofGame ps("rnbqk1nr/ppppppbp/6p1/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
+        ProofGame ps(TextIO::startPosFEN,
+                     "rnbqk1nr/ppppppbp/6p1/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
         std::vector<Move> initPath { toM("a2a3") };
         std::vector<Move> movePath;
-        int best = ps.search(TextIO::startPosFEN, initPath, movePath);
+        int best = ps.search(initPath, movePath);
         ASSERT_EQ(6, best);
         ASSERT_EQ(6, movePath.size());
         ASSERT_EQ("a2a3", TextIO::moveToUCIString(movePath[0]));
@@ -680,9 +657,10 @@ ProofGameTest::testSearch() {
         ASSERT_EQ("h6g7", TextIO::moveToUCIString(movePath[5]));
     }
     {
-        ProofGame ps("rnbqkbnr/p1pppppp/p7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        ProofGame ps(TextIO::startPosFEN,
+                     "rnbqkbnr/p1pppppp/p7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         std::vector<Move> movePath;
-        int best = ps.search(TextIO::startPosFEN, {}, movePath);
+        int best = ps.search({}, movePath);
         ASSERT_EQ(INT_MAX, best);
     }
 }
@@ -694,29 +672,33 @@ TEST(ProofGameTest, testEnPassant) {
 void
 ProofGameTest::testEnPassant() {
     {
-        ProofGame ps("rnbqkbnr/pp1ppppp/8/8/2pPP3/7P/PPP2PP1/RNBQKBNR b KQkq d3 0 1");
+        ProofGame ps(TextIO::startPosFEN,
+                     "rnbqkbnr/pp1ppppp/8/8/2pPP3/7P/PPP2PP1/RNBQKBNR b KQkq d3 0 1");
         std::vector<Move> movePath;
-        int best = ps.search(TextIO::startPosFEN, {}, movePath);
+        int best = ps.search({}, movePath);
         ASSERT_EQ(5, best);
         ASSERT_EQ(5, movePath.size());
         ASSERT_EQ("d2d4", TextIO::moveToUCIString(movePath[4]));
     }
     {
-        ProofGame ps("rnbqkbnr/ppppp1pp/8/8/3PPp2/7P/PPP2PP1/RNBQKBNR b KQkq e3 0 1");
+        ProofGame ps(TextIO::startPosFEN,
+                     "rnbqkbnr/ppppp1pp/8/8/3PPp2/7P/PPP2PP1/RNBQKBNR b KQkq e3 0 1");
         std::vector<Move> movePath;
-        int best = ps.search(TextIO::startPosFEN, {}, movePath);
+        int best = ps.search({}, movePath);
         ASSERT_EQ(5, best);
         ASSERT_EQ(5, movePath.size());
         ASSERT_EQ("e2e4", TextIO::moveToUCIString(movePath[4]));
     }
     {
         EXPECT_THROW({
-            ProofGame ps("4k3/8/8/1pP5/B7/1P6/8/4K3 w - b6 0 1");
+            ProofGame ps(TextIO::startPosFEN,
+                         "4k3/8/8/1pP5/B7/1P6/8/4K3 w - b6 0 1");
         }, ChessParseError);
     }
     {
         EXPECT_THROW({
-            ProofGame ps("1r2N1B1/1Np2K1R/pq2rQn1/nN4pr/k3bBpP/8/BN4N1/b4Qq1 b - h3 0 1");
+            ProofGame ps(TextIO::startPosFEN,
+                         "1r2N1B1/1Np2K1R/pq2rQn1/nN4pr/k3bBpP/8/BN4N1/b4Qq1 b - h3 0 1");
         }, ChessParseError);
     }
 }
@@ -754,7 +736,7 @@ ProofGameTest::testCaptureSquares() {
             for (int j = 0; j < 8; j++)
                 m(i,j) = initial[i*8+j] ? 1 : bigCost;
         Assignment<int> as(m);
-        ProofGame ps(TextIO::startPosFEN);
+        ProofGame ps(TextIO::startPosFEN, TextIO::startPosFEN);
         int cost = ps.solveAssignment(as);
         ASSERT_EQ(8, cost);
         for (int i = 0; i < 8; i++)
@@ -763,7 +745,7 @@ ProofGameTest::testCaptureSquares() {
     }
 
     {
-        ProofGame ps(TextIO::startPosFEN);
+        ProofGame ps(TextIO::startPosFEN, TextIO::startPosFEN);
         U64 m = ps.allPawnPaths(true, D3, F6, 0, 2);
         ASSERT_EQ(BitBoard::sqMask(D3,D4,E4,E5,F5,F6), m);
         m = ps.allPawnPaths(true, D3, F6, 0, 1);
@@ -796,7 +778,7 @@ ProofGameTest::testCaptureSquares() {
     }
 
     {
-        ProofGame ps(TextIO::startPosFEN);
+        ProofGame ps(TextIO::startPosFEN, TextIO::startPosFEN);
         U64 cutSets[16];
         int size = 0;
         bool ret = ps.computeCutSets(true, BitBoard::sqMask(C2), A4, 0, 2, cutSets, size);
@@ -878,21 +860,18 @@ ProofGameTest::testCaptureSquares() {
     }
 
     {
-        ProofGame ps("rnbqk3/pppppp1p/8/8/1P3P2/8/PPP1PPP1/RNBQKBNR w KQq - 0 1");
-        ASSERT_GE(hScore(ps, TextIO::startPosFEN), 8);
-        ASSERT_LE(hScore(ps, TextIO::startPosFEN), 26);
+        std::string goal("rnbqk3/pppppp1p/8/8/1P3P2/8/PPP1PPP1/RNBQKBNR w KQq - 0 1");
+        ASSERT_GE(hScore(TextIO::startPosFEN, goal), 8);
+        ASSERT_LE(hScore(TextIO::startPosFEN, goal), 26);
     }
     {
-        ProofGame ps("rnbqk3/pppppp1p/8/8/8/P1P1P1P1/8/RNBQKBNR w KQq - 0 1");
-        std::string startFen = "rnbqkbnr/pppppppp/8/8/8/8/1P1P1P1P/RNBQKBNR w KQkq - 0 1";
-        ASSERT_GE(hScore(ps, startFen), 8);
-        ASSERT_LE(hScore(ps, startFen), 28);
+        std::string start("rnbqkbnr/pppppppp/8/8/8/8/1P1P1P1P/RNBQKBNR w KQkq - 0 1");
+        std::string goal("rnbqk3/pppppp1p/8/8/8/P1P1P1P1/8/RNBQKBNR w KQq - 0 1");
+        ASSERT_GE(hScore(start, goal), 8);
+        ASSERT_LE(hScore(start, goal), 28);
     }
-    {
-        ProofGame ps("2b1kqr1/p2p3p/3p4/p2PpP2/PpP2p2/6P1/8/RRB1KQ1N w - - 0 1");
-        std::string startFen = "2b1kqr1/p1rp3p/1p1p1b2/3PpPp1/PpP3P1/6P1/4BN2/R1B1KQ1R w Q - 5 1";
-        ASSERT_EQ(INT_MAX, hScore(ps, startFen));
-    }
+    ASSERT_EQ(INT_MAX, hScore("2b1kqr1/p1rp3p/1p1p1b2/3PpPp1/PpP3P1/6P1/4BN2/R1B1KQ1R w Q - 5 1",
+                              "2b1kqr1/p2p3p/3p4/p2PpP2/PpP2p2/6P1/8/RRB1KQ1N w - - 0 1"));
 }
 
 TEST(ProofGameTest, testKingPawnsTrap) {
@@ -902,38 +881,26 @@ TEST(ProofGameTest, testKingPawnsTrap) {
 void
 ProofGameTest::testKingPawnsTrap() {
     {
-        std::string goalFen  = "1k6/1Pb4b/1P6/8/8/8/8/4K3 w - - 0 1";
-        std::string startFen = "1k6/bP5b/1P6/8/8/8/8/4K3 w - - 0 1";
-        ProofGame ps(goalFen);
-        ASSERT_EQ(INT_MAX, hScore(ps, startFen));
-        startFen = "1k6/1Pb2b2/1P6/8/8/2K5/8/8 w - - 0 1";
-        ASSERT_EQ(4, hScore(ps, startFen));
+        std::string goalFen = "1k6/1Pb4b/1P6/8/8/8/8/4K3 w - - 0 1";
+        ASSERT_EQ(INT_MAX, hScore("1k6/bP5b/1P6/8/8/8/8/4K3 w - - 0 1", goalFen));
+        ASSERT_EQ(4,       hScore("1k6/1Pb2b2/1P6/8/8/2K5/8/8 w - - 0 1", goalFen));
     }
-    {
-        std::string startFen = "4k3/2b1P3/4P3/8/8/2K1P3/8/8 w - - 0 1";
-        std::string goalFen  = "4k3/2b1P3/4P3/8/8/2K1Q3/8/8 w - - 0 1";
-        ProofGame ps(goalFen);
-        ASSERT_EQ(INT_MAX, hScore(ps, startFen));
-    }
-    {
-        std::string startFen = "4k3/2b1P3/4P3/8/P7/2K5/8/8 w - - 0 1";
-        std::string goalFen  = "2k5/2b1P3/4P3/8/N7/2K5/8/8 w - - 0 1";
-        ProofGame ps(goalFen);
-        ASSERT_EQ(INT_MAX, hScore(ps, startFen));
-    }
+    ASSERT_EQ(INT_MAX, hScore("4k3/2b1P3/4P3/8/8/2K1P3/8/8 w - - 0 1",
+                              "4k3/2b1P3/4P3/8/8/2K1Q3/8/8 w - - 0 1"));
+    ASSERT_EQ(INT_MAX, hScore("4k3/2b1P3/4P3/8/P7/2K5/8/8 w - - 0 1",
+                              "2k5/2b1P3/4P3/8/N7/2K5/8/8 w - - 0 1"));
     {
         std::string startFen = "4k3/2b1P3/4P3/8/P7/2K5/8/8 w - - 0 1";
         std::string goalFen  = "8/2b5/3k4/8/B3B3/2K5/8/8 w - - 0 1";
-        ProofGame ps(goalFen);
-        ASSERT_GE(hScore(ps, startFen), 12);
-        ASSERT_LE(hScore(ps, startFen), 16);
+        ASSERT_GE(hScore(startFen, goalFen), 12);
+        ASSERT_LE(hScore(startFen, goalFen), 16);
     }
 
     {
         std::string startFen = "3k4/b2P4/3P4/3P4/3p4/3p3B/3p4/3K4 w - - 0 1";
         std::string goalFen  = "3k4/b2P4/3P4/3P4/1B1p4/3p4/3p4/3K4 w - - 0 1";
-        ProofGame ps(goalFen);
-        ASSERT_EQ(INT_MAX, hScore(ps, startFen));
+        ProofGame ps(startFen, goalFen);
+        ASSERT_EQ(INT_MAX, hScore(startFen, goalFen));
         Position pos = TextIO::readFEN(startFen);
         U64 blocked;
         ps.computeBlocked(pos, blocked);
@@ -943,8 +910,8 @@ ProofGameTest::testKingPawnsTrap() {
     {
         std::string startFen = "4k3/b3p3/4p3/8/1B6/5P2/5P2/5K2 w - - 0 1";
         std::string goalFen  = "4k3/4p3/1b2p3/8/8/B4P2/5P2/5K2 w - - 0 1";
-        ProofGame ps(goalFen);
-        ASSERT_EQ(2, hScore(ps, startFen));
+        ProofGame ps(startFen, goalFen);
+        ASSERT_EQ(2, hScore(startFen, goalFen));
         Position pos = TextIO::readFEN(startFen);
         U64 blocked;
         ps.computeBlocked(pos, blocked);
@@ -953,8 +920,8 @@ ProofGameTest::testKingPawnsTrap() {
     {
         std::string startFen = "3k4/b2P4/3P4/2P5/1P6/P7/8/4K3 w - - 0 1";
         std::string goalFen  = "3k4/3P2b1/3P4/2P5/1P6/P7/8/4K3 w - - 0 1";
-        ProofGame ps(goalFen);
-        ASSERT_EQ(INT_MAX, hScore(ps, startFen));
+        ProofGame ps(startFen, goalFen);
+        ASSERT_EQ(INT_MAX, hScore(startFen, goalFen));
         U64 blocked;
         Position pos = TextIO::readFEN(startFen);
         ps.computeBlocked(pos, blocked);

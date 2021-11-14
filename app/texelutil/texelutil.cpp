@@ -429,9 +429,9 @@ doProofGameCmd(int argc, char* argv[]) {
             }
         }
 
-        ProofGame ps(goalFen, a, b, dynamic);
+        ProofGame ps(initFen, goalFen, a, b, dynamic);
         std::vector<Move> movePath;
-        ps.search(initFen, initPath, movePath, maxNodes, verbose);
+        ps.search(initPath, movePath, maxNodes, verbose);
     }
 }
 

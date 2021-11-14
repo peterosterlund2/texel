@@ -42,20 +42,19 @@
 class ProofGame {
     friend class ProofGameTest;
 public:
-    /** Create object to find a move path to a goal position.
+    /** Create object to find a move path from a start to a goal position.
      * A position is considered to match the goal position even if move
      * numbers, en passant square, and/or castling flags are different.
      * Use scale a for ply and scale b for bound when ordering nodes to search.
      * If "dynamic" is true, dynamic weighting A* search is used. */
-    ProofGame(const std::string& goal, int a = 1, int b = 1, bool dynamic = false,
-              bool smallCache = false);
-    ProofGame(std::ostream& log, const std::string& goal, int a = 1, int b = 1,
-              bool dynamic = false, bool smallCache = false);
+    ProofGame(const std::string& start, const std::string& goal,
+              int a = 1, int b = 1, bool dynamic = false, bool smallCache = false);
+    ProofGame(std::ostream& log, const std::string& start, const std::string& goal,
+              int a = 1, int b = 1, bool dynamic = false, bool smallCache = false);
     ProofGame(const ProofGame&) = delete;
     ProofGame& operator=(const ProofGame&) = delete;
 
     /** Search for shortest solution. Print solutions to standard output.
-     * @param initialFen   Position to start searching from.
      * @param initialPath  Only search for solutions starting with this path.
      * @param movePath     Set to shortest found path.
      * @param maxNodes     Maximum number of search nodes before giving up,
@@ -64,11 +63,8 @@ public:
      * @return             Length of shortest path found,
      *                     or INT_MAX if no solution exists,
      *                     or -1 if unknown whether a solution exists. */
-    int search(const std::string& initialFen, const std::vector<Move>& initialPath,
+    int search(const std::vector<Move>& initialPath,
                std::vector<Move>& movePath, S64 maxNodes = -1, bool verbose = false);
-
-    /** Return goal position. */
-    const Position& getGoalPos() const;
 
     /** Compute blocked pieces in a position. A blocked piece is a piece that
      *  can not move without making it impossible to reach the goal position.
@@ -203,6 +199,7 @@ private:
 
     static const int bigCost = 1000;
 
+    const std::string initialFen;
     Position goalPos;
     int goalPieceCnt[Piece::nPieceTypes];
     std::vector<Move> lastMoves; // Forced moves after reaching goalPos to reach original goalPos
@@ -287,11 +284,6 @@ ProofGame::isSolution(const Position& pos) const {
     if (pos.zobristHash() != goalPos.zobristHash())
         return false;
     return pos.drawRuleEquals(goalPos);
-}
-
-inline const Position&
-ProofGame::getGoalPos() const {
-    return goalPos;
 }
 
 #endif /* PROOFGAME_HPP_ */

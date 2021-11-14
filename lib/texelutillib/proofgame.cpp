@@ -80,13 +80,14 @@ ProofGame::staticInit() {
     staticInitDone = true;
 }
 
-ProofGame::ProofGame(const std::string& goal, int a, int b, bool dynamic, bool smallCache)
-    : ProofGame(std::cout, goal, a, b, dynamic, smallCache) {
+ProofGame::ProofGame(const std::string& start, const std::string& goal,
+                     int a, int b, bool dynamic, bool smallCache)
+    : ProofGame(std::cout, start, goal, a, b, dynamic, smallCache) {
 }
 
-ProofGame::ProofGame(std::ostream& log, const std::string& goal, int a, int b,
-                     bool dynamic, bool smallCache)
-    : weightA(a), weightB(b), dynamic(dynamic), log(log) {
+ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::string& goal,
+                     int a, int b, bool dynamic, bool smallCache)
+    : initialFen(start), weightA(a), weightB(b), dynamic(dynamic), log(log) {
     goalPos = TextIO::readFEN(goal);
     if (TextIO::toFEN(goalPos) != goal)
         throw ChessParseError("Lossy FEN conversion");
@@ -157,7 +158,7 @@ ProofGame::validatePieceCounts(const Position& pos) {
 }
 
 int
-ProofGame::search(const std::string& initialFen, const std::vector<Move>& initialPath,
+ProofGame::search(const std::vector<Move>& initialPath,
                   std::vector<Move>& movePath, S64 maxNodes, bool verbose) {
     Position startPos = TextIO::readFEN(initialFen);
     {
@@ -1342,7 +1343,8 @@ bool ProofGame::TreeNodeCompare::higherPrio(int a, int b) const {
 }
 
 void ProofGame::filterFens(std::istream& is, std::ostream& os) {
-    Position startPos = TextIO::readFEN(TextIO::startPosFEN);
+    const std::string startPosFEN = TextIO::startPosFEN;
+    Position startPos = TextIO::readFEN(startPosFEN);
     while (true) {
         std::string line;
         std::getline(is, line);
@@ -1351,9 +1353,9 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
 
         std::string status;
         try {
-            ProofGame pg(std::cerr, line, 1, 1, false, true);
+            ProofGame pg(std::cerr, startPosFEN, line, 1, 1, false, true);
             std::vector<Move> movePath;
-            int minCost = pg.search(TextIO::startPosFEN, {}, movePath, 2, false);
+            int minCost = pg.search({}, movePath, 2, false);
             if (minCost == INT_MAX) {
                 status = "illegal, other";
             } else if (minCost >= 0) {
