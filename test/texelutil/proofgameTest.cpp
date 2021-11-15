@@ -676,6 +676,17 @@ ProofGameTest::testSearch() {
         int best = ps.search({}, movePath);
         ASSERT_EQ(INT_MAX, best);
     }
+    {
+        ProofGame ps1(TextIO::startPosFEN, "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 1");
+        std::vector<Move> movePath;
+        int best = ps1.search({}, movePath);
+        ASSERT_EQ(4, best);
+
+        // One extra move needed to avoid ep square in goal position
+        ProofGame ps2(TextIO::startPosFEN, "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
+        best = ps2.search({}, movePath);
+        ASSERT_EQ(6, best);
+    }
 }
 
 TEST(ProofGameTest, testEnPassant) {

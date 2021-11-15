@@ -44,7 +44,7 @@ class ProofGame {
 public:
     /** Create object to find a move path from a start to a goal position.
      * A position is considered to match the goal position even if move
-     * numbers, en passant square, and/or castling flags are different.
+     * numbers are different.
      * Use scale a for ply and scale b for bound when ordering nodes to search.
      * If "dynamic" is true, dynamic weighting A* search is used. */
     ProofGame(const std::string& start, const std::string& goal,
