@@ -107,29 +107,26 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
         for (const UnMove& um : unMoves)
             ((um.ui.capturedPiece == Piece::EMPTY) ? quiets : captures).push_back(um);
 
-        bool capturesRejected = false;
-        if (quiets.size() <= 1) { // Check if all captures are invalid
-            bool validCapture = false;
-            for (const UnMove& um : captures) {
-                log << "Checking capture: " << um << std::endl;
-                Position tmpPos(goalPos);
-                tmpPos.unMakeMove(um.move, um.ui);
-                tmpPos.setFullMoveCounter(1);
+        unMoves = quiets;
 
-                U64 blocked;
-                if (!computeBlocked(startPos, blocked))
-                    blocked = 0xffffffffffffffffULL;
-                ProofKernel pk(startPos, tmpPos, blocked);
-                std::vector<ProofKernel::PkMove> kernel;
-                if (pk.findProofKernel(kernel)) {
-                    validCapture = true;
-                    break;
-                }
-            }
-            if (!captures.empty() && !validCapture) {
+        bool capturesRejected = false;
+        for (const UnMove& um : captures) {
+            if (unMoves.size() > 1)
+                break;
+            log << "Checking capture: " << um << std::endl;
+            Position tmpPos(goalPos);
+            tmpPos.unMakeMove(um.move, um.ui);
+            tmpPos.setFullMoveCounter(1);
+
+            U64 blocked;
+            if (!computeBlocked(startPos, blocked))
+                blocked = 0xffffffffffffffffULL;
+            ProofKernel pk(startPos, tmpPos, blocked);
+            std::vector<ProofKernel::PkMove> kernel;
+            if (pk.findProofKernel(kernel))
+                unMoves.push_back(um);
+            else
                 capturesRejected = true;
-                unMoves = quiets;
-            }
         }
 
         if (unMoves.empty()) {
