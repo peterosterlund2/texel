@@ -89,12 +89,17 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
                      int a, int b, bool dynamic, bool smallCache)
     : initialFen(start), weightA(a), weightB(b), dynamic(dynamic), log(log) {
     Position startPos = TextIO::readFEN(initialFen);
+    startPos.setFullMoveCounter(1);
     goalPos = TextIO::readFEN(goal);
     if (TextIO::toFEN(goalPos) != goal)
         throw ChessParseError("Lossy FEN conversion");
+    goalPos.setFullMoveCounter(1);
     validatePieceCounts(goalPos);
 
     while (true) {
+        if (startPos == goalPos)
+            break;
+
         std::vector<UnMove> unMoves;
         RevMoveGen::genMoves(goalPos, unMoves, false);
 

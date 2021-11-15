@@ -577,6 +577,19 @@ ProofGameTest::testReachable() {
 
     ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPB/RNBQK1NR w KQkq - 0 1",
                               "rnbqkbn1/p1ppppp1/p7/8/8/8/PPP1PPP1/RNBQK1NR w KQq - 0 1"));
+
+    { // Trivially reachable, but position only has one reverse move.
+        std::string start = "4k3/1p6/8/2P5/B7/1P6/8/4K3 b - - 0 3";
+        std::string goal  = "4k3/8/8/1pP5/B7/1P6/8/4K3 w - b6 0 2";
+        ASSERT_EQ(0, hScore(goal, goal));
+        ASSERT_EQ(0, hScore(start, goal));
+
+        ProofGame ps(start, goal);
+        std::vector<Move> movePath;
+        int best = ps.search({}, movePath);
+        ASSERT_EQ(1, best);
+        ASSERT_EQ(1, movePath.size());
+    }
 }
 
 TEST(ProofGameTest, testRemainingMoves) {
