@@ -979,6 +979,9 @@ void ProofGameTest::testFilter() {
         { "k1bBrR2/1B1rbN2/p2BN1Q1/2n3bP/p2bNR1p/2R1n3/P4b2/1K3b2 b - - 0 1", "illegal", true },
         { "nB1kr3/pbnBR3/P2PpQ1Q/2N2K2/r1r1r3/qPr5/qR2P2q/1N5r w - - 1 2", "illegal", true },
         { "4B2n/Bqp2Nbr/r1r2p1B/5b2/n3bN2/1QR1q1b1/3kr2B/QKb2B1R w - - 0 1", "illegal", true },
+
+        { "rnbRkbnr/p1pp1ppp/1p1p4/8/8/8/PPP2PPP/RNBQKBNR b KQkq - 0 1", "illegal", false },
+        { "Q2q4/2Bp3r/2PBRb2/R2N3p/1q3RBP/1pQnK2N/2B2Qp1/2bn1b1k w - - 0 1", "illegal", true },
     };
     for (const Data& d : v) {
         std::stringstream in;
