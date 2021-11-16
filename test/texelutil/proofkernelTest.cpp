@@ -778,4 +778,12 @@ ProofKernelTest::testSearch() {
 
     test(startFEN, "3rRQ2/1P2q1q1/NK2brn1/1q3b2/B3k3/1BB4N/RbrrP1Pq/n2br3 w - - 0 1",
          false, "");
+
+    test("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQK1NR w KQkq - 0 1",
+         "B1Q5/1p1bR3/1RPQqb1b/3n4/1RK1N1Nn/b4pQ1/2Qr3B/1r2qbBk w - - 0 1",
+         false, "");
+    test(startFEN, "B1Q5/1p1bR3/1RPQqb1b/3n4/1RK1N1Nn/b4pQ1/2Qr3B/1r2qbBk w - - 0 1",
+         false, "");
+    test(startFEN, "BnbqkbBr/1ppppp1p/8/8/3P4/8/1PP1PP1P/RNBRK1NR w KQk - 0 1",
+         false, "");
 }

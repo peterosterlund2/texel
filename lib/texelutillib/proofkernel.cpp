@@ -374,11 +374,20 @@ ProofKernel::isGoal() const {
         int promNeeded = 0;
         promNeeded += std::max(0, -excessCnt[c][QUEEN]);
         promNeeded += std::max(0, -excessCnt[c][ROOK]);
-        int promNeededDark = std::max(0, -excessCnt[c][DARK_BISHOP]);
-        promNeeded += promNeededDark;
-        int promNeededLight = std::max(0, -excessCnt[c][LIGHT_BISHOP]);
-        promNeeded += promNeededLight;
         promNeeded += std::max(0, -excessCnt[c][KNIGHT]);
+
+        int promNeededDark = 0, promNeededLight = 0;
+        for (int i = 0; i < 8; i++) {
+            if (columns[i].bishopPromotionRequired(c)) {
+                if (columns[i].promotionSquareType(c) == SquareColor::DARK)
+                    promNeededDark++;
+                else
+                    promNeededLight++;
+            }
+        }
+        promNeededDark = std::max(promNeededDark, -excessCnt[c][DARK_BISHOP]);
+        promNeededLight = std::max(promNeededLight, -excessCnt[c][LIGHT_BISHOP]);
+        promNeeded += promNeededDark + promNeededLight;
 
         int promAvail = 0;
         int promAvailDark = 0;
