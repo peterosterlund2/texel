@@ -740,7 +740,7 @@ ProofKernelTest::testSearch() {
         Position startPos = TextIO::readFEN(start);
         Position goalPos = TextIO::readFEN(goal);
 
-        ProofKernel pk (startPos, goalPos, computeBlocked(startPos, goalPos));
+        ProofKernel pk(startPos, goalPos, computeBlocked(startPos, goalPos));
 
         std::vector<PkMove> moves;
         bool found = pk.findProofKernel(moves);
@@ -757,6 +757,14 @@ ProofKernelTest::testSearch() {
             if (expectedPath != "*") {
                 ASSERT_EQ(expectedPath, path);
             }
+        }
+
+        if (expectedPath.empty() || expectedPath == "*") {
+            startPos = PosUtil::swapColors(startPos);
+            goalPos = PosUtil::swapColors(goalPos);
+            ProofKernel pk2(startPos, goalPos, computeBlocked(startPos, goalPos));
+            found = pk2.findProofKernel(moves);
+            ASSERT_EQ(hasSolution, found) << "start: " << start << " goal: " << goal;
         }
     };
 
@@ -786,4 +794,19 @@ ProofKernelTest::testSearch() {
          false, "");
     test(startFEN, "BnbqkbBr/1ppppp1p/8/8/3P4/8/1PP1PP1P/RNBRK1NR w KQk - 0 1",
          false, "");
+
+    // Rook/queen promotion not allowed next to uncastled king
+    test(startFEN, "r1bRkbnr/pppp1ppp/8/8/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+         true, "*");
+    test(startFEN, "rnbqkR1r/pppp1ppp/8/8/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+         true, "*");
+    test(startFEN, "r1bQkbnr/pppp1ppp/8/8/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+         true, "*");
+    test(startFEN, "rnbqkQ1r/pppp1ppp/8/8/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+         true, "*");
+
+    test(startFEN, "rnbqkb1r/ppp2ppp/8/8/3R4/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1",
+         false, "");
+    test(startFEN, "rnbqkb1r/ppp2ppp/8/8/3R4/8/PPPP1PPP/RNBQKBNR w KQ - 0 1",
+         true, "*");
 }

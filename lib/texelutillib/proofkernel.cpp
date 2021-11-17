@@ -82,6 +82,15 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U6
             bool promLeft = !blocked7 && !kingDiagBlock && x > 0 && !isBlocked(x-1, promY);
             bool promRight = !blocked7 && !kingDiagBlock && x < 7 && !isBlocked(x+1, promY);
             bool rqPromote = !blockedByKing(x, promY, c);
+            if (!rqPromote) {
+                int rook  = c == PieceColor::WHITE ? Piece::WROOK  : Piece::BROOK;
+                int queen = c == PieceColor::WHITE ? Piece::WQUEEN : Piece::BQUEEN;
+                int pieceLeft  = x == 0 ? Piece::EMPTY : getPiece(x - 1, promY);
+                int pieceRight = x == 7 ? Piece::EMPTY : getPiece(x + 1, promY);
+                if (pieceLeft == rook || pieceLeft == queen ||
+                    pieceRight == rook || pieceRight == queen)
+                    rqPromote = true;
+            }
             col.setCanPromote(c, promLeft, promForward, promRight, rqPromote);
         }
     }
