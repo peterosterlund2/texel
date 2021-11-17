@@ -233,26 +233,7 @@ TextIO::toFEN(const Position& pos) {
     ret += pos.isWhiteMove() ? " w " : " b ";
 
     // Castling rights
-    bool anyCastle = false;
-    if (pos.h1Castle()) {
-        ret += 'K';
-        anyCastle = true;
-    }
-    if (pos.a1Castle()) {
-        ret += 'Q';
-        anyCastle = true;
-    }
-    if (pos.h8Castle()) {
-        ret += 'k';
-        anyCastle = true;
-    }
-    if (pos.a8Castle()) {
-        ret += 'q';
-        anyCastle = true;
-    }
-    if (!anyCastle) {
-        ret += '-';
-    }
+    ret += castleMaskToString(pos.getCastleMask());
 
     // En passant target square
     {
@@ -357,14 +338,15 @@ isCapture(const Position& pos, const Move& move) {
            (move.to() == pos.getEpSquare());
 }
 
-static std::string
-pieceToChar(int p) {
+std::string
+TextIO::pieceToChar(int p, bool handlePawn) {
     switch (p) {
         case Piece::WQUEEN:  case Piece::BQUEEN:  return "Q";
         case Piece::WROOK:   case Piece::BROOK:   return "R";
         case Piece::WBISHOP: case Piece::BBISHOP: return "B";
         case Piece::WKNIGHT: case Piece::BKNIGHT: return "N";
         case Piece::WKING:   case Piece::BKING:   return "K";
+        case Piece::WPAWN:   case Piece::BPAWN:   return handlePawn ? "P" : "";
     }
     return "";
 }
@@ -389,7 +371,7 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveList& mov
     }
     if (ret.length() == 0) {
         int p = pos.getPiece(move.from());
-        ret += pieceToChar(p);
+        ret += TextIO::pieceToChar(p);
         int x1 = Square::getX(move.from());
         int y1 = Square::getY(move.from());
         int x2 = Square::getX(move.to());
@@ -435,7 +417,7 @@ moveToString(Position& pos, const Move& move, bool longForm, const MoveList& mov
         ret += (char)(x2 + 'a');
         ret += (char)(y2 + '1');
         if (move.promoteTo() != Piece::EMPTY)
-            ret += pieceToChar(move.promoteTo());
+            ret += TextIO::pieceToChar(move.promoteTo());
     }
     UndoInfo ui;
     if (MoveGen::givesCheck(pos, move)) {
@@ -658,3 +640,25 @@ TextIO::squareList(U64 mask) {
     return ret;
 }
 
+std::string
+TextIO::castleMaskToString(int castleMask) {
+    std::string castle;
+    if (castleMask & (1 << Position::H1_CASTLE)) castle += "K";
+    if (castleMask & (1 << Position::A1_CASTLE)) castle += "Q";
+    if (castleMask & (1 << Position::H8_CASTLE)) castle += "k";
+    if (castleMask & (1 << Position::A8_CASTLE)) castle += "q";
+    if (castle.empty()) castle += "-";
+    return castle;
+}
+
+std::ostream&
+operator<<(std::ostream& os, const UndoInfo& ui) {
+    std::string p = TextIO::pieceToChar(ui.capturedPiece, true);
+    os << "("
+       << (p.empty() ? "-" : p)
+       << ", " << TextIO::castleMaskToString(ui.castleMask)
+       << ", " << (ui.epSquare == -1 ? "-" : TextIO::squareToString(ui.epSquare))
+       << ", " << ui.halfMoveClock
+       << ")";
+    return os;
+};

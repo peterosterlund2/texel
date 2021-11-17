@@ -99,6 +99,12 @@ public:
     /** Create a comma separated list of squares corresponding to mask. */
     static std::string squareList(U64 mask);
 
+    /** Convert a piece value to string representation. */
+    static std::string pieceToChar(int piece, bool handlePawn = false);
+
+    /** Convert a castle mask to FEN string representation. */
+    static std::string castleMaskToString(int castleMask);
+
 private:
     static void safeSetPiece(Position& pos, int col, int row, int p);
 
@@ -155,15 +161,6 @@ operator<<(std::ostream& os, const Move& m) {
     return os;
 }
 
-inline std::ostream&
-operator<<(std::ostream& os, const UndoInfo& ui) {
-    os << "(" << ui.capturedPiece << ", " << ui.castleMask << ", ";
-    if (ui.epSquare == -1)
-        os << -1;
-    else
-        os << TextIO::squareToString(ui.epSquare);
-    os << ", " << ui.halfMoveClock << ")";
-    return os;
-};
+std::ostream& operator<<(std::ostream& os, const UndoInfo& ui);
 
 #endif /* TEXTIO_HPP_ */
