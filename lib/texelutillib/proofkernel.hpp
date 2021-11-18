@@ -168,6 +168,11 @@ private:
         /** Set whether promotion is possible for a color in left/forward/right directions. */
         void setCanPromote(PieceColor c, bool pLeft, bool pForward, bool pRight, bool pRookQueen);
 
+        /** True if the first pawn (i.e. 2:nd row for white, 7:th for black) can move. */
+        bool firstCanMove(PieceColor c) const;
+        /** Set whether first pawn for each color can move. */
+        void setFirstCanMove(bool whiteCanMove, bool blackCanMove);
+
         /** Color of promotion square. */
         SquareColor promotionSquareType(PieceColor c) const;
 
@@ -182,6 +187,7 @@ private:
         bool canRQProm[2] { true, true };                               // [color]
         std::array<S8,128> nProm[2][2];                                 // [color][toBishop][pawnPattern]
         bool bishopPromRequired[2] = { false, false };                  // [color]
+        bool firstPCanMove[2] = { true, true };                         // [color]
         std::array<bool,128> complete;                                  // [pawnPattern]
     };
     std::array<PawnColumn, 8> columns;
@@ -209,7 +215,7 @@ private:
 
     /** Extract pawn structure and piece counts from a position. */
     static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
-                           int (&pieceCnt)[2][nPieceTypes]);
+                           int (&pieceCnt)[2][nPieceTypes], U64 blocked);
 
     /** Recursive search function used by findProofKernel(). */
     bool search(int ply, std::vector<PkMove>& path);
@@ -404,6 +410,17 @@ ProofKernel::PawnColumn::canPromote(PieceColor c, Direction d) const {
 inline bool
 ProofKernel::PawnColumn::rookQueenPromotePossible(PieceColor c) const {
     return canRQProm[(int)c];
+}
+
+inline bool
+ProofKernel::PawnColumn::firstCanMove(PieceColor c) const {
+    return firstPCanMove[(int)c];
+}
+
+inline void
+ProofKernel::PawnColumn::setFirstCanMove(bool whiteCanMove, bool blackCanMove) {
+    firstPCanMove[WHITE] = whiteCanMove;
+    firstPCanMove[BLACK] = blackCanMove;
 }
 
 inline ProofKernel::SquareColor

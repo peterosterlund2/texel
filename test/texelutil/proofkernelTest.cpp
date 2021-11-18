@@ -551,8 +551,10 @@ ProofKernelTest::testMoveGen() {
            "wxPb1", "wxPb2", "wxPc3", "bxPb0", "bxPc0", "bxPc1", "bxPc2"
          });
 
-    test("1n2k3/p6p/8/8/8/8/P6P/1N2K3 w - - 0 1", "4k3/p7/8/6p1/1P6/8/7P/4K3 w - - 0 1",
+    test("1n2k3/p6p/8/8/8/8/P6P/1N2K3 w - - 0 1", "4k3/8/p7/6p1/1P6/7P/8/4K3 w - - 0 1",
          {"wPa0xNb0", "wPh0xNg0", "wxPa1", "wxPh1", "bPa1xNb0", "bPh1xNg0", "bxPa0", "bxPh0"});
+    test("1n2k3/p6p/8/8/8/8/P6P/1N2K3 w - - 0 1", "4k3/p7/8/6p1/1P6/8/7P/4K3 w - - 0 1",
+         {"wPa0xNb0", "wxPh1", "bPh1xNg0", "bxPa0"});
 
     test("1nbqkr2/8/8/8/8/8/P7/4K3 w - - 0 1", "4k3/8/8/8/1P6/8/8/4K3 w - - 0 1",
          {"wPa0xNb0",  "wPa0xNbN",  "wPa0xNbDB",  "wPa0xNbR",  "wPa0xNbQ",
@@ -562,11 +564,15 @@ ProofKernelTest::testMoveGen() {
           "bxPa0"
          });
 
+    test("4k3/p1p5/8/P7/p7/p7/P7/4K3 w - - 0 1", "4k3/8/pP6/8/p7/p7/P7/4K3 w - - 0 1",
+         {"wPa3xcb0", "wxPa1", "wxPa2", "wxPa4", "wxPc0", "bxPa3"});
     test("4k3/p1p5/8/P7/p7/p7/P7/4K3 w - - 0 1", "4k3/p7/1P6/8/p7/p7/P7/4K3 w - - 0 1",
-         {"wPa0xcb0", "wPa3xcb0", "wxPa1", "wxPa2", "wxPa4", "wxPc0", "bxPa0", "bxPa3"});
+         {"wPa3xcb0", "wxPa1", "wxPa2", "wxPc0", "bxPa3"});
 
-    test("4k3/1p6/8/8/1P6/1p6/8/4K3 w - - 0 1", "4k3/1p6/8/2P5/8/8/8/4K3 w - - 0 1",
+    test("4k3/1p6/8/8/1P6/1p6/8/4K3 w - - 0 1", "4k3/8/1p6/2P5/8/8/8/4K3 w - - 0 1",
          {"wPb0xba0", "wPb0xbc0", "wxPb0", "wxPb2", "bxPb1"});
+    test("4k3/1p6/8/8/1P6/1p6/8/4K3 w - - 0 1", "4k3/1p6/8/2P5/8/8/8/4K3 w - - 0 1",
+         {"wPb0xba0", "wPb0xbc0", "wxPb0", "bxPb1"});
     test("4k3/8/8/8/1P6/1p6/8/4K3 w - - 0 1", "4k3/8/8/2P5/8/8/8/4K3 w - - 0 1",
          {"wPb0xba0", "wPb0xbaN", "wPb0xbaLB", "wPb0xbaR", "wPb0xbaQ",
           "wPb0xbc0", "wPb0xbcN", "wPb0xbcLB", "wPb0xbcR", "wPb0xbcQ",
@@ -612,6 +618,29 @@ ProofKernelTest::testMoveGen() {
          {"wPd0xRc0", "wPd0xRe0", "wPd0xhc0", "wPd0xhe0", "wxPh0", "bxPd0"});
     test("4k3/8/8/3p4/8/8/7P/R3K1R1 w Q - 0 1", "4k3/8/8/4n3/8/8/8/R3K1R1 w Q - 0 1",
          {"bPd0xRc0", "bPd0xRe0", "bPd0xhc0", "bPd0xhe0", "wxPd0", "bxPh0"});
+
+    // Blocked pawns
+    test("4k3/1p6/8/8/8/8/PPP5/4K3 w - - 0 1", "4k3/1n6/8/8/8/8/PP6/4K3 w - - 0 1",
+         {"wPc0xPb1", "wxPb1",
+          "bPb1xPc0", "bPb1xca1", "bPb1xcc0", "bxPc0"
+         });
+    test("4k3/ppp5/8/8/8/8/1P6/4K3 w - - 0 1", "4k3/pp6/8/8/8/8/1N6/4K3 w - - 0 1",
+         {"wPb0xPc0", "wPb0xca0", "wPb0xcc0", "wxPc0",
+          "bPc0xPb0", "bxPb0"
+         });
+    test("1n2k3/ppp5/8/8/8/8/1P6/4K3 w - - 0 1", "4k3/pp6/8/8/8/8/1N6/4K3 w - - 0 1",
+         {"wPb0xPc0", "wPb0xca0", "wPb0xcc0", "wxPc0",
+          "wPb0xNa0", "wPb0xNc0", "wPb0xNc1",
+          "bPc0xPb0", "bxPb0"
+         });
+    test("4k3/1p6/8/8/2P5/8/PPP5/4K3 w - - 0 1", "4k3/1n6/8/8/8/8/PPP5/4K3 w - - 0 1",
+         {"wPc1xPb1", "wxPb1",
+          "bPb1xPc1", "bPb1xca1", "bPb1xcc1", "bxPc1"
+         });
+    test("4k3/ppp5/8/2p5/8/8/1P6/4K3 w - - 0 1", "4k3/ppp5/8/8/8/8/1N6/4K3 w - - 0 1",
+         {"wPb0xPc0", "wPb0xca0", "wPb0xcc0", "wxPc0",
+          "bPc0xPb0", "bxPb0"
+         });
 }
 
 TEST(ProofKernelTest, testMakeMove) {
@@ -809,4 +838,8 @@ ProofKernelTest::testSearch() {
          false, "");
     test(startFEN, "rnbqkb1r/ppp2ppp/8/8/3R4/8/PPPP1PPP/RNBQKBNR w KQ - 0 1",
          true, "*");
+
+    // Blocked pawns
+    test("4k3/ppp5/8/2p5/8/8/1P6/4K3 w - - 0 1", "4k3/ppp5/8/8/8/8/1N6/4K3 w - - 0 1",
+         false, "");
 }

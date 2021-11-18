@@ -32,10 +32,10 @@
 ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked) {
     for (int i = 0; i < 8; i++)
         columns[i] = PawnColumn(i);
-    posToState(initialPos, columns, pieceCnt);
+    posToState(initialPos, columns, pieceCnt, blocked);
 
     std::array<PawnColumn,8> goalColumns;
-    posToState(goalPos, goalColumns, goalCnt);
+    posToState(goalPos, goalColumns, goalCnt, blocked);
 
     auto isBlocked = [&blocked](int x, int y) -> bool {
         int sq = Square::getSquare(x, y);
@@ -111,7 +111,7 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U6
 }
 
 void ProofKernel::posToState(const Position& pos, std::array<PawnColumn,8>& columns,
-                             int (&pieceCnt)[2][nPieceTypes]) {
+                             int (&pieceCnt)[2][nPieceTypes], U64 blocked) {
     for (int c = 0; c < 2; c++) {
         pieceCnt[c][QUEEN]  = BitBoard::bitCount(pos.pieceTypeBB(c == WHITE ? Piece::WQUEEN  : Piece::BQUEEN));
         pieceCnt[c][ROOK]   = BitBoard::bitCount(pos.pieceTypeBB(c == WHITE ? Piece::WROOK   : Piece::BROOK));
@@ -132,6 +132,18 @@ void ProofKernel::posToState(const Position& pos, std::array<PawnColumn,8>& colu
                 col.addPawn(col.nPawns(), BLACK);
             }
         }
+
+        bool canMove[2] = { true, true };
+        for (int c = 0; c < 2; c++) {
+            int y = c == WHITE ? 1 : 6;
+            int sq = Square::getSquare(x, y);
+            if (blocked & (1ULL << sq)) {
+                int pawn = c == WHITE ? Piece::WPAWN : Piece::BPAWN;
+                if (pos.getPiece(sq) == pawn)
+                    canMove[c] = false;
+            }
+        }
+        col.setFirstCanMove(canMove[0], canMove[1]);
     }
 }
 
@@ -460,6 +472,23 @@ void
 ProofKernel::genMoves(std::vector<PkMove>& moves) {
     moves.clear();
 
+    // Return true if a pawn is free to move
+    auto canMove = [](const PawnColumn& col, int idx, int colNp) -> bool {
+        if ((idx == 0 && !col.firstCanMove(WHITE)) ||
+            (idx == colNp - 1 && !col.firstCanMove(BLACK)))
+            return false;
+        return true;
+    };
+
+    // Return true if a pawn can be inserted at a position in the pawn column,
+    // without forcing an un-movable pawn to move
+    auto canInsert = [](const PawnColumn& col, int idx, int colNp) -> bool {
+        if ((idx == 0 && !col.firstCanMove(WHITE)) ||
+            (idx == colNp && !col.firstCanMove(BLACK)))
+            return false;
+        return true;
+    };
+
     // Pawn takes pawn moves
     for (int x = 0; x < 8; x++) {
         PawnColumn& col = columns[x];
@@ -470,10 +499,14 @@ ProofKernel::genMoves(std::vector<PkMove>& moves) {
             PawnColumn oCol = columns[x + dir];
             const int oColNp = oCol.nPawns();
             for (int fromIdx = 0; fromIdx < colNp; fromIdx++) {
+                if (!canMove(col, fromIdx, colNp))
+                    continue;
                 PieceColor c = col.getPawn(fromIdx);
                 for (int toIdx = 0; toIdx < oColNp; toIdx++) {
                     if (c == oCol.getPawn(toIdx))
                         continue; // Cannot capture own pawn
+                    if (!canMove(oCol, toIdx, oColNp))
+                        continue;
                     moves.push_back(PkMove::pawnXPawn(c, x, fromIdx, x + dir, toIdx));
                 }
             }
@@ -499,14 +532,19 @@ ProofKernel::genMoves(std::vector<PkMove>& moves) {
             PawnColumn oCol = columns[x + dir];
             const int oColNp = oCol.nPawns();
             for (int fromIdx = 0; fromIdx < colNp; fromIdx++) {
+                if (!canMove(col, fromIdx, colNp))
+                    continue;
                 PieceColor c = col.getPawn(fromIdx);
                 PieceColor oc = c == WHITE ? BLACK : WHITE;
                 for (int t = QUEEN; t < PAWN; t++) {
                     PieceType taken = (PieceType)t;
                     if (pieceCnt[oc][taken] == 0)
                         continue;
-                    for (int toIdx = 0; toIdx <= oColNp; toIdx++)
+                    for (int toIdx = 0; toIdx <= oColNp; toIdx++) {
+                        if (!canInsert(oCol, toIdx, oColNp))
+                            continue;
                         moves.push_back(PkMove::pawnXPiece(c, x, fromIdx, x + dir, toIdx, taken));
+                    }
 
                     // Promotion
                     if ((c == WHITE && fromIdx != colNp - 1) ||
@@ -533,6 +571,8 @@ ProofKernel::genMoves(std::vector<PkMove>& moves) {
             PawnColumn oCol = columns[x + dir];
             const int oColNp = oCol.nPawns();
             for (int fromIdx = 0; fromIdx < colNp; fromIdx++) {
+                if (!canMove(col, fromIdx, colNp))
+                    continue;
                 PieceColor c = col.getPawn(fromIdx);
                 PieceColor oc = c == WHITE ? BLACK : WHITE;
                 for (int promFile = 0; promFile < 8; promFile++) {
@@ -540,7 +580,10 @@ ProofKernel::genMoves(std::vector<PkMove>& moves) {
                         continue;
                     int fromIdxDelta = (promFile == x && c == WHITE) ? -1 : 0;
                     for (int toIdx = 0; toIdx <= oColNp; toIdx++) {
-                        if (promFile == x + dir && toIdx == oColNp)
+                        bool promOnToFile = promFile == x + dir;
+                        if (!canInsert(oCol, toIdx, oColNp - (promOnToFile ? 1 : 0)))
+                            continue;
+                        if (promOnToFile && toIdx == oColNp)
                             continue; // Promotion from file x+dir, one less pawn available
                         moves.push_back(PkMove::pawnXPromPawn(c, x, fromIdx + fromIdxDelta,
                                                               x + dir, toIdx, promFile));
@@ -566,6 +609,8 @@ ProofKernel::genMoves(std::vector<PkMove>& moves) {
         PawnColumn& col = columns[x];
         const int colNp = col.nPawns();
         for (int toIdx = 0; toIdx < colNp; toIdx++) {
+            if (!canMove(col, toIdx, colNp))
+                continue;
             PieceColor oc = col.getPawn(toIdx);
             PieceColor c = oc == WHITE ? BLACK : WHITE;
             moves.push_back(PkMove::pieceXPawn(c, x, toIdx));
