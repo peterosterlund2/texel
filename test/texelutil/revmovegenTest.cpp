@@ -276,7 +276,7 @@ RevMoveGenTest::testCastleMask() {
         { "r3k2Q/8/2b5/8/8/2N5/8/R3K3 b q - 0 1", "g7h8q", { a8, a8|h8 } },
     };
 
-    auto mirrorDataY = [](const Data& d) {
+    auto mirrorDataY = [&](const Data& d) {
         Data mirror;
         mirror.fen = mirrorFenY(d.fen);
         mirror.move = mirrorUciMoveY(d.move);

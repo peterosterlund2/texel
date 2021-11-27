@@ -29,7 +29,7 @@
 #include <vector>
 
 class Position;
-class UnMove;
+struct UnMove;
 
 class RevMoveGenTest {
 public:
