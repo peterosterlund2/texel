@@ -25,6 +25,7 @@
 
 #include "bitBoard.hpp"
 #include "textio.hpp"
+#include "util/random.hpp"
 
 #include <algorithm>
 
@@ -177,6 +178,29 @@ TEST(BitBoardTest, testTrailingZeros) {
     }
     ASSERT_EQ(64, cnt);
 }
+
+TEST(BitBoardTest, testLastSquare) {
+    for (int i = 0; i < 64; i++) {
+        U64 mask = 1ULL << i;
+        ASSERT_EQ(i, BitBoard::lastSquare(mask));
+        if (i > 0) {
+            ASSERT_EQ(i - 1, BitBoard::lastSquare(mask - 1));
+            if (i < 63) {
+                ASSERT_EQ(i, BitBoard::lastSquare(mask + 1));
+            }
+        }
+    }
+    for (int i = 0; i < 1000; i++) {
+        U64 m = hashU64(i+1);
+        ASSERT_NE(0, m);
+        int expected = 0;
+        for (int b = 0; b < 64; b++)
+            if (m & (1ULL << b))
+                expected = b;
+        ASSERT_EQ(expected, BitBoard::lastSquare(m));
+    }
+}
+
 
 static U64 mirrorXSlow(U64 mask) {
     U64 ret = 0;

@@ -126,8 +126,11 @@ public:
 
     static U64 northFill(U64 mask);
 
-    /** Get the lowest square from mask. */
+    /** Get the lowest square from mask. mask must be non-zero. */
     static int firstSquare(U64 mask);
+
+    /** Get the highest square from mask. mask must be non-zero. */
+    static int lastSquare(U64 mask);
 
     /** Get the lowest square from mask and remove the corresponding bit in mask. */
     static int extractSquare(U64& mask);
@@ -164,7 +167,7 @@ private:
     static vector_aligned<U64> tableData;
 
     static const S8 dirTable[];
-    static const int trailingZ[64];
+    static const int trailingZ[64], lastBitTable[64];
 };
 
 inline U64
@@ -271,6 +274,30 @@ BitBoard::firstSquare(U64 mask) {
 #endif
 #else
     return trailingZ[(int)(((mask & -mask) * 0x07EDD5E59A4E28C2ULL) >> 58)];
+#endif
+}
+
+inline int
+BitBoard::lastSquare(U64 mask) {
+#ifdef HAS_CTZ
+#if _MSC_VER
+    unsigned long ret;
+    _BitScanReverse64(&ret, mask);
+    return (int)ret;
+#else
+    if (sizeof(U64) == sizeof(long))
+        return 63 - __builtin_clzl(mask);
+    else if (sizeof(U64) == sizeof(long long))
+        return 63 - __builtin_clzll(mask);
+#endif
+#else
+    mask |= mask >> 1;
+    mask |= mask >> 2;
+    mask |= mask >> 4;
+    mask |= mask >> 8;
+    mask |= mask >> 16;
+    mask |= mask >> 32;
+    return lastBitTable[(mask * 0x03F79D71B4CB0A89ULL) >> 58];
 #endif
 }
 
