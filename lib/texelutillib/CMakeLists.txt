@@ -1,6 +1,8 @@
 set(src_texelutillib
                   assignment.hpp
+                  bitSet.hpp
   bookbuild.cpp   bookbuild.hpp
+  cspsolver.cpp   cspsolver.hpp
   gametree.cpp    gametree.hpp
                   gametreeutil.hpp
   posutil.cpp     posutil.hpp

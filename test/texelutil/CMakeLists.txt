@@ -1,5 +1,6 @@
 set(src_texelutiltest
   bookBuildTest.cpp   bookBuildTest.hpp
+  cspsolverTest.cpp   cspsolverTest.hpp
   gameTreeTest.cpp
   proofgameTest.cpp   proofgameTest.hpp
   proofkernelTest.cpp proofkernelTest.hpp
