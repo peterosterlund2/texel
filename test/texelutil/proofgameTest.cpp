@@ -396,6 +396,9 @@ TEST(ProofGameTest, testPawnReachable) {
 
 void
 ProofGameTest::testPawnReachable() {
+    { // Initialize static data
+        ProofGame ps(TextIO::startPosFEN, TextIO::startPosFEN);
+    }
     {
         ASSERT_EQ(BitBoard::sqMask(A1), ProofGame::bPawnReachable[A1]);
         ASSERT_EQ(BitBoard::sqMask(A2,A1,B1), ProofGame::bPawnReachable[A2]);
