@@ -217,7 +217,8 @@ private:
     };
     void getState(State& state) const;
 
-    std::vector<State> visited;
+    // Cache of states already known not to lead to a goal state
+    std::vector<State> failed;
 
     /** Extract pawn structure and piece counts from a position. */
     static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,

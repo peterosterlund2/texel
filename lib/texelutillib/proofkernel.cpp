@@ -192,7 +192,7 @@ ProofKernel::findProofKernel(std::vector<PkMove>& result) {
 
     nodes = 0;
     moveStack.resize(remainingMoves);
-    visited.resize(1 << 20);
+    failed.resize(1 << 20);
 
     bool found = search(0, path);
     std::cerr << "found:" << (found?1:0) << " nodes:" << nodes << std::endl;
@@ -213,10 +213,9 @@ ProofKernel::search(int ply, std::vector<PkMove>& path) {
 
     State myState;
     getState(myState);
-    U64 idx = myState.hashKey() & (visited.size() - 1);
-    if (visited[idx] == myState)
-        return false; // Already searched
-    visited[idx] = myState;
+    const U64 idx = myState.hashKey() & (failed.size() - 1);
+    if (failed[idx] == myState)
+        return false; // Already searched, no solution exists
 
     std::vector<PkMove>& moves = moveStack[ply];
     genMoves(moves);
@@ -237,6 +236,7 @@ ProofKernel::search(int ply, std::vector<PkMove>& path) {
 
         path.pop_back();
     }
+    failed[idx] = myState;
     return false;
 }
 
