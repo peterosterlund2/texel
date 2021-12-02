@@ -190,6 +190,7 @@ ProofKernel::findProofKernel(std::vector<PkMove>& result) {
         return false;
     }
 
+    onlyPieceXPiece = false;
     nodes = 0;
     moveStack.resize(remainingMoves);
     failed.resize(1 << 20);
@@ -206,7 +207,7 @@ bool
 ProofKernel::search(int ply, std::vector<PkMove>& path) {
     nodes++;
 
-    if (isGoal())
+    if (remainingMoves == 0 && isGoal())
         return true;
     if (remainingMoves <= 0 || !goalPossible())
         return false;
@@ -475,7 +476,13 @@ ProofKernel::minMovesToGoal() const {
 void
 ProofKernel::genMoves(std::vector<PkMove>& moves) {
     moves.clear();
+    if (!onlyPieceXPiece)
+        genPawnMoves(moves);
+    genPieceXPieceMoves(moves);
+}
 
+void
+ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
     // Return true if a pawn is free to move
     auto canMove = [](const PawnColumn& col, int idx, int colNp) -> bool {
         if ((idx == 0 && !col.firstCanMove(WHITE)) ||
@@ -623,6 +630,17 @@ ProofKernel::genMoves(std::vector<PkMove>& moves) {
 }
 
 void
+ProofKernel::genPieceXPieceMoves(std::vector<PkMove>& moves) {
+    for (int i = 0; i < 2; i++) {
+        PieceColor c  = i == 0 ? WHITE : BLACK;
+        PieceColor oc = i == 0 ? BLACK : WHITE;
+        for (int j = 0; j < PAWN; j++)
+            if (pieceCnt[oc][j] > 0)
+                moves.push_back(PkMove::pieceXPiece(c, (PieceType)j));
+    }
+}
+
+void
 ProofKernel::makeMove(const PkMove& m, PkUndoInfo& ui) {
     PieceType taken;
     if (m.otherPromotionFile != -1) {
@@ -670,6 +688,11 @@ ProofKernel::makeMove(const PkMove& m, PkUndoInfo& ui) {
             excessCnt[m.color][PieceType::PAWN]--;
         }
     }
+
+    if (m.fromFile == -1 && m.toFile == -1) {
+        ui.onlyPieceXPiece = onlyPieceXPiece;
+        onlyPieceXPiece = true;
+    }
 }
 
 void
@@ -681,6 +704,7 @@ ProofKernel::unMakeMove(const PkMove& m, PkUndoInfo& ui) {
         pieceCnt[d.color][d.piece] -= d.delta;
         excessCnt[d.color][d.piece] -= d.delta;
     }
+    onlyPieceXPiece = ui.onlyPieceXPiece;
 }
 
 std::string toString(const ProofKernel::PkMove& m) {
@@ -744,5 +768,8 @@ ProofKernel::getState(State& state) const {
     for (int i = 0; i < 2; i++)
         for (int j = 0; j < nPieceTypes; j++)
             counts = (counts << 4) | pieceCnt[i][j];
+    counts <<= 1;
+    if (onlyPieceXPiece)
+        counts |= 1;
     state.pieceCounts = counts;
 }

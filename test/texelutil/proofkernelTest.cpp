@@ -489,10 +489,11 @@ ProofKernelTest::testMoveGen() {
     using PkMove = ProofKernel::PkMove;
 
     auto test = [](const std::string& start, const std::string& goal,
-                   std::vector<std::string> expected) {
+                   std::vector<std::string> expected, bool onlyPieceXPiece = false) {
         Position startPos = TextIO::readFEN(start);
         Position goalPos = TextIO::readFEN(goal);
         ProofKernel pk(startPos, goalPos, computeBlocked(startPos, goalPos));
+        pk.onlyPieceXPiece = onlyPieceXPiece;
         std::vector<PkMove> moves;
         pk.genMoves(moves);
         std::vector<std::string> strMoves;
@@ -507,9 +508,9 @@ ProofKernelTest::testMoveGen() {
     };
 
     test("1n2k3/4p3/8/8/8/8/4P3/4K3 w - - 0 1", "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
-         {"wPe0xNd0", "wPe0xNf0", "wxPe1", "bxPe0"});
+         {"wPe0xNd0", "wPe0xNf0", "wxPe1", "bxPe0", "wxN"});
     test("1n2k3/4p3/8/8/8/8/4P3/4K1B1 w - - 0 1", "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
-         {"wPe0xNd0", "wPe0xNf0", "wxPe1", "bxPe0", "bPe1xDBd0", "bPe1xDBf0"});
+         {"wPe0xNd0", "wPe0xNf0", "wxPe1", "bxPe0", "bPe1xDBd0", "bPe1xDBf0", "wxN", "bxDB"});
 
     // XXX No need to generate promotion moves when there is a move that creates
     // a passed pawn on the same file, since promotion of a passed pawn can be
@@ -552,16 +553,16 @@ ProofKernelTest::testMoveGen() {
          });
 
     test("1n2k3/p6p/8/8/8/8/P6P/1N2K3 w - - 0 1", "4k3/8/p7/6p1/1P6/7P/8/4K3 w - - 0 1",
-         {"wPa0xNb0", "wPh0xNg0", "wxPa1", "wxPh1", "bPa1xNb0", "bPh1xNg0", "bxPa0", "bxPh0"});
+         {"wPa0xNb0", "wPh0xNg0", "wxPa1", "wxPh1", "bPa1xNb0", "bPh1xNg0", "bxPa0", "bxPh0", "wxN", "bxN"});
     test("1n2k3/p6p/8/8/8/8/P6P/1N2K3 w - - 0 1", "4k3/p7/8/6p1/1P6/8/7P/4K3 w - - 0 1",
-         {"wPa0xNb0", "wxPh1", "bPh1xNg0", "bxPa0"});
+         {"wPa0xNb0", "wxPh1", "bPh1xNg0", "bxPa0", "wxN", "bxN"});
 
     test("1nbqkr2/8/8/8/8/8/P7/4K3 w - - 0 1", "4k3/8/8/8/1P6/8/8/4K3 w - - 0 1",
          {"wPa0xNb0",  "wPa0xNbN",  "wPa0xNbDB",  "wPa0xNbR",  "wPa0xNbQ",
           "wPa0xLBb0", "wPa0xLBbN", "wPa0xLBbDB", "wPa0xLBbR", "wPa0xLBbQ",
           "wPa0xRb0",  "wPa0xRbN",  "wPa0xRbDB",  "wPa0xRbR",  "wPa0xRbQ",
           "wPa0xQb0",  "wPa0xQbN",  "wPa0xQbDB",  "wPa0xQbR",  "wPa0xQbQ",
-          "bxPa0"
+          "bxPa0", "wxN", "wxLB", "wxQ", "wxR"
          });
 
     test("4k3/p1p5/8/P7/p7/p7/P7/4K3 w - - 0 1", "4k3/8/pP6/8/p7/p7/P7/4K3 w - - 0 1",
@@ -593,31 +594,31 @@ ProofKernelTest::testMoveGen() {
          {"wPb0xRa0",
           "wPb0xRc0", "wPb0xRcN", "wPb0xRcLB", "wPb0xRcR", "wPb0xRcQ",
           "bPh0xbg0", "bPh0xbgN", "bPh0xbgDB", "bPh0xbgR", "bPh0xbgQ", 
-          "wxPh0", "bxPb0"
+          "wxPh0", "bxPb0", "wxR"
          });
     test("1r2k2r/p7/8/6P1/8/8/8/4K3 w k - 0 1", "1r2k2r/8/8/6N1/8/8/8/4K3 w k - 0 1",
          {"wPg0xRh0", "wPg0xah0",
           "wPg0xRf0", "wPg0xRfN", "wPg0xRfDB", "wPg0xRfR", "wPg0xRfQ",
           "wPg0xaf0", "wPg0xafN", "wPg0xafDB", "wPg0xafR", "wPg0xafQ",
           "bPa0xgb0", "bPa0xgbN", "bPa0xgbLB", "bPa0xgbR", "bPa0xgbQ",
-          "wxPa0", "bxPg0"
+          "wxPa0", "bxPg0", "wxR"
          });
 
     test("r3k1r1/7p/8/8/4P3/8/8/4K3 w q - 0 1", "r3k3/8/8/1N5p/8/8/8/4K3 w q - 0 1",
          {"wPe0xRd0", "wPe0xRdN", "wPe0xRdDB",
           "wPe0xRf0", "wPe0xRfN", "wPe0xRfDB",
-          "wxPh0", "bxPe0"
+          "wxPh0", "bxPe0", "wxR"
          });
     test("4k3/8/8/4p3/8/8/7P/R3K1R1 w Q - 0 1", "4k3/8/8/4n3/7P/8/8/R3K1R1 w Q - 0 1",
          {"bPe0xRd0", "bPe0xRdN", "bPe0xRdLB",
           "bPe0xRf0", "bPe0xRfN", "bPe0xRfLB",
-          "bxPh0", "wxPe0"
+          "bxPh0", "wxPe0", "bxR"
          });
 
     test("r3k1r1/7p/8/8/3P4/8/8/4K3 w q - 0 1", "r3k1r1/8/8/8/8/2N5/8/4K3 w q - 0 1",
-         {"wPd0xRc0", "wPd0xRe0", "wPd0xhc0", "wPd0xhe0", "wxPh0", "bxPd0"});
+         {"wPd0xRc0", "wPd0xRe0", "wPd0xhc0", "wPd0xhe0", "wxPh0", "bxPd0", "wxR"});
     test("4k3/8/8/3p4/8/8/7P/R3K1R1 w Q - 0 1", "4k3/8/8/4n3/8/8/8/R3K1R1 w Q - 0 1",
-         {"bPd0xRc0", "bPd0xRe0", "bPd0xhc0", "bPd0xhe0", "wxPd0", "bxPh0"});
+         {"bPd0xRc0", "bPd0xRe0", "bPd0xhc0", "bPd0xhe0", "wxPd0", "bxPh0", "bxR"});
 
     // Blocked pawns
     test("4k3/1p6/8/8/8/8/PPP5/4K3 w - - 0 1", "4k3/1n6/8/8/8/8/PP6/4K3 w - - 0 1",
@@ -631,7 +632,7 @@ ProofKernelTest::testMoveGen() {
     test("1n2k3/ppp5/8/8/8/8/1P6/4K3 w - - 0 1", "4k3/pp6/8/8/8/8/1N6/4K3 w - - 0 1",
          {"wPb0xPc0", "wPb0xca0", "wPb0xcc0", "wxPc0",
           "wPb0xNa0", "wPb0xNc0", "wPb0xNc1",
-          "bPc0xPb0", "bxPb0"
+          "bPc0xPb0", "bxPb0", "wxN"
          });
     test("4k3/1p6/8/8/2P5/8/PPP5/4K3 w - - 0 1", "4k3/1n6/8/8/8/8/PPP5/4K3 w - - 0 1",
          {"wPc1xPb1", "wxPb1",
@@ -641,6 +642,9 @@ ProofKernelTest::testMoveGen() {
          {"wPb0xPc0", "wPb0xca0", "wPb0xcc0", "wxPc0",
           "bPc0xPb0", "bxPb0"
          });
+
+    test("1n2k3/4p3/8/8/8/8/4P3/4K3 w - - 0 1", "3qk3/8/8/8/8/8/8/3RK3 w - - 0 1",
+         {"wxN"}, true);
 }
 
 TEST(ProofKernelTest, testMakeMove) {
@@ -785,6 +789,10 @@ ProofKernelTest::testSearch() {
             std::cout << "moves: " << path << std::endl;
         if (expectedPath != "*") {
             ASSERT_EQ(expectedPath, path) << "start: " << start << " goal: " << goal;
+        } else {
+            int nCapt = (BitBoard::bitCount(startPos.occupiedBB()) -
+                         BitBoard::bitCount(goalPos.occupiedBB()));
+            ASSERT_EQ(nCapt, (int)moves.size());
         }
 
         if (expectedPath.empty() || expectedPath == "*") {
@@ -846,4 +854,11 @@ ProofKernelTest::testSearch() {
     // Blocked pawns
     test("4k3/ppp5/8/2p5/8/8/1P6/4K3 w - - 0 1", "4k3/ppp5/8/8/8/8/1N6/4K3 w - - 0 1",
          false, "");
+
+    test(startFEN, "1N2Q1n1/r6B/Q4B1b/KP1qPN1b/1RN4R/B5nn/1q2P1Pr/1q5k w - - 0 1",
+         true, "*");
+
+    // "Piece takes piece" move required
+    test(startFEN, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1",
+         true, "bxN");
 }

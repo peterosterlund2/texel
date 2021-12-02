@@ -202,6 +202,7 @@ private:
     int goalCnt[2][nPieceTypes];
     int excessCnt[2][nPieceTypes];  // pieceCnt - goalCnt
     int remainingMoves;
+    bool onlyPieceXPiece = false;
 
     U64 deadBishops;  // Mask of bishops initially trapped on first/last row and not present in goal position
 
@@ -239,6 +240,10 @@ private:
     /** Generate a list of moves. Moves that are known to be futile are not necessarily generated.
      *  "Piece takes piece" moves are not generated. */
     void genMoves(std::vector<PkMove>& moves);
+    /** Generate moves involving a pawn. */
+    void genPawnMoves(std::vector<PkMove>& moves);
+    /** Generate piece takes piece moves. */
+    void genPieceXPieceMoves(std::vector<PkMove>& moves);
 
     struct PkUndoInfo {
         void addColData(int x, U8 data) { colData[nColData++] = { x, data }; }
@@ -258,6 +263,7 @@ private:
         };
         std::array<CntData, 3> cntData;
         int nCntData = 0;
+        bool onlyPieceXPiece = false;
     };
 
     /** Make a move and store undo information in "ui". */
