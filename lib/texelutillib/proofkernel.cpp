@@ -181,10 +181,14 @@ ProofKernel::findProofKernel(std::vector<PkMove>& result) {
         path.push_back(PkMove::pieceXPiece(color, bishop));
         PkUndoInfo ui;
         makeMove(path.back(), ui);
+        if (--remainingMoves < 0)
+            break;
     }
 
-    if (!goalPossible())
+    if (!goalPossible()) {
+        result = path;
         return false;
+    }
 
     nodes = 0;
     moveStack.resize(remainingMoves);

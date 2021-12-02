@@ -775,17 +775,16 @@ ProofKernelTest::testSearch() {
         bool found = pk.findProofKernel(moves);
         ASSERT_EQ(hasSolution, found) << "start: " << start << " goal: " << goal;
 
-        if (found) {
-            std::string path;
-            for (const PkMove& m : moves) {
-                if (!path.empty())
-                    path += ' ';
-                path += toString(m);
-            }
+        std::string path;
+        for (const PkMove& m : moves) {
+            if (!path.empty())
+                path += ' ';
+            path += toString(m);
+        }
+        if (found)
             std::cout << "moves: " << path << std::endl;
-            if (expectedPath != "*") {
-                ASSERT_EQ(expectedPath, path);
-            }
+        if (expectedPath != "*") {
+            ASSERT_EQ(expectedPath, path) << "start: " << start << " goal: " << goal;
         }
 
         if (expectedPath.empty() || expectedPath == "*") {
@@ -805,16 +804,21 @@ ProofKernelTest::testSearch() {
          true, "wPb0xPa1");
 
     test("2b1k3/1p1p4/8/8/3P4/8/8/4K3 w - - 0 1", "4k3/1p1p4/8/8/3N4/8/8/4K3 w - - 0 1",
-         false, "");
+         false, "wxLB");
 
     const std::string startFEN = TextIO::startPosFEN;
+    test(startFEN, "3rRQ2/1P2q1q1/NK2brn1/1q3b2/B3k3/1BB4N/RbrrP1Pq/n2br3 w - - 0 1",
+         false, "bxLB");
+    test(startFEN, "b3b3/1qrN1n2/1Pkppp2/4P2K/1Bp5/bR1bN2Q/1P1PNr2/NBn1B2R w - - 0 1",
+         false, "bxDB");
+
     test(startFEN, "1r1n4/1N1qb2N/kr2r1r1/1RpN1K2/1R2B1Q1/bP3Q1B/B1n2Q2/1r1Bb1b1 w - - 0 1",
          false, "");
     test(startFEN, "1Q1nkbr1/4b1Qq/2pn2N1/r1P2R1b/r2NqP2/Q2R4/r1n5/1RK1qb2 w - - 0 1",
          true, "*");
 
     test(startFEN, "3rRQ2/1P2q1q1/NK2brn1/1q3b2/B3k3/1BB4N/RbrrP1Pq/n2br3 w - - 0 1",
-         false, "");
+         false, "bxLB");
 
     test("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQK1NR w KQkq - 0 1",
          "B1Q5/1p1bR3/1RPQqb1b/3n4/1RK1N1Nn/b4pQ1/2Qr3B/1r2qbBk w - - 0 1",
