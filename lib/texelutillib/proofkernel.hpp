@@ -88,7 +88,7 @@ public:
         PieceType takenPiece;    // Cannot be EMPTY. Always set to KNIGHT if promoted piece taken
         int otherPromotionFile;  // File where other pawn promoted, or -1
 
-        int toFile;              // File of taken piece, or -1 if not pawn move
+        int toFile;              // File of taken piece, or -1 if not pawn move and not pawn capture
         int toIdx;               // Index in pawn column. Insertion index if takenPiece != PAWN. -1 if promotion
         PieceType promotedPiece; // Promoted piece, or EMPTY
 
@@ -274,6 +274,10 @@ private:
 
 /** Convert a PkMove to human readable string representation. */
 std::string toString(const ProofKernel::PkMove& m);
+ProofKernel::PkMove strToPkMove(const std::string& move);
+std::ostream& operator<<(std::ostream& os, const ProofKernel::PkMove& m);
+
+std::string pieceName(ProofKernel::PieceType p);
 
 
 inline bool

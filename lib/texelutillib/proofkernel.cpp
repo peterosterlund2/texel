@@ -707,6 +707,18 @@ ProofKernel::unMakeMove(const PkMove& m, PkUndoInfo& ui) {
     onlyPieceXPiece = ui.onlyPieceXPiece;
 }
 
+std::string pieceName(ProofKernel::PieceType p) {
+    switch (p) {
+    case ProofKernel::QUEEN:        return "Q";
+    case ProofKernel::ROOK:         return "R";
+    case ProofKernel::DARK_BISHOP:  return "DB";
+    case ProofKernel::LIGHT_BISHOP: return "LB";
+    case ProofKernel::KNIGHT:       return "N";
+    case ProofKernel::PAWN:         return "P";
+    default:                        assert(false); return "";
+    }
+};
+
 std::string toString(const ProofKernel::PkMove& m) {
     std::string ret;
     ret += m.color == ProofKernel::WHITE ? "w" : "b";
@@ -726,18 +738,6 @@ std::string toString(const ProofKernel::PkMove& m) {
 
     ret += "x";
 
-    auto pieceName = [&ret](ProofKernel::PieceType p) -> std::string {
-        switch (p) {
-        case ProofKernel::QUEEN:        return "Q";
-        case ProofKernel::ROOK:         return "R";
-        case ProofKernel::DARK_BISHOP:  return "DB";
-        case ProofKernel::LIGHT_BISHOP: return "LB";
-        case ProofKernel::KNIGHT:       return "N";
-        case ProofKernel::PAWN:         return "P";
-        default:                        assert(false); return "";
-        };
-    };
-
     if (m.otherPromotionFile == -1) {
         ret += pieceName(m.takenPiece);
     } else {
@@ -755,6 +755,90 @@ std::string toString(const ProofKernel::PkMove& m) {
     }
 
     return ret;
+}
+
+ProofKernel::PkMove
+strToPkMove(const std::string& str) {
+    auto ensure = [&str](bool b) {
+        if (!b)
+            throw ChessParseError("Invalid move: " + str);
+    };
+
+    ProofKernel::PkMove m;
+    int idx = 0;
+    m.color = str.at(idx++) == 'w' ? ProofKernel::WHITE : ProofKernel::BLACK;
+    if (str.at(idx) == 'P') {
+        idx++;
+        m.fromFile = str.at(idx++) - 'a'; ensure(m.fromFile >= 0 && m.fromFile < 8);
+        m.fromIdx = str.at(idx++) - '0';  ensure(m.fromIdx >= 0 && m.fromIdx < 6);
+    } else {
+        m.fromFile = -1;
+        m.fromIdx = -1;
+    }
+
+    ensure(str.at(idx++) == 'x');
+
+    m.otherPromotionFile = -1;
+    char taken = str.at(idx++);
+    switch (taken) {
+    case 'Q':
+        m.takenPiece = ProofKernel::QUEEN;
+        break;
+    case 'R':
+        m.takenPiece = ProofKernel::ROOK;
+        break;
+    case 'D': ensure(str.at(idx++) == 'B');
+        m.takenPiece = ProofKernel::DARK_BISHOP;
+        break;
+    case 'L': ensure(str.at(idx++) == 'B');
+        m.takenPiece = ProofKernel::LIGHT_BISHOP;
+        break;
+    case 'N':
+        m.takenPiece = ProofKernel::KNIGHT;
+        break;
+    case 'P':
+        m.takenPiece = ProofKernel::PAWN;
+        break;
+    default:
+        m.takenPiece = ProofKernel::KNIGHT;
+        m.otherPromotionFile = taken - 'a'; ensure(m.otherPromotionFile >= 0 && m.otherPromotionFile < 8);
+        break;
+    }
+
+    m.toFile = -1;
+    m.toIdx = -1;
+    m.promotedPiece = ProofKernel::EMPTY;
+    if (idx != (int)str.size()) {
+        m.toFile = str.at(idx++) - 'a'; ensure(m.toFile >= 0 && m.toFile < 8);
+        char rank = str.at(idx++);
+        switch (rank) {
+        case 'Q':
+            m.promotedPiece = ProofKernel::QUEEN;
+            break;
+        case 'R':
+            m.promotedPiece = ProofKernel::ROOK;
+            break;
+        case 'D': ensure(str.at(idx++) == 'B');
+            m.promotedPiece = ProofKernel::DARK_BISHOP;
+            break;
+        case 'L': ensure(str.at(idx++) == 'B');
+            m.promotedPiece = ProofKernel::LIGHT_BISHOP;
+            break;
+        case 'N':
+            m.promotedPiece = ProofKernel::KNIGHT;
+            break;
+        default:
+            m.toIdx = rank - '0'; ensure(m.toIdx >= 0 && m.toIdx < 6);
+            break;
+        }
+    }
+
+    return m;
+}
+
+std::ostream& operator<<(std::ostream& os, const ProofKernel::PkMove& m) {
+    os << toString(m);
+    return os;
 }
 
 void

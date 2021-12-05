@@ -392,29 +392,42 @@ ProofKernelTest::testMoveToString() {
     using PieceColor = ProofKernel::PieceColor;
     using PieceType = ProofKernel::PieceType;
 
-    ASSERT_EQ("wPa0xPb1", toString(PkMove::pawnXPawn(PieceColor::WHITE, 0, 0, 1, 1)));
-    ASSERT_EQ("bPc3xPb2", toString(PkMove::pawnXPawn(PieceColor::BLACK, 2, 3, 1, 2)));
+    auto test = [](const std::string& strMove, const PkMove& move) {
+        ASSERT_EQ(strMove, toString(move)) << "move: " << strMove;
+        PkMove move2 = strToPkMove(strMove);
+        std::string str2 = toString(move2);
+        ASSERT_EQ(strMove, str2);
+    };
 
-    ASSERT_EQ("bPf1xQe0", toString(PkMove::pawnXPiece(PieceColor::BLACK, 5, 1, 4, 0, PieceType::QUEEN)));
-    ASSERT_EQ("wPh0xRg2", toString(PkMove::pawnXPiece(PieceColor::WHITE, 7, 0, 6, 2, PieceType::ROOK)));
-    ASSERT_EQ("wPc1xLBd1", toString(PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::LIGHT_BISHOP)));
-    ASSERT_EQ("wPc1xDBd1", toString(PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::DARK_BISHOP)));
-    ASSERT_EQ("wPc1xNd1", toString(PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::KNIGHT)));
+    test("wPa0xPb1", PkMove::pawnXPawn(PieceColor::WHITE, 0, 0, 1, 1));
+    test("bPc3xPb2", PkMove::pawnXPawn(PieceColor::BLACK, 2, 3, 1, 2));
 
-    ASSERT_EQ("wPg0xDBfQ", toString(PkMove::pawnXPieceProm(PieceColor::WHITE, 6, 0, 5,
-                                                           PieceType::DARK_BISHOP, PieceType::QUEEN)));
+    test("bPf1xQe0", PkMove::pawnXPiece(PieceColor::BLACK, 5, 1, 4, 0, PieceType::QUEEN));
+    test("wPh0xRg2", PkMove::pawnXPiece(PieceColor::WHITE, 7, 0, 6, 2, PieceType::ROOK));
+    test("wPc1xLBd1", PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::LIGHT_BISHOP));
+    test("wPc1xDBd1", PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::DARK_BISHOP));
+    test("wPc1xNd1", PkMove::pawnXPiece(PieceColor::WHITE, 2, 1, 3, 1, PieceType::KNIGHT));
 
-    ASSERT_EQ("bPa1xhb1", toString(PkMove::pawnXPromPawn(PieceColor::BLACK, 0, 1, 1, 1, 7)));
-    ASSERT_EQ("wPb0xga2", toString(PkMove::pawnXPromPawn(PieceColor::WHITE, 1, 0, 0, 2, 6)));
+    test("wPg0xDBfQ", PkMove::pawnXPieceProm(PieceColor::WHITE, 6, 0, 5,
+                                             PieceType::DARK_BISHOP, PieceType::QUEEN));
 
-    ASSERT_EQ("wPb0xgaLB", toString(PkMove::pawnXPromPawnProm(PieceColor::WHITE, 1, 0, 0, 6,
-                                                              PieceType::LIGHT_BISHOP)));
+    test("bPa1xhb1", PkMove::pawnXPromPawn(PieceColor::BLACK, 0, 1, 1, 1, 7));
+    test("wPb0xga2", PkMove::pawnXPromPawn(PieceColor::WHITE, 1, 0, 0, 2, 6));
 
-    ASSERT_EQ("bxPc1", toString(PkMove::pieceXPawn(PieceColor::BLACK, 2, 1)));
-    ASSERT_EQ("wxPf2", toString(PkMove::pieceXPawn(PieceColor::WHITE, 5, 2)));
+    test("wPb0xgaLB", PkMove::pawnXPromPawnProm(PieceColor::WHITE, 1, 0, 0, 6,
+                                                PieceType::LIGHT_BISHOP));
+    test("wPa0xgbDB", PkMove::pawnXPromPawnProm(PieceColor::WHITE, 0, 0, 1, 6,
+                                                PieceType::DARK_BISHOP));
+    test("wPb0xgaR", PkMove::pawnXPromPawnProm(PieceColor::WHITE, 1, 0, 0, 6,
+                                                PieceType::ROOK));
+    test("wPb0xgaN", PkMove::pawnXPromPawnProm(PieceColor::WHITE, 1, 0, 0, 6,
+                                                PieceType::KNIGHT));
 
-    ASSERT_EQ("wxN", toString(PkMove::pieceXPiece(PieceColor::WHITE, PieceType::KNIGHT)));
-    ASSERT_EQ("bxR", toString(PkMove::pieceXPiece(PieceColor::BLACK, PieceType::ROOK)));
+    test("bxPc1", PkMove::pieceXPawn(PieceColor::BLACK, 2, 1));
+    test("wxPf2", PkMove::pieceXPawn(PieceColor::WHITE, 5, 2));
+
+    test("wxN", PkMove::pieceXPiece(PieceColor::WHITE, PieceType::KNIGHT));
+    test("bxR", PkMove::pieceXPiece(PieceColor::BLACK, PieceType::ROOK));
 }
 
 TEST(ProofKernelTest, testMoveGen) {
