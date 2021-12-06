@@ -1428,6 +1428,8 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
                     }
                 }
             }
+        } catch (NotImplementedError& e) {
+            status = std::string("unknown, ") + e.what();
         } catch (ChessError& e) {
             status = std::string("illegal, ") + e.what();
         }

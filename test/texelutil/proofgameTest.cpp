@@ -985,6 +985,8 @@ void ProofGameTest::testFilter() {
 
         { "rnbRkbnr/p1pp1ppp/1p1p4/8/8/8/PPP2PPP/RNBQKBNR b KQkq - 0 1", "illegal", false },
         { "Q2q4/2Bp3r/2PBRb2/R2N3p/1q3RBP/1pQnK2N/2B2Qp1/2bn1b1k w - - 0 1", "illegal", true },
+
+        { "2bqk2r/1pppp1P1/6p1/p5p1/2B3p1/6P1/PPPP2P1/R1BQKB1R b KQk - 0 1", "unknown, too many pawns", true },
     };
     for (const Data& d : v) {
         std::stringstream in;

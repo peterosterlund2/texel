@@ -28,11 +28,17 @@
 
 #include "util/util.hpp"
 #include "util/random.hpp"
+#include "chessError.hpp"
 #include <array>
 
 class Position;
 class ProofKernelTest;
 
+class NotImplementedError : public ChessError {
+public:
+    explicit NotImplementedError(const std::string& msg)
+        : ChessError(msg) {}
+};
 
 /** The ProofKerrnel class is used for finding a sequence of captures and promotions
  *  that transform the material configuration of a starting position to the material
@@ -391,6 +397,8 @@ ProofKernel::PawnColumn::setPawn(int i, PieceColor c) {
 
 inline void
 ProofKernel::PawnColumn::addPawn(int i, PieceColor c) {
+    if (nPawns() >= 6)
+        throw NotImplementedError("too many pawns in one file");
     U8 mask = (1 << i) - 1;
     data = (data & mask) | ((data & ~mask) << 1);
     setPawn(i, c);
