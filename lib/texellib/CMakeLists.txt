@@ -30,7 +30,7 @@ set(src_util
 set(src_texellib
   bitBoard.cpp            bitBoard.hpp
   book.cpp                book.hpp
-                          chessParseError.hpp
+                          chessError.hpp
   cluster.cpp             cluster.hpp
   clustertt.cpp           clustertt.hpp
   computerPlayer.cpp      computerPlayer.hpp

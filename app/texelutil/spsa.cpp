@@ -28,7 +28,7 @@
 #include "parameters.hpp"
 #include "chesstool.hpp"
 #include "threadpool.hpp"
-#include "chessParseError.hpp"
+#include "chessError.hpp"
 #include <memory>
 #include <iostream>
 #include <limits>

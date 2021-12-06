@@ -407,7 +407,7 @@ PosGenerator::dtmStat(const std::vector<std::string>& tbTypes) {
             nPos++;
             int score;
             if (!TBProbe::gtbProbeDTM(pos, 0, score))
-                throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
+                throw ChessError("GTB probe failed, pos:" + TextIO::toFEN(pos));
             if (score > 0) {
                 if (score < posScore) {
                     posScore = score;
@@ -444,10 +444,10 @@ PosGenerator::dtzStat(const std::vector<std::string>& tbTypes) {
             int success;
             int dtz = Syzygy::probe_dtz(pos, &success);
             if (!success)
-                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+                throw ChessError("RTB probe failed, pos:" + TextIO::toFEN(pos));
             int wdl = Syzygy::probe_wdl(pos, &success);
             if (!success)
-                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+                throw ChessError("RTB probe failed, pos:" + TextIO::toFEN(pos));
             if (dtz > 0) {
                 if (wdl == 2) {
                     if (dtz > posScore) {
@@ -563,7 +563,7 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
 
         int score;
         if (!TBProbe::rtbProbeWDL(pos, 0, score, ent))
-            throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+            throw ChessError("RTB probe failed, pos:" + TextIO::toFEN(pos));
         if (!pos.isWhiteMove())
             score = -score;
         if (score > 0)
@@ -624,9 +624,9 @@ PosGenerator::wdlTest(const std::vector<std::string>& tbTypes) {
             nPos++;
             int rtbScore, gtbScore;
             if (!TBProbe::rtbProbeWDL(pos, 0, rtbScore, ent))
-                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+                throw ChessError("RTB probe failed, pos:" + TextIO::toFEN(pos));
             if (!TBProbe::gtbProbeWDL(pos, 0, gtbScore))
-                throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
+                throw ChessError("GTB probe failed, pos:" + TextIO::toFEN(pos));
             bool diff;
             if (rtbScore > 0) {
                 diff = gtbScore <= 0;
@@ -637,7 +637,7 @@ PosGenerator::wdlTest(const std::vector<std::string>& tbTypes) {
                 if (diff) {
                     int scoreDTM;
                     if (!TBProbe::gtbProbeDTM(pos, 0, scoreDTM))
-                        throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
+                        throw ChessError("GTB probe failed, pos:" + TextIO::toFEN(pos));
                     if (std::abs(scoreDTM) < SearchConst::MATE0 - 100) {
                         diff = false;
                         nDiff50++;
@@ -669,7 +669,7 @@ PosGenerator::wdlDump(const std::vector<std::string>& tbTypes) {
             int success;
             int wdl = Syzygy::probe_wdl(pos, &success);
             if (!success)
-                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+                throw ChessError("RTB probe failed, pos:" + TextIO::toFEN(pos));
             if (!pos.isWhiteMove())
                 wdl = -wdl;
             cnt[wdl+2]++;
@@ -697,11 +697,11 @@ PosGenerator::dtzTest(const std::vector<std::string>& tbTypes) {
             nPos++;
             int dtz, dtm, wdl;
             if (!TBProbe::rtbProbeDTZ(pos, 0, dtz, ent))
-                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+                throw ChessError("RTB probe failed, pos:" + TextIO::toFEN(pos));
             if (!TBProbe::gtbProbeDTM(pos, 0, dtm))
-                throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
+                throw ChessError("GTB probe failed, pos:" + TextIO::toFEN(pos));
             if (!TBProbe::rtbProbeWDL(pos, 0, wdl, ent))
-                throw ChessParseError("RTB probe failed, pos:" + TextIO::toFEN(pos));
+                throw ChessError("RTB probe failed, pos:" + TextIO::toFEN(pos));
             bool diff;
             int slack = 0;
             int slack2 = 0;
@@ -777,13 +777,13 @@ PosGenerator::tbgenTest(const std::vector<std::string>& tbTypes) {
             nPos++;
             int score, gtbScore;
             if (!tbGen.probeDTM(pos, 0, score))
-                throw ChessParseError("tbGen probe failed, pos:" + TextIO::toFEN(pos));
+                throw ChessError("tbGen probe failed, pos:" + TextIO::toFEN(pos));
             if (!TBProbe::gtbProbeDTM(pos, 0, gtbScore))
-                throw ChessParseError("GTB probe failed, pos:" + TextIO::toFEN(pos));
+                throw ChessError("GTB probe failed, pos:" + TextIO::toFEN(pos));
             if (score != gtbScore) {
                 std::cout << tbType << " i:" << nPos << " score:" << score << " gtbScore:" << gtbScore
                           << " pos:" << TextIO::toFEN(pos) << std::endl;
-                throw ChessParseError("stop");
+                throw ChessError("stop");
             }
         });
         double t1 = currentTime();

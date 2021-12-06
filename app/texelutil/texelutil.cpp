@@ -32,7 +32,7 @@
 #include "matchbookcreator.hpp"
 #include "tbgen.hpp"
 #include "parameters.hpp"
-#include "chessParseError.hpp"
+#include "chessError.hpp"
 #include "computerPlayer.hpp"
 #include "gametree.hpp"
 #include "textio.hpp"

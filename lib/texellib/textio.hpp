@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 
-#include "chessParseError.hpp"
+#include "chessError.hpp"
 #include "position.hpp"
 #include "util/util.hpp"
 

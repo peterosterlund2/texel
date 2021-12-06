@@ -375,7 +375,7 @@ ProofGameTest::testValidPieceCount() {
         try {
             ProofGame::validatePieceCounts(pos);
             ok = true;
-        } catch (const ChessParseError&) {
+        } catch (const ChessError&) {
         }
         return ok;
     };
@@ -720,7 +720,7 @@ ProofGameTest::testEnPassant() {
         EXPECT_THROW({
             ProofGame ps(TextIO::startPosFEN,
                          "4k3/8/8/1pP5/B7/1P6/8/4K3 w - b6 0 1");
-        }, ChessParseError);
+        }, ChessError);
     }
     {
         EXPECT_THROW({

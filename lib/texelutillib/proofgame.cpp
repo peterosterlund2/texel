@@ -131,9 +131,9 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
 
         if (unMoves.empty()) {
             if (capturesRejected)
-                throw ChessParseError("No possible last move, all captures rejected");
+                throw ChessError("No possible last move, all captures rejected");
             else
-                throw ChessParseError("No possible last move");
+                throw ChessError("No possible last move");
         }
 
         if (unMoves.size() == 1) {
@@ -1428,7 +1428,7 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
                     }
                 }
             }
-        } catch (ChessParseError& e) {
+        } catch (ChessError& e) {
             status = std::string("illegal, ") + e.what();
         }
         os << line << " " << status << std::endl;

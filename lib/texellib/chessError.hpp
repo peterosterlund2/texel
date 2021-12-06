@@ -17,25 +17,22 @@
 */
 
 /*
- * chessParseError.hpp
+ * chessError.hpp
  *
  *  Created on: Feb 25, 2012
  *      Author: petero
  */
 
-#ifndef CHESSPARSEERROR_HPP_
-#define CHESSPARSEERROR_HPP_
+#ifndef CHESSERROR_HPP_
+#define CHESSERROR_HPP_
 
 #include <exception>
 #include <string>
 
-/**
- * Exception class to represent parse errors in FEN or algebraic notation.
- */
-class ChessParseError : public std::exception {
+/** Generic chess related errors. */
+class ChessError : public std::exception {
 public:
-    ChessParseError();
-    explicit ChessParseError(const std::string& msg);
+    explicit ChessError(const std::string& msg);
 
     const char* what() const noexcept override;
 
@@ -43,14 +40,26 @@ private:
     std::string msg_;
 };
 
+/** Parse errors in FEN, algebraic move notation, text files, etc. */
+class ChessParseError : public ChessError {
+public:
+    explicit ChessParseError(const std::string& msg);
+};
+
+
 inline
-ChessParseError::ChessParseError(const std::string& msg)
+ChessError::ChessError(const std::string& msg)
     : msg_(msg) {
 }
 
 inline const char*
-ChessParseError::what() const noexcept {
+ChessError::what() const noexcept {
     return msg_.c_str();
 }
 
-#endif /* CHESSPARSEERROR_HPP_ */
+inline
+ChessParseError::ChessParseError(const std::string& msg)
+    : ChessError(msg) {
+}
+
+#endif /* CHESSERROR_HPP_ */
