@@ -92,7 +92,7 @@ private:
     };
     std::vector<Constraint> constr;
 
-    using ConstrSet = BitSet<64>;
+    using ConstrSet = BitSet<64*3>;
     std::vector<ConstrSet> varToConstr; // [varNo] -> bitmask of constraints using varNo
 
     U64 nodes; // Number of nodes visited by solveRecursive()
