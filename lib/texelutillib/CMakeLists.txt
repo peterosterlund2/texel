@@ -1,17 +1,18 @@
 set(src_texelutillib
-                  assignment.hpp
-                  bitSet.hpp
-  bookbuild.cpp   bookbuild.hpp
-  cspsolver.cpp   cspsolver.hpp
-  gametree.cpp    gametree.hpp
-                  gametreeutil.hpp
-  posutil.cpp     posutil.hpp
-  proofgame.cpp   proofgame.hpp
-  proofkernel.cpp proofkernel.hpp
-  revmovegen.cpp  revmovegen.hpp
-                  stloutput.hpp
-                  threadpool.hpp
-  tbpath.cpp      tbpath.hpp
+                     assignment.hpp
+                     bitSet.hpp
+  bookbuild.cpp      bookbuild.hpp
+  cspsolver.cpp      cspsolver.hpp
+  extproofkernel.cpp extproofkernel.hpp
+  gametree.cpp       gametree.hpp
+                     gametreeutil.hpp
+  posutil.cpp        posutil.hpp
+  proofgame.cpp      proofgame.hpp
+  proofkernel.cpp    proofkernel.hpp
+  revmovegen.cpp     revmovegen.hpp
+                     stloutput.hpp
+                     threadpool.hpp
+  tbpath.cpp         tbpath.hpp
   )
 
 add_library(texelutillib STATIC

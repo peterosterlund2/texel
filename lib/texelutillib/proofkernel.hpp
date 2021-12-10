@@ -26,12 +26,12 @@
 #ifndef PROOFKERNEL_HPP_
 #define PROOFKERNEL_HPP_
 
+#include "position.hpp"
 #include "util/util.hpp"
 #include "util/random.hpp"
 #include "chessError.hpp"
 #include <array>
 
-class Position;
 class ProofKernelTest;
 
 class NotImplementedError : public ChessError {
@@ -59,6 +59,8 @@ public:
         WHITE,
         BLACK,
     };
+
+    static PieceColor otherColor(PieceColor c);
 
     enum PieceType {
         QUEEN,
@@ -105,16 +107,44 @@ public:
         static PkMove pieceXPiece(PieceColor c, PieceType taken);
     };
 
+    /** Represents a move in the extended proof kernel space. Each PkMove corresponds
+     *  to one or more ExtPkMoves, such that pawn moves have specified from/to squares.
+     *  Move type        Example
+     *  Promotion        wPg5-g8Q   White pawn moves from g5 to g8 and promotes to queen
+     *  Piece move       wRh1-f6    White rook moves from h1 to f6
+     *  Pawn move        wPa3-a6    White pawn moves from a3 to a6
+     *  Pawn capture     wPa6xb7    White pawn on a6 captures a piece on b7
+     *  Piece capture    wxh8       White piece captures piece on h8
+     */
+    struct ExtPkMove {
+        PieceColor color;        // Color of moving piece
+        PieceType movingPiece;   // Type of moving piece
+        int fromSquare;          // Initial square of moving piece
+        bool capture;            // True if move captures an opponent piece
+        int toSquare;            // Final square of moving piece
+        PieceType promotedPiece; // Promoted piece, or EMPTY
+
+        ExtPkMove(PieceColor c, PieceType pt, int fromSq, bool capture, int toSq, PieceType prom);
+    };
+
+    enum SearchResult {
+        FAIL,             // No proof kernel exists
+        PROOF_KERNEL,     // Proof kernel exists, but no extended proof kernel exists
+        EXT_PROOF_KERNEL, // Proof kernel and extended proof kernel exist
+    };
+
     /** Computes a proof kernel, as a sequence of PkMoves, for the given initial and goal positions.
      *  A proof kernel, when applied to the initial position, results in a position that has the
      *  same number of white and black pieces as the goal position, and where promotions can
      *  be performed to get the same number of pieces as the goal position for each piece type.
-     *  @param result  If true is returned, set to path to a goal position
-     *                 If false is returned, set to initial sequence of forced moves
-     *  @return        True if a proof kernel exists, false otherwise. */
-    bool findProofKernel(std::vector<PkMove>& result);
+     *  An extended proof kernel is also computed if it exists. */
+    SearchResult findProofKernel(std::vector<PkMove>& proofKernel,
+                                 std::vector<ExtPkMove>& extProofKernel);
 
 private:
+    const Position initialPos;
+    const Position goalPos;
+
     enum class SquareColor { // Square color, important for bishops
         DARK,
         LIGHT,
@@ -206,8 +236,12 @@ private:
 
     U64 deadBishops;  // Mask of bishops initially trapped on first/last row and not present in goal position
 
-    std::vector<std::vector<PkMove>> moveStack;
-    U64 nodes; // Number of visited search nodes
+    std::vector<PkMove> path;                   // Current path during search
+    std::vector<std::vector<PkMove>> moveStack; // Move list storage for each ply during search
+    U64 nodes;                                  // Number of visited search nodes
+    U64 nCSPs;                                  // Number of solved CSPs
+    U64 nCSPNodes;                              // Number of of CSP nodes used to solve all CSPs
+    std::vector<ExtPkMove> extPath;             // Extended proof kernel path corresponding to "path".
 
     /** Uniquely identifies the search state. */
     struct State {
@@ -226,7 +260,7 @@ private:
                            int (&pieceCnt)[2][nPieceTypes], U64 blocked);
 
     /** Recursive search function used by findProofKernel(). */
-    bool search(int ply, std::vector<PkMove>& path);
+    SearchResult search(int ply);
 
     /** Return true if current state is a goal state. */
     bool isGoal() const;
@@ -270,12 +304,19 @@ private:
     void makeMove(const PkMove& m, PkUndoInfo& ui);
     /** Undo a move previously made by makeMove(). */
     void unMakeMove(const PkMove& m, PkUndoInfo& ui);
+
+    /** Compute an extended proof kernel corresponding to "path".
+     *  The result is stored in extPath.
+     *  @return True if an extended proof kernel exists, false otherwise. */
+    bool computeExtKernel();
 };
 
 /** Convert a PkMove to human readable string representation. */
 std::string toString(const ProofKernel::PkMove& m);
 ProofKernel::PkMove strToPkMove(const std::string& move);
+std::string toString(const ProofKernel::ExtPkMove& m);
 std::ostream& operator<<(std::ostream& os, const ProofKernel::PkMove& m);
+std::ostream& operator<<(std::ostream& os, const ProofKernel::ExtPkMove& m);
 
 std::string pieceName(ProofKernel::PieceType p);
 
@@ -283,6 +324,11 @@ std::string pieceName(ProofKernel::PieceType p);
 inline bool
 ProofKernel::operator!=(const ProofKernel& other) const {
     return !(*this == other);
+}
+
+inline ProofKernel::PieceColor
+ProofKernel::otherColor(PieceColor c) {
+    return c == WHITE ? BLACK : WHITE;
 }
 
 inline ProofKernel::PkMove
@@ -376,6 +422,13 @@ ProofKernel::PkMove::pieceXPiece(PieceColor c, PieceType taken) {
     m.toIdx = -1;
     m.promotedPiece = EMPTY;
     return m;
+}
+
+inline
+ProofKernel::ExtPkMove::ExtPkMove(PieceColor c, PieceType pt, int fromSq, bool capt,
+                                  int toSq, PieceType prom)
+    : color(c), movingPiece(pt), fromSquare(fromSq), capture(capt),
+      toSquare(toSq), promotedPiece(prom) {
 }
 
 inline bool

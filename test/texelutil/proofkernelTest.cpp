@@ -25,9 +25,12 @@
 
 #include "proofkernelTest.hpp"
 #include "proofgame.hpp"
+#include "extproofkernel.hpp"
 #include "position.hpp"
 #include "textio.hpp"
 #include "posutil.hpp"
+#include "util/util.hpp"
+#include "stloutput.hpp"
 
 #include "gtest/gtest.h"
 
@@ -780,17 +783,19 @@ TEST(ProofKernelTest, testSearch) {
 void
 ProofKernelTest::testSearch() {
     using PkMove = ProofKernel::PkMove;
+    using ExtPkMove = ProofKernel::ExtPkMove;
 
     auto test = [](const std::string& start, const std::string& goal,
-                   bool hasSolution, const std::string& expectedPath) {
+                   bool expectedSolution, const std::string& expectedPath) {
         Position startPos = TextIO::readFEN(start);
         Position goalPos = TextIO::readFEN(goal);
 
         ProofKernel pk(startPos, goalPos, computeBlocked(startPos, goalPos));
 
         std::vector<PkMove> moves;
-        bool found = pk.findProofKernel(moves);
-        ASSERT_EQ(hasSolution, found) << "start: " << start << " goal: " << goal;
+        std::vector<ExtPkMove> extMoves;
+        bool found = pk.findProofKernel(moves, extMoves) == ProofKernel::EXT_PROOF_KERNEL;
+        ASSERT_EQ(expectedSolution, found) << "start: " << start << " goal: " << goal;
 
         std::string path;
         for (const PkMove& m : moves) {
@@ -812,8 +817,8 @@ ProofKernelTest::testSearch() {
             startPos = PosUtil::swapColors(startPos);
             goalPos = PosUtil::swapColors(goalPos);
             ProofKernel pk2(startPos, goalPos, computeBlocked(startPos, goalPos));
-            found = pk2.findProofKernel(moves);
-            ASSERT_EQ(hasSolution, found) << "start: " << start << " goal: " << goal;
+            found = pk2.findProofKernel(moves, extMoves) == ProofKernel::EXT_PROOF_KERNEL;
+            ASSERT_EQ(expectedSolution, found) << "start: " << start << " goal: " << goal;
         }
     };
 
@@ -874,4 +879,182 @@ ProofKernelTest::testSearch() {
     // "Piece takes piece" move required
     test(startFEN, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1",
          true, "bxN");
+
+    test("rn2kb2/8/8/6pP/6P1/8/8/4K3 w q - 0 1", "r3kb2/8/8/6p1/3B1B2/8/8/4K3 w q - 0 1",
+         true, "wPg0xNh0");
+
+    // No extended proof kernel because bishop on wrong color
+    test(startFEN, "q2R3N/k2nK2p/bPR2Q1q/2r4N/rr2B2P/3BbN1p/r3q1q1/2Q2n1b b - - 0 1",
+         false, "");
+    test(startFEN, "1rkQ1r2/b5p1/1nnRrRN1/pRNN4/B4Nb1/1bn1PNP1/3K4/1qn2r2 b - - 0 1",
+         false, "");
+    test(startFEN, "Rrq3K1/1p3bPQ/P7/B4RNb/1R1n4/kP2nbq1/2PnbpR1/3N1q2 w - - 0 1",
+         false, "");
+}
+
+TEST(ProofKernelTest, testExtMoveToString) {
+    ProofKernelTest::testExtMoveToString();
+}
+
+void
+ProofKernelTest::testExtMoveToString() {
+    using ExtPkMove = ProofKernel::ExtPkMove;
+    using PieceColor = ProofKernel::PieceColor;
+    using PieceType = ProofKernel::PieceType;
+
+    ASSERT_EQ("wPg5-g8Q", toString(ExtPkMove(PieceColor::WHITE, PieceType::PAWN,
+                                             G5, false, G8, PieceType::QUEEN)));
+    ASSERT_EQ("bRh8-f6", toString(ExtPkMove(PieceColor::BLACK, PieceType::ROOK,
+                                            H8, false, F6, PieceType::EMPTY)));
+    ASSERT_EQ("wPa3-a6", toString(ExtPkMove(PieceColor::WHITE, PieceType::PAWN,
+                                            A3, false, A6, PieceType::EMPTY)));
+    ASSERT_EQ("wPa6xb7", toString(ExtPkMove(PieceColor::WHITE, PieceType::PAWN,
+                                            A6, true, B7, PieceType::EMPTY)));
+    ASSERT_EQ("wxh8", toString(ExtPkMove(PieceColor::WHITE, PieceType::EMPTY,
+                                         -1, true, H8, PieceType::EMPTY)));
+    ASSERT_EQ("bxc1", toString(ExtPkMove(PieceColor::BLACK, PieceType::EMPTY,
+                                         -1, true, C1, PieceType::EMPTY)));
+}
+
+static void
+strToPath(const std::string& str, std::vector<ProofKernel::PkMove>& path) {
+    path.clear();
+    std::vector<std::string> strMoves;
+    splitString(str, strMoves);
+    for (const std::string& s : strMoves)
+        path.push_back(strToPkMove(s));
+}
+
+TEST(ProofKernelTest, testExtKernel) {
+    ProofKernelTest::testExtKernel();
+}
+
+void
+ProofKernelTest::testExtKernel() {
+    using PkMove = ProofKernel::PkMove;
+    using ExtPkMove = ProofKernel::ExtPkMove;
+
+    auto test = [](const std::string& start, const std::string& goal,
+                   const std::string& proofKernel,
+                   bool expectedSolution, const std::string& expectedPath) {
+        Position startPos = TextIO::readFEN(start);
+        Position goalPos = TextIO::readFEN(goal);
+        ExtProofKernel epk(startPos, goalPos);
+
+        std::vector<PkMove> moves;
+        strToPath(proofKernel, moves);
+        std::vector<ExtPkMove> extMoves;
+        bool found = epk.findExtKernel(moves, extMoves);
+        ASSERT_EQ(expectedSolution, found) << "start: " << start << " goal: " << goal << " pk: " << proofKernel;
+
+        std::string extPath;
+        for (const ExtPkMove& m : extMoves) {
+            if (!extPath.empty())
+                extPath += ' ';
+            extPath += toString(m);
+        }
+        if (found)
+            std::cout << "extMoves: " << extPath << std::endl;
+        if (expectedPath != "*") {
+            ASSERT_EQ(expectedPath, extPath) << "start: " << start << " goal: " << goal << " pk: " << proofKernel;
+        }
+    };
+
+    // Pawn needs to move to leave room for knight to be captured by other pawn
+    test("rn2kb2/8/8/6pP/6P1/8/8/4K3 w q - 0 1", "r3kb2/8/8/6p1/3B1B2/8/8/4K3 w q - 0 1",
+         "wPg0xNh0", true, "wPh5-h6 bNb8-h5 wPg4xh5");
+
+    // Misc
+    test(TextIO::startPosFEN, "rnbqkbnr/ppp1pppp/8/3P4/3p4/8/PP2PPPP/RNB1KBNR w KQkq - 0 1",
+         "bPd1xPc0 bPc0xQd0", true, "*");
+    test(TextIO::startPosFEN, "3kB3/4pnb1/qpp2bR1/3Nr2r/NB2K1P1/nb1p1P2/nn3Br1/5B2 w - - 0 1",
+         "bPa1xPb0 bPb0xPa0 bPf1xPe0 bPg1xPh0 bPc1xQd0 bPd2xRc0", true, "*");
+    test(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1",
+         "bxPe0", true, "bxe2");
+    test(TextIO::startPosFEN, "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "wxPf1", true, "wxf7");
+    test("rnbqkbnr/pppppppp/8/8/3P4/8/PPPBPPPP/RN1QKBNR w KQkq - 0 1",
+         "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RN1QKBNR w KQkq - 0 1",
+         "bxDB", true, "bxd2");
+    test("rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1",
+         "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQK1NR w KQkq - 0 1",
+         "bxLB", true, "bxf1");
+    test(TextIO::startPosFEN, "r1bqkb1r/pppppp2/8/7p/6pP/6P1/PPPPP1P1/RNBQKBNR w KQkq - 0 1",
+         "wPh0xDBg1 wPf0xNg1 wPg1xNh0", false, "");
+    test("r1bqk2r/pppppp2/8/7p/6pP/6P1/PPPPP1P1/RNBQKBNR w KQkq - 0 1",
+         "r1bqk2r/pppppp2/8/7P/6pP/8/PPPPP1P1/RNBQKBNR w KQkq - 0 1",
+         "wPg1xPh1", false, "");
+    test(TextIO::startPosFEN, "rnbqkbnr/1ppppppp/1p6/8/8/8/P1PPPPPP/RNBQKBNR w KQkq - 0 1",
+         "bPa1xPb0", true, "wPb2-b6 bPa7xb6");
+    test(TextIO::startPosFEN, "rnbqk1nr/pppppp1p/6p1/8/8/7P/PPPPPP1P/RNBQKBNR w KQkq - 0 1",
+         "wPg0xDBh1", false, "");
+    test(TextIO::startPosFEN, "rnbqkbnr/2pppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "wPa0xPb1 wPb1xPa0", false, "");
+
+    // Capture promoted piece
+    test("rnbqkbnr/1ppppppp/8/p7/1P6/8/P1PPPPPP/RNBQKBNR w KQkq - 0 1",
+         "rnb1kbnr/1ppppppp/8/8/8/8/P1PPPPPP/RN1QKBNR w KQkq - 0 1",
+         "bPa1xPb0 bPb0xDBcQ wxQ wxQ", true, "bPa5xb4 bPb4-b2 bPb2xc1Q wxc1 wxd8");
+    test("rnbqkbnr/1ppppppp/8/p7/1P6/8/P1PPPPPP/RNBQKBNR w KQkq - 0 1",
+         "r1bqkbnr/1ppppppp/8/8/8/8/P1PPPPPP/RNB1KBNR w KQkq - 0 1",
+         "wPb0xPa1 wPa1xNbQ bxQ bxQ", true, "wPb4xa5 wPa5-a7 wPa7xb8Q bxb8 bxd1");
+
+    test(TextIO::startPosFEN, "r2qkbnr/p1pppppp/1p6/8/8/8/1PPPPPPP/RNB1KBNR w KQkq - 0 1",
+         "wPa0xNb2 wPb2xLBcQ bxQ bxQ", true, "wPa2-a6 bPb7-b6 bNb8-b7 wPa6xb7 wPb7xc8Q bxc8 bxd1");
+    test(TextIO::startPosFEN, "1n1qkbnr/p1pppppp/8/8/8/8/2PPPPPP/R1B1KB1R w KQk - 0 1",
+         "wPa0xPb1 wPb1xRaQ wPb0xLBcN bxQ bxQ bxN bxN bxN", true, "*");
+
+    // Invalid proof kernel for legal positions
+    test(TextIO::startPosFEN, "5rk1/1ppb3p/p1pb4/6q1/3P1p1r/2P1R2P/PP1BQ1P1/5RKN w - - 0 1",
+         "wPc0xPd1 wPd0xPe1 wPd0xNc0 wPe0xNd0 bPf1xLBe0 bPe0xNd0 bPd0xNc1 bPg1xef0",
+         false, "");
+    test(TextIO::startPosFEN, "5rk1/1ppb3p/p1pb4/6q1/3P1p1r/2P1R2P/PP1BQ1P1/5RKN w - - 0 1",
+         "wPc0xPd1 bPe1xPd0 bPd0xQc0 wPd0xNc0 wPe0xNd0 bPg1xLBf0 bPf0xNeN wPf0xNe0", false, "");
+
+    // Capture just promoted pawn
+    test(TextIO::startPosFEN, "rnbqkbnr/ppp1pp1p/8/8/3p4/3P3N/PPPP1P1P/RNBQKB1R w KQkq - 0 1",
+         "bxPg0 wPe0xgd1", true, "bxg2 bPg7-g1N bNg1-d3 wPe2xd3");
+    test(TextIO::startPosFEN, "r1bqkb2/pppppp1p/8/8/6P1/2P3P1/PPP1PP2/R1BQKB1R w KQq - 0 1",
+         "wPg0xNf1 wPf1xNg1 wPd0xgc1 wPh0xRg0 bxN bxN", true,
+         "bNb8-f3 wPg2xf3 bPg7-g3 bNg8-g4 wPf3xg4 bPg3-g1N bNg1-c3 wPd2xc3 bRa8-g3 wPh2xg3 bxb1 bxg1");
+    test(TextIO::startPosFEN, "rnbqkbnr/ppp1pp2/2p3p1/6p1/8/8/PPPPPP1P/R1BQKB2 w Qkq - 0 1",
+         "bPg1xNf1 bPf1xNg0 bPd1xgc1 bPh1xRg1", true,
+         "wNb1-f6 bPg7xf6 wPg2-g6 wNg1-g5 bPf6xg5 wPg6-g8N wNg8-c6 bPd7xc6 wRa1-g6 bPh7xg6");
+    test(TextIO::startPosFEN, "r1bqkb1r/pppppp1p/8/8/8/2P2P2/PPP1PP1P/RNBQKBNR w KQkq - 0 1",
+         "wPg0xNf1 wPd0xgc1 wxN", true,
+         "bNb8-f3 wPg2xf3 bPg7-g1N bNg1-c3 wPd2xc3 wxg8");
+
+    // Non-capture promotions needed
+    test(TextIO::startPosFEN, "kNN2b1Q/1R1n2P1/bB2p3/3rQB2/1q3Q2/2ppQ1r1/P1PQq3/B1K1nr2 w - - 0 1",
+         "wPb0xPa1 wPd0xPe1 wPh0xPg1 bPf1xRe0", true, "*");
+    test(TextIO::startPosFEN, "5b2/5B2/pPbB3b/P1nb1p2/q4NQR/1qP2rp1/1kr2N2/R2NKRrr b - - 0 1",
+         "bPb1xPc0 bPe1xPf0 bPh1xPg0 wPd0xNc2", true, "*");
+    test(TextIO::startPosFEN, "1RRqk1nr/pPpp1ppp/1p2p3/8/8/8/3PPPPP/RNBQKBNR w KQ - 0 1",
+         "wPc0xLBb2 wPa0xNb2 wPb0xDBc0 wPc0xRb1", true,
+         "wPc2-c6 bPb7-b6 bLBc8-b7 wPc6xb7 wPa2-a6 wPb7-b8 bNb8-b7 wPa6xb7 bDBf8-c3 wPb2xc3 "
+         "wPc3-c6 wPb7-b8 bRa8-b7 wPc6xb7");
+    test(TextIO::startPosFEN, "1RRqk1nr/pPpp1ppp/1p2p3/8/8/8/3PPPPP/RNBQKBNR w KQ - 0 1",
+         "wPc0xLBb2 wPa0xNb3", false, "");
+    test(TextIO::startPosFEN, "1RRqk1nr/pPpp1ppp/4p3/1p6/8/8/3PPPPP/RNBQKBNR w KQ - 0 1",
+         "wPc0xLBb2 wPa0xNb3", false, "");
+    test(TextIO::startPosFEN, "1RRqk1nr/pPpp1ppp/4p3/1p6/8/8/3PPPPP/RNBQKBNR w KQ - 0 1",
+         "wPa0xNb2 wPc0xLBb3", true, "wPa2-a5 bPb7-b5 bNb8-b6 wPa5xb6 wPc2-c6 bLBc8-b7 wPc6xb7");
+    test(TextIO::startPosFEN, "1RRqk1nr/pPpp1ppp/4p3/8/1p6/8/3PPPPP/RNBQKBNR w KQ - 0 1",
+         "wPc0xLBb2 wPa0xNb3", true, "wPc2-c4 bPb7-b4 bLBc8-b5 wPc4xb5 wPa2-a5 bNb8-b6 wPa5xb6");
+    test(TextIO::startPosFEN, "rnbqkbnr/3ppppp/8/8/8/1P2P3/PpPP1PPP/1rrQK1NR w kq - 0 1",
+         "bPc1xDBb0 bPa1xNb1 bPb3xLBc1 bPc1xRb2", true,
+         "bPc7-c3 wPb2-b3 wDBc1-b2 bPc3xb2 bPa7-a3 bPb2-b1 wNb1-b2 bPa3xb2 wLBf1-c6 bPb7xc6 "
+         "bPc6-c3 bPb2-b1 wRa1-b2 bPc3xb2");
+    test(TextIO::startPosFEN, "r1bqkb1r/pPpppppp/1p6/8/8/8/1P1PPPPP/RNBQKBNR w KQkq - 0 1",
+         "wPa0xNb2 wPc0xNb2 bxPb3", false, "");
+    test(TextIO::startPosFEN, "rnbqkbnr/1p1ppppp/8/8/8/1P6/PpPPPPPP/R1BQKB1R w KQkq - 0 1",
+         "bPa1xNb0 bPc1xNb1 wxPb0", false, "");
+
+    // More than one pawn needs to move away to leave room for a capture
+    test(TextIO::startPosFEN, "r1bqkb1r/pppppp1p/6p1/1P6/1P6/1P6/3PPPPP/RNBQKBNR w KQkq - 0 1",
+         "wPc0xNb0 wPa0xNb0", true,
+         "wPb2-b4 bNb8-b3 wPc2xb3 wPb4-b5 wPb3-b4 bNg8-b3 wPa2xb3");
+    test(TextIO::startPosFEN, "rnbqkbnr/ppp3pp/4p3/4p3/4p3/1P6/P1PPPPPP/R1BQKB1R w KQkq - 0 1",
+         "bPf1xNe2 bPd1xNe3", true,
+         "bPe7-e5 wNb1-e6 bPf7xe6 bPe5-e4 bPe6-e5 wNg1-e6 bPd7xe6");
 }

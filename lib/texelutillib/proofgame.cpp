@@ -123,7 +123,8 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
                 blocked = 0xffffffffffffffffULL;
             ProofKernel pk(startPos, tmpPos, blocked);
             std::vector<ProofKernel::PkMove> kernel;
-            if (pk.findProofKernel(kernel))
+            std::vector<ProofKernel::ExtPkMove> extKernel;
+            if (pk.findProofKernel(kernel, extKernel) == ProofKernel::EXT_PROOF_KERNEL)
                 unMoves.push_back(um);
             else
                 capturesRejected = true;
@@ -1411,7 +1412,9 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
                     blocked = 0xffffffffffffffffULL; // If goal not reachable, consider all pieces blocked
                 ProofKernel pk(startPos, pg.goalPos, blocked);
                 std::vector<ProofKernel::PkMove> kernel;
-                if (!pk.findProofKernel(kernel)) {
+                std::vector<ProofKernel::ExtPkMove> extKernel;
+                auto res = pk.findProofKernel(kernel, extKernel);
+                if (res == ProofKernel::FAIL) {
                     status = "illegal, no proof kernel";
                     if (!kernel.empty()) {
                         status += ", forced:";
@@ -1420,9 +1423,16 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
                             status += toString(m);
                         }
                     }
+                } else if (res == ProofKernel::PROOF_KERNEL) {
+                    status = "illegal, no extended proof kernel";
                 } else {
                     status = "unknown, kernel:";
                     for (const auto& m : kernel) {
+                        status += ' ';
+                        status += toString(m);
+                    }
+                    status += " extKernel:";
+                    for (const auto& m : extKernel) {
                         status += ' ';
                         status += toString(m);
                     }

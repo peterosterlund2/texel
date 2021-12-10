@@ -24,12 +24,13 @@
  */
 
 #include "proofkernel.hpp"
-#include "position.hpp"
+#include "extproofkernel.hpp"
 #include "textio.hpp"
 #include <cassert>
 
 
-ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked) {
+ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked)
+    : initialPos(initialPos), goalPos(goalPos) {
     for (int i = 0; i < 8; i++)
         columns[i] = PawnColumn(i);
     posToState(initialPos, columns, pieceCnt, blocked);
@@ -167,11 +168,13 @@ ProofKernel::operator==(const ProofKernel& other) const {
     return true;
 }
 
-bool
-ProofKernel::findProofKernel(std::vector<PkMove>& result) {
-    result.clear();
+ProofKernel::SearchResult
+ProofKernel::findProofKernel(std::vector<PkMove>& proofKernel,
+                             std::vector<ExtPkMove>& extProofKernel) {
+    proofKernel.clear();
+    extProofKernel.clear();
 
-    std::vector<PkMove> path;
+    path.clear();
     while (deadBishops) {
         int sq = BitBoard::extractSquare(deadBishops);
         int x = Square::getX(sq);
@@ -186,38 +189,48 @@ ProofKernel::findProofKernel(std::vector<PkMove>& result) {
     }
 
     if (!goalPossible()) {
-        result = path;
-        return false;
+        proofKernel = path;
+        return FAIL;
     }
 
     onlyPieceXPiece = false;
     nodes = 0;
+    nCSPs = 0;
+    nCSPNodes = 0;
     moveStack.resize(remainingMoves);
     failed.resize(1 << 20);
 
-    bool found = search(0, path);
-    std::cerr << "found:" << (found?1:0) << " nodes:" << nodes << std::endl;
+    SearchResult ret = search(0);
+    std::cerr << "found:" << (int)ret << " nodes:" << nodes
+              << " csp:" << nCSPs << " cspNodes:" << nCSPNodes << std::endl;
 
-    result.insert(result.end(), path.begin(), path.end());
+    proofKernel.insert(proofKernel.end(), path.begin(), path.end());
+    extProofKernel.insert(extProofKernel.end(), extPath.begin(), extPath.end());
 
-    return found;
+    return ret;
 }
 
-bool
-ProofKernel::search(int ply, std::vector<PkMove>& path) {
+ProofKernel::SearchResult
+ProofKernel::search(int ply) {
     nodes++;
 
-    if (remainingMoves == 0 && isGoal())
-        return true;
+    if (remainingMoves == 0 && isGoal()) {
+        if (computeExtKernel())
+            return EXT_PROOF_KERNEL;
+        else
+            return PROOF_KERNEL;
+    }
+
     if (remainingMoves <= 0 || !goalPossible())
-        return false;
+        return FAIL;
 
     State myState;
     getState(myState);
     const U64 idx = myState.hashKey() & (failed.size() - 1);
     if (failed[idx] == myState)
-        return false; // Already searched, no solution exists
+        return FAIL; // Already searched, no solution exists
 
+    bool hasProofKernel = false;
     std::vector<PkMove>& moves = moveStack[ply];
     genMoves(moves);
     for (const PkMove& m : moves) {
@@ -227,18 +240,23 @@ ProofKernel::search(int ply, std::vector<PkMove>& path) {
         path.push_back(m);
         remainingMoves--;
 
-        bool found = search(ply + 1, path);
+        SearchResult res = search(ply + 1);
 
         remainingMoves++;
         unMakeMove(m, ui);
 
-        if (found)
-            return true;
+        if (res == EXT_PROOF_KERNEL)
+            return res;
+        if (res == PROOF_KERNEL)
+            hasProofKernel = true;
 
         path.pop_back();
     }
-    failed[idx] = myState;
-    return false;
+    if (!hasProofKernel) {
+        failed[idx] = myState;
+        return FAIL;
+    }
+    return PROOF_KERNEL;
 }
 
 ProofKernel::PawnColumn::PawnColumn(int x) {
@@ -841,6 +859,25 @@ std::ostream& operator<<(std::ostream& os, const ProofKernel::PkMove& m) {
     return os;
 }
 
+std::string toString(const ProofKernel::ExtPkMove& m) {
+    std::string ret;
+    ret += m.color == ProofKernel::WHITE ? 'w' : 'b';
+    if (m.movingPiece != ProofKernel::PieceType::EMPTY) {
+        ret += pieceName(m.movingPiece);
+        ret += TextIO::squareToString(m.fromSquare);
+    }
+    ret += m.capture ? 'x' : '-';
+    ret += TextIO::squareToString(m.toSquare);
+    if (m.promotedPiece != ProofKernel::PieceType::EMPTY)
+        ret += pieceName(m.promotedPiece);
+    return ret;
+}
+
+std::ostream& operator<<(std::ostream& os, const ProofKernel::ExtPkMove& m) {
+    os << toString(m);
+    return os;
+}
+
 void
 ProofKernel::getState(State& state) const {
     U64 pawns = 0;
@@ -856,4 +893,12 @@ ProofKernel::getState(State& state) const {
     if (onlyPieceXPiece)
         counts |= 1;
     state.pieceCounts = counts;
+}
+
+bool ProofKernel::computeExtKernel() {
+    nCSPs++;
+    ExtProofKernel epk(initialPos, goalPos);
+    bool ret = epk.findExtKernel(path, extPath);
+    nCSPNodes += epk.getNumNodes();
+    return ret;
 }

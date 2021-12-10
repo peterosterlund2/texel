@@ -38,6 +38,8 @@ public:
     static void testMoveGen();
     static void testMakeMove();
     static void testSearch();
+    static void testExtMoveToString();
+    static void testExtKernel();
 
 private:
     static void testMove(const Position& pos, const ProofKernel& pk,
