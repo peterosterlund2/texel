@@ -259,10 +259,13 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
     // Substitute variable values to create extPath
     for (const ExtMove& m : varExtPath) {
         int fromY = m.from.yVar == -1 ? m.from.y : values[m.from.yVar];
-        int fromSq = Square::getSquare(m.from.x, fromY);
         int toY = m.to.yVar == -1 ? m.to.y : values[m.to.yVar];
-        if (toY > 7 || toY < 0)
-            continue; // Ignore moves of already promoted pawns
+
+        // Adjust moves involving already promoted pawns
+        fromY = clamp(fromY, 0, 7);
+        toY = clamp(toY, 0, 7);
+
+        int fromSq = Square::getSquare(m.from.x, fromY);
         int toSq = Square::getSquare(m.to.x, toY);
         if (fromSq != toSq)
             extPath.emplace_back(m.color, m.movingPiece, fromSq, m.capture, toSq, m.promotedPiece);
