@@ -39,13 +39,20 @@ public:
     /** Minimum supported variable value. */
     constexpr static int minAllowedValue = -16;
 
+    /** Controls which variable values are tried first when
+     *  searching for a solution. */
+    enum class PrefVal {
+        SMALL,        // Try smaller values before larger
+        LARGE,        // Try larger values before smaller
+        MIDDLE_SMALL, // Prefer values 3,2,1, then increasing
+        MIDDLE_LARGE, // Prefer values 4,5,6, then decreasing
+    };
+
     /** Add a new integer variable. The variable satisfies:
-     *  0 <= minVal <= var <= maxVal < 63.
-     *  @param preferSmall  If true, small variables are tried before
-     *                      large values during solving.
+     *  -16 <= minVal <= var <= maxVal < 48.
      *  @return Variable identifier. Zero for first added variable, then
      *          incremented for each additional added variable. */
-    int addVariable(bool preferSmall = true, int minVal = 1, int maxVal = 6);
+    int addVariable(PrefVal pref = PrefVal::SMALL, int minVal = 1, int maxVal = 6);
 
     /** Restrict variable "varNo" to 2*n for some integer n. */
     void makeEven(int varNo);
@@ -72,16 +79,20 @@ public:
     U64 getNumNodes() const;
 
 private:
+    using Domain = BitSet<64,minAllowedValue>;
+
     /** Recursively try to assign valid values to all variables. */
     bool solveRecursive(int varNo, std::vector<int>& values);
+
+    /** Return the first set bit in "d", according to order defined by "pref". */
+    int getBitVal(Domain d, CspSolver::PrefVal pref);
 
     /** Make the CSP problem arc consistent.
      *  @return false if it is found that the CSP has no solution, true otherwise. */
     bool makeArcConsistent();
 
-    using Domain = BitSet<64,minAllowedValue>;
     std::vector<Domain> domain; // Domain of each variable, i.e. set of potentially legal values
-    std::vector<bool> preferSmall; // [varNo] If true, prefer small values when solving
+    std::vector<PrefVal> prefVal; // [varNo] preferred values when solving
 
     /** Represents the constraint var_v1 <= var_v2 + c */
     struct Constraint {

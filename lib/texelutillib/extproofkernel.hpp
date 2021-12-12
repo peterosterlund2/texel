@@ -42,6 +42,7 @@ public:
     using PieceType = ProofKernel::PieceType;
     using PkMove = ProofKernel::PkMove;
     using ExtPkMove = ProofKernel::ExtPkMove;
+    using PrefVal = CspSolver::PrefVal;
 
     /** Converts a proof kernel to an extended proof kernel if possible.
      *  @return true if an extended proof kernel exists, false otherwise. */

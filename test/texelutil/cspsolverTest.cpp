@@ -32,6 +32,11 @@
 const CspSolver::Oper LE = CspSolver::LE;
 const CspSolver::Oper GE = CspSolver::GE;
 
+const auto SMALL = CspSolver::PrefVal::SMALL;
+const auto LARGE = CspSolver::PrefVal::LARGE;
+const auto MIDDLE_SMALL = CspSolver::PrefVal::MIDDLE_SMALL;
+const auto MIDDLE_LARGE = CspSolver::PrefVal::MIDDLE_LARGE;
+
 
 TEST(CspSolverTest, testBitSet) {
     CspSolverTest::testBitSet();
@@ -152,13 +157,13 @@ CspSolverTest::basicTests() {
     }
     {
         CspSolver csp;
-        csp.addVariable(true, 1, 0); // Empty domain
+        csp.addVariable(SMALL, 1, 0); // Empty domain
         ASSERT_EQ(false, csp.solve(values));
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, 0, 9);
-        int v2 = csp.addVariable(true, 9, 15);
+        int v1 = csp.addVariable(SMALL, 0, 9);
+        int v2 = csp.addVariable(SMALL, 9, 15);
         csp.addIneq(v2, LE, v1, 0);
         ASSERT_EQ(true, csp.solve(values));
         expected = { 9, 9 };
@@ -169,8 +174,8 @@ CspSolverTest::basicTests() {
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, 0, 3);
-        int v2 = csp.addVariable(true, 0, 3);
+        int v1 = csp.addVariable(SMALL, 0, 3);
+        int v2 = csp.addVariable(SMALL, 0, 3);
         csp.addIneq(v1, LE, v2, -3);
         ASSERT_EQ(true, csp.solve(values));
         expected = { 0, 3 };
@@ -181,8 +186,8 @@ CspSolverTest::basicTests() {
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, 8, 8);
-        int v2 = csp.addVariable(true, 7, 10);
+        int v1 = csp.addVariable(SMALL, 8, 8);
+        int v2 = csp.addVariable(SMALL, 7, 10);
         csp.addIneq(v1, GE, v2, 1);
         ASSERT_EQ(true, csp.solve(values));
         expected = { 8, 7 };
@@ -193,8 +198,8 @@ CspSolverTest::basicTests() {
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, 8, 8);
-        int v2 = csp.addVariable(true, 7, 10);
+        int v1 = csp.addVariable(SMALL, 8, 8);
+        int v2 = csp.addVariable(SMALL, 7, 10);
         csp.addIneq(v2, GE, v1, 2);
         ASSERT_EQ(true, csp.solve(values));
         expected = { 8, 10 };
@@ -205,8 +210,8 @@ CspSolverTest::basicTests() {
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, 0, 40);
-        int v2 = csp.addVariable(true, 0, 40);
+        int v1 = csp.addVariable(SMALL, 0, 40);
+        int v2 = csp.addVariable(SMALL, 0, 40);
         csp.addIneq(v2, GE, v1, 2);
         csp.addMinVal(0, 8);
         csp.addMaxVal(0, 8);
@@ -217,16 +222,16 @@ CspSolverTest::basicTests() {
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, 1, 1);
-        int v2 = csp.addVariable(true, 4, 6);
+        int v1 = csp.addVariable(SMALL, 1, 1);
+        int v2 = csp.addVariable(SMALL, 4, 6);
         csp.addIneq(v2, GE, v1, 5);
         csp.addMaxVal(1, 4);
         ASSERT_EQ(false, csp.solve(values));
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, 1, 1);
-        int v2 = csp.addVariable(true, 2, 5);
+        int v1 = csp.addVariable(SMALL, 1, 1);
+        int v2 = csp.addVariable(SMALL, 2, 5);
         csp.addIneq(v2, GE, v1, 4);
         csp.addMinVal(1, 4);
         ASSERT_EQ(true, csp.solve(values));
@@ -235,10 +240,10 @@ CspSolverTest::basicTests() {
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, 0, 3);
-        int v2 = csp.addVariable(true, 0, 3);
-        int v3 = csp.addVariable(true, 0, 3);
-        int v4 = csp.addVariable(true, 0, 3);
+        int v1 = csp.addVariable(SMALL, 0, 3);
+        int v2 = csp.addVariable(SMALL, 0, 3);
+        int v3 = csp.addVariable(SMALL, 0, 3);
+        int v4 = csp.addVariable(SMALL, 0, 3);
         csp.addIneq(v2, GE, v1, 1);
         csp.addIneq(v3, GE, v2, 1);
         csp.addIneq(v4, GE, v3, 1);
@@ -248,11 +253,11 @@ CspSolverTest::basicTests() {
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, 0, 3);
-        int v2 = csp.addVariable(true, 0, 3);
-        int v3 = csp.addVariable(true, 0, 3);
-        int v4 = csp.addVariable(true, 0, 3);
-        int v5 = csp.addVariable(true, 0, 3);
+        int v1 = csp.addVariable(SMALL, 0, 3);
+        int v2 = csp.addVariable(SMALL, 0, 3);
+        int v3 = csp.addVariable(SMALL, 0, 3);
+        int v4 = csp.addVariable(SMALL, 0, 3);
+        int v5 = csp.addVariable(SMALL, 0, 3);
         csp.addIneq(v2, GE, v1, 1);
         csp.addIneq(v3, GE, v2, 1);
         csp.addIneq(v4, GE, v3, 1);
@@ -261,9 +266,9 @@ CspSolverTest::basicTests() {
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, 0, 3);
-        int v2 = csp.addVariable(true, 0, 3);
-        int v3 = csp.addVariable(false, 0, 3);
+        int v1 = csp.addVariable(SMALL, 0, 3);
+        int v2 = csp.addVariable(SMALL, 0, 3);
+        int v3 = csp.addVariable(LARGE, 0, 3);
         csp.addEq(v1, v2, 3);
         csp.addEq(v3, v2, 0);
         ASSERT_EQ(true, csp.solve(values));
@@ -273,7 +278,7 @@ CspSolverTest::basicTests() {
     {
         CspSolver csp;
         for (int i = 0; i < 1000; i++)
-            csp.addVariable(true, 1, 2);
+            csp.addVariable(SMALL, 1, 2);
         ASSERT_EQ(true, csp.solve(values));
         for (int i = 0; i < 1000; i++) {
             ASSERT_EQ(1, values[i]);
@@ -281,8 +286,8 @@ CspSolverTest::basicTests() {
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, -5, 5);
-        int v2 = csp.addVariable(true, -5, 5);
+        int v1 = csp.addVariable(SMALL, -5, 5);
+        int v2 = csp.addVariable(SMALL, -5, 5);
         csp.addIneq(v1, LE, v2, -10);
         ASSERT_EQ(true, csp.solve(values));
         ASSERT_EQ(-5, values[0]);
@@ -292,7 +297,7 @@ CspSolverTest::basicTests() {
         int offs = CspSolver::minAllowedValue;
         CspSolver csp;
         for (int i = 0; i < 64; i++) {
-            csp.addVariable(true, offs+0, offs+63);
+            csp.addVariable(SMALL, offs+0, offs+63);
             if (i > 0)
                 csp.addIneq(i, GE, i-1, 1);
         }
@@ -303,10 +308,67 @@ CspSolverTest::basicTests() {
     }
     {
         CspSolver csp;
-        int v1 = csp.addVariable(true, 0, 2);
+        int v1 = csp.addVariable(SMALL, 0, 2);
         csp.makeOdd(v1);
         ASSERT_EQ(true, csp.solve(values));
         ASSERT_EQ(1, values[0]);
+    }
+}
+
+TEST(CspSolverTest, testPrefVal) {
+    CspSolverTest::testPrefVal();
+}
+
+void
+CspSolverTest::testPrefVal() {
+    std::vector<int> values;
+    {
+        CspSolver csp;
+        int v1 = csp.addVariable(MIDDLE_SMALL);
+        int v2 = csp.addVariable(LARGE);
+        csp.addIneq(v2, GE, v1, 1);
+        ASSERT_EQ(true, csp.solve(values));
+        ASSERT_EQ(3, values[v1]);
+        ASSERT_EQ(6, values[v2]);
+    }
+    {
+        CspSolver csp;
+        int v1 = csp.addVariable(MIDDLE_SMALL);
+        int v2 = csp.addVariable(MIDDLE_LARGE);
+        csp.addIneq(v2, GE, v1, 1);
+        ASSERT_EQ(true, csp.solve(values));
+        ASSERT_EQ(3, values[v1]);
+        ASSERT_EQ(4, values[v2]);
+    }
+    {
+        CspSolver csp;
+        int v1 = csp.addVariable(MIDDLE_SMALL);
+        int v2 = csp.addVariable(LARGE);
+        csp.addIneq(v2, GE, v1, 1);
+        csp.addMaxVal(v1, 2);
+        ASSERT_EQ(true, csp.solve(values));
+        ASSERT_EQ(2, values[v1]);
+        ASSERT_EQ(6, values[v2]);
+    }
+    {
+        CspSolver csp;
+        int v1 = csp.addVariable(MIDDLE_SMALL);
+        int v2 = csp.addVariable(LARGE);
+        csp.addIneq(v2, GE, v1, 1);
+        csp.addMaxVal(v2, 2);
+        ASSERT_EQ(true, csp.solve(values));
+        ASSERT_EQ(1, values[v1]);
+        ASSERT_EQ(2, values[v2]);
+    }
+    {
+        CspSolver csp;
+        int v1 = csp.addVariable(MIDDLE_SMALL);
+        int v2 = csp.addVariable(LARGE);
+        csp.addIneq(v2, GE, v1, 1);
+        csp.addMaxVal(v1, 1);
+        ASSERT_EQ(true, csp.solve(values));
+        ASSERT_EQ(1, values[v1]);
+        ASSERT_EQ(6, values[v2]);
     }
 }
 
@@ -321,7 +383,7 @@ CspSolverTest::testEvenOdd() {
     for (int i = 0; i < 64; i++) {
         int offs = CspSolver::minAllowedValue;
         CspSolver csp;
-        int v1 = csp.addVariable(true, offs+0, offs+63);
+        int v1 = csp.addVariable(SMALL, offs+0, offs+63);
         if ((offs+i) % 2 == 0) {
             csp.makeEven(v1);
         } else {
@@ -346,14 +408,14 @@ CspSolverTest::testProofKernel() {
     std::vector<int> values, expected;
     {
         CspSolver csp;
-        int r1 = csp.addVariable(true, 3, 7);
-        int r2 = csp.addVariable(true, 4, 7);
+        int r1 = csp.addVariable(SMALL, 3, 7);
+        int r2 = csp.addVariable(SMALL, 4, 7);
         csp.addIneq(r2, LE, r1, -1);
-        int r3 = csp.addVariable(true, 3, 7); (void)r3;
-        int r4 = csp.addVariable(true, 3, 7);
-        int r5 = csp.addVariable(true, 2, 5);
+        int r3 = csp.addVariable(SMALL, 3, 7); (void)r3;
+        int r4 = csp.addVariable(SMALL, 3, 7);
+        int r5 = csp.addVariable(SMALL, 2, 5);
         csp.addIneq(r5, GE, r1, 1);
-        int r6 = csp.addVariable(true, 3, 7);
+        int r6 = csp.addVariable(SMALL, 3, 7);
         csp.addIneq(r6, LE, r4, -1);
         ASSERT_EQ(false, csp.solve(values));
     }
@@ -445,38 +507,38 @@ CspSolverTest::testProofKernel() {
     {
         CspSolver csp; // 2QB1rr1/1R4Q1/r2q1N2/1R1K1B2/5rB1/r6b/Rrr3r1/RN1bk1nq w - - 0 1
         // bPa1xPb0
-        int a2_0 = csp.addVariable(true);
-        int a7_0 = csp.addVariable(false);
-        int b7_0 = csp.addVariable(false);
+        int a2_0 = csp.addVariable(SMALL);
+        int a7_0 = csp.addVariable(LARGE);
+        int b7_0 = csp.addVariable(LARGE);
         csp.addIneq(a7_0, LE, b7_0, -1);
         csp.addIneq(a2_0, LE, b7_0, 0);
 
         // bPb0xPa0
-        int a7_1 = csp.addVariable(false);
-        int b7_1 = csp.addVariable(false);
+        int a7_1 = csp.addVariable(LARGE);
+        int b7_1 = csp.addVariable(LARGE);
         csp.addIneq(a7_1, LE, a7_0, -1);
         csp.addIneq(b7_1, LE, b7_0, 0);
         csp.addIneq(a2_0, LE, a7_1, 0);
 
         // bPc1xPd0
-        int c2_2 = csp.addVariable(true);
-        int c7_2 = csp.addVariable(false);
-        int d7_2 = csp.addVariable(false);
+        int c2_2 = csp.addVariable(SMALL);
+        int c7_2 = csp.addVariable(LARGE);
+        int d7_2 = csp.addVariable(LARGE);
         csp.addIneq(c7_2, LE, d7_2, -1);
         csp.addIneq(c2_2, LE, d7_2, 0);
 
         // bPe1xPf0
-        int e2_3 = csp.addVariable(true);
-        int e7_3 = csp.addVariable(false);
-        int f7_3 = csp.addVariable(false);
+        int e2_3 = csp.addVariable(SMALL);
+        int e7_3 = csp.addVariable(LARGE);
+        int f7_3 = csp.addVariable(LARGE);
         csp.addIneq(e7_3, LE, f7_3, -1);
         csp.addIneq(e2_3, LE, f7_3, 0);
 
         // wPg0xDBf2
-        int e7_4 = csp.addVariable(false);
-        int f7_4 = csp.addVariable(false);
-        int g2_4 = csp.addVariable(true);
-        int g7_4 = csp.addVariable(false);
+        int e7_4 = csp.addVariable(LARGE);
+        int f7_4 = csp.addVariable(LARGE);
+        int g2_4 = csp.addVariable(SMALL);
+        int g7_4 = csp.addVariable(LARGE);
         csp.addIneq(e7_4, LE, e7_3, 0);
         csp.addIneq(f7_4, LE, f7_3, 0);
         csp.addIneq(e7_4, LE, f7_4, -1);
@@ -485,9 +547,9 @@ CspSolverTest::testProofKernel() {
         csp.makeOdd(g2_4);
 
         // wPh0xNg1
-        int g7_5 = csp.addVariable(false);
-        int h2_5 = csp.addVariable(true);
-        int h7_5 = csp.addVariable(false);
+        int g7_5 = csp.addVariable(LARGE);
+        int h2_5 = csp.addVariable(SMALL);
+        int h7_5 = csp.addVariable(LARGE);
         csp.addIneq(g7_5, LE, g7_4, 0);
         csp.addIneq(g7_5, LE, h2_5, -1);
         csp.addIneq(h2_5, LE, h7_5, 0);

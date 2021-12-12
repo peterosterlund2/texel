@@ -32,6 +32,7 @@ class CspSolverTest {
 public:
     static void testBitSet();
     static void basicTests();
+    static void testPrefVal();
     static void testEvenOdd();
     static void testProofKernel();
 };

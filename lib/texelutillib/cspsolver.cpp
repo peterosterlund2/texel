@@ -60,7 +60,7 @@ CspSolver::CspSolver() {
 }
 
 int
-CspSolver::addVariable(bool small, int minVal, int maxVal) {
+CspSolver::addVariable(PrefVal pref, int minVal, int maxVal) {
     int id = domain.size();
     assert(minVal >= Domain::minAllowed);
     assert(minVal < Domain::minAllowed + Domain::numBits);
@@ -70,9 +70,9 @@ CspSolver::addVariable(bool small, int minVal, int maxVal) {
     Domain d;
     d.setRange(minVal, maxVal);
     domain.push_back(d);
-    preferSmall.push_back(small);
+    prefVal.push_back(pref);
 
-    LOG("v:" << id << " d:" << bits(d));
+    LOG("v:" << id << " pref:" << static_cast<int>(pref) << " d:" << bits(d));
     return id;
 }
 
@@ -155,10 +155,10 @@ bool
 CspSolver::solveRecursive(int varNo, std::vector<int>& values) {
     nodes++;
     const int nValues = values.size();
-    const bool small = preferSmall[varNo];
+    const PrefVal pref = prefVal[varNo];
     Domain d = domain[varNo];
     while (!d.empty()) {
-        int val = small ? d.getMinBit() : d.getMaxBit();
+        int val = getBitVal(d, pref);
         d.clearBit(val);
         values[varNo] = val;
         ConstrSet constrMask = varToConstr[varNo];
@@ -184,6 +184,27 @@ CspSolver::solveRecursive(int varNo, std::vector<int>& values) {
     }
     values[varNo] = -1;
     return false;
+}
+
+int
+CspSolver::getBitVal(CspSolver::Domain d, CspSolver::PrefVal pref) {
+    switch (pref) {
+    case PrefVal::SMALL:
+        return d.getMinBit();
+    case PrefVal::LARGE:
+        return d.getMaxBit();
+    case PrefVal::MIDDLE_SMALL:
+        for (int b = 3; b >= 1; b--)
+            if (d.getBit(b))
+                return b;
+        return d.getMinBit();
+    case PrefVal::MIDDLE_LARGE:
+        for (int b = 4; b <= 6; b++)
+            if (d.getBit(b))
+                return b;
+        return d.getMaxBit();
+    }
+    assert(false);
 }
 
 bool

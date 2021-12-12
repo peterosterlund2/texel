@@ -960,6 +960,12 @@ ProofKernelTest::testExtKernel() {
         }
     };
 
+    // Prefer capture on rank 4/5
+    test(TextIO::startPosFEN, "rnbqkbnr/Pppppppp/8/8/8/8/P1PPPPPP/RNBQKBNR b KQkq - 0 1",
+         "wPb0xPa1", true, "wPb2-b4 bPa7-a5 wPb4xa5");
+    test(TextIO::startPosFEN, "rnbqkbnr/1ppppppp/8/8/8/8/PpPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "bPa1xPb0", true, "bPa7-a5 wPb2-b4 bPa5xb4");
+
     // Pawn needs to move to leave room for knight to be captured by other pawn
     test("rn2kb2/8/8/6pP/6P1/8/8/4K3 w q - 0 1", "r3kb2/8/8/6p1/3B1B2/8/8/4K3 w q - 0 1",
          "wPg0xNh0", true, "wPh5-h6 bNb8-h5 wPg4xh5");
@@ -1029,10 +1035,10 @@ ProofKernelTest::testExtKernel() {
          "wPb0xPa1 wPd0xPe1 wPh0xPg1 bPf1xRe0", true, "*");
     test(TextIO::startPosFEN, "5b2/5B2/pPbB3b/P1nb1p2/q4NQR/1qP2rp1/1kr2N2/R2NKRrr b - - 0 1",
          "bPb1xPc0 bPe1xPf0 bPh1xPg0 wPd0xNc2", true, "*");
-    test(TextIO::startPosFEN, "1RRqk1nr/pPpp1ppp/1p2p3/8/8/8/3PPPPP/RNBQKBNR w KQ - 0 1",
+    test(TextIO::startPosFEN, "1RRqk1nr/pPpp1ppp/1p2p3/8/8/8/3PPPPP/RNBQKBNR w KQ - 0 1", //
          "wPc0xLBb2 wPa0xNb2 wPb0xDBc0 wPc0xRb1", true,
-         "wPc2-c6 bPb7-b6 bLBc8-b7 wPc6xb7 wPa2-a6 wPb7-b8 bNb8-b7 wPa6xb7 bDBf8-c3 wPb2xc3 "
-         "wPc3-c6 wPb7-b8 bRa8-b7 wPc6xb7");
+         "wPc2-c6 bPb7-b6 bLBc8-b7 wPc6xb7 wPa2-a6 wPb7-b8 bNb8-b7 wPa6xb7 wPb2-b4 bDBf8-c5 wPb4xc5 "
+         "wPc5-c6 wPb7-b8 bRa8-b7 wPc6xb7");
     test(TextIO::startPosFEN, "1RRqk1nr/pPpp1ppp/1p2p3/8/8/8/3PPPPP/RNBQKBNR w KQ - 0 1",
          "wPc0xLBb2 wPa0xNb3", false, "");
     test(TextIO::startPosFEN, "1RRqk1nr/pPpp1ppp/4p3/1p6/8/8/3PPPPP/RNBQKBNR w KQ - 0 1",
@@ -1043,18 +1049,22 @@ ProofKernelTest::testExtKernel() {
          "wPc0xLBb2 wPa0xNb3", true, "wPc2-c4 bPb7-b4 bLBc8-b5 wPc4xb5 wPa2-a5 bNb8-b6 wPa5xb6");
     test(TextIO::startPosFEN, "rnbqkbnr/3ppppp/8/8/8/1P2P3/PpPP1PPP/1rrQK1NR w kq - 0 1",
          "bPc1xDBb0 bPa1xNb1 bPb3xLBc1 bPc1xRb2", true,
-         "bPc7-c3 wPb2-b3 wDBc1-b2 bPc3xb2 bPa7-a3 bPb2-b1 wNb1-b2 bPa3xb2 wLBf1-c6 bPb7xc6 "
-         "bPc6-c3 bPb2-b1 wRa1-b2 bPc3xb2");
+         "bPc7-c3 wPb2-b3 wDBc1-b2 bPc3xb2 bPa7-a3 bPb2-b1 wNb1-b2 bPa3xb2 bPb7-b5 wLBf1-c4 bPb5xc4 "
+         "bPc4-c3 bPb2-b1 wRa1-b2 bPc3xb2");
     test(TextIO::startPosFEN, "r1bqkb1r/pPpppppp/1p6/8/8/8/1P1PPPPP/RNBQKBNR w KQkq - 0 1",
          "wPa0xNb2 wPc0xNb2 bxPb3", false, "");
     test(TextIO::startPosFEN, "rnbqkbnr/1p1ppppp/8/8/8/1P6/PpPPPPPP/R1BQKB1R w KQkq - 0 1",
          "bPa1xNb0 bPc1xNb1 wxPb0", false, "");
+    test("rnbqkbnr/ppppp1p1/8/8/8/1P3pPp/P1PPPP1P/RNBQKBNR w kq - 0 1",
+         "rnbqkbnr/ppppp1p1/8/8/5P2/1P4P1/P1P1PP1P/R1BQKB1R w kq - 0 1",
+         "bPf1xNg0 BPh1xNg1 wPd0xge1 wPe1xgf1", true,
+         "wNb1-g2 bPf3xg2 bPg2-g1 wNg1-g2 bPh3xg2 bNg1-e3 wPd2xe3 bPg2-g1N bNg1-f4 wPe3xf4");
 
     // More than one pawn needs to move away to leave room for a capture
-    test(TextIO::startPosFEN, "r1bqkb1r/pppppp1p/6p1/1P6/1P6/1P6/3PPPPP/RNBQKBNR w KQkq - 0 1",
-         "wPc0xNb0 wPa0xNb0", true,
-         "wPb2-b4 bNb8-b3 wPc2xb3 wPb4-b5 wPb3-b4 bNg8-b3 wPa2xb3");
-    test(TextIO::startPosFEN, "rnbqkbnr/ppp3pp/4p3/4p3/4p3/1P6/P1PPPPPP/R1BQKB1R w KQkq - 0 1",
-         "bPf1xNe2 bPd1xNe3", true,
-         "bPe7-e5 wNb1-e6 bPf7xe6 bPe5-e4 bPe6-e5 wNg1-e6 bPd7xe6");
+    test("r1bqkbnr/pppppppp/8/8/1P6/1P6/P2PPPPP/RNBQKBNR w KQkq - 0 1",
+         "r1bqkb1r/pppppp1p/6p1/1P6/1P6/1P6/3PPPPP/RNBQKBNR w KQkq - 0 1",
+         "wPa0xNb0", true, "wPb4-b5 wPb3-b4 bNg8-b3 wPa2xb3");
+    test("rnbqkbnr/pppp2pp/4p3/4p3/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1",
+         "rnbqkbnr/ppp3pp/4p3/4p3/4p3/1P6/P1PPPPPP/R1BQKB1R w KQkq - 0 1",
+         "bPd1xNe3", true, "bPe5-e4 bPe6-e5 wNg1-e6 bPd7xe6");
 }

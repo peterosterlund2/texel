@@ -54,7 +54,7 @@ ExtProofKernel::ExtProofKernel(const Position& initialPos,
                 bool w = p == Piece::WPAWN;
                 int idx = allPawns.size();
                 allPawns.emplace_back(idx, w);
-                int var = csp.addVariable(w, y, y);
+                int var = csp.addVariable(w ? PrefVal::SMALL : PrefVal::LARGE, y, y);
                 allPawns[idx].addVar(var, csp);
                 columns[x].addPawn(columns[x].nPawns(), idx);
             }
@@ -151,7 +151,7 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
             pawnIdx = col.getPawn(m.fromIdx);
             Pawn& pawn = allPawns[pawnIdx];
             int initYVar = pawn.varIds.back();
-            fromYVar = csp.addVariable(white);
+            fromYVar = csp.addVariable(white ? PrefVal::MIDDLE_SMALL : PrefVal::MIDDLE_LARGE);
             pawn.addVar(fromYVar, csp);
             addColumnIneqs(col);
             col.removePawn(m.fromIdx);
@@ -165,7 +165,7 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
             if (m.promotedPiece == PieceType::EMPTY) {
                 if (m.fromFile != -1) {
                     Pawn& pawn = allPawns[pawnIdx];
-                    int toYVar = csp.addVariable(white);
+                    int toYVar = csp.addVariable(white ? PrefVal::SMALL : PrefVal::LARGE);
                     pawn.addVar(toYVar, csp, false);
                     csp.addEq(toYVar, fromYVar, white ? 1 : -1);
                     movePawns(m.toFile, col, varExtPath);
@@ -303,7 +303,8 @@ ExtProofKernel::movePawns(int x, const PawnColumn& col,
     for (int i = 0; i < col.nPawns(); i++) {
         Pawn& pawn = allPawns[col.getPawn(i)];
         int fromYVar = pawn.varIds.back();
-        int toYVar = csp.addVariable(pawn.white, 1 - maxPromoteOneFile, 6 + maxPromoteOneFile);
+        int toYVar = csp.addVariable(pawn.white ? PrefVal::SMALL : PrefVal::LARGE,
+                                     1 - maxPromoteOneFile, 6 + maxPromoteOneFile);
         pawn.addVar(toYVar, csp);
         PieceColor color = pawn.white ? PieceColor::WHITE : PieceColor::BLACK;
         ExtMove m { color, PieceType::PAWN,
