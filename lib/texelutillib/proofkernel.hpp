@@ -105,6 +105,11 @@ public:
                                         int otherPromFile, PieceType promoted);
         static PkMove pieceXPawn(PieceColor c, int toFile, int toIdx);
         static PkMove pieceXPiece(PieceColor c, PieceType taken);
+
+        int sortKey = 0;         // Used for move ordering
+        bool operator<(const PkMove& o) const {
+            return sortKey < o.sortKey;
+        }
     };
 
     /** Represents a move in the extended proof kernel space. Each PkMove corresponds
@@ -273,7 +278,7 @@ private:
 
     /** Generate a list of moves. Moves that are known to be futile are not necessarily generated.
      *  "Piece takes piece" moves are not generated. */
-    void genMoves(std::vector<PkMove>& moves);
+    void genMoves(std::vector<PkMove>& moves, bool sort = false);
     /** Generate moves involving a pawn. */
     void genPawnMoves(std::vector<PkMove>& moves);
     /** Generate piece takes piece moves. */

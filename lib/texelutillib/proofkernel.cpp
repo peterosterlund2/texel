@@ -232,7 +232,7 @@ ProofKernel::search(int ply) {
 
     bool hasProofKernel = false;
     std::vector<PkMove>& moves = moveStack[ply];
-    genMoves(moves);
+    genMoves(moves, remainingMoves > 2);
     for (const PkMove& m : moves) {
         PkUndoInfo ui;
 
@@ -492,11 +492,21 @@ ProofKernel::minMovesToGoal() const {
 
 
 void
-ProofKernel::genMoves(std::vector<PkMove>& moves) {
+ProofKernel::genMoves(std::vector<PkMove>& moves, bool sort) {
     moves.clear();
     if (!onlyPieceXPiece)
         genPawnMoves(moves);
     genPieceXPieceMoves(moves);
+
+    if (sort) {
+        for (PkMove& m : moves) {
+            PkUndoInfo ui;
+            makeMove(m, ui);
+            m.sortKey = minMovesToGoal();
+            unMakeMove(m, ui);
+        }
+        std::stable_sort(moves.begin(), moves.end());
+    }
 }
 
 void
