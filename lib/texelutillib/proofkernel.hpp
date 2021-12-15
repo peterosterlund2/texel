@@ -178,6 +178,8 @@ private:
 
         /** Number of pawns in the column. */
         int nPawns() const;
+        /** Number of pawns of one color in the column. */
+        int nPawns(PieceColor c) const;
         /** Get color of the i:th pawn. 0 <= i < nPawns(). */
         PieceColor getPawn(int i) const;
 
@@ -232,11 +234,13 @@ private:
         std::array<bool,128> complete;                                  // [pawnPattern]
     };
     std::array<PawnColumn, 8> columns;
+    std::array<PawnColumn, 8> goalColumns;
     static const int nPieceTypes = EMPTY;
     int pieceCnt[2][nPieceTypes];
     int goalCnt[2][nPieceTypes];
     int excessCnt[2][nPieceTypes];  // pieceCnt - goalCnt
-    int remainingMoves;
+    int remainingMoves;       // Remaining moves for both colors combined
+    int remainingCaptures[2]; // Remaining number of pieces to be captured for each color
     bool onlyPieceXPiece = false;
 
     U64 deadBishops;  // Mask of bishops initially trapped on first/last row and not present in goal position
@@ -275,6 +279,8 @@ private:
 
     /** Return a lower bound on the number of moves required to reach a goal position. */
     int minMovesToGoal() const;
+    /** Return a lower bound on the number of moves one side needs to make to reach a goal position. */
+    int minMovesToGoalOneColor(PieceColor c) const;
 
     /** Generate a list of moves. Moves that are known to be futile are not necessarily generated.
      *  "Piece takes piece" moves are not generated. */
@@ -449,6 +455,12 @@ ProofKernel::PawnColumn::operator!=(const ProofKernel::PawnColumn& other) const 
 inline int
 ProofKernel::PawnColumn::nPawns() const {
     return BitUtil::lastBit(data);
+}
+
+inline int
+ProofKernel::PawnColumn::nPawns(PieceColor c) const {
+    int nBlack = BitUtil::bitCount(data) - 1;
+    return (c == BLACK) ? nBlack : nPawns() - nBlack;
 }
 
 inline ProofKernel::PieceColor

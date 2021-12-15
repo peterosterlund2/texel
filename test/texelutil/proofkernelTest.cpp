@@ -50,21 +50,29 @@ ProofKernelTest::testPawnColumn() {
 
     col.addPawn(0, WHITE);
     ASSERT_EQ(1, col.nPawns());
+    ASSERT_EQ(1, col.nPawns(WHITE));
+    ASSERT_EQ(0, col.nPawns(BLACK));
     ASSERT_EQ(WHITE, col.getPawn(0));
 
     col.addPawn(1, BLACK);
     ASSERT_EQ(2, col.nPawns());
+    ASSERT_EQ(1, col.nPawns(WHITE));
+    ASSERT_EQ(1, col.nPawns(BLACK));
     ASSERT_EQ(WHITE, col.getPawn(0));
     ASSERT_EQ(BLACK, col.getPawn(1));
 
     col.addPawn(0, BLACK);
     ASSERT_EQ(3, col.nPawns());
+    ASSERT_EQ(1, col.nPawns(WHITE));
+    ASSERT_EQ(2, col.nPawns(BLACK));
     ASSERT_EQ(BLACK, col.getPawn(0));
     ASSERT_EQ(WHITE, col.getPawn(1));
     ASSERT_EQ(BLACK, col.getPawn(2));
 
     col.addPawn(1, WHITE);
     ASSERT_EQ(4, col.nPawns());
+    ASSERT_EQ(2, col.nPawns(WHITE));
+    ASSERT_EQ(2, col.nPawns(BLACK));
     ASSERT_EQ(BLACK, col.getPawn(0));
     ASSERT_EQ(WHITE, col.getPawn(1));
     ASSERT_EQ(WHITE, col.getPawn(2));
@@ -72,6 +80,8 @@ ProofKernelTest::testPawnColumn() {
 
     col.removePawn(0);
     ASSERT_EQ(3, col.nPawns());
+    ASSERT_EQ(2, col.nPawns(WHITE));
+    ASSERT_EQ(1, col.nPawns(BLACK));
     ASSERT_EQ(WHITE, col.getPawn(0));
     ASSERT_EQ(WHITE, col.getPawn(1));
     ASSERT_EQ(BLACK, col.getPawn(2));
@@ -79,6 +89,8 @@ ProofKernelTest::testPawnColumn() {
     col.addPawn(3, WHITE);
     col.addPawn(4, BLACK);
     ASSERT_EQ(5, col.nPawns());
+    ASSERT_EQ(3, col.nPawns(WHITE));
+    ASSERT_EQ(2, col.nPawns(BLACK));
     ASSERT_EQ(WHITE, col.getPawn(0));
     ASSERT_EQ(WHITE, col.getPawn(1));
     ASSERT_EQ(BLACK, col.getPawn(2));
@@ -87,6 +99,8 @@ ProofKernelTest::testPawnColumn() {
 
     col.removePawn(3);
     ASSERT_EQ(4, col.nPawns());
+    ASSERT_EQ(2, col.nPawns(WHITE));
+    ASSERT_EQ(2, col.nPawns(BLACK));
     ASSERT_EQ(WHITE, col.getPawn(0));
     ASSERT_EQ(WHITE, col.getPawn(1));
     ASSERT_EQ(BLACK, col.getPawn(2));
@@ -94,6 +108,8 @@ ProofKernelTest::testPawnColumn() {
 
     col.setPawn(3, WHITE);
     ASSERT_EQ(4, col.nPawns());
+    ASSERT_EQ(3, col.nPawns(WHITE));
+    ASSERT_EQ(1, col.nPawns(BLACK));
     ASSERT_EQ(WHITE, col.getPawn(0));
     ASSERT_EQ(WHITE, col.getPawn(1));
     ASSERT_EQ(BLACK, col.getPawn(2));
@@ -102,6 +118,8 @@ ProofKernelTest::testPawnColumn() {
     for (int i = 0; i < 2; i++) {
         col.setPawn(1, BLACK);
         ASSERT_EQ(4, col.nPawns());
+        ASSERT_EQ(2, col.nPawns(WHITE));
+        ASSERT_EQ(2, col.nPawns(BLACK));
         ASSERT_EQ(WHITE, col.getPawn(0));
         ASSERT_EQ(BLACK, col.getPawn(1));
         ASSERT_EQ(BLACK, col.getPawn(2));
@@ -687,7 +705,7 @@ ProofKernelTest::testMakeMove() {
         ASSERT_EQ(pk0, pk);
         ASSERT_NE(pkG, pk);
         testMove(startPos, pk, move);
-        ASSERT_TRUE(pk.goalPossible());
+        ASSERT_TRUE(pk.goalPossible()) << "start: " << start << " goal: " << goal << " move: " << toString(move);
 
         PkUndoInfo ui;
         pk.makeMove(move, ui);

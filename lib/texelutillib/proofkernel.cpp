@@ -26,6 +26,7 @@
 #include "proofkernel.hpp"
 #include "extproofkernel.hpp"
 #include "textio.hpp"
+#include "stloutput.hpp"
 #include <cassert>
 
 
@@ -34,8 +35,6 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U6
     for (int i = 0; i < 8; i++)
         columns[i] = PawnColumn(i);
     posToState(initialPos, columns, pieceCnt, blocked);
-
-    std::array<PawnColumn,8> goalColumns;
     posToState(goalPos, goalColumns, goalCnt, blocked);
 
     auto isBlocked = [&blocked](int x, int y) -> bool {
@@ -103,10 +102,12 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U6
 
     remainingMoves = 0;
     for (int c = 0; c < 2; c++) {
+        remainingCaptures[c] = 0;
         for (int p = 0; p < nPieceTypes; p++) {
             int tmp = pieceCnt[c][p] - goalCnt[c][p];
             excessCnt[c][p] = tmp;
             remainingMoves += tmp;
+            remainingCaptures[c] += tmp;
         }
     }
 }
@@ -184,7 +185,7 @@ ProofKernel::findProofKernel(std::vector<PkMove>& proofKernel,
         path.push_back(PkMove::pieceXPiece(color, bishop));
         PkUndoInfo ui;
         makeMove(path.back(), ui);
-        if (--remainingMoves < 0)
+        if (remainingMoves < 0)
             break;
     }
 
@@ -213,6 +214,10 @@ ProofKernel::findProofKernel(std::vector<PkMove>& proofKernel,
 ProofKernel::SearchResult
 ProofKernel::search(int ply) {
     nodes++;
+    if ((nodes & ((1ULL << 26) - 1)) == 0) {
+        std::cerr << "nodes:" << nodes << std::endl;
+        std::cerr << "path:" << path << std::endl;
+    }
 
     if (remainingMoves == 0 && isGoal()) {
         if (computeExtKernel())
@@ -238,11 +243,9 @@ ProofKernel::search(int ply) {
 
         makeMove(m, ui);
         path.push_back(m);
-        remainingMoves--;
 
         SearchResult res = search(ply + 1);
 
-        remainingMoves++;
         unMakeMove(m, ui);
 
         if (res == EXT_PROOF_KERNEL)
@@ -473,6 +476,11 @@ ProofKernel::goalPossible() const {
         if (sparePawns < 0)
             return false;
     }
+
+    for (int c = 0; c < 2; c++)
+        if (minMovesToGoalOneColor((PieceColor)c) > remainingCaptures[1-c])
+            return false;
+
     return true;
 }
 
@@ -490,6 +498,30 @@ ProofKernel::minMovesToGoal() const {
     return minMoves;
 }
 
+int
+ProofKernel::minMovesToGoalOneColor(PieceColor c) const {
+    int availIdx = -100;
+    int needed[8], minDist[8];
+    for (int i = 0; i < 8; i++) {
+        int n = goalColumns[i].nPawns(c) - columns[i].nPawns(c);
+        needed[i] = n;
+        if (n < 0)
+            availIdx = i;
+        minDist[i] = i - availIdx;
+    }
+    availIdx = 100;
+    int cnt = 0;
+    for (int i = 7; i >= 0; i--) {
+        int n = needed[i];
+        if (n < 0) {
+            availIdx = i;
+        } else if (n > 0) {
+            int minDst = std::min(minDist[i], availIdx - i);
+            cnt += n * minDst;
+        }
+    }
+    return cnt;
+}
 
 void
 ProofKernel::genMoves(std::vector<PkMove>& moves, bool sort) {
@@ -693,6 +725,8 @@ ProofKernel::makeMove(const PkMove& m, PkUndoInfo& ui) {
     ui.addCntData(oc, taken, -1);
     pieceCnt[oc][taken]--;
     excessCnt[oc][taken]--;
+    remainingMoves--;
+    remainingCaptures[oc]--;
 
     if (m.toFile != -1) {
         PawnColumn& col = columns[m.toFile];
@@ -733,6 +767,8 @@ ProofKernel::unMakeMove(const PkMove& m, PkUndoInfo& ui) {
         excessCnt[d.color][d.piece] -= d.delta;
     }
     onlyPieceXPiece = ui.onlyPieceXPiece;
+    remainingMoves++;
+    remainingCaptures[otherColor(m.color)]++;
 }
 
 std::string pieceName(ProofKernel::PieceType p) {
