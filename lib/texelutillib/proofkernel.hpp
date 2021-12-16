@@ -448,7 +448,7 @@ ProofKernel::PawnColumn::operator!=(const ProofKernel::PawnColumn& other) const 
 
 inline int
 ProofKernel::PawnColumn::nPawns() const {
-    return floorLog2(data);
+    return BitUtil::lastBit(data);
 }
 
 inline ProofKernel::PieceColor

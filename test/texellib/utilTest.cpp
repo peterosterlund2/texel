@@ -170,12 +170,3 @@ TEST(UtilTest, testHistogram) {
     for (int i = 0; i < maxV; i++)
         EXPECT_EQ(i==0?0:1, hist.get(i));
 }
-
-TEST(UtilTest, testFloorLog2) {
-    EXPECT_EQ(0, floorLog2(0));
-    for (int i = 0; i < 32; i++) {
-        U32 v = 1 << i;
-        int lg = floorLog2(v);
-        EXPECT_EQ(i, lg);
-    }
-}

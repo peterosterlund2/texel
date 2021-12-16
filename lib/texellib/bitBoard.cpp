@@ -140,7 +140,7 @@ const S8 BitBoard::dirTable[] = {
     0,  7,  0,  0,  0,  0,  0,  0,  8,  0,  0,  0,  0,  0,  0,  9
 };
 
-const int BitBoard::trailingZ[64] = {
+const int BitUtil::trailingZ[64] = {
     63,  0, 58,  1, 59, 47, 53,  2,
     60, 39, 48, 27, 54, 33, 42,  3,
     61, 51, 37, 40, 49, 18, 28, 20,
@@ -151,7 +151,7 @@ const int BitBoard::trailingZ[64] = {
     44, 24, 15,  8, 23,  7,  6,  5
 };
 
-const int BitBoard::lastBitTable[64] = {
+const int BitUtil::lastBitTable[64] = {
     0, 47,  1, 56, 48, 27,  2, 60,
    57, 49, 41, 37, 28, 16,  3, 61,
    54, 58, 35, 52, 50, 42, 21, 44,

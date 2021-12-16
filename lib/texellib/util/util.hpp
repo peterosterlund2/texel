@@ -82,9 +82,6 @@ T clamp(T val, T min, T max) {
         return val;
 }
 
-/** Return integer 2-logarithm of a positive number. */
-int floorLog2(U32 x);
-
 // ----------------------------------------------------------------------------
 
 /** Split a string using " " as delimiter. Append words to out. */

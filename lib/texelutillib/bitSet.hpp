@@ -145,14 +145,14 @@ public:
     int getMinBit() const {
         for (int i = 0; i < nWords; i++)
             if (data[i] != 0)
-                return i * 64 + BitBoard::firstSquare(data[i]) + offs;
+                return i * 64 + BitUtil::firstBit(data[i]) + offs;
         return -1;
     }
 
     int getMaxBit() const {
         for (int i = nWords - 1; i >= 0; i--)
             if (data[i] != 0)
-                return i * 64 + BitBoard::lastSquare(data[i]) + offs;
+                return i * 64 + BitUtil::lastBit(data[i]) + offs;
         return -1;
     }
 

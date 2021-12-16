@@ -47,6 +47,21 @@ inline U64 pext(U64 value, U64 mask) {
 }
 #endif
 
+class BitUtil {
+public:
+    /** Get the lowest 1 bit from mask. mask must be non-zero. */
+    static int firstBit(U64 mask);
+
+    /** Get the highest 1 bit from mask. mask must be non-zero. */
+    static int lastBit(U64 mask);
+
+    /** Return number of 1 bits in mask. */
+    static int bitCount(U64 mask);
+
+private:
+    static const int trailingZ[64], lastBitTable[64];
+};
+
 class BitBoard {
 public:
     static const U64 maskFileA = 0x0101010101010101ULL;
@@ -167,8 +182,76 @@ private:
     static vector_aligned<U64> tableData;
 
     static const S8 dirTable[];
-    static const int trailingZ[64], lastBitTable[64];
 };
+
+
+inline int
+BitUtil::firstBit(U64 mask) {
+#ifdef HAS_CTZ
+#if _MSC_VER
+    unsigned long ret;
+    _BitScanForward64(&ret, mask);
+    return (int)ret;
+#else
+    if (sizeof(U64) == sizeof(long))
+        return __builtin_ctzl(mask);
+    else if (sizeof(U64) == sizeof(long long))
+        return __builtin_ctzll(mask);
+#endif
+#else
+    return trailingZ[(int)(((mask & -mask) * 0x07EDD5E59A4E28C2ULL) >> 58)];
+#endif
+}
+
+inline int
+BitUtil::lastBit(U64 mask) {
+#ifdef HAS_CTZ
+#if _MSC_VER
+    unsigned long ret;
+    _BitScanReverse64(&ret, mask);
+    return (int)ret;
+#else
+    if (sizeof(U64) == sizeof(long))
+        return 63 - __builtin_clzl(mask);
+    else if (sizeof(U64) == sizeof(long long))
+        return 63 - __builtin_clzll(mask);
+#endif
+#else
+    mask |= mask >> 1;
+    mask |= mask >> 2;
+    mask |= mask >> 4;
+    mask |= mask >> 8;
+    mask |= mask >> 16;
+    mask |= mask >> 32;
+    return lastBitTable[(mask * 0x03F79D71B4CB0A89ULL) >> 58];
+#endif
+}
+
+inline int
+BitUtil::bitCount(U64 mask) {
+#ifdef HAS_POPCNT
+#if _MSC_VER
+    return _mm_popcnt_u64(mask);
+#else
+    if (sizeof(U64) == sizeof(long))
+        return __builtin_popcountl(mask);
+    else if (sizeof(U64) == 2*sizeof(long))
+        return __builtin_popcountl(mask >> 32) +
+               __builtin_popcountl(mask & 0xffffffffULL);
+#endif
+#else
+    const U64 k1 = 0x5555555555555555ULL;
+    const U64 k2 = 0x3333333333333333ULL;
+    const U64 k4 = 0x0f0f0f0f0f0f0f0fULL;
+    const U64 kf = 0x0101010101010101ULL;
+    U64 t = mask;
+    t -= (t >> 1) & k1;
+    t = (t & k2) + ((t >> 2) & k2);
+    t = (t + (t >> 4)) & k4;
+    t = (t * kf) >> 56;
+    return (int)t;
+#endif
+}
 
 inline U64
 BitBoard::mirrorX(U64 mask) {
@@ -261,44 +344,12 @@ BitBoard::northFill(U64 mask) {
 
 inline int
 BitBoard::firstSquare(U64 mask) {
-#ifdef HAS_CTZ
-#if _MSC_VER
-    unsigned long ret;
-    _BitScanForward64(&ret, mask);
-    return (int)ret;
-#else
-    if (sizeof(U64) == sizeof(long))
-        return __builtin_ctzl(mask);
-    else if (sizeof(U64) == sizeof(long long))
-        return __builtin_ctzll(mask);
-#endif
-#else
-    return trailingZ[(int)(((mask & -mask) * 0x07EDD5E59A4E28C2ULL) >> 58)];
-#endif
+    return BitUtil::firstBit(mask);
 }
 
 inline int
 BitBoard::lastSquare(U64 mask) {
-#ifdef HAS_CTZ
-#if _MSC_VER
-    unsigned long ret;
-    _BitScanReverse64(&ret, mask);
-    return (int)ret;
-#else
-    if (sizeof(U64) == sizeof(long))
-        return 63 - __builtin_clzl(mask);
-    else if (sizeof(U64) == sizeof(long long))
-        return 63 - __builtin_clzll(mask);
-#endif
-#else
-    mask |= mask >> 1;
-    mask |= mask >> 2;
-    mask |= mask >> 4;
-    mask |= mask >> 8;
-    mask |= mask >> 16;
-    mask |= mask >> 32;
-    return lastBitTable[(mask * 0x03F79D71B4CB0A89ULL) >> 58];
-#endif
+    return BitUtil::lastBit(mask);
 }
 
 inline int
@@ -310,28 +361,7 @@ BitBoard::extractSquare(U64& mask) {
 
 inline int
 BitBoard::bitCount(U64 mask) {
-#ifdef HAS_POPCNT
-#if _MSC_VER
-    return _mm_popcnt_u64(mask);
-#else
-    if (sizeof(U64) == sizeof(long))
-        return __builtin_popcountl(mask);
-    else if (sizeof(U64) == 2*sizeof(long))
-        return __builtin_popcountl(mask >> 32) +
-               __builtin_popcountl(mask & 0xffffffffULL);
-#endif
-#else
-    const U64 k1 = 0x5555555555555555ULL;
-    const U64 k2 = 0x3333333333333333ULL;
-    const U64 k4 = 0x0f0f0f0f0f0f0f0fULL;
-    const U64 kf = 0x0101010101010101ULL;
-    U64 t = mask;
-    t -= (t >> 1) & k1;
-    t = (t & k2) + ((t >> 2) & k2);
-    t = (t + (t >> 4)) & k4;
-    t = (t * kf) >> 56;
-    return (int)t;
-#endif
+    return BitUtil::bitCount(mask);
 }
 
 #endif /* BITBOARD_HPP_ */
