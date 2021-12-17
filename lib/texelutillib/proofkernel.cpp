@@ -272,7 +272,7 @@ void
 ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
     const int goalPawns = goal.nPawns();
     const U8 oldData = data;
-    for (int d = 1; d < 128; d++) {
+    for (int d = 1; d < nPawnConfigs; d++) {
         data = d;
         const int pawns = nPawns();
 
@@ -352,7 +352,7 @@ ProofKernel::PawnColumn::calcBishopPromotions(const Position& initialPos,
         return pos.getPiece(Square::getSquare(x, y));
     };
 
-    S8 nWhiteBishopProm = 6;
+    S8 nWhiteBishopProm = maxPawns;
     if (promBlocked(6)) {
         if (getPiece(goalPos, x, 7) == Piece::WBISHOP &&
             getPiece(initialPos, x, 7) != Piece::WBISHOP) {
@@ -363,7 +363,7 @@ ProofKernel::PawnColumn::calcBishopPromotions(const Position& initialPos,
         }
     }
 
-    S8 nBlackBishopProm = 6;
+    S8 nBlackBishopProm = maxPawns;
     if (promBlocked(1)) {
         if (getPiece(goalPos, x, 0) == Piece::BBISHOP &&
             getPiece(initialPos, x, 0) != Piece::BBISHOP) {
@@ -374,7 +374,7 @@ ProofKernel::PawnColumn::calcBishopPromotions(const Position& initialPos,
         }
     }
 
-    for (int d = 1; d < 128; d++) {
+    for (int d = 1; d < nPawnConfigs; d++) {
         nProm[WHITE][true][d] = std::min(nProm[WHITE][false][d], nWhiteBishopProm);
         nProm[BLACK][true][d] = std::min(nProm[BLACK][false][d], nBlackBishopProm);
     }
@@ -834,7 +834,7 @@ strToPkMove(const std::string& str) {
     if (str.at(idx) == 'P') {
         idx++;
         m.fromFile = str.at(idx++) - 'a'; ensure(m.fromFile >= 0 && m.fromFile < 8);
-        m.fromIdx = str.at(idx++) - '0';  ensure(m.fromIdx >= 0 && m.fromIdx < 6);
+        m.fromIdx = str.at(idx++) - '0';  ensure(m.fromIdx >= 0 && m.fromIdx < ProofKernel::maxPawns);
     } else {
         m.fromFile = -1;
         m.fromIdx = -1;
@@ -892,7 +892,7 @@ strToPkMove(const std::string& str) {
             m.promotedPiece = ProofKernel::KNIGHT;
             break;
         default:
-            m.toIdx = rank - '0'; ensure(m.toIdx >= 0 && m.toIdx < 6);
+            m.toIdx = rank - '0'; ensure(m.toIdx >= 0 && m.toIdx < ProofKernel::maxPawns);
             break;
         }
     }

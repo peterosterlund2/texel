@@ -160,7 +160,10 @@ private:
         RIGHT,
     };
 
-    /** Represents all pawns (0 - 6) on a file.*/
+    static const int maxPawns = 7; // Maximum number of pawns in one column during search
+    static const int nPawnConfigs = (1 << (maxPawns + 1)); // Size of pawn config lookup tables
+
+    /** Represents all pawns (0 - maxPawns) on a file. */
     class PawnColumn {
     public:
         /** Constructor. */
@@ -228,10 +231,10 @@ private:
         SquareColor promSquare[2]; // Color of promotion square for white/black
         bool canProm[2][3] { { true, true, true}, {true, true, true} }; // [color][dir]
         bool canRQProm[2] { true, true };                               // [color]
-        std::array<S8,128> nProm[2][2];                                 // [color][toBishop][pawnPattern]
+        std::array<S8,nPawnConfigs> nProm[2][2];                        // [color][toBishop][pawnPattern]
         bool bishopPromRequired[2] = { false, false };                  // [color]
         bool firstPCanMove[2] = { true, true };                         // [color]
-        std::array<bool,128> complete;                                  // [pawnPattern]
+        std::array<bool,nPawnConfigs> complete;                         // [pawnPattern]
     };
     std::array<PawnColumn, 8> columns;
     std::array<PawnColumn, 8> goalColumns;
@@ -320,6 +323,8 @@ private:
      *  The result is stored in extPath.
      *  @return True if an extended proof kernel exists, false otherwise. */
     bool computeExtKernel();
+
+    friend PkMove strToPkMove(const std::string& move);
 };
 
 /** Convert a PkMove to human readable string representation. */
@@ -478,7 +483,7 @@ ProofKernel::PawnColumn::setPawn(int i, PieceColor c) {
 
 inline void
 ProofKernel::PawnColumn::addPawn(int i, PieceColor c) {
-    if (nPawns() >= 6)
+    if (nPawns() >= maxPawns)
         throw NotImplementedError("too many pawns in one file");
     U8 mask = (1 << i) - 1;
     data = (data & mask) | ((data & ~mask) << 1);
