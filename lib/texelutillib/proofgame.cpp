@@ -1389,6 +1389,7 @@ void ProofGame::filterFens(std::istream& is, std::ostream& os) {
         std::getline(is, line);
         if (!is || is.eof())
             break;
+        line = trim(line);
 
         std::string status;
         try {
