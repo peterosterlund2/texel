@@ -584,12 +584,16 @@ ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
         }
     }
 
-    auto canPromote = [](const PawnColumn& col, PieceColor c, int prom) -> bool {
+    auto canPromote = [](const PawnColumn& col, PieceColor c, int prom, int taken) -> bool {
         if (!col.rookQueenPromotePossible(c) && (prom == QUEEN || prom == ROOK))
             return false;
-        if ((prom == DARK_BISHOP && col.promotionSquareType(c) == SquareColor::DARK) ||
-            (prom == LIGHT_BISHOP && col.promotionSquareType(c) == SquareColor::LIGHT))
-            return false;
+        if (col.promotionSquareType(c) == SquareColor::DARK) {
+            if (prom == DARK_BISHOP || taken == DARK_BISHOP)
+                return false;
+        } else {
+            if (prom == LIGHT_BISHOP || taken == LIGHT_BISHOP)
+                return false;
+        }
         return true;
     };
 
@@ -624,7 +628,7 @@ ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
                     if (!col.canPromote(c, dir == -1 ? Direction::LEFT : Direction::RIGHT))
                         continue;
                     for (int prom = QUEEN; prom < PAWN; prom++)
-                        if (canPromote(col, c, prom))
+                        if (canPromote(col, c, prom, taken))
                             moves.push_back(PkMove::pawnXPieceProm(c, x, fromIdx, x + dir,
                                                                    taken, (PieceType)prom));
                 }
@@ -667,7 +671,7 @@ ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
                     if (!col.canPromote(c, dir == -1 ? Direction::LEFT : Direction::RIGHT))
                         continue;
                     for (int prom = QUEEN; prom < PAWN; prom++)
-                        if (canPromote(col, c, prom))
+                        if (canPromote(col, c, prom, KNIGHT))
                             moves.push_back(PkMove::pawnXPromPawnProm(c, x, fromIdx + fromIdxDelta,
                                                                       x + dir, promFile, (PieceType)prom));
                 }

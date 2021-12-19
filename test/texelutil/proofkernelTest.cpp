@@ -593,11 +593,13 @@ ProofKernelTest::testMoveGen() {
 
     test("1nbqkr2/8/8/8/8/8/P7/4K3 w - - 0 1", "4k3/8/8/8/1P6/8/8/4K3 w - - 0 1",
          {"wPa0xNb0",  "wPa0xNbN",  "wPa0xNbDB",  "wPa0xNbR",  "wPa0xNbQ",
-          "wPa0xLBb0", "wPa0xLBbN", "wPa0xLBbDB", "wPa0xLBbR", "wPa0xLBbQ",
+          "wPa0xLBb0",
           "wPa0xRb0",  "wPa0xRbN",  "wPa0xRbDB",  "wPa0xRbR",  "wPa0xRbQ",
           "wPa0xQb0",  "wPa0xQbN",  "wPa0xQbDB",  "wPa0xQbR",  "wPa0xQbQ",
           "bxPa0", "wxN", "wxLB", "wxQ", "wxR"
          });
+    test("4k3/8/3b4/8/8/8/1P6/4K3 w - - 0 1", "B3k3/8/8/8/8/8/8/4K3 w - - 0 1",
+         {"wPb0xDBa0", "wPb0xDBc0", "wxDB", "bxPb0"});
 
     test("4k3/p1p5/8/P7/p7/p7/P7/4K3 w - - 0 1", "4k3/8/pP6/8/p7/p7/P7/4K3 w - - 0 1",
          {"wPa3xcb0", "wxPa1", "wxPa2", "wxPa4", "wxPc0", "bxPa3"});
@@ -907,6 +909,8 @@ ProofKernelTest::testSearch() {
     test(startFEN, "1rkQ1r2/b5p1/1nnRrRN1/pRNN4/B4Nb1/1bn1PNP1/3K4/1qn2r2 b - - 0 1",
          false, "");
     test(startFEN, "Rrq3K1/1p3bPQ/P7/B4RNb/1R1n4/kP2nbq1/2PnbpR1/3N1q2 w - - 0 1",
+         false, "");
+    test("3bk3/1P6/8/8/8/8/8/4K3 w - - 0 1", "B3k3/8/8/8/8/8/8/4K3 w - - 0 1",
          false, "");
 }
 
