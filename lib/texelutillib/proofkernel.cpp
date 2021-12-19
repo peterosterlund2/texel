@@ -606,7 +606,7 @@ ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
                 if (!canMove(col, fromIdx, colNp))
                     continue;
                 PieceColor c = col.getPawn(fromIdx);
-                PieceColor oc = c == WHITE ? BLACK : WHITE;
+                PieceColor oc = otherColor(c);
                 for (int t = QUEEN; t < PAWN; t++) {
                     PieceType taken = (PieceType)t;
                     if (pieceCnt[oc][taken] == 0)
@@ -645,7 +645,7 @@ ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
                 if (!canMove(col, fromIdx, colNp))
                     continue;
                 PieceColor c = col.getPawn(fromIdx);
-                PieceColor oc = c == WHITE ? BLACK : WHITE;
+                PieceColor oc = otherColor(c);
                 for (int promFile = 0; promFile < 8; promFile++) {
                     if (columns[promFile].nAllowedPromotions(oc, false) <= 0)
                         continue;
@@ -683,7 +683,7 @@ ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
             if (!canMove(col, toIdx, colNp))
                 continue;
             PieceColor oc = col.getPawn(toIdx);
-            PieceColor c = oc == WHITE ? BLACK : WHITE;
+            PieceColor c = otherColor(oc);
             moves.push_back(PkMove::pieceXPawn(c, x, toIdx));
         }
     }
@@ -721,7 +721,7 @@ ProofKernel::makeMove(const PkMove& m, PkUndoInfo& ui) {
         col.removePawn(m.fromIdx);
     }
 
-    PieceColor oc = m.color == WHITE ? BLACK : WHITE;
+    PieceColor oc = otherColor(m.color);
     ui.addCntData(oc, taken, -1);
     pieceCnt[oc][taken]--;
     excessCnt[oc][taken]--;

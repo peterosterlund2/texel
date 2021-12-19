@@ -451,10 +451,6 @@ ProofKernelTest::testMoveToString() {
     test("bxR", PkMove::pieceXPiece(PieceColor::BLACK, PieceType::ROOK));
 }
 
-TEST(ProofKernelTest, testMoveGen) {
-    ProofKernelTest::testMoveGen();
-}
-
 void
 ProofKernelTest::testMove(const Position& pos, const ProofKernel& pk,
                           const ProofKernel::PkMove& m) {
@@ -516,6 +512,10 @@ ProofKernelTest::testMove(const Position& pos, const ProofKernel& pk,
             ASSERT_TRUE(pk.pieceCnt[m.color][PieceType::PAWN] > 0);
         }
     }
+}
+
+TEST(ProofKernelTest, testMoveGen) {
+    ProofKernelTest::testMoveGen();
 }
 
 void
