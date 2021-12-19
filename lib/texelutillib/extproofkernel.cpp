@@ -219,6 +219,16 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
                     csp.addMaxVal(fromYVar, 1);
                 }
                 VarSquare toSq = { m.toFile, white ? 7 : 0, -1 };
+                auto oc = ProofKernel::otherColor(m.color);
+                if (m.otherPromotionFile == -1) {
+                    addExtMove({ oc, m.takenPiece,
+                                 getSquare(!white, m.takenPiece), false,
+                                 toSq, PieceType::EMPTY });
+                } else {
+                    addExtMove({ oc, m.takenPiece,
+                                 otherToSq, false,
+                                 toSq, PieceType::EMPTY });
+                }
                 addExtMove({ m.color, PieceType::PAWN,
                              { m.fromFile, -1, fromYVar }, true,
                              toSq, m.promotedPiece });

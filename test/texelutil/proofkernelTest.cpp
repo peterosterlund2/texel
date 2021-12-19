@@ -1035,6 +1035,18 @@ ProofKernelTest::testExtKernel() {
     test(TextIO::startPosFEN, "5rk1/1ppb3p/p1pb4/6q1/3P1p1r/2P1R2P/PP1BQ1P1/5RKN w - - 0 1",
          "wPc0xPd1 bPe1xPd0 bPd0xQc0 wPd0xNc0 wPe0xNd0 bPg1xLBf0 bPf0xNeN wPf0xNe0", false, "");
 
+    // Capture promotion
+    test("rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPB/RNBQK1NR w KQkq - 0 1",
+         "rnbqkbn1/p1ppppp1/p7/8/8/8/PPP1PPP1/RNBQK1NR w KQq - 0 1",
+         "bPb1xQa1 bPh0xDBgN wPd0xNc1 wPc1xRb1",
+         true, "wQd1-a6 bPb7xa6 bPh7-h2 wDBc1-g1 bPh2xg1N bNg1-c5 wPd4xc5 bRa8-b6 wPc5xb6");
+    test("r1bqkbnr/p1pppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "R1bqkbnr/p1pppppp/8/8/8/8/P1PPPPPP/RNBQKBNR w KQk - 0 1",
+         "wPb0xRaR", true, "wPb2-b7 wPb7xa8R");
+    test("r1bqkbnr/p1pppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "R1bqkbnr/p1pppppp/8/8/8/8/P1PPPPPP/RNBQKBNR w KQk - 0 1",
+         "wPb0xLBaR", true, "wPb2-b7 bLBc8-a8 wPb7xa8R");
+
     // Capture just promoted pawn
     test(TextIO::startPosFEN, "rnbqkbnr/ppp1pp1p/8/8/3p4/3P3N/PPPP1P1P/RNBQKB1R w KQkq - 0 1",
          "bxPg0 wPe0xgd1", true, "bxg2 bPg7-g1N bNg1-d3 wPe2xd3");
@@ -1047,6 +1059,9 @@ ProofKernelTest::testExtKernel() {
     test(TextIO::startPosFEN, "r1bqkb1r/pppppp1p/8/8/8/2P2P2/PPP1PP1P/RNBQKBNR w KQkq - 0 1",
          "wPg0xNf1 wPd0xgc1 wxN", true,
          "bNb8-f3 wPg2xf3 bPg7-g1N bNg1-c3 wPd2xc3 wxg8");
+    test("r1bqkb1r/p1pppppp/8/8/8/8/PPPPPP1P/RNBQKB1R w KQkq - 0 1",
+         "R1bqkb1r/p1pppp1p/8/8/8/8/P1PPPP1P/RNBQKB1R w KQk - 0 1",
+         "wPb0xgaR", true, "bPg7-g1N wPb2-b7 bNg1-a8 wPb7xa8R");
 
     // Non-capture promotions needed
     test(TextIO::startPosFEN, "kNN2b1Q/1R1n2P1/bB2p3/3rQB2/1q3Q2/2ppQ1r1/P1PQq3/B1K1nr2 w - - 0 1",
