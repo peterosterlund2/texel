@@ -107,9 +107,27 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
         for (const UnMove& um : unMoves)
             ((um.ui.capturedPiece == Piece::EMPTY) ? quiets : captures).push_back(um);
 
-        unMoves = quiets;
+        unMoves.clear();
+        bool rejected = false;
+        for (const UnMove& um : quiets) {
+            Position tmpPos(goalPos);
+            tmpPos.unMakeMove(um.move, um.ui);
+            tmpPos.setFullMoveCounter(1);
+            bool valid = tmpPos == startPos;
+            if (!valid) {
+                std::vector<UnMove> unMoves2;
+                RevMoveGen::genMoves(tmpPos, unMoves2, false);
+                valid = !unMoves2.empty();
+            }
+            if (valid) {
+                unMoves.push_back(um);
+                if (unMoves.size() > 1)
+                    break;
+            } else {
+                rejected = true;
+            }
+        }
 
-        bool capturesRejected = false;
         for (const UnMove& um : captures) {
             if (unMoves.size() > 1)
                 break;
@@ -127,12 +145,12 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
             if (pk.findProofKernel(kernel, extKernel) == ProofKernel::EXT_PROOF_KERNEL)
                 unMoves.push_back(um);
             else
-                capturesRejected = true;
+                rejected = true;
         }
 
         if (unMoves.empty()) {
-            if (capturesRejected)
-                throw ChessError("No possible last move, all captures rejected");
+            if (rejected)
+                throw ChessError("No possible last move, all moves rejected");
             else
                 throw ChessError("No possible last move");
         }

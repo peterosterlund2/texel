@@ -987,6 +987,7 @@ void ProofGameTest::testFilter() {
         { "Q2q4/2Bp3r/2PBRb2/R2N3p/1q3RBP/1pQnK2N/2B2Qp1/2bn1b1k w - - 0 1", "illegal", true },
 
         { " 2bqk2r/1pppp1P1/6p1/p5p1/2B3p1/6P1/PPPP2P1/R1BQKB1R b KQk - 0 1 ", "unknown, kernel", true },
+        { "k1Bb1B1q/2NNp2r/1KNp1RB1/1R2qb2/BB1P3B/2N5/r2r4/RQqn4 b - - 0 1", "illegal", true },
     };
     for (const Data& d : v) {
         std::stringstream in;
