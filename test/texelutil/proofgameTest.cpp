@@ -25,6 +25,7 @@
 
 #include "proofgameTest.hpp"
 #include "proofgame.hpp"
+#include "proofgamefilter.hpp"
 #include "moveGen.hpp"
 #include "textio.hpp"
 #include "posutil.hpp"
@@ -999,7 +1000,7 @@ void ProofGameTest::testFilter() {
         std::stringstream in;
         in << d.fen << std::endl;
         std::stringstream out;
-        ProofGame::filterFens(in, out);
+        ProofGameFilter().filterFens(in, out);
         ASSERT_EQ(d.value, contains(out.str(), d.status))
             << (d.value ? "" : "!")  << d.status << ": " << d.fen;
     }

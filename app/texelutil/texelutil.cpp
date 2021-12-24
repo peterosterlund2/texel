@@ -28,6 +28,7 @@
 #include "spsa.hpp"
 #include "bookbuild.hpp"
 #include "proofgame.hpp"
+#include "proofgamefilter.hpp"
 #include "revmovegen.hpp"
 #include "matchbookcreator.hpp"
 #include "tbgen.hpp"
@@ -405,7 +406,8 @@ doProofGameCmd(int argc, char* argv[]) {
         }
     }
     if (filter) {
-        ProofGame::filterFens(std::cin, std::cout);
+        ProofGameFilter pgf;
+        pgf.filterFens(std::cin, std::cout);
     } else {
         if (arg+1 != argc)
             usage();

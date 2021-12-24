@@ -71,9 +71,8 @@ public:
      *  If false is returned, it is impossible to reach goalPos from pos. */
     bool computeBlocked(const Position& pos, U64& blocked) const;
 
-    /** Read a list of FENs from a stream and classify them as legal/illegal/unknown
-     *  with regards to reachability from the starting position. */
-    static void filterFens(std::istream& is, std::ostream& os);
+    /** Return the goal position. */
+    const Position& getGoalPos() const;
 
 private:
     /** Initialize static data if not already done. */
@@ -277,6 +276,11 @@ private:
 
     std::ostream& log;
 };
+
+inline const Position&
+ProofGame::getGoalPos() const {
+    return goalPos;
+}
 
 
 inline bool
