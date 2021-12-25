@@ -1041,23 +1041,30 @@ void ProofGameTest::testFilter() {
     };
     std::vector<Data> v = {
         { TextIO::startPosFEN, "illegal", false },
-        { "rnbqkbnr/p1pppppp/p7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "illegal", true }, // invalid pawn capture
-        { "rnbqkbnr/p1pppppp/p7/8/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1", "illegal", false }, // a4 Nf6 a5 Ng8 a6 bxa6
-        { "nnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk - 0 1", "illegal", true }, // Too many black knights
-        { "8/8/8/8/8/8/8/Kk6 w - - 0 1", "illegal", true }, // King capture possible
-        { "8/8/8/8/8/8/8/KRk5 w - - 0 1", "illegal", true }, // King capture possible
-//        { "8/8/8/8/8/8/8/KRk5 b - - 0 1", "illegal", false }, // King in check XXX Search explosion
+        { TextIO::startPosFEN, "legal: proof", true },
+        { "rnbqkbnr/p1pppppp/p7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "illegal:", true }, // invalid pawn capture
+        { "rnbqkbnr/p1pppppp/p7/8/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "illegal:", false }, // a4 Nf6 a5 Ng8 a6 bxa6
+        { "nnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk - 0 1",
+          "illegal:", true }, // Too many black knights
+        { "8/8/8/8/8/8/8/Kk6 w - - 0 1", "illegal:", true }, // King capture possible
+        { "8/8/8/8/8/8/8/KRk5 w - - 0 1", "illegal:", true }, // King capture possible
+//        { "8/8/8/8/8/8/8/KRk5 b - - 0 1", "illegal:", false }, // King in check XXX Search explosion
 
         // All possible captures for last move rejected
-        { "k1bBrR2/1B1rbN2/p2BN1Q1/2n3bP/p2bNR1p/2R1n3/P4b2/1K3b2 b - - 0 1", "illegal", true },
-        { "nB1kr3/pbnBR3/P2PpQ1Q/2N2K2/r1r1r3/qPr5/qR2P2q/1N5r w - - 1 2", "illegal", true },
-        { "4B2n/Bqp2Nbr/r1r2p1B/5b2/n3bN2/1QR1q1b1/3kr2B/QKb2B1R w - - 0 1", "illegal", true },
+        { "k1bBrR2/1B1rbN2/p2BN1Q1/2n3bP/p2bNR1p/2R1n3/P4b2/1K3b2 b - - 0 1", "illegal:", true },
+        { "nB1kr3/pbnBR3/P2PpQ1Q/2N2K2/r1r1r3/qPr5/qR2P2q/1N5r w - - 1 2", "illegal:", true },
+        { "4B2n/Bqp2Nbr/r1r2p1B/5b2/n3bN2/1QR1q1b1/3kr2B/QKb2B1R w - - 0 1", "illegal:", true },
 
-        { "rnbRkbnr/p1pp1ppp/1p1p4/8/8/8/PPP2PPP/RNBQKBNR b KQkq - 0 1", "illegal", false },
-        { "Q2q4/2Bp3r/2PBRb2/R2N3p/1q3RBP/1pQnK2N/2B2Qp1/2bn1b1k w - - 0 1", "illegal", true },
+        { "rnbRkbnr/p1pp1ppp/1p1p4/8/8/8/PPP2PPP/RNBQKBNR b KQkq - 0 1", "illegal:", false },
+        { "Q2q4/2Bp3r/2PBRb2/R2N3p/1q3RBP/1pQnK2N/2B2Qp1/2bn1b1k w - - 0 1", "illegal:", true },
 
-        { " 2bqk2r/1pppp1P1/6p1/p5p1/2B3p1/6P1/PPPP2P1/R1BQKB1R b KQk - 0 1 ", "unknown, kernel", true },
-        { "k1Bb1B1q/2NNp2r/1KNp1RB1/1R2qb2/BB1P3B/2N5/r2r4/RQqn4 b - - 0 1", "illegal", true },
+        { " 2bqk2r/1pppp1P1/6p1/p5p1/2B3p1/6P1/PPPP2P1/R1BQKB1R b KQk - 0 1 ", "unknown: kernel:", true },
+        { "k1Bb1B1q/2NNp2r/1KNp1RB1/1R2qb2/BB1P3B/2N5/r2r4/RQqn4 b - - 0 1", "illegal:", true },
+
+        { "r1bqkbnr/pppppppp/2n5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1 legal: proof: e4 Nc6",
+          "legal: proof: e4 Nc6", true },
     };
     for (const Data& d : v) {
         std::stringstream in;
@@ -1065,6 +1072,29 @@ void ProofGameTest::testFilter() {
         std::stringstream out;
         ProofGameFilter().filterFens(in, out);
         ASSERT_EQ(d.value, contains(out.str(), d.status))
-            << (d.value ? "" : "!")  << d.status << ": " << d.fen;
+            << (d.value ? "" : "!")  << d.status << " : " << out.str();
+    }
+
+    {
+        std::stringstream in;
+        in << "Q2q4/2Bp3r/2PBRb2/R2N3p/1q3RBP/1pQnK2N/2B2Qp1/2bn1b1k w - - 0 1" << '\n'
+           << "2bqk2r/1pppp1P1/6p1/p5p1/2B3p1/6P1/PPPP2P1/R1BQKB1R b KQk - 0 1" << '\n';
+        std::stringstream out;
+        ProofGameFilter().filterFens(in, out);
+        std::string outStr = out.str();
+        size_t idx = outStr.find('\n');
+        std::string line1 = outStr.substr(0, idx);
+        std::string line2 = outStr.substr(idx+1);
+        ASSERT_EQ(true, contains(line1, "illegal:")) << line1;
+        ASSERT_EQ(true, contains(line2, "unknown:")) << line2;
+    }
+
+    {
+        std::stringstream in;
+        in << "4k3/8/8/8/8/8/8/4K3 w - - 0 1 abc" << std::endl;
+        std::stringstream out;
+        EXPECT_THROW({
+            ProofGameFilter().filterFens(in, out);
+        }, ChessParseError);
     }
 }
