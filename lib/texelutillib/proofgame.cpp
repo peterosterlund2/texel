@@ -943,8 +943,7 @@ ProofGame::solveAssignment(Assignment<int>& as) {
     // If a row/column only has one choice, remove all other choices from the corresponding column/row
     U64 rowsHandled = 0;
     U64 colsHandled = 0;
-    while (true) {
-        bool finished = true;
+    while (rowsToCheck | colsToCheck) {
         if (rowsToCheck) {
             int r = BitBoard::extractSquare(rowsToCheck);
             if ((nValidR[r] == 1) && !(rowsHandled & (1 << r))) {
@@ -959,7 +958,6 @@ ProofGame::solveAssignment(Assignment<int>& as) {
                             rowsToCheck |= 1 << r2;
                     }
                 }
-                finished = false;
                 rowsHandled |= 1 << r;
                 colsHandled |= 1 << c;
             }
@@ -978,13 +976,10 @@ ProofGame::solveAssignment(Assignment<int>& as) {
                             colsToCheck |= 1 << c2;
                     }
                 }
-                finished = false;
                 rowsHandled |= 1 << r;
                 colsHandled |= 1 << c;
             }
         }
-        if (finished)
-            break;
     }
 
     // Solve the assignment problem and return the optimal cost

@@ -593,6 +593,12 @@ ProofGameTest::testReachable() {
         ASSERT_EQ(1, best);
         ASSERT_EQ(1, movePath.size());
     }
+
+    {
+        std::string start = "rnbqkbnr/1p1pppp1/8/3p3p/1p2PP2/8/P1PP2PP/RNBQK1NR w KQkq - 0 6";
+        std::string goal  = "r1bqkbnr/1p1pp1p1/8/5P2/1p1ppPp1/8/P1P4P/RNBQK1NR w KQkq - 0 1";
+        ASSERT_GE(hScore(start, goal), 14);
+    }
 }
 
 TEST(ProofGameTest, testRemainingMoves) {

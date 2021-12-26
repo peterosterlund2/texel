@@ -188,7 +188,7 @@ private:
 
     /** Compute shortest path for a piece p to toSq from all possible start squares,
      *  taking blocked squares into account. For squares that can not reach toSq,
-     *  the shortest path is set to 1. For pawns the maximum number of available
+     *  the shortest path is set to -1. For pawns the maximum number of available
      *  captures is taken into account. */
     std::shared_ptr<ShortestPathData> shortestPaths(Piece::Type p, int toSq, U64 blocked,
                                                     int maxCapt);
