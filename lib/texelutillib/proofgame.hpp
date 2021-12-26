@@ -269,9 +269,11 @@ private:
     static const int maxMoveAPSize = 16;
     Assignment<int> moveAP[2][maxMoveAPSize + 1];
 
-    // Squares reachable by a pawn on an empty board, starting at a given square.
-    static U64 wPawnReachable[64];
-    static U64 bPawnReachable[64];
+    // Squares reachable by a pawn on an empty board, starting at a given square,
+    // depending on number of available captures.
+    static const int maxPawnCapt = 5;
+    static U64 wPawnReachable[64][maxPawnCapt+1]; // [sq][nCaptures]
+    static U64 bPawnReachable[64][maxPawnCapt+1];
     static bool staticInitDone;
 
     std::ostream& log;

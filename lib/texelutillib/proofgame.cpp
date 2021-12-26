@@ -36,8 +36,8 @@
 
 
 bool ProofGame::staticInitDone = false;
-U64 ProofGame::wPawnReachable[64];
-U64 ProofGame::bPawnReachable[64];
+U64 ProofGame::wPawnReachable[64][maxPawnCapt+1];
+U64 ProofGame::bPawnReachable[64][maxPawnCapt+1];
 
 const int ProofGame::bigCost;
 
@@ -47,33 +47,47 @@ ProofGame::staticInit() {
     if (staticInitDone)
         return;
 
-    for (int y = 7; y >= 0; y--) {
+    for (int y = 6; y >= 1; y--) {
         for (int x = 0; x < 8; x++) {
             int sq = Square::getSquare(x, y);
             U64 mask = 1ULL << sq;
             if (y < 7) {
-                mask |= wPawnReachable[sq + 8];
+                mask |= wPawnReachable[sq + 8][maxPawnCapt];
                 if (x > 0)
-                    mask |= wPawnReachable[sq + 7];
+                    mask |= wPawnReachable[sq + 7][maxPawnCapt];
                 if (x < 7)
-                    mask |= wPawnReachable[sq + 9];
+                    mask |= wPawnReachable[sq + 9][maxPawnCapt];
             }
-            wPawnReachable[sq] = mask;
+            wPawnReachable[sq][maxPawnCapt] = mask;
         }
     }
 
-    for (int y = 0; y < 8; y++) {
+    for (int y = 1; y < 7; y++) {
         for (int x = 0; x < 8; x++) {
             int sq = Square::getSquare(x, y);
             U64 mask = 1ULL << sq;
             if (y > 0) {
-                mask |= bPawnReachable[sq - 8];
+                mask |= bPawnReachable[sq - 8][maxPawnCapt];
                 if (x > 0)
-                    mask |= bPawnReachable[sq - 9];
+                    mask |= bPawnReachable[sq - 9][maxPawnCapt];
                 if (x < 7)
-                    mask |= bPawnReachable[sq - 7];
+                    mask |= bPawnReachable[sq - 7][maxPawnCapt];
             }
-            bPawnReachable[sq] = mask;
+            bPawnReachable[sq][maxPawnCapt] = mask;
+        }
+    }
+
+    for (int c = 0; c < 2; c++) {
+        for (int nCapt = maxPawnCapt - 1; nCapt >= 0; nCapt--) {
+            for (int sq = 0; sq < 64; sq++) {
+                int x = Square::getX(sq);
+                U64 m = (c ? wPawnReachable : bPawnReachable)[sq][nCapt + 1];
+                if (x - (nCapt+1) >= 0)
+                    m &= ~BitBoard::maskFile[x - (nCapt+1)];
+                if (x + (nCapt+1) < 8)
+                    m &= ~BitBoard::maskFile[x + (nCapt+1)];
+                (c ? wPawnReachable : bPawnReachable)[sq][nCapt] = m;
+            }
         }
     }
 
@@ -1006,20 +1020,30 @@ ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
         return false;
     blocked |= goalUnMovedPawns;
 
+    const int nWhiteExtraPieces = (BitBoard::bitCount(pos.whiteBB()) -
+                                   BitBoard::bitCount(goalPos.whiteBB()));
+    const int nBlackExtraPieces = (BitBoard::bitCount(pos.blackBB()) -
+                                   BitBoard::bitCount(goalPos.blackBB()));
+
     U64 wUsefulPawnSquares = 0;
     // Compute pawns that are blocked because advancing them would leave too few
     // remaining pawns in the cone of squares that can reach the pawn square.
     U64 m = wGoalPawns & ~blocked;
     while (m) {
-        int sq = BitBoard::extractSquare(m);
-        U64 mask = bPawnReachable[sq];
+        int sq = BitUtil::firstBit(m); m &= ~(1ULL << sq);
+        U64 mask = bPawnReachable[sq][maxPawnCapt];
         wUsefulPawnSquares |= mask;
         int nGoal = BitBoard::bitCount(wGoalPawns & mask);
         int nCurr = BitBoard::bitCount(wCurrPawns & mask);
         if (nCurr < nGoal)
             return false;
-        if ((nCurr == nGoal) && (wCurrPawns & (1ULL << sq)))
+        if ((nCurr == nGoal) && (wCurrPawns & (1ULL << sq))) {
             blocked |= (1ULL << sq);
+        } else if (nBlackExtraPieces < maxPawnCapt) {
+            mask = bPawnReachable[sq][nBlackExtraPieces];
+            if ((wCurrPawns & mask & ~blocked) == (1ULL << sq))
+                blocked |= (1ULL << sq);
+        }
     }
 
     if (BitBoard::bitCount(wGoalPawns) == BitBoard::bitCount(wCurrPawns)) {
@@ -1039,15 +1063,20 @@ ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
     // remaining pawns in the cone of squares that can reach the pawn square.
     m = bGoalPawns & ~blocked;
     while (m) {
-        int sq = BitBoard::extractSquare(m);
-        U64 mask = wPawnReachable[sq];
+        int sq = BitUtil::lastBit(m); m &= ~(1ULL << sq);
+        U64 mask = wPawnReachable[sq][maxPawnCapt];
         bUsefulPawnSquares |= mask;
         int nGoal = BitBoard::bitCount(bGoalPawns & mask);
         int nCurr = BitBoard::bitCount(bCurrPawns & mask);
         if (nCurr < nGoal)
             return false;
-        if ((nCurr == nGoal) && (bCurrPawns & (1ULL << sq)))
+        if ((nCurr == nGoal) && (bCurrPawns & (1ULL << sq))) {
             blocked |= (1ULL << sq);
+        } else if (nWhiteExtraPieces < maxPawnCapt) {
+            mask = wPawnReachable[sq][nWhiteExtraPieces];
+            if ((bCurrPawns & mask & ~blocked) == (1ULL << sq))
+                blocked |= (1ULL << sq);
+        }
     }
 
     if (BitBoard::bitCount(bGoalPawns) == BitBoard::bitCount(bCurrPawns)) {

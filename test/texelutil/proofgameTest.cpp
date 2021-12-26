@@ -401,8 +401,23 @@ ProofGameTest::testPawnReachable() {
         ProofGame ps(TextIO::startPosFEN, TextIO::startPosFEN);
     }
     {
-        ASSERT_EQ(BitBoard::sqMask(A1), ProofGame::bPawnReachable[A1]);
-        ASSERT_EQ(BitBoard::sqMask(A2,A1,B1), ProofGame::bPawnReachable[A2]);
+        const int maxCapt = 5; // Max number of captures relevant for pawn movements
+        for (int x = 0; x < 8; x++) {
+            for (int y = 0; y <= 7; y += 7) {
+                ASSERT_EQ(0, ProofGame::wPawnReachable[Square::getSquare(x, y)][maxCapt]);
+                ASSERT_EQ(0, ProofGame::wPawnReachable[Square::getSquare(x, y)][maxCapt]);
+            }
+        }
+        ASSERT_EQ(BitBoard::sqMask(A2), ProofGame::bPawnReachable[A2][maxCapt]);
+        ASSERT_EQ(BitBoard::sqMask(A3,A2,B2), ProofGame::bPawnReachable[A3][maxCapt]);
+        ASSERT_EQ(BitBoard::sqMask(C3, C2), ProofGame::bPawnReachable[C3][0]);
+        ASSERT_EQ(BitBoard::sqMask(B4, B5, B6, B7), ProofGame::wPawnReachable[B4][0]);
+        ASSERT_EQ(BitBoard::sqMask(B4, A5, B5, C5, A6, B6, C6, A7, B7, C7),
+                  ProofGame::wPawnReachable[B4][1]);
+        ASSERT_EQ(BitBoard::sqMask(B4, A5, B5, C5, A6, B6, C6, D6, A7, B7, C7, D7),
+                  ProofGame::wPawnReachable[B4][2]);
+    }
+    {
         std::string start(TextIO::startPosFEN);
         ProofGame ps(start, "rnbqkbnr/pppppppp/8/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1");
         U64 blocked;
@@ -456,6 +471,38 @@ ProofGameTest::testPawnReachable() {
     // Not reachable, white c1 bishop can not reach required capture square a6.
     ASSERT_EQ(INT_MAX, hScore(TextIO::startPosFEN, "rnbqkbnr/p1pppppp/p7/8/8/3P4/PPP1PPPP/RN1QKBNR w KQkq - 0 1"));
 
+    { // Pg7 cannot move so bishop cannot reach h8
+        ASSERT_EQ(INT_MAX, hScore("8/3k2P1/8/4P3/7B/8/4K3/8 w - - 0 1",
+                                  "7B/2k3P1/8/4N3/8/8/4K3/8 w - - 0 1"));
+        ASSERT_EQ(INT_MAX, hScore("8/2k3P1/4P3/8/7B/8/4K3/8 w - - 0 1",
+                                  "7B/2k3P1/8/4N3/8/8/4K3/8 w - - 0 1"));
+        ASSERT_GE(hScore("1nn5/2k3P1/8/4P3/7B/8/4K3/8 w - - 0 1",
+                         "7B/2k3P1/8/4N3/8/8/4K3/8 w - - 0 1"), 14);
+        ASSERT_LE(hScore("1nn5/2k3P1/8/4P3/7B/8/4K3/8 w - - 0 1",
+                         "7B/2k3P1/8/4N3/8/8/4K3/8 w - - 0 1"), 16);
+        ASSERT_EQ(INT_MAX, hScore("8/3k2P1/8/8/6PB/8/4K3/8 w - - 0 1",
+                                  "7B/3k2P1/8/8/6P1/8/4K3/8 w - - 0 1"));
+    }
+
+    // Pd3,f3,g2 blocked, so Bf1 cannot get to g6
+    ASSERT_EQ(INT_MAX, hScore("rnbqkbnr/pppppppp/8/8/8/1P1P1P2/P1P1P1PP/RNBQKBNR w KQkq - 0 1",
+                              "rnbqkbnr/ppppp1pp/6p1/8/2P1P3/1P1P1P2/P5PP/RNBQK1NR w KQkq - 0 1"));
+
+    ASSERT_EQ(6, hScore(TextIO::startPosFEN, "rnbqkbnr/1p1ppppp/1p6/p7/8/8/P1PPPPPP/RNBQKBNR w KQkq - 0 1"));
+    ASSERT_EQ(INT_MAX, hScore("4b3/4bRPN/1P2pQB1/1r1qRnK1/1BqPr1b1/1q1r1QB1/N1b3N1/1k5n w - - 30 83",
+                              "b3b2B/4bRPN/1P2pQB1/1r1qRnK1/bB2r3/3r1QB1/N1q1q1N1/1k5n b - - 0 1"));
+
+    {
+        std::string init = "rnb1kbnr/p1pp1p1p/8/1P6/3P1p1p/8/1P1PP1P1/RNBQKBNR w KQkq - 0 8";
+        std::string goal = "1r2R2b/2RbR1nn/nN1p4/1b1n1qb1/N1BP4/1N3NBr/3P2Q1/1k3KBq b - - 0 1";
+        ProofGame ps(init, goal);
+        U64 blocked;
+        bool res = ps.computeBlocked(TextIO::readFEN(init), blocked);
+        ASSERT_TRUE(res);
+        ASSERT_EQ(BitBoard::sqMask(D2,D4), blocked);
+        ASSERT_GE(hScore(init, goal), 107);
+    }
+
 #if 0
     // Reachable by en passant capture
     ASSERT_LE(hScore("rnbqkbnr/p1pppppp/8/8/1pP5/8/PP1PPPPP/RNBQKBNR b KQkq c3 0 1",
@@ -476,7 +523,7 @@ ProofGameTest::testBlocked() {
         U64 blocked;
         bool res = ps.computeBlocked(TextIO::readFEN(start), blocked);
         ASSERT_TRUE(res);
-        ASSERT_EQ(BitBoard::sqMask(B2,H2,A3,F3,G4,E6,H6,F7,G7), blocked);
+        ASSERT_EQ(BitBoard::sqMask(B2,H2,A3,F3,E4,G4,E6,H6,F7,G7), blocked);
         int s = hScore(start, goal);
         ASSERT_LE(s, 35);
         ASSERT_GE(s, 15);
