@@ -234,7 +234,7 @@ ProofGame::search(const std::vector<Move>& initialPath,
     Position startPos = TextIO::readFEN(initialFen);
     {
         int N = dynamic ? distLowerBound(startPos) * 2 : 0;
-        queue = make_unique<Queue>(TreeNodeCompare(goalPos, nodes, weightA, weightB, N));
+        queue = make_unique<Queue>(TreeNodeCompare(nodes, weightA, weightB, N));
     }
 
     validatePieceCounts(startPos);
@@ -335,20 +335,22 @@ ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkB
     if ((it != nodeHash.end()) && (it->second <= ply))
         return false;
 
+    int bound = distLowerBound(pos);
+    if (checkBound && bound == INT_MAX)
+        return false;
+
     TreeNode tn;
     pos.serialize(tn.psd);
     tn.parent = parent;
     tn.ply = ply;
-    int bound = distLowerBound(pos);
-    if (!checkBound || bound < INT_MAX) {
-        tn.bound = bound;
-        U32 idx = nodes.size();
-        nodes.push_back(tn);
-        nodeHash[pos.zobristHash()] = ply;
-        queue->push(idx);
-        return true;
-    }
-    return false;
+    tn.bound = bound;
+    tn.computePrio(pos, goalPos);
+
+    U32 idx = nodes.size();
+    nodes.push_back(tn);
+    nodeHash[pos.zobristHash()] = ply;
+    queue->push(idx);
+    return true;
 }
 
 void
@@ -1359,6 +1361,8 @@ ProofGame::computeNeighbors(Piece::Type p, U64 toSquares, U64 blocked) {
     return ret & ~blocked;
 }
 
+// --------------------------------------------------------------------------------
+
 /** Return penalty for white/black kings far away from their goal positions. */
 static int kingDistPenalty(const Position& pos, const Position& goalPos) {
     int dw = std::max(1, BitBoard::getKingDistance(pos.wKingSq(), goalPos.wKingSq()));
@@ -1385,7 +1389,8 @@ static int nPawnAdvances(const Position& pos) {
     return adv;
 }
 
-bool ProofGame::TreeNodeCompare::higherPrio(int a, int b) const {
+bool
+ProofGame::TreeNodeCompare::higherPrio(int a, int b) const {
     const TreeNode& n1 = nodes[a];
     const TreeNode& n2 = nodes[b];
     int min1 = n1.sortWeight(k0, k1, N);
@@ -1395,30 +1400,27 @@ bool ProofGame::TreeNodeCompare::higherPrio(int a, int b) const {
     if (n1.ply != n2.ply)
         return n1.ply > n2.ply;
 
-    Position pos1;
-    pos1.deSerialize(n1.psd);
-    Position pos2;
-    pos2.deSerialize(n2.psd);
-
-    int nPiece1 = BitBoard::bitCount(pos1.occupiedBB());
-    int nPiece2 = BitBoard::bitCount(pos2.occupiedBB());
-    if (nPiece1 != nPiece2)
-        return nPiece1 < nPiece2; // Fewer pieces hopefully closer to the goal
-
-    int kp1 = kingDistPenalty(pos1, goalPos);
-    int kp2 = kingDistPenalty(pos2, goalPos);
-    if (kp1 != kp2)
-        return kp1 < kp2; // Kings closer to goal position hopefully closer to the goal
-
-    int nP1 = BitBoard::bitCount(pos1.pieceTypeBB(Piece::WPAWN, Piece::BPAWN));
-    int nP2 = BitBoard::bitCount(pos2.pieceTypeBB(Piece::WPAWN, Piece::BPAWN));
-    if (nP1 != nP2)
-        return nP1 < nP2; // More promoted pawns hopefully closer to the goal
-
-    int nPAdv1 = nPawnAdvances(pos1);
-    int nPAdv2 = nPawnAdvances(pos2);
-    if (nPAdv1 != nPAdv2)
-        return nPAdv1 > nPAdv2; // More advanced pawns hopefully closer to the goal
+    if (n1.prio != n2.prio)
+        return n1.prio > n2.prio;
 
     return n1.parent > n2.parent;
+}
+
+void
+ProofGame::TreeNode::computePrio(const Position& pos, const Position& goalPos) {
+    int p = 0;
+
+    int nPiece = BitBoard::bitCount(pos.occupiedBB());
+    p = p * 32 + (32 - nPiece); // Fewer pieces hopefully closer to the goal
+
+    int kp = kingDistPenalty(pos, goalPos);
+    p = p * 16 + (14 - kp); // Kings closer to goal position hopefully closer to the goal
+
+    int nP = BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN));
+    p = p * 17 + (16 - nP); // More promoted pawns hopefully closer to the goal
+
+    int nPAdv = nPawnAdvances(pos);
+    p = p * 41 + nPAdv; // More advanced pawns hopefully closer to the goal
+
+    prio = p;
 }

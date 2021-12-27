@@ -212,6 +212,7 @@ private:
         U32 parent;                  // Parent index, not used for root position
         U16 ply;                     // Number of moves already made, 0 for root node
         U16 bound;                   // Lower bound on number of moves to a solution
+        U32 prio;                    // For otherwise equal nodes, higher prio nodes are searched first
 
         int sortWeight(int a, int b, int N) const {
             if (N == 0) {
@@ -221,6 +222,7 @@ private:
                 return a*N * ply + (a*N + (b-a)*(N-p)) * bound;
             }
         }
+        void computePrio(const Position& pos, const Position& goalPos);
     };
 
     // All nodes encountered so far
@@ -231,9 +233,9 @@ private:
 
     class TreeNodeCompare {
     public:
-        TreeNodeCompare(const Position& goalPos0, const std::vector<TreeNode>& nodes0,
+        TreeNodeCompare(const std::vector<TreeNode>& nodes0,
                         int a0, int b0, int N0)
-            : goalPos(goalPos0), nodes(nodes0), k0(a0), k1(b0), N(N0) {}
+            : nodes(nodes0), k0(a0), k1(b0), N(N0) {}
         bool operator()(int a, int b) const {
             return higherPrio(b, a);
         }
@@ -241,7 +243,6 @@ private:
         /** Return true if node "a" has higher priority than node "b". */
         bool higherPrio(int a, int b) const;
 
-        const Position& goalPos;
         const std::vector<TreeNode>& nodes;
         int k0, k1;
         int N;
