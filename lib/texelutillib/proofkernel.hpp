@@ -130,6 +130,9 @@ public:
         PieceType promotedPiece; // Promoted piece, or EMPTY
 
         ExtPkMove(PieceColor c, PieceType pt, int fromSq, bool capture, int toSq, PieceType prom);
+
+        bool operator==(const ExtPkMove& other) const;
+        bool operator!=(const ExtPkMove& other) const;
     };
 
     enum SearchResult {
@@ -329,7 +332,8 @@ private:
 
 /** Convert a PkMove to human readable string representation. */
 std::string toString(const ProofKernel::PkMove& m);
-ProofKernel::PkMove strToPkMove(const std::string& move);
+ProofKernel::PkMove strToPkMove(const std::string& str);
+ProofKernel::ExtPkMove strToExtPkMove(const std::string& str);
 std::string toString(const ProofKernel::ExtPkMove& m);
 std::ostream& operator<<(std::ostream& os, const ProofKernel::PkMove& m);
 std::ostream& operator<<(std::ostream& os, const ProofKernel::ExtPkMove& m);
@@ -445,6 +449,11 @@ ProofKernel::ExtPkMove::ExtPkMove(PieceColor c, PieceType pt, int fromSq, bool c
                                   int toSq, PieceType prom)
     : color(c), movingPiece(pt), fromSquare(fromSq), capture(capt),
       toSquare(toSq), promotedPiece(prom) {
+}
+
+inline bool
+ProofKernel::ExtPkMove::operator!=(const ExtPkMove& other) const {
+    return !(*this == other);
 }
 
 inline bool

@@ -833,12 +833,19 @@ ProofKernelTest::testSearch() {
             ASSERT_EQ(nCapt, (int)moves.size());
         }
 
+        for (const ExtPkMove& m : extMoves) {
+            ASSERT_EQ(toString(m), toString(strToExtPkMove(toString(m))));
+        }
+
         if (expectedPath.empty() || expectedPath == "*") {
             startPos = PosUtil::swapColors(startPos);
             goalPos = PosUtil::swapColors(goalPos);
             ProofKernel pk2(startPos, goalPos, computeBlocked(startPos, goalPos));
             found = pk2.findProofKernel(moves, extMoves) == ProofKernel::EXT_PROOF_KERNEL;
             ASSERT_EQ(expectedSolution, found) << "start: " << start << " goal: " << goal;
+            for (const ExtPkMove& m : extMoves) {
+                ASSERT_EQ(toString(m), toString(strToExtPkMove(toString(m))));
+            }
         }
     };
 
@@ -924,18 +931,18 @@ ProofKernelTest::testExtMoveToString() {
     using PieceColor = ProofKernel::PieceColor;
     using PieceType = ProofKernel::PieceType;
 
-    ASSERT_EQ("wPg5-g8Q", toString(ExtPkMove(PieceColor::WHITE, PieceType::PAWN,
-                                             G5, false, G8, PieceType::QUEEN)));
-    ASSERT_EQ("bRh8-f6", toString(ExtPkMove(PieceColor::BLACK, PieceType::ROOK,
-                                            H8, false, F6, PieceType::EMPTY)));
-    ASSERT_EQ("wPa3-a6", toString(ExtPkMove(PieceColor::WHITE, PieceType::PAWN,
-                                            A3, false, A6, PieceType::EMPTY)));
-    ASSERT_EQ("wPa6xb7", toString(ExtPkMove(PieceColor::WHITE, PieceType::PAWN,
-                                            A6, true, B7, PieceType::EMPTY)));
-    ASSERT_EQ("wxh8", toString(ExtPkMove(PieceColor::WHITE, PieceType::EMPTY,
-                                         -1, true, H8, PieceType::EMPTY)));
-    ASSERT_EQ("bxc1", toString(ExtPkMove(PieceColor::BLACK, PieceType::EMPTY,
-                                         -1, true, C1, PieceType::EMPTY)));
+    auto test = [](const std::string& str, const ExtPkMove& m) {
+        ASSERT_EQ(str, toString(m));
+        ASSERT_EQ(strToExtPkMove(str), m);
+        ASSERT_EQ(str, toString(strToExtPkMove(str)));
+    };
+
+    test("wPg5-g8Q", ExtPkMove(PieceColor::WHITE, PieceType::PAWN, G5, false, G8, PieceType::QUEEN));
+    test("bRh8-f6", ExtPkMove(PieceColor::BLACK, PieceType::ROOK, H8, false, F6, PieceType::EMPTY));
+    test("wPa3-a6", ExtPkMove(PieceColor::WHITE, PieceType::PAWN, A3, false, A6, PieceType::EMPTY));
+    test("wPa6xb7", ExtPkMove(PieceColor::WHITE, PieceType::PAWN, A6, true, B7, PieceType::EMPTY));
+    test("wxh8", ExtPkMove(PieceColor::WHITE, PieceType::EMPTY, -1, true, H8, PieceType::EMPTY));
+    test("bxc1", ExtPkMove(PieceColor::BLACK, PieceType::EMPTY, -1, true, C1, PieceType::EMPTY));
 }
 
 static void
@@ -974,6 +981,7 @@ ProofKernelTest::testExtKernel() {
             if (!extPath.empty())
                 extPath += ' ';
             extPath += toString(m);
+            ASSERT_EQ(toString(m), toString(strToExtPkMove(toString(m))));
         }
         if (found)
             std::cout << "extMoves: " << extPath << std::endl;
