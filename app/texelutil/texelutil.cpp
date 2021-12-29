@@ -433,7 +433,7 @@ doProofGameCmd(int argc, char* argv[]) {
 
         ProofGame ps(initFen, goalFen, a, b, dynamic);
         std::vector<Move> movePath;
-        ps.search(initPath, movePath, maxNodes, verbose);
+        ps.search(initPath, movePath, ProofGame::Options().setMaxNodes(maxNodes).setVerbose(verbose));
     }
 }
 

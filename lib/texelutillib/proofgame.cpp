@@ -230,7 +230,7 @@ ProofGame::validatePieceCounts(const Position& pos) {
 
 int
 ProofGame::search(const std::vector<Move>& initialPath,
-                  std::vector<Move>& movePath, S64 maxNodes, bool verbose) {
+                  std::vector<Move>& movePath, const Options& opts) {
     Position startPos = TextIO::readFEN(initialFen);
     {
         int N = dynamic ? distLowerBound(startPos) * 2 : 0;
@@ -257,7 +257,7 @@ ProofGame::search(const std::vector<Move>& initialPath,
     int best = INT_MAX;
     int smallestBound = INT_MAX;
     UndoInfo ui;
-    while (!queue->empty() && (maxNodes == -1 || numNodes < maxNodes)) {
+    while (!queue->empty() && (opts.maxNodes == -1 || numNodes < opts.maxNodes)) {
         const U32 idx = queue->top();
         queue->pop();
         const TreeNode& tn = nodes[idx];
@@ -305,7 +305,7 @@ ProofGame::search(const std::vector<Move>& initialPath,
             anyChildren |= addPosition(pos, idx, false, true);
             pos.unMakeMove(moves[i], ui);
         }
-        if (verbose && anyChildren) {
+        if (opts.verbose && anyChildren) {
             const TreeNode& tn = nodes[idx]; // Old "tn" no longer valid
             if (tn.bound > 0 && tn.bound < smallestBound) {
                 smallestBound = tn.bound;
@@ -323,7 +323,7 @@ ProofGame::search(const std::vector<Move>& initialPath,
 
     if (best < INT_MAX)
         return best + lastMoves.size(); // Return best found solution length
-    if (numNodes == maxNodes)
+    if (numNodes == opts.maxNodes)
         return -1;                      // Gave up, unknown if solution exists
     return INT_MAX;                     // No solution exists
 }

@@ -54,17 +54,26 @@ public:
     ProofGame(const ProofGame&) = delete;
     ProofGame& operator=(const ProofGame&) = delete;
 
+    struct Options {
+        /** Maximum number of search nodes before giving up,
+         *  or -1 to never give up. */
+        S64 maxNodes = -1;
+        /** If true, print path every time distance to goal decreases. */
+        bool verbose = false;
+
+        Options& setMaxNodes(S64 m) { maxNodes = m; return *this; }
+        Options& setVerbose(bool v) { verbose = v; return *this; }
+    };
+
     /** Search for shortest solution. Print solutions to standard output.
      * @param initialPath  Only search for solutions starting with this path.
      * @param movePath     Set to shortest found path.
-     * @param maxNodes     Maximum number of search nodes before giving up,
-     *                     or -1 to never give up.
-     * @param verbose      If true, print path every time distance to goal decreases.
+     * @param opts         Options controlling search behavior.
      * @return             Length of shortest path found,
      *                     or INT_MAX if no solution exists,
      *                     or -1 if unknown whether a solution exists. */
     int search(const std::vector<Move>& initialPath,
-               std::vector<Move>& movePath, S64 maxNodes = -1, bool verbose = false);
+               std::vector<Move>& movePath, const Options& opts);
 
     /** Compute blocked pieces in a position. A blocked piece is a piece that
      *  can not move without making it impossible to reach the goal position.

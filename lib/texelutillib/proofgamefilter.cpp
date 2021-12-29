@@ -49,7 +49,7 @@ void ProofGameFilter::filterFens(std::istream& is, std::ostream& os) {
         try {
             ProofGame pg(std::cerr, startPosFEN, line, 1, 1, false, true);
             std::vector<Move> movePath;
-            int minCost = pg.search({}, movePath, 2, false);
+            int minCost = pg.search({}, movePath, ProofGame::Options().setMaxNodes(2));
             if (minCost == INT_MAX) {
                 status = "illegal, other";
             } else if (minCost >= 0) {
