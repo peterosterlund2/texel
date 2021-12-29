@@ -96,7 +96,7 @@ private:
                                std::vector<Move>& initialPath);
 
     /** Queue a new position to be searched. Return true if position was queued. */
-    bool addPosition(const Position& pos, U32 parent, bool isRoot, bool checkBound);
+    bool addPosition(const Position& pos, U32 parent, bool isRoot, bool checkBound, int best);
 
     /** Return true if pos is equal to the goal position. */
     bool isSolution(const Position& pos) const;

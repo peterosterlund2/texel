@@ -238,7 +238,8 @@ ProofGame::search(const std::vector<Move>& initialPath,
     }
 
     validatePieceCounts(startPos);
-    addPosition(startPos, 0, true, false);
+    int best = INT_MAX;
+    addPosition(startPos, 0, true, false, best);
     {
         Position pos(startPos);
         UndoInfo ui;
@@ -246,7 +247,7 @@ ProofGame::search(const std::vector<Move>& initialPath,
             U32 idx = queue->top();
             queue->pop();
             pos.makeMove(m, ui);
-            addPosition(pos, idx, false, false);
+            addPosition(pos, idx, false, false, best);
         }
     }
 
@@ -254,7 +255,6 @@ ProofGame::search(const std::vector<Move>& initialPath,
     Position pos;
     S64 numNodes = 0;
     int minCost = -1;
-    int best = INT_MAX;
     int smallestBound = INT_MAX;
     UndoInfo ui;
     while (!queue->empty() && (opts.maxNodes == -1 || numNodes < opts.maxNodes)) {
@@ -288,11 +288,11 @@ ProofGame::search(const std::vector<Move>& initialPath,
         if (!computeBlocked(pos, blocked))
             continue;
 
-#if 0
-        if ((nodes % 10000) == 0)
-            log << "ply:" << tn.ply << " bound:" << tn.bound << " "
-                << TextIO::toFEN(pos) << std::endl;
-#endif
+        if (opts.verbose && (numNodes % 1000000) == 0)
+            log << "ply: " << tn.ply << " bound: " << tn.bound
+                << " queue: " << queue->size() << " nodes: " << numNodes
+                << " time: " << (currentTime() - t0)
+                << " " << TextIO::toFEN(pos) << std::endl;
 
         bool anyChildren = false;
         MoveList moves;
@@ -302,7 +302,7 @@ ProofGame::search(const std::vector<Move>& initialPath,
             if (((1ULL << moves[i].from()) | (1ULL << moves[i].to())) & blocked)
                 continue;
             pos.makeMove(moves[i], ui);
-            anyChildren |= addPosition(pos, idx, false, true);
+            anyChildren |= addPosition(pos, idx, false, true, best);
             pos.unMakeMove(moves[i], ui);
         }
         if (opts.verbose && anyChildren) {
@@ -329,15 +329,19 @@ ProofGame::search(const std::vector<Move>& initialPath,
 }
 
 bool
-ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkBound) {
+ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkBound, int best) {
     const int ply = isRoot ? 0 : nodes[parent].ply + 1;
     auto it = nodeHash.find(pos.zobristHash());
     if ((it != nodeHash.end()) && (it->second <= ply))
         return false;
 
     int bound = distLowerBound(pos);
-    if (checkBound && bound == INT_MAX)
-        return false;
+    if (checkBound) {
+        if (bound == INT_MAX)
+            return false;
+        if (best < INT_MAX && ply + bound >= best)
+            return false;
+    }
 
     TreeNode tn;
     pos.serialize(tn.psd);
