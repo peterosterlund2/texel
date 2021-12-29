@@ -985,3 +985,25 @@ bool ProofKernel::computeExtKernel() {
     nCSPNodes += epk.getNumNodes();
     return ret;
 }
+
+Piece::Type
+ProofKernel::toPieceType(bool white, PieceType p, bool allowPawn) {
+    switch (p) {
+    case PieceType::QUEEN:
+        return white ? Piece::WQUEEN : Piece::BQUEEN;
+    case PieceType::ROOK :
+        return white ? Piece::WROOK : Piece::BROOK;
+    case PieceType::DARK_BISHOP:
+    case PieceType::LIGHT_BISHOP:
+        return white ? Piece::WBISHOP : Piece::BBISHOP;
+    case PieceType::KNIGHT:
+        return white ? Piece::WKNIGHT : Piece::BKNIGHT;
+    case PieceType::PAWN:
+        if (allowPawn)
+            return white ? Piece::WPAWN : Piece::BPAWN;
+        // Fall through
+    default:
+        assert(false);
+        throw ChessError("Invalid piece type");
+    }
+}

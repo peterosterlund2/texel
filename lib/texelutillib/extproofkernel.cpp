@@ -90,16 +90,7 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
             }
         }
 
-        Piece::Type pt;
-        switch (p) {
-        case PieceType::QUEEN:        pt = white ? Piece::WQUEEN  : Piece::BQUEEN;  break;
-        case PieceType::ROOK :        pt = white ? Piece::WROOK   : Piece::BROOK;   break;
-        case PieceType::DARK_BISHOP:
-        case PieceType::LIGHT_BISHOP: pt = white ? Piece::WBISHOP : Piece::BBISHOP; break;
-        case PieceType::KNIGHT:       pt = white ? Piece::WKNIGHT : Piece::BKNIGHT; break;
-        default: assert(false); throw new ChessError("Invalid piece type");
-        }
-
+        Piece::Type pt = ProofKernel::toPieceType(white, p, false);
         U64 m = currPos.pieceTypeBB(pt);
         if (p == PieceType::DARK_BISHOP)
             m &= BitBoard::maskDarkSq;

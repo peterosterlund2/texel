@@ -72,6 +72,9 @@ public:
         EMPTY,
     };
 
+    /** Convert PieceType to Piece::Type. */
+    static Piece::Type toPieceType(bool white, PieceType p, bool allowPawn);
+
     /** Represents a move in the proof kernel state space. Each move reduces the
      *  total number of pieces by one. Possible moves are of the following types:
      *  Move type                Example
