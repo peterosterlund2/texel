@@ -595,43 +595,6 @@ ProofGame::capturesFeasible(const Position& pos, int pieceCnt[],
                 return false;
         }
     }
-
-    if (numWhiteExtraPieces + numBlackExtraPieces == 0)
-        if (!hasCorrectPawnStructure(pos))
-            return false;
-
-    return true;
-}
-
-bool
-ProofGame::hasCorrectPawnStructure(const Position& pos) const {
-    auto getPawnSignature = [](int x, U64 wPawns, U64 bPawns) -> int {
-        int ret = 1;
-        for (int y = 1; y < 7; y++) {
-            int sq = Square::getSquare(x, y);
-            if (wPawns & (1ULL << sq))
-                ret = ret * 2 + 0;
-            else if (bPawns & (1ULL << sq))
-                ret = ret * 2 + 1;
-        }
-        return ret;
-    };
-
-    U64 wPawnsCurr = pos.pieceTypeBB(Piece::WPAWN);
-    U64 bPawnsCurr = pos.pieceTypeBB(Piece::BPAWN);
-    U64 wPawnsGoal = goalPos.pieceTypeBB(Piece::WPAWN);
-    U64 bPawnsGoal = goalPos.pieceTypeBB(Piece::BPAWN);
-
-    for (int x = 0; x < 8; x++) {
-        if (((wPawnsCurr & BitBoard::maskFile[x]) == 0) ||
-            ((bPawnsCurr & BitBoard::maskFile[x]) == 0))
-            continue; // Only one side has pawns in this file, no conflict possible
-        int s1 = getPawnSignature(x, wPawnsCurr, bPawnsCurr);
-        int s2 = getPawnSignature(x, wPawnsGoal, bPawnsGoal);
-        if (s1 != s2)
-            return false;
-    }
-
     return true;
 }
 

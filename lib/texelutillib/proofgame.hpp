@@ -124,10 +124,6 @@ private:
                           int numWhiteExtraPieces, int numBlackExtraPieces,
                           int excessWPawns, int excessBPawns);
 
-    /** Return false if pawn structure in "pos" cannot be changed to pawn structure
-     *  in "goalPos" without using any captures. */
-    bool hasCorrectPawnStructure(const Position& pos) const;
-
     struct ShortestPathData {
         S8 pathLen[64];    // Distance to target square
         U64 fromSquares;   // Bitboard corresponding to pathLen[i] >= 0

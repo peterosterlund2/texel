@@ -509,21 +509,16 @@ ProofGameTest::testPawnReachable() {
                      "rnbqkbnr/p1pppppp/8/8/8/2p5/PP1PPPPP/RNBQKBNR w KQkq - 0 1"), 1);
 #endif
 
-    // Pawns cannot move past each other when no available captures
-    ASSERT_EQ(INT_MAX, hScore("4k3/8/8/4p3/4P3/8/8/4K3 w - - 0 1",
-                              "4k3/8/8/4P3/4p3/8/8/4K3 w - - 0 1"));
-    ASSERT_EQ(INT_MAX, hScore("4k3/8/4p3/8/8/4P3/8/4K3 w - - 0 1",
-                              "4k3/8/8/4P3/4p3/8/8/4K3 w - - 0 1"));
     ASSERT_GE(hScore("1nn1k3/8/4p3/8/8/4P3/8/4K3 w - - 0 1",
                      "4k3/8/8/4P3/4p3/8/8/4K3 w - - 0 1"), 4);
     ASSERT_LE(hScore("1nn1k3/8/4p3/8/8/4P3/8/4K3 w - - 0 1",
                      "4k3/8/8/4P3/4p3/8/8/4K3 w - - 0 1"), 18);
     ASSERT_LE(hScore("4k3/7p/4p3/8/7P/4P3/7P/4K3 w - - 0 1",
                      "4k3/7p/4p2P/8/7P/4P3/8/4K3 w - - 0 1"), INT_MAX);
-    ASSERT_EQ(INT_MAX, hScore("4k3/7p/4p3/8/7P/4P3/7P/4K3 w - - 0 1",
-                              "4k3/7P/4p2p/8/7P/4P3/8/4K3 w - - 0 1"));
     ASSERT_EQ(INT_MAX, hScore("4k3/7p/4p3/8/P6P/p3P3/P6P/4K3 w - - 0 1",
                               "4k3/7p/4p3/P7/P6P/p3P3/7P/4K3 w - - 0 1"));
+    ASSERT_EQ(8, hScore("3k4/8/5P2/5p2/8/3K1P2/8/8 w - - 0 1",
+                        "3k4/8/5N2/5p2/8/3K1P2/8/8 w - - 0 1"));
 }
 
 TEST(ProofGameTest, testBlocked) {
