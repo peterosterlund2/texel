@@ -705,8 +705,9 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
                     int cost = 0;
                     U64 captSquares = captureSquares[c][idx];
                     if (captSquares) {
-                        cost = minDistToSquares(pos.getPiece(fromSq), fromSq, blocked, maxCapt,
-                                                promPath[c], captSquares, canPromote);
+                        int p = pos.getPiece(fromSq);
+                        cost = minDistToSquares(p, fromSq, getBlocked(blocked, pos, p),
+                                                maxCapt, promPath[c], captSquares, canPromote);
                         idx++;
                     }
                     colToSq[t] = -1;
@@ -736,6 +737,16 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
     return true;
 }
 
+U64
+ProofGame::getBlocked(U64 blocked, const Position& pos, int pieceType) const {
+    if (pieceType == Piece::WKING) {
+        blocked |= BitBoard::bPawnAttacksMask(blocked & pos.pieceTypeBB(Piece::BPAWN));
+    } else if (pieceType == Piece::BKING) {
+        blocked |= BitBoard::wPawnAttacksMask(blocked & pos.pieceTypeBB(Piece::WPAWN));
+    }
+    return blocked;
+}
+
 bool
 ProofGame::computeShortestPathData(const Position& pos,
                                     int numWhiteExtraPieces, int numBlackExtraPieces,
@@ -754,7 +765,7 @@ ProofGame::computeShortestPathData(const Position& pos,
         const Piece::Type p = (Piece::Type)goalPos.getPiece(sq);
         const bool wtm = Piece::isWhite(p);
         const int maxCapt = wtm ? numBlackExtraPieces : numWhiteExtraPieces;
-        auto spd = shortestPaths(p, sq, blocked, maxCapt);
+        auto spd = shortestPaths(p, sq, getBlocked(blocked, pos, p), maxCapt);
         bool testPromote = false;
         switch (p) {
         case Piece::WQUEEN: case Piece::WROOK: case Piece::WBISHOP: case Piece::WKNIGHT:
@@ -1339,6 +1350,7 @@ ProofGame::computeNeighbors(Piece::Type p, U64 toSquares, U64 blocked) {
     U64 ret = 0;
     switch (p) {
     case Piece::WKING: case Piece::BKING:
+        toSquares &= ~blocked;
         while (toSquares) {
             int sq = BitBoard::extractSquare(toSquares);
             ret |= BitBoard::kingAttacks(sq);

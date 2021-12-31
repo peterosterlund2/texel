@@ -144,6 +144,10 @@ private:
                             int excessWPawns, int excessBPawns,
                             int neededMoves[]);
 
+    /** If pieceType is a king, extend "blocked" to also include attacks from
+     *  blocked opponent pawns. */
+    U64 getBlocked(U64 blocked, const Position& pos, int pieceType) const;
+
     /** Compute shortest path data to all non-blocked goal squares. Update
      * blocked if it is discovered that more pieces are blocked.
      * Return false if it is discovered the goalPos is not reachable. */

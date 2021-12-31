@@ -674,6 +674,13 @@ ProofGameTest::testRemainingMoves() {
         ASSERT_GE(hScore(TextIO::startPosFEN, goal), 20);
         ASSERT_LE(hScore(TextIO::startPosFEN, goal), 76);
     }
+
+    { // King reachability limited by opponent blocked pawn attacks
+        ASSERT_EQ(24, hScore("2k5/8/8/1p2p3/1P2P3/K7/8/8 w - - 0 1",
+                             "8/8/K7/1p2p3/1P2P3/8/8/4k3 w - - 0 1"));
+        ASSERT_EQ(INT_MAX, hScore("2k5/5r2/8/1p6/8/K7/7R/8 w - - 0 1",
+                                  "2k5/5r2/8/1p6/K7/8/7R/8 w - - 0 1"));
+    }
 }
 
 TEST(ProofGameTest, testSearch) {
