@@ -256,6 +256,23 @@ ProofGame::search(const std::vector<Move>& initialPath,
     S64 numNodes = 0;
     int minCost = -1;
     int smallestBound = INT_MAX;
+
+    std::string delayedLog;
+    int nNodesAtLogTime = -1;
+    auto flushDelayed = [this,numNodes,&delayedLog,&nNodesAtLogTime](bool force = true) {
+        if (nNodesAtLogTime != -1) {
+            if (force || numNodes >= nNodesAtLogTime + 100) {
+                log << delayedLog;
+                delayedLog.clear();
+                nNodesAtLogTime = -1;
+            }
+        }
+    };
+    auto logDelayed = [numNodes,&delayedLog,&nNodesAtLogTime](std::stringstream& os) {
+        delayedLog = os.str();
+        nNodesAtLogTime = numNodes;
+    };
+
     UndoInfo ui;
     while (!queue->empty() && (opts.maxNodes == -1 || numNodes < opts.maxNodes)) {
         const U32 idx = queue->top();
@@ -264,6 +281,7 @@ ProofGame::search(const std::vector<Move>& initialPath,
         if (tn.ply + tn.bound >= best)
             continue;
         if (tn.ply + tn.bound > minCost) {
+            flushDelayed();
             minCost = tn.ply + tn.bound;
             log << "min cost: " << minCost << " queue: " << queue->size()
                 << " nodes: " << numNodes
@@ -275,12 +293,14 @@ ProofGame::search(const std::vector<Move>& initialPath,
 
         if (numNodes == 1)
             showPieceStats(pos);
+        flushDelayed(false);
 
         if (tn.ply < best && isSolution(pos)) {
+            flushDelayed();
             log << tn.ply << " -w " << weightA << ":" << weightB
                 << " queue: " << queue->size() << " nodes: " << numNodes
                 << " time: " << (currentTime() - t0) << std::endl;
-            getMoves(startPos, idx, true, movePath);
+            getMoves(log, startPos, idx, true, movePath);
             best = tn.ply;
         }
 
@@ -288,11 +308,13 @@ ProofGame::search(const std::vector<Move>& initialPath,
         if (!computeBlocked(pos, blocked))
             continue;
 
-        if (opts.verbose && (numNodes % 1000000) == 0)
+        if (opts.verbose && (numNodes % 1000000) == 0) {
+            flushDelayed();
             log << "ply: " << tn.ply << " bound: " << tn.bound
                 << " queue: " << queue->size() << " nodes: " << numNodes
                 << " time: " << (currentTime() - t0)
                 << " " << TextIO::toFEN(pos) << std::endl;
+        }
 
         bool anyChildren = false;
         MoveList moves;
@@ -309,14 +331,17 @@ ProofGame::search(const std::vector<Move>& initialPath,
             const TreeNode& tn = nodes[idx]; // Old "tn" no longer valid
             if (tn.bound > 0 && tn.bound < smallestBound) {
                 smallestBound = tn.bound;
-                log << "bound: " << tn.bound << " -w " << weightA << ":" << weightB
-                    << " queue: " << queue->size() << " nodes: " << numNodes
-                    << " time: " << (currentTime() - t0) << std::endl;
+                std::stringstream os;
+                os << "bound: " << tn.bound << " -w " << weightA << ":" << weightB
+                   << " queue: " << queue->size() << " nodes: " << numNodes
+                   << " time: " << (currentTime() - t0) << std::endl;
                 std::vector<Move> path;
-                getMoves(startPos, idx, false, path);
+                getMoves(os, startPos, idx, false, path);
+                logDelayed(os);
             }
         }
     }
+    flushDelayed();
     double t1 = currentTime();
     log << "nodes: " << numNodes
         << " time: " << t1 - t0 <<  std::endl;
@@ -358,8 +383,8 @@ ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkB
 }
 
 void
-ProofGame::getMoves(const Position& startPos, int idx, bool includeLastMoves,
-                    std::vector<Move>& movePath) const {
+ProofGame::getMoves(std::ostream& logStream, const Position& startPos, int idx,
+                    bool includeLastMoves, std::vector<Move>& movePath) const {
     std::function<void(int)> getMoves = [this,&movePath,&getMoves](U32 idx) {
         const TreeNode& tn = nodes[idx];
         if (tn.ply == 0)
@@ -392,13 +417,12 @@ ProofGame::getMoves(const Position& startPos, int idx, bool includeLastMoves,
     UndoInfo ui;
     for (size_t i = 0; i < movePath.size(); i++) {
         if (i > 0)
-            log << ' ';
-        log << TextIO::moveToString(pos, movePath[i], false);
+            logStream << ' ';
+        logStream << TextIO::moveToString(pos, movePath[i], false);
         pos.makeMove(movePath[i], ui);
     }
-    log << std::endl;
+    logStream << std::endl;
 }
-
 
 // --------------------------------------------------------------------------------
 

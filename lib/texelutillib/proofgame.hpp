@@ -65,7 +65,7 @@ public:
         Options& setVerbose(bool v) { verbose = v; return *this; }
     };
 
-    /** Search for shortest solution. Print solutions to standard output.
+    /** Search for shortest solution. Print solutions to log stream.
      * @param initialPath  Only search for solutions starting with this path.
      * @param movePath     Set to shortest found path.
      * @param opts         Options controlling search behavior.
@@ -102,9 +102,9 @@ private:
     bool isSolution(const Position& pos) const;
 
     /** Get move sequence leading to position given by index "idx".
-     * Also print move sequence to standard output. */
-    void getMoves(const Position& startPos, int idx, bool includeLastMoves,
-                  std::vector<Move>& movePath) const;
+     * Also print move sequence to "logStream". */
+    void getMoves(std::ostream& logStream, const Position& startPos, int idx,
+                  bool includeLastMoves, std::vector<Move>& movePath) const;
 
     /** Compute a lower bound for the minimum number of plies from position pos
      * to position goalPos. If INT_MAX is returned, it means that goalPos can not be
@@ -114,7 +114,7 @@ private:
     /** Return true if there are enough remaining pieces to reach goalPos. */
     bool enoughRemainingPieces(int pieceCnt[]) const;
 
-    /** Print required piece count changes to standard output. */
+    /** Print required piece count changes to log stream. */
     void showPieceStats(const Position& pos) const;
 
     /** Compute number of required captures to get pawns into correct files.
