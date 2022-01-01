@@ -87,3 +87,44 @@ PosUtil::mirrorX(const Position& pos) {
     return mir;
 }
 
+
+U64
+PosUtil::attackedSquares(const Position& pos, bool whitePieces) {
+    U64 attacked = 0;
+
+    U64 m = pos.pieceTypeBB(whitePieces ? Piece::WKNIGHT : Piece::BKNIGHT);
+    while (m) {
+        int sq = BitBoard::extractSquare(m);
+        attacked |= BitBoard::knightAttacks(sq);
+    }
+
+    m = pos.pieceTypeBB(whitePieces ? Piece::WKING : Piece::BKING);
+    while (m) {
+        int sq = BitBoard::extractSquare(m);
+        attacked |= BitBoard::kingAttacks(sq);
+    }
+
+    if (whitePieces)
+        attacked |= BitBoard::wPawnAttacksMask(pos.pieceTypeBB(Piece::WPAWN));
+    else
+        attacked |= BitBoard::bPawnAttacksMask(pos.pieceTypeBB(Piece::BPAWN));
+
+    auto q = whitePieces ? Piece::WQUEEN  : Piece::BQUEEN;
+    auto r = whitePieces ? Piece::WROOK   : Piece::BROOK;
+    auto b = whitePieces ? Piece::WBISHOP : Piece::BBISHOP;
+
+    U64 occupied = pos.occupiedBB();
+    m = pos.pieceTypeBB(q, r);
+    while (m) {
+        int sq = BitBoard::extractSquare(m);
+        attacked |= BitBoard::rookAttacks(sq, occupied);
+    }
+
+    m = pos.pieceTypeBB(q, b);
+    while (m) {
+        int sq = BitBoard::extractSquare(m);
+        attacked |= BitBoard::bishopAttacks(sq, occupied);
+    }
+
+    return attacked;
+}

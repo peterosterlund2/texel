@@ -40,7 +40,7 @@ public:
         : ChessError(msg) {}
 };
 
-/** The ProofKerrnel class is used for finding a sequence of captures and promotions
+/** The ProofKernel class is used for finding a sequence of captures and promotions
  *  that transform the material configuration of a starting position to the material
  *  configuration of a goal position.
  *  The lack of a proof kernel means the corresponding proof game problem has no solution.
@@ -71,6 +71,7 @@ public:
         PAWN,
         EMPTY,
     };
+    static const int nPieceTypes = EMPTY;
 
     /** Convert PieceType to Piece::Type. */
     static Piece::Type toPieceType(bool white, PieceType p, bool allowPawn);
@@ -244,7 +245,6 @@ private:
     };
     std::array<PawnColumn, 8> columns;
     std::array<PawnColumn, 8> goalColumns;
-    static const int nPieceTypes = EMPTY;
     int pieceCnt[2][nPieceTypes];
     int goalCnt[2][nPieceTypes];
     int excessCnt[2][nPieceTypes];  // pieceCnt - goalCnt

@@ -34,6 +34,8 @@
 #include <vector>
 #include <map>
 
+class MultiBoard;
+
 /** Finds proof games for a list of positions in a text file. */
 class ProofGameFilter {
     friend class ProofGameTest;
@@ -73,6 +75,9 @@ private:
         /** Get data for a given token type. */
         std::vector<std::string>& tokenData(Info tokType);
 
+        /** Remove data for a given token type. */
+        void eraseToken(Info tokType);
+
         /** Print text representation to "os". */
         void print(std::ostream& os);
     };
@@ -84,6 +89,21 @@ private:
     /** Compute a sequence of moves corresponding to an extended proof kernel.
      *  This computation can fail even if a solution exists. Prints result to "os". */
     void computePath(const Position& startPos, Line& line, std::ostream& os);
+
+    /** For pawns on first/last row, replace them with suitable promoted pieces. */
+    void decidePromotions(std::vector<MultiBoard>& brdVec, const Position& initPos,
+                          const Position& goalPos) const;
+
+    /** Compute a sequence of moves from brdVec[startIdx] to brdVec[endIdx], appending
+     *  the required moves to "path". */
+    void computePath(std::vector<MultiBoard>& brdVec, int startIdx, int endIdx,
+                     const Position& initPos, const Position& goalPos,
+                     std::vector<Move>& path) const;
+
+    /** If pieces need to move away from their original position, try to advance
+     *  suitable pawns to allow the pieces to move. */
+    void freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
+                    const Position& initPos, const Position& goalPos) const;
 
     /** Try to compute a proof game starting with a given path and ending in a
      *  goal position, both specified by "line". The STATUS data in "line" keeps
@@ -111,6 +131,56 @@ private:
     static std::string info2Str(Info info);
 };
 
+/** A chess board where each square can have more than one piece.
+ *  Only the position of pieces are stored in this class. Other things
+ *  like side to move, castling rights, etc are ignored. */
+class MultiBoard {
+    friend class ProofGameTest;
+public:
+    /** Constructor. Create empty board. */
+    MultiBoard();
+    /** Constructor. Create from "pos". */
+    MultiBoard(const Position& pos);
+
+    /** Get number of pieces on a square. */
+    int nPieces(int square) const;
+    /** Get a piece from a square. 0 <= pieceNo < nPieces(square). */
+    int getPiece(int square, int pieceNo) const;
+    /** Return true if there is a piece of a certain type on a square. */
+    bool hasPiece(int square, int piece) const;
+    /** Return number of pieces of a given type on a square. */
+    int nPiecesOfType(int square, int piece) const;
+
+    /** Add a piece to a square. */
+    void addPiece(int square, int piece);
+    /** Remove a piece from a square. */
+    void removePieceType(int square, int piece);
+    /** Remove a piece from a square. 0 <= pieceNo < nPieces(square). */
+    void removePieceNo(int square, int pieceNo);
+
+    /** Move pieces so there is at most one piece on each square.
+     *  Also move kings out of check. */
+    void expel();
+
+    /** Return true if it is possible to push a pawn at least up to toSq without
+     *  interference from any other pawn. Also return true if there is no pawn
+     *  that needs pushing. */
+    bool canMovePawn(bool white, int toSq) const;
+
+    /** If there is a piece of type oldPiece on square, replace it with newPiece
+     *  and return true. Otherwise return false. */
+    bool replacePiece(int square, int oldPiece, int newPiece);
+
+    /** Copy piece configuration to "pos". Assumes there is at most
+     *  one piece in each square. */
+    void toPos(Position& pos);
+
+private:
+    static const int maxPerSquare = 8;
+    int squares[64][maxPerSquare + 1];
+};
+
+
 inline bool
 ProofGameFilter::Line::hasToken(Info tokType) const {
     return data.find(tokType) != data.end();
@@ -121,5 +191,9 @@ ProofGameFilter::Line::tokenData(Info tokType) {
     return data[tokType];
 }
 
+inline void
+ProofGameFilter::Line::eraseToken(Info tokType) {
+    data.erase(tokType);
+}
 
 #endif /* PROOFGAMEFILTER_HPP_ */

@@ -56,6 +56,9 @@ public:
 
     /** Return true if (x,y) is a dark square. */
     static bool darkSquare(int x, int y);
+
+    /** Return true if "sq" is a dark square. */
+    static bool darkSquare(int sq);
 };
 
 inline int
@@ -86,6 +89,11 @@ Square::mirrorY(int square) {
 inline bool
 Square::darkSquare(int x, int y) {
     return (x & 1) == (y & 1);
+}
+
+inline bool
+Square::darkSquare(int sq) {
+    return darkSquare(getX(sq), getY(sq));
 }
 
 #endif /* BITBOARD_HPP_ */

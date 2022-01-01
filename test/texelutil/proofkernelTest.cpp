@@ -868,9 +868,13 @@ ProofKernelTest::testSearch() {
          false, "");
     test(startFEN, "1Q1nkbr1/4b1Qq/2pn2N1/r1P2R1b/r2NqP2/Q2R4/r1n5/1RK1qb2 w - - 0 1",
          true, "*");
+    test(startFEN, "2r3n1/RpQp2n1/1p6/1Q2Kp1p/Nn1N1NRR/Br1R2b1/b5Rp/4k3 w - - 0 1",
+         true, "*");
 
     test(startFEN, "3rRQ2/1P2q1q1/NK2brn1/1q3b2/B3k3/1BB4N/RbrrP1Pq/n2br3 w - - 0 1",
          false, "bxLB");
+    test(startFEN, "3q1r1R/4nr2/NNbp1n1R/4kNB1/p2n3N/4nQ2/NPb1RP2/b1KQ4 b - - 0 1",
+         true, "*");
 
     test("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQK1NR w KQkq - 0 1",
          "B1Q5/1p1bR3/1RPQqb1b/3n4/1RK1N1Nn/b4pQ1/2Qr3B/1r2qbBk w - - 0 1",

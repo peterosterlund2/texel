@@ -27,6 +27,7 @@
 #define POSUTIL_HPP_
 
 #include "piece.hpp"
+#include "util/util.hpp"
 
 class Position;
 
@@ -44,6 +45,9 @@ public:
 
     /** Change color of a piece. */
     static int swapPieceColor(int p);
+
+    /** Return mask of squares attacked by white/black pieces. */
+    static U64 attackedSquares(const Position& pos, bool whitePieces);
 };
 
 inline int

@@ -1074,20 +1074,35 @@ ProofGameTest::testKingPawnsTrap() {
     }
 }
 
-TEST(ProofGameTest, testFilter) {
-    ProofGameTest::testFilter();
+TEST(ProofGameTest, testFilter1) {
+    ProofGameTest::testFilter1();
 }
 
-void ProofGameTest::testFilter() {
-    auto contains = [](const std::string& str, const std::string value) {
-        return str.find(value) != std::string::npos;
-    };
-    struct Data {
+namespace {
+    struct FilterData {
         std::string fen;
         std::string status;
         bool value;
     };
-    std::vector<Data> v = {
+
+    bool contains(const std::string& str, const std::string& value) {
+        return str.find(value) != std::string::npos;
+    };
+
+    void testFilterData(const std::vector<FilterData>& v) {
+        for (const FilterData& d : v) {
+            std::stringstream in;
+            in << d.fen << std::endl;
+            std::stringstream out;
+            ProofGameFilter().filterFens(in, out);
+            ASSERT_EQ(d.value, contains(out.str(), d.status))
+                << (d.value ? "" : "!")  << d.status << " : " << out.str();
+        }
+    }
+}
+
+void ProofGameTest::testFilter1() {
+    std::vector<FilterData> v = {
         { TextIO::startPosFEN, "illegal", false },
         { TextIO::startPosFEN, "legal: proof", true },
         { "rnbqkbnr/p1pppppp/p7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -1113,15 +1128,69 @@ void ProofGameTest::testFilter() {
 
         { "r1bqkbnr/pppppppp/2n5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1 legal: proof: e4 Nc6",
           "legal: proof: e4 Nc6", true },
+
+        // Test that PATH is computed
+        { "Rr1n1K2/1P2Q2B/n2Q3B/2bq1RR1/b5Nq/2k2N1r/1N1Rq1Q1/n1b1r1Q1 w - - 0 1 "
+          "unknown: kernel: wPa0xPb1 wPc0xPd1 wPe0xPf1 bPg1xPh0 "
+          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPc2-c4 bPd7-d5 wPc4xd5 wPe2-e4 bPf7-f5 "
+          "wPe4xf5 bPg7-g5 wPh2-h4 bPg5xh4",
+          " path: ", true },
+        { "b4R2/Pb1Q1n2/1pN2R2/3K3P/2r1P2r/B1k3nb/Q2pr1Nq/Q2B2rb b - - 0 1 "
+          "unknown: kernel: bPa1xPb0 bPc1xPd0 bPe1xPf0 wPg0xPh1 wPc0xDBbQ "
+          "extKernel: bPa7-a5 wPb2-b4 bPa5xb4 bPc7-c5 wPd2-d4 bPc5xd4 bPe7-e5 wPf2-f4 "
+          "bPe5xf4 wPg2-g4 bPh7-h5 wPg4xh5 wPc2-c7 bDBf8-b8 wPc7xb8Q",
+          " path: ", true },
+        { "rnN1kbnr/p1pppppp/2b5/8/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1 "
+          "unknown: kernel: wPa0xPb1 wPb1xQcN "
+          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPb5-b7 bQd8-c8 wPb7xc8N",
+          " path: ", true },
+        { "rnbqkbnr/1ppppppp/8/8/8/2B5/P1PPPPPP/RNb1KBNR w KQkq - 0 1 "
+          "unknown: kernel: bPa1xPb0 bPb0xQcDB "
+          "extKernel: bPa7-a5 wPb2-b4 bPa5xb4 bPb4-b2 wQd1-c1 bPb2xc1DB",
+          " path: ", true },
+        { "1R1Qr3/1pPQ2nr/nnk1BN1Q/3RB1n1/3n3N/4p2b/RKn3Q1/1n3B2 b - - 0 1 "
+          "unknown: kernel: bPa1xPb0 bPc1xPd0 wPe0xPf1 wPg0xQf0 wPh0xDBg1 "
+          "extKernel: bPa7-a5 wPb2-b4 bPa5xb4 bPc7-c5 wPd2-d4 bPc5xd4 wPe2-e4 bPf7-f5 "
+          "wPe4xf5 wPg2-g4 wPf5-f7 wPf2-f6 bQd8-f5 wPg4xf5 wPh2-h4 bPg7-g4 bDBf8-g5 wPh4xg5",
+          " path: ", true },
+        { "3n4/6b1/Bn1qN3/k1Bqq1nr/3np1KR/bb4B1/Pb1NB1pN/8 b - - 0 1 "
+          "unknown: kernel: bPa1xPb0 bPc1xPd0 bPf1xPe0 bPh1xPg0 bPb0xQaQ bPb0xRaQ wPf0xRe2 "
+          "extKernel: bPa7-a5 wPb2-b4 bPa5xb4 bPc7-c5 wPd2-d4 bPc5xd4 bPf7-f5 wPe2-e4 "
+          "bPf5xe4 bPh7-h5 wPg2-g4 bPh5xg4 bPb4-b2 wQd1-a1 bPb2xa1Q bPb7-b2 bPb2xa1Q "
+          "wPf2-f4 bPe4-e3 bPe7-e4 bRa8-e5 wPf4xe5",
+          " Wrong piece color ", false },
+
+        // Test that PATH is computed also in complicated cases
+        { "2R4n/2rPQN1p/2BrRpR1/K1Nk4/n4Q1r/B3bn1R/5nqP/n1B2Q2 b - - 0 1 "
+          "unknown: kernel: wPa0xPb1 wPc0xPd1 bPe1xPf0 wPg0xLBf2 "
+          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPc2-c4 bPd7-d5 wPc4xd5 bPe7-e5 wPf2-f4 "
+          "bPe5xf4 wPg2-g6 bPf7-f6 bLBc8-f7 wPg6xf7",
+          " path: ", true },
+        { "R1b1bB2/4n1pQ/3bq1p1/3PQP1r/3K1nkq/RP1n4/bB6/1r5N w - - 0 1 "
+          "unknown: kernel: wPa0xPb1 wPc0xPd1 bPf1xPe0 bPh1xPg0 bPa0xPb0 bPc0xLBbQ bPe0xNd0 "
+          "extKernel: bPb7-b3 wPa2xb3 wPc2-c4 bPd7-d5 wPc4xd5 bPf7-f5 wPe2-e4 bPf5xe4 wPg2-g6 "
+          "bPh7xg6 bPa7-a3 bPa3xb2 bPc7-c2 wLBf1-b1 bPc2xb1Q wPd2-d4 wNb1-d3 bPe4xd3",
+          " path: ", true },
+        { "nr2BK2/Q1NBb1R1/4pkb1/1R4R1/R1rq1rQ1/1n1r1Q2/3qqP1q/3Q4 w - - 0 1 "
+          "unknown: kernel: wPa0xPb1 wPc0xPd1 bPf1xPe0 bPg1xDBh0 bPh2xNg0 "
+          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPc2-c4 bPd7-d5 wPc4xd5 bPf7-f5 wPe2-e4 "
+          "bPf5xe4 bPg7-g5 wPh2-h5 wDBc1-h4 bPg5xh4 bPh7-h6 wPg2-g6 wNb1-g5 bPh6xg5",
+          " path: ", true },
+
+        { "Bq1b3R/1Pb3N1/1BP2pNP/4pBNp/4r3/R1np4/1KN4b/3k2Bb w - - 0 1 "
+          "unknown: kernel: wPa0xPb1 bPc1xPd0 wPf0xPe1 bPd0xQe0 wPg0xRh2 wPh0xNg1 "
+          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPd2-d6 bPc7xd6 wPf2-f4 bPe7-e5 wPf4xe5 "
+          "wPe5-e7 wPe2-e6 wQd1-e5 bPd6xe5 wPg2-g5 bPh7-h5 bRa8-h6 wPg5xh6 wPh2-h4 "
+          "bPg7-g4 bNb8-g5 wPh4xg5",
+          " unknown: ", true },
+        { "KN2bBn1/1n1b2r1/2qQ1Q2/pp6/Pr1RPn2/r3p3/1BQ5/2Rnqk2 b - - 0 1 "
+          "unknown: kernel: bPc1xPb0 bPd1xPc0 bPg1xPh0 wPd0xDBc1 bPe1xLBd0 bPf1xNe0 "
+          "extKernel: bPc7-c5 wPb2-b4 bPc5xb4 bPd7-d5 wPc2-c4 bPd5xc4 bPg7-g5 wPh2-h4 "
+          "bPg5xh4 wPd2-d4 bDBf8-c5 wPd4xc5 bPe7-e6 wLBf1-d5 bPe6xd5 bPf7-f4 wPe2-e4 "
+          "wNb1-e3 bPf4xe3",
+          " path: ", true },
     };
-    for (const Data& d : v) {
-        std::stringstream in;
-        in << d.fen << std::endl;
-        std::stringstream out;
-        ProofGameFilter().filterFens(in, out);
-        ASSERT_EQ(d.value, contains(out.str(), d.status))
-            << (d.value ? "" : "!")  << d.status << " : " << out.str();
-    }
+    testFilterData(v);
 
     {
         std::stringstream in;
@@ -1145,4 +1214,167 @@ void ProofGameTest::testFilter() {
             ProofGameFilter().filterFens(in, out);
         }, ChessParseError);
     }
+}
+
+TEST(ProofGameTest, testFilter2) {
+    ProofGameTest::testFilter2();
+}
+
+void ProofGameTest::testFilter2() {
+    std::vector<FilterData> v = {
+        // Test PATH computation when promotion piece information is missing
+        { "rBbqkbnr/p1p1pppp/n1p5/8/8/8/2PPPPPP/RNBQKBNR w KQkq - 0 1 "
+          "unknown: kernel: wPa0xPb1 bPd7xNc6 "
+          "extKernel: bPb7-b3 wPa2xb3 wPb3-b8 wPb2-b8 wNb8-c6 bPd7xc6",
+          " path: ", true },
+        { "r2qkbnr/p1pppppp/n7/3p4/8/8/N2PPPPP/RNBQKBNR w KQkq - 0 1 "
+          "unknown: kernel: bPb1xPc0 bPc0xbe1 wPa0xLBb0 "
+          "extKernel: wPc2-c6 bPb7xc6 wPb2-b8 wNb8-d5 bPc6xd5 wPa2-a6 bLBc8-b7 wPa6xb7 wPb7-b8",
+          " path: ", true },
+        { "kNN2b1Q/1R1n2P1/bB2p3/3rQB2/1q3Q2/2ppQ1r1/P1PQq3/B1K1nr2 w - - 0 1 "
+          "unknown: kernel: wPb0xPa1 wPd0xPe1 wPh0xPg1 bPf1xRe0 "
+          "extKernel: wPb2-b4 bPa7-a5 wPb4xa5 wPd2-d4 bPe7-e5 wPd4xe5 wPh2-h4 bPg7-g5 "
+          "wPh4xg5 wPe5-e8 wPe2-e7 wRa1-e6 bPf7xe6",
+          " unknown: ", true }, // Only test that code does not crash, finding solution too hard
+        { "5b2/5B2/pPbB3b/P1nb1p2/q4NQR/1qP2rp1/1kr2N2/R2NKRrr b - - 0 1 "
+          "unknown: kernel: bPb1xPc0 bPe1xPf0 bPh1xPg0 wPd0xNc2 "
+          "extKernel: bPb7-b5 wPc2-c4 bPb5xc4 bPe7-e5 wPf2-f4 bPe5xf4 bPh7-h5 wPg2-g4 "
+          "bPh5xg4 bPc4-c1 bPc7-c2 bNb8-c3 wPd2xc3",
+          " path: ", true },
+        { "3b4/n1n1QK2/1p1Bpp2/1R4PB/b1bBq2R/2Rn3b/B1BQ3Q/4k1rr b - - 0 1 "
+          "unknown: kernel: bPa1xPb0 wPd0xPc1 wPe0xPf1 bPg1xNf0 bPh1xNg0 "
+          "extKernel: bPa7-a5 wPb2-b4 bPa5xb4 wPd2-d4 bPc7-c5 wPd4xc5 wPe2-e4 bPf7-f5 "
+          "wPe4xf5 wPf5-f8 wPf2-f7 wNb1-f6 bPg7xf6 bPh7-h5 wPg2-g5 wNg1-g4 bPh5xg4",
+          " unknown: ", true }, // Only test that code does not crash, finding solution too hard
+    };
+    testFilterData(v);
+}
+
+TEST(ProofGameTest, testFilterPath) {
+    ProofGameTest::testFilterPath();
+}
+
+void ProofGameTest::testFilterPath() {
+    auto getPathPos = [](const std::string& lineStr, Position& pos) {
+        std::stringstream out;
+        {
+            std::stringstream in;
+            in << lineStr << std::endl;
+            ProofGameFilter().filterFens(in, out);
+        }
+
+        std::stringstream in;
+        in << out.str();
+        ProofGameFilter ps;
+        ProofGameFilter::Line line;
+        bool res = ps.readLine(in, line);
+        ASSERT_TRUE(res);
+        ASSERT_TRUE(line.hasToken(ProofGameFilter::PATH));
+        pos = TextIO::readFEN(TextIO::startPosFEN);
+        UndoInfo ui;
+        for (const std::string& s : line.tokenData(ProofGameFilter::PATH)) {
+            Move m = TextIO::stringToMove(pos, s);
+            pos.makeMove(m, ui);
+        }
+    };
+
+    {
+        Position pos;
+        getPathPos("Qnb1kbnr/p1pppppp/8/Q7/8/8/2PPPPPP/RNBQKBNR b KQk - 0 1 "
+                   "unknown: kernel: dummy "
+                   "extKernel: wPa2-a6 wPa6xb7 wPb7xa8Q wPb2-b7 bQd8-a8 wPb7xa8Q", pos);
+        ASSERT_EQ(3, BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)));
+        ASSERT_EQ(0, BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN)));
+        ASSERT_EQ(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK)));
+        ASSERT_EQ(6, BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN)));
+        ASSERT_EQ(7, BitBoard::bitCount(pos.pieceTypeBB(Piece::BPAWN)));
+    }
+    {
+        Position pos;
+        getPathPos("rnbqNbn1/ppppp2p/4k1p1/8/8/8/PPPP1PPP/RNBQKBNR w KQ - 0 1 "
+                   "unknown: kernel: dummy "
+                   "extKernel: wPe2-e6 wPe6xf7 bPg7-g6 bRh8-e8 wPf7xe8N", pos);
+        ASSERT_EQ(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::BKING)));
+        ASSERT_EQ(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK)));
+        ASSERT_EQ(3, BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT)));
+        ASSERT_EQ(7, BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN)));
+        ASSERT_EQ(7, BitBoard::bitCount(pos.pieceTypeBB(Piece::BPAWN)));
+    }
+}
+
+TEST(ProofGameTest, testMultiBoard) {
+    ProofGameTest::testMultiBoard();
+}
+
+void ProofGameTest::testMultiBoard() {
+    {
+        MultiBoard brd;
+        for (int i = 0; i < 64; i++) {
+            ASSERT_EQ(0, brd.nPieces(i));
+        }
+        brd.addPiece(A2, Piece::WPAWN);
+        ASSERT_EQ(1, brd.nPieces(A2));
+        ASSERT_TRUE(brd.hasPiece(A2, Piece::WPAWN));
+        ASSERT_FALSE(brd.hasPiece(A2, Piece::BPAWN));
+        ASSERT_FALSE(brd.hasPiece(A2, Piece::EMPTY));
+        ASSERT_EQ(Piece::WPAWN, brd.getPiece(A2, 0));
+
+        brd.removePieceType(A2, Piece::WPAWN);
+        ASSERT_EQ(0, brd.nPieces(A2));
+
+        brd.addPiece(B5, Piece::BPAWN);
+        brd.addPiece(B5, Piece::WPAWN);
+        ASSERT_EQ(2, brd.nPieces(B5));
+        ASSERT_TRUE(brd.hasPiece(B5, Piece::WPAWN));
+        ASSERT_TRUE(brd.hasPiece(B5, Piece::BPAWN));
+        ASSERT_EQ(Piece::BPAWN, brd.getPiece(B5, 0));
+        ASSERT_EQ(Piece::WPAWN, brd.getPiece(B5, 1));
+
+        brd.removePieceNo(B5, 0);
+        ASSERT_EQ(1, brd.nPieces(B5));
+        ASSERT_TRUE(brd.hasPiece(B5, Piece::WPAWN));
+        ASSERT_FALSE(brd.hasPiece(B5, Piece::BPAWN));
+    }
+    {
+        Position initPos = TextIO::readFEN(TextIO::startPosFEN);
+        MultiBoard brd(initPos);
+        Position pos;
+        brd.toPos(pos);
+        for (int sq = 0; sq < 64; sq++) {
+            ASSERT_EQ(pos.getPiece(sq), initPos.getPiece(sq));
+        }
+    }
+}
+
+TEST(ProofGameTest, testAttackedSq) {
+    ProofGameTest::testAttackedSq();
+}
+
+void ProofGameTest::testAttackedSq() {
+    auto test = [](const std::string& fen, U64 wAttacked, U64 bAttacked) {
+        Position pos = TextIO::readFEN(fen);
+        ASSERT_EQ(wAttacked, PosUtil::attackedSquares(pos, true)) << fen;
+        ASSERT_EQ(bAttacked, PosUtil::attackedSquares(pos, false)) << fen;
+
+        Position mirrorPos = PosUtil::swapColors(pos);
+        ASSERT_EQ(BitBoard::mirrorY(bAttacked), PosUtil::attackedSquares(mirrorPos, true)) << fen;
+        ASSERT_EQ(BitBoard::mirrorY(wAttacked), PosUtil::attackedSquares(mirrorPos, false)) << fen;
+    };
+
+    test("rnbk2nr/1p1ppP1p/5P2/5PP1/1p1p2p1/8/P1P5/RNBQKBNR w KQkq - 0 1",
+         BitBoard::sqMask(B1,C1,D1,E1,F1,G1,
+                          A2,B2,C2,D2,E2,F2,G2,H2,
+                          A3,B3,C3,D3,E3,F3,H3,
+                          C4,D4,F4,G4,H4,
+                          B5,G5,H5,
+                          A6,E6,F6,G6,H6,
+                          E7,G7,H7,
+                          E8,G8),
+         BitBoard::sqMask(A2,
+                          A3,C3,E3,F3,H3,
+                          A4,
+                          A5,
+                          A6,C6,D6,E6,F6,G6,H6,
+                          A7,B7,C7,D7,E7,H7,
+                          B8,C8,E8,G8));
 }

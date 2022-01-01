@@ -48,7 +48,11 @@ public:
     static void testEnPassant();
     static void testCaptureSquares();
     static void testKingPawnsTrap();
-    static void testFilter();
+    static void testFilter1();
+    static void testFilter2();
+    static void testFilterPath();
+    static void testMultiBoard();
+    static void testAttackedSq();
 
 private:
     static void checkBlockedConsistency(ProofGame& ps, Position& pos);
