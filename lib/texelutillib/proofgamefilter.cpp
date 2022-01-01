@@ -93,9 +93,12 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line, std
     };
 
     try {
-        ProofGame pg(std::cerr, TextIO::startPosFEN, line.fen, 1, 1, false, true);
+        ProofGame pg(std::cerr, TextIO::startPosFEN, line.fen);
+        auto opts = ProofGame::Options()
+            .setSmallCache(true)
+            .setMaxNodes(2);
         std::vector<Move> movePath;
-        int minCost = pg.search({}, movePath, ProofGame::Options().setMaxNodes(2));
+        int minCost = pg.search({}, movePath, opts);
         if (minCost == INT_MAX) {
             setIllegal("Other");
         } else if (minCost >= 0) {

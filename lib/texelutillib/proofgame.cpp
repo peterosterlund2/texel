@@ -33,9 +33,9 @@
 #include <iostream>
 #include <climits>
 #include <functional>
+#include <mutex>
 
 
-bool ProofGame::staticInitDone = false;
 U64 ProofGame::wPawnReachable[64][maxPawnCapt+1];
 U64 ProofGame::bPawnReachable[64][maxPawnCapt+1];
 
@@ -44,9 +44,6 @@ const int ProofGame::bigCost;
 
 void
 ProofGame::staticInit() {
-    if (staticInitDone)
-        return;
-
     for (int y = 6; y >= 1; y--) {
         for (int x = 0; x < 8; x++) {
             int sq = Square::getSquare(x, y);
@@ -90,18 +87,14 @@ ProofGame::staticInit() {
             }
         }
     }
-
-    staticInitDone = true;
 }
 
-ProofGame::ProofGame(const std::string& start, const std::string& goal,
-                     int a, int b, bool dynamic, bool smallCache)
-    : ProofGame(std::cout, start, goal, a, b, dynamic, smallCache) {
+ProofGame::ProofGame(const std::string& start, const std::string& goal)
+    : ProofGame(std::cout, start, goal) {
 }
 
-ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::string& goal,
-                     int a, int b, bool dynamic, bool smallCache)
-    : initialFen(start), weightA(a), weightB(b), dynamic(dynamic), log(log) {
+ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::string& goal)
+    : initialFen(start), log(log) {
     Position startPos = TextIO::readFEN(initialFen);
     startPos.setFullMoveCounter(1);
     goalPos = TextIO::readFEN(goal);
@@ -185,10 +178,7 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
         goalPieceCnt[p] = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)p));
 
-    // Set up caches
-    if (smallCache)
-        pathCacheSize = 1;
-    pathDataCache.resize(pathCacheSize);
+    pathDataCache.resize(1);
 
     Matrix<int> m(8, 8);
     captureAP[0] = Assignment<int>(m);
@@ -200,7 +190,8 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
         }
     }
 
-    staticInit();
+    std::once_flag flag;
+    call_once(flag, staticInit);
 }
 
 void
@@ -231,10 +222,13 @@ ProofGame::validatePieceCounts(const Position& pos) {
 int
 ProofGame::search(const std::vector<Move>& initialPath,
                   std::vector<Move>& movePath, const Options& opts) {
+    if (!opts.smallCache)
+        pathDataCache.resize(1024*1024);
+
     Position startPos = TextIO::readFEN(initialFen);
     {
-        int N = dynamic ? distLowerBound(startPos) * 2 : 0;
-        queue = make_unique<Queue>(TreeNodeCompare(nodes, weightA, weightB, N));
+        int N = opts.dynamic ? distLowerBound(startPos) * 2 : 0;
+        queue = make_unique<Queue>(TreeNodeCompare(nodes, opts.weightA, opts.weightB, N));
     }
 
     validatePieceCounts(startPos);
@@ -297,11 +291,13 @@ ProofGame::search(const std::vector<Move>& initialPath,
 
         if (tn.ply < best && isSolution(pos)) {
             flushDelayed();
-            log << tn.ply << " -w " << weightA << ":" << weightB
+            log << tn.ply << " -w " << opts.weightA << ":" << opts.weightB
                 << " queue: " << queue->size() << " nodes: " << numNodes
                 << " time: " << (currentTime() - t0) << std::endl;
             getMoves(log, startPos, idx, true, movePath);
             best = tn.ply;
+            if (opts.acceptFirst)
+                break;
         }
 
         U64 blocked;
@@ -332,7 +328,7 @@ ProofGame::search(const std::vector<Move>& initialPath,
             if (tn.bound > 0 && tn.bound < smallestBound) {
                 smallestBound = tn.bound;
                 std::stringstream os;
-                os << "bound: " << tn.bound << " -w " << weightA << ":" << weightB
+                os << "bound: " << tn.bound << " -w " << opts.weightA << ":" << opts.weightB
                    << " queue: " << queue->size() << " nodes: " << numNodes
                    << " time: " << (currentTime() - t0) << std::endl;
                 std::vector<Move> path;
@@ -1232,7 +1228,7 @@ ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
         maxCapt = 6;
     U64 h = blocked * 0x9e3779b97f4a7c55ULL + (int)p * 0x9e3779b97f51ULL +
             toSq * 0x9e3779cdULL + maxCapt * 0x964e55ULL;
-    h &= pathCacheSize - 1;
+    h &= pathDataCache.size() - 1;
     PathCacheEntry& entry = pathDataCache[h];
     if (entry.blocked == blocked && entry.toSq == toSq &&
         entry.piece == (int)p && entry.maxCapt == maxCapt)

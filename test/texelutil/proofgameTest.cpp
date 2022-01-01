@@ -696,9 +696,9 @@ ProofGameTest::testSearch() {
         ASSERT_EQ(16, best);
     }
     { // Start position without castling rights
-        ProofGame ps(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1", 1, 9);
+        ProofGame ps(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1");
         std::vector<Move> movePath;
-        int best = ps.search({}, movePath, {});
+        int best = ps.search({}, movePath, ProofGame::Options().setWeightA(1).setWeightB(9));
         ASSERT_EQ(16, best);
     }
     {

@@ -44,25 +44,38 @@ class ProofGame {
 public:
     /** Create object to find a move path from a start to a goal position.
      * A position is considered to match the goal position even if move
-     * numbers are different.
-     * Use scale a for ply and scale b for bound when ordering nodes to search.
-     * If "dynamic" is true, dynamic weighting A* search is used. */
-    ProofGame(const std::string& start, const std::string& goal,
-              int a = 1, int b = 1, bool dynamic = false, bool smallCache = false);
-    ProofGame(std::ostream& log, const std::string& start, const std::string& goal,
-              int a = 1, int b = 1, bool dynamic = false, bool smallCache = false);
+     * numbers are different. */
+    ProofGame(const std::string& start, const std::string& goal);
+    ProofGame(std::ostream& log, const std::string& start, const std::string& goal);
     ProofGame(const ProofGame&) = delete;
     ProofGame& operator=(const ProofGame&) = delete;
 
     struct Options {
+        /** Weight for length of current partial solution. */
+        int weightA = 1;
+        /** Weight for heuristic lower bound for length to goalPos. */
+        int weightB = 1;
+        /** If true, use dynamic weighting A* algorithm. */
+        bool dynamic = false;
+        /** If true, use a minimal cache to reduce initialization time. */
+        bool smallCache = false;
+
         /** Maximum number of search nodes before giving up,
          *  or -1 to never give up. */
         S64 maxNodes = -1;
         /** If true, print path every time distance to goal decreases. */
         bool verbose = false;
+        /** If true, accept first solution found, otherwise continue searching
+         *  searching for a better solution. */
+        bool acceptFirst = false;
 
+        Options& setWeightA(int a) { weightA = a; return *this; }
+        Options& setWeightB(int b) { weightB = b; return *this; }
+        Options& setDynamic(int d) { dynamic = d; return *this; }
+        Options& setSmallCache(bool s) { smallCache = s; return *this; }
         Options& setMaxNodes(S64 m) { maxNodes = m; return *this; }
         Options& setVerbose(bool v) { verbose = v; return *this; }
+        Options& setAcceptFirst(bool a) { acceptFirst = a; return *this; }
     };
 
     /** Search for shortest solution. Print solutions to log stream.
@@ -85,7 +98,7 @@ public:
 
 private:
     /** Initialize static data if not already done. */
-    void staticInit();
+    static void staticInit();
 
     /** Check that there are not too many pieces present. */
     static void validatePieceCounts(const Position& pos);
@@ -216,10 +229,6 @@ private:
     int goalPieceCnt[Piece::nPieceTypes];
     std::vector<Move> lastMoves; // Forced moves after reaching goalPos to reach original goalPos
 
-    const int weightA; // Weight for length of current partial solution
-    const int weightB; // Weight for heuristic lower bound for length to goalPos
-    const bool dynamic; // If true, use dynamic weighting algorithm
-
     struct TreeNode {
         Position::SerializeData psd; // Position data
         U32 parent;                  // Parent index, not used for root position
@@ -266,7 +275,6 @@ private:
     std::unique_ptr<Queue> queue;
 
     // Cache of recently used ShortestPathData objects
-    int pathCacheSize = 1024*1024;
     struct PathCacheEntry {
         PathCacheEntry() : piece(-1), toSq(-1), maxCapt(-1), blocked(0) {}
         U8 piece;

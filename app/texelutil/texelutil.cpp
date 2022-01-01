@@ -431,9 +431,15 @@ doProofGameCmd(int argc, char* argv[]) {
             }
         }
 
-        ProofGame ps(initFen, goalFen, a, b, dynamic);
+        ProofGame ps(initFen, goalFen);
+        auto opts = ProofGame::Options()
+            .setWeightA(a)
+            .setWeightB(b)
+            .setDynamic(dynamic)
+            .setMaxNodes(maxNodes)
+            .setVerbose(verbose);
         std::vector<Move> movePath;
-        ps.search(initPath, movePath, ProofGame::Options().setMaxNodes(maxNodes).setVerbose(verbose));
+        ps.search(initPath, movePath, opts);
     }
 }
 

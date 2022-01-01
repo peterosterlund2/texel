@@ -185,8 +185,7 @@ TEST(ProofKernelTest, testGoal) {
 
 static U64 computeBlocked(const Position& startPos, const Position& goalPos) {
     U64 blocked;
-    ProofGame pg(std::cerr, TextIO::toFEN(startPos), TextIO::toFEN(goalPos),
-                 1, 1, false, true);
+    ProofGame pg(std::cerr, TextIO::toFEN(startPos), TextIO::toFEN(goalPos));
     if (!pg.computeBlocked(startPos, blocked))
         blocked = 0xffffffffffffffffULL; // If goal not reachable, consider all pieces blocked
     return blocked;
