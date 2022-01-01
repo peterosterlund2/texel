@@ -89,18 +89,26 @@ ProofGame::staticInit() {
     }
 }
 
-ProofGame::ProofGame(const std::string& start, const std::string& goal)
-    : ProofGame(std::cout, start, goal) {
-}
+ProofGame::ProofGame(const std::string& start, const std::string& goal,
+                     const std::vector<Move>& initialPath, std::ostream& log)
+    : initialFen(start), initialPath(initialPath), log(log) {
 
-ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::string& goal)
-    : initialFen(start), log(log) {
+    auto resetMoveCnt = [](Position& pos) {
+        pos.setFullMoveCounter(1);
+        pos.setHalfMoveClock(0);
+    };
+
     Position startPos = TextIO::readFEN(initialFen);
-    startPos.setFullMoveCounter(1);
+    UndoInfo ui;
+    for (Move m : initialPath)
+        startPos.makeMove(m, ui);
+    resetMoveCnt(startPos);
+
     goalPos = TextIO::readFEN(goal);
     if (TextIO::toFEN(goalPos) != goal)
         throw ChessParseError("Lossy FEN conversion");
-    goalPos.setFullMoveCounter(1);
+    resetMoveCnt(goalPos);
+
     validatePieceCounts(goalPos);
 
     while (true) {
@@ -119,7 +127,7 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
         for (const UnMove& um : quiets) {
             Position tmpPos(goalPos);
             tmpPos.unMakeMove(um.move, um.ui);
-            tmpPos.setFullMoveCounter(1);
+            resetMoveCnt(tmpPos);
             bool valid = tmpPos == startPos;
             if (!valid) {
                 std::vector<UnMove> unMoves2;
@@ -141,7 +149,7 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
             log << "Checking capture: " << um << std::endl;
             Position tmpPos(goalPos);
             tmpPos.unMakeMove(um.move, um.ui);
-            tmpPos.setFullMoveCounter(1);
+            resetMoveCnt(tmpPos);
 
             U64 blocked;
             if (!computeBlocked(startPos, blocked))
@@ -166,7 +174,7 @@ ProofGame::ProofGame(std::ostream& log, const std::string& start, const std::str
             const UnMove& um = unMoves[0];
             log << "Forced last move: " << um << std::endl;
             goalPos.unMakeMove(um.move, um.ui);
-            goalPos.setFullMoveCounter(1);
+            resetMoveCnt(goalPos);
             lastMoves.push_back(um.move);
             log << "New goalPos: " << TextIO::toFEN(goalPos) << std::endl;
         } else {
@@ -220,8 +228,7 @@ ProofGame::validatePieceCounts(const Position& pos) {
 }
 
 int
-ProofGame::search(const std::vector<Move>& initialPath,
-                  std::vector<Move>& movePath, const Options& opts) {
+ProofGame::search(std::vector<Move>& movePath, const Options& opts) {
     if (!opts.smallCache)
         pathDataCache.resize(1024*1024);
 

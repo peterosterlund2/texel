@@ -44,9 +44,10 @@ class ProofGame {
 public:
     /** Create object to find a move path from a start to a goal position.
      * A position is considered to match the goal position even if move
-     * numbers are different. */
-    ProofGame(const std::string& start, const std::string& goal);
-    ProofGame(std::ostream& log, const std::string& start, const std::string& goal);
+     * numbers are different.
+     * @param initialPath  Only search for solutions starting with this path. */
+    ProofGame(const std::string& start, const std::string& goal,
+              const std::vector<Move>& initialPath, std::ostream& log = std::cout);
     ProofGame(const ProofGame&) = delete;
     ProofGame& operator=(const ProofGame&) = delete;
 
@@ -79,14 +80,12 @@ public:
     };
 
     /** Search for shortest solution. Print solutions to log stream.
-     * @param initialPath  Only search for solutions starting with this path.
      * @param movePath     Set to shortest found path.
      * @param opts         Options controlling search behavior.
      * @return             Length of shortest path found,
      *                     or INT_MAX if no solution exists,
      *                     or -1 if unknown whether a solution exists. */
-    int search(const std::vector<Move>& initialPath,
-               std::vector<Move>& movePath, const Options& opts);
+    int search(std::vector<Move>& movePath, const Options& opts);
 
     /** Compute blocked pieces in a position. A blocked piece is a piece that
      *  can not move without making it impossible to reach the goal position.
@@ -226,6 +225,7 @@ private:
 
     const std::string initialFen;
     Position goalPos;
+    const std::vector<Move> initialPath;
     int goalPieceCnt[Piece::nPieceTypes];
     std::vector<Move> lastMoves; // Forced moves after reaching goalPos to reach original goalPos
 

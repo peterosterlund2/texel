@@ -44,6 +44,7 @@ public:
     static void testReachable();
     static void testRemainingMoves();
     static void testSearch();
+    static void testInitPath();
     static void testEnPassant();
     static void testCaptureSquares();
     static void testKingPawnsTrap();
