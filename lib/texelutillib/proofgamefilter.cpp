@@ -635,7 +635,83 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
 
 bool
 ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
-    return false;
+    std::vector<Move> initPath;
+    {
+        Position pos(startPos);
+        UndoInfo ui;
+        for (const std::string& moveS : line.tokenData(PATH)) {
+            Move m = TextIO::stringToMove(pos, moveS);
+            initPath.push_back(m);
+            pos.makeMove(m, ui);
+        }
+    }
+
+    const int initMaxNodes = 50000;
+    const int maxMaxNodes = 3200000;
+
+    int oldMaxNodes = line.getStatusInt("N", 0);
+    line.eraseToken(STATUS);
+    int maxNodes = clamp(oldMaxNodes * 2, initMaxNodes, maxMaxNodes);
+    if (maxNodes <= oldMaxNodes) {
+        line.tokenData(FAIL).clear();
+        return false;
+    }
+
+    const int weightA = 1;
+    const int weightB = 5;
+
+    try {
+        std::cerr << "Finding proof game for " << line.fen << std::endl;
+        std::vector<Move> movePath;
+        int len;
+        {
+            ProofGame ps(TextIO::toFEN(startPos), line.fen, initPath, std::cerr);
+            auto opts = ProofGame::Options()
+                .setWeightA(weightA)
+                .setWeightB(weightB)
+                .setMaxNodes(maxNodes)
+                .setVerbose(true)
+                .setAcceptFirst(true);
+            len = ps.search(movePath, opts);
+        }
+
+        if (len == INT_MAX) {
+            line.tokenData(FAIL).clear();
+            line.tokenData(INFO).clear();
+            line.tokenData(INFO).push_back("No solution exists");
+            return false;
+        }
+        if (len == -1)
+            throw ChessError("No solution found");
+
+        std::vector<std::string>& proof = line.tokenData(PROOF);
+        proof.clear();
+
+        Position pos(startPos);
+        UndoInfo ui;
+        for (const Move& m : movePath) {
+            proof.push_back(TextIO::moveToString(pos, m, false));
+            pos.makeMove(m, ui);
+        }
+        line.eraseToken(UNKNOWN);
+        line.tokenData(LEGAL).clear();
+        std::cerr << "Solution: -w " << weightA << ':' << weightB
+                  << " nodes: " << maxNodes << " len: " << proof.size()
+                  << std::endl;
+        return false;
+    } catch (const ChessError& e) {
+        line.eraseToken(PROOF);
+        bool workRemains = maxNodes < maxMaxNodes;
+        if (workRemains) {
+            line.eraseToken(FAIL);
+            line.setStatusInt("N", maxNodes);
+        } else {
+            line.tokenData(FAIL).clear();
+        }
+        line.tokenData(INFO).clear();
+        line.tokenData(INFO).push_back(e.what());
+        return workRemains;
+    }
 }
 
 // ----------------------------------------------------------------------------
