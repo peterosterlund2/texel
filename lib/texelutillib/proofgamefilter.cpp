@@ -28,8 +28,11 @@
 #include "textio.hpp"
 #include "proofkernel.hpp"
 #include "posutil.hpp"
+#include "util/timeUtil.hpp"
 
 #include <iostream>
+#include <iomanip>
+#include <fstream>
 #include <climits>
 #include <mutex>
 
@@ -54,6 +57,7 @@ ProofGameFilter::init() {
     infoStrData.push_back({ PATH,       "path"      });
     infoStrData.push_back({ STATUS,     "status"    });
     infoStrData.push_back({ FAIL,       "fail"      });
+    infoStrData.push_back({ INFO,       "info"      });
 
     infoStrData.push_back({ PROOF,      "proof"     });
 }
@@ -61,41 +65,113 @@ ProofGameFilter::init() {
 ProofGameFilter::ProofGameFilter() {
     std::once_flag flag;
     call_once(flag, init);
+    startTime = currentTime();
 }
 
 void
 ProofGameFilter::filterFens(std::istream& is, std::ostream& os) {
-    Position startPos = TextIO::readFEN(TextIO::startPosFEN);
-    while (true) {
-        Line line;
-        if (!readLine(is, line))
-            break;
-
-        if (!line.hasToken(ILLEGAL) && !line.hasToken(UNKNOWN) && !line.hasToken(LEGAL)) {
-            computeExtProofKernel(startPos, line, os);
-        } else if (line.hasToken(UNKNOWN) && !line.hasToken(FAIL)) {
-            if (!line.hasToken(PATH)) {
-                computePath(startPos, line, os);
-            } else if (!line.hasToken(PROOF)) {
-                computeProofGame(startPos, line, os);
-            } else {
-                line.print(os);
-            }
-        } else {
-            line.print(os);
-        }
-    }
+    runOneIteration(is, os, true, false, false);
 }
 
 void
-ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line, std::ostream& os) {
-    auto setIllegal = [&line](const std::string& reason) {
+ProofGameFilter::filterFensIterated(std::istream& is,
+                                    const std::string& outFileBaseName,
+                                    bool retry) {
+    auto getFileName = [&outFileBaseName](int iter) {
+        std::stringstream ss;
+        ss << outFileBaseName << std::setfill('0') << std::setw(2) << iter;
+        return ss.str();
+    };
+
+    int iter = 0;
+    while (true) {
+        std::ofstream of(getFileName(iter));
+        std::ifstream prev;
+        if (iter > 0)
+            prev.open(getFileName(iter - 1));
+        std::istream& in = iter == 0 ? is : prev;
+        if (!runOneIteration(in, of, iter == 0, true, retry))
+            break;
+        iter++;
+    }
+}
+
+bool
+ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
+                                 bool firstIteration,
+                                 bool showProgress, bool retry) {
+    bool workRemains = false;
+    Position startPos = TextIO::readFEN(TextIO::startPosFEN);
+    while (true) {
+        Line line;
+        if (!line.read(is))
+            break;
+        if (firstIteration && retry) {
+            line.eraseToken(PATH);
+            line.eraseToken(STATUS);
+            line.eraseToken(FAIL);
+            line.eraseToken(INFO);
+        }
+
+        Legality status = line.getStatus();
+        if (firstIteration)
+            statusCnt[(int)status]++;
+
+        bool reportProgress = firstIteration;
+
+        switch (status) {
+        case Legality::INITIAL:
+            computeExtProofKernel(startPos, line);
+            workRemains = true;
+            break;
+        case Legality::KERNEL:
+            workRemains |= computePath(startPos, line);
+            reportProgress = true;
+            break;
+        case Legality::PATH:
+            workRemains |= computeProofGame(startPos, line);
+            reportProgress = true;
+            break;
+        case Legality::ILLEGAL:
+        case Legality::LEGAL:
+        case Legality::FAIL:
+        case Legality::nLegality:
+            break;
+        }
+        Legality newStatus = line.getStatus();
+        line.write(os);
+
+        if (newStatus != status) {
+            statusCnt[(int)status]--;
+            statusCnt[(int)line.getStatus()]++;
+        }
+
+        if (showProgress && (reportProgress || newStatus != status)) {
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(3) << (currentTime() - startTime);
+            std::string elapsed = ss.str();
+            std::cout << "legal: "    << statusCnt[(int)Legality::LEGAL]
+                      << " path: "    << statusCnt[(int)Legality::PATH]
+                      << " kernel: "  << statusCnt[(int)Legality::KERNEL]
+                      << " fail: "    << statusCnt[(int)Legality::FAIL]
+                      << " illegal: " << statusCnt[(int)Legality::ILLEGAL]
+                      << " time: " << elapsed
+                      << std::endl;
+        }
+    }
+    return workRemains;
+}
+
+void
+ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line) {
+    auto setIllegal = [this,&line](const std::string& reason) {
         std::vector<std::string>& illegal = line.tokenData(ILLEGAL);
         illegal.clear();
         illegal.push_back(reason);
     };
 
     try {
+        std::cerr << "Finding proof kernel for " << line.fen << std::endl;
         auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
         ProofGame pg(TextIO::startPosFEN, line.fen, {}, std::cerr);
         std::vector<Move> movePath;
@@ -143,25 +219,36 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line, std
         }
     } catch (const NotImplementedError& e) {
         line.tokenData(UNKNOWN).clear();
-        line.tokenData(UNKNOWN).push_back(e.what());
+        line.tokenData(FAIL).clear();
+        line.tokenData(INFO).clear();
+        line.tokenData(INFO).push_back(e.what());
     } catch (const ChessError& e) {
         setIllegal(e.what());
     }
-    line.print(os);
 }
 
-void
-ProofGameFilter::computePath(const Position& startPos, Line& line, std::ostream& os) {
-    if (!line.hasToken(EXT_KERNEL)) {
-        line.print(os);
-        return;
-    }
+bool
+ProofGameFilter::computePath(const Position& startPos, Line& line) {
+    if (!line.hasToken(EXT_KERNEL))
+        return false;
 
     std::vector<ExtPkMove> extKernel;
     for (const std::string& s : line.tokenData(EXT_KERNEL))
         extKernel.push_back(strToExtPkMove(s));
 
+    const int initMaxNodes = 5000;
+    const int maxMaxNodes = 500000;
+
+    int oldMaxNodes = line.getStatusInt("N", 0);
+    line.eraseToken(STATUS);
+    int maxNodes = clamp(oldMaxNodes * 2, initMaxNodes, maxMaxNodes);
+    if (maxNodes <= oldMaxNodes) {
+        line.tokenData(FAIL).clear();
+        return false;
+    }
+
     try {
+        std::cerr << "Finding path for " << line.fen << std::endl;
         Position initPos(startPos);
         Position goalPos = TextIO::readFEN(line.fen);
         initPos.setCastleMask(goalPos.getCastleMask());
@@ -213,22 +300,41 @@ ProofGameFilter::computePath(const Position& startPos, Line& line, std::ostream&
         }
         decidePromotions(brdVec, initPos, goalPos);
 
+        PathOptions pathOpts;
+        pathOpts.maxNodes = maxNodes;
+        pathOpts.weightA = 1;
+        pathOpts.weightB = 5;
+
         std::vector<Move> movePath;
-        computePath(brdVec, 0, brdVec.size() - 1, initPos, goalPos, movePath);
+        computePath(brdVec, 0, brdVec.size() - 1, initPos, goalPos, pathOpts, movePath);
+
+        line.eraseToken(INFO);
+        std::vector<std::string>& path = line.tokenData(PATH);
+        path.clear();
 
         Position pos(initPos);
         UndoInfo ui;
-        std::vector<std::string>& path = line.tokenData(PATH);
         for (const Move& m : movePath) {
             path.push_back(TextIO::moveToString(pos, m, false));
             pos.makeMove(m, ui);
         }
+        std::cerr << "Path solution: -w " << pathOpts.weightA << ':' << pathOpts.weightB
+                  << " nodes: " << pathOpts.maxNodes << " len: " << path.size()
+                  << std::endl;
+        return true;
     } catch (const ChessError& e) {
         line.eraseToken(PATH);
-        line.tokenData(FAIL).clear();
-        line.tokenData(FAIL).push_back(e.what());
+        bool workRemains = maxNodes < maxMaxNodes;
+        if (workRemains) {
+            line.eraseToken(FAIL);
+            line.setStatusInt("N", maxNodes);
+        } else {
+            line.tokenData(FAIL).clear();
+        }
+        line.tokenData(INFO).clear();
+        line.tokenData(INFO).push_back(e.what());
+        return workRemains;
     }
-    line.print(os);
 }
 
 void
@@ -402,7 +508,7 @@ ProofGameFilter::decidePromotions(std::vector<MultiBoard>& brdVec,
 void
 ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int endIdx,
                              const Position& initPos, const Position& goalPos,
-                             std::vector<Move>& path) const {
+                             const PathOptions& pathOpts, std::vector<Move>& path) const {
     freePieces(brdVec, endIdx, initPos, goalPos);
 
     Position startPos(initPos);
@@ -418,9 +524,9 @@ ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int 
     {
         ProofGame ps(TextIO::toFEN(startPos), TextIO::toFEN(endPos), {}, std::cerr);
         auto opts = ProofGame::Options()
-            .setWeightA(1)
-            .setWeightB(5)
-            .setMaxNodes(5000)
+            .setWeightA(pathOpts.weightA)
+            .setWeightB(pathOpts.weightB)
+            .setMaxNodes(pathOpts.maxNodes)
             .setVerbose(true)
             .setAcceptFirst(true);
         len = ps.search(movePath, opts);
@@ -445,8 +551,8 @@ ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int 
         if (endIdx <= startIdx + 1)
             throw ChessError("No solution found" + getFenInfo());
         int midIdx = (startIdx + endIdx) / 2;
-        computePath(brdVec, startIdx, midIdx, initPos, goalPos, path);
-        computePath(brdVec, midIdx, endIdx, initPos, goalPos, path);
+        computePath(brdVec, startIdx, midIdx, initPos, goalPos, pathOpts, path);
+        computePath(brdVec, midIdx, endIdx, initPos, goalPos, pathOpts, path);
     } else {
         path.insert(path.end(), movePath.begin(), movePath.end());
     }
@@ -527,53 +633,12 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
 
 // ----------------------------------------------------------------------------
 
-void
-ProofGameFilter::computeProofGame(const Position& startPos, Line& line, std::ostream& os) {
-    line.print(os);
+bool
+ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
+    return false;
 }
 
 // ----------------------------------------------------------------------------
-
-bool
-ProofGameFilter::readLine(std::istream& is, Line& line) {
-    std::string lineStr;
-    std::vector<std::string> arr;
-    {
-        std::getline(is, lineStr);
-        if (!is || is.eof())
-            return false;
-        lineStr = trim(lineStr);
-
-        splitString(lineStr, arr);
-    }
-
-    if (arr.size() < 6)
-        return false;
-
-    line.fen.clear();
-    for (int i = 0; i < 6; i++) {
-        if (i > 0)
-            line.fen += ' ';
-        line.fen += arr[i];
-    }
-
-    Info info = STATUS;
-    bool infoValid = false;
-    for (int i = 6; i < (int)arr.size(); i++) {
-        const std::string& token = arr[i];
-        if (endsWith(token, ":")) {
-            info = str2Info(token.substr(0, token.length() - 1));
-            line.data[info].clear();
-            infoValid = true;
-        } else {
-            if (!infoValid)
-                throw ChessParseError("Invalid line format: " + lineStr);
-            line.data[info].push_back(token);
-        }
-    }
-
-    return true;
-}
 
 ProofGameFilter::Info
 ProofGameFilter::str2Info(const std::string& token) {
@@ -592,8 +657,49 @@ ProofGameFilter::info2Str(Info info) {
     throw ChessError("internal error");
 }
 
+bool
+ProofGameFilter::Line::read(std::istream& is) {
+    std::string lineStr;
+    std::vector<std::string> arr;
+    {
+        std::getline(is, lineStr);
+        if (!is || is.eof())
+            return false;
+        lineStr = trim(lineStr);
+
+        splitString(lineStr, arr);
+    }
+
+    if (arr.size() < 6)
+        return false;
+
+    fen.clear();
+    for (int i = 0; i < 6; i++) {
+        if (i > 0)
+            fen += ' ';
+        fen += arr[i];
+    }
+
+    Info info = STATUS;
+    bool infoValid = false;
+    for (int i = 6; i < (int)arr.size(); i++) {
+        const std::string& token = arr[i];
+        if (endsWith(token, ":")) {
+            info = str2Info(token.substr(0, token.length() - 1));
+            data[info].clear();
+            infoValid = true;
+        } else {
+            if (!infoValid)
+                throw ChessParseError("Invalid line format: " + lineStr);
+            data[info].push_back(token);
+        }
+    }
+
+    return true;
+}
+
 void
-ProofGameFilter::Line::print(std::ostream& os) {
+ProofGameFilter::Line::write(std::ostream& os) {
     os << fen;
 
     auto printTokenData = [&os,this](Info tokType) {
@@ -615,12 +721,62 @@ ProofGameFilter::Line::print(std::ostream& os) {
         printTokenData(PATH);
         printTokenData(STATUS);
         printTokenData(FAIL);
+        printTokenData(INFO);
     } else if (hasToken(LEGAL)) {
         printTokenData(LEGAL);
         printTokenData(PROOF);
     }
 
     os << std::endl;
+}
+
+ProofGameFilter::Legality
+ProofGameFilter::Line::getStatus() const {
+    if (hasToken(ILLEGAL))
+        return Legality::ILLEGAL;
+    if (hasToken(LEGAL) && hasToken(PROOF))
+        return Legality::LEGAL;
+
+    if (hasToken(UNKNOWN)) {
+        if (hasToken(FAIL))
+            return Legality::FAIL;
+        if (hasToken(PATH))
+            return Legality::PATH;
+        if (hasToken(EXT_KERNEL))
+            return Legality::KERNEL;
+    }
+
+    return Legality::INITIAL;
+}
+
+int
+ProofGameFilter::Line::getStatusInt(const std::string& name, int defVal) const {
+    if (hasToken(STATUS)) {
+        const std::vector<std::string>& status = data.at(STATUS);
+        std::string pre = name + "=";
+        for (const std::string& s : status) {
+            if (startsWith(s, pre)) {
+                int val = defVal;
+                str2Num(s.substr(pre.length()), val);
+                return val;
+            }
+        }
+    }
+    return defVal;
+}
+
+void
+ProofGameFilter::Line::setStatusInt(const std::string& name, int value) {
+    std::vector<std::string>& status = tokenData(STATUS);
+    std::string pre = name + "=";
+    std::string valS = pre + num2Str(value);
+    for (std::string& s : status) {
+        if (startsWith(s, pre)) {
+            s = valS;
+            return;
+        }
+    }
+    status.push_back(valS);
 }
 
 // ----------------------------------------------------------------------------

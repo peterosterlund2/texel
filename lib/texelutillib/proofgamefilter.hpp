@@ -47,6 +47,14 @@ public:
      *  with regards to reachability from the starting position. */
     void filterFens(std::istream& is, std::ostream& os);
 
+    /** Read a list of FENs from a stream and classify them as legal/illegal/unknown
+     *  with regards to reachability from the starting position. The classification
+     *  iteratively tries more and more expensive computations to determine the status.
+     *  The result from each iteration is written to a file with name outFileBaseName + NN,
+     *  where NN is 00, 01, ..., for the different iterations. */
+    void filterFensIterated(std::istream& is, const std::string& outFileBaseName,
+                            bool retry);
+
 private:
     /** Type of information that can be attached to a position in a line in a text file. */
     enum Info {
@@ -61,13 +69,33 @@ private:
         PATH,          // For unknown positions, legal chess moves corresponding to extended kernel
         STATUS,        // For unknown positions, status of attempts to find proof game
         FAIL,          // For unknown positions, algorithm failed to find a PATH or PROOF
+        INFO,          // For unknown positions, reason for not yet finding a PATH or PROOF
 
         PROOF,         // Legal chess moves (proof game) leading to the goal position
+    };
+
+    /** Status of legality classification. */
+    enum class Legality {
+        INITIAL,   // No computation performed yet
+        ILLEGAL,   // Position is illegal
+        FAIL,      // Position is unknown, more computation time will not help
+        KERNEL,    // Position is unknown, a proof kernel has been found
+        PATH,      // Position is unknown, a path corresponding to proof kernel has been found
+        LEGAL,     // Position is legal, a proof game has been found
+        nLegality
     };
 
     struct Line {
         std::string fen;
         std::map<Info, std::vector<std::string>> data;
+
+        /** Read data from a line of input from "is". */
+        bool read(std::istream& is);
+        /** Write data as one line of text to "os". */
+        void write(std::ostream& os);
+
+        /** Return legality status. */
+        Legality getStatus() const;
 
         /** Return true if there is data for a given token type. */
         bool hasToken(Info tokType) const;
@@ -78,27 +106,42 @@ private:
         /** Remove data for a given token type. */
         void eraseToken(Info tokType);
 
-        /** Print text representation to "os". */
-        void print(std::ostream& os);
+        /** Return a status value with given name, or default value
+         *  if not present in this object. */
+        int getStatusInt(const std::string& name, int defVal) const;
+        /** Add or update status value with given name. */
+        void setStatusInt(const std::string& name, int value);
     };
 
+    /** Process all lines in "is" and write result to "os".
+     *  Return true if any work remains to be done. */
+    bool runOneIteration(std::istream& is, std::ostream& os, bool firstIteration,
+                         bool showProgress, bool retry);
+
     /** Determine if position is illegal, unknown or legal, based on existence
-     *  of an extended proof kernel. Prints result to "os". */
-    void computeExtProofKernel(const Position& startPos, Line& line, std::ostream& os);
+     *  of an extended proof kernel. */
+    void computeExtProofKernel(const Position& startPos, Line& line);
 
     /** Compute a sequence of moves corresponding to an extended proof kernel.
-     *  This computation can fail even if a solution exists. Prints result to "os". */
-    void computePath(const Position& startPos, Line& line, std::ostream& os);
+     *  This computation can fail even if a solution exists.
+     *  Return true if any work remains to be done. */
+    bool computePath(const Position& startPos, Line& line);
 
     /** For pawns on first/last row, replace them with suitable promoted pieces. */
     void decidePromotions(std::vector<MultiBoard>& brdVec, const Position& initPos,
                           const Position& goalPos) const;
 
+    struct PathOptions {
+        int maxNodes;
+        int weightA;
+        int weightB;
+    };
+
     /** Compute a sequence of moves from brdVec[startIdx] to brdVec[endIdx], appending
      *  the required moves to "path". */
     void computePath(std::vector<MultiBoard>& brdVec, int startIdx, int endIdx,
                      const Position& initPos, const Position& goalPos,
-                     std::vector<Move>& path) const;
+                     const PathOptions& pathOpts, std::vector<Move>& path) const;
 
     /** If pieces need to move away from their original position, try to advance
      *  suitable pawns to allow the pieces to move. */
@@ -112,11 +155,8 @@ private:
      *  1. LEGAL, PROOF    : A proof game is found.
      *  2. UNKNOWN, FAIL   : A proof game is not found and more computation will not help.
      *  3. UNKNOWN, STATUS : A proof game is not found but searching more might help.
-     *  Prints result to "os". */
-    void computeProofGame(const Position& startPos, Line& line, std::ostream& os);
-
-    /** Read a line of text and store in the Line object. */
-    bool readLine(std::istream& is, Line& line);
+     *  Return true if any work remains to be done. */
+    bool computeProofGame(const Position& startPos, Line& line);
 
     /** Data for conversion between Info enum and string representation. */
     struct InfoData {
@@ -129,6 +169,10 @@ private:
     /** Convert between string and Info enum value. */
     static Info str2Info(const std::string& infoStr);
     static std::string info2Str(Info info);
+
+    /** Time when object was constructed. */
+    double startTime;
+    int statusCnt[(int)Legality::nLegality] = { 0 };
 };
 
 /** A chess board where each square can have more than one piece.

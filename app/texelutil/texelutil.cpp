@@ -151,8 +151,8 @@ usage() {
     std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file\n";
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
-    std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-f] [-i \"initFen\"]\n";
-    std::cerr << "           [-ipgn \"initPgnFile\"] \"goalFen\"\n";
+    std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-f [-o outfile] [-r]]\n";
+    std::cerr << "           [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
     std::cerr << " revmoves \"fen\"\n";
     std::cerr << std::flush;
     ::exit(2);
@@ -372,6 +372,8 @@ doProofGameCmd(int argc, char* argv[]) {
     bool dynamic = false;
     bool verbose = false;
     bool filter = false;
+    std::string outFile;
+    bool retry = false;
     int arg = 2;
     while (arg < argc) {
         if (arg+1 < argc && argv[arg] == std::string("-w")) {
@@ -401,15 +403,27 @@ doProofGameCmd(int argc, char* argv[]) {
         } else if (argv[arg] == std::string("-f")) {
             filter = true;
             arg++;
+        } else if (arg + 1 < argc && argv[arg] == std::string("-o")) {
+            outFile = argv[arg+1];
+            arg += 2;
+        } else if (argv[arg] == std::string("-r")) {
+            retry = true;
+            arg++;
         } else {
             break;
         }
     }
     if (filter) {
         ProofGameFilter pgf;
-        pgf.filterFens(std::cin, std::cout);
+        if (outFile.empty()) {
+            pgf.filterFens(std::cin, std::cout);
+        } else {
+            pgf.filterFensIterated(std::cin, outFile, retry);
+        }
     } else {
         if (arg+1 != argc)
+            usage();
+        if (!outFile.empty())
             usage();
         std::string goalFen = argv[arg];
 

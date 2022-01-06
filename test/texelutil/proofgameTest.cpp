@@ -1267,7 +1267,7 @@ void ProofGameTest::testFilterPath() {
         in << out.str();
         ProofGameFilter ps;
         ProofGameFilter::Line line;
-        bool res = ps.readLine(in, line);
+        bool res = line.read(in);
         ASSERT_TRUE(res);
         ASSERT_TRUE(line.hasToken(ProofGameFilter::PATH));
         pos = TextIO::readFEN(TextIO::startPosFEN);
