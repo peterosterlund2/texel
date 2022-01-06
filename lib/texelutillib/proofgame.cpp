@@ -242,12 +242,35 @@ ProofGame::search(std::vector<Move>& movePath, const Options& opts) {
     int best = INT_MAX;
     addPosition(startPos, 0, true, false, best);
     {
+        // Ignore moves causing position repetition
+        struct HashMove {
+            U64 hash;
+            Move m;
+        };
+        std::vector<HashMove> hmVec;
         Position pos(startPos);
         UndoInfo ui;
         for (Move m : initialPath) {
+            U64 hash = pos.zobristHash();
+            hmVec.push_back({hash, m});
+            pos.makeMove(m, ui);
+        }
+        for (int i = 0; i < (int)hmVec.size(); i++) {
+            for (int j = 0; j < i; j++) {
+                if (hmVec[j].hash == hmVec[i].hash) {
+                    hmVec.erase(hmVec.begin() + j, hmVec.begin() + i);
+                    i = j;
+                }
+            }
+        }
+
+        // Add all moves so that the full path for a solution can later be reconstructed
+        pos = startPos;
+        for (auto& e : hmVec) {
+            assert(!queue->empty());
             U32 idx = queue->top();
             queue->pop();
-            pos.makeMove(m, ui);
+            pos.makeMove(e.m, ui);
             addPosition(pos, idx, false, false, best);
         }
     }

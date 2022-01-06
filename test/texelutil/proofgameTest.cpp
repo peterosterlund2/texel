@@ -730,7 +730,6 @@ ProofGameTest::testSearch() {
         best = ps2.search(movePath, {});
         ASSERT_EQ(6, best);
     }
-
 }
 
 TEST(ProofGameTest, testInitPath) {
@@ -798,6 +797,17 @@ ProofGameTest::testInitPath() {
         int best = ps.search(movePath, opts);
         ASSERT_EQ(17, best);
         ASSERT_EQ(initPath, movePath);
+    }
+    {   // Repetition in initial path
+        std::vector<Move> initPath = getMoves({"Nf3", "Nf6", "Ng1", "Ng8", "Nf3"});
+        ProofGame ps(TextIO::startPosFEN,
+                     "rnbqkb1r/pppppppp/5n2/8/8/5N2/PPPPPPPP/RNBQKB1R w KQkq - 0 1", initPath);
+        std::vector<Move> movePath;
+        int best = ps.search(movePath, {});
+        ASSERT_EQ(2, best);
+        ASSERT_EQ(2, movePath.size());
+        ASSERT_EQ("g1f3", TextIO::moveToUCIString(movePath[0]));
+        ASSERT_EQ("g8f6", TextIO::moveToUCIString(movePath[1]));
     }
 }
 
