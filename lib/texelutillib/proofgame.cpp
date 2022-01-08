@@ -228,7 +228,7 @@ ProofGame::validatePieceCounts(const Position& pos) {
 }
 
 int
-ProofGame::search(std::vector<Move>& movePath, const Options& opts) {
+ProofGame::search(const Options& opts, Result& result) {
     if (!opts.smallCache)
         pathDataCache.resize(1024*1024);
 
@@ -321,10 +321,13 @@ ProofGame::search(std::vector<Move>& movePath, const Options& opts) {
 
         if (tn.ply < best && isSolution(pos)) {
             flushDelayed();
+            double elapsed = currentTime() - t0;
             log << tn.ply << " -w " << opts.weightA << ":" << opts.weightB
                 << " queue: " << queue->size() << " nodes: " << numNodes
-                << " time: " << (currentTime() - t0) << std::endl;
-            getMoves(log, startPos, idx, true, movePath);
+                << " time: " << elapsed << std::endl;
+            getMoves(log, startPos, idx, true, result.proofGame);
+            result.numNodes = numNodes;
+            result.solutionTime = elapsed;
             best = tn.ply;
             if (opts.acceptFirst)
                 break;
@@ -361,8 +364,8 @@ ProofGame::search(std::vector<Move>& movePath, const Options& opts) {
                 os << "bound: " << tn.bound << " -w " << opts.weightA << ":" << opts.weightB
                    << " queue: " << queue->size() << " nodes: " << numNodes
                    << " time: " << (currentTime() - t0) << std::endl;
-                std::vector<Move> path;
-                getMoves(os, startPos, idx, false, path);
+                getMoves(os, startPos, idx, false, result.closestPath);
+                result.smallestBound = smallestBound;
                 logDelayed(os);
             }
         }
@@ -579,8 +582,8 @@ ProofGame::showPieceStats(const Position& pos) const {
 
 bool
 ProofGame::capturesFeasible(const Position& pos, int pieceCnt[],
-                             int numWhiteExtraPieces, int numBlackExtraPieces,
-                             int excessWPawns, int excessBPawns) {
+                            int numWhiteExtraPieces, int numBlackExtraPieces,
+                            int excessWPawns, int excessBPawns) {
     for (int c = 0; c < 2; c++) {
         const Piece::Type  p = (c == 0) ? Piece::WPAWN : Piece::BPAWN;
         Assignment<int>& as = captureAP[c];
@@ -650,9 +653,9 @@ ProofGame::capturesFeasible(const Position& pos, int pieceCnt[],
 
 bool
 ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
-                               int numWhiteExtraPieces, int numBlackExtraPieces,
-                               int excessWPawns, int excessBPawns,
-                               int neededMoves[]) {
+                              int numWhiteExtraPieces, int numBlackExtraPieces,
+                              int excessWPawns, int excessBPawns,
+                              int neededMoves[]) {
     std::vector<SqPathData> sqPathData;
     SqPathData promPath[2][8]; // Pawn cost to each possible promotion square
     if (!computeShortestPathData(pos, numWhiteExtraPieces, numBlackExtraPieces,
@@ -775,9 +778,9 @@ ProofGame::getBlocked(U64 blocked, const Position& pos, int pieceType) const {
 
 bool
 ProofGame::computeShortestPathData(const Position& pos,
-                                    int numWhiteExtraPieces, int numBlackExtraPieces,
-                                    SqPathData promPath[2][8],
-                                    std::vector<SqPathData>& sqPathData, U64& blocked) {
+                                   int numWhiteExtraPieces, int numBlackExtraPieces,
+                                   SqPathData promPath[2][8],
+                                   std::vector<SqPathData>& sqPathData, U64& blocked) {
     std::vector<SqPathData> pending;
     U64 pieces = goalPos.occupiedBB() & ~blocked;
     while (pieces) {
@@ -834,7 +837,7 @@ ProofGame::computeShortestPathData(const Position& pos,
 
 int
 ProofGame::promPathLen(bool wtm, int fromSq, int targetPiece, U64 blocked, int maxCapt,
-                        const ShortestPathData& toSqPath, SqPathData promPath[8]) {
+                       const ShortestPathData& toSqPath, SqPathData promPath[8]) {
     int pLen = INT_MAX;
     switch (targetPiece) {
     case Piece::WQUEEN:  case Piece::BQUEEN:
@@ -863,8 +866,8 @@ ProofGame::promPathLen(bool wtm, int fromSq, int targetPiece, U64 blocked, int m
 
 bool
 ProofGame::computeAllCutSets(const Assignment<int>& as, int rowToSq[16], int colToSq[16],
-                              bool wtm, U64 blocked, int maxCapt,
-                              U64 cutSets[16], int& nConstraints) {
+                             bool wtm, U64 blocked, int maxCapt,
+                             U64 cutSets[16], int& nConstraints) {
     const int N = as.getSize();
     int nCutSets = 0;
     for (int t = 0; t < N; t++) {
@@ -895,7 +898,7 @@ ProofGame::computeAllCutSets(const Assignment<int>& as, int rowToSq[16], int col
 
 bool
 ProofGame::computeCutSets(bool wtm, U64 fromSqMask, int toSq, U64 blocked, int maxCapt,
-                           U64 cutSets[16], int& nCutSets) {
+                          U64 cutSets[16], int& nCutSets) {
     U64 allPaths = 0;
     U64 m = fromSqMask;
     while (m) {
@@ -951,7 +954,7 @@ ProofGame::allPawnPaths(bool wtm, int fromSq, int toSq, U64 blocked, int maxCapt
 
 int
 ProofGame::minDistToSquares(int piece, int fromSq, U64 blocked, int maxCapt,
-                             SqPathData promPath[8], U64 targetSquares, bool canPromote) {
+                            SqPathData promPath[8], U64 targetSquares, bool canPromote) {
     const bool wtm = Piece::isWhite(piece);
     int best = bigCost;
     while (targetSquares) {
@@ -969,7 +972,7 @@ ProofGame::minDistToSquares(int piece, int fromSq, U64 blocked, int maxCapt,
 
 int
 ProofGame::promPathLen(bool wtm, int fromSq, U64 blocked, int maxCapt,
-                        int toSq, SqPathData promPath[8], int pLen) {
+                       int toSq, SqPathData promPath[8], int pLen) {
     int firstP = wtm ? Piece::WQUEEN : Piece::BQUEEN;
     int lastP = wtm ? Piece::WKNIGHT : Piece::BKNIGHT;
     for (int x = 0; x < 8; x++) {

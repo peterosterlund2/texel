@@ -452,8 +452,8 @@ doProofGameCmd(int argc, char* argv[]) {
             .setDynamic(dynamic)
             .setMaxNodes(maxNodes)
             .setVerbose(verbose);
-        std::vector<Move> movePath;
-        ps.search(movePath, opts);
+        ProofGame::Result result;
+        ps.search(opts, result);
     }
 }
 

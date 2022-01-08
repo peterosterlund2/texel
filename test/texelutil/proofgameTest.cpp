@@ -647,10 +647,10 @@ ProofGameTest::testReachable() {
         ASSERT_EQ(0, hScore(start, goal));
 
         ProofGame ps(start, goal, {});
-        std::vector<Move> movePath;
-        int best = ps.search(movePath, {});
+        ProofGame::Result result;
+        int best = ps.search({}, result);
         ASSERT_EQ(1, best);
-        ASSERT_EQ(1, movePath.size());
+        ASSERT_EQ(1, result.proofGame.size());
     }
 
     {
@@ -691,43 +691,43 @@ void
 ProofGameTest::testSearch() {
     { // Start position without castling rights
         ProofGame ps(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1", {});
-        std::vector<Move> movePath;
-        int best = ps.search(movePath, {});
+        ProofGame::Result result;
+        int best = ps.search({}, result);
         ASSERT_EQ(16, best);
     }
     { // Start position without castling rights
         ProofGame ps(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1", {});
-        std::vector<Move> movePath;
-        int best = ps.search(movePath, ProofGame::Options().setWeightA(1).setWeightB(9));
+        ProofGame::Result result;
+        int best = ps.search(ProofGame::Options().setWeightA(1).setWeightB(9), result);
         ASSERT_EQ(16, best);
     }
     {
         ProofGame ps(TextIO::startPosFEN,
                      "rnbqk1nr/ppppppbp/6p1/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1", {});
-        std::vector<Move> movePath;
-        int best = ps.search(movePath, {});
+        ProofGame::Result result;
+        int best = ps.search({}, result);
         ASSERT_EQ(4, best);
-        ASSERT_EQ(4, movePath.size());
-        ASSERT_EQ("a2a4", TextIO::moveToUCIString(movePath[0]));
-        ASSERT_EQ("g7g6", TextIO::moveToUCIString(movePath[1]));
-        ASSERT_EQ("b1a3", TextIO::moveToUCIString(movePath[2]));
-        ASSERT_EQ("f8g7", TextIO::moveToUCIString(movePath[3]));
+        ASSERT_EQ(4, result.proofGame.size());
+        ASSERT_EQ("a2a4", TextIO::moveToUCIString(result.proofGame[0]));
+        ASSERT_EQ("g7g6", TextIO::moveToUCIString(result.proofGame[1]));
+        ASSERT_EQ("b1a3", TextIO::moveToUCIString(result.proofGame[2]));
+        ASSERT_EQ("f8g7", TextIO::moveToUCIString(result.proofGame[3]));
     }
     {
         ProofGame ps(TextIO::startPosFEN, "rnbqkbnr/p1pppppp/p7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", {});
-        std::vector<Move> movePath;
-        int best = ps.search(movePath, {});
+        ProofGame::Result result;
+        int best = ps.search({}, result);
         ASSERT_EQ(INT_MAX, best);
     }
     {
         ProofGame ps1(TextIO::startPosFEN, "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 1", {});
-        std::vector<Move> movePath;
-        int best = ps1.search(movePath, {});
+        ProofGame::Result result;
+        int best = ps1.search({}, result);
         ASSERT_EQ(4, best);
 
         // One extra move needed to avoid ep square in goal position
         ProofGame ps2(TextIO::startPosFEN, "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1", {});
-        best = ps2.search(movePath, {});
+        best = ps2.search({}, result);
         ASSERT_EQ(6, best);
     }
 }
@@ -754,29 +754,29 @@ ProofGameTest::testInitPath() {
         std::vector<Move> initPath = getMoves({"a4", "g6"});
         ProofGame ps(TextIO::startPosFEN,
                      "rnbqk1nr/ppppppbp/6p1/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1", initPath);
-        std::vector<Move> movePath;
-        int best = ps.search(movePath, {});
+        ProofGame::Result result;
+        int best = ps.search({}, result);
         ASSERT_EQ(4, best);
-        ASSERT_EQ(4, movePath.size());
-        ASSERT_EQ("a2a4", TextIO::moveToUCIString(movePath[0]));
-        ASSERT_EQ("g7g6", TextIO::moveToUCIString(movePath[1]));
-        ASSERT_EQ("b1a3", TextIO::moveToUCIString(movePath[2]));
-        ASSERT_EQ("f8g7", TextIO::moveToUCIString(movePath[3]));
+        ASSERT_EQ(4, result.proofGame.size());
+        ASSERT_EQ("a2a4", TextIO::moveToUCIString(result.proofGame[0]));
+        ASSERT_EQ("g7g6", TextIO::moveToUCIString(result.proofGame[1]));
+        ASSERT_EQ("b1a3", TextIO::moveToUCIString(result.proofGame[2]));
+        ASSERT_EQ("f8g7", TextIO::moveToUCIString(result.proofGame[3]));
     }
     {
         std::vector<Move> initPath = getMoves({"a3"});
         ProofGame ps(TextIO::startPosFEN,
                      "rnbqk1nr/ppppppbp/6p1/8/P7/N7/1PPPPPPP/R1BQKBNR w KQkq - 0 1", initPath);
-        std::vector<Move> movePath;
-        int best = ps.search(movePath, {});
+        ProofGame::Result result;
+        int best = ps.search({}, result);
         ASSERT_EQ(6, best);
-        ASSERT_EQ(6, movePath.size());
-        ASSERT_EQ("a2a3", TextIO::moveToUCIString(movePath[0]));
-        ASSERT_EQ("g7g6", TextIO::moveToUCIString(movePath[1]));
-        ASSERT_EQ("a3a4", TextIO::moveToUCIString(movePath[2]));
-        ASSERT_EQ("f8h6", TextIO::moveToUCIString(movePath[3]));
-        ASSERT_EQ("b1a3", TextIO::moveToUCIString(movePath[4]));
-        ASSERT_EQ("h6g7", TextIO::moveToUCIString(movePath[5]));
+        ASSERT_EQ(6, result.proofGame.size());
+        ASSERT_EQ("a2a3", TextIO::moveToUCIString(result.proofGame[0]));
+        ASSERT_EQ("g7g6", TextIO::moveToUCIString(result.proofGame[1]));
+        ASSERT_EQ("a3a4", TextIO::moveToUCIString(result.proofGame[2]));
+        ASSERT_EQ("f8h6", TextIO::moveToUCIString(result.proofGame[3]));
+        ASSERT_EQ("b1a3", TextIO::moveToUCIString(result.proofGame[4]));
+        ASSERT_EQ("h6g7", TextIO::moveToUCIString(result.proofGame[5]));
     }
     { // Initial path contains a capture that is needed as last move, so no solution exists
         std::vector<Move> initPath = getMoves({"b4", "a5", "c4", "axb4", "d4", "c5", "f4", "e5",
@@ -792,22 +792,22 @@ ProofGameTest::testInitPath() {
                                                "Ng8", "Be6", "f6", "Qd2", "Qe7", "Qe2", "Qd8", "Bf7+"});
         ProofGame ps(TextIO::startPosFEN,
                      "rnbqkbnr/pppp1Bpp/3p1p2/8/8/8/PPP1QPPP/RNB1K1NR b KQkq - 0 1", initPath);
-        std::vector<Move> movePath;
+        ProofGame::Result result;
         auto opts = ProofGame::Options().setMaxNodes(10);
-        int best = ps.search(movePath, opts);
+        int best = ps.search(opts, result);
         ASSERT_EQ(17, best);
-        ASSERT_EQ(initPath, movePath);
+        ASSERT_EQ(initPath, result.proofGame);
     }
     {   // Repetition in initial path
         std::vector<Move> initPath = getMoves({"Nf3", "Nf6", "Ng1", "Ng8", "Nf3"});
         ProofGame ps(TextIO::startPosFEN,
                      "rnbqkb1r/pppppppp/5n2/8/8/5N2/PPPPPPPP/RNBQKB1R w KQkq - 0 1", initPath);
-        std::vector<Move> movePath;
-        int best = ps.search(movePath, {});
+        ProofGame::Result result;
+        int best = ps.search({}, result);
         ASSERT_EQ(2, best);
-        ASSERT_EQ(2, movePath.size());
-        ASSERT_EQ("g1f3", TextIO::moveToUCIString(movePath[0]));
-        ASSERT_EQ("g8f6", TextIO::moveToUCIString(movePath[1]));
+        ASSERT_EQ(2, result.proofGame.size());
+        ASSERT_EQ("g1f3", TextIO::moveToUCIString(result.proofGame[0]));
+        ASSERT_EQ("g8f6", TextIO::moveToUCIString(result.proofGame[1]));
     }
 }
 
@@ -820,20 +820,20 @@ ProofGameTest::testEnPassant() {
     {
         ProofGame ps(TextIO::startPosFEN,
                      "rnbqkbnr/pp1ppppp/8/8/2pPP3/7P/PPP2PP1/RNBQKBNR b KQkq d3 0 1", {});
-        std::vector<Move> movePath;
-        int best = ps.search(movePath, {});
+        ProofGame::Result result;
+        int best = ps.search({}, result);
         ASSERT_EQ(5, best);
-        ASSERT_EQ(5, movePath.size());
-        ASSERT_EQ("d2d4", TextIO::moveToUCIString(movePath[4]));
+        ASSERT_EQ(5, result.proofGame.size());
+        ASSERT_EQ("d2d4", TextIO::moveToUCIString(result.proofGame[4]));
     }
     {
         ProofGame ps(TextIO::startPosFEN,
                      "rnbqkbnr/ppppp1pp/8/8/3PPp2/7P/PPP2PP1/RNBQKBNR b KQkq e3 0 1", {});
-        std::vector<Move> movePath;
-        int best = ps.search(movePath, {});
+        ProofGame::Result result;
+        int best = ps.search({}, result);
         ASSERT_EQ(5, best);
-        ASSERT_EQ(5, movePath.size());
-        ASSERT_EQ("e2e4", TextIO::moveToUCIString(movePath[4]));
+        ASSERT_EQ(5, result.proofGame.size());
+        ASSERT_EQ("e2e4", TextIO::moveToUCIString(result.proofGame[4]));
     }
     {
         EXPECT_THROW({

@@ -162,6 +162,18 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
     return workRemains;
 }
 
+static std::vector<std::string>
+getMovePath(const Position& startPos, std::vector<Move>& movePath) {
+    std::vector<std::string> ret;
+    Position pos(startPos);
+    UndoInfo ui;
+    for (const Move& m : movePath) {
+        ret.push_back(TextIO::moveToString(pos, m, false));
+        pos.makeMove(m, ui);
+    }
+    return ret;
+}
+
 void
 ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line) {
     auto setIllegal = [this,&line](const std::string& reason) {
@@ -174,20 +186,14 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line) {
         std::cerr << "Finding proof kernel for " << line.fen << std::endl;
         auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
         ProofGame pg(TextIO::startPosFEN, line.fen, {}, std::cerr);
-        std::vector<Move> movePath;
-        int minCost = pg.search(movePath, opts);
+        ProofGame::Result result;
+        int minCost = pg.search(opts, result);
         if (minCost == INT_MAX) {
             setIllegal("Other");
         } else if (minCost >= 0) {
             line.tokenData(LEGAL).clear();
             std::vector<std::string>& proof = line.tokenData(PROOF);
-            proof.clear();
-            Position pos = startPos;
-            UndoInfo ui;
-            for (size_t i = 0; i < movePath.size(); i++) {
-                proof.push_back(TextIO::moveToString(pos, movePath[i], false));
-                pos.makeMove(movePath[i], ui);
-            }
+            proof = getMovePath(startPos, result.proofGame);
         } else {
             U64 blocked;
             if (!pg.computeBlocked(startPos, blocked))
@@ -310,14 +316,8 @@ ProofGameFilter::computePath(const Position& startPos, Line& line) {
 
         line.eraseToken(INFO);
         std::vector<std::string>& path = line.tokenData(PATH);
-        path.clear();
+        path = getMovePath(initPos, movePath);
 
-        Position pos(initPos);
-        UndoInfo ui;
-        for (const Move& m : movePath) {
-            path.push_back(TextIO::moveToString(pos, m, false));
-            pos.makeMove(m, ui);
-        }
         std::cerr << "Path solution: -w " << pathOpts.weightA << ':' << pathOpts.weightB
                   << " nodes: " << pathOpts.maxNodes << " len: " << path.size()
                   << std::endl;
@@ -519,7 +519,7 @@ ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int 
     brdVec[endIdx].expel();
     brdVec[endIdx].toPos(endPos);
 
-    std::vector<Move> movePath;
+    ProofGame::Result result;
     int len;
     {
         ProofGame ps(TextIO::toFEN(startPos), TextIO::toFEN(endPos), {}, std::cerr);
@@ -529,7 +529,7 @@ ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int 
             .setMaxNodes(pathOpts.maxNodes)
             .setVerbose(true)
             .setAcceptFirst(true);
-        len = ps.search(movePath, opts);
+        len = ps.search(opts, result);
     }
 
     auto getFenInfo = [&]() -> std::string {
@@ -554,7 +554,7 @@ ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int 
         computePath(brdVec, startIdx, midIdx, initPos, goalPos, pathOpts, path);
         computePath(brdVec, midIdx, endIdx, initPos, goalPos, pathOpts, path);
     } else {
-        path.insert(path.end(), movePath.begin(), movePath.end());
+        path.insert(path.end(), result.proofGame.begin(), result.proofGame.end());
     }
 }
 
@@ -660,9 +660,10 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
     const int weightA = 1;
     const int weightB = 5;
 
+    ProofGame::Result result;
+
     try {
         std::cerr << "Finding proof game for " << line.fen << std::endl;
-        std::vector<Move> movePath;
         int len;
         {
             ProofGame ps(TextIO::toFEN(startPos), line.fen, initPath, std::cerr);
@@ -672,7 +673,7 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
                 .setMaxNodes(maxNodes)
                 .setVerbose(true)
                 .setAcceptFirst(true);
-            len = ps.search(movePath, opts);
+            len = ps.search(opts, result);
         }
 
         if (len == INT_MAX) {
@@ -685,18 +686,12 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
             throw ChessError("No solution found");
 
         std::vector<std::string>& proof = line.tokenData(PROOF);
-        proof.clear();
-
-        Position pos(startPos);
-        UndoInfo ui;
-        for (const Move& m : movePath) {
-            proof.push_back(TextIO::moveToString(pos, m, false));
-            pos.makeMove(m, ui);
-        }
+        proof = getMovePath(startPos, result.proofGame);
         line.eraseToken(UNKNOWN);
         line.tokenData(LEGAL).clear();
         std::cerr << "Solution: -w " << weightA << ':' << weightB
-                  << " nodes: " << maxNodes << " len: " << proof.size()
+                  << " len: " << proof.size()
+                  << " nodes: " << result.numNodes << " time: " << result.solutionTime
                   << std::endl;
         return false;
     } catch (const ChessError& e) {
@@ -708,8 +703,13 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
         } else {
             line.tokenData(FAIL).clear();
         }
-        line.tokenData(INFO).clear();
-        line.tokenData(INFO).push_back(e.what());
+        std::vector<std::string>& info = line.tokenData(INFO);
+        info.clear();
+        info.push_back(e.what() + std::string(","));
+        info.push_back("bound=" + num2Str(result.smallestBound));
+        info.push_back("moves");
+        for (auto& s : getMovePath(startPos, result.closestPath))
+            info.push_back(s);
         return workRemains;
     }
 }

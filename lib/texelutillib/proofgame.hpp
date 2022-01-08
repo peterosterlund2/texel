@@ -79,13 +79,24 @@ public:
         Options& setAcceptFirst(bool a) { acceptFirst = a; return *this; }
     };
 
+    struct Result {
+        // Data returned when a solution was found
+        std::vector<Move> proofGame;
+        int numNodes = 0;              // Number of nodes used to find solution
+        double solutionTime = 0;       // Time needed to compute solution
+
+        // Data returned when no solution was found
+        std::vector<Move> closestPath; // Best found non-solution
+        int smallestBound = 0;         // Minimum distance from closestPath to goal
+    };
+
     /** Search for shortest solution. Print solutions to log stream.
-     * @param movePath     Set to shortest found path.
      * @param opts         Options controlling search behavior.
+     * @param result       Computed result.
      * @return             Length of shortest path found,
      *                     or INT_MAX if no solution exists,
      *                     or -1 if unknown whether a solution exists. */
-    int search(std::vector<Move>& movePath, const Options& opts);
+    int search(const Options& opts, Result& result);
 
     /** Compute blocked pieces in a position. A blocked piece is a piece that
      *  can not move without making it impossible to reach the goal position.
