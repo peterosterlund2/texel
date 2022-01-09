@@ -283,16 +283,16 @@ ProofGame::search(std::vector<Move>& movePath, const Options& opts) {
 
     std::string delayedLog;
     int nNodesAtLogTime = -1;
-    auto flushDelayed = [this,numNodes,&delayedLog,&nNodesAtLogTime](bool force = true) {
+    auto flushDelayed = [this,&numNodes,&delayedLog,&nNodesAtLogTime](bool force = true) {
         if (nNodesAtLogTime != -1) {
             if (force || numNodes >= nNodesAtLogTime + 100) {
-                log << delayedLog;
+                log << delayedLog << std::flush;
                 delayedLog.clear();
                 nNodesAtLogTime = -1;
             }
         }
     };
-    auto logDelayed = [numNodes,&delayedLog,&nNodesAtLogTime](std::stringstream& os) {
+    auto logDelayed = [&numNodes,&delayedLog,&nNodesAtLogTime](std::stringstream& os) {
         delayedLog = os.str();
         nNodesAtLogTime = numNodes;
     };
