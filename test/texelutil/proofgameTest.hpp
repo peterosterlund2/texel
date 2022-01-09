@@ -43,6 +43,7 @@ public:
     static void testCastling();
     static void testReachable();
     static void testRemainingMoves();
+    static void testNonAdmissible();
     static void testSearch();
     static void testInitPath();
     static void testEnPassant();
@@ -56,7 +57,8 @@ public:
 
 private:
     static void checkBlockedConsistency(ProofGame& ps, Position& pos);
-    static int hScore(const std::string& initFen, const std::string& goalFen, bool testMirrorY = true);
+    static int hScore(const std::string& initFen, const std::string& goalFen,
+                      bool useNonAdmissible = false, bool testMirrorY = true);
     static void comparePaths(Piece::Type p, int sq, U64 blocked, int maxMoves,
                              const std::vector<int>& expected, bool testColorReversed = true);
 };

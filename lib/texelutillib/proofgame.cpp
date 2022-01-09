@@ -231,6 +231,7 @@ int
 ProofGame::search(const Options& opts, Result& result) {
     if (!opts.smallCache)
         pathDataCache.resize(1024*1024);
+    useNonAdmissible = opts.useNonAdmissible;
 
     Position startPos = TextIO::readFEN(initialFen);
     {
@@ -686,6 +687,7 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
     captureSquares[1][0] = 0;
     nCaptureConstraints[1] = 0;
 
+    int rowToSq[2][16], colToSq[2][16];
     int c = 0;
     bool solved[2] = { false, false };
     while (!solved[c]) {
@@ -697,11 +699,10 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
         if (N > 0) {
             assert(N <= maxMoveAPSize);
             Assignment<int>& as = moveAP[c][N];
-            int rowToSq[16], colToSq[16];
             for (int f = 0; f < N; f++) {
                 assert(fromPieces != 0);
                 const int fromSq = BitBoard::extractSquare(fromPieces);
-                rowToSq[f] = fromSq;
+                rowToSq[c][f] = fromSq;
                 bool canPromote = wtm ? (excessWPawns > 0) && (pos.getPiece(fromSq) == Piece::WPAWN)
                                       : (excessBPawns > 0) && (pos.getPiece(fromSq) == Piece::BPAWN);
                 int t = 0;
@@ -710,7 +711,7 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
                     int p = goalPos.getPiece(toSq);
                     if (Piece::isWhite(p) == wtm) {
                         assert(t < N);
-                        colToSq[t] = toSq;
+                        colToSq[c][t] = toSq;
                         int pLen;
                         if (p == pos.getPiece(fromSq)) {
                             pLen = sqPathData[ci].spd->pathLen[fromSq];
@@ -739,7 +740,7 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
                                                 maxCapt, promPath[c], captSquares, canPromote);
                         idx++;
                     }
-                    colToSq[t] = -1;
+                    colToSq[c][t] = -1;
                     as.setCost(f, t, cost);
                 }
                 if (captureSquares[c][idx])
@@ -750,7 +751,7 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
                 return false;
 
             int nConstr;
-            if (!computeAllCutSets(as, rowToSq, colToSq, wtm, blocked, maxCapt,
+            if (!computeAllCutSets(as, rowToSq[c], colToSq[c], wtm, blocked, maxCapt,
                                    captureSquares[1-c], nConstr))
                 return false;
             assert(nCaptureConstraints[1-c] <= nConstr);
@@ -763,7 +764,143 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
         solved[c] = true;
         c = 1 - c;
     }
+
+    if (useNonAdmissible) {
+        for (int c = 0; c < 2; c++) {
+            const bool wtm = (c == 0);
+            U64 fromPieces = (wtm ? pos.whiteBB() : pos.blackBB()) & ~blocked;
+            int N = BitBoard::bitCount(fromPieces);
+            Assignment<int>& as = moveAP[c][N];
+            const std::vector<int>& s = as.optWeightMatch();
+            for (int i = 0; i < N; i++) {
+                int cost = as.getCost(i, s[i]);
+                if (cost == 0)
+                    continue;
+
+                const int fromSq = rowToSq[c][i];
+                const int toSq = colToSq[c][s[i]];
+                if (toSq == -1)
+                    continue; // Piece is captured
+
+                const ShortestPathData* spd = nullptr;
+                for (const SqPathData& d : sqPathData) {
+                    if (d.square == toSq) {
+                        spd = d.spd.get();
+                        break;
+                    }
+                }
+
+                U64 obstacles = getMovePathObstacles(pos, blocked, fromSq, toSq, *spd);
+                int wObst = BitBoard::bitCount(obstacles & pos.whiteBB());
+                int bObst = BitBoard::bitCount(obstacles & pos.blackBB());
+                neededMoves[0] += wObst * 2;
+                neededMoves[1] += bObst * 2;
+            }
+        }
+    }
+
     return true;
+}
+
+U64
+ProofGame::getMovePathObstacles(const Position& pos, U64 blocked, int fromSq, int toSq,
+                                const ShortestPathData& spd) const {
+    U64 path = 0;
+
+    bool promotion = false;
+    int piece = pos.getPiece(fromSq);
+    if (piece != goalPos.getPiece(toSq)) { // Pawn promotion needed
+        switch (piece) {
+        case Piece::WPAWN:
+            path |= BitBoard::northFill(1ULL << (fromSq + 8));
+            break;
+        case Piece::BPAWN:
+            path |= BitBoard::southFill(1ULL << (fromSq - 8));
+            break;
+        default:
+            assert(false);
+        }
+        piece = goalPos.getPiece(toSq);
+        promotion = true;
+    }
+
+    U64 obstacles = 0; // Squares having same piece in pos and goalPos
+    {
+        U64 m = pos.occupiedBB() & goalPos.occupiedBB();
+        while (m) {
+            int sq = BitBoard::extractSquare(m);
+            if (pos.getPiece(sq) == goalPos.getPiece(sq))
+                obstacles |= 1ULL << sq;
+        }
+    }
+
+    while (fromSq != toSq) {
+        U64 reachable = 0;
+        switch (piece) {
+        case Piece::WQUEEN: case Piece::BQUEEN:
+            reachable = (BitBoard::rookAttacks(fromSq, blocked) |
+                         BitBoard::bishopAttacks(fromSq, blocked));
+            break;
+        case Piece::WROOK: case Piece::BROOK:
+            reachable = BitBoard::rookAttacks(fromSq, blocked);
+            break;
+        case Piece::WBISHOP: case Piece::BBISHOP:
+            reachable = BitBoard::bishopAttacks(fromSq, blocked);
+            break;
+        case Piece::WKNIGHT: case Piece::BKNIGHT:
+            reachable = BitBoard::knightAttacks(fromSq);
+            break;
+        case Piece::WKING: case Piece::BKING:
+            reachable = BitBoard::kingAttacks(fromSq);
+            break;
+        case Piece::WPAWN:
+            reachable = BitBoard::wPawnAttacks(fromSq);
+            reachable |= 1ULL << (fromSq + 8);
+            if (Square::getY(fromSq) == 1 && ((1ULL << (fromSq + 8)) & blocked) == 0)
+                reachable |= 1ULL << (fromSq + 16);
+            break;
+        case Piece::BPAWN:
+            reachable = BitBoard::bPawnAttacks(fromSq);
+            reachable |= 1ULL << (fromSq - 8);
+            if (Square::getY(fromSq) == 6 && ((1ULL << (fromSq - 8)) & blocked) == 0)
+                reachable |= 1ULL << (fromSq - 16);
+            break;
+        }
+        reachable &= ~blocked;
+        reachable &= spd.fromSquares;
+        if (promotion && reachable == 0)
+            return 0; // Give up, need to find other promotion square
+
+        assert(reachable != 0);
+        int dist = spd.pathLen[fromSq];
+        int sq1 = -1, sq2 = -1;
+        while (reachable) {
+            int sq = BitBoard::extractSquare(reachable);
+            if (spd.pathLen[sq] < dist) {
+                if ((1ULL << sq) & obstacles) {
+                    sq2 = sq;
+                } else {
+                    sq1 = sq;
+                    break;
+                }
+            }
+        }
+        int sq = sq1 == -1 ? sq2 : sq1;
+        assert(sq != -1);
+        switch (piece) {
+        case Piece::WQUEEN: case Piece::BQUEEN:
+        case Piece::WROOK: case Piece::BROOK:
+        case Piece::WBISHOP: case Piece::BBISHOP:
+        case Piece::WPAWN: case Piece::BPAWN:
+            path |= BitBoard::squaresBetween(fromSq, sq);
+            break;
+        default:
+            break;
+        }
+        path |= 1ULL << sq;
+        fromSq = sq;
+    }
+    return path & obstacles;
 }
 
 U64
@@ -845,7 +982,7 @@ ProofGame::promPathLen(bool wtm, int fromSq, int targetPiece, U64 blocked, int m
     case Piece::WBISHOP: case Piece::BBISHOP:
     case Piece::WKNIGHT: case Piece::BKNIGHT: {
         for (int x = 0; x < 8; x++) {
-            int promSq = wtm ? 7*8 + x : x;
+            int promSq = Square::getSquare(x, wtm ? 7 : 0);
             if (!promPath[x].spd)
                 promPath[x].spd = shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
                                                 promSq, blocked, maxCapt);
@@ -976,11 +1113,10 @@ ProofGame::promPathLen(bool wtm, int fromSq, U64 blocked, int maxCapt,
     int firstP = wtm ? Piece::WQUEEN : Piece::BQUEEN;
     int lastP = wtm ? Piece::WKNIGHT : Piece::BKNIGHT;
     for (int x = 0; x < 8; x++) {
-        int promSq = wtm ? 7*8 + x : x;
+        int promSq = Square::getSquare(x, wtm ? 7 : 0);
         if (!promPath[x].spd)
-            promPath[x].spd =
-                shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
-                              promSq, blocked, maxCapt);
+            promPath[x].spd = shortestPaths(wtm ? Piece::WPAWN : Piece::BPAWN,
+                                            promSq, blocked, maxCapt);
         int promCost = promPath[x].spd->pathLen[fromSq];
         if (promCost >= 0 && promCost < pLen) {
             int cost2 = INT_MAX;

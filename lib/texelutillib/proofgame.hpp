@@ -58,6 +58,9 @@ public:
         int weightB = 1;
         /** If true, use dynamic weighting A* algorithm. */
         bool dynamic = false;
+        /** If true, use a non-admissible heuristic function that takes
+         *  into account that pieces can block each other. */
+        bool useNonAdmissible = false;
         /** If true, use a minimal cache to reduce initialization time. */
         bool smallCache = false;
 
@@ -73,6 +76,7 @@ public:
         Options& setWeightA(int a) { weightA = a; return *this; }
         Options& setWeightB(int b) { weightB = b; return *this; }
         Options& setDynamic(int d) { dynamic = d; return *this; }
+        Options& setUseNonAdmissible(int b) { useNonAdmissible = b; return *this; }
         Options& setSmallCache(bool s) { smallCache = s; return *this; }
         Options& setMaxNodes(S64 m) { maxNodes = m; return *this; }
         Options& setVerbose(bool v) { verbose = v; return *this; }
@@ -166,6 +170,12 @@ private:
                             int numWhiteExtraPieces, int numBlackExtraPieces,
                             int excessWPawns, int excessBPawns,
                             int neededMoves[]);
+
+    /** Return obstacles between fromSq and toSq when following a shortest path
+     *  from fromSq to toSq. Obstacles are squares containing the same piece in
+     *  "pos" and "goalPos". */
+    U64 getMovePathObstacles(const Position& pos, U64 blocked, int fromSq, int toSq,
+                             const ShortestPathData& spd) const;
 
     /** If pieceType is a king, extend "blocked" to also include attacks from
      *  blocked opponent pawns. */
@@ -308,6 +318,8 @@ private:
     static U64 wPawnReachable[64][maxPawnCapt+1]; // [sq][nCaptures]
     static U64 bPawnReachable[64][maxPawnCapt+1];
     static bool staticInitDone;
+
+    bool useNonAdmissible = false;
 
     std::ostream& log;
 };

@@ -151,7 +151,7 @@ usage() {
     std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file\n";
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
-    std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-f [-o outfile] [-r]]\n";
+    std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-na] [-f [-o outfile] [-r]]\n";
     std::cerr << "           [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
     std::cerr << " revmoves \"fen\"\n";
     std::cerr << std::flush;
@@ -374,6 +374,7 @@ doProofGameCmd(int argc, char* argv[]) {
     bool filter = false;
     std::string outFile;
     bool retry = false;
+    bool useNonAdmissible = false;
     int arg = 2;
     while (arg < argc) {
         if (arg+1 < argc && argv[arg] == std::string("-w")) {
@@ -408,6 +409,9 @@ doProofGameCmd(int argc, char* argv[]) {
             arg += 2;
         } else if (argv[arg] == std::string("-r")) {
             retry = true;
+            arg++;
+        } else if (argv[arg] == std::string("-na")) {
+            useNonAdmissible = true;
             arg++;
         } else {
             break;
@@ -450,6 +454,7 @@ doProofGameCmd(int argc, char* argv[]) {
             .setWeightA(a)
             .setWeightB(b)
             .setDynamic(dynamic)
+            .setUseNonAdmissible(useNonAdmissible)
             .setMaxNodes(maxNodes)
             .setVerbose(verbose);
         ProofGame::Result result;

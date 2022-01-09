@@ -61,9 +61,11 @@ mirrorFenY(const std::string& fen) {
 }
 
 int
-ProofGameTest::hScore(const std::string& initFen, const std::string& goalFen, bool testMirrorY) {
+ProofGameTest::hScore(const std::string& initFen, const std::string& goalFen,
+                      bool useNonAdmissible, bool testMirrorY) {
     Position initPos = TextIO::readFEN(initFen);
     ProofGame ps(initFen, goalFen, {});
+    ps.useNonAdmissible = useNonAdmissible;
     {
         Position pos0 = TextIO::readFEN(TextIO::startPosFEN);
         checkBlockedConsistency(ps, pos0);
@@ -73,7 +75,7 @@ ProofGameTest::hScore(const std::string& initFen, const std::string& goalFen, bo
     EXPECT_GE(score, 0);
 
     if (testMirrorY) {
-        int score2 = hScore(mirrorFenY(initFen), mirrorFenY(goalFen), false);
+        int score2 = hScore(mirrorFenY(initFen), mirrorFenY(goalFen), useNonAdmissible, false);
         EXPECT_EQ(score, score2);
     }
 
@@ -681,6 +683,21 @@ ProofGameTest::testRemainingMoves() {
         ASSERT_EQ(INT_MAX, hScore("2k5/5r2/8/1p6/8/K7/7R/8 w - - 0 1",
                                   "2k5/5r2/8/1p6/K7/8/7R/8 w - - 0 1"));
     }
+}
+
+TEST(ProofGameTest, testNonAdmissible) {
+    ProofGameTest::testNonAdmissible();
+}
+
+void ProofGameTest::testNonAdmissible() {
+    ASSERT_EQ(13, hScore("2n2N1n/Q1B1PB2/qq2b3/1k2K1b1/R4B1r/Qpp1N1b1/P1q2rp1/Q2R4 b - - 31 72",
+                         "1bn2N1n/Q1B1PB2/qq2b3/1k2K1b1/R4B1r/Qpp1N3/P1q2rp1/Q2R4 w - - 0 1", true));
+    ASSERT_EQ(22, hScore("rnbqkbnr/1ppppppp/8/1p6/8/8/P1PPPPPP/RNBQKBNR w - - 0 1",
+                         "rnbqkbnr/1pppp3/8/1p6/8/5ppp/N1PPPPPP/RNBQKBNR w - - 0 1", true));
+    ASSERT_GE(hScore("rnbqkbnr/1p1ppppp/8/2pP4/Pp6/8/2P1PPPP/RNBQKBNR b - - 0 4",
+                     "rnbqkbnr/1p1pp3/6P1/5Pp1/Pp1ppp1P/8/2P5/1NBQKBN1 w - - 0 1", true), 1);
+    ASSERT_GE(hScore("rn1qkbnr/p4p1p/7P/1pPPpb2/5Pp1/8/P2PP1P1/RNBQKBNR b - - 0 1",
+                     "rn1qk1nr/p4p2/7P/1pPP3p/5pP1/6p1/P2PP3/RNBQKBNR w - - 0 1", true), 1);
 }
 
 TEST(ProofGameTest, testSearch) {
