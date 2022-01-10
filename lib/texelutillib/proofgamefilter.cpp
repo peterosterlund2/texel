@@ -505,6 +505,40 @@ ProofGameFilter::decidePromotions(std::vector<MultiBoard>& brdVec,
     }
 }
 
+static int
+pgSearch(const std::string& start, const std::string& goal,
+         std::vector<Move>& initialPath, std::ostream& log,
+         ProofGame::Options& opts, ProofGame::Result& result) {
+    ProofGame::Result firstResult;
+    int firstNumNodes = opts.maxNodes;
+    double firstSolTime = currentTime();
+    {
+        ProofGame ps(start, goal, initialPath, log);
+        int ret = ps.search(opts, firstResult);
+        if (ret != -1 || firstResult.closestPath.empty()) {
+            result = firstResult;
+            return ret;
+        }
+        initialPath = firstResult.closestPath;
+        firstSolTime = currentTime() - firstSolTime;
+    }
+
+    opts.maxNodes /= 4;
+    opts.setUseNonAdmissible(true);
+
+    ProofGame ps(start, goal, initialPath, log);
+    int ret = ps.search(opts, result);
+
+    if (ret == -1) {
+        result = firstResult;
+    } else if (ret != INT_MAX) {
+        result.numNodes += firstNumNodes;
+        result.solutionTime += firstSolTime;
+    }
+
+    return ret;
+}
+
 void
 ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int endIdx,
                              const Position& initPos, const Position& goalPos,
@@ -520,17 +554,15 @@ ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int 
     brdVec[endIdx].toPos(endPos);
 
     ProofGame::Result result;
-    int len;
-    {
-        ProofGame ps(TextIO::toFEN(startPos), TextIO::toFEN(endPos), {}, std::cerr);
-        auto opts = ProofGame::Options()
-            .setWeightA(pathOpts.weightA)
-            .setWeightB(pathOpts.weightB)
-            .setMaxNodes(pathOpts.maxNodes)
-            .setVerbose(true)
-            .setAcceptFirst(true);
-        len = ps.search(opts, result);
-    }
+    auto opts = ProofGame::Options()
+        .setWeightA(pathOpts.weightA)
+        .setWeightB(pathOpts.weightB)
+        .setMaxNodes(pathOpts.maxNodes)
+        .setVerbose(true)
+        .setAcceptFirst(true);
+    std::vector<Move> initPath;
+    int len = pgSearch(TextIO::toFEN(startPos), TextIO::toFEN(endPos), initPath, std::cerr,
+                       opts, result);
 
     auto getFenInfo = [&]() -> std::string {
         std::stringstream ss;
@@ -666,14 +698,14 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
         std::cerr << "Finding proof game for " << line.fen << std::endl;
         int len;
         {
-            ProofGame ps(TextIO::toFEN(startPos), line.fen, initPath, std::cerr);
             auto opts = ProofGame::Options()
                 .setWeightA(weightA)
                 .setWeightB(weightB)
                 .setMaxNodes(maxNodes)
                 .setVerbose(true)
                 .setAcceptFirst(true);
-            len = ps.search(opts, result);
+            len = pgSearch(TextIO::toFEN(startPos), line.fen, initPath, std::cerr,
+                           opts, result);
         }
 
         if (len == INT_MAX) {
