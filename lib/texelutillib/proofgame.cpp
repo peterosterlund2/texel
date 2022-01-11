@@ -327,8 +327,6 @@ ProofGame::search(const Options& opts, Result& result) {
                 << " queue: " << queue->size() << " nodes: " << numNodes
                 << " time: " << elapsed << std::endl;
             getMoves(log, startPos, idx, true, result.proofGame);
-            result.numNodes = numNodes;
-            result.solutionTime = elapsed;
             best = tn.ply;
             if (opts.acceptFirst)
                 break;
@@ -375,6 +373,9 @@ ProofGame::search(const Options& opts, Result& result) {
     double t1 = currentTime();
     log << "nodes: " << numNodes
         << " time: " << t1 - t0 <<  std::endl;
+
+    result.numNodes = numNodes;
+    result.computationTime = t1 - t0;
 
     if (best < INT_MAX)
         return best + lastMoves.size(); // Return best found solution length

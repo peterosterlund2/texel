@@ -84,10 +84,12 @@ public:
     };
 
     struct Result {
+        // Data always returned
+        int numNodes = 0;              // Number of nodes searched
+        double computationTime = 0;    // Time spent searching
+
         // Data returned when a solution was found
         std::vector<Move> proofGame;
-        int numNodes = 0;              // Number of nodes used to find solution
-        double solutionTime = 0;       // Time needed to compute solution
 
         // Data returned when no solution was found
         std::vector<Move> closestPath; // Best found non-solution

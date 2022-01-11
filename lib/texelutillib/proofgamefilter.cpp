@@ -507,35 +507,41 @@ ProofGameFilter::decidePromotions(std::vector<MultiBoard>& brdVec,
 
 static int
 pgSearch(const std::string& start, const std::string& goal,
-         std::vector<Move>& initialPath, std::ostream& log,
+         const std::vector<Move>& initialPath, std::ostream& log,
          ProofGame::Options& opts, ProofGame::Result& result) {
-    ProofGame::Result firstResult;
-    int firstNumNodes = opts.maxNodes;
-    double firstSolTime = currentTime();
     {
         ProofGame ps(start, goal, initialPath, log);
-        int ret = ps.search(opts, firstResult);
-        if (ret != -1 || firstResult.closestPath.empty()) {
-            result = firstResult;
+        int ret = ps.search(opts, result);
+        if (ret != -1 || result.closestPath.empty())
             return ret;
-        }
-        initialPath = firstResult.closestPath;
-        firstSolTime = currentTime() - firstSolTime;
     }
+
+    ProofGame::Result tmpResult;
+    auto updateResult = [&result,&tmpResult](int ret) -> bool {
+        if (ret != -1 && ret != INT_MAX) { // solution found
+            tmpResult.numNodes += result.numNodes;
+            tmpResult.computationTime += result.computationTime;
+            result = tmpResult;
+            return true;
+        }
+        result.numNodes += tmpResult.numNodes;
+        result.computationTime += tmpResult.computationTime;
+        return false;
+    };
 
     opts.maxNodes /= 4;
     opts.setUseNonAdmissible(true);
-
-    ProofGame ps(start, goal, initialPath, log);
-    int ret = ps.search(opts, result);
-
-    if (ret == -1) {
-        result = firstResult;
-    } else if (ret != INT_MAX) {
-        result.numNodes += firstNumNodes;
-        result.solutionTime += firstSolTime;
+    {
+        ProofGame ps(start, goal, result.closestPath, log);
+        int ret = ps.search(opts, tmpResult);
+        if (updateResult(ret))
+            return ret;
     }
 
+    opts.maxNodes /= 2;
+    ProofGame ps(start, goal, initialPath, log);
+    int ret = ps.search(opts, tmpResult);
+    updateResult(ret);
     return ret;
 }
 
@@ -723,7 +729,7 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
         line.tokenData(LEGAL).clear();
         std::cerr << "Solution: -w " << weightA << ':' << weightB
                   << " len: " << proof.size()
-                  << " nodes: " << result.numNodes << " time: " << result.solutionTime
+                  << " nodes: " << result.numNodes << " time: " << result.computationTime
                   << std::endl;
         return false;
     } catch (const ChessError& e) {
