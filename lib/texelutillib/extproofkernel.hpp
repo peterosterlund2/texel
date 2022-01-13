@@ -36,7 +36,8 @@ class ExtProofKernel {
     friend class ExtProofKernelTest;
 public:
     /** Constructor. */
-    ExtProofKernel(const Position& initialPos, const Position& goalPos);
+    ExtProofKernel(const Position& initialPos, const Position& goalPos,
+                   std::ostream& log = std::cerr);
 
     using PieceColor = ProofKernel::PieceColor;
     using PieceType = ProofKernel::PieceType;
@@ -58,12 +59,13 @@ private:
     CspSolver csp;
 
     struct Pawn {
-        Pawn(int idx, bool w) : idx(idx), white(w) {}
+        Pawn(std::ostream& log, int idx, bool w) : idx(idx), white(w), log(log) {}
         void addVar(int varNo, CspSolver& csp, bool addIneq = true);
 
         int idx;                  // Index in allPawns
         bool white;               // True for white pawn, false for black
         std::vector<int> varIds;  // All variables associated with this pawn
+        std::ostream& log;
     };
     std::vector<Pawn> allPawns;
 
@@ -116,6 +118,8 @@ private:
 
     friend std::ostream& operator<<(std::ostream& os, const VarSquare& vsq);
     friend std::ostream& operator<<(std::ostream& os, const ExtMove& move);
+
+    std::ostream& log;
 };
 
 std::ostream& operator<<(std::ostream& os, const ExtProofKernel::VarSquare& vsq);

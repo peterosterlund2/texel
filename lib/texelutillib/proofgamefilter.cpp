@@ -100,6 +100,7 @@ bool
 ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
                                  bool firstIteration,
                                  bool showProgress, bool retry) {
+    std::ostream& log = std::cerr;
     bool workRemains = false;
     Position startPos = TextIO::readFEN(TextIO::startPosFEN);
     while (true) {
@@ -121,15 +122,15 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
 
         switch (status) {
         case Legality::INITIAL:
-            computeExtProofKernel(startPos, line);
+            computeExtProofKernel(startPos, line, log);
             workRemains = true;
             break;
         case Legality::KERNEL:
-            workRemains |= computePath(startPos, line);
+            workRemains |= computePath(startPos, line, log);
             reportProgress = true;
             break;
         case Legality::PATH:
-            workRemains |= computeProofGame(startPos, line);
+            workRemains |= computeProofGame(startPos, line, log);
             reportProgress = true;
             break;
         case Legality::ILLEGAL:
@@ -175,7 +176,8 @@ getMovePath(const Position& startPos, std::vector<Move>& movePath) {
 }
 
 void
-ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line) {
+ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line,
+                                       std::ostream& log) {
     auto setIllegal = [this,&line](const std::string& reason) {
         std::vector<std::string>& illegal = line.tokenData(ILLEGAL);
         illegal.clear();
@@ -183,9 +185,9 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line) {
     };
 
     try {
-        std::cerr << "Finding proof kernel for " << line.fen << std::endl;
+        log << "Finding proof kernel for " << line.fen << std::endl;
         auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
-        ProofGame pg(TextIO::startPosFEN, line.fen, {}, std::cerr);
+        ProofGame pg(TextIO::startPosFEN, line.fen, {}, log);
         ProofGame::Result result;
         int minCost = pg.search(opts, result);
         if (minCost == INT_MAX) {
@@ -198,7 +200,7 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line) {
             U64 blocked;
             if (!pg.computeBlocked(startPos, blocked))
                 blocked = 0xffffffffffffffffULL; // If goal not reachable, consider all pieces blocked
-            ProofKernel pk(startPos, pg.getGoalPos(), blocked);
+            ProofKernel pk(startPos, pg.getGoalPos(), blocked, log);
             std::vector<PkMove> kernel;
             std::vector<ExtPkMove> extKernel;
             auto res = pk.findProofKernel(kernel, extKernel);
@@ -234,7 +236,8 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line) {
 }
 
 bool
-ProofGameFilter::computePath(const Position& startPos, Line& line) {
+ProofGameFilter::computePath(const Position& startPos, Line& line,
+                             std::ostream& log) {
     if (!line.hasToken(EXT_KERNEL))
         return false;
 
@@ -254,7 +257,7 @@ ProofGameFilter::computePath(const Position& startPos, Line& line) {
     }
 
     try {
-        std::cerr << "Finding path for " << line.fen << std::endl;
+        log << "Finding path for " << line.fen << std::endl;
         Position initPos(startPos);
         Position goalPos = TextIO::readFEN(line.fen);
         initPos.setCastleMask(goalPos.getCastleMask());
@@ -312,15 +315,15 @@ ProofGameFilter::computePath(const Position& startPos, Line& line) {
         pathOpts.weightB = 5;
 
         std::vector<Move> movePath;
-        computePath(brdVec, 0, brdVec.size() - 1, initPos, goalPos, pathOpts, movePath);
+        computePath(brdVec, 0, brdVec.size() - 1, initPos, goalPos, pathOpts, movePath, log);
 
         line.eraseToken(INFO);
         std::vector<std::string>& path = line.tokenData(PATH);
         path = getMovePath(initPos, movePath);
 
-        std::cerr << "Path solution: -w " << pathOpts.weightA << ':' << pathOpts.weightB
-                  << " nodes: " << pathOpts.maxNodes << " len: " << path.size()
-                  << std::endl;
+        log << "Path solution: -w " << pathOpts.weightA << ':' << pathOpts.weightB
+            << " nodes: " << pathOpts.maxNodes << " len: " << path.size()
+            << std::endl;
         return true;
     } catch (const ChessError& e) {
         line.eraseToken(PATH);
@@ -548,7 +551,8 @@ pgSearch(const std::string& start, const std::string& goal,
 void
 ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int endIdx,
                              const Position& initPos, const Position& goalPos,
-                             const PathOptions& pathOpts, std::vector<Move>& path) const {
+                             const PathOptions& pathOpts, std::vector<Move>& path,
+                             std::ostream& log) const {
     freePieces(brdVec, endIdx, initPos, goalPos);
 
     Position startPos(initPos);
@@ -567,7 +571,7 @@ ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int 
         .setVerbose(true)
         .setAcceptFirst(true);
     std::vector<Move> initPath;
-    int len = pgSearch(TextIO::toFEN(startPos), TextIO::toFEN(endPos), initPath, std::cerr,
+    int len = pgSearch(TextIO::toFEN(startPos), TextIO::toFEN(endPos), initPath, log,
                        opts, result);
 
     auto getFenInfo = [&]() -> std::string {
@@ -589,8 +593,8 @@ ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int 
         if (endIdx <= startIdx + 1)
             throw ChessError("No solution found" + getFenInfo());
         int midIdx = (startIdx + endIdx) / 2;
-        computePath(brdVec, startIdx, midIdx, initPos, goalPos, pathOpts, path);
-        computePath(brdVec, midIdx, endIdx, initPos, goalPos, pathOpts, path);
+        computePath(brdVec, startIdx, midIdx, initPos, goalPos, pathOpts, path, log);
+        computePath(brdVec, midIdx, endIdx, initPos, goalPos, pathOpts, path, log);
     } else {
         path.insert(path.end(), result.proofGame.begin(), result.proofGame.end());
     }
@@ -672,7 +676,8 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
 // ----------------------------------------------------------------------------
 
 bool
-ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
+ProofGameFilter::computeProofGame(const Position& startPos, Line& line,
+                                  std::ostream& log) {
     std::vector<Move> initPath;
     {
         Position pos(startPos);
@@ -701,7 +706,7 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
     ProofGame::Result result;
 
     try {
-        std::cerr << "Finding proof game for " << line.fen << std::endl;
+        log << "Finding proof game for " << line.fen << std::endl;
         int len;
         {
             auto opts = ProofGame::Options()
@@ -710,7 +715,7 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
                 .setMaxNodes(maxNodes)
                 .setVerbose(true)
                 .setAcceptFirst(true);
-            len = pgSearch(TextIO::toFEN(startPos), line.fen, initPath, std::cerr,
+            len = pgSearch(TextIO::toFEN(startPos), line.fen, initPath, log,
                            opts, result);
         }
 
@@ -727,10 +732,10 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line) {
         proof = getMovePath(startPos, result.proofGame);
         line.eraseToken(UNKNOWN);
         line.tokenData(LEGAL).clear();
-        std::cerr << "Solution: -w " << weightA << ':' << weightB
-                  << " len: " << proof.size()
-                  << " nodes: " << result.numNodes << " time: " << result.computationTime
-                  << std::endl;
+        log << "Solution: -w " << weightA << ':' << weightB
+            << " len: " << proof.size()
+            << " nodes: " << result.numNodes << " time: " << result.computationTime
+            << std::endl;
         return false;
     } catch (const ChessError& e) {
         line.eraseToken(PROOF);

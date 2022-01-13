@@ -30,7 +30,7 @@
 //#define EPKDEBUG
 
 #ifdef EPKDEBUG
-#define LOG(x) std::cerr << x << std::endl
+#define LOG(x) log << x << std::endl
 #else
 #define LOG(x) do { } while (false)
 #endif
@@ -43,8 +43,9 @@ const int maxPromoteOneFile = 7;
 
 
 ExtProofKernel::ExtProofKernel(const Position& initialPos,
-                               const Position& goalPos)
-    : initialPos(initialPos), goalPos(goalPos) {
+                               const Position& goalPos,
+                               std::ostream& log)
+    : initialPos(initialPos), goalPos(goalPos), csp(log), log(log) {
     allPawns.reserve(16);
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
@@ -53,7 +54,7 @@ ExtProofKernel::ExtProofKernel(const Position& initialPos,
             if (p == Piece::WPAWN || p == Piece::BPAWN) {
                 bool w = p == Piece::WPAWN;
                 int idx = allPawns.size();
-                allPawns.emplace_back(idx, w);
+                allPawns.emplace_back(log, idx, w);
                 int var = csp.addVariable(w ? PrefVal::SMALL : PrefVal::LARGE, y, y);
                 allPawns[idx].addVar(var, csp);
                 columns[x].addPawn(columns[x].nPawns(), idx);
@@ -65,7 +66,7 @@ ExtProofKernel::ExtProofKernel(const Position& initialPos,
 bool
 ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
                               std::vector<ExtPkMove>& extPath) {
-    std::cerr << "kernel: " << path << std::endl;
+    log << "kernel: " << path << std::endl;
 
     struct PromPiece {
         bool white;
@@ -104,7 +105,7 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
     };
 
     std::vector<ExtMove> varExtPath;
-    auto addExtMove = [&varExtPath](ExtMove&& move) {
+    auto addExtMove = [this,&varExtPath](ExtMove&& move) {
          LOG("extMove: " << move);
          varExtPath.push_back(std::move(move));
     };

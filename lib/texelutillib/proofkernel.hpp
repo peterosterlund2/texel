@@ -50,7 +50,8 @@ class ProofKernel {
     friend class ProofKernelTest;
 public:
     /** Constructor. */
-    ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked);
+    ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked,
+                std::ostream& log = std::cerr);
 
     bool operator==(const ProofKernel& other) const;
     bool operator!=(const ProofKernel& other) const;
@@ -331,6 +332,8 @@ private:
     bool computeExtKernel();
 
     friend PkMove strToPkMove(const std::string& move);
+
+    std::ostream& log;
 };
 
 /** Convert a PkMove to human readable string representation. */

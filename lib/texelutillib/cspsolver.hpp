@@ -28,13 +28,14 @@
 
 #include "bitSet.hpp"
 #include <vector>
+#include <iostream>
 
 /** Solves constraint satisfaction problems (CSPs) that arise when trying to
  *  determine the ranks at which captures in a proof kernel occurs. */
 class CspSolver {
     friend class CspSolverTest;
 public:
-    CspSolver();
+    CspSolver(std::ostream& log = std::cerr);
 
     /** Minimum supported variable value. */
     constexpr static int minAllowedValue = -16;
@@ -107,6 +108,8 @@ private:
     std::vector<ConstrSet> varToConstr; // [varNo] -> bitmask of constraints using varNo
 
     U64 nodes; // Number of nodes visited by solveRecursive()
+
+    std::ostream& log;
 };
 
 inline void

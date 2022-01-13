@@ -33,7 +33,7 @@
 //#define CSPDEBUG
 
 #ifdef CSPDEBUG
-#define LOG(x) std::cerr << x << std::endl
+#define LOG(x) log << x << std::endl
 template <int N, int offs>
 static std::string bits(const BitSet<N,offs>& mask) {
     std::stringstream ss;
@@ -56,7 +56,8 @@ static std::string bits(const BitSet<N,offs>& mask) {
 #endif
 
 
-CspSolver::CspSolver() {
+CspSolver::CspSolver(std::ostream& log)
+    : log(log) {
 }
 
 int
@@ -104,12 +105,12 @@ void
 CspSolver::addIneq(int v1, Oper op, int v2, int offs) {
 #ifdef CSPDEBUG
     int id = constr.size();
-    std::cerr << "id:" << id << " v" << v1 << (op == LE ? " <= v" : " >= v") << v2;
+    log << "id:" << id << " v" << v1 << (op == LE ? " <= v" : " >= v") << v2;
     if (offs < 0)
-        std::cerr << " - " << (-offs);
+        log << " - " << (-offs);
     else if (offs > 0)
-        std::cerr << " + " << offs;
-    std::cerr << std::endl;
+        log << " + " << offs;
+    log << std::endl;
 #endif
 
     if (op == GE) {
@@ -132,7 +133,7 @@ CspSolver::solve(std::vector<int>& values) {
     if (nVars == 0)
         return true;
 
-    std::cerr << "nVars:" << domain.size() << " nConstr:" << constr.size() << std::endl;
+    log << "nVars:" << domain.size() << " nConstr:" << constr.size() << std::endl;
     assert(constr.size() <= ConstrSet::numBits);
 
     varToConstr.assign(nVars, ConstrSet());
@@ -147,7 +148,7 @@ CspSolver::solve(std::vector<int>& values) {
         return false;
 
     bool ret = solveRecursive(0, values);
-    std::cerr << "CSP nodes: " << nodes << std::endl;
+    log << "CSP nodes: " << nodes << std::endl;
     return ret;
 }
 

@@ -30,8 +30,9 @@
 #include <cassert>
 
 
-ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked)
-    : initialPos(initialPos), goalPos(goalPos) {
+ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked,
+                         std::ostream& log)
+    : initialPos(initialPos), goalPos(goalPos), log(log) {
     for (int i = 0; i < 8; i++)
         columns[i] = PawnColumn(i);
     posToState(initialPos, columns, pieceCnt, blocked);
@@ -202,8 +203,8 @@ ProofKernel::findProofKernel(std::vector<PkMove>& proofKernel,
     failed.resize(1 << 20);
 
     SearchResult ret = search(0);
-    std::cerr << "found:" << (int)ret << " nodes:" << nodes
-              << " csp:" << nCSPs << " cspNodes:" << nCSPNodes << std::endl;
+    log << "found:" << (int)ret << " nodes:" << nodes
+        << " csp:" << nCSPs << " cspNodes:" << nCSPNodes << std::endl;
 
     proofKernel.insert(proofKernel.end(), path.begin(), path.end());
     extProofKernel.insert(extProofKernel.end(), extPath.begin(), extPath.end());
@@ -215,8 +216,8 @@ ProofKernel::SearchResult
 ProofKernel::search(int ply) {
     nodes++;
     if ((nodes & ((1ULL << 26) - 1)) == 0) {
-        std::cerr << "nodes:" << nodes << std::endl;
-        std::cerr << "path:" << path << std::endl;
+        log << "nodes:" << nodes << std::endl;
+        log << "path:" << path << std::endl;
     }
 
     if (remainingMoves == 0 && isGoal()) {
@@ -980,7 +981,7 @@ ProofKernel::getState(State& state) const {
 
 bool ProofKernel::computeExtKernel() {
     nCSPs++;
-    ExtProofKernel epk(initialPos, goalPos);
+    ExtProofKernel epk(initialPos, goalPos, log);
     bool ret = epk.findExtKernel(path, extPath);
     nCSPNodes += epk.getNumNodes();
     return ret;

@@ -120,12 +120,14 @@ private:
 
     /** Determine if position is illegal, unknown or legal, based on existence
      *  of an extended proof kernel. */
-    void computeExtProofKernel(const Position& startPos, Line& line);
+    void computeExtProofKernel(const Position& startPos, Line& line,
+                               std::ostream& log);
 
     /** Compute a sequence of moves corresponding to an extended proof kernel.
      *  This computation can fail even if a solution exists.
      *  Return true if any work remains to be done. */
-    bool computePath(const Position& startPos, Line& line);
+    bool computePath(const Position& startPos, Line& line,
+                     std::ostream& log);
 
     /** For pawns on first/last row, replace them with suitable promoted pieces. */
     void decidePromotions(std::vector<MultiBoard>& brdVec, const Position& initPos,
@@ -141,7 +143,8 @@ private:
      *  the required moves to "path". */
     void computePath(std::vector<MultiBoard>& brdVec, int startIdx, int endIdx,
                      const Position& initPos, const Position& goalPos,
-                     const PathOptions& pathOpts, std::vector<Move>& path) const;
+                     const PathOptions& pathOpts, std::vector<Move>& path,
+                     std::ostream& log) const;
 
     /** If pieces need to move away from their original position, try to advance
      *  suitable pawns to allow the pieces to move. */
@@ -156,7 +159,8 @@ private:
      *  2. UNKNOWN, FAIL   : A proof game is not found and more computation will not help.
      *  3. UNKNOWN, STATUS : A proof game is not found but searching more might help.
      *  Return true if any work remains to be done. */
-    bool computeProofGame(const Position& startPos, Line& line);
+    bool computeProofGame(const Position& startPos, Line& line,
+                          std::ostream& log);
 
     /** Data for conversion between Info enum and string representation. */
     struct InfoData {

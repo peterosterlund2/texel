@@ -154,7 +154,7 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
             U64 blocked;
             if (!computeBlocked(startPos, blocked))
                 blocked = 0xffffffffffffffffULL;
-            ProofKernel pk(startPos, tmpPos, blocked);
+            ProofKernel pk(startPos, tmpPos, blocked, log);
             std::vector<ProofKernel::PkMove> kernel;
             std::vector<ProofKernel::ExtPkMove> extKernel;
             if (pk.findProofKernel(kernel, extKernel) == ProofKernel::EXT_PROOF_KERNEL)
