@@ -51,6 +51,10 @@ public:
     ProofGame(const ProofGame&) = delete;
     ProofGame& operator=(const ProofGame&) = delete;
 
+    /** Set random seed used for breaking ties between positions having the same
+     *  priority in the A* search. */
+    void setRandomSeed(U64 seed);
+
     struct Options {
         /** Weight for length of current partial solution. */
         int weightA = 1;
@@ -252,6 +256,8 @@ private:
     int goalPieceCnt[Piece::nPieceTypes];
     std::vector<Move> lastMoves; // Forced moves after reaching goalPos to reach original goalPos
 
+    U64 rndSeed;   // Random seed for breaking ties between equal priority nodes
+
     struct TreeNode {
         Position::SerializeData psd; // Position data
         U32 parent;                  // Parent index, not used for root position
@@ -267,7 +273,7 @@ private:
                 return a*N * ply + (a*N + (b-a)*(N-p)) * bound;
             }
         }
-        void computePrio(const Position& pos, const Position& goalPos);
+        void computePrio(const Position& pos, const Position& goalPos, U64 rnd);
     };
 
     // All nodes encountered so far
@@ -330,7 +336,6 @@ inline const Position&
 ProofGame::getGoalPos() const {
     return goalPos;
 }
-
 
 inline bool
 ProofGame::isSolution(const Position& pos) const {

@@ -27,8 +27,7 @@
 #define PROOFGAMEFILTER_HPP_
 
 #include "util/util.hpp"
-#include "position.hpp"
-#include "assignment.hpp"
+#include "proofgame.hpp"
 
 #include <string>
 #include <vector>
@@ -122,6 +121,12 @@ private:
      *  of an extended proof kernel. */
     void computeExtProofKernel(const Position& startPos, Line& line,
                                std::ostream& log);
+
+    /** Try to find a sequence of moves from "start" to "goal" using the
+     *  ProofGame class. */
+    int pgSearch(const std::string& start, const std::string& goal,
+                 const std::vector<Move>& initialPath, std::ostream& log,
+                 ProofGame::Options& opts, ProofGame::Result& result) const;
 
     /** Compute a sequence of moves corresponding to an extended proof kernel.
      *  This computation can fail even if a solution exists.

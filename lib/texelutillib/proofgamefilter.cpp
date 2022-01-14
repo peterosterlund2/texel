@@ -24,7 +24,6 @@
  */
 
 #include "proofgamefilter.hpp"
-#include "proofgame.hpp"
 #include "textio.hpp"
 #include "proofkernel.hpp"
 #include "posutil.hpp"
@@ -508,12 +507,24 @@ ProofGameFilter::decidePromotions(std::vector<MultiBoard>& brdVec,
     }
 }
 
-static int
-pgSearch(const std::string& start, const std::string& goal,
-         const std::vector<Move>& initialPath, std::ostream& log,
-         ProofGame::Options& opts, ProofGame::Result& result) {
+int
+ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
+                          const std::vector<Move>& initialPath, std::ostream& log,
+                          ProofGame::Options& opts, ProofGame::Result& result) const {
+    auto getHash = [&opts]() -> U64 {
+        U64 ret = 1;
+        ret = hashU64(ret) + opts.weightA;
+        ret = hashU64(ret) + opts.weightB;
+        ret = hashU64(ret) + (opts.dynamic ? 1 : 0);
+        ret = hashU64(ret) + (opts.useNonAdmissible ? 1 : 0);
+        ret = hashU64(ret) + opts.maxNodes;
+        ret = hashU64(ret);
+        return ret;
+    };
+
     {
         ProofGame ps(start, goal, initialPath, log);
+        ps.setRandomSeed(getHash());
         int ret = ps.search(opts, result);
         if (ret != -1 || result.closestPath.empty())
             return ret;
@@ -536,6 +547,7 @@ pgSearch(const std::string& start, const std::string& goal,
     opts.setUseNonAdmissible(true);
     {
         ProofGame ps(start, goal, result.closestPath, log);
+        ps.setRandomSeed(getHash());
         int ret = ps.search(opts, tmpResult);
         if (updateResult(ret))
             return ret;
@@ -543,6 +555,7 @@ pgSearch(const std::string& start, const std::string& goal,
 
     opts.maxNodes /= 2;
     ProofGame ps(start, goal, initialPath, log);
+    ps.setRandomSeed(getHash());
     int ret = ps.search(opts, tmpResult);
     updateResult(ret);
     return ret;

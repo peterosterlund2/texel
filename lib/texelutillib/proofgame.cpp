@@ -92,6 +92,7 @@ ProofGame::staticInit() {
 ProofGame::ProofGame(const std::string& start, const std::string& goal,
                      const std::vector<Move>& initialPath, std::ostream& log)
     : initialFen(start), initialPath(initialPath), log(log) {
+    setRandomSeed(1);
 
     auto resetMoveCnt = [](Position& pos) {
         pos.setFullMoveCounter(1);
@@ -200,6 +201,11 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
 
     std::once_flag flag;
     call_once(flag, staticInit);
+}
+
+void
+ProofGame::setRandomSeed(U64 seed) {
+    rndSeed = hashU64(seed + hashU64(1));
 }
 
 void
@@ -404,9 +410,10 @@ ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkB
     tn.parent = parent;
     tn.ply = ply;
     tn.bound = bound;
-    tn.computePrio(pos, goalPos);
-
     U32 idx = nodes.size();
+    U64 rnd = hashU64(rndSeed + idx);
+    tn.computePrio(pos, goalPos, rnd);
+
     nodes.push_back(tn);
     nodeHash[pos.zobristHash()] = ply;
     queue->push(idx);
@@ -1609,11 +1616,11 @@ ProofGame::TreeNodeCompare::higherPrio(int a, int b) const {
     if (n1.prio != n2.prio)
         return n1.prio > n2.prio;
 
-    return n1.parent > n2.parent;
+    return a > b;
 }
 
 void
-ProofGame::TreeNode::computePrio(const Position& pos, const Position& goalPos) {
+ProofGame::TreeNode::computePrio(const Position& pos, const Position& goalPos, U64 rnd) {
     int p = 0;
 
     int nPiece = BitBoard::bitCount(pos.occupiedBB());
@@ -1627,6 +1634,8 @@ ProofGame::TreeNode::computePrio(const Position& pos, const Position& goalPos) {
 
     int nPAdv = nPawnAdvances(pos);
     p = p * 41 + nPAdv; // More advanced pawns hopefully closer to the goal
+
+    p = p * 1024 + (rnd & 1023); // Randomize
 
     prio = p;
 }
