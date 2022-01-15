@@ -244,12 +244,12 @@ ProofGameFilter::computePath(const Position& startPos, Line& line,
     for (const std::string& s : line.tokenData(EXT_KERNEL))
         extKernel.push_back(strToExtPkMove(s));
 
-    const int initMaxNodes = 5000;
-    const int maxMaxNodes = 500000;
+    const int initMaxNodes =  5000;
+    const int maxMaxNodes = 250000;
 
     int oldMaxNodes = line.getStatusInt("N", 0);
     line.eraseToken(STATUS);
-    int maxNodes = clamp(oldMaxNodes * 2, initMaxNodes, maxMaxNodes);
+    int maxNodes = clamp(oldMaxNodes * 19 / 16, initMaxNodes, maxMaxNodes);
     if (maxNodes <= oldMaxNodes) {
         line.tokenData(FAIL).clear();
         return false;
@@ -703,11 +703,11 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line,
     }
 
     const int initMaxNodes = 50000;
-    const int maxMaxNodes = 3200000;
+    const int maxMaxNodes = 800000;
 
     int oldMaxNodes = line.getStatusInt("N", 0);
     line.eraseToken(STATUS);
-    int maxNodes = clamp(oldMaxNodes * 2, initMaxNodes, maxMaxNodes);
+    int maxNodes = clamp(oldMaxNodes * 19 / 16, initMaxNodes, maxMaxNodes);
     if (maxNodes <= oldMaxNodes) {
         line.tokenData(FAIL).clear();
         return false;
