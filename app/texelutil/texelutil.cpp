@@ -364,7 +364,7 @@ doBookCmd(int argc, char* argv[]) {
 }
 
 static void
-doProofGameCmd(int argc, char* argv[]) {
+doProofGameCmd(int argc, char* argv[], int nWorkers) {
     std::string initFen = TextIO::startPosFEN;
     std::string initPgnFile;
     S64 maxNodes = -1;
@@ -418,7 +418,7 @@ doProofGameCmd(int argc, char* argv[]) {
         }
     }
     if (filter) {
-        ProofGameFilter pgf;
+        ProofGameFilter pgf(nWorkers);
         if (outFile.empty()) {
             pgf.filterFens(std::cin, std::cout);
         } else {
@@ -796,7 +796,7 @@ main(int argc, char* argv[]) {
             MatchBookCreator mbc(nWorkers);
             mbc.pgnStat(pgnFile, pairMode, std::cout);
         } else if (cmd == "proofgame") {
-            doProofGameCmd(argc, argv);
+            doProofGameCmd(argc, argv, nWorkers);
         } else if (cmd == "revmoves") {
             if (argc != 3)
                 usage();

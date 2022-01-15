@@ -40,7 +40,7 @@ class ProofGameFilter {
     friend class ProofGameTest;
 public:
     /** Constructor. */
-    ProofGameFilter();
+    ProofGameFilter(int nWorkers = 1);
 
     /** Read a list of FENs from a stream and classify them as legal/illegal/unknown
      *  with regards to reachability from the starting position. */
@@ -91,7 +91,7 @@ private:
         /** Read data from a line of input from "is". */
         bool read(std::istream& is);
         /** Write data as one line of text to "os". */
-        void write(std::ostream& os);
+        void write(std::ostream& os) const;
 
         /** Return legality status. */
         Legality getStatus() const;
@@ -120,7 +120,7 @@ private:
     /** Determine if position is illegal, unknown or legal, based on existence
      *  of an extended proof kernel. */
     void computeExtProofKernel(const Position& startPos, Line& line,
-                               std::ostream& log);
+                               std::ostream& log) const;
 
     /** Try to find a sequence of moves from "start" to "goal" using the
      *  ProofGame class. */
@@ -132,7 +132,7 @@ private:
      *  This computation can fail even if a solution exists.
      *  Return true if any work remains to be done. */
     bool computePath(const Position& startPos, Line& line,
-                     std::ostream& log);
+                     std::ostream& log) const;
 
     /** For pawns on first/last row, replace them with suitable promoted pieces. */
     void decidePromotions(std::vector<MultiBoard>& brdVec, const Position& initPos,
@@ -165,7 +165,7 @@ private:
      *  3. UNKNOWN, STATUS : A proof game is not found but searching more might help.
      *  Return true if any work remains to be done. */
     bool computeProofGame(const Position& startPos, Line& line,
-                          std::ostream& log);
+                          std::ostream& log) const;
 
     /** Data for conversion between Info enum and string representation. */
     struct InfoData {
@@ -179,8 +179,8 @@ private:
     static Info str2Info(const std::string& infoStr);
     static std::string info2Str(Info info);
 
-    /** Time when object was constructed. */
-    double startTime;
+    const int nWorkers; // Number of worker threads to use
+    double startTime;   // Time when object was constructed
     int statusCnt[(int)Legality::nLegality] = { 0 };
 };
 

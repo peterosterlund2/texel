@@ -28,6 +28,7 @@
 #include "proofkernel.hpp"
 #include "posutil.hpp"
 #include "util/timeUtil.hpp"
+#include "threadpool.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -61,7 +62,8 @@ ProofGameFilter::init() {
     infoStrData.push_back({ PROOF,      "proof"     });
 }
 
-ProofGameFilter::ProofGameFilter() {
+ProofGameFilter::ProofGameFilter(int nWorkers)
+    : nWorkers(nWorkers) {
     std::once_flag flag;
     call_once(flag, init);
     startTime = currentTime();
@@ -101,64 +103,121 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
                                  bool showProgress, bool retry) {
     std::ostream& log = std::cerr;
     bool workRemains = false;
-    Position startPos = TextIO::readFEN(TextIO::startPosFEN);
-    while (true) {
+    const Position startPos = TextIO::readFEN(TextIO::startPosFEN);
+
+    struct Result {
+        int id;
         Line line;
-        if (!line.read(is))
-            break;
-        if (firstIteration && retry) {
-            line.eraseToken(PATH);
-            line.eraseToken(STATUS);
-            line.eraseToken(FAIL);
-            line.eraseToken(INFO);
+        Legality status;
+        std::string log;
+        bool reportProgress;
+        bool workRemains = false;
+    };
+    int nStarted = 0;
+    int nFinished = 0;
+    bool allStarted = false;
+    bool allFinished = false;
+
+    ThreadPool<Result> pool(nWorkers);
+    std::map<int, Result> nonRetired; // Keep track of "out of order" results
+    while (true) {
+        Result r;
+        if (!allStarted && r.line.read(is)) {
+            Line& line = r.line;
+            if (firstIteration && retry) {
+                line.eraseToken(PATH);
+                line.eraseToken(STATUS);
+                line.eraseToken(FAIL);
+                line.eraseToken(INFO);
+            }
+
+            r.status = line.getStatus();
+            if (firstIteration)
+                statusCnt[(int)r.status]++;
+
+            r.id = nStarted++;
+            r.reportProgress = firstIteration;
+
+            auto func = [this,&startPos,r](int workerNo) mutable {
+                std::stringstream log;
+                switch (r.status) {
+                case Legality::INITIAL:
+                    computeExtProofKernel(startPos, r.line, log);
+                    r.workRemains = true;
+                    break;
+                case Legality::KERNEL:
+                    r.workRemains = computePath(startPos, r.line, log);
+                    r.reportProgress = true;
+                    break;
+                case Legality::PATH:
+                    r.workRemains = computeProofGame(startPos, r.line, log);
+                    r.reportProgress = true;
+                    break;
+                case Legality::ILLEGAL:
+                case Legality::LEGAL:
+                case Legality::FAIL:
+                case Legality::nLegality:
+                    break;
+                }
+                r.log = log.str();
+                return r;
+            };
+            pool.addTask(func);
+        } else {
+            allStarted = true;
         }
 
-        Legality status = line.getStatus();
-        if (firstIteration)
-            statusCnt[(int)status]++;
+        if (allStarted || nStarted >= nFinished + nWorkers * 2) {
+            if (!allFinished) {
+                Result r;
+                if (pool.getResult(r)) {
+                    nonRetired.insert({r.id, r});
+                } else {
+                    allFinished = true;
+                }
+            }
+            while (!nonRetired.empty()) {
+                auto it = nonRetired.begin();
+                if (it->first != nFinished) {
+                    assert(it->first > nFinished);
+                    break;
+                }
+                const Result& r = it->second;
+                const Line& line = r.line;
 
-        bool reportProgress = firstIteration;
+                workRemains |= r.workRemains;
+                log << r.log << std::flush;
 
-        switch (status) {
-        case Legality::INITIAL:
-            computeExtProofKernel(startPos, line, log);
-            workRemains = true;
-            break;
-        case Legality::KERNEL:
-            workRemains |= computePath(startPos, line, log);
-            reportProgress = true;
-            break;
-        case Legality::PATH:
-            workRemains |= computeProofGame(startPos, line, log);
-            reportProgress = true;
-            break;
-        case Legality::ILLEGAL:
-        case Legality::LEGAL:
-        case Legality::FAIL:
-        case Legality::nLegality:
-            break;
-        }
-        Legality newStatus = line.getStatus();
-        line.write(os);
+                Legality newStatus = line.getStatus();
+                line.write(os);
 
-        if (newStatus != status) {
-            statusCnt[(int)status]--;
-            statusCnt[(int)line.getStatus()]++;
-        }
+                if (newStatus != r.status) {
+                    statusCnt[(int)r.status]--;
+                    statusCnt[(int)newStatus]++;
+                }
 
-        if (showProgress && (reportProgress || newStatus != status)) {
-            std::stringstream ss;
-            ss << std::fixed << std::setprecision(3) << (currentTime() - startTime);
-            std::string elapsed = ss.str();
-            std::cout << "legal: "    << statusCnt[(int)Legality::LEGAL]
-                      << " path: "    << statusCnt[(int)Legality::PATH]
-                      << " kernel: "  << statusCnt[(int)Legality::KERNEL]
-                      << " fail: "    << statusCnt[(int)Legality::FAIL]
-                      << " illegal: " << statusCnt[(int)Legality::ILLEGAL]
-                      << " time: " << elapsed
-                      << std::endl;
+                if (showProgress && (r.reportProgress || newStatus != r.status)) {
+                    std::stringstream ss;
+                    ss << std::fixed << std::setprecision(3) << (currentTime() - startTime);
+                    std::string elapsed = ss.str();
+                    std::cout << "legal: "    << statusCnt[(int)Legality::LEGAL]
+                              << " path: "    << statusCnt[(int)Legality::PATH]
+                              << " kernel: "  << statusCnt[(int)Legality::KERNEL]
+                              << " fail: "    << statusCnt[(int)Legality::FAIL]
+                              << " illegal: " << statusCnt[(int)Legality::ILLEGAL]
+                              << " time: " << elapsed
+                              << std::endl;
+                }
+                nonRetired.erase(nonRetired.begin());
+                nFinished++;
+            }
+            if (allFinished) {
+                assert(nonRetired.empty());
+                break;
+            }
         }
     }
+    assert(nStarted == nFinished);
     return workRemains;
 }
 
@@ -176,7 +235,7 @@ getMovePath(const Position& startPos, std::vector<Move>& movePath) {
 
 void
 ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line,
-                                       std::ostream& log) {
+                                       std::ostream& log) const {
     auto setIllegal = [this,&line](const std::string& reason) {
         std::vector<std::string>& illegal = line.tokenData(ILLEGAL);
         illegal.clear();
@@ -236,7 +295,7 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line,
 
 bool
 ProofGameFilter::computePath(const Position& startPos, Line& line,
-                             std::ostream& log) {
+                             std::ostream& log) const {
     if (!line.hasToken(EXT_KERNEL))
         return false;
 
@@ -690,7 +749,7 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
 
 bool
 ProofGameFilter::computeProofGame(const Position& startPos, Line& line,
-                                  std::ostream& log) {
+                                  std::ostream& log) const {
     std::vector<Move> initPath;
     {
         Position pos(startPos);
@@ -831,14 +890,14 @@ ProofGameFilter::Line::read(std::istream& is) {
 }
 
 void
-ProofGameFilter::Line::write(std::ostream& os) {
+ProofGameFilter::Line::write(std::ostream& os) const {
     os << fen;
 
     auto printTokenData = [&os,this](Info tokType) {
         if (hasToken(tokType)) {
             os << ' ' << info2Str(tokType) << ':';
-            std::vector<std::string>& data = tokenData(tokType);
-            for (const std::string& s : data)
+            const std::vector<std::string>& d = data.at(tokType);
+            for (const std::string& s : d)
                 os << ' ' << s;
         }
     };
