@@ -70,8 +70,8 @@ ProofGameFilter::ProofGameFilter(int nWorkers, U64 rndSeed)
 }
 
 void
-ProofGameFilter::filterFens(std::istream& is, std::ostream& os) {
-    runOneIteration(is, os, true, false, false);
+ProofGameFilter::filterFens(std::istream& is, std::ostream& os, bool retry) {
+    runOneIteration(is, os, true, false, retry);
 }
 
 void

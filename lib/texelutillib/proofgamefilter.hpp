@@ -44,7 +44,7 @@ public:
 
     /** Read a list of FENs from a stream and classify them as legal/illegal/unknown
      *  with regards to reachability from the starting position. */
-    void filterFens(std::istream& is, std::ostream& os);
+    void filterFens(std::istream& is, std::ostream& os, bool retry = false);
 
     /** Read a list of FENs from a stream and classify them as legal/illegal/unknown
      *  with regards to reachability from the starting position. The classification
