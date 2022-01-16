@@ -62,8 +62,8 @@ ProofGameFilter::init() {
     infoStrData.push_back({ PROOF,      "proof"     });
 }
 
-ProofGameFilter::ProofGameFilter(int nWorkers)
-    : nWorkers(nWorkers) {
+ProofGameFilter::ProofGameFilter(int nWorkers, U64 rndSeed)
+    : nWorkers(nWorkers), rndSeed(rndSeed) {
     std::once_flag flag;
     call_once(flag, init);
     startTime = currentTime();
@@ -570,7 +570,7 @@ int
 ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
                           const std::vector<Move>& initialPath, std::ostream& log,
                           ProofGame::Options& opts, ProofGame::Result& result) const {
-    auto getHash = [&opts]() -> U64 {
+    auto getHash = [this,&opts]() -> U64 {
         U64 ret = 1;
         ret = hashU64(ret) + opts.weightA;
         ret = hashU64(ret) + opts.weightB;
@@ -578,6 +578,7 @@ ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
         ret = hashU64(ret) + (opts.useNonAdmissible ? 1 : 0);
         ret = hashU64(ret) + opts.maxNodes;
         ret = hashU64(ret);
+        ret += rndSeed;
         return ret;
     };
 

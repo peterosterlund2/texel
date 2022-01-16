@@ -151,8 +151,9 @@ usage() {
     std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file\n";
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
-    std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-na] [-f [-o outfile] [-r]]\n";
-    std::cerr << "           [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
+    std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-na] [-i \"initFen\"]\n";
+    std::cerr << "           [-ipgn \"initPgnFile\"] \"goalFen\"\n";
+    std::cerr << " proofgame -f [-o outfile] [-r] [-rnd seed]\n";
     std::cerr << " revmoves \"fen\"\n";
     std::cerr << std::flush;
     ::exit(2);
@@ -365,16 +366,22 @@ doBookCmd(int argc, char* argv[]) {
 
 static void
 doProofGameCmd(int argc, char* argv[], int nWorkers) {
+    bool filter = false;
+
+    // Options used in non-filtering mode
     std::string initFen = TextIO::startPosFEN;
     std::string initPgnFile;
     S64 maxNodes = -1;
     int a = 1, b = 1;
     bool dynamic = false;
     bool verbose = false;
-    bool filter = false;
+    bool useNonAdmissible = false;
+
+    // Options used in filtering (-f) mode
     std::string outFile;
     bool retry = false;
-    bool useNonAdmissible = false;
+    U64 rndSeed = 0;
+
     int arg = 2;
     while (arg < argc) {
         if (arg+1 < argc && argv[arg] == std::string("-w")) {
@@ -413,12 +420,16 @@ doProofGameCmd(int argc, char* argv[], int nWorkers) {
         } else if (argv[arg] == std::string("-na")) {
             useNonAdmissible = true;
             arg++;
+        } else if (arg + 1 < argc && argv[arg] == std::string("-rnd")) {
+            if (!str2Num(argv[arg+1], rndSeed))
+                usage();
+            arg += 2;
         } else {
             break;
         }
     }
     if (filter) {
-        ProofGameFilter pgf(nWorkers);
+        ProofGameFilter pgf(nWorkers, rndSeed);
         if (outFile.empty()) {
             pgf.filterFens(std::cin, std::cout);
         } else {
