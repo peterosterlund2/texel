@@ -423,11 +423,12 @@ ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkB
 void
 ProofGame::getMoves(std::ostream& logStream, const Position& startPos, int idx,
                     bool includeLastMoves, std::vector<Move>& movePath) const {
-    std::function<void(int)> getMoves = [this,&movePath,&getMoves](U32 idx) {
+    movePath.clear();
+    while (true) {
         const TreeNode& tn = nodes[idx];
         if (tn.ply == 0)
-            return;
-        getMoves(tn.parent);
+            break;
+
         Position target;
         target.deSerialize(tn.psd);
 
@@ -446,9 +447,11 @@ ProofGame::getMoves(std::ostream& logStream, const Position& startPos, int idx,
             }
             pos.unMakeMove(moves[i], ui);
         }
-    };
-    movePath.clear();
-    getMoves(idx);
+
+        idx = tn.parent;
+    }
+    std::reverse(movePath.begin(), movePath.end());
+
     if (includeLastMoves)
         movePath.insert(movePath.end(), lastMoves.begin(), lastMoves.end());
     Position pos = startPos;
