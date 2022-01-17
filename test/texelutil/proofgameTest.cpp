@@ -1143,6 +1143,8 @@ void ProofGameTest::testFilter1() {
         { " 2bqk2r/1pppp1P1/6p1/p5p1/2B3p1/6P1/PPPP2P1/R1BQKB1R b KQk - 0 1 ", "unknown: kernel:", true },
         { "k1Bb1B1q/2NNp2r/1KNp1RB1/1R2qb2/BB1P3B/2N5/r2r4/RQqn4 b - - 0 1", "illegal:", true },
 
+        { "1B1b1nr1/2N2p2/3rr1B1/r3NQQR/Bp1k1nRK/2P1N3/2r2QP1/B5q1 b - - 0 1", "illegal:", true },
+
         { "r1bqkbnr/pppppppp/2n5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1 legal: proof: e4 Nc6",
           "legal: proof: e4 Nc6", true },
 

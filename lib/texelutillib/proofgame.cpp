@@ -158,10 +158,26 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
             ProofKernel pk(startPos, tmpPos, blocked, log);
             std::vector<ProofKernel::PkMove> kernel;
             std::vector<ProofKernel::ExtPkMove> extKernel;
-            if (pk.findProofKernel(kernel, extKernel) == ProofKernel::EXT_PROOF_KERNEL)
-                unMoves.push_back(um);
-            else
+            if (pk.findProofKernel(kernel, extKernel) != ProofKernel::EXT_PROOF_KERNEL) {
                 rejected = true;
+            } else {
+                bool knownIllegal = false;
+                try {
+                    ProofGame ps(TextIO::toFEN(startPos), TextIO::toFEN(tmpPos), {}, log);
+                    auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
+                    ProofGame::Result result;
+                    int ret = ps.search(opts, result);
+                    knownIllegal = ret == INT_MAX;
+                } catch (ChessError& e) {
+                    knownIllegal = true;
+                }
+                if (knownIllegal) {
+                    log << "Capture rejected by recursive proof game search" << std::endl;
+                    rejected = true;
+                } else {
+                    unMoves.push_back(um);
+                }
+            }
         }
 
         if (unMoves.empty()) {

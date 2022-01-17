@@ -125,6 +125,8 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
         if (!allStarted && r.line.read(is)) {
             Line& line = r.line;
             if (firstIteration && retry) {
+                line.eraseToken(KERNEL);
+                line.eraseToken(EXT_KERNEL);
                 line.eraseToken(PATH);
                 line.eraseToken(STATUS);
                 line.eraseToken(FAIL);
