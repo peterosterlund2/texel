@@ -140,19 +140,20 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
             r.id = nStarted++;
             r.reportProgress = firstIteration;
 
-            auto func = [this,&startPos,r](int workerNo) mutable {
-                std::stringstream log;
+            auto func = [this,&log,&startPos,r](int workerNo) mutable {
+                std::stringstream strLog;
+                std::ostream& localLog = nWorkers == 1 ? log : strLog;
                 switch (r.status) {
                 case Legality::INITIAL:
-                    computeExtProofKernel(startPos, r.line, log);
+                    computeExtProofKernel(startPos, r.line, localLog);
                     r.workRemains = true;
                     break;
                 case Legality::KERNEL:
-                    r.workRemains = computePath(startPos, r.line, log);
+                    r.workRemains = computePath(startPos, r.line, localLog);
                     r.reportProgress = true;
                     break;
                 case Legality::PATH:
-                    r.workRemains = computeProofGame(startPos, r.line, log);
+                    r.workRemains = computeProofGame(startPos, r.line, localLog);
                     r.reportProgress = true;
                     break;
                 case Legality::ILLEGAL:
@@ -161,7 +162,7 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
                 case Legality::nLegality:
                     break;
                 }
-                r.log = log.str();
+                r.log = strLog.str();
                 return r;
             };
             pool.addTask(func);
@@ -188,7 +189,8 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
                 const Line& line = r.line;
 
                 workRemains |= r.workRemains;
-                log << r.log << std::flush;
+                if (nWorkers > 1)
+                    log << r.log << std::flush;
 
                 Legality newStatus = line.getStatus();
                 line.write(os);
