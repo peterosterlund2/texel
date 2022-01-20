@@ -90,7 +90,8 @@ ProofGame::staticInit() {
 }
 
 ProofGame::ProofGame(const std::string& start, const std::string& goal,
-                     const std::vector<Move>& initialPath, std::ostream& log)
+                     const std::vector<Move>& initialPath,
+                     bool useNonForcedCapture, std::ostream& log)
     : initialFen(start), initialPath(initialPath), log(log) {
     setRandomSeed(1);
 
@@ -143,6 +144,7 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
                 rejected = true;
             }
         }
+        bool validQuiet = !unMoves.empty();
 
         for (const UnMove& um : captures) {
             if (unMoves.size() > 1)
@@ -163,7 +165,7 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
             } else {
                 bool knownIllegal = false;
                 try {
-                    ProofGame ps(TextIO::toFEN(startPos), TextIO::toFEN(tmpPos), {}, log);
+                    ProofGame ps(TextIO::toFEN(startPos), TextIO::toFEN(tmpPos), {}, false, log);
                     auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
                     ProofGame::Result result;
                     int ret = ps.search(opts, result);
@@ -190,6 +192,13 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
         if (unMoves.size() == 1) {
             const UnMove& um = unMoves[0];
             log << "Forced last move: " << um << std::endl;
+            goalPos.unMakeMove(um.move, um.ui);
+            resetMoveCnt(goalPos);
+            lastMoves.push_back(um.move);
+            log << "New goalPos: " << TextIO::toFEN(goalPos) << std::endl;
+        } else if (useNonForcedCapture && !validQuiet) {
+            const UnMove& um = unMoves[0];
+            log << "Only captures possible, assuming move: " << um << std::endl;
             goalPos.unMakeMove(um.move, um.ui);
             resetMoveCnt(goalPos);
             lastMoves.push_back(um.move);

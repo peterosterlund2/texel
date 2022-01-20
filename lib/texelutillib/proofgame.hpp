@@ -47,7 +47,8 @@ public:
      * numbers are different.
      * @param initialPath  Only search for solutions starting with this path. */
     ProofGame(const std::string& start, const std::string& goal,
-              const std::vector<Move>& initialPath, std::ostream& log = std::cout);
+              const std::vector<Move>& initialPath,
+              bool useNonForcedCapture = false, std::ostream& log = std::cout);
     ProofGame(const ProofGame&) = delete;
     ProofGame& operator=(const ProofGame&) = delete;
 

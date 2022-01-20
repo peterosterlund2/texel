@@ -828,6 +828,23 @@ ProofGameTest::testInitPath() {
     }
 }
 
+TEST(ProofGameTest, testLastMove) {
+    ProofGameTest::testLastMove();
+}
+
+void
+ProofGameTest::testLastMove() {
+    {
+        std::string goal = "K1b1r2n/2N4p/2nBQ1b1/8/RB2Rrq1/1nQB1nr1/QpNk4/1B2b2n b - - 0 1";
+        ProofGame ps1(TextIO::startPosFEN, goal, {});
+        ASSERT_EQ(goal, TextIO::toFEN(ps1.getGoalPos()));
+
+        ProofGame ps2(TextIO::startPosFEN, goal, {}, true);
+        ASSERT_EQ("K1b1r2n/2N4p/2nBQ1b1/8/RBQ1Rrq1/1nqB1nr1/QpNk4/1B2b2n w - - 0 1",
+                  TextIO::toFEN(ps2.getGoalPos()));
+    }
+}
+
 TEST(ProofGameTest, testEnPassant) {
     ProofGameTest::testEnPassant();
 }

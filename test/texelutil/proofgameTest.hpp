@@ -46,6 +46,7 @@ public:
     static void testNonAdmissible();
     static void testSearch();
     static void testInitPath();
+    static void testLastMove();
     static void testEnPassant();
     static void testCaptureSquares();
     static void testKingPawnsTrap();

@@ -126,6 +126,7 @@ private:
      *  ProofGame class. */
     int pgSearch(const std::string& start, const std::string& goal,
                  const std::vector<Move>& initialPath, std::ostream& log,
+                 bool useNonForcedCapture,
                  ProofGame::Options& opts, ProofGame::Result& result) const;
 
     /** Compute a sequence of moves corresponding to an extended proof kernel.

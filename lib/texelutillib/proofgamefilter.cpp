@@ -265,7 +265,7 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line,
     try {
         log << "Finding proof kernel for " << line.fen << std::endl;
         auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
-        ProofGame pg(TextIO::startPosFEN, line.fen, {}, log);
+        ProofGame pg(TextIO::startPosFEN, line.fen, {}, true, log);
         ProofGame::Result result;
         int minCost = pg.search(opts, result);
         if (minCost == INT_MAX) {
@@ -589,6 +589,7 @@ ProofGameFilter::decidePromotions(std::vector<MultiBoard>& brdVec,
 int
 ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
                           const std::vector<Move>& initialPath, std::ostream& log,
+                          bool useNonForcedCapture,
                           ProofGame::Options& opts, ProofGame::Result& result) const {
     auto getHash = [this,&opts]() -> U64 {
         U64 ret = 1;
@@ -603,7 +604,7 @@ ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
     };
 
     {
-        ProofGame ps(start, goal, initialPath, log);
+        ProofGame ps(start, goal, initialPath, useNonForcedCapture, log);
         ps.setRandomSeed(getHash());
         int ret = ps.search(opts, result);
         if (ret != -1 || result.closestPath.empty())
@@ -626,7 +627,7 @@ ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
     opts.maxNodes /= 4;
     opts.setUseNonAdmissible(true);
     {
-        ProofGame ps(start, goal, result.closestPath, log);
+        ProofGame ps(start, goal, result.closestPath, useNonForcedCapture, log);
         ps.setRandomSeed(getHash());
         int ret = ps.search(opts, tmpResult);
         if (updateResult(ret))
@@ -634,7 +635,7 @@ ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
     }
 
     opts.maxNodes /= 2;
-    ProofGame ps(start, goal, initialPath, log);
+    ProofGame ps(start, goal, initialPath, useNonForcedCapture, log);
     ps.setRandomSeed(getHash());
     int ret = ps.search(opts, tmpResult);
     updateResult(ret);
@@ -665,7 +666,7 @@ ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int 
         .setAcceptFirst(true);
     std::vector<Move> initPath;
     int len = pgSearch(TextIO::toFEN(startPos), TextIO::toFEN(endPos), initPath, log,
-                       opts, result);
+                       false, opts, result);
 
     auto getFenInfo = [&]() -> std::string {
         std::stringstream ss;
@@ -809,7 +810,7 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line,
                 .setVerbose(true)
                 .setAcceptFirst(true);
             len = pgSearch(TextIO::toFEN(startPos), line.fen, initPath, log,
-                           opts, result);
+                           true, opts, result);
         }
 
         if (len == INT_MAX) {
