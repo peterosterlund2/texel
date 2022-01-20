@@ -71,7 +71,8 @@ ProofGameFilter::ProofGameFilter(int nWorkers, U64 rndSeed)
 
 void
 ProofGameFilter::filterFens(std::istream& is, std::ostream& os, bool retry) {
-    runOneIteration(is, os, true, false, retry);
+    int maxNodes;
+    runOneIteration(is, os, true, false, retry, maxNodes);
 }
 
 void
@@ -84,6 +85,7 @@ ProofGameFilter::filterFensIterated(std::istream& is,
         return ss.str();
     };
 
+    int maxNodesAllPos = 0;
     int iter = 0;
     while (true) {
         std::ofstream of(getFileName(iter));
@@ -91,7 +93,7 @@ ProofGameFilter::filterFensIterated(std::istream& is,
         if (iter > 0)
             prev.open(getFileName(iter - 1));
         std::istream& in = iter == 0 ? is : prev;
-        if (!runOneIteration(in, of, iter == 0, true, retry))
+        if (!runOneIteration(in, of, iter == 0, true, retry, maxNodesAllPos))
             break;
         iter++;
     }
@@ -100,7 +102,8 @@ ProofGameFilter::filterFensIterated(std::istream& is,
 bool
 ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
                                  bool firstIteration,
-                                 bool showProgress, bool retry) {
+                                 bool showProgress, bool retry,
+                                 int& maxNodesAllPos) {
     std::ostream& log = std::cerr;
     bool workRemains = false;
     const Position startPos = TextIO::readFEN(TextIO::startPosFEN);
@@ -117,6 +120,8 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
     int nFinished = 0;
     bool allStarted = false;
     bool allFinished = false;
+    int maxNodesPrevIteration = maxNodesAllPos;
+    maxNodesAllPos = 0;
 
     ThreadPool<Result> pool(nWorkers);
     std::map<int, Result> nonRetired; // Keep track of "out of order" results
@@ -140,7 +145,7 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
             r.id = nStarted++;
             r.reportProgress = firstIteration;
 
-            auto func = [this,&log,&startPos,r](int workerNo) mutable {
+            auto func = [this,&log,&startPos,maxNodesPrevIteration,r](int workerNo) mutable {
                 std::stringstream strLog;
                 std::ostream& localLog = nWorkers == 1 ? log : strLog;
                 switch (r.status) {
@@ -150,12 +155,19 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
                     break;
                 case Legality::KERNEL:
                     r.workRemains = computePath(startPos, r.line, localLog);
+                    if (r.workRemains && !r.line.hasToken(PATH))
+                        r.workRemains = computePath(startPos, r.line, localLog);
                     r.reportProgress = true;
                     break;
-                case Legality::PATH:
+                case Legality::PATH: {
                     r.workRemains = computeProofGame(startPos, r.line, localLog);
+                    int maxNodes = r.line.getStatusInt("N", 0);
+                    if (r.workRemains && maxNodes <= maxNodesPrevIteration) {
+                        r.workRemains = computeProofGame(startPos, r.line, localLog);
+                    }
                     r.reportProgress = true;
                     break;
+                }
                 case Legality::ILLEGAL:
                 case Legality::LEGAL:
                 case Legality::FAIL:
@@ -189,6 +201,10 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
                 const Line& line = r.line;
 
                 workRemains |= r.workRemains;
+                if (r.workRemains && r.line.hasToken(PATH)) {
+                    int maxNodes = r.line.getStatusInt("N", 0);
+                    maxNodesAllPos = std::max(maxNodesAllPos, maxNodes);
+                }
                 if (nWorkers > 1)
                     log << r.log << std::flush;
 
@@ -826,10 +842,12 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line,
         std::vector<std::string>& info = line.tokenData(INFO);
         info.clear();
         info.push_back(e.what() + std::string(","));
-        info.push_back("bound=" + num2Str(result.smallestBound));
-        info.push_back("moves");
-        for (auto& s : getMovePath(startPos, result.closestPath))
-            info.push_back(s);
+        if (result.smallestBound > 0) {
+            info.push_back("bound=" + num2Str(result.smallestBound));
+            info.push_back("moves");
+            for (auto& s : getMovePath(startPos, result.closestPath))
+                info.push_back(s);
+        }
         return workRemains;
     }
 }

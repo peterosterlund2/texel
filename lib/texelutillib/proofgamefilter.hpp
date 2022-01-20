@@ -115,7 +115,7 @@ private:
     /** Process all lines in "is" and write result to "os".
      *  Return true if any work remains to be done. */
     bool runOneIteration(std::istream& is, std::ostream& os, bool firstIteration,
-                         bool showProgress, bool retry);
+                         bool showProgress, bool retry, int& maxNodesAllPos);
 
     /** Determine if position is illegal, unknown or legal, based on existence
      *  of an extended proof kernel. */
