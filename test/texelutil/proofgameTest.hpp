@@ -49,7 +49,7 @@ public:
     static void testLastMove();
     static void testEnPassant();
     static void testCaptureSquares();
-    static void testKingPawnsTrap();
+    static void testDeadlockedPieces();
     static void testFilter1();
     static void testFilter2();
     static void testFilterPath();

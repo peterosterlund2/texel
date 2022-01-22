@@ -75,7 +75,7 @@ public:
         /** If true, print path every time distance to goal decreases. */
         bool verbose = false;
         /** If true, accept first solution found, otherwise continue searching
-         *  searching for a better solution. */
+         *  for a better solution. */
         bool acceptFirst = false;
 
         Options& setWeightA(int a) { weightA = a; return *this; }
@@ -102,11 +102,11 @@ public:
     };
 
     /** Search for shortest solution. Print solutions to log stream.
-     * @param opts         Options controlling search behavior.
-     * @param result       Computed result.
-     * @return             Length of shortest path found,
-     *                     or INT_MAX if no solution exists,
-     *                     or -1 if unknown whether a solution exists. */
+     * @param opts    Options controlling search behavior.
+     * @param result  Computed result.
+     * @return        Length of shortest path found,
+     *                or INT_MAX if no solution exists,
+     *                or -1 if unknown whether a solution exists. */
     int search(const Options& opts, Result& result);
 
     /** Compute blocked pieces in a position. A blocked piece is a piece that
@@ -233,10 +233,9 @@ private:
      * be part of a non-optimal solution are not modified. */
     static int solveAssignment(Assignment<int>& as);
 
-    /** Compute blocked pieces caused by a king on the first rank trapped by
-     *  two enemy pawns on the second and third ranks.
+    /** Compute pieces that cannot move because they block each other.
      *  If false is returned, it is impossible to reach goalPos from pos. */
-    bool computeKingPawnsTrapBlocked(const Position& pos, U64& blocked) const;
+    bool computeDeadlockedPieces(const Position& pos, U64& blocked) const;
 
     /** Compute shortest path for a piece p to toSq from all possible start squares,
      *  taking blocked squares into account. For squares that can not reach toSq,

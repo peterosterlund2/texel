@@ -352,7 +352,7 @@ ProofKernelTest::testGoal() {
          "rnbqkbnB/pppppp2/6p1/8/1B6/8/PPPPPP2/RNBQKBNR w - - 0 1", true, 0);
 
     test("r1bqkb1B/ppppppp1/8/8/8/7P/PPPPP2P/RNBQKBNR w - - 0 1",
-         "r1bqkb1B/ppppppp1/8/8/3B4/8/PPPPP2P/RNBQKBNR w - - 0 1", false, 0);
+         "r1bqkb1B/ppppppp1/8/8/3B4/8/PPPPP2P/RNBQKBNR w - - 0 1", false, 1);
 
     // Bishop promotion possible, but cannot reach goal square after promotion
     test("r1bqkbn1/p1pppp2/6p1/8/8/8/PPPPPPPP/RNBQKBNR w KQ - 0 1",
