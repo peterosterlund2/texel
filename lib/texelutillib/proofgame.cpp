@@ -1356,8 +1356,7 @@ ProofGame::computeDeadlockedPieces(const Position& pos, U64& blocked) const {
         return true; // Captures can break a deadlock
 
     auto pieceCanMove = [&pos](int sq, U64 occ) -> bool {
-        int p = pos.getPiece(sq);
-        switch (p) {
+        switch (pos.getPiece(sq)) {
         case Piece::WKING: {
             U64 toMask = BitBoard::kingAttacks(sq) & ~occ;
             toMask &= ~BitBoard::bPawnAttacksMask(pos.pieceTypeBB(Piece::BPAWN) & occ);
@@ -1407,8 +1406,7 @@ ProofGame::computeDeadlockedPieces(const Position& pos, U64& blocked) const {
 
     while (deadlocked) {
         int sq = BitBoard::extractSquare(deadlocked);
-        int p = pos.getPiece(sq);
-        if (goalPos.getPiece(sq) != p)
+        if (pos.getPiece(sq) != goalPos.getPiece(sq))
             return false;
     }
 
