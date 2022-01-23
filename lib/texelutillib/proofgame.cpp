@@ -261,7 +261,7 @@ ProofGame::validatePieceCounts(const Position& pos) {
 int
 ProofGame::search(const Options& opts, Result& result) {
     if (!opts.smallCache)
-        pathDataCache.resize(1024*1024);
+        pathDataCache.resize(1024*512);
     useNonAdmissible = opts.useNonAdmissible;
 
     Position startPos = TextIO::readFEN(initialFen);
@@ -1432,8 +1432,7 @@ std::shared_ptr<ProofGame::ShortestPathData>
 ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
     if (p != Piece::WPAWN && p != Piece::BPAWN)
         maxCapt = 6;
-    U64 h = blocked * 0x9e3779b97f4a7c55ULL + (int)p * 0x9e3779b97f51ULL +
-            toSq * 0x9e3779cdULL + maxCapt * 0x964e55ULL;
+    U64 h = hashU64(hashU64(blocked) + (p * 64 + toSq) * 16 + maxCapt);
     h &= pathDataCache.size() - 1;
     PathCacheEntry& entry = pathDataCache[h];
     if (entry.blocked == blocked && entry.toSq == toSq &&
