@@ -1144,6 +1144,26 @@ TEST(ProofGameTest, testFilter1) {
     ProofGameTest::testFilter1();
 }
 
+TEST(ProofGameTest, testFilter2) {
+    ProofGameTest::testFilter2();
+}
+
+TEST(ProofGameTest, testFilter3) {
+    ProofGameTest::testFilter3();
+}
+
+TEST(ProofGameTest, testFilter4) {
+    ProofGameTest::testFilter4();
+}
+
+TEST(ProofGameTest, testFilter5) {
+    ProofGameTest::testFilter5();
+}
+
+TEST(ProofGameTest, testFilter6) {
+    ProofGameTest::testFilter6();
+}
+
 namespace {
     struct FilterData {
         std::string fen;
@@ -1227,36 +1247,6 @@ void ProofGameTest::testFilter1() {
           "bPf5xe4 bPh7-h5 wPg2-g4 bPh5xg4 bPb4-b2 wQd1-a1 bPb2xa1Q bPb7-b2 bPb2xa1Q "
           "wPf2-f4 bPe4-e3 bPe7-e4 bRa8-e5 wPf4xe5",
           " Wrong piece color ", false },
-
-        // Test that PATH is computed also in complicated cases
-        { "2R4n/2rPQN1p/2BrRpR1/K1Nk4/n4Q1r/B3bn1R/5nqP/n1B2Q2 b - - 0 1 "
-          "unknown: kernel: wPa0xPb1 wPc0xPd1 bPe1xPf0 wPg0xLBf2 "
-          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPc2-c4 bPd7-d5 wPc4xd5 bPe7-e5 wPf2-f4 "
-          "bPe5xf4 wPg2-g6 bPf7-f6 bLBc8-f7 wPg6xf7",
-          " path: ", true },
-        { "R1b1bB2/4n1pQ/3bq1p1/3PQP1r/3K1nkq/RP1n4/bB6/1r5N w - - 0 1 "
-          "unknown: kernel: wPa0xPb1 wPc0xPd1 bPf1xPe0 bPh1xPg0 bPa0xPb0 bPc0xLBbQ bPe0xNd0 "
-          "extKernel: bPb7-b3 wPa2xb3 wPc2-c4 bPd7-d5 wPc4xd5 bPf7-f5 wPe2-e4 bPf5xe4 wPg2-g6 "
-          "bPh7xg6 bPa7-a3 bPa3xb2 bPc7-c2 wLBf1-b1 bPc2xb1Q wPd2-d4 wNb1-d3 bPe4xd3",
-          " path: ", true },
-        { "nr2BK2/Q1NBb1R1/4pkb1/1R4R1/R1rq1rQ1/1n1r1Q2/3qqP1q/3Q4 w - - 0 1 "
-          "unknown: kernel: wPa0xPb1 wPc0xPd1 bPf1xPe0 bPg1xDBh0 bPh2xNg0 "
-          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPc2-c4 bPd7-d5 wPc4xd5 bPf7-f5 wPe2-e4 "
-          "bPf5xe4 bPg7-g5 wPh2-h5 wDBc1-h4 bPg5xh4 bPh7-h6 wPg2-g6 wNb1-g5 bPh6xg5",
-          " path: ", true },
-
-        { "Bq1b3R/1Pb3N1/1BP2pNP/4pBNp/4r3/R1np4/1KN4b/3k2Bb w - - 0 1 "
-          "unknown: kernel: wPa0xPb1 bPc1xPd0 wPf0xPe1 bPd0xQe0 wPg0xRh2 wPh0xNg1 "
-          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPd2-d6 bPc7xd6 wPf2-f4 bPe7-e5 wPf4xe5 "
-          "wPe5-e7 wPe2-e6 wQd1-e5 bPd6xe5 wPg2-g5 bPh7-h5 bRa8-h6 wPg5xh6 wPh2-h4 "
-          "bPg7-g4 bNb8-g5 wPh4xg5",
-          " unknown: ", true },
-        { "KN2bBn1/1n1b2r1/2qQ1Q2/pp6/Pr1RPn2/r3p3/1BQ5/2Rnqk2 b - - 0 1 "
-          "unknown: kernel: bPc1xPb0 bPd1xPc0 bPg1xPh0 wPd0xDBc1 bPe1xLBd0 bPf1xNe0 "
-          "extKernel: bPc7-c5 wPb2-b4 bPc5xb4 bPd7-d5 wPc2-c4 bPd5xc4 bPg7-g5 wPh2-h4 "
-          "bPg5xh4 wPd2-d4 bDBf8-c5 wPd4xc5 bPe7-e6 wLBf1-d5 bPe6xd5 bPf7-f4 wPe2-e4 "
-          "wNb1-e3 bPf4xe3",
-          " path: ", true },
     };
     testFilterData(v);
 
@@ -1284,11 +1274,47 @@ void ProofGameTest::testFilter1() {
     }
 }
 
-TEST(ProofGameTest, testFilter2) {
-    ProofGameTest::testFilter2();
+void ProofGameTest::testFilter2() {
+    std::vector<FilterData> v = {
+        // Test that PATH is computed also in complicated cases
+        { "2R4n/2rPQN1p/2BrRpR1/K1Nk4/n4Q1r/B3bn1R/5nqP/n1B2Q2 b - - 0 1 "
+          "unknown: kernel: wPa0xPb1 wPc0xPd1 bPe1xPf0 wPg0xLBf2 "
+          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPc2-c4 bPd7-d5 wPc4xd5 bPe7-e5 wPf2-f4 "
+          "bPe5xf4 wPg2-g6 bPf7-f6 bLBc8-f7 wPg6xf7",
+          " path: ", true },
+        { "R1b1bB2/4n1pQ/3bq1p1/3PQP1r/3K1nkq/RP1n4/bB6/1r5N w - - 0 1 "
+          "unknown: kernel: wPa0xPb1 wPc0xPd1 bPf1xPe0 bPh1xPg0 bPa0xPb0 bPc0xLBbQ bPe0xNd0 "
+          "extKernel: bPb7-b3 wPa2xb3 wPc2-c4 bPd7-d5 wPc4xd5 bPf7-f5 wPe2-e4 bPf5xe4 wPg2-g6 "
+          "bPh7xg6 bPa7-a3 bPa3xb2 bPc7-c2 wLBf1-b1 bPc2xb1Q wPd2-d4 wNb1-d3 bPe4xd3",
+          " path: ", true },
+        { "nr2BK2/Q1NBb1R1/4pkb1/1R4R1/R1rq1rQ1/1n1r1Q2/3qqP1q/3Q4 w - - 0 1 "
+          "unknown: kernel: wPa0xPb1 wPc0xPd1 bPf1xPe0 bPg1xDBh0 bPh2xNg0 "
+          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPc2-c4 bPd7-d5 wPc4xd5 bPf7-f5 wPe2-e4 "
+          "bPf5xe4 bPg7-g5 wPh2-h5 wDBc1-h4 bPg5xh4 bPh7-h6 wPg2-g6 wNb1-g5 bPh6xg5",
+          " path: ", true },
+    };
+    testFilterData(v);
 }
 
-void ProofGameTest::testFilter2() {
+void ProofGameTest::testFilter3() {
+    std::vector<FilterData> v = {
+        { "Bq1b3R/1Pb3N1/1BP2pNP/4pBNp/4r3/R1np4/1KN4b/3k2Bb w - - 0 1 "
+          "unknown: kernel: wPa0xPb1 bPc1xPd0 wPf0xPe1 bPd0xQe0 wPg0xRh2 wPh0xNg1 "
+          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPd2-d6 bPc7xd6 wPf2-f4 bPe7-e5 wPf4xe5 "
+          "wPe5-e7 wPe2-e6 wQd1-e5 bPd6xe5 wPg2-g5 bPh7-h5 bRa8-h6 wPg5xh6 wPh2-h4 "
+          "bPg7-g4 bNb8-g5 wPh4xg5",
+          " unknown: ", true },
+        { "KN2bBn1/1n1b2r1/2qQ1Q2/pp6/Pr1RPn2/r3p3/1BQ5/2Rnqk2 b - - 0 1 "
+          "unknown: kernel: bPc1xPb0 bPd1xPc0 bPg1xPh0 wPd0xDBc1 bPe1xLBd0 bPf1xNe0 "
+          "extKernel: bPc7-c5 wPb2-b4 bPc5xb4 bPd7-d5 wPc2-c4 bPd5xc4 bPg7-g5 wPh2-h4 "
+          "bPg5xh4 wPd2-d4 bDBf8-c5 wPd4xc5 bPe7-e6 wLBf1-d5 bPe6xd5 bPf7-f4 wPe2-e4 "
+          "wNb1-e3 bPf4xe3",
+          " path: ", true },
+    };
+    testFilterData(v);
+}
+
+void ProofGameTest::testFilter4() {
     std::vector<FilterData> v = {
         // Test PATH computation when promotion piece information is missing
         { "rBbqkbnr/p1p1pppp/n1p5/8/8/8/2PPPPPP/RNBQKBNR w KQkq - 0 1 "
@@ -1304,11 +1330,23 @@ void ProofGameTest::testFilter2() {
           "extKernel: wPb2-b4 bPa7-a5 wPb4xa5 wPd2-d4 bPe7-e5 wPd4xe5 wPh2-h4 bPg7-g5 "
           "wPh4xg5 wPe5-e8 wPe2-e7 wRa1-e6 bPf7xe6",
           " unknown: ", true }, // Only test that code does not crash, finding solution too hard
+    };
+    testFilterData(v);
+}
+
+void ProofGameTest::testFilter5() {
+    std::vector<FilterData> v = {
         { "5b2/5B2/pPbB3b/P1nb1p2/q4NQR/1qP2rp1/1kr2N2/R2NKRrr b - - 0 1 "
           "unknown: kernel: bPb1xPc0 bPe1xPf0 bPh1xPg0 wPd0xNc2 "
           "extKernel: bPb7-b5 wPc2-c4 bPb5xc4 bPe7-e5 wPf2-f4 bPe5xf4 bPh7-h5 wPg2-g4 "
           "bPh5xg4 bPc4-c1 bPc7-c2 bNb8-c3 wPd2xc3",
           " path: ", true },
+    };
+    testFilterData(v);
+}
+
+void ProofGameTest::testFilter6() {
+    std::vector<FilterData> v = {
         { "3b4/n1n1QK2/1p1Bpp2/1R4PB/b1bBq2R/2Rn3b/B1BQ3Q/4k1rr b - - 0 1 "
           "unknown: kernel: bPa1xPb0 wPd0xPc1 wPe0xPf1 bPg1xNf0 bPh1xNg0 "
           "extKernel: bPa7-a5 wPb2-b4 bPa5xb4 wPd2-d4 bPc7-c5 wPd4xc5 wPe2-e4 bPf7-f5 "
