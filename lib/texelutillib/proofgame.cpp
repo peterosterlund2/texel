@@ -89,16 +89,17 @@ ProofGame::staticInit() {
     }
 }
 
+static void
+resetMoveCnt(Position& pos) {
+    pos.setFullMoveCounter(1);
+    pos.setHalfMoveClock(0);
+}
+
 ProofGame::ProofGame(const std::string& start, const std::string& goal,
                      const std::vector<Move>& initialPath,
                      bool useNonForcedCapture, std::ostream& log)
     : initialFen(start), initialPath(initialPath), log(log) {
     setRandomSeed(1);
-
-    auto resetMoveCnt = [](Position& pos) {
-        pos.setFullMoveCounter(1);
-        pos.setHalfMoveClock(0);
-    };
 
     Position startPos = TextIO::readFEN(initialFen);
     UndoInfo ui;
@@ -113,6 +114,32 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
 
     validatePieceCounts(goalPos);
 
+    computeLastMoves(startPos, goalPos, useNonForcedCapture, lastMoves, log);
+
+    for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
+        goalPieceCnt[p] = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)p));
+
+    pathDataCache.resize(1);
+
+    Matrix<int> m(8, 8);
+    captureAP[0] = Assignment<int>(m);
+    captureAP[1] = Assignment<int>(m);
+    for (int c = 0; c < 2; c++) {
+        for (int n = 0; n <= maxMoveAPSize; n++) {
+            Matrix<int> m(n, n);
+            moveAP[c][n] = Assignment<int>(m);
+        }
+    }
+
+    std::once_flag flag;
+    call_once(flag, staticInit);
+}
+
+void
+ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
+                            bool useNonForcedCapture,
+                            std::vector<Move>& lastMoves,
+                            std::ostream& log) {
     while (true) {
         if (startPos == goalPos)
             break;
@@ -124,6 +151,7 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
         for (const UnMove& um : unMoves)
             ((um.ui.capturedPiece == Piece::EMPTY) ? quiets : captures).push_back(um);
 
+        std::vector<UnMove> quietsInCheck;
         unMoves.clear();
         bool rejected = false;
         for (const UnMove& um : quiets) {
@@ -132,9 +160,15 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
             resetMoveCnt(tmpPos);
             bool valid = tmpPos == startPos;
             if (!valid) {
-                std::vector<UnMove> unMoves2;
-                RevMoveGen::genMoves(tmpPos, unMoves2, false);
-                valid = !unMoves2.empty();
+                if (BitBoard::bitCount(tmpPos.occupiedBB()) >= 25 && // Hack to avoid expensive endgame positions
+                    MoveGen::inCheck(tmpPos)) {
+                    quietsInCheck.push_back(um);
+                    continue;
+                } else {
+                    std::vector<UnMove> unMoves2;
+                    RevMoveGen::genMoves(tmpPos, unMoves2, false);
+                    valid = !unMoves2.empty();
+                }
             }
             if (valid) {
                 unMoves.push_back(um);
@@ -144,41 +178,53 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
                 rejected = true;
             }
         }
+
+        auto knownIllegal = [&startPos,&goalPos,&log](const UnMove& um) -> bool {
+            Position tmpPos(goalPos);
+            tmpPos.unMakeMove(um.move, um.ui);
+            resetMoveCnt(tmpPos);
+            U64 blocked;
+            if (!computeBlocked(startPos, goalPos, blocked))
+                blocked = 0xffffffffffffffffULL;
+            ProofKernel pk(startPos, tmpPos, blocked, log);
+            std::vector<ProofKernel::PkMove> kernel;
+            std::vector<ProofKernel::ExtPkMove> extKernel;
+            if (pk.findProofKernel(kernel, extKernel) != ProofKernel::EXT_PROOF_KERNEL)
+                return true;
+
+            bool ret;
+            try {
+                ProofGame ps(TextIO::toFEN(startPos), TextIO::toFEN(tmpPos), {}, false, log);
+                auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
+                ProofGame::Result result;
+                ret = ps.search(opts, result) == INT_MAX;
+            } catch (ChessError& e) {
+                ret = true;
+            }
+            if (ret)
+                log << "Capture rejected by recursive proof game search" << std::endl;
+            return ret;
+        };
+
+        for (const UnMove& um : quietsInCheck) {
+            if (unMoves.size() > 1)
+                break;
+            if (knownIllegal(um)) {
+                rejected = true;
+            } else {
+                unMoves.push_back(um);
+            }
+        }
         bool validQuiet = !unMoves.empty();
 
         for (const UnMove& um : captures) {
             if (unMoves.size() > 1)
                 break;
             log << "Checking capture: " << um << std::endl;
-            Position tmpPos(goalPos);
-            tmpPos.unMakeMove(um.move, um.ui);
-            resetMoveCnt(tmpPos);
-
-            U64 blocked;
-            if (!computeBlocked(startPos, blocked))
-                blocked = 0xffffffffffffffffULL;
-            ProofKernel pk(startPos, tmpPos, blocked, log);
-            std::vector<ProofKernel::PkMove> kernel;
-            std::vector<ProofKernel::ExtPkMove> extKernel;
-            if (pk.findProofKernel(kernel, extKernel) != ProofKernel::EXT_PROOF_KERNEL) {
+            if (knownIllegal(um)) {
                 rejected = true;
             } else {
-                bool knownIllegal = false;
-                try {
-                    ProofGame ps(TextIO::toFEN(startPos), TextIO::toFEN(tmpPos), {}, false, log);
-                    auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
-                    ProofGame::Result result;
-                    int ret = ps.search(opts, result);
-                    knownIllegal = ret == INT_MAX;
-                } catch (ChessError& e) {
-                    knownIllegal = true;
-                }
-                if (knownIllegal) {
-                    log << "Capture rejected by recursive proof game search" << std::endl;
-                    rejected = true;
-                } else {
-                    unMoves.push_back(um);
-                }
+                unMoves.push_back(um);
             }
         }
 
@@ -208,24 +254,6 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
             break;
         }
     }
-
-    for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
-        goalPieceCnt[p] = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)p));
-
-    pathDataCache.resize(1);
-
-    Matrix<int> m(8, 8);
-    captureAP[0] = Assignment<int>(m);
-    captureAP[1] = Assignment<int>(m);
-    for (int c = 0; c < 2; c++) {
-        for (int n = 0; n <= maxMoveAPSize; n++) {
-            Matrix<int> m(n, n);
-            moveAP[c][n] = Assignment<int>(m);
-        }
-    }
-
-    std::once_flag flag;
-    call_once(flag, staticInit);
 }
 
 void
@@ -1248,6 +1276,11 @@ ProofGame::solveAssignment(Assignment<int>& as) {
 
 bool
 ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
+    return computeBlocked(pos, goalPos, blocked);
+}
+
+bool
+ProofGame::computeBlocked(const Position& pos, const Position& goalPos, U64& blocked) {
     blocked = 0;
     const U64 wGoalPawns = goalPos.pieceTypeBB(Piece::WPAWN);
     const U64 bGoalPawns = goalPos.pieceTypeBB(Piece::BPAWN);
@@ -1344,14 +1377,15 @@ ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
     if (goalPos.a8Castle())
         blocked |= BitBoard::sqMask(E8,A8);
 
-    if (!computeDeadlockedPieces(pos, blocked))
+    if (!computeDeadlockedPieces(pos, goalPos, blocked))
         return false;
 
     return true;
 }
 
 bool
-ProofGame::computeDeadlockedPieces(const Position& pos, U64& blocked) const {
+ProofGame::computeDeadlockedPieces(const Position& pos, const Position& goalPos,
+                                   U64& blocked) {
     if (BitBoard::bitCount(pos.occupiedBB()) > BitBoard::bitCount(goalPos.occupiedBB()))
         return true; // Captures can break a deadlock
 

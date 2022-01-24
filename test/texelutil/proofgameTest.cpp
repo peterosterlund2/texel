@@ -1341,6 +1341,8 @@ void ProofGameTest::testFilter5() {
           "extKernel: bPb7-b5 wPc2-c4 bPb5xc4 bPe7-e5 wPf2-f4 bPe5xf4 bPh7-h5 wPg2-g4 "
           "bPh5xg4 bPc4-c1 bPc7-c2 bNb8-c3 wPd2xc3",
           " path: ", true },
+
+        { "NN1b1K2/pQ3Qn1/2qQ1q1N/7k/2B4n/Nnb2rQR/r3RPr1/1qB4b b - - 0 1", "illegal:", true },
     };
     testFilterData(v);
 }

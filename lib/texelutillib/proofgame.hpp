@@ -113,6 +113,8 @@ public:
      *  can not move without making it impossible to reach the goal position.
      *  If false is returned, it is impossible to reach goalPos from pos. */
     bool computeBlocked(const Position& pos, U64& blocked) const;
+    static bool computeBlocked(const Position& pos, const Position& goalPos,
+                               U64& blocked);
 
     /** Return the goal position. */
     const Position& getGoalPos() const;
@@ -120,6 +122,13 @@ public:
 private:
     /** Initialize static data if not already done. */
     static void staticInit();
+
+    /** Compute forced moves at the end of the proof game. Update goalPos to be
+     *  the position before the first of "lastMoves" is played. */
+    static void computeLastMoves(const Position& startPos, Position& goalPos,
+                                 bool useNonForcedCapture,
+                                 std::vector<Move>& lastMoves,
+                                 std::ostream& log);
 
     /** Check that there are not too many pieces present. */
     static void validatePieceCounts(const Position& pos);
@@ -235,7 +244,8 @@ private:
 
     /** Compute pieces that cannot move because they block each other.
      *  If false is returned, it is impossible to reach goalPos from pos. */
-    bool computeDeadlockedPieces(const Position& pos, U64& blocked) const;
+    static bool computeDeadlockedPieces(const Position& pos, const Position& goalPos,
+                                        U64& blocked);
 
     /** Compute shortest path for a piece p to toSq from all possible start squares,
      *  taking blocked squares into account. For squares that can not reach toSq,
