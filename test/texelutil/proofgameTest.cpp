@@ -844,6 +844,14 @@ ProofGameTest::testLastMove() {
         ASSERT_EQ("K1b1r2n/2N4p/2nBQ1b1/8/RBQ1Rrq1/1nqB1nr1/QpNk4/1B2b2n w - - 0 1",
                   TextIO::toFEN(ps2.getGoalPos()));
     }
+    {
+        std::string goal = "nR2RQB1/N2K4/2p1r2B/1B1pb3/2P4k/q2bQ1P1/R1n1b3/3nbBbr b - - 0 1";
+        ProofGame ps1(TextIO::startPosFEN, goal, {});
+        ASSERT_EQ(goal, TextIO::toFEN(ps1.getGoalPos()));
+
+        ProofGame ps2(TextIO::startPosFEN, goal, {}, true);
+        ASSERT_NE(goal, TextIO::toFEN(ps2.getGoalPos()));
+    }
 }
 
 TEST(ProofGameTest, testEnPassant) {

@@ -914,8 +914,12 @@ ProofKernelTest::testSearch() {
          true, "wPg0xNh0");
 
     // No extended proof kernel because bishop on wrong color
-    test(startFEN, "q2R3N/k2nK2p/bPR2Q1q/2r4N/rr2B2P/3BbN1p/r3q1q1/2Q2n1b b - - 0 1",
-         false, "");
+    {
+        EXPECT_THROW({
+            test(startFEN, "q2R3N/k2nK2p/bPR2Q1q/2r4N/rr2B2P/3BbN1p/r3q1q1/2Q2n1b b - - 0 1",
+                 false, "");
+        }, ChessError);
+    }
     test(startFEN, "1rkQ1r2/b5p1/1nnRrRN1/pRNN4/B4Nb1/1bn1PNP1/3K4/1qn2r2 b - - 0 1",
          false, "");
     test(startFEN, "Rrq3K1/1p3bPQ/P7/B4RNb/1R1n4/kP2nbq1/2PnbpR1/3N1q2 w - - 0 1",

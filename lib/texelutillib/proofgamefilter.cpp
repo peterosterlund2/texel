@@ -589,7 +589,7 @@ ProofGameFilter::decidePromotions(std::vector<MultiBoard>& brdVec,
 int
 ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
                           const std::vector<Move>& initialPath, std::ostream& log,
-                          bool useNonForcedCapture,
+                          bool useNonForcedIrreversible,
                           ProofGame::Options& opts, ProofGame::Result& result) const {
     auto getHash = [this,&opts]() -> U64 {
         U64 ret = 1;
@@ -604,7 +604,7 @@ ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
     };
 
     {
-        ProofGame ps(start, goal, initialPath, useNonForcedCapture, log);
+        ProofGame ps(start, goal, initialPath, useNonForcedIrreversible, log);
         ps.setRandomSeed(getHash());
         int ret = ps.search(opts, result);
         if (ret != -1 || result.closestPath.empty())
@@ -627,7 +627,7 @@ ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
     opts.maxNodes /= 4;
     opts.setUseNonAdmissible(true);
     {
-        ProofGame ps(start, goal, result.closestPath, useNonForcedCapture, log);
+        ProofGame ps(start, goal, result.closestPath, useNonForcedIrreversible, log);
         ps.setRandomSeed(getHash());
         int ret = ps.search(opts, tmpResult);
         if (updateResult(ret))
@@ -635,7 +635,7 @@ ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
     }
 
     opts.maxNodes /= 2;
-    ProofGame ps(start, goal, initialPath, useNonForcedCapture, log);
+    ProofGame ps(start, goal, initialPath, useNonForcedIrreversible, log);
     ps.setRandomSeed(getHash());
     int ret = ps.search(opts, tmpResult);
     updateResult(ret);

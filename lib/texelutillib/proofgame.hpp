@@ -48,7 +48,7 @@ public:
      * @param initialPath  Only search for solutions starting with this path. */
     ProofGame(const std::string& start, const std::string& goal,
               const std::vector<Move>& initialPath,
-              bool useNonForcedCapture = false, std::ostream& log = std::cout);
+              bool useNonForcedIrreversible = false, std::ostream& log = std::cout);
     ProofGame(const ProofGame&) = delete;
     ProofGame& operator=(const ProofGame&) = delete;
 
@@ -126,7 +126,7 @@ private:
     /** Compute forced moves at the end of the proof game. Update goalPos to be
      *  the position before the first of "lastMoves" is played. */
     static void computeLastMoves(const Position& startPos, Position& goalPos,
-                                 bool useNonForcedCapture,
+                                 bool useNonForcedIrreversible,
                                  std::vector<Move>& lastMoves,
                                  std::ostream& log);
 

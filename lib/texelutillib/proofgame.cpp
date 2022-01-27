@@ -97,7 +97,7 @@ resetMoveCnt(Position& pos) {
 
 ProofGame::ProofGame(const std::string& start, const std::string& goal,
                      const std::vector<Move>& initialPath,
-                     bool useNonForcedCapture, std::ostream& log)
+                     bool useNonForcedIrreversible, std::ostream& log)
     : initialFen(start), initialPath(initialPath), log(log) {
     setRandomSeed(1);
 
@@ -114,7 +114,7 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
 
     validatePieceCounts(goalPos);
 
-    computeLastMoves(startPos, goalPos, useNonForcedCapture, lastMoves, log);
+    computeLastMoves(startPos, goalPos, useNonForcedIrreversible, lastMoves, log);
 
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
         goalPieceCnt[p] = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)p));
@@ -137,7 +137,7 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
 
 void
 ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
-                            bool useNonForcedCapture,
+                            bool useNonForcedIrreversible,
                             std::vector<Move>& lastMoves,
                             std::ostream& log) {
     while (true) {
@@ -147,9 +147,20 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
         std::vector<UnMove> unMoves;
         RevMoveGen::genMoves(goalPos, unMoves, false);
 
-        std::vector<UnMove> quiets, captures;
-        for (const UnMove& um : unMoves)
-            ((um.ui.capturedPiece == Piece::EMPTY) ? quiets : captures).push_back(um);
+        auto canAnalyze = [](const Position& pos) {
+            return BitBoard::bitCount(pos.occupiedBB()) >= 25; // Hack to avoid expensive endgame positions
+        };
+
+        std::vector<UnMove> quiets, irreversibles;
+        for (const UnMove& um : unMoves) {
+            bool capture = um.ui.capturedPiece != Piece::EMPTY;
+            bool pawnMove = um.move.promoteTo() != Piece::EMPTY ||
+                Piece::makeWhite(goalPos.getPiece(um.move.to())) == Piece::WPAWN;
+            if (capture || (pawnMove && canAnalyze(goalPos)))
+                irreversibles.push_back(um);
+            else
+                quiets.push_back(um);
+        }
 
         std::vector<UnMove> quietsInCheck;
         unMoves.clear();
@@ -160,8 +171,7 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
             resetMoveCnt(tmpPos);
             bool valid = tmpPos == startPos;
             if (!valid) {
-                if (BitBoard::bitCount(tmpPos.occupiedBB()) >= 25 && // Hack to avoid expensive endgame positions
-                    MoveGen::inCheck(tmpPos)) {
+                if (canAnalyze(tmpPos) && MoveGen::inCheck(tmpPos)) {
                     quietsInCheck.push_back(um);
                     continue;
                 } else {
@@ -202,7 +212,7 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
                 ret = true;
             }
             if (ret)
-                log << "Capture rejected by recursive proof game search" << std::endl;
+                log << "Move rejected by recursive proof game search" << std::endl;
             return ret;
         };
 
@@ -217,7 +227,7 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
         }
         bool validQuiet = !unMoves.empty();
 
-        for (const UnMove& um : captures) {
+        for (const UnMove& um : irreversibles) {
             if (unMoves.size() > 1)
                 break;
             log << "Checking capture: " << um << std::endl;
@@ -242,9 +252,9 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
             resetMoveCnt(goalPos);
             lastMoves.push_back(um.move);
             log << "New goalPos: " << TextIO::toFEN(goalPos) << std::endl;
-        } else if (useNonForcedCapture && !validQuiet) {
+        } else if (useNonForcedIrreversible && !validQuiet) {
             const UnMove& um = unMoves[0];
-            log << "Only captures possible, assuming move: " << um << std::endl;
+            log << "Only irreversible moves possible, assuming move: " << um << std::endl;
             goalPos.unMakeMove(um.move, um.ui);
             resetMoveCnt(goalPos);
             lastMoves.push_back(um.move);
