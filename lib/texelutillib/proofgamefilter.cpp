@@ -337,7 +337,8 @@ ProofGameFilter::computePath(const Position& startPos, Line& line,
     try {
         log << "Finding path for " << line.fen << std::endl;
         Position initPos(startPos);
-        Position goalPos = TextIO::readFEN(line.fen);
+        ProofGame pg(TextIO::toFEN(startPos), line.fen, {}, true, log);
+        Position goalPos = pg.getGoalPos();
         initPos.setCastleMask(goalPos.getCastleMask());
         MultiBoard brd(initPos);
 
