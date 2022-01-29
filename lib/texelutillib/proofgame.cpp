@@ -100,6 +100,8 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
                      bool useNonForcedIrreversible, std::ostream& log)
     : initialFen(start), initialPath(initialPath), log(log) {
     setRandomSeed(1);
+    std::once_flag flag;
+    call_once(flag, staticInit);
 
     Position startPos = TextIO::readFEN(initialFen);
     UndoInfo ui;
@@ -130,9 +132,6 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
             moveAP[c][n] = Assignment<int>(m);
         }
     }
-
-    std::once_flag flag;
-    call_once(flag, staticInit);
 }
 
 void
@@ -194,7 +193,7 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
             tmpPos.unMakeMove(um.move, um.ui);
             resetMoveCnt(tmpPos);
             U64 blocked;
-            if (!computeBlocked(startPos, goalPos, blocked))
+            if (!computeBlocked(startPos, tmpPos, blocked))
                 blocked = 0xffffffffffffffffULL;
             ProofKernel pk(startPos, tmpPos, blocked, log);
             std::vector<ProofKernel::PkMove> kernel;

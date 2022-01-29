@@ -399,10 +399,8 @@ TEST(ProofGameTest, testPawnReachable) {
 
 void
 ProofGameTest::testPawnReachable() {
-    { // Initialize static data
-        ProofGame ps(TextIO::startPosFEN, TextIO::startPosFEN, {});
-    }
     {
+        ProofGame::staticInit();
         const int maxCapt = 5; // Max number of captures relevant for pawn movements
         for (int x = 0; x < 8; x++) {
             for (int y = 0; y <= 7; y += 7) {
@@ -768,6 +766,17 @@ ProofGameTest::testInitPath() {
         return moves;
     };
 
+    {
+        std::vector<Move> initPath = getMoves({"a4", "b5", "axb5", "d5", "c4", "h5", "cxd5",
+                                               "e6", "g4", "hxg4", "d6", "f5", "d7+", "Kf7",
+                                               "d4", "Bc5", "d5", "a5", "e4", "Be3", "d6",
+                                               "c5", "Bc4", "g5", "Bd5", "exd5", "fxe3"});
+        ProofGame ps(TextIO::startPosFEN,
+                     "2NB4/1bk1P3/1Rq1rn1B/q1pnN3/2K1Ppb1/Q6R/QB4pQ/3Q2rq b - - 0 1", initPath);
+        ProofGame::Result result;
+        int best = ps.search(ProofGame::Options().setMaxNodes(2), result);
+        ASSERT_EQ(-1, best);
+    }
     {
         std::vector<Move> initPath = getMoves({"a4", "g6"});
         ProofGame ps(TextIO::startPosFEN,
