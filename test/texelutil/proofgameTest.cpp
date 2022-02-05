@@ -1390,7 +1390,6 @@ void ProofGameTest::testFilterPath() {
 
         std::stringstream in;
         in << out.str();
-        ProofGameFilter ps;
         ProofGameFilter::Line line;
         bool res = line.read(in);
         ASSERT_TRUE(res);

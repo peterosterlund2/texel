@@ -6,6 +6,7 @@ set(src_texelutillib
   extproofkernel.cpp  extproofkernel.hpp
   gametree.cpp        gametree.hpp
                       gametreeutil.hpp
+  pkseq.cpp           pkseq.hpp
   posutil.cpp         posutil.hpp
   proofgame.cpp       proofgame.hpp
   proofgamefilter.cpp proofgamefilter.hpp

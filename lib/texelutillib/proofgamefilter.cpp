@@ -26,6 +26,7 @@
 #include "proofgamefilter.hpp"
 #include "textio.hpp"
 #include "posutil.hpp"
+#include "pkseq.hpp"
 #include "util/timeUtil.hpp"
 #include "threadpool.hpp"
 
@@ -339,7 +340,7 @@ ProofGameFilter::computePath(const Position& startPos, Line& line,
         Position goalPos = pg.getGoalPos();
         initPos.setCastleMask(goalPos.getCastleMask());
 
-        decidePromotions(extKernel, initPos, goalPos);
+        enhanceExtKernel(extKernel, initPos, goalPos, log);
 
         MultiBoard brd(initPos);
         std::vector<MultiBoard> brdVec;
@@ -416,6 +417,16 @@ ProofGameFilter::computePath(const Position& startPos, Line& line,
         line.tokenData(INFO).push_back(e.what());
         return workRemains;
     }
+}
+
+void
+ProofGameFilter::enhanceExtKernel(std::vector<ExtPkMove>& extKernel,
+                                  const Position& initPos, const Position& goalPos,
+                                  std::ostream& log) const {
+    decidePromotions(extKernel, initPos, goalPos);
+    PkSequence seq(extKernel, initPos, goalPos, log);
+    seq.improve();
+    extKernel = seq.getSeq();
 }
 
 void

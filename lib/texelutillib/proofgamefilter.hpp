@@ -138,6 +138,11 @@ private:
     bool computePath(const Position& startPos, Line& line,
                      std::ostream& log) const;
 
+    /** Enhance extKernel to make it easier to convert to a sequence of real chess moves. */
+    void enhanceExtKernel(std::vector<ExtPkMove>& extKernel,
+                          const Position& initPos, const Position& goalPos,
+                          std::ostream& log) const;
+
     /** For pawns on first/last row, replace them with suitable promoted pieces. */
     void decidePromotions(std::vector<ExtPkMove>& extKernel,
                           const Position& initPos, const Position& goalPos) const;
