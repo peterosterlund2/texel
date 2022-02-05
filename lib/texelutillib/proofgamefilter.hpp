@@ -28,6 +28,7 @@
 
 #include "util/util.hpp"
 #include "proofgame.hpp"
+#include "proofkernel.hpp"
 
 #include <string>
 #include <vector>
@@ -55,6 +56,8 @@ public:
                             bool retry);
 
 private:
+    using ExtPkMove = ProofKernel::ExtPkMove;
+
     /** Type of information that can be attached to a position in a line in a text file. */
     enum Info {
         ILLEGAL,       // Position known to be illegal
@@ -136,8 +139,8 @@ private:
                      std::ostream& log) const;
 
     /** For pawns on first/last row, replace them with suitable promoted pieces. */
-    void decidePromotions(std::vector<MultiBoard>& brdVec, const Position& initPos,
-                          const Position& goalPos) const;
+    void decidePromotions(std::vector<ExtPkMove>& extKernel,
+                          const Position& initPos, const Position& goalPos) const;
 
     struct PathOptions {
         int maxNodes;
@@ -229,6 +232,8 @@ public:
     /** Copy piece configuration to "pos". Assumes there is at most
      *  one piece in each square. */
     void toPos(Position& pos);
+
+    void print(std::ostream& os) const;
 
 private:
     static const int maxPerSquare = 8;

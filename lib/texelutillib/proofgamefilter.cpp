@@ -25,7 +25,6 @@
 
 #include "proofgamefilter.hpp"
 #include "textio.hpp"
-#include "proofkernel.hpp"
 #include "posutil.hpp"
 #include "util/timeUtil.hpp"
 #include "threadpool.hpp"
@@ -40,7 +39,6 @@
 using PieceColor = ProofKernel::PieceColor;
 using PieceType = ProofKernel::PieceType;
 using PkMove = ProofKernel::PkMove;
-using ExtPkMove = ProofKernel::ExtPkMove;
 
 std::vector<ProofGameFilter::InfoData> ProofGameFilter::infoStrData;
 
@@ -340,8 +338,10 @@ ProofGameFilter::computePath(const Position& startPos, Line& line,
         ProofGame pg(TextIO::toFEN(startPos), line.fen, {}, true, log);
         Position goalPos = pg.getGoalPos();
         initPos.setCastleMask(goalPos.getCastleMask());
-        MultiBoard brd(initPos);
 
+        decidePromotions(extKernel, initPos, goalPos);
+
+        MultiBoard brd(initPos);
         std::vector<MultiBoard> brdVec;
         brdVec.push_back(brd);
         for (const ExtPkMove& m : extKernel) {
@@ -386,7 +386,6 @@ ProofGameFilter::computePath(const Position& startPos, Line& line,
                 brd.addPiece(m.toSquare, tgtPiece);
             brdVec.push_back(brd);
         }
-        decidePromotions(brdVec, initPos, goalPos);
 
         PathOptions pathOpts;
         pathOpts.maxNodes = maxNodes;
@@ -420,9 +419,58 @@ ProofGameFilter::computePath(const Position& startPos, Line& line,
 }
 
 void
-ProofGameFilter::decidePromotions(std::vector<MultiBoard>& brdVec,
+ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
                                   const Position& initPos, const Position& goalPos) const {
-    MultiBoard& lastBrd = brdVec.back();
+    auto hasMissingProm = [](const ExtPkMove& m, PieceColor c, int sq) {
+        return m.color == c &&
+            m.movingPiece == PieceType::PAWN &&
+            !m.capture && m.toSquare == sq &&
+            m.promotedPiece == PieceType::EMPTY;
+    };
+
+    MultiBoard brd(initPos);
+    for (const ExtPkMove& m : extKernel) {
+        bool white = m.color == PieceColor::WHITE;
+        int movingPiece = Piece::EMPTY;
+        if (m.fromSquare != -1) {
+            movingPiece = ProofKernel::toPieceType(white, m.movingPiece, true);
+            if (!brd.hasPiece(m.fromSquare, movingPiece) &&
+                Square::getY(m.fromSquare) == (white ? 7 : 0)) {
+                int pawn = white ? Piece::WPAWN : Piece::BPAWN;
+                if (brd.hasPiece(m.fromSquare, pawn)) { // Moving promoted pawn
+                    brd.replacePiece(m.fromSquare, pawn, movingPiece);
+                    bool found = false;
+                    for (int i = 0; extKernel[i] != m; i++) {
+                        if (hasMissingProm(extKernel[i], m.color, m.fromSquare)) {
+                            extKernel[i].promotedPiece = PieceType::KNIGHT;
+                            found = true;
+                            break;
+                        }
+                    }
+                    assert(found);
+                }
+            }
+            brd.removePieceType(m.fromSquare, movingPiece);
+        }
+
+        if (m.capture) {
+            int np = brd.nPieces(m.toSquare);
+            for (int i = np - 1; i >= 0; i--) {
+                int p = brd.getPiece(m.toSquare, i);
+                if (Piece::isWhite(p) != white) {
+                    brd.removePieceNo(m.toSquare, i);
+                    break;
+                }
+            }
+        }
+
+        int tgtPiece = movingPiece;
+        if (m.promotedPiece != PieceType::EMPTY)
+            tgtPiece = ProofKernel::toPieceType(white, m.promotedPiece, false);
+        if (tgtPiece != Piece::EMPTY)
+            brd.addPiece(m.toSquare, tgtPiece);
+    }
+    MultiBoard& lastBrd = brd;
 
     bool allPromotionsComplete = true;
     for (int ci = 0; ci < 2; ci++) {
@@ -533,15 +581,17 @@ ProofGameFilter::decidePromotions(std::vector<MultiBoard>& brdVec,
                 assert(fpi.bishopPromAllowed);
                 int sq = Square::getSquare(x, y);
                 if (fpi.nPromAvail == lastBrd.nPiecesOfType(sq, pawn)) {
-                    for (int i = (int)brdVec.size() - 1; i >= 0; i--) {
-                        int nPawns = brdVec[i].nPiecesOfType(sq, pawn);
-                        if (nPawns != fpi.nPromAvail) {
-                            assert(i < (int)brdVec.size() - 1);
-                            assert(nPawns < fpi.nPromAvail);
+                    bool found = false;
+                    for (int i = (int)extKernel.size() - 1; i >= 0; i--) {
+                        ExtPkMove& m = extKernel[i];
+                        if (hasMissingProm(m, c, sq)) {
+                            m.promotedPiece = fpi.bishopType;
+                            found = true;
                             break;
                         }
-                        brdVec[i].replacePiece(sq, pawn, bish);
                     }
+                    assert(found);
+                    lastBrd.replacePiece(sq, pawn, bish);
                 }
                 nPromNeeded[fpi.bishopType][c]--;
                 fpi.nPromAvail--;
@@ -576,12 +626,17 @@ ProofGameFilter::decidePromotions(std::vector<MultiBoard>& brdVec,
                 }
                 nPromNeeded[prom][c]--;
 
-                Piece::Type promT = ProofKernel::toPieceType(white, prom, false);
-                for (int i = (int)brdVec.size() - 1; i >= 0; i--) {
-                    if (!brdVec[i].hasPiece(sq, pawn))
+                bool found = false;
+                for (ExtPkMove& m : extKernel) {
+                    if (hasMissingProm(m, c, sq)) {
+                        m.promotedPiece = prom;
+                        found = true;
                         break;
-                    brdVec[i].replacePiece(sq, pawn, promT);
+                    }
                 }
+                assert(found);
+                Piece::Type promT = ProofKernel::toPieceType(white, prom, false);
+                lastBrd.replacePiece(sq, pawn, promT);
             }
         }
     }
@@ -1193,4 +1248,31 @@ MultiBoard::toPos(Position& pos) {
             throw ChessError("Too many pieces on square " + TextIO::squareToString(sq));
         }
     }
+}
+
+void
+MultiBoard::print(std::ostream& os) const {
+    for (int y = 7; y >= 0; y--) {
+        for (int x = 0; x < 8; x++) {
+            int sq = Square::getSquare(x, y);
+            std::string s;
+            if (hasPiece(sq, Piece::WKING)) s += "K";
+            if (hasPiece(sq, Piece::WQUEEN)) s += "Q";
+            if (hasPiece(sq, Piece::WROOK)) s += "R";
+            if (hasPiece(sq, Piece::WBISHOP)) s += "B";
+            if (hasPiece(sq, Piece::WKNIGHT)) s += "N";
+            if (hasPiece(sq, Piece::WPAWN)) s += "P";
+            if (hasPiece(sq, Piece::BKING)) s += "k";
+            if (hasPiece(sq, Piece::BQUEEN)) s += "q";
+            if (hasPiece(sq, Piece::BROOK)) s += "r";
+            if (hasPiece(sq, Piece::BBISHOP)) s += "b";
+            if (hasPiece(sq, Piece::BKNIGHT)) s += "n";
+            if (hasPiece(sq, Piece::BPAWN)) s += "p";
+            while (s.size() < 3)
+                s += '.';
+            os << s << ' ';
+        }
+        os << '\n';
+    }
+    os << std::endl;
 }
