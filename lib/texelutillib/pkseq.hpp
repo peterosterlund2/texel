@@ -49,6 +49,12 @@ public:
     std::vector<ExtPkMove> getSeq() const;
 
 private:
+    /** Split pawn moves into several shorter moves, eg "a2a5 -> "a2a3, a3a4, a4a5". */
+    void splitPawnMoves();
+
+    /** Combine pawn moves into double pawn moves, eg "a2a3, a3a4" -> "a2a4". */
+    void combinePawnMoves();
+
     std::vector<ExtPkMove> extKernel;
     const Position initPos;
     const Position goalPos;

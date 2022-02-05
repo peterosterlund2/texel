@@ -24,6 +24,11 @@
  */
 
 #include "pkseq.hpp"
+#include "stloutput.hpp"
+#include <cassert>
+
+using PieceColor = ProofKernel::PieceColor;
+using PieceType = ProofKernel::PieceType;
 
 PkSequence::PkSequence(std::vector<ExtPkMove>& extKernel,
                        const Position& initPos, const Position& goalPos,
@@ -33,10 +38,7 @@ PkSequence::PkSequence(std::vector<ExtPkMove>& extKernel,
 
 void
 PkSequence::improve() {
-    // FIXME!!
-
-    // Split up pawn moves. "a2a5" - > "a2a3 a3a4 a4a5". This gives more freedom
-    // to later move reordering.
+    splitPawnMoves();
 
     // For each pawn move, compute bitmask of affected squares, ie all squares
     // between fromSq and toSq.
@@ -72,5 +74,66 @@ PkSequence::improve() {
     // - If there later is a move of the other rook, that move must be swapped
     //   too.
 
-    // Combine pawn moves into double pawn moves. "a2a3 + a3a4" -> "a2a4"
+    combinePawnMoves();
+}
+
+static bool
+isNonCapturePawnMove(const ProofKernel::ExtPkMove& m) {
+    if (m.movingPiece == PieceType::PAWN &&
+        Square::getX(m.fromSquare) == Square::getX(m.toSquare)) {
+        assert(!m.capture);
+        return true;
+    }
+    return false;
+}
+
+void
+PkSequence::splitPawnMoves() {
+    std::vector<ExtPkMove> seq;
+    for (const ExtPkMove& m : extKernel) {
+        if (isNonCapturePawnMove(m)) {
+            int x = Square::getX(m.fromSquare);
+            int y1 = Square::getY(m.fromSquare);
+            int y2 = Square::getY(m.toSquare);
+            int d = y1 < y2 ? 1 : -1;
+            for (int y = y1 + d; y != y2 + d; y += d) {
+                ExtPkMove tmpM(m);
+                tmpM.fromSquare = Square::getSquare(x, y1);
+                tmpM.toSquare = Square::getSquare(x, y);
+                if (y != y2)
+                    tmpM.promotedPiece = PieceType::EMPTY;
+                seq.push_back(tmpM);
+                y1 = y;
+            }
+        } else {
+            seq.push_back(m);
+        }
+    }
+    extKernel = seq;
+}
+
+void
+PkSequence::combinePawnMoves() {
+    std::vector<ExtPkMove> seq;
+    for (const ExtPkMove& m : extKernel) {
+        bool merged = false;
+        if (!seq.empty() && isNonCapturePawnMove(m) && isNonCapturePawnMove(seq.back())) {
+            const ExtPkMove& m0 = seq.back();
+            int x = Square::getX(m.fromSquare);
+            if (x == Square::getX(m0.fromSquare) &&
+                Square::getY(m0.toSquare) == Square::getY(m.fromSquare)) {
+                int y0 = Square::getY(m0.fromSquare);
+                int y1 = Square::getY(m.toSquare);
+                bool white = (m.color == PieceColor::WHITE);
+                if (y0 == (white ? 1 : 6) && y1 == (white ? 3 : 4)) {
+                    seq.back() = m;
+                    seq.back().fromSquare = Square::getSquare(x, y0);
+                    merged = true;
+                }
+            }
+        }
+        if (!merged)
+            seq.push_back(m);
+    }
+    extKernel = seq;
 }
