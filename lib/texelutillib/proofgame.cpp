@@ -876,6 +876,52 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
 }
 
 U64
+ProofGame::ShortestPathData::getNextSquares(int piece, int fromSq, U64 blocked) const {
+    U64 reachable = 0;
+    switch (piece) {
+    case Piece::WQUEEN: case Piece::BQUEEN:
+        reachable = (BitBoard::rookAttacks(fromSq, blocked) |
+                     BitBoard::bishopAttacks(fromSq, blocked));
+        break;
+    case Piece::WROOK: case Piece::BROOK:
+        reachable = BitBoard::rookAttacks(fromSq, blocked);
+        break;
+    case Piece::WBISHOP: case Piece::BBISHOP:
+        reachable = BitBoard::bishopAttacks(fromSq, blocked);
+        break;
+    case Piece::WKNIGHT: case Piece::BKNIGHT:
+        reachable = BitBoard::knightAttacks(fromSq);
+        break;
+    case Piece::WKING: case Piece::BKING:
+        reachable = BitBoard::kingAttacks(fromSq);
+        break;
+    case Piece::WPAWN:
+        reachable = BitBoard::wPawnAttacks(fromSq);
+        reachable |= 1ULL << (fromSq + 8);
+        if (Square::getY(fromSq) == 1 && ((1ULL << (fromSq + 8)) & blocked) == 0)
+            reachable |= 1ULL << (fromSq + 16);
+        break;
+    case Piece::BPAWN:
+        reachable = BitBoard::bPawnAttacks(fromSq);
+        reachable |= 1ULL << (fromSq - 8);
+        if (Square::getY(fromSq) == 6 && ((1ULL << (fromSq - 8)) & blocked) == 0)
+            reachable |= 1ULL << (fromSq - 16);
+        break;
+    }
+    reachable &= ~blocked;
+    reachable &= fromSquares;
+
+    int dist = pathLen[fromSq];
+    U64 ret = 0;
+    while (reachable) {
+        int sq = BitBoard::extractSquare(reachable);
+        if (pathLen[sq] < dist)
+            ret |= 1ULL << sq;
+    }
+    return ret;
+}
+
+U64
 ProofGame::getMovePathObstacles(const Position& pos, U64 blocked, int fromSq, int toSq,
                                 const ShortestPathData& spd) const {
     U64 path = 0;
@@ -908,54 +954,19 @@ ProofGame::getMovePathObstacles(const Position& pos, U64 blocked, int fromSq, in
     }
 
     while (fromSq != toSq) {
-        U64 reachable = 0;
-        switch (piece) {
-        case Piece::WQUEEN: case Piece::BQUEEN:
-            reachable = (BitBoard::rookAttacks(fromSq, blocked) |
-                         BitBoard::bishopAttacks(fromSq, blocked));
-            break;
-        case Piece::WROOK: case Piece::BROOK:
-            reachable = BitBoard::rookAttacks(fromSq, blocked);
-            break;
-        case Piece::WBISHOP: case Piece::BBISHOP:
-            reachable = BitBoard::bishopAttacks(fromSq, blocked);
-            break;
-        case Piece::WKNIGHT: case Piece::BKNIGHT:
-            reachable = BitBoard::knightAttacks(fromSq);
-            break;
-        case Piece::WKING: case Piece::BKING:
-            reachable = BitBoard::kingAttacks(fromSq);
-            break;
-        case Piece::WPAWN:
-            reachable = BitBoard::wPawnAttacks(fromSq);
-            reachable |= 1ULL << (fromSq + 8);
-            if (Square::getY(fromSq) == 1 && ((1ULL << (fromSq + 8)) & blocked) == 0)
-                reachable |= 1ULL << (fromSq + 16);
-            break;
-        case Piece::BPAWN:
-            reachable = BitBoard::bPawnAttacks(fromSq);
-            reachable |= 1ULL << (fromSq - 8);
-            if (Square::getY(fromSq) == 6 && ((1ULL << (fromSq - 8)) & blocked) == 0)
-                reachable |= 1ULL << (fromSq - 16);
-            break;
-        }
-        reachable &= ~blocked;
-        reachable &= spd.fromSquares;
+        U64 reachable = spd.getNextSquares(piece, fromSq, blocked);
         if (promotion && reachable == 0)
             return 0; // Give up, need to find other promotion square
 
         assert(reachable != 0);
-        int dist = spd.pathLen[fromSq];
         int sq1 = -1, sq2 = -1;
         while (reachable) {
             int sq = BitBoard::extractSquare(reachable);
-            if (spd.pathLen[sq] < dist) {
-                if ((1ULL << sq) & obstacles) {
-                    sq2 = sq;
-                } else {
-                    sq1 = sq;
-                    break;
-                }
+            if ((1ULL << sq) & obstacles) {
+                sq2 = sq;
+            } else {
+                sq1 = sq;
+                break;
             }
         }
         int sq = sq1 == -1 ? sq2 : sq1;
@@ -1469,25 +1480,17 @@ static void printTable(const T* tbl) {
 }
 #endif
 
-std::shared_ptr<ProofGame::ShortestPathData>
-ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
-    if (p != Piece::WPAWN && p != Piece::BPAWN)
-        maxCapt = 6;
-    U64 h = hashU64(hashU64(blocked) + (p * 64 + toSq) * 16 + maxCapt);
-    h &= pathDataCache.size() - 1;
-    PathCacheEntry& entry = pathDataCache[h];
-    if (entry.blocked == blocked && entry.toSq == toSq &&
-        entry.piece == (int)p && entry.maxCapt == maxCapt)
-        return entry.spd;
-
-    auto spd = std::make_shared<ShortestPathData>();
+void
+ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked,
+                         const ShortestPathData* pawnSub,
+                         ShortestPathData& spd) {
     for (int i = 0; i < 64; i++)
-        spd->pathLen[i] = -1;
-    spd->pathLen[toSq] = 0;
+        spd.pathLen[i] = -1;
+    spd.pathLen[toSq] = 0;
     U64 reached = 1ULL << toSq;
 
-    if (maxCapt < 6) { // pawn
-        if (maxCapt == 0) {
+    if (p == Piece::WPAWN || p == Piece::BPAWN) {
+        if (pawnSub == nullptr) {
             int sq = toSq;
             int d = (p == Piece::WPAWN) ? -8 : 8;
             int dist = 1;
@@ -1495,13 +1498,12 @@ ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
                 sq += d;
                 if ((sq < 0) || (sq > 63) || (blocked & (1ULL << sq)))
                     break;
-                spd->pathLen[sq] = dist;
+                spd.pathLen[sq] = dist;
                 reached |= 1ULL << sq;
                 if (Square::getY(sq) != ((d > 0) ? 5 : 2))
                     dist++;
             }
         } else {
-            auto sub = shortestPaths(p, toSq, blocked, maxCapt-1);
             auto minLen = [](int a, int b) {
                 if (b != -1)
                     b++;
@@ -1516,15 +1518,15 @@ ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
                         int sq = Square::getSquare(x, y);
                         if (blocked & (1ULL << sq))
                             continue;
-                        int best = sub->pathLen[sq];
-                        best = minLen(best, spd->pathLen[sq+8]);
+                        int best = pawnSub->pathLen[sq];
+                        best = minLen(best, spd.pathLen[sq+8]);
                         if ((y == 1) && !(blocked & (1ULL << (sq+8))))
-                            best = minLen(best, spd->pathLen[sq+16]);
+                            best = minLen(best, spd.pathLen[sq+16]);
                         if (x > 0)
-                            best = minLen(best, sub->pathLen[sq+7]);
+                            best = minLen(best, pawnSub->pathLen[sq+7]);
                         if (x < 7)
-                            best = minLen(best, sub->pathLen[sq+9]);
-                        spd->pathLen[sq] = best;
+                            best = minLen(best, pawnSub->pathLen[sq+9]);
+                        spd.pathLen[sq] = best;
                         if (best != -1) {
                             reached |= 1ULL << sq;
                             newReached = true;
@@ -1540,15 +1542,15 @@ ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
                         int sq = Square::getSquare(x, y);
                         if (blocked & (1ULL << sq))
                             continue;
-                        int best = sub->pathLen[sq];
-                        best = minLen(best, spd->pathLen[sq-8]);
+                        int best = pawnSub->pathLen[sq];
+                        best = minLen(best, spd.pathLen[sq-8]);
                         if ((y == 6) && !(blocked & (1ULL << (sq-8))))
-                            best = minLen(best, spd->pathLen[sq-16]);
+                            best = minLen(best, spd.pathLen[sq-16]);
                         if (x > 0)
-                            best = minLen(best, sub->pathLen[sq-9]);
+                            best = minLen(best, pawnSub->pathLen[sq-9]);
                         if (x < 7)
-                            best = minLen(best, sub->pathLen[sq-7]);
-                        spd->pathLen[sq] = best;
+                            best = minLen(best, pawnSub->pathLen[sq-7]);
+                        spd.pathLen[sq] = best;
                         if (best != -1) {
                             reached |= 1ULL << sq;
                             newReached = true;
@@ -1570,13 +1572,33 @@ ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
             U64 m = newSquares;
             while (m) {
                 int sq = BitBoard::extractSquare(m);
-                spd->pathLen[sq] = dist;
+                spd.pathLen[sq] = dist;
             }
             reached |= newSquares;
             dist++;
         }
     }
-    spd->fromSquares = reached;
+    spd.fromSquares = reached;
+}
+
+std::shared_ptr<ProofGame::ShortestPathData>
+ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked, int maxCapt) {
+    bool pawn = (p == Piece::WPAWN || p == Piece::BPAWN);
+    if (!pawn)
+        maxCapt = 6;
+    U64 h = hashU64(hashU64(blocked) + (p * 64 + toSq) * 16 + maxCapt);
+    h &= pathDataCache.size() - 1;
+    PathCacheEntry& entry = pathDataCache[h];
+    if (entry.blocked == blocked && entry.toSq == toSq &&
+        entry.piece == (int)p && entry.maxCapt == maxCapt)
+        return entry.spd;
+
+    auto spd = std::make_shared<ShortestPathData>();
+
+    std::shared_ptr<ShortestPathData> pawnSub;
+    if (pawn && maxCapt > 0)
+        pawnSub = shortestPaths(p, toSq, blocked, maxCapt - 1);
+    shortestPaths(p, toSq, blocked, pawnSub.get(), *spd);
 
     entry.piece = p;
     entry.toSq = toSq;

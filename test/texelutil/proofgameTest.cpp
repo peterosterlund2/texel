@@ -281,6 +281,14 @@ ProofGameTest::testShortestPath() {
     }
 
     spd = ps.shortestPaths(Piece::WPAWN, D8, BitBoard::sqMask(D3,E2,F1), 8);
+    auto spd5 = ps.shortestPaths(Piece::WPAWN, D8, BitBoard::sqMask(D3,E2,F1), 5);
+    ProofGame::ShortestPathData spd2;
+    ProofGame::shortestPaths(Piece::WPAWN, D8, BitBoard::sqMask(D3,E2,F1), spd5.get(), spd2);
+    ASSERT_EQ(spd->fromSquares, spd2.fromSquares);
+    for (int i = 0; i < 64; i++) {
+        ASSERT_EQ(spd->pathLen[i], spd2.pathLen[i]);
+    }
+
     std::vector<int> expected[7] = {
         {   -1,-1,-1, 0,-1,-1,-1,-1,
             -1,-1,-1, 1,-1,-1,-1,-1,
@@ -363,6 +371,56 @@ ProofGameTest::testShortestPath() {
             -1,-1,-1,-1, 4, 4, 4,-1,
         };
         comparePaths(Piece::WPAWN, H5, BitBoard::sqMask(G3,H3), 3, expected);
+    }
+    {
+        Piece::Type p = Piece::WQUEEN;
+        U64 blocked = BitBoard::sqMask(B8);
+        spd = ps.shortestPaths(p, H8, blocked, 8);
+        ASSERT_EQ(BitBoard::sqMask(A1,H1), spd->getNextSquares(p, A8, blocked));
+        ASSERT_EQ(BitBoard::sqMask(C8,D8,G7,H7,E5,H2,C3), spd->getNextSquares(p, C7, blocked));
+    }
+    {
+        Piece::Type p = Piece::WROOK;
+        U64 blocked = BitBoard::sqMask(B8);
+        spd = ps.shortestPaths(p, H8, blocked, 8);
+        ASSERT_EQ(BitBoard::sqMask(A1,A2,A3,A4,A5,A6,A7), spd->getNextSquares(p, A8, blocked));
+        ASSERT_EQ(BitBoard::sqMask(C8,H2), spd->getNextSquares(p, C2, blocked));
+    }
+    {
+        Piece::Type p = Piece::WBISHOP;
+        U64 blocked = BitBoard::sqMask(C3);
+        spd = ps.shortestPaths(p, H8, blocked, 8);
+        ASSERT_EQ(BitBoard::sqMask(H8), spd->getNextSquares(p, D4, blocked));
+        ASSERT_EQ(BitBoard::sqMask(B2), spd->getNextSquares(p, A1, blocked));
+        ASSERT_EQ(BitBoard::sqMask(A3,C1), spd->getNextSquares(p, B2, blocked));
+        ASSERT_EQ(BitBoard::sqMask(C5,D6,E7,F8), spd->getNextSquares(p, A3, blocked));
+        ASSERT_EQ(BitBoard::sqMask(F6), spd->getNextSquares(p, E7, blocked));
+        ASSERT_EQ(BitBoard::sqMask(H8), spd->getNextSquares(p, F6, blocked));
+    }
+    {
+        Piece::Type p = Piece::WKNIGHT;
+        U64 blocked = BitBoard::sqMask(E3);
+        spd = ps.shortestPaths(p, D6, blocked, 8);
+        ASSERT_EQ(BitBoard::sqMask(B2,C3,F2), spd->getNextSquares(p, D1, blocked));
+        ASSERT_EQ(BitBoard::sqMask(B5,E4), spd->getNextSquares(p, C3, blocked));
+    }
+    {
+        Piece::Type p = Piece::WPAWN;
+        U64 blocked = BitBoard::sqMask(D3);
+        spd = ps.shortestPaths(p, D8, blocked, 2);
+        ASSERT_EQ(BitBoard::sqMask(C3,E3), spd->getNextSquares(p, D2, blocked));
+        ASSERT_EQ(BitBoard::sqMask(D4,E4,F4), spd->getNextSquares(p, E3, blocked));
+        ASSERT_EQ(BitBoard::sqMask(F5,E5), spd->getNextSquares(p, F4, blocked));
+        ASSERT_EQ(BitBoard::sqMask(E7), spd->getNextSquares(p, F6, blocked));
+    }
+    {
+        Piece::Type p = Piece::BPAWN;
+        U64 blocked = 0;
+        spd = ps.shortestPaths(p, A1, blocked, 6);
+        ASSERT_EQ(BitBoard::sqMask(A5), spd->getNextSquares(p, A7, blocked));
+        ASSERT_EQ(BitBoard::sqMask(A5,B5), spd->getNextSquares(p, A6, blocked));
+        ASSERT_EQ(BitBoard::sqMask(A1), spd->getNextSquares(p, B2, blocked));
+        ASSERT_EQ(BitBoard::sqMask(A2,B2), spd->getNextSquares(p, B3, blocked));
     }
 }
 

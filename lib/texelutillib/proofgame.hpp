@@ -119,6 +119,25 @@ public:
     /** Return the goal position. */
     const Position& getGoalPos() const;
 
+    struct ShortestPathData {
+        S8 pathLen[64];    // Distance to target square
+        U64 fromSquares;   // Bitboard corresponding to pathLen[i] >= 0
+
+        /** Get squares that are closer to the goal than fromSq and can
+         *  be reached from fromSq in one move. */
+        U64 getNextSquares(int piece, int fromSq, U64 blocked) const;
+    };
+
+    /** Compute shortest path for a piece p to toSq from all possible start squares,
+     *  taking blocked squares into account. For squares that can not reach toSq,
+     *  the shortest path is set to -1.
+     *  @param pawnSub  When "p" is a pawn, solution for the same problem but with
+     *                  one less pawn capture available. nullptr if "p" is not a
+     *                  pawn or if no pawn capture is available. */
+    static void shortestPaths(Piece::Type p, int toSq, U64 blocked,
+                              const ShortestPathData* pawnSub,
+                              ShortestPathData& spd);
+
 private:
     /** Initialize static data if not already done. */
     static void staticInit();
@@ -166,11 +185,6 @@ private:
     bool capturesFeasible(const Position& pos, int pieceCnt[],
                           int numWhiteExtraPieces, int numBlackExtraPieces,
                           int excessWPawns, int excessBPawns);
-
-    struct ShortestPathData {
-        S8 pathLen[64];    // Distance to target square
-        U64 fromSquares;   // Bitboard corresponding to pathLen[i] >= 0
-    };
 
     struct SqPathData {
         SqPathData() : square(-1) {}
@@ -247,7 +261,7 @@ private:
     static bool computeDeadlockedPieces(const Position& pos, const Position& goalPos,
                                         U64& blocked);
 
-    /** Compute shortest path for a piece p to toSq from all possible start squares,
+    /** Compute shortest paths for a piece p to toSq from all possible start squares,
      *  taking blocked squares into account. For squares that can not reach toSq,
      *  the shortest path is set to -1. For pawns the maximum number of available
      *  captures is taken into account. */
