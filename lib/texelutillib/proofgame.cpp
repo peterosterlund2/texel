@@ -102,6 +102,7 @@ resetMoveCnt(Position& pos) {
 }
 
 ProofGame::ProofGame(const std::string& start, const std::string& goal,
+                     bool analyzeLastMoves,
                      const std::vector<Move>& initialPath,
                      bool useNonForcedIrreversible, std::ostream& log)
     : initialFen(start), initialPath(initialPath), log(log) {
@@ -121,7 +122,8 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
 
     validatePieceCounts(goalPos);
 
-    computeLastMoves(startPos, goalPos, useNonForcedIrreversible, lastMoves, log);
+    if (analyzeLastMoves)
+        computeLastMoves(startPos, goalPos, useNonForcedIrreversible, lastMoves, log);
 
     for (int p = Piece::WKING; p <= Piece::BPAWN; p++)
         goalPieceCnt[p] = BitBoard::bitCount(goalPos.pieceTypeBB((Piece::Type)p));
@@ -208,7 +210,7 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
 
             bool ret;
             try {
-                ProofGame ps(TextIO::toFEN(startPos), TextIO::toFEN(tmpPos), {}, false, log);
+                ProofGame ps(TextIO::toFEN(startPos), TextIO::toFEN(tmpPos), true, {}, false, log);
                 auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
                 ProofGame::Result result;
                 ret = ps.search(opts, result) == INT_MAX;
@@ -234,7 +236,7 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
         for (const UnMove& um : irreversibles) {
             if (unMoves.size() > 1)
                 break;
-            log << "Checking capture: " << um << std::endl;
+            log << "Checking move: " << um << std::endl;
             if (knownIllegal(um)) {
                 rejected = true;
             } else {

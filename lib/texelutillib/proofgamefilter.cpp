@@ -264,7 +264,7 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line,
     try {
         log << "Finding proof kernel for " << line.fen << std::endl;
         auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
-        ProofGame pg(TextIO::startPosFEN, line.fen, {}, true, log);
+        ProofGame pg(TextIO::startPosFEN, line.fen, true, {}, true, log);
         ProofGame::Result result;
         int minCost = pg.search(opts, result);
         if (minCost == INT_MAX) {
@@ -336,7 +336,7 @@ ProofGameFilter::computePath(const Position& startPos, Line& line,
     try {
         log << "Finding path for " << line.fen << std::endl;
         Position initPos(startPos);
-        ProofGame pg(TextIO::toFEN(startPos), line.fen, {}, true, log);
+        ProofGame pg(TextIO::toFEN(startPos), line.fen, true, {}, true, log);
         Position goalPos = pg.getGoalPos();
         initPos.setCastleMask(goalPos.getCastleMask());
 
@@ -671,7 +671,7 @@ ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
     };
 
     {
-        ProofGame ps(start, goal, initialPath, useNonForcedIrreversible, log);
+        ProofGame ps(start, goal, true, initialPath, useNonForcedIrreversible, log);
         ps.setRandomSeed(getHash());
         int ret = ps.search(opts, result);
         if (ret != -1 || result.closestPath.empty())
@@ -694,7 +694,7 @@ ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
     opts.maxNodes /= 4;
     opts.setUseNonAdmissible(true);
     {
-        ProofGame ps(start, goal, result.closestPath, useNonForcedIrreversible, log);
+        ProofGame ps(start, goal, true, result.closestPath, useNonForcedIrreversible, log);
         ps.setRandomSeed(getHash());
         int ret = ps.search(opts, tmpResult);
         if (updateResult(ret))
@@ -702,7 +702,7 @@ ProofGameFilter::pgSearch(const std::string& start, const std::string& goal,
     }
 
     opts.maxNodes /= 2;
-    ProofGame ps(start, goal, initialPath, useNonForcedIrreversible, log);
+    ProofGame ps(start, goal, true, initialPath, useNonForcedIrreversible, log);
     ps.setRandomSeed(getHash());
     int ret = ps.search(opts, tmpResult);
     updateResult(ret);

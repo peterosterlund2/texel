@@ -460,7 +460,7 @@ doProofGameCmd(int argc, char* argv[], int nWorkers) {
             }
         }
 
-        ProofGame ps(initFen, goalFen, initPath);
+        ProofGame ps(initFen, goalFen, true, initPath);
         auto opts = ProofGame::Options()
             .setWeightA(a)
             .setWeightB(b)
