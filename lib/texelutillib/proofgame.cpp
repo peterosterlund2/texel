@@ -100,7 +100,7 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
                      bool useNonForcedIrreversible, std::ostream& log)
     : initialFen(start), initialPath(initialPath), log(log) {
     setRandomSeed(1);
-    std::once_flag flag;
+    static std::once_flag flag;
     call_once(flag, staticInit);
 
     Position startPos = TextIO::readFEN(initialFen);
