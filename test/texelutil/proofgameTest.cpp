@@ -25,7 +25,9 @@
 
 #include "proofgameTest.hpp"
 #include "proofgame.hpp"
+#include "proofkernel.hpp"
 #include "proofgamefilter.hpp"
+#include "pkseq.hpp"
 #include "moveGen.hpp"
 #include "textio.hpp"
 #include "posutil.hpp"
@@ -1482,6 +1484,109 @@ void ProofGameTest::testFilterPath() {
         ASSERT_EQ(7, BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN)));
         ASSERT_EQ(7, BitBoard::bitCount(pos.pieceTypeBB(Piece::BPAWN)));
     }
+    {
+        Position pos;
+        std::string goalFen  = "N1BR1Bk1/1n1R4/K1Bn1PR1/1QP2pr1/nP3n1p/1r6/1BqbNq2/6N1 b - - 0 1";
+        getPathPos(goalFen + " "
+                   "unknown: kernel: dummy "
+                   "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 bPc7-c5 wPd2-d4 bPc5xd4 wPh2-h4 "
+                   "bPg7-g5 wPh4xg5 wPe2-e5 bPf7-f5 bQd8-f6 wPe5xf6 wPf2-f3 bPe7-e3 "
+                   "bLBc8-e4 wPf3xe4", pos);
+        int s = hScore(TextIO::toFEN(pos), goalFen);
+        ASSERT_GE(s, 70);
+        ASSERT_LE(s, 149);
+    }
+}
+
+TEST(ProofGameTest, testPkSequence) {
+    ProofGameTest::testPkSequence();
+}
+
+void ProofGameTest::testPkSequence() {
+    using PieceColor = ProofKernel::PieceColor;
+    using PieceType = ProofKernel::PieceType;
+    using ExtPkMove = ProofKernel::ExtPkMove;
+    auto toExtKernel = [](const std::string& str) {
+        std::vector<std::string> strMoves;
+        splitString(str, strMoves);
+        std::vector<ExtPkMove> extKernel;
+        for (const std::string& s : strMoves)
+            extKernel.push_back(strToExtPkMove(s));
+        return extKernel;
+    };
+    auto toStr = [](const std::vector<ExtPkMove>& extKernel) -> std::string {
+        std::string ret;
+        for (const ExtPkMove& m : extKernel) {
+            if (!ret.empty())
+                ret += ' ';
+            ret += toString(m);
+        }
+        return ret;
+    };
+
+    auto mirrorPieceType = [](PieceType pt) {
+        if (pt == PieceType::DARK_BISHOP)
+            return PieceType::LIGHT_BISHOP;
+        if (pt == PieceType::LIGHT_BISHOP)
+            return PieceType::DARK_BISHOP;
+        return pt;
+    };
+
+    auto mirrorExtKernel = [&](const std::string& extKernel) {
+        std::vector<std::string> strMoves;
+        splitString(extKernel, strMoves);
+
+        std::string ret;
+        for (const std::string& strMove : strMoves) {
+            ExtPkMove m = strToExtPkMove(strMove);
+            m.color = m.color == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE;
+            m.movingPiece = mirrorPieceType(m.movingPiece);
+            m.fromSquare = Square::mirrorY(m.fromSquare);
+            m.toSquare = Square::mirrorY(m.toSquare);
+            m.promotedPiece = mirrorPieceType(m.promotedPiece);
+            if (!ret.empty())
+                ret += ' ';
+            ret += toString(m);
+        }
+        return ret;
+    };
+
+    auto test0 = [&](const std::string& initFen, const std::string& goalFen,
+                     const std::string& extKernel, const std::string& expected) {
+        PkSequence pkSeq(toExtKernel(extKernel), TextIO::readFEN(initFen),
+                         TextIO::readFEN(goalFen), std::cout);
+        pkSeq.improve();
+        ASSERT_EQ(expected, toStr(pkSeq.getSeq()));
+    };
+    auto test = [&](const std::string& initFen, const std::string& goalFen,
+                    const std::string& extKernel, const std::string& expected,
+                    bool testMirrorY = true) {
+        test0(initFen, goalFen, extKernel, expected);
+        if (testMirrorY) {
+            test0(mirrorFenY(initFen), mirrorFenY(goalFen),
+                  mirrorExtKernel(extKernel), mirrorExtKernel(expected));
+        }
+    };
+
+    test(TextIO::startPosFEN, "rnbqkbnr/1pp2ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
+         "wxe7", "wNb1-c3 wNc3-d5 wNd5xe7");
+    test(TextIO::startPosFEN, "rnbqkbnr/1pp2ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
+         "wxd7", "wNg1-f3 wNf3-e5 wNe5xd7");
+    test("rnbqkbnr/pppppppp/8/8/8/3P4/PPP1PPPP/RNBQKBNR w - - 0 1",
+         "rnbqkbnr/1pp2ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
+         "wxa7", "wDBc1-e3 wDBe3xa7");
+    test("rnbqkbnr/pppppppp/8/8/8/4P3/PPPP1PPP/RNBQKBNR w - - 0 1",
+         "rnbqkbnr/1pp2ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
+         "wxh7", "wQd1-h5 wQh5xh7");
+    test("rnbqkbnr/pppppppp/8/8/8/6P1/PPPPPP1P/RNBQKBNR w KQkq - 0 1",
+         "rnbqkbnr/p1pppppp/8/8/8/6P1/PPPPPP1P/RNBQKBNR w KQkq - 0 1",
+         "wxb7", "wLBf1-g2 wLBg2xb7");
+    test("rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR w - - 0 1",
+         "rnbqkbnr/p1pppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR w - - 0 1",
+         "wxb7", "wRa1-a3 wRa3-b3 wRb3xb7");
+    test("rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "rnbqkbnr/p1pppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "wxb7", "wNb1-a3 wNa3-c4 wNc4-a5 wNa5xb7", false);
 }
 
 TEST(ProofGameTest, testMultiBoard) {

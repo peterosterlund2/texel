@@ -34,10 +34,11 @@
  * to make it closer to a sequence of real chess moves.
  */
 class PkSequence {
+    friend class ProofGameTest;
     using ExtPkMove = ProofKernel::ExtPkMove;
 public:
     /** Constructor. */
-    PkSequence(std::vector<ExtPkMove>& extKernel,
+    PkSequence(const std::vector<ExtPkMove>& extKernel,
                const Position& initPos, const Position& goalPos,
                std::ostream& log);
 
@@ -49,11 +50,33 @@ public:
     std::vector<ExtPkMove> getSeq() const;
 
 private:
+    struct MoveData {
+        ExtPkMove move;
+        U64 squares = 0; // If pawn move, squares affected by move
+        Position pos;    // Position before move has been made
+        Move m;          // "move" converted to real chess move
+
+        MoveData(const ExtPkMove& m) : move(m) {}
+    };
+
     /** Split pawn moves into several shorter moves, eg "a2a5 -> "a2a3, a3a4, a4a5". */
     void splitPawnMoves();
 
     /** Combine pawn moves into double pawn moves, eg "a2a3, a3a4" -> "a2a4". */
     void combinePawnMoves();
+
+    /** For all piece moves in moves, expand them using expandPieceMove(). */
+    void expandPieceMoves(std::vector<MoveData>& moves);
+
+    /** Add piece and fromSquare info to an unspecified capture move. */
+    void assignPiece(const Position& pos, ExtPkMove& move) const;
+
+    /** Convert "move" to a sequence of moves that correspond to how chess pieces
+     *  are allowed to move. For example "wRh1-f6" can be converted to "wRh1-h6, wRh6-f6".
+     *  All resulting moves are legal regarding how the pieces move, but it is possible
+     *  that a move allows for an illegal king capture. */
+    void expandPieceMove(const Position& pos, const ExtPkMove& move,
+                         std::vector<ExtPkMove>& moves) const;
 
     std::vector<ExtPkMove> extKernel;
     const Position initPos;

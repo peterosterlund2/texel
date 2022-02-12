@@ -141,6 +141,7 @@ public:
 private:
     /** Initialize static data if not already done. */
     static void staticInit();
+    static void doStaticInit();
 
     /** Compute forced moves at the end of the proof game. Update goalPos to be
      *  the position before the first of "lastMoves" is played. */

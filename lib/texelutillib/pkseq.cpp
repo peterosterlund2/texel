@@ -24,13 +24,15 @@
  */
 
 #include "pkseq.hpp"
+#include "proofgame.hpp"
 #include "stloutput.hpp"
 #include <cassert>
+#include <limits.h>
 
 using PieceColor = ProofKernel::PieceColor;
 using PieceType = ProofKernel::PieceType;
 
-PkSequence::PkSequence(std::vector<ExtPkMove>& extKernel,
+PkSequence::PkSequence(const std::vector<ExtPkMove>& extKernel,
                        const Position& initPos, const Position& goalPos,
                        std::ostream& log)
     : extKernel(extKernel), initPos(initPos), goalPos(goalPos), log(log) {
@@ -38,22 +40,27 @@ PkSequence::PkSequence(std::vector<ExtPkMove>& extKernel,
 
 void
 PkSequence::improve() {
+    if (extKernel.empty())
+        return;
+
     splitPawnMoves();
 
-    // For each pawn move, compute bitmask of affected squares, ie all squares
-    // between fromSq and toSq.
 
-    // For each non-pawn move, decide if it is possible to make the move without
-    // moving any other pieces.
-    // - If other non-pawn piece needs to move, insert ExtPkMove to move it.
-    //   - If target square conflicts with later move, also generate ExtPkMove
-    //     to move the piece back to where it was.
-    // - If other pawn needs to move, check if a later move of that pawn can be
-    //   moved earlier in the sequence. (add constraint + topological sort)
-    //   - If not, check if extra pawn move can be added without conflicting with
-    //     existing pawn moves and without making it impossible to reach pawn
-    //     goal square.
-    // - Split the non-pawn move in several parts, using shortest path data.
+    std::vector<MoveData> moves;
+    for (const ExtPkMove& m : extKernel) {
+        MoveData md(m);
+        md.squares = 0;
+        if (m.movingPiece == PieceType::PAWN)
+            md.squares = (1ULL << m.fromSquare) | (1ULL << m.toSquare);
+        moves.push_back(md);
+    }
+
+    expandPieceMoves(moves);
+
+    // After each move, test if the king is in check.
+    // - If so, generate king evasion move.
+    // - If king has nowhere to go, generate move to make space for the king
+    //   before the checking move.
 
     // At end of proof kernel position, if some piece cannot reach its target
     // position, add an ExtPkMove for this piece movement. Then:
@@ -63,16 +70,15 @@ PkSequence::improve() {
     //      sequence where whatever was blocking its path is not yet in a
     //      blocking position.
 
-    // After each move, test if the king is in check.
-    // - If so, generate king evasion move.
-    // - If king has nowhere to go, generate move to make space for the king
-    //   before the checking move.
-
     // If a rook cannot reach its target square, check if the other rook can
     // reach it instead.
     // - If so, swap which rook is moved.
     // - If there later is a move of the other rook, that move must be swapped
     //   too.
+
+    extKernel.clear();
+    for (const MoveData& md : moves)
+        extKernel.push_back(md.move);
 
     combinePawnMoves();
 }
@@ -136,4 +142,137 @@ PkSequence::combinePawnMoves() {
             seq.push_back(m);
     }
     extKernel = seq;
+}
+
+void
+PkSequence::expandPieceMoves(std::vector<MoveData>& moves) {
+    Position currPos(initPos);
+    int nPlayed = 0;
+
+    auto makeMove = [&moves,&currPos,&nPlayed](const Move& m) {
+        MoveData& md = moves[nPlayed];
+        md.m = m;
+        UndoInfo ui;
+        currPos.makeMove(m, ui);
+        currPos.setWhiteMove(true);
+        nPlayed++;
+    };
+
+    while (nPlayed < (int)moves.size()) {
+        MoveData& md = moves[nPlayed];
+        md.pos = currPos;
+        bool white = md.move.color == PieceColor::WHITE;
+
+        if (md.move.movingPiece == PieceType::EMPTY)
+            assignPiece(currPos, md.move);
+
+        if (md.move.movingPiece == PieceType::EMPTY) {
+            assert(md.move.capture);
+            nPlayed++;
+        } else if (md.move.movingPiece == PieceType::PAWN) {
+            int promoteTo = Piece::EMPTY;
+            if (md.move.promotedPiece != PieceType::EMPTY)
+                promoteTo = ProofKernel::toPieceType(white, md.move.promotedPiece, false);
+            makeMove(Move(md.move.fromSquare, md.move.toSquare, promoteTo));
+        } else {
+            std::vector<ExtPkMove> expanded;
+            expandPieceMove(md.pos, md.move, expanded);
+            moves.erase(moves.begin() + nPlayed);
+            moves.insert(moves.begin() + nPlayed, expanded.begin(), expanded.end());
+            for (int i = 0; i < (int)expanded.size(); i++) {
+                MoveData& md = moves[nPlayed];
+                makeMove(Move(md.move.fromSquare, md.move.toSquare, Piece::EMPTY));
+            }
+        }
+    }
+}
+
+void
+PkSequence::assignPiece(const Position& pos, ExtPkMove& move) const {
+    bool whiteMoving = !Piece::isWhite(pos.getPiece(move.toSquare));
+    U64 candidates = whiteMoving ? pos.whiteBB() : pos.blackBB();
+    candidates &= ~pos.pieceTypeBB(whiteMoving ? Piece::WPAWN : Piece::BPAWN);
+    candidates &= ~pos.pieceTypeBB(whiteMoving ? Piece::WKING : Piece::BKING);
+    if (pos.a1Castle()) candidates &= ~(1ULL << A1);
+    if (pos.h1Castle()) candidates &= ~(1ULL << H1);
+    if (pos.a8Castle()) candidates &= ~(1ULL << A8);
+    if (pos.h8Castle()) candidates &= ~(1ULL << H8);
+
+    int bestDist = INT_MAX;
+    ProofGame::ShortestPathData spd;
+    while (candidates != 0) {
+        int sq = BitBoard::extractSquare(candidates);
+        Piece::Type p = (Piece::Type)pos.getPiece(sq);
+
+        U64 blocked = pos.occupiedBB() & ~(1ULL << sq) & ~(1ULL << move.toSquare);
+        ProofGame::shortestPaths(p, move.toSquare, blocked, nullptr, spd);
+        int dist = spd.pathLen[sq];
+        if (dist > 0 && dist < bestDist) {
+            PieceType pt = PieceType::EMPTY;
+            switch (p) {
+            case Piece::WQUEEN: case Piece::BQUEEN:
+                pt = PieceType::QUEEN;
+                break;
+            case Piece::WROOK: case Piece::BROOK:
+                pt = PieceType::ROOK;
+                break;
+            case Piece::WBISHOP: case Piece::BBISHOP:
+                pt = Square::darkSquare(sq) ? PieceType::DARK_BISHOP : PieceType::LIGHT_BISHOP;
+                break;
+            case Piece::WKNIGHT: case Piece::BKNIGHT:
+                pt = PieceType::KNIGHT;
+                break;
+            default:
+                assert(false);
+            }
+            move.movingPiece = pt;
+            move.fromSquare = sq;
+            bestDist = dist;
+        }
+    }
+}
+
+void
+PkSequence::expandPieceMove(const Position& pos, const ExtPkMove& move,
+                            std::vector<ExtPkMove>& moves) const {
+    moves.clear();
+
+    bool white = move.color == PieceColor::WHITE;
+    Piece::Type p = ProofKernel::toPieceType(white, move.movingPiece, false);
+
+    ProofGame::ShortestPathData spd;
+    U64 blocked = pos.occupiedBB() & ~(1ULL << move.toSquare) & ~(1ULL << move.fromSquare);
+    ProofGame::shortestPaths(p, move.toSquare, blocked, nullptr, spd);
+    if (spd.pathLen[move.fromSquare] >= 0) {
+        int fromSq = move.fromSquare;
+        int toSq = move.toSquare;
+        while (fromSq != toSq) {
+            U64 nextMask = spd.getNextSquares(p, fromSq, blocked);
+            assert(nextMask != 0);
+            int nextSq = BitBoard::firstSquare(nextMask);
+
+            ExtPkMove m(move);
+            m.fromSquare = fromSq;
+            m.toSquare = nextSq;
+            if (nextSq != toSq)
+                m.capture = false;
+            moves.push_back(m);
+
+            fromSq = nextSq;
+        }
+        return;
+    }
+
+    moves.push_back(move);
+
+    // For a non-pawn move, decide if it is possible to make the move without
+    // moving any other pieces.
+    // - If other non-pawn piece needs to move, insert ExtPkMove to move it.
+    //   - If target square conflicts with later move, also generate ExtPkMove
+    //     to move the piece back to where it was.
+    // - If other pawn needs to move, check if a later move of that pawn can be
+    //   moved earlier in the sequence. (add constraint + topological sort)
+    //   - If not, check if extra pawn move can be added without conflicting with
+    //     existing pawn moves and without making it impossible to reach pawn
+    //     goal square.
 }

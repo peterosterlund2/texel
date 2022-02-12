@@ -57,6 +57,7 @@ public:
     static void testFilter5();
     static void testFilter6();
     static void testFilterPath();
+    static void testPkSequence();
     static void testMultiBoard();
     static void testAttackedSq();
 

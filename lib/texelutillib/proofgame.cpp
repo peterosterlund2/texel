@@ -44,6 +44,12 @@ const int ProofGame::bigCost;
 
 void
 ProofGame::staticInit() {
+    static std::once_flag flag;
+    call_once(flag, doStaticInit);
+}
+
+void
+ProofGame::doStaticInit() {
     for (int y = 6; y >= 1; y--) {
         for (int x = 0; x < 8; x++) {
             int sq = Square::getSquare(x, y);
@@ -100,8 +106,7 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
                      bool useNonForcedIrreversible, std::ostream& log)
     : initialFen(start), initialPath(initialPath), log(log) {
     setRandomSeed(1);
-    static std::once_flag flag;
-    call_once(flag, staticInit);
+    staticInit();
 
     Position startPos = TextIO::readFEN(initialFen);
     UndoInfo ui;
@@ -1484,6 +1489,7 @@ void
 ProofGame::shortestPaths(Piece::Type p, int toSq, U64 blocked,
                          const ShortestPathData* pawnSub,
                          ShortestPathData& spd) {
+    staticInit();
     for (int i = 0; i < 64; i++)
         spd.pathLen[i] = -1;
     spd.pathLen[toSq] = 0;
