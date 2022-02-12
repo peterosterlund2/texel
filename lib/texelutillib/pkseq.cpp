@@ -164,7 +164,7 @@ PkSequence::expandPieceMoves(std::vector<MoveData>& moves) {
         bool white = md.move.color == PieceColor::WHITE;
 
         if (md.move.movingPiece == PieceType::EMPTY)
-            assignPiece(currPos, md.move);
+            assignPiece(currPos, moves, nPlayed);
 
         if (md.move.movingPiece == PieceType::EMPTY) {
             assert(md.move.capture);
@@ -188,7 +188,9 @@ PkSequence::expandPieceMoves(std::vector<MoveData>& moves) {
 }
 
 void
-PkSequence::assignPiece(const Position& pos, ExtPkMove& move) const {
+PkSequence::assignPiece(const Position& pos, std::vector<MoveData>& moves,
+                        int moveIdx) const {
+    ExtPkMove& move = moves[moveIdx].move;
     bool whiteMoving = !Piece::isWhite(pos.getPiece(move.toSquare));
     U64 candidates = whiteMoving ? pos.whiteBB() : pos.blackBB();
     candidates &= ~pos.pieceTypeBB(whiteMoving ? Piece::WPAWN : Piece::BPAWN);
@@ -228,6 +230,18 @@ PkSequence::assignPiece(const Position& pos, ExtPkMove& move) const {
             move.movingPiece = pt;
             move.fromSquare = sq;
             bestDist = dist;
+        }
+    }
+
+    if (bestDist < INT_MAX) { // Update next move of the same piece
+        for (int i = moveIdx + 1; i < (int)moves.size(); i++) {
+            ExtPkMove& m = moves[i].move;
+            if (m.color == move.color &&
+                m.movingPiece == move.movingPiece &&
+                m.fromSquare == move.fromSquare) {
+                m.fromSquare = move.toSquare;
+                break;
+            }
         }
     }
 }

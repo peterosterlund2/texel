@@ -69,7 +69,8 @@ private:
     void expandPieceMoves(std::vector<MoveData>& moves);
 
     /** Add piece and fromSquare info to an unspecified capture move. */
-    void assignPiece(const Position& pos, ExtPkMove& move) const;
+    void assignPiece(const Position& pos, std::vector<MoveData>& moves,
+                     int moveIdx) const;
 
     /** Convert "move" to a sequence of moves that correspond to how chess pieces
      *  are allowed to move. For example "wRh1-f6" can be converted to "wRh1-h6, wRh6-f6".
