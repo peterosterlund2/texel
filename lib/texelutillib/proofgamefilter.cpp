@@ -767,22 +767,23 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
     struct Data {
         int pieceType;
         int square;
+        std::vector<int> blockingPawns;
         std::vector<int> pawnTargets;
     };
     static std::vector<Data> dataVec = {
-        { Piece::WROOK,   A1, { A4, B4 } },
-        { Piece::WROOK,   H1, { H4, G4 } },
-        { Piece::WBISHOP, C1, { D4, B4, D3, B3 } },
-        { Piece::WBISHOP, F1, { E4, G4, E3, G3 } },
-        { Piece::WQUEEN,  D1, { E4, D4, C4, E3, D3, C3 } },
-        { Piece::WKING,   E1, { E4, D4, F4, E3, D3, F3 } },
+        { Piece::WROOK,   A1, { }, { A4, B4 } },
+        { Piece::WROOK,   H1, { }, { H4, G4 } },
+        { Piece::WBISHOP, C1, { B2, D2 }, { D4, B4, D3, B3 } },
+        { Piece::WBISHOP, F1, { E2, G2 }, { E4, G4, E3, G3 } },
+        { Piece::WQUEEN,  D1, { C2, D2, E2 }, { E4, D4, C4, E3, D3, C3 } },
+        { Piece::WKING,   E1, { D2, E2, F2 }, { E4, D4, F4, E3, D3, F3 } },
 
-        { Piece::BROOK,   A8, { A5, B5 } },
-        { Piece::BROOK,   H8, { H5, G5 } },
-        { Piece::BBISHOP, C8, { D5, B5, D6, B6 } },
-        { Piece::BBISHOP, F8, { E5, G5, E6, G6 } },
-        { Piece::BQUEEN,  D8, { E5, D5, C5, E6, D6, C6 } },
-        { Piece::BKING,   E8, { E5, D5, F5, E6, D6, F6 } },
+        { Piece::BROOK,   A8, { }, { A5, B5 } },
+        { Piece::BROOK,   H8, { }, { H5, G5 } },
+        { Piece::BBISHOP, C8, { B7, D7 }, { D5, B5, D6, B6 } },
+        { Piece::BBISHOP, F8, { E7, G7 }, { E5, G5, E6, G6 } },
+        { Piece::BQUEEN,  D8, { C7, D7, E7 }, { E5, D5, C5, E6, D6, C6 } },
+        { Piece::BKING,   E8, { D7, E7, F7 }, { E5, D5, F5, E6, D6, F6 } },
     };
 
     int nBrds = brdVec.size();
@@ -790,7 +791,22 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
     for (const Data& d : dataVec) {
         if (brdVec[startIdx].hasPiece(d.square, d.pieceType))
             continue;
+
         bool white = Piece::isWhite(d.pieceType);
+        int pawn = white ? Piece::WPAWN : Piece::BPAWN;
+
+        if (!d.blockingPawns.empty()) {
+            bool isFree = false;
+            for (int pSq : d.blockingPawns) {
+                if (!brdVec[startIdx].hasPiece(pSq, pawn)) {
+                    isFree = true;
+                    break;
+                }
+            }
+            if (isFree)
+                continue;
+        }
+
         for (int tgtSq : d.pawnTargets) {
             bool canMove = true;
             for (int b = startIdx; b < nBrds; b++) {
@@ -815,7 +831,6 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
             if (canMove) {
                 int sq0 = Square::getSquare(Square::getX(tgtSq), white ? 1 : 6);
                 int d = white ? 8 : -8;
-                int pawn = white ? Piece::WPAWN : Piece::BPAWN;
                 bool moved = false;
                 for (int b = startIdx; b < nBrds; b++) {
                     for (int sq = sq0; sq != tgtSq; sq += d) {
