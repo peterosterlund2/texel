@@ -1217,8 +1217,16 @@ ProofGameTest::testDeadlockedPieces() {
     }
 }
 
-TEST(ProofGameTest, testFilter1) {
-    ProofGameTest::testFilter1();
+TEST(ProofGameTest, testFilter1a) {
+    ProofGameTest::testFilter1a();
+}
+
+TEST(ProofGameTest, testFilter1b) {
+    ProofGameTest::testFilter1b();
+}
+
+TEST(ProofGameTest, testFilter1c) {
+    ProofGameTest::testFilter1c();
 }
 
 TEST(ProofGameTest, testFilter2) {
@@ -1268,7 +1276,7 @@ namespace {
     }
 }
 
-void ProofGameTest::testFilter1() {
+void ProofGameTest::testFilter1a() {
     std::vector<FilterData> v = {
         { TextIO::startPosFEN, "illegal", false },
         { TextIO::startPosFEN, "legal: proof", true },
@@ -1322,6 +1330,12 @@ void ProofGameTest::testFilter1() {
           "extKernel: bPa7-a5 wPb2-b4 bPa5xb4 bPc7-c5 wPd2-d4 bPc5xd4 wPe2-e4 bPf7-f5 "
           "wPe4xf5 wPg2-g4 wPf5-f7 wPf2-f6 bQd8-f5 wPg4xf5 wPh2-h4 bPg7-g4 bDBf8-g5 wPh4xg5",
           " path: ", true },
+    };
+    testFilterData(v);
+}
+
+void ProofGameTest::testFilter1b() {
+    std::vector<FilterData> v = {
         { "3n4/6b1/Bn1qN3/k1Bqq1nr/3np1KR/bb4B1/Pb1NB1pN/8 b - - 0 1 "
           "unknown: kernel: bPa1xPb0 bPc1xPd0 bPf1xPe0 bPh1xPg0 bPb0xQaQ bPb0xRaQ wPf0xRe2 "
           "extKernel: bPa7-a5 wPb2-b4 bPa5xb4 bPc7-c5 wPd2-d4 bPc5xd4 bPf7-f5 wPe2-e4 "
@@ -1330,7 +1344,9 @@ void ProofGameTest::testFilter1() {
           " Wrong piece color ", false },
     };
     testFilterData(v);
+}
 
+void ProofGameTest::testFilter1c() {
     {
         std::stringstream in;
         in << "Q2q4/2Bp3r/2PBRb2/R2N3p/1q3RBP/1pQnK2N/2B2Qp1/2bn1b1k w - - 0 1" << '\n'
@@ -1612,10 +1628,17 @@ void ProofGameTest::testPkSequence() {
          "wDBc1-f6 bPe7xf6 bDBf8-a3 wPb2xa3", "wDBc1-f6 bPe7xf6 bDBf8-a3 wPb2xa3"); // No valid reordering
     test(TextIO::startPosFEN, "rnbqkbnr/pppppppp/5R2/8/P7/8/1PPPPPPP/1NBQKBNR w - - 0 1",
          "wRa1-f6 wPa2-a4", "wPa2-a4 wRa1-a3 wRa3-f3 wRf3-f6");
+
     test(TextIO::startPosFEN, "rnbqkbnr/p1pppppp/5R2/8/1P6/8/1PPPPPPP/1NBQKBNR w Kkq - 0 1",
          "wRa1-f6 wPa2-a3 bPb7-b4 wPa3xb4", "bPb7-b5 bPb5-b4 wPa2-a3 wPa3xb4 wRa1-a6 wRa6-f6");
     test(TextIO::startPosFEN, "rnbqkbnr/pppppppp/5R2/8/P7/8/1PPPPPPP/1NBQKBNR w - - 0 1",
          "wRa1-f6 wPa2-a3", "wPa2-a4 wRa1-a3 wRa3-f3 wRf3-f6");
+
+    test("rnbqkbnr/pppppppp/8/8/8/3P4/PPP1PPPP/RNBQKBNR w KQkq - 0 1",
+         "rnbqkbnr/pppppppp/7B/6P1/8/3P4/PPP1PP1P/RN1QKBNR w KQkq - 0 1",
+         "wPg2-g5 wDBc1-h6", "wPg2-g4 wDBc1-h6 wPg4-g5");
+    test(TextIO::startPosFEN, "rnbqkbnr/pppppppp/7B/6P1/8/3P4/PPP1PP1P/RN1QKBNR w KQkq - 0 1",
+         "wPg2-g5 wDBc1-h6 wPd2-d3", "wPg2-g4 wPd2-d3 wDBc1-h6 wPg4-g5");
 }
 
 TEST(ProofGameTest, testMultiBoard) {

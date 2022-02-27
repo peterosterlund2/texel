@@ -50,7 +50,9 @@ public:
     static void testEnPassant();
     static void testCaptureSquares();
     static void testDeadlockedPieces();
-    static void testFilter1();
+    static void testFilter1a();
+    static void testFilter1b();
+    static void testFilter1c();
     static void testFilter2();
     static void testFilter3a();
     static void testFilter3b();
