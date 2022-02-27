@@ -49,24 +49,6 @@ PkSequence::improve() {
     Graph kernel;
     for (const ExtPkMove& m : extKernel) {
         kernel.addNode(m);
-        MoveData& md = kernel.nodes.back();
-        if (m.movingPiece == PieceType::PAWN) {
-            md.pseudoLegal = true;
-            if (m.capture && kernel.nodes.size() > 1) {
-                const MoveData& prev = kernel.nodes[kernel.nodes.size() - 2];
-                if (m.toSquare == prev.move.toSquare)
-                    md.dependsOn.push_back(prev.id);
-            }
-            U64 mMask = (1ULL << m.fromSquare) | (1ULL << m.toSquare);
-            for (int i = (int)kernel.nodes.size() - 2; i >= 0; i--) {
-                const MoveData& prev = kernel.nodes[i];
-                if (prev.move.movingPiece == PieceType::PAWN) {
-                    U64 iMask = (1ULL << prev.move.fromSquare) | (1ULL << prev.move.toSquare);
-                    if ((mMask & iMask) != 0)
-                        md.dependsOn.push_back(prev.id);
-                }
-            }
-        }
     }
 
     Position pos(initPos);
@@ -178,6 +160,19 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos) const {
             }
         }
 
+        auto updatePos = [](const Graph& tmpKernel, int idx, int id,
+                            Position& pos) -> bool {
+            UndoInfo ui;
+            for (int i = idx; i < (int)tmpKernel.nodes.size(); i++) {
+                if (tmpKernel.nodes[i].id == id)
+                    break;
+                if (!makeMove(pos, ui, tmpKernel.nodes[i].move)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
         // Try moving later pawn moves earlier to make the piece movement possible
         for (int i = idx + 1; i < (int)kernel.nodes.size(); i++) {
             const MoveData& nextMd = kernel.nodes[i];
@@ -191,17 +186,31 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos) const {
                 continue;
 
             Position tmpPos(pos);
-            UndoInfo ui;
-            bool ok = true;
-            for (int j = idx; j < (int)tmpKernel.nodes.size(); j++) {
-                if (tmpKernel.nodes[j].id == md.id)
-                    break;
-                if (!makeMove(tmpPos, ui, tmpKernel.nodes[j].move)) {
-                    ok = false;
-                    break;
-                }
+            if (!updatePos(tmpKernel, idx, md.id, tmpPos))
+                continue;
+
+            U64 blocked = tmpPos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
+            std::vector<ExtPkMove> expanded;
+            if (expandPieceMove(m, blocked, expanded)) {
+                if (!improveKernel(tmpKernel, idx, pos))
+                    return false;
+                kernel = tmpKernel;
+                return true;
             }
-            if (!ok)
+        }
+
+        // Try adding a pawn move to make piece movement possible
+        std::vector<ExtPkMove> pawnMoves;
+        getPawnMoves(kernel, idx, pos, pawnMoves);
+        for (const ExtPkMove& pawnMove : pawnMoves) {
+            Graph tmpKernel(kernel);
+            tmpKernel.addNode(pawnMove);
+            tmpKernel.nodes[idx].dependsOn.push_back(tmpKernel.nodes.back().id);
+            if (!tmpKernel.topoSort())
+                continue;
+
+            Position tmpPos(pos);
+            if (!updatePos(tmpKernel, idx, md.id, tmpPos))
                 continue;
 
             U64 blocked = tmpPos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
@@ -249,11 +258,6 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos) const {
     // - If other non-pawn piece needs to move, insert ExtPkMove to move it.
     //   - If target square conflicts with later move, also generate ExtPkMove
     //     to move the piece back to where it was.
-    // - If other pawn needs to move, check if a later move of that pawn can be
-    //   moved earlier in the sequence.
-    //   - If not, check if extra pawn move can be added without conflicting with
-    //     existing pawn moves and without making it impossible to reach pawn
-    //     goal square.
 
     return false;
 }
@@ -359,11 +363,112 @@ PkSequence::expandPieceMove(const ExtPkMove& move, U64 blocked,
     return true;
 }
 
+void
+PkSequence::getPawnMoves(const Graph& kernel, int idx, const Position& inPos,
+                         std::vector<ExtPkMove>& pawnMoves) const {
+    // Remove all but pawns and kings
+    Position tmpPos(inPos);
+    for (int sq = 0; sq < 64; sq++) {
+        int p = tmpPos.getPiece(sq);
+        switch (p) {
+        case Piece::WKING: case Piece::BKING:
+        case Piece::WPAWN: case Piece::BPAWN:
+        case Piece::EMPTY:
+            break;
+        default:
+            tmpPos.setPiece(sq, Piece::EMPTY);
+        }
+    }
+
+    for (int i = idx; i < (int)kernel.nodes.size(); i++) {
+        const ExtPkMove& m = kernel.nodes[i].move;
+        int p = Piece::EMPTY;
+        if (m.fromSquare != -1) {
+            p = tmpPos.getPiece(m.fromSquare);
+            tmpPos.setPiece(m.fromSquare, Piece::EMPTY);
+        }
+        if (m.promotedPiece != PieceType::EMPTY)
+            p = Piece::EMPTY;
+        tmpPos.setPiece(m.toSquare, p);
+    }
+
+    auto countPawns = [](const Position& pos, int sq, bool white) -> int {
+        U64 mask = 1ULL << sq;
+        mask = white ? BitBoard::southFill(mask) : BitBoard::northFill(mask);
+        mask &= pos.pieceTypeBB(white ? Piece::WPAWN : Piece::BPAWN);
+        return BitBoard::bitCount(mask);
+    };
+
+    auto pawnsOk = [this,&tmpPos,&countPawns](bool white, int x) -> bool {
+        U64 mask = goalPos.pieceTypeBB(white ? Piece::WPAWN : Piece::BPAWN);
+        mask &= BitBoard::maskFile[x];
+        while (mask != 0) {
+            int sq = BitBoard::extractSquare(mask);
+            int cntNow = countPawns(tmpPos, sq, white);
+            int cntGoal = countPawns(goalPos, sq, white);
+            if (cntNow < cntGoal)
+                return false;
+        }
+        return true;
+    };
+
+    for (int c = 0; c < 2; c++) {
+        bool white = c == 0;
+        U64 mask = tmpPos.pieceTypeBB(white ? Piece::WPAWN : Piece::BPAWN);
+        while (mask != 0) {
+            int sq = BitBoard::extractSquare(mask);
+            int x0 = Square::getX(sq);
+            int y0 = Square::getY(sq);
+            for (int d = 1; d <= 2; d++) {
+                if (d == 2 && y0 != (white ? 1 : 6))
+                    break;
+                int y1 = y0 + (white ? d : -d);
+                if (y1 == 0 || y1 == 7)
+                    break; // Cannot move pawn to first/last rank
+                int toSq = Square::getSquare(x0, y1);
+                if (tmpPos.getPiece(toSq) != Piece::EMPTY)
+                    break;
+
+                Move m(sq, toSq, Piece::EMPTY);
+                UndoInfo ui;
+                tmpPos.makeMove(m, ui);
+
+                if (pawnsOk(white, x0)) {
+                    ExtPkMove em(white ? PieceColor::WHITE : PieceColor::BLACK,
+                                 PieceType::PAWN, sq, false, toSq, PieceType::EMPTY);
+                    pawnMoves.push_back(em);
+                }
+
+                tmpPos.unMakeMove(m, ui);
+            }
+        }
+    }
+}
+
 // --------------------------------------------------------------------------------
 
 void
-PkSequence::Graph::addNode(const ExtPkMove& move) {
-    nodes.emplace_back(nextId++, move);
+PkSequence::Graph::addNode(const ExtPkMove& m) {
+    nodes.emplace_back(nextId++, m);
+
+    MoveData& md = nodes.back();
+    if (m.movingPiece == PieceType::PAWN) {
+        md.pseudoLegal = true;
+        if (m.capture && nodes.size() > 1) {
+            const MoveData& prev = nodes[nodes.size() - 2];
+            if (m.toSquare == prev.move.toSquare)
+                md.dependsOn.push_back(prev.id);
+        }
+        U64 mMask = (1ULL << m.fromSquare) | (1ULL << m.toSquare);
+        for (int i = (int)nodes.size() - 2; i >= 0; i--) {
+            const MoveData& prev = nodes[i];
+            if (prev.move.movingPiece == PieceType::PAWN) {
+                U64 iMask = (1ULL << prev.move.fromSquare) | (1ULL << prev.move.toSquare);
+                if ((mMask & iMask) != 0)
+                    md.dependsOn.push_back(prev.id);
+            }
+        }
+    }
 }
 
 void

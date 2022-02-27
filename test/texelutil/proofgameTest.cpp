@@ -1225,8 +1225,12 @@ TEST(ProofGameTest, testFilter2) {
     ProofGameTest::testFilter2();
 }
 
-TEST(ProofGameTest, testFilter3) {
-    ProofGameTest::testFilter3();
+TEST(ProofGameTest, testFilter3a) {
+    ProofGameTest::testFilter3a();
+}
+
+TEST(ProofGameTest, testFilter3b) {
+    ProofGameTest::testFilter3b();
 }
 
 TEST(ProofGameTest, testFilter4) {
@@ -1373,7 +1377,7 @@ void ProofGameTest::testFilter2() {
     testFilterData(v);
 }
 
-void ProofGameTest::testFilter3() {
+void ProofGameTest::testFilter3a() {
     std::vector<FilterData> v = {
         { "Bq1b3R/1Pb3N1/1BP2pNP/4pBNp/4r3/R1np4/1KN4b/3k2Bb w - - 0 1 "
           "unknown: kernel: wPa0xPb1 bPc1xPd0 wPf0xPe1 bPd0xQe0 wPg0xRh2 wPh0xNg1 "
@@ -1381,6 +1385,12 @@ void ProofGameTest::testFilter3() {
           "wPe5-e7 wPe2-e6 wQd1-e5 bPd6xe5 wPg2-g5 bPh7-h5 bRa8-h6 wPg5xh6 wPh2-h4 "
           "bPg7-g4 bNb8-g5 wPh4xg5",
           " unknown: ", true },
+    };
+    testFilterData(v);
+}
+
+void ProofGameTest::testFilter3b() {
+    std::vector<FilterData> v = {
         { "KN2bBn1/1n1b2r1/2qQ1Q2/pp6/Pr1RPn2/r3p3/1BQ5/2Rnqk2 b - - 0 1 "
           "unknown: kernel: bPc1xPb0 bPd1xPc0 bPg1xPh0 wPd0xDBc1 bPe1xLBd0 bPf1xNe0 "
           "extKernel: bPc7-c5 wPb2-b4 bPc5xb4 bPd7-d5 wPc2-c4 bPd5xc4 bPg7-g5 wPh2-h4 "
@@ -1406,7 +1416,7 @@ void ProofGameTest::testFilter4() {
           "unknown: kernel: wPb0xPa1 wPd0xPe1 wPh0xPg1 bPf1xRe0 "
           "extKernel: wPb2-b4 bPa7-a5 wPb4xa5 wPd2-d4 bPe7-e5 wPd4xe5 wPh2-h4 bPg7-g5 "
           "wPh4xg5 wPe5-e8 wPe2-e7 wRa1-e6 bPf7xe6",
-          " unknown: ", true }, // Only test that code does not crash, finding solution too hard
+          " path: ", true },
     };
     testFilterData(v);
 }
@@ -1604,6 +1614,8 @@ void ProofGameTest::testPkSequence() {
          "wRa1-f6 wPa2-a4", "wPa2-a4 wRa1-a3 wRa3-f3 wRf3-f6");
     test(TextIO::startPosFEN, "rnbqkbnr/p1pppppp/5R2/8/1P6/8/1PPPPPPP/1NBQKBNR w Kkq - 0 1",
          "wRa1-f6 wPa2-a3 bPb7-b4 wPa3xb4", "bPb7-b5 bPb5-b4 wPa2-a3 wPa3xb4 wRa1-a6 wRa6-f6");
+    test(TextIO::startPosFEN, "rnbqkbnr/pppppppp/5R2/8/P7/8/1PPPPPPP/1NBQKBNR w - - 0 1",
+         "wRa1-f6 wPa2-a3", "wPa2-a4 wRa1-a3 wRa3-f3 wRf3-f6");
 }
 
 TEST(ProofGameTest, testMultiBoard) {

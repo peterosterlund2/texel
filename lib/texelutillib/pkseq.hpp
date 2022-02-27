@@ -70,8 +70,9 @@ private:
         std::vector<MoveData> nodes;
         int nextId = 1;
 
-        /** Add "move" last in "nodes". */
-        void addNode(const ExtPkMove& move);
+        /** Add "m" last in "nodes". If the move is a pawn move, add
+         *  dependencies to relevant previous moves. */
+        void addNode(const ExtPkMove& m);
 
         /** Replace nodes[idx] with a sequence of nodes given by "moves".
          *  Dependencies are added to the first/last move in "moves"
@@ -103,7 +104,6 @@ private:
      *  the target position is already occupied for a non-capture move. */
     static bool makeMove(Position& pos, UndoInfo& ui, const ExtPkMove& move);
 
-
     /** Add piece and fromSquare info to an unspecified capture move. */
     bool assignPiece(Graph& kernel, int idx, const Position& pos) const;
 
@@ -116,6 +116,11 @@ private:
      *  Return false if conversion is not possible. */
     static bool expandPieceMove(const ExtPkMove& move, U64 blocked,
                                 std::vector<ExtPkMove>& outMoves);
+
+    /** Compute possible pawn moves in the position corresponding to the end of
+     *  the proof kernel. */
+    void getPawnMoves(const Graph& kernel, int idx, const Position& inPos,
+                      std::vector<ExtPkMove>& pawnMoves) const;
 
     std::vector<ExtPkMove> extKernel;
     const Position initPos;

@@ -52,7 +52,8 @@ public:
     static void testDeadlockedPieces();
     static void testFilter1();
     static void testFilter2();
-    static void testFilter3();
+    static void testFilter3a();
+    static void testFilter3b();
     static void testFilter4();
     static void testFilter5();
     static void testFilter6();
