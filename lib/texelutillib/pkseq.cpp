@@ -25,6 +25,7 @@
 
 #include "pkseq.hpp"
 #include "proofgame.hpp"
+#include "textio.hpp"
 #include "stloutput.hpp"
 #include <cassert>
 #include <limits.h>
@@ -45,6 +46,7 @@ PkSequence::improve() {
 
     splitPawnMoves();
 
+    log << "extKernel: " << extKernel << std::endl;
 
     Graph kernel;
     for (const ExtPkMove& m : extKernel) {
@@ -59,6 +61,7 @@ PkSequence::improve() {
             extKernel.push_back(md.move);
     }
 
+    log << "new extKernel: " << extKernel << std::endl;
 
     combinePawnMoves();
 }
