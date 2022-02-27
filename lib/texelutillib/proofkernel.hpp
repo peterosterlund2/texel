@@ -76,6 +76,8 @@ public:
 
     /** Convert PieceType to Piece::Type. */
     static Piece::Type toPieceType(bool white, PieceType p, bool allowPawn);
+    /** Convert Piece::Type to PieceType. */
+    static PieceType toPieceType(int p, int sq);
 
     /** Represents a move in the proof kernel state space. Each move reduces the
      *  total number of pieces by one. Possible moves are of the following types:

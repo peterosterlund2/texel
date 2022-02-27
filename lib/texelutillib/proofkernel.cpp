@@ -1008,3 +1008,21 @@ ProofKernel::toPieceType(bool white, PieceType p, bool allowPawn) {
         throw ChessError("Invalid piece type");
     }
 }
+
+ProofKernel::PieceType
+ProofKernel::toPieceType(int p, int sq) {
+    PieceType pt = PieceType::EMPTY;
+    switch (p) {
+    case Piece::WQUEEN: case Piece::BQUEEN:
+        return PieceType::QUEEN;
+    case Piece::WROOK: case Piece::BROOK:
+        return PieceType::ROOK;
+    case Piece::WBISHOP: case Piece::BBISHOP:
+        return Square::darkSquare(sq) ? PieceType::DARK_BISHOP : PieceType::LIGHT_BISHOP;
+    case Piece::WKNIGHT: case Piece::BKNIGHT:
+        return PieceType::KNIGHT;
+    default:
+        assert(false);
+        return PieceType::EMPTY;
+    }
+}

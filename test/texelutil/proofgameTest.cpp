@@ -1592,6 +1592,18 @@ void ProofGameTest::testPkSequence() {
          "wxe7 wNb1-c3", "wNb1-c3 wNc3-d5 wNd5xe7 wNe7-d5 wNd5-c3");
     test(TextIO::startPosFEN, "rnbqkbnr/1pp2ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
          "wxe7 wNb1-e7", "wNb1-c3 wNc3-d5 wNd5xe7");
+
+    test(TextIO::startPosFEN, "rnbqkbnr/pppp1ppp/5p2/8/8/1P6/P1PPPPPP/RN1QKBNR w KQkq - 0 1",
+         "wDBc1-f6 bPe7xf6 wPb2-b3", "wPb2-b3 wDBc1-b2 wDBb2-f6 bPe7xf6");
+    test("rnbqkbnr/p1pppppp/8/8/8/1p6/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "rnbqkbnr/p1pp1ppp/5p2/8/8/1P1P4/P1p1PPPP/RN1QKBNR w KQkq - 0 1",
+         "wDBc1-f6 bPe7xf6 bPb3xc2 wPb2-b3 wPd2-d3", "bPb3xc2 wPb2-b3 wDBc1-b2 wDBb2-f6 bPe7xf6 wPd2-d3");
+    test(TextIO::startPosFEN, "rnbqk1nr/pppp1ppp/5p2/8/8/P7/P1PPPPPP/RN1QKBNR w KQkq - 0 1",
+         "wDBc1-f6 bPe7xf6 bDBf8-a3 wPb2xa3", "wDBc1-f6 bPe7xf6 bDBf8-a3 wPb2xa3"); // No valid reordering
+    test(TextIO::startPosFEN, "rnbqkbnr/pppppppp/5R2/8/P7/8/1PPPPPPP/1NBQKBNR w - - 0 1",
+         "wRa1-f6 wPa2-a4", "wPa2-a4 wRa1-a3 wRa3-f3 wRf3-f6");
+    test(TextIO::startPosFEN, "rnbqkbnr/p1pppppp/5R2/8/1P6/8/1PPPPPPP/1NBQKBNR w Kkq - 0 1",
+         "wRa1-f6 wPa2-a3 bPb7-b4 wPa3xb4", "bPb7-b5 bPb5-b4 wPa2-a3 wPa3xb4 wRa1-a6 wRa6-f6");
 }
 
 TEST(ProofGameTest, testMultiBoard) {
