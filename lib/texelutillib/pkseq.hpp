@@ -60,10 +60,12 @@ private:
     struct MoveData {
         int id;                     // Graph node ID
         ExtPkMove move;
-        bool pseudoLegal;           // True if move is known to be pseudo legal
+        bool pseudoLegal = false;   // True if move is known to be pseudo legal
+        bool movedEarly = false;    // True if piece move has already been moved to
+                                    // an earlier point in the sequence
         std::vector<int> dependsOn; // IDs of moves that must be played before this move
 
-        MoveData(int id, const ExtPkMove& m) : id(id), move(m), pseudoLegal(false) {}
+        MoveData(int id, const ExtPkMove& m) : id(id), move(m) {}
     };
 
     struct Graph {
@@ -85,6 +87,12 @@ private:
          *  is already in sorted order is guaranteed to not be modified.
          *  Return false if not a DAG. */
         bool topoSort();
+
+        /** After a move has been inserted at position "idx", adjust the next
+         *  move of the same piece (if any) so that its from square matches the
+         *  to square of the inserted move. Also add dependencies between this
+         *  move and the previous/next move of the same piece. */
+        void adjustPrevNextMove(int idx);
 
     private:
         bool sortRecursive(int i,
@@ -121,6 +129,11 @@ private:
      *  the proof kernel. */
     void getPawnMoves(const Graph& kernel, int idx, const Position& inPos,
                       std::vector<ExtPkMove>& pawnMoves) const;
+
+    /** Compute ordered list of evasion squares for a non-pawn piece, attempting
+     * to put "good" squares early in the list. */
+    void getPieceEvasions(const Position& pos, int fromSq,
+                          std::vector<int>& toSquares) const;
 
     std::vector<ExtPkMove> extKernel;
     const Position initPos;

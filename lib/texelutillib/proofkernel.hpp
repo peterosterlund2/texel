@@ -71,11 +71,12 @@ public:
         KNIGHT,
         PAWN,
         EMPTY,
+        KING,
     };
     static const int nPieceTypes = EMPTY;
 
     /** Convert PieceType to Piece::Type. */
-    static Piece::Type toPieceType(bool white, PieceType p, bool allowPawn);
+    static Piece::Type toPieceType(bool white, PieceType p, bool allowPawn, bool allowKing);
     /** Convert Piece::Type to PieceType. */
     static PieceType toPieceType(int p, int sq);
 

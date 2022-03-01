@@ -1241,8 +1241,12 @@ TEST(ProofGameTest, testFilter3b) {
     ProofGameTest::testFilter3b();
 }
 
-TEST(ProofGameTest, testFilter4) {
-    ProofGameTest::testFilter4();
+TEST(ProofGameTest, testFilter4a) {
+    ProofGameTest::testFilter4a();
+}
+
+TEST(ProofGameTest, testFilter4b) {
+    ProofGameTest::testFilter4b();
 }
 
 TEST(ProofGameTest, testFilter5) {
@@ -1417,7 +1421,7 @@ void ProofGameTest::testFilter3b() {
     testFilterData(v);
 }
 
-void ProofGameTest::testFilter4() {
+void ProofGameTest::testFilter4a() {
     std::vector<FilterData> v = {
         // Test PATH computation when promotion piece information is missing
         { "rBbqkbnr/p1p1pppp/n1p5/8/8/8/2PPPPPP/RNBQKBNR w KQkq - 0 1 "
@@ -1428,6 +1432,12 @@ void ProofGameTest::testFilter4() {
           "unknown: kernel: bPb1xPc0 bPc0xbe1 wPa0xLBb0 "
           "extKernel: wPc2-c6 bPb7xc6 wPb2-b8 wNb8-d5 bPc6xd5 wPa2-a6 bLBc8-b7 wPa6xb7 wPb7-b8",
           " path: ", true },
+    };
+    testFilterData(v);
+}
+
+void ProofGameTest::testFilter4b() {
+    std::vector<FilterData> v = {
         { "kNN2b1Q/1R1n2P1/bB2p3/3rQB2/1q3Q2/2ppQ1r1/P1PQq3/B1K1nr2 w - - 0 1 "
           "unknown: kernel: wPb0xPa1 wPd0xPe1 wPh0xPg1 bPf1xRe0 "
           "extKernel: wPb2-b4 bPa7-a5 wPb4xa5 wPd2-d4 bPe7-e5 wPd4xe5 wPh2-h4 bPg7-g5 "
@@ -1639,6 +1649,14 @@ void ProofGameTest::testPkSequence() {
          "wPg2-g5 wDBc1-h6", "wPg2-g4 wDBc1-h6 wPg4-g5");
     test(TextIO::startPosFEN, "rnbqkbnr/pppppppp/7B/6P1/8/3P4/PPP1PP1P/RN1QKBNR w KQkq - 0 1",
          "wPg2-g5 wDBc1-h6 wPd2-d3", "wPg2-g4 wPd2-d3 wDBc1-h6 wPg4-g5");
+
+    test(TextIO::startPosFEN, "rQbqkbnr/p1pppppp/n7/8/8/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1",
+         "wPa2-a6 wPa6xb7 wPb7-b8Q", "wPa2-a4 wPa4-a5 wPa5-a6 wPa6xb7 bNb8-a6 wPb7-b8Q");
+    test(TextIO::startPosFEN, "rnNqkbnr/p2ppppp/bp6/8/8/8/P1PPPPPP/RNBQKBNR w KQkq - 0 1",
+         "wPb2-b6 wPb6xc7 wPc7-c8N", "wPb2-b4 wPb4-b5 wPb5-b6 wPb6xc7 bPb7-b6 bLBc8-a6 wPc7-c8N");
+
+    test(TextIO::startPosFEN, "rnbqRbnr/ppp2ppp/2kp4/8/8/8/PPP1PPPP/RNBQKBNR w KQ - 0 1",
+         "wPd2-d6 wPd6xe7 wPe7-e8R", "wPd2-d4 wPd4-d5 wPd5-d6 wPd6xe7 bPd7-d6 bKe8-d7 bKd7-c6 wPe7-e8R");
 }
 
 TEST(ProofGameTest, testMultiBoard) {

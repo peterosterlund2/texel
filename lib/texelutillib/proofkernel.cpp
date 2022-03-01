@@ -784,6 +784,7 @@ std::string pieceName(ProofKernel::PieceType p) {
     case ProofKernel::LIGHT_BISHOP: return "LB";
     case ProofKernel::KNIGHT:       return "N";
     case ProofKernel::PAWN:         return "P";
+    case ProofKernel::KING:         return "K";
     default:                        assert(false); return "";
     }
 };
@@ -833,7 +834,7 @@ ensure(bool b, const std::string& str) {
 }
 
 static ProofKernel::PieceType
-parsePiece(const std::string& str, int& idx, bool allowPawn) {
+parsePiece(const std::string& str, int& idx, bool allowPawn, bool allowKing) {
     switch (str.at(idx++)) {
     case 'Q':
         return ProofKernel::QUEEN;
@@ -850,11 +851,16 @@ parsePiece(const std::string& str, int& idx, bool allowPawn) {
     case 'P':
         if (allowPawn)
             return ProofKernel::PAWN;
-        // Fall through
+        break;
+    case 'K':
+        if (allowKing)
+            return ProofKernel::KING;
+        break;
     default:
-        idx--;
-        return ProofKernel::EMPTY;
+        break;
     }
+    idx--;
+    return ProofKernel::EMPTY;
 }
 
 ProofKernel::PkMove
@@ -874,7 +880,7 @@ strToPkMove(const std::string& str) {
     ensure(str.at(idx++) == 'x', str);
 
     m.otherPromotionFile = -1;
-    m.takenPiece = parsePiece(str, idx, true);
+    m.takenPiece = parsePiece(str, idx, true, false);
     if (m.takenPiece == ProofKernel::EMPTY) {
         m.takenPiece = ProofKernel::KNIGHT;
         char taken = str.at(idx++);
@@ -888,7 +894,7 @@ strToPkMove(const std::string& str) {
     if (idx != (int)str.size()) {
         m.toFile = str.at(idx++) - 'a';
         ensure(m.toFile >= 0 && m.toFile < 8, str);
-        m.promotedPiece = parsePiece(str, idx, false);
+        m.promotedPiece = parsePiece(str, idx, false, false);
         if (m.promotedPiece == ProofKernel::EMPTY) {
             char rank = str.at(idx++);
             m.toIdx = rank - '0';
@@ -946,13 +952,13 @@ strToExtPkMove(const std::string& str) {
     int fromSq = -1;
 
     if (str.at(idx) != 'x' && str.at(idx) != '-') {
-        movingPiece = parsePiece(str, idx, true);
+        movingPiece = parsePiece(str, idx, true, true);
         fromSq = getSquare();
     }
 
     bool capture = str.at(idx++) == 'x';
     int toSq = getSquare();
-    auto promPiece = idx < (int)str.size() ? parsePiece(str, idx, false) : ProofKernel::EMPTY;
+    auto promPiece = idx < (int)str.size() ? parsePiece(str, idx, false, false) : ProofKernel::EMPTY;
 
     return ProofKernel::ExtPkMove(color, movingPiece, fromSq, capture, toSq, promPiece);
 }
@@ -988,7 +994,7 @@ bool ProofKernel::computeExtKernel() {
 }
 
 Piece::Type
-ProofKernel::toPieceType(bool white, PieceType p, bool allowPawn) {
+ProofKernel::toPieceType(bool white, PieceType p, bool allowPawn, bool allowKing) {
     switch (p) {
     case PieceType::QUEEN:
         return white ? Piece::WQUEEN : Piece::BQUEEN;
@@ -1002,17 +1008,23 @@ ProofKernel::toPieceType(bool white, PieceType p, bool allowPawn) {
     case PieceType::PAWN:
         if (allowPawn)
             return white ? Piece::WPAWN : Piece::BPAWN;
-        // Fall through
-    default:
-        assert(false);
-        throw ChessError("Invalid piece type");
+        break;
+    case PieceType::KING:
+        if (allowKing)
+            return white ? Piece::WKING : Piece::BKING;
+        break;
+    case PieceType::EMPTY:
+        break;
     }
+    assert(false);
+    throw ChessError("Invalid piece type");
 }
 
 ProofKernel::PieceType
 ProofKernel::toPieceType(int p, int sq) {
-    PieceType pt = PieceType::EMPTY;
     switch (p) {
+    case Piece::WKING: case Piece::BKING:
+        return PieceType::KING;
     case Piece::WQUEEN: case Piece::BQUEEN:
         return PieceType::QUEEN;
     case Piece::WROOK: case Piece::BROOK:

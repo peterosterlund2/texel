@@ -349,7 +349,7 @@ ProofGameFilter::computePath(const Position& startPos, Line& line,
             bool white = m.color == PieceColor::WHITE;
             int movingPiece = Piece::EMPTY;
             if (m.fromSquare != -1) {
-                movingPiece = ProofKernel::toPieceType(white, m.movingPiece, true);
+                movingPiece = ProofKernel::toPieceType(white, m.movingPiece, true, true);
                 if (!brd.hasPiece(m.fromSquare, movingPiece) &&
                     Square::getY(m.fromSquare) == (white ? 7 : 0)) {
                     int pawn = white ? Piece::WPAWN : Piece::BPAWN;
@@ -382,7 +382,7 @@ ProofGameFilter::computePath(const Position& startPos, Line& line,
 
             int tgtPiece = movingPiece;
             if (m.promotedPiece != PieceType::EMPTY)
-                tgtPiece = ProofKernel::toPieceType(white, m.promotedPiece, false);
+                tgtPiece = ProofKernel::toPieceType(white, m.promotedPiece, false, false);
             if (tgtPiece != Piece::EMPTY)
                 brd.addPiece(m.toSquare, tgtPiece);
             brdVec.push_back(brd);
@@ -444,7 +444,7 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
         bool white = m.color == PieceColor::WHITE;
         int movingPiece = Piece::EMPTY;
         if (m.fromSquare != -1) {
-            movingPiece = ProofKernel::toPieceType(white, m.movingPiece, true);
+            movingPiece = ProofKernel::toPieceType(white, m.movingPiece, true, true);
             if (!brd.hasPiece(m.fromSquare, movingPiece) &&
                 Square::getY(m.fromSquare) == (white ? 7 : 0)) {
                 int pawn = white ? Piece::WPAWN : Piece::BPAWN;
@@ -477,7 +477,7 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
 
         int tgtPiece = movingPiece;
         if (m.promotedPiece != PieceType::EMPTY)
-            tgtPiece = ProofKernel::toPieceType(white, m.promotedPiece, false);
+            tgtPiece = ProofKernel::toPieceType(white, m.promotedPiece, false, false);
         if (tgtPiece != Piece::EMPTY)
             brd.addPiece(m.toSquare, tgtPiece);
     }
@@ -554,7 +554,7 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
     int nPromNeeded[ProofKernel::nPieceTypes][2]; // [PieceType][color]
     {
         auto getPieceCnt = [](const Position& pos, PieceType pt, PieceColor c) {
-            Piece::Type p = ProofKernel::toPieceType(c == PieceColor::WHITE, pt, false);
+            Piece::Type p = ProofKernel::toPieceType(c == PieceColor::WHITE, pt, false, false);
             U64 mask = pos.pieceTypeBB(p);
             if (pt == PieceType::DARK_BISHOP)
                 mask &= BitBoard::maskDarkSq;
@@ -646,7 +646,7 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
                     }
                 }
                 assert(found);
-                Piece::Type promT = ProofKernel::toPieceType(white, prom, false);
+                Piece::Type promT = ProofKernel::toPieceType(white, prom, false, false);
                 lastBrd.replacePiece(sq, pawn, promT);
             }
         }

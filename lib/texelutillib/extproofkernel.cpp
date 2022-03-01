@@ -91,7 +91,7 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
             }
         }
 
-        Piece::Type pt = ProofKernel::toPieceType(white, p, false);
+        Piece::Type pt = ProofKernel::toPieceType(white, p, false, false);
         U64 m = currPos.pieceTypeBB(pt);
         if (p == PieceType::DARK_BISHOP)
             m &= BitBoard::maskDarkSq;

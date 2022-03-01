@@ -56,7 +56,8 @@ public:
     static void testFilter2();
     static void testFilter3a();
     static void testFilter3b();
-    static void testFilter4();
+    static void testFilter4a();
+    static void testFilter4b();
     static void testFilter5();
     static void testFilter6();
     static void testFilterPath();

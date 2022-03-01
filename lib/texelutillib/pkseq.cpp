@@ -136,6 +136,32 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
     ExtPkMove& m = md.move;
 
     if (m.movingPiece == PieceType::PAWN) {
+        if (!m.capture) {
+            int p = pos.getPiece(m.toSquare);
+            if (p != Piece::EMPTY) {
+                // If piece at target square, try to move it away
+                int fromSquare = m.toSquare;
+                std::vector<int> toSquares;
+                getPieceEvasions(pos, fromSquare, toSquares);
+                for (int toSq : toSquares) {
+                    Graph tmpKernel(kernel);
+                    ExtPkMove em(Piece::isWhite(p) ? PieceColor::WHITE : PieceColor::BLACK,
+                                 ProofKernel::toPieceType(p, fromSquare),
+                                 fromSquare, false, toSq, PieceType::EMPTY);
+                    tmpKernel.addNode(em);
+                    tmpKernel.nodes[idx].dependsOn.push_back(tmpKernel.nodes.back().id);
+                    if (!tmpKernel.topoSort())
+                        continue;
+                    tmpKernel.adjustPrevNextMove(idx);
+                    if (improveKernel(tmpKernel, idx, pos, depth)) {
+                        kernel = tmpKernel;
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
         UndoInfo ui;
         Position tmpPos(pos);
         if (!makeMove(tmpPos, ui, m))
@@ -157,10 +183,10 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
             std::vector<ExtPkMove> expanded;
             if (expandPieceMove(m, blocked, expanded)) {
                 tmpKernel.replaceNode(idx, expanded);
-                if (improveKernel(tmpKernel, idx, pos, depth)) {
-                    kernel = tmpKernel;
-                    return true;
-                }
+                if (!improveKernel(tmpKernel, idx, pos, depth))
+                    return false;
+                kernel = tmpKernel;
+                return true;
             }
         }
 
@@ -227,13 +253,14 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
             }
         }
 
-        if (depth > 0) {
+        if (depth > 0 && !kernel.nodes[idx].movedEarly) {
             // Try moving the piece move earlier in the proof kernel
             for (int i = idx - 1; i >= 0; i--) {
                 if (kernel.nodes[i].move.movingPiece != PieceType::PAWN)
                     continue;
                 Graph tmpKernel(kernel);
                 tmpKernel.nodes[i].dependsOn.push_back(tmpKernel.nodes[idx].id);
+                tmpKernel.nodes[idx].movedEarly = true;
                 if (!tmpKernel.topoSort())
                     continue;
 
@@ -305,7 +332,7 @@ PkSequence::makeMove(Position& pos, UndoInfo& ui, const ExtPkMove& move) {
 
     int promoteTo = Piece::EMPTY;
     if (move.promotedPiece != PieceType::EMPTY)
-        promoteTo = ProofKernel::toPieceType(white, move.promotedPiece, false);
+        promoteTo = ProofKernel::toPieceType(white, move.promotedPiece, false, false);
     Move m(move.fromSquare, move.toSquare, promoteTo);
     pos.makeMove(m, ui);
     pos.setWhiteMove(true);
@@ -344,16 +371,7 @@ PkSequence::assignPiece(Graph& kernel, int idx, const Position& pos) const {
     if (bestDist == INT_MAX)
         return false;
 
-    // Update next move of the same piece
-    for (int i = idx + 1; i < (int)kernel.nodes.size(); i++) {
-        ExtPkMove& m = kernel.nodes[i].move;
-        if (m.color == move.color &&
-            m.movingPiece == move.movingPiece &&
-            m.fromSquare == move.fromSquare) {
-            m.fromSquare = move.toSquare;
-            break;
-        }
-    }
+    kernel.adjustPrevNextMove(idx);
     return true;
 }
 
@@ -361,7 +379,7 @@ bool
 PkSequence::expandPieceMove(const ExtPkMove& move, U64 blocked,
                             std::vector<ExtPkMove>& outMoves) {
     bool white = move.color == PieceColor::WHITE;
-    Piece::Type p = ProofKernel::toPieceType(white, move.movingPiece, false);
+    Piece::Type p = ProofKernel::toPieceType(white, move.movingPiece, false, true);
 
     ProofGame::ShortestPathData spd;
     ProofGame::shortestPaths(p, move.toSquare, blocked, nullptr, spd);
@@ -470,6 +488,37 @@ PkSequence::getPawnMoves(const Graph& kernel, int idx, const Position& inPos,
     }
 }
 
+void
+PkSequence::getPieceEvasions(const Position& pos, int fromSq,
+                             std::vector<int>& toSquares) const {
+    Piece::Type p = (Piece::Type)pos.getPiece(fromSq);
+    ProofGame::ShortestPathData spd;
+    ProofGame::shortestPaths(p, fromSq, 0, nullptr, spd);
+
+    struct SquareCost {
+        int square;
+        int cost;
+    };
+
+    std::vector<SquareCost> squares;
+    for (int sq = 0; sq < 64; sq++) {
+        int d = spd.pathLen[sq];
+        if (d <= 0 || pos.getPiece(sq) != Piece::EMPTY)
+            continue;
+        int cost = d * 8 + BitBoard::getKingDistance(fromSq, sq);
+        squares.push_back(SquareCost{sq, cost});
+    }
+
+    std::sort(squares.begin(), squares.end(),
+              [](const SquareCost& a, const SquareCost& b) {
+                  if (a.cost != b.cost)
+                      return a.cost < b.cost;
+                  return a.square < b.square;
+              });
+    for (const SquareCost sc : squares)
+        toSquares.push_back(sc.square);
+}
+
 // --------------------------------------------------------------------------------
 
 void
@@ -564,6 +613,31 @@ PkSequence::Graph::sortRecursive(int i,
             return false;
     currPath[i] = false;
 
+    result.reserve(nodes.size());
     result.push_back(nodes[i]);
     return true;
+}
+
+void
+PkSequence::Graph::adjustPrevNextMove(int idx) {
+    const ExtPkMove& move = nodes[idx].move;
+    for (int i = idx + 1; i < (int)nodes.size(); i++) {
+        ExtPkMove& m = nodes[i].move;
+        if (m.color == move.color &&
+            m.movingPiece == move.movingPiece &&
+            m.fromSquare == move.fromSquare) {
+            m.fromSquare = move.toSquare;
+            nodes[i].dependsOn.push_back(nodes[idx].id);
+            break;
+        }
+    }
+    for (int i = idx - 1; i >= 0; i--) {
+        ExtPkMove& m = nodes[i].move;
+        if (m.color == move.color &&
+            m.movingPiece == move.movingPiece &&
+            m.toSquare == move.fromSquare) {
+            nodes[idx].dependsOn.push_back(nodes[i].id);
+            break;
+        }
+    }
 }
