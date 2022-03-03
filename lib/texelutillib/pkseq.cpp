@@ -641,3 +641,12 @@ PkSequence::Graph::adjustPrevNextMove(int idx) {
         }
     }
 }
+
+void
+PkSequence::Graph::print(std::ostream& os, int idx) const {
+    for (int i = 0; i < (int)nodes.size(); i++) {
+        os << ((i == idx) ? '*' : ' ');
+        os << nodes[i].move << ' ';
+    }
+    os << std::endl;
+}

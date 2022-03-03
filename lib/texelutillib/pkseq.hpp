@@ -94,6 +94,9 @@ private:
          *  move and the previous/next move of the same piece. */
         void adjustPrevNextMove(int idx);
 
+        /** Print kernel move sequence, highlighting the move at "idx". */
+        void print(std::ostream& os, int idx) const;
+
     private:
         bool sortRecursive(int i,
                            std::vector<bool>& visited,
