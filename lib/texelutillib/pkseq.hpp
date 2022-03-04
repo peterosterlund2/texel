@@ -27,7 +27,7 @@
 #define PKSEQ_HPP_
 
 #include "proofkernel.hpp"
-
+#include <deque>
 
 /**
  * A sequence of ProofKernel::ExtPkMove that can be transformed in various ways
@@ -109,7 +109,7 @@ private:
      *  "pos" must correspond to the position before the move at position "idx"
      *  has been played.
      *  Returns true if improving the sequence succeeded. */
-    bool improveKernel(Graph& kernel, int idx, const Position& pos, int depth) const;
+    bool improveKernel(int level, Graph& kernel, int idx, const Position& pos, int depth);
 
     /** Try to apply "move" to "pos". Return false if not possible, eg because
      *  the target position is already occupied for a non-capture move. */
@@ -142,6 +142,8 @@ private:
     const Position initPos;
     const Position goalPos;
     std::ostream& log;
+
+    std::deque<Graph> graphData;
 };
 
 
