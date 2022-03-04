@@ -135,6 +135,9 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
     MoveData& md = kernel.nodes[idx];
     ExtPkMove& m = md.move;
 
+    if (m.fromSquare == m.toSquare)
+        return improveKernel(kernel, idx+1, pos, depth);
+
     if (m.movingPiece == PieceType::PAWN) {
         if (!m.capture) {
             int p = pos.getPiece(m.toSquare);
@@ -378,6 +381,11 @@ PkSequence::assignPiece(Graph& kernel, int idx, const Position& pos) const {
 bool
 PkSequence::expandPieceMove(const ExtPkMove& move, U64 blocked,
                             std::vector<ExtPkMove>& outMoves) {
+    if (move.fromSquare == move.toSquare) {
+        outMoves.push_back(move);
+        return true;
+    }
+
     bool white = move.color == PieceColor::WHITE;
     Piece::Type p = ProofKernel::toPieceType(white, move.movingPiece, false, true);
 
@@ -547,11 +555,6 @@ PkSequence::Graph::addNode(const ExtPkMove& m) {
 
 void
 PkSequence::Graph::replaceNode(int idx, const std::vector<ExtPkMove>& moves) {
-    if (moves.empty()) {
-        nodes.erase(nodes.begin() + idx);
-        return;
-    }
-
     const int oldId = nodes[idx].id;
     auto dependsOn = nodes[idx].dependsOn;
     nodes[idx] = MoveData(nextId++, moves[0]);
