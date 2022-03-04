@@ -1502,10 +1502,11 @@ void ProofGameTest::testFilterPath() {
         Position pos;
         getPathPos("Qnb1kbnr/p1pppppp/8/Q7/8/8/2PPPPPP/RNBQKBNR b KQk - 0 1 "
                    "unknown: kernel: dummy "
-                   "extKernel: wPa2-a6 wPa6xb7 wPb7xa8Q wPb2-b7 bQd8-a8 wPb7xa8Q", pos);
-        ASSERT_EQ(3, BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)));
+                   "extKernel: wPa2-a6 wPa6xb7 wPb7xa8Q wPb2-b7 bQd8-a8 wPb7xa8LB", pos);
+        ASSERT_EQ(2, BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)));
         ASSERT_EQ(0, BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN)));
         ASSERT_EQ(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK)));
+        ASSERT_EQ(3, BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP)));
         ASSERT_EQ(6, BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN)));
         ASSERT_EQ(7, BitBoard::bitCount(pos.pieceTypeBB(Piece::BPAWN)));
     }
@@ -1657,6 +1658,11 @@ void ProofGameTest::testPkSequence() {
 
     test(TextIO::startPosFEN, "rnbqRbnr/ppp2ppp/2kp4/8/8/8/PPP1PPPP/RNBQKBNR w KQ - 0 1",
          "wPd2-d6 wPd6xe7 wPe7-e8R", "wPd2-d4 wPd4-d5 wPd5-d6 wPd6xe7 bPd7-d6 bKe8-d7 bKd7-c6 wPe7-e8R");
+
+    test(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/1P6/N1R5/P1PPPPPP/2BQKBNR w Kkq - 0 1",
+         "wPb2-b4 wRa1-c3", "wPb2-b4 wNb1-a3 wRa1-b1 wRb1-b3 wRb3-c3");
+    test(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/1P6/N1R5/P1PPPPPP/2BQKBNR w Kkq - 0 1",
+         "wRa1-c3 wPb2-b4", "wPb2-b4 wNb1-a3 wRa1-b1 wRb1-b3 wRb3-c3");
 }
 
 TEST(ProofGameTest, testMultiBoard) {
