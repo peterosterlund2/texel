@@ -195,9 +195,9 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
         // Try moving piece while respecting occupied squares
         if (m.capture || pos.getPiece(m.toSquare) == Piece::EMPTY) {
             Graph tmpKernel(kernel);
-            U64 blocked = pos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
+            U64 occupied = pos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
             std::vector<ExtPkMove> expanded;
-            if (expandPieceMove(m, blocked, expanded)) {
+            if (expandPieceMove(m, occupied, expanded)) {
                 tmpKernel.replaceNode(idx, expanded);
                 if (!improveKernel(tmpKernel, idx, pos, depth))
                     return false;
@@ -222,9 +222,9 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
             if (!updatePos(tmpKernel, idx, md.id, tmpPos))
                 continue;
 
-            U64 blocked = tmpPos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
+            U64 occupied = tmpPos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
             std::vector<ExtPkMove> expanded;
-            if (expandPieceMove(m, blocked, expanded)) {
+            if (expandPieceMove(m, occupied, expanded)) {
                 if (!improveKernel(tmpKernel, idx, pos, depth))
                     return false;
                 kernel = tmpKernel;
@@ -246,9 +246,9 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
             if (!updatePos(tmpKernel, idx, md.id, tmpPos))
                 continue;
 
-            U64 blocked = tmpPos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
+            U64 occupied = tmpPos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
             std::vector<ExtPkMove> expanded;
-            if (expandPieceMove(m, blocked, expanded)) {
+            if (expandPieceMove(m, occupied, expanded)) {
                 if (!improveKernel(tmpKernel, idx, pos, depth))
                     return false;
                 kernel = tmpKernel;
@@ -358,8 +358,8 @@ PkSequence::assignPiece(Graph& kernel, int idx, const Position& pos) const {
         int sq = BitBoard::extractSquare(candidates);
         Piece::Type p = (Piece::Type)pos.getPiece(sq);
 
-        U64 blocked = pos.occupiedBB() & ~(1ULL << sq) & ~(1ULL << move.toSquare);
-        ProofGame::shortestPaths(p, move.toSquare, blocked, nullptr, spd);
+        U64 occupied = pos.occupiedBB() & ~(1ULL << sq) & ~(1ULL << move.toSquare);
+        ProofGame::shortestPaths(p, move.toSquare, occupied, nullptr, spd);
         int dist = spd.pathLen[sq];
         if (dist > 0 && dist < bestDist) {
             move.movingPiece = ProofKernel::toPieceType(p, sq);
@@ -376,7 +376,7 @@ PkSequence::assignPiece(Graph& kernel, int idx, const Position& pos) const {
 }
 
 bool
-PkSequence::expandPieceMove(const ExtPkMove& move, U64 blocked,
+PkSequence::expandPieceMove(const ExtPkMove& move, U64 occupied,
                             std::vector<ExtPkMove>& outMoves) {
     if (move.fromSquare == move.toSquare) {
         outMoves.push_back(move);
@@ -387,14 +387,14 @@ PkSequence::expandPieceMove(const ExtPkMove& move, U64 blocked,
     Piece::Type p = ProofKernel::toPieceType(white, move.movingPiece, false, true);
 
     ProofGame::ShortestPathData spd;
-    ProofGame::shortestPaths(p, move.toSquare, blocked, nullptr, spd);
+    ProofGame::shortestPaths(p, move.toSquare, occupied, nullptr, spd);
     if (spd.pathLen[move.fromSquare] < 0)
         return false;
 
     int fromSq = move.fromSquare;
     int toSq = move.toSquare;
     while (fromSq != toSq) {
-        U64 nextMask = spd.getNextSquares(p, fromSq, blocked);
+        U64 nextMask = spd.getNextSquares(p, fromSq, occupied);
         assert(nextMask != 0);
         int nextSq = BitBoard::firstSquare(nextMask);
 

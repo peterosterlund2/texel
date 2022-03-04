@@ -123,9 +123,9 @@ private:
      *  wRh6-f6". All resulting moves are legal regarding how the pieces move,
      *  but it is possible that a move allows for an illegal king capture. That
      *  is, the moves are pseudo legal.
-     *  No output moves interfere with the "blocked" squares.
+     *  No output moves interfere with the "occupied" squares.
      *  Return false if conversion is not possible. */
-    static bool expandPieceMove(const ExtPkMove& move, U64 blocked,
+    static bool expandPieceMove(const ExtPkMove& move, U64 occupied,
                                 std::vector<ExtPkMove>& outMoves);
 
     /** Compute possible pawn moves in the position corresponding to the end of
