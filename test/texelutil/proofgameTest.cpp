@@ -1466,7 +1466,7 @@ void ProofGameTest::testFilter6() {
           "unknown: kernel: bPa1xPb0 wPd0xPc1 wPe0xPf1 bPg1xNf0 bPh1xNg0 "
           "extKernel: bPa7-a5 wPb2-b4 bPa5xb4 wPd2-d4 bPc7-c5 wPd4xc5 wPe2-e4 bPf7-f5 "
           "wPe4xf5 wPf5-f8 wPf2-f7 wNb1-f6 bPg7xf6 bPh7-h5 wPg2-g5 wNg1-g4 bPh5xg4",
-          " unknown: ", true }, // Only test that code does not crash, finding solution too hard
+          " path: ", true },
     };
     testFilterData(v);
 }

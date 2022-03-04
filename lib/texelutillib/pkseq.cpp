@@ -138,39 +138,52 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
     if (m.fromSquare == m.toSquare)
         return improveKernel(kernel, idx+1, pos, depth);
 
-    if (m.movingPiece == PieceType::PAWN) {
-        if (!m.capture) {
-            int p = pos.getPiece(m.toSquare);
-            if (p != Piece::EMPTY) {
-                // If piece at target square, try to move it away
-                int fromSquare = m.toSquare;
-                std::vector<int> toSquares;
-                getPieceEvasions(pos, fromSquare, toSquares);
-                for (int toSq : toSquares) {
-                    Graph tmpKernel(kernel);
-                    ExtPkMove em(Piece::isWhite(p) ? PieceColor::WHITE : PieceColor::BLACK,
-                                 ProofKernel::toPieceType(p, fromSquare),
-                                 fromSquare, false, toSq, PieceType::EMPTY);
-                    tmpKernel.addNode(em);
-                    tmpKernel.nodes[idx].dependsOn.push_back(tmpKernel.nodes.back().id);
-                    if (!tmpKernel.topoSort())
-                        continue;
-                    tmpKernel.adjustPrevNextMove(idx);
-                    if (improveKernel(tmpKernel, idx, pos, depth)) {
-                        kernel = tmpKernel;
-                        return true;
-                    }
+    if (!m.capture) {
+        // If piece at target square, try to move it away
+        int p = pos.getPiece(m.toSquare);
+        if (p != Piece::EMPTY && Piece::makeWhite(p) != Piece::WPAWN) {
+            int fromSquare = m.toSquare;
+            std::vector<int> toSquares;
+            getPieceEvasions(pos, fromSquare, toSquares);
+            for (int toSq : toSquares) {
+                Graph tmpKernel(kernel);
+                ExtPkMove em(Piece::isWhite(p) ? PieceColor::WHITE : PieceColor::BLACK,
+                             ProofKernel::toPieceType(p, fromSquare),
+                             fromSquare, false, toSq, PieceType::EMPTY);
+                tmpKernel.addNode(em);
+                tmpKernel.nodes[idx].dependsOn.push_back(tmpKernel.nodes.back().id);
+                if (!tmpKernel.topoSort())
+                    continue;
+                tmpKernel.adjustPrevNextMove(idx);
+                if (improveKernel(tmpKernel, idx, pos, depth)) {
+                    kernel = tmpKernel;
+                    return true;
                 }
-                return false;
             }
+            return false;
         }
+    }
 
+    if (m.movingPiece == PieceType::PAWN) {
         UndoInfo ui;
         Position tmpPos(pos);
         if (!makeMove(tmpPos, ui, m))
             return false;
         return improveKernel(kernel, idx + 1, tmpPos, depth);
     }
+
+    auto updatePos = [](const Graph& tmpKernel, int idx, int id,
+                        Position& pos) -> bool {
+        UndoInfo ui;
+        for (int i = idx; i < (int)tmpKernel.nodes.size(); i++) {
+            if (tmpKernel.nodes[i].id == id)
+                break;
+            if (!makeMove(pos, ui, tmpKernel.nodes[i].move)) {
+                return false;
+            }
+        }
+        return true;
+    };
 
     if (!md.pseudoLegal) {
         if (m.movingPiece == PieceType::EMPTY) {
@@ -180,7 +193,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
         }
 
         // Try moving piece while respecting occupied squares
-        {
+        if (m.capture || pos.getPiece(m.toSquare) == Piece::EMPTY) {
             Graph tmpKernel(kernel);
             U64 blocked = pos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
             std::vector<ExtPkMove> expanded;
@@ -192,19 +205,6 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
                 return true;
             }
         }
-
-        auto updatePos = [](const Graph& tmpKernel, int idx, int id,
-                            Position& pos) -> bool {
-            UndoInfo ui;
-            for (int i = idx; i < (int)tmpKernel.nodes.size(); i++) {
-                if (tmpKernel.nodes[i].id == id)
-                    break;
-                if (!makeMove(pos, ui, tmpKernel.nodes[i].move)) {
-                    return false;
-                }
-            }
-            return true;
-        };
 
         // Try moving later pawn moves earlier to make the piece movement possible
         for (int i = idx + 1; i < (int)kernel.nodes.size(); i++) {
@@ -278,6 +278,9 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
             }
         }
 
+        // For a non-pawn move, if other non-pawn piece needs to move, insert
+        // ExtPkMove to move it.
+
         return false;
     }
 
@@ -307,12 +310,6 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
     // - If so, swap which rook is moved.
     // - If there later is a move of the other rook, that move must be swapped
     //   too.
-
-    // For a non-pawn move, decide if it is possible to make the move without
-    // moving any other pieces.
-    // - If other non-pawn piece needs to move, insert ExtPkMove to move it.
-    //   - If target square conflicts with later move, also generate ExtPkMove
-    //     to move the piece back to where it was.
 
     return false;
 }
