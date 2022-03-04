@@ -620,11 +620,17 @@ PkSequence::Graph::sortRecursive(int i,
 
 void
 PkSequence::Graph::adjustPrevNextMove(int idx) {
+    auto targetPiece = [](const ExtPkMove& move) -> PieceType {
+        if (move.promotedPiece != PieceType::EMPTY)
+            return move.promotedPiece;
+        return move.movingPiece;
+    };
+
     const ExtPkMove& move = nodes[idx].move;
     for (int i = idx + 1; i < (int)nodes.size(); i++) {
         ExtPkMove& m = nodes[i].move;
         if (m.color == move.color &&
-            m.movingPiece == move.movingPiece &&
+            m.movingPiece == targetPiece(move) &&
             m.fromSquare == move.fromSquare) {
             m.fromSquare = move.toSquare;
             nodes[i].dependsOn.push_back(nodes[idx].id);
@@ -634,7 +640,7 @@ PkSequence::Graph::adjustPrevNextMove(int idx) {
     for (int i = idx - 1; i >= 0; i--) {
         ExtPkMove& m = nodes[i].move;
         if (m.color == move.color &&
-            m.movingPiece == move.movingPiece &&
+            targetPiece(m) == move.movingPiece &&
             m.toSquare == move.fromSquare) {
             nodes[idx].dependsOn.push_back(nodes[i].id);
             break;
