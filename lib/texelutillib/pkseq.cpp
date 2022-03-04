@@ -127,6 +127,15 @@ PkSequence::combinePawnMoves() {
     extKernel = seq;
 }
 
+static U64
+moveMask(const ProofKernel::ExtPkMove& m) {
+    U64 mask = 0;
+    if (m.fromSquare != -1)
+        mask |= 1ULL << m.fromSquare;
+    mask |= 1ULL << m.toSquare;
+    return mask;
+}
+
 bool
 PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth) const {
     if (idx >= (int)kernel.nodes.size())
@@ -195,7 +204,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
         // Try moving piece while respecting occupied squares
         if (m.capture || pos.getPiece(m.toSquare) == Piece::EMPTY) {
             Graph tmpKernel(kernel);
-            U64 occupied = pos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
+            U64 occupied = pos.occupiedBB() & ~moveMask(m);
             std::vector<ExtPkMove> expanded;
             if (expandPieceMove(m, occupied, expanded)) {
                 tmpKernel.replaceNode(idx, expanded);
@@ -222,7 +231,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
             if (!updatePos(tmpKernel, idx, md.id, tmpPos))
                 continue;
 
-            U64 occupied = tmpPos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
+            U64 occupied = tmpPos.occupiedBB() & ~moveMask(m);
             std::vector<ExtPkMove> expanded;
             if (expandPieceMove(m, occupied, expanded)) {
                 if (!improveKernel(tmpKernel, idx, pos, depth))
@@ -246,7 +255,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos, int depth
             if (!updatePos(tmpKernel, idx, md.id, tmpPos))
                 continue;
 
-            U64 occupied = tmpPos.occupiedBB() & ~(1ULL << m.toSquare) & ~(1ULL << m.fromSquare);
+            U64 occupied = tmpPos.occupiedBB() & ~moveMask(m);
             std::vector<ExtPkMove> expanded;
             if (expandPieceMove(m, occupied, expanded)) {
                 if (!improveKernel(tmpKernel, idx, pos, depth))
@@ -538,11 +547,11 @@ PkSequence::Graph::addNode(const ExtPkMove& m) {
             if (m.toSquare == prev.move.toSquare)
                 md.dependsOn.push_back(prev.id);
         }
-        U64 mMask = (1ULL << m.fromSquare) | (1ULL << m.toSquare);
+        U64 mMask = moveMask(m);
         for (int i = (int)nodes.size() - 2; i >= 0; i--) {
             const MoveData& prev = nodes[i];
             if (prev.move.movingPiece == PieceType::PAWN) {
-                U64 iMask = (1ULL << prev.move.fromSquare) | (1ULL << prev.move.toSquare);
+                U64 iMask = moveMask(prev.move);
                 if ((mMask & iMask) != 0)
                     md.dependsOn.push_back(prev.id);
             }
