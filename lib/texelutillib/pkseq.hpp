@@ -144,6 +144,7 @@ private:
     std::ostream& log;
 
     std::deque<Graph> graphData;
+    U64 nodes;
 };
 
 

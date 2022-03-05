@@ -56,13 +56,14 @@ PkSequence::improve() {
     Position pos(initPos);
     int maxD1 = 2;
     int maxD2 = 2;
+    nodes = 0;
     if (improveKernel(0, kernel, 0, pos, maxD1, maxD2)) {
         extKernel.clear();
         for (const MoveData& md : kernel.nodes)
             extKernel.push_back(md.move);
     }
 
-    log << "new extKernel: " << extKernel << std::endl;
+    log << "nodes: " << nodes << " new extKernel: " << extKernel << std::endl;
 
     combinePawnMoves();
 }
@@ -142,6 +143,12 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
                           int d1, int d2) {
     if (idx >= (int)kernel.nodes.size())
         return true;
+
+    nodes++;
+    if ((nodes % 10000000) == 0) {
+        log << "improveKernel nodes: " << nodes << std::endl;
+        kernel.print(log, idx);
+    }
 
     MoveData& md = kernel.nodes[idx];
     ExtPkMove& m = md.move;
@@ -714,7 +721,10 @@ void
 PkSequence::Graph::print(std::ostream& os, int idx) const {
     for (int i = 0; i < (int)nodes.size(); i++) {
         os << ((i == idx) ? '*' : ' ');
-        os << nodes[i].move << ' ';
+        os << nodes[i].move;
+        os << (nodes[i].pseudoLegal ? 'p' : ' ');
+        os << (nodes[i].movedEarly ? 'e' : ' ');
+        os << ' ';
     }
     os << std::endl;
 }
