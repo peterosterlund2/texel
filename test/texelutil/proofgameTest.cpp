@@ -1502,11 +1502,10 @@ void ProofGameTest::testFilterPath() {
         Position pos;
         getPathPos("Qnb1kbnr/p1pppppp/8/Q7/8/8/2PPPPPP/RNBQKBNR b KQk - 0 1 "
                    "unknown: kernel: dummy "
-                   "extKernel: wPa2-a6 wPa6xb7 wPb7xa8Q wPb2-b7 bQd8-a8 wPb7xa8LB", pos);
-        ASSERT_EQ(2, BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)));
+                   "extKernel: wPa2-a6 wPa6xb7 wPb7xa8Q wPb2-b7 bQd8-a8 wPb7xa8Q", pos);
+        ASSERT_EQ(3, BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN)));
         ASSERT_EQ(0, BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN)));
         ASSERT_EQ(1, BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK)));
-        ASSERT_EQ(3, BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP)));
         ASSERT_EQ(6, BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN)));
         ASSERT_EQ(7, BitBoard::bitCount(pos.pieceTypeBB(Piece::BPAWN)));
     }

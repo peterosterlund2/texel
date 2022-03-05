@@ -415,7 +415,7 @@ PkSequence::makeMove(Position& pos, UndoInfo& ui, const ExtPkMove& move) {
         promoteTo = ProofKernel::toPieceType(white, move.promotedPiece, false, false);
     Move m(move.fromSquare, move.toSquare, promoteTo);
     pos.makeMove(m, ui);
-    pos.setWhiteMove(true);
+    pos.setWhiteMove(!white);
 
     return true;
 }
