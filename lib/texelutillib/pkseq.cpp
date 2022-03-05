@@ -448,6 +448,9 @@ PkSequence::assignPiece(Graph& kernel, int idx, const Position& pos) const {
 bool
 PkSequence::expandPieceMove(const ExtPkMove& move, U64 occupied,
                             std::vector<ExtPkMove>& outMoves) {
+    if ((moveMask(move) & occupied) != 0)
+        return false;
+
     if (move.fromSquare == move.toSquare) {
         outMoves.push_back(move);
         return true;
