@@ -109,7 +109,7 @@ private:
      *  "pos" must correspond to the position before the move at position "idx"
      *  has been played.
      *  Returns true if improving the sequence succeeded. */
-    bool improveKernel(int level, Graph& kernel, int idx, const Position& pos, int depth);
+    bool improveKernel(int level, Graph& kernel, int idx, const Position& pos, int d1, int d2);
 
     /** Try to apply "move" to "pos". Return false if not possible, eg because
      *  the target position is already occupied for a non-capture move. */
