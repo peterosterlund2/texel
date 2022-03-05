@@ -173,6 +173,7 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
                              ProofKernel::toPieceType(p, fromSquare),
                              fromSquare, false, toSq, PieceType::EMPTY);
                 tmpKernel.addNode(em);
+                tmpKernel.nodes.back().movedEarly = true;
                 tmpKernel.nodes[idx].dependsOn.push_back(tmpKernel.nodes.back().id);
                 if (!tmpKernel.topoSort())
                     continue;
@@ -292,11 +293,10 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
                             if (em.fromSquare != -1)
                                 expandedMask |= BitBoard::squaresBetween(em.fromSquare, em.toSquare);
                         }
-                        expandedMask &= ~moveMask(m);
                     }
                 }
             }
-            U64 mask = expandedMask;
+            U64 mask = expandedMask & ~moveMask(m);
             while (mask != 0) {
                 int fromSquare = BitBoard::extractSquare(mask);
                 int p = pos.getPiece(fromSquare);
@@ -312,6 +312,7 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
                                      ProofKernel::toPieceType(p, fromSquare),
                                      fromSquare, false, toSq, PieceType::EMPTY);
                         tmpKernel.addNode(em);
+                        tmpKernel.nodes.back().movedEarly = true;
                         tmpKernel.nodes[idx].dependsOn.push_back(tmpKernel.nodes.back().id);
                         if (!tmpKernel.topoSort())
                             continue;
@@ -622,10 +623,12 @@ PkSequence::Graph::addNode(const ExtPkMove& m) {
 void
 PkSequence::Graph::replaceNode(int idx, const std::vector<ExtPkMove>& moves) {
     const int oldId = nodes[idx].id;
+    const bool early = nodes[idx].movedEarly;
     auto dependsOn = nodes[idx].dependsOn;
     nodes[idx] = MoveData(nextId++, moves[0]);
     nodes[idx].pseudoLegal = true;
     nodes[idx].dependsOn = dependsOn;
+    nodes[idx].movedEarly = early;
 
     std::vector<MoveData> toInsert;
     int prevId = nodes[idx].id;
@@ -633,6 +636,7 @@ PkSequence::Graph::replaceNode(int idx, const std::vector<ExtPkMove>& moves) {
         MoveData md(nextId++, moves[i]);
         md.pseudoLegal = true;
         md.dependsOn.push_back(prevId);
+        md.movedEarly = early;
         toInsert.push_back(md);
         prevId = md.id;
     }
