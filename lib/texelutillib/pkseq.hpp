@@ -105,11 +105,22 @@ private:
                            std::vector<MoveData>& result);
     };
 
+    struct SearchLimits {
+        int level = 0;
+        int d1 = 2;
+        int d2 = 2;
+        U64 maxNodes = 0;
+
+        SearchLimits nextLev() { level++; return *this; }
+        SearchLimits decD1() { d1--; return *this; }
+        SearchLimits decD2() { d2--; return *this; }
+    };
+
     /** Try to improve the proof kernel move sequence starting from position "idx".
      *  "pos" must correspond to the position before the move at position "idx"
      *  has been played.
      *  Returns true if improving the sequence succeeded. */
-    bool improveKernel(int level, Graph& kernel, int idx, const Position& pos, int d1, int d2);
+    bool improveKernel(Graph& kernel, int idx, const Position& pos, const SearchLimits lim);
 
     /** Try to apply "move" to "pos". Return false if not possible, eg because
      *  the target position is already occupied for a non-capture move. */

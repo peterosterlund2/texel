@@ -54,10 +54,10 @@ PkSequence::improve() {
     }
 
     Position pos(initPos);
-    int maxD1 = 2;
-    int maxD2 = 2;
+    SearchLimits lim;
+    lim.maxNodes = 1000000;
     nodes = 0;
-    if (improveKernel(0, kernel, 0, pos, maxD1, maxD2)) {
+    if (improveKernel(kernel, 0, pos, lim)) {
         extKernel.clear();
         for (const MoveData& md : kernel.nodes)
             extKernel.push_back(md.move);
@@ -139,13 +139,13 @@ moveMask(const ProofKernel::ExtPkMove& m) {
 }
 
 bool
-PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos,
-                          int d1, int d2) {
+PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
+                          const SearchLimits lim) {
     if (idx >= (int)kernel.nodes.size())
         return true;
 
     nodes++;
-    if ((nodes % 10000000) == 0) {
+    if ((nodes % 100000) == 0) {
         log << "improveKernel nodes: " << nodes << std::endl;
         kernel.print(log, idx);
     }
@@ -153,12 +153,16 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
     MoveData& md = kernel.nodes[idx];
     ExtPkMove& m = md.move;
 
-    if ((int)graphData.size() < level + 1)
-        graphData.resize(level + 1);
-    Graph& tmpKernel = graphData[level];
+    if ((int)graphData.size() < lim.level + 1)
+        graphData.resize(lim.level + 1);
+    Graph& tmpKernel = graphData[lim.level];
+
+    auto nextLim = [&lim]() -> SearchLimits {
+        return SearchLimits(lim).nextLev();
+    };
 
     if (m.fromSquare == m.toSquare)
-        return improveKernel(level + 1, kernel, idx+1, pos, d1, d2);
+        return improveKernel(kernel, idx+1, pos, nextLim());
 
     if (!m.capture) {
         // If piece at target square, try to move it away
@@ -178,10 +182,12 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
                 if (!tmpKernel.topoSort())
                     continue;
                 tmpKernel.adjustPrevNextMove(idx);
-                if (improveKernel(level + 1, tmpKernel, idx, pos, d1, d2)) {
+                if (improveKernel(tmpKernel, idx, pos, nextLim())) {
                     kernel = tmpKernel;
                     return true;
                 }
+                if (nodes > lim.maxNodes)
+                    return false;
             }
             return false;
         }
@@ -192,7 +198,7 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
         Position tmpPos(pos);
         if (!makeMove(tmpPos, ui, m))
             return false;
-        return improveKernel(level + 1, kernel, idx + 1, tmpPos, d1, d2);
+        return improveKernel(kernel, idx + 1, tmpPos, nextLim());
     }
 
     auto updatePos = [](const Graph& tmpKernel, int idx, int id,
@@ -222,7 +228,7 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
             std::vector<ExtPkMove> expanded;
             if (expandPieceMove(m, occupied, expanded)) {
                 tmpKernel.replaceNode(idx, expanded);
-                if (!improveKernel(level + 1, tmpKernel, idx, pos, d1, d2))
+                if (!improveKernel(tmpKernel, idx, pos, nextLim()))
                     return false;
                 kernel = tmpKernel;
                 return true;
@@ -248,7 +254,7 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
             U64 occupied = tmpPos.occupiedBB() & ~moveMask(m);
             std::vector<ExtPkMove> expanded;
             if (expandPieceMove(m, occupied, expanded)) {
-                if (!improveKernel(level + 1, tmpKernel, idx, pos, d1, d2))
+                if (!improveKernel(tmpKernel, idx, pos, nextLim()))
                     return false;
                 kernel = tmpKernel;
                 return true;
@@ -272,14 +278,14 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
             U64 occupied = tmpPos.occupiedBB() & ~moveMask(m);
             std::vector<ExtPkMove> expanded;
             if (expandPieceMove(m, occupied, expanded)) {
-                if (!improveKernel(level + 1, tmpKernel, idx, pos, d1, d2))
+                if (!improveKernel(tmpKernel, idx, pos, nextLim()))
                     return false;
                 kernel = tmpKernel;
                 return true;
             }
         }
 
-        if (d2 > 0) {
+        if (lim.d2 > 0) {
             // For a non-pawn move, if other non-pawn piece needs to move, insert
             // ExtPkMove to move it.
             U64 expandedMask = 0;
@@ -317,10 +323,12 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
                         if (!tmpKernel.topoSort())
                             continue;
                         tmpKernel.adjustPrevNextMove(idx);
-                        if (improveKernel(level + 1, tmpKernel, idx, pos, d1, d2 - 1)) {
+                        if (improveKernel(tmpKernel, idx, pos, nextLim().decD2())) {
                             kernel = tmpKernel;
                             return true;
                         }
+                        if (nodes > lim.maxNodes)
+                            return false;
                         if (++tries >= 3)
                             break;
                     }
@@ -329,7 +337,7 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
             }
         }
 
-        if (d1 > 0 && !kernel.nodes[idx].movedEarly) {
+        if (lim.d1 > 0 && !kernel.nodes[idx].movedEarly) {
             // Try moving the piece move earlier in the proof kernel
             for (int i = idx - 1; i >= 0; i--) {
                 if (kernel.nodes[i].move.movingPiece != PieceType::PAWN)
@@ -344,10 +352,12 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
                 if (!updatePos(tmpKernel, 0, tmpKernel.nodes[i].id, tmpPos))
                     continue;
 
-                if (improveKernel(level + 1, tmpKernel, i, tmpPos, d1 - 1, d2)) {
+                if (improveKernel(tmpKernel, i, tmpPos, nextLim().decD1())) {
                     kernel = tmpKernel;
                     return true;
                 }
+                if (nodes > lim.maxNodes)
+                    return false;
             }
         }
 
@@ -359,7 +369,7 @@ PkSequence::improveKernel(int level, Graph& kernel, int idx, const Position& pos
         UndoInfo ui;
         if (!makeMove(tmpPos, ui, m))
             return false;
-        return improveKernel(level + 1, kernel, idx + 1, tmpPos, d1, d2);
+        return improveKernel(kernel, idx + 1, tmpPos, nextLim());
     }
 
     // After each move, test if the king is in check.
