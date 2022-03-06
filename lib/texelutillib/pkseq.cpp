@@ -162,7 +162,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
         try {
             auto pg = std::unique_ptr<ProofGame>(new ProofGame(TextIO::toFEN(pos),
                                                                TextIO::toFEN(goalPos),
-                                                               true, {}, true, log));
+                                                               false, {}, true, log));
             if (!pg->isInfeasible(fromSq, toSq))
                 return true;
         } catch (const ChessError& e) {
