@@ -25,6 +25,7 @@
 
 #include "pkseq.hpp"
 #include "proofgame.hpp"
+#include "moveGen.hpp"
 #include "textio.hpp"
 #include "stloutput.hpp"
 #include <cassert>
@@ -141,8 +142,40 @@ moveMask(const ProofKernel::ExtPkMove& m) {
 bool
 PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
                           const SearchLimits lim) {
-    if (idx >= (int)kernel.nodes.size())
-        return true;
+    if ((int)graphData.size() < lim.level + 1)
+        graphData.resize(lim.level + 1);
+    Graph& tmpKernel = graphData[lim.level];
+
+    auto nextLim = [&lim]() -> SearchLimits {
+        return SearchLimits(lim).nextLev();
+    };
+
+    if (idx >= (int)kernel.nodes.size()) {
+        int fromSq = -1, toSq = -1;
+        try {
+            ProofGame pg(TextIO::toFEN(pos), TextIO::toFEN(goalPos), {}, true, log);
+            if (!pg.isInfeasible(fromSq, toSq))
+                return true;
+        } catch (const ChessError& e) {
+            return true; // Cannot determine feasibility
+        }
+        if (fromSq != -1 && toSq != -1) {
+            int p = pos.getPiece(fromSq);
+            if (p != Piece::WPAWN && p != Piece::BPAWN) {
+                tmpKernel = kernel;
+                ExtPkMove em(Piece::isWhite(p) ? PieceColor::WHITE : PieceColor::BLACK,
+                             ProofKernel::toPieceType(p, fromSq), fromSq, false, toSq,
+                             PieceType::EMPTY);
+                tmpKernel.addNode(em);
+                tmpKernel.adjustPrevNextMove(idx);
+                if (improveKernel(tmpKernel, idx, pos, nextLim())) {
+                    kernel = tmpKernel;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     nodes++;
     if ((nodes % 100000) == 0) {
@@ -152,14 +185,6 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
 
     MoveData& md = kernel.nodes[idx];
     ExtPkMove& m = md.move;
-
-    if ((int)graphData.size() < lim.level + 1)
-        graphData.resize(lim.level + 1);
-    Graph& tmpKernel = graphData[lim.level];
-
-    auto nextLim = [&lim]() -> SearchLimits {
-        return SearchLimits(lim).nextLev();
-    };
 
     if (m.fromSquare == m.toSquare)
         return improveKernel(kernel, idx+1, pos, nextLim());
@@ -377,14 +402,6 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
     // - If king has nowhere to go, generate move to make space for the king
     //   before the checking move.
 
-    // At end of proof kernel position, if some piece cannot reach its target
-    // position, add an ExtPkMove for this piece movement. Then:
-    // - Try to add a pawn move before the piece move to make the piece move
-    //   possible.
-    //   - If this does not work, try to move the piece move earlier in the move
-    //      sequence where whatever was blocking its path is not yet in a
-    //      blocking position.
-
     // If a rook cannot reach its target square, check if the other rook can
     // reach it instead.
     // - If so, swap which rook is moved.
@@ -415,7 +432,10 @@ PkSequence::makeMove(Position& pos, UndoInfo& ui, const ExtPkMove& move) {
         promoteTo = ProofKernel::toPieceType(white, move.promotedPiece, false, false);
     Move m(move.fromSquare, move.toSquare, promoteTo);
     pos.makeMove(m, ui);
+
     pos.setWhiteMove(!white);
+    if (MoveGen::canTakeKing(pos) && !MoveGen::inCheck(pos))
+        pos.setWhiteMove(white);
 
     return true;
 }

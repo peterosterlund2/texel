@@ -1467,6 +1467,11 @@ void ProofGameTest::testFilter6() {
           "extKernel: bPa7-a5 wPb2-b4 bPa5xb4 wPd2-d4 bPc7-c5 wPd4xc5 wPe2-e4 bPf7-f5 "
           "wPe4xf5 wPf5-f8 wPf2-f7 wNb1-f6 bPg7xf6 bPh7-h5 wPg2-g5 wNg1-g4 bPh5xg4",
           " path: ", true },
+        { "1R2Q1Nn/1rRqB2R/1n6/pq1b4/1np2PN1/3qr2K/1b4pR/b1k2b1R w - - 0 1 "
+          "unknown: kernel: dummy "
+          "extKernel: bPb7-b5 wPa2-a4 bPb5xa4 bPd7-d5 wPc2-c4 bPd5xc4 bPf7-f5 "
+          "wPe2-e4 bPf5xe4 bPg7-g5 wPh2-h4 bPg5xh4 bPh4-h3 wPg2-g3 wLBf1-g2 bPh3xg2",
+          " unknown: ", true }, // Only test that code does not crash, finding solution too hard
     };
     testFilterData(v);
 }
@@ -1531,6 +1536,30 @@ void ProofGameTest::testFilterPath() {
         int s = hScore(TextIO::toFEN(pos), goalFen);
         ASSERT_GE(s, 70);
         ASSERT_LE(s, 149);
+    }
+    {
+        Position pos;
+        std::string goalFen  = "B1rb1RN1/B4Np1/rP5b/3qb1P1/1k1n3P/3QrPK1/1BbPB3/2n3Q1 w - - 0 1";
+        getPathPos(goalFen + " "
+                   "unknown: kernel: dummy "
+                   "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 wPc2-c4 bPd7-d5 wPc4xd5 wPe2-e4 "
+                   "bPf7-f5 wPe4xf5 wPb2-b4 bPa7-a5 wPb4xa5 bPh7-h5 wPg2-g5 wRa1-g4 bPh5xg4 ",
+                   pos);
+        int fromSq = -1, toSq = -1;
+        ProofGame pg(TextIO::toFEN(pos), goalFen, {}, true);
+        bool infeasible = pg.isInfeasible(fromSq, toSq);
+        ASSERT_FALSE(infeasible);
+    }
+    {
+        Position pos;
+        std::string goalFen  = "rnbqkbnr/1ppppppp/8/8/8/2B5/PpPPPPPP/RN1QKBNR w KQkq - 0 1";
+        getPathPos(goalFen + " "
+                   "unknown: kernel: dummy "
+                   "extKernel: bPa7-a4 wPb2-b3 bPa4xb3 bPb3-b2 ", pos);
+        int fromSq = -1, toSq = -1;
+        ProofGame pg(TextIO::toFEN(pos), goalFen, {}, true);
+        bool infeasible = pg.isInfeasible(fromSq, toSq);
+        ASSERT_FALSE(infeasible);
     }
 }
 
@@ -1609,10 +1638,10 @@ void ProofGameTest::testPkSequence() {
     test(TextIO::startPosFEN, "rnbqkbnr/1pp2ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
          "wxd7", "wNg1-f3 wNf3-e5 wNe5xd7");
     test("rnbqkbnr/pppppppp/8/8/8/3P4/PPP1PPPP/RNBQKBNR w - - 0 1",
-         "rnbqkbnr/1pp2ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
+         "rnbqkbnr/1pp2ppp/8/8/8/3P4/PPP1PPPP/RNBQKBNR w - - 0 1",
          "wxa7", "wDBc1-e3 wDBe3xa7");
     test("rnbqkbnr/pppppppp/8/8/8/4P3/PPPP1PPP/RNBQKBNR w - - 0 1",
-         "rnbqkbnr/1pp2ppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
+         "rnbqkbnr/ppp2pp1/8/8/8/4P3/PPPP1PPP/RNBQKBNR w - - 0 1",
          "wxh7", "wQd1-h5 wQh5xh7");
     test("rnbqkbnr/pppppppp/8/8/8/6P1/PPPPPP1P/RNBQKBNR w KQkq - 0 1",
          "rnbqkbnr/p1pppppp/8/8/8/6P1/PPPPPP1P/RNBQKBNR w KQkq - 0 1",

@@ -458,6 +458,19 @@ ProofGame::search(const Options& opts, Result& result) {
 }
 
 bool
+ProofGame::isInfeasible(int& fromSq, int& toSq) {
+    Position startPos = TextIO::readFEN(initialFen);
+    infeasibleFrom = infeasibleTo = -1;
+    findInfeasible = true;
+    if (distLowerBound(startPos) == INT_MAX) {
+        fromSq = infeasibleFrom;
+        toSq = infeasibleTo;
+        return true;
+    }
+    return false;
+}
+
+bool
 ProofGame::addPosition(const Position& pos, U32 parent, bool isRoot, bool checkBound, int best) {
     const int ply = isRoot ? 0 : nodes[parent].ply + 1;
     auto it = nodeHash.find(pos.zobristHash());
@@ -825,8 +838,11 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
                     return false;
             }
             cost = solveAssignment(as);
-            if (cost >= bigCost)
+            if (cost >= bigCost) {
+                if (findInfeasible)
+                    findInfeasibleMove(pos, as, N, rowToSq[c], colToSq[c]);
                 return false;
+            }
 
             int nConstr;
             if (!computeAllCutSets(as, rowToSq[c], colToSq[c], wtm, blocked, maxCapt,
@@ -878,6 +894,66 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
     }
 
     return true;
+}
+
+void
+ProofGame::findInfeasibleMove(const Position& pos,
+                              const Assignment<int>& as, int N,
+                              int (&rowToSq)[16], int (&colToSq)[16]) {
+    findInfeasible = false;
+
+    auto wrongBishop = [](int p, int fromSq, int toSq) -> bool {
+        return Piece::makeWhite(p) == Piece::WBISHOP &&
+            Square::darkSquare(fromSq) != Square::darkSquare(toSq);
+    };
+
+    for (int r = 0; r < N; r++) {
+        bool allBig = true;
+        for (int c = 0; c < N; c++) {
+            if (as.getCost(r, c) != bigCost) {
+                allBig = false;
+                break;
+            }
+        }
+        if (allBig) {
+            int fromSq = rowToSq[r];
+            int p = pos.getPiece(fromSq);
+            U64 mask = goalPos.pieceTypeBB((Piece::Type)p);
+            while (mask != 0) {
+                int toSq = BitBoard::extractSquare(mask);
+                if (fromSq == toSq || wrongBishop(p, fromSq, toSq))
+                    continue;
+                infeasibleFrom = fromSq;
+                infeasibleTo = toSq;
+                return;
+            }
+        }
+    }
+
+    for (int c = 0; c < N; c++) {
+        bool allBig = true;
+        for (int r = 0; r < N; r++) {
+            if (as.getCost(r, c) != bigCost) {
+                allBig = false;
+                break;
+            }
+        }
+        if (allBig) {
+            int toSq = colToSq[c];
+            if (toSq != -1) {
+                int p = goalPos.getPiece(toSq);
+                U64 mask = pos.pieceTypeBB((Piece::Type)p);
+                while (mask != 0) {
+                    int fromSq = BitBoard::extractSquare(mask);
+                    if (fromSq == toSq || wrongBishop(p, fromSq, toSq))
+                        continue;
+                    infeasibleFrom = fromSq;
+                    infeasibleTo = toSq;
+                    return;
+                }
+            }
+        }
+    }
 }
 
 U64
@@ -1044,7 +1120,7 @@ ProofGame::computeShortestPathData(const Position& pos,
             if (promPath[c][x].spd->fromSquares & pos.pieceTypeBB(pawn))
                 promotionPossible = true;
         }
-        if ((spd->fromSquares == (1ULL << sq)) && !promotionPossible) {
+        if (!findInfeasible && (spd->fromSquares == (1ULL << sq)) && !promotionPossible) {
             // Piece on goal square can not move, must be same piece on sq in pos
             if (pos.getPiece(sq) != p)
                 return false;
@@ -1301,11 +1377,12 @@ ProofGame::solveAssignment(Assignment<int>& as) {
 
 bool
 ProofGame::computeBlocked(const Position& pos, U64& blocked) const {
-    return computeBlocked(pos, goalPos, blocked);
+    return computeBlocked(pos, goalPos, blocked, findInfeasible);
 }
 
 bool
-ProofGame::computeBlocked(const Position& pos, const Position& goalPos, U64& blocked) {
+ProofGame::computeBlocked(const Position& pos, const Position& goalPos, U64& blocked,
+                          bool findInfeasible) {
     blocked = 0;
     const U64 wGoalPawns = goalPos.pieceTypeBB(Piece::WPAWN);
     const U64 bGoalPawns = goalPos.pieceTypeBB(Piece::BPAWN);
@@ -1402,7 +1479,7 @@ ProofGame::computeBlocked(const Position& pos, const Position& goalPos, U64& blo
     if (goalPos.a8Castle())
         blocked |= BitBoard::sqMask(E8,A8);
 
-    if (!computeDeadlockedPieces(pos, goalPos, blocked))
+    if (!findInfeasible && !computeDeadlockedPieces(pos, goalPos, blocked))
         return false;
 
     return true;

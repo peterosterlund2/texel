@@ -114,7 +114,13 @@ public:
      *  If false is returned, it is impossible to reach goalPos from pos. */
     bool computeBlocked(const Position& pos, U64& blocked) const;
     static bool computeBlocked(const Position& pos, const Position& goalPos,
-                               U64& blocked);
+                               U64& blocked, bool findInfeasible = false);
+
+    /** Return true if it can be determined without search that the problem has
+     *  no solution. If a piece can be determined that cannot be moved from the
+     *  start square to a goal square, set "fromSq" and "toSq" to the
+     *  corresponding squares. */
+    bool isInfeasible(int& fromSq, int& toSq);
 
     /** Return the goal position. */
     const Position& getGoalPos() const;
@@ -201,6 +207,12 @@ private:
                             int numWhiteExtraPieces, int numBlackExtraPieces,
                             int excessWPawns, int excessBPawns,
                             int neededMoves[]);
+
+    /** Find a single piece that makes the assignment problem infeasible.
+     *  If such a piece exists, set "infeasibleFrom" and "infeasibleTo" to the
+     *  piece square in the current and goal position. */
+    void findInfeasibleMove(const Position& pos, const Assignment<int>& as, int N,
+                            int (&rowToSq)[16], int (&colToSq)[16]);
 
     /** Return obstacles between fromSq and toSq when following a shortest path
      *  from fromSq to toSq. Obstacles are squares containing the same piece in
@@ -353,6 +365,10 @@ private:
     static bool staticInitDone;
 
     bool useNonAdmissible = false;
+
+    bool findInfeasible = false;
+    int infeasibleFrom = -1;
+    int infeasibleTo = -1;
 
     std::ostream& log;
 };
