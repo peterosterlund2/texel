@@ -139,6 +139,15 @@ if(CMAKE_EXTRA_GENERATOR STREQUAL "Eclipse CDT4" AND
 endif()
 
 
+# Testing
+if(NOT CMAKE_CROSSCOMPILING)
+  find_program(MEMORYCHECK_COMMAND NAMES valgrind)
+  set(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")
+  include(CTest)
+  enable_testing()
+endif()
+
+
 # Subdirectories
 add_subdirectory(lib)
 add_subdirectory(app)

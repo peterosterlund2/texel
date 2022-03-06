@@ -24,3 +24,6 @@ set(src_texellibtest
 
 add_executable(texellibtest ${src_texellibtest})
 target_link_libraries(texellibtest texellib texelutillib gtest)
+if(BUILD_TESTING)
+  gtest_discover_tests(texellibtest)
+endif()
