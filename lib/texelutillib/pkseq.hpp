@@ -154,7 +154,11 @@ private:
     const Position goalPos;
     std::ostream& log;
 
-    std::deque<Graph> graphData;
+    struct Data {
+        Graph graph;
+        Position pos;
+    };
+    std::deque<Data> searchData;
     U64 nodes;
 };
 

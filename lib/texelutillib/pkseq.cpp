@@ -142,9 +142,16 @@ moveMask(const ProofKernel::ExtPkMove& m) {
 bool
 PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
                           const SearchLimits lim) {
-    if ((int)graphData.size() < lim.level + 1)
-        graphData.resize(lim.level + 1);
-    Graph& tmpKernel = graphData[lim.level];
+    nodes++;
+    if ((nodes % 100000) == 0) {
+        log << "improveKernel nodes: " << nodes << std::endl;
+        kernel.print(log, idx);
+    }
+
+    if ((int)searchData.size() < lim.level + 1)
+        searchData.resize(lim.level + 1);
+    Graph& tmpKernel = searchData[lim.level].graph;
+    Position& tmpPos = searchData[lim.level].pos;
 
     auto nextLim = [&lim]() -> SearchLimits {
         return SearchLimits(lim).nextLev();
@@ -153,8 +160,10 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
     if (idx >= (int)kernel.nodes.size()) {
         int fromSq = -1, toSq = -1;
         try {
-            ProofGame pg(TextIO::toFEN(pos), TextIO::toFEN(goalPos), {}, true, log);
-            if (!pg.isInfeasible(fromSq, toSq))
+            auto pg = std::unique_ptr<ProofGame>(new ProofGame(TextIO::toFEN(pos),
+                                                               TextIO::toFEN(goalPos),
+                                                               {}, true, log));
+            if (!pg->isInfeasible(fromSq, toSq))
                 return true;
         } catch (const ChessError& e) {
             return true; // Cannot determine feasibility
@@ -175,12 +184,6 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
             }
         }
         return false;
-    }
-
-    nodes++;
-    if ((nodes % 100000) == 0) {
-        log << "improveKernel nodes: " << nodes << std::endl;
-        kernel.print(log, idx);
     }
 
     MoveData& md = kernel.nodes[idx];
@@ -220,7 +223,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
 
     if (m.movingPiece == PieceType::PAWN) {
         UndoInfo ui;
-        Position tmpPos(pos);
+        tmpPos = pos;
         if (!makeMove(tmpPos, ui, m))
             return false;
         return improveKernel(kernel, idx + 1, tmpPos, nextLim());
@@ -272,7 +275,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
             if (!tmpKernel.topoSort())
                 continue;
 
-            Position tmpPos(pos);
+            tmpPos = pos;
             if (!updatePos(tmpKernel, idx, md.id, tmpPos))
                 continue;
 
@@ -296,7 +299,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
             if (!tmpKernel.topoSort())
                 continue;
 
-            Position tmpPos(pos);
+            tmpPos = pos;
             if (!updatePos(tmpKernel, idx, md.id, tmpPos))
                 continue;
 
@@ -373,7 +376,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
                 if (!tmpKernel.topoSort())
                     continue;
 
-                Position tmpPos(initPos);
+                tmpPos = initPos;
                 if (!updatePos(tmpKernel, 0, tmpKernel.nodes[i].id, tmpPos))
                     continue;
 
@@ -390,7 +393,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
     }
 
     if (md.pseudoLegal) {
-        Position tmpPos(pos);
+        tmpPos = pos;
         UndoInfo ui;
         if (!makeMove(tmpPos, ui, m))
             return false;
