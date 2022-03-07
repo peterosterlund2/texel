@@ -1701,6 +1701,13 @@ void ProofGameTest::testPkSequence() {
          "wPb2-b4 wRa1-c3", "wPb2-b4 wNb1-a3 wRa1-b1 wRb1-b3 wRb3-c3");
     test(TextIO::startPosFEN, "rnbqkbnr/pppppppp/8/8/1P6/N1R5/P1PPPPPP/2BQKBNR w Kkq - 0 1",
          "wRa1-c3 wPb2-b4", "wNb1-a3 wPb2-b4 wRa1-b1 wRb1-b3 wRb3-c3");
+
+    test("rnbqkbnr/p1pppppp/1p6/8/8/8/PPPPPPPP/RNBQKBNR w KQk a6 0 1",
+         "1nbqkbnr/2pppppp/1p6/2r5/8/p7/PPPPPPPP/RNBQKBNR w KQk - 0 1",
+         "bRa8-c5", "bPa7-a5 bPa5-a4 bRa8-a5 bRa5-c5");
+    test("rnbqkbnr/pppppppp/8/8/8/1P6/P1PPPPPP/RNBQKBNR w KQkq - 0 1",
+         "rnbqkbnr/pppppppp/P7/8/2R5/1P6/2PPPPPP/1NBQKBNR w Kkq - 0 1",
+         "wRa1-c4 wPa2-a4 wPa4-a5", "wPa2-a4 wPa4-a5 wRa1-a4 wRa4-c4");
 }
 
 TEST(ProofGameTest, testMultiBoard) {

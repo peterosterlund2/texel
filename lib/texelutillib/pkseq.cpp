@@ -363,6 +363,25 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
                     break;
                 }
             }
+
+            for (const ExtPkMove& pawnMove : pawnMoves) {
+                if (((1ULL << pawnMove.fromSquare) & expandedMask) != 0) {
+                    tmpKernel = kernel;
+                    tmpKernel.addNode(pawnMove);
+                    tmpKernel.nodes[idx].dependsOn.push_back(tmpKernel.nodes.back().id);
+                    if (!tmpKernel.topoSort())
+                        continue;
+                    tmpPos = pos;
+                    if (!updatePos(tmpKernel, idx, md.id, tmpPos))
+                        continue;
+                    if (improveKernel(tmpKernel, idx, pos, nextLim().decD2())) {
+                        kernel = tmpKernel;
+                        return true;
+                    }
+                    if (nodes > lim.maxNodes)
+                        return false;
+                }
+            }
         }
 
         if (lim.d1 > 0 && !kernel.nodes[idx].movedEarly) {
