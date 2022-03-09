@@ -113,6 +113,11 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U6
     }
 }
 
+void
+ProofKernel::setRandomSeed(U64 seed) {
+    rndSeed = hashU64(seed + hashU64(1));
+}
+
 void ProofKernel::posToState(const Position& pos, std::array<PawnColumn,8>& columns,
                              int (&pieceCnt)[2][nPieceTypes], U64 blocked) {
     for (int c = 0; c < 2; c++) {
@@ -531,11 +536,11 @@ ProofKernel::genMoves(std::vector<PkMove>& moves, bool sort) {
         genPawnMoves(moves);
     genPieceXPieceMoves(moves);
 
-    if (sort) {
+    if (sort | rndSeed) {
         for (PkMove& m : moves) {
             PkUndoInfo ui;
             makeMove(m, ui);
-            m.sortKey = minMovesToGoal();
+            m.sortKey = rndSeed ? hashU64(++rndSeed) : minMovesToGoal();
             unMakeMove(m, ui);
         }
         std::stable_sort(moves.begin(), moves.end());

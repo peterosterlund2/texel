@@ -53,6 +53,10 @@ public:
     ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked,
                 std::ostream& log = std::cerr);
 
+    /** Set random seed used for breaking ties between positions having the same
+     *  priority in the A* search. */
+    void setRandomSeed(U64 seed);
+
     bool operator==(const ProofKernel& other) const;
     bool operator!=(const ProofKernel& other) const;
 
@@ -336,6 +340,7 @@ private:
 
     friend PkMove strToPkMove(const std::string& move);
 
+    U64 rndSeed = 0;
     std::ostream& log;
 };
 

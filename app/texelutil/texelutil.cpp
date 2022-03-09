@@ -153,7 +153,7 @@ usage() {
     std::cerr << "\n";
     std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-na] [-i \"initFen\"]\n";
     std::cerr << "           [-ipgn \"initPgnFile\"] \"goalFen\"\n";
-    std::cerr << " proofgame -f [-o outfile] [-retry] [-rnd seed]\n";
+    std::cerr << " proofgame -f [-o outfile] [-retry] [-rnd seed] [-rndkernel]\n";
     std::cerr << " revmoves \"fen\"\n";
     std::cerr << std::flush;
     ::exit(2);
@@ -381,6 +381,7 @@ doProofGameCmd(int argc, char* argv[], int nWorkers) {
     std::string outFile;
     bool retry = false;
     U64 rndSeed = 0;
+    bool rndKernel = false;
 
     int arg = 2;
     while (arg < argc) {
@@ -424,12 +425,15 @@ doProofGameCmd(int argc, char* argv[], int nWorkers) {
             if (!str2Num(argv[arg+1], rndSeed))
                 usage();
             arg += 2;
+        } else if (argv[arg] == std::string("-rndkernel")) {
+            rndKernel = true;
+            arg++;
         } else {
             break;
         }
     }
     if (filter) {
-        ProofGameFilter pgf(nWorkers, rndSeed);
+        ProofGameFilter pgf(nWorkers, rndSeed, rndKernel);
         if (outFile.empty()) {
             pgf.filterFens(std::cin, std::cout, retry);
         } else {

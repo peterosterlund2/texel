@@ -41,7 +41,7 @@ class ProofGameFilter {
     friend class ProofGameTest;
 public:
     /** Constructor. */
-    ProofGameFilter(int nWorkers = 1, U64 rndSeed = 0);
+    ProofGameFilter(int nWorkers = 1, U64 rndSeed = 0, bool rndKernel = false);
 
     /** Read a list of FENs from a stream and classify them as legal/illegal/unknown
      *  with regards to reachability from the starting position. */
@@ -188,9 +188,10 @@ private:
     static Info str2Info(const std::string& infoStr);
     static std::string info2Str(Info info);
 
-    const int nWorkers; // Number of worker threads to use
-    const int rndSeed;  // Random number seed
-    double startTime;   // Time when object was constructed
+    const int nWorkers;   // Number of worker threads to use
+    const int rndSeed;    // Random number seed
+    const bool rndKernel; // If true, randomize proof kernel search
+    double startTime;     // Time when object was constructed
     int statusCnt[(int)Legality::nLegality] = { 0 };
 };
 

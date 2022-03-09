@@ -61,8 +61,8 @@ ProofGameFilter::init() {
     infoStrData.push_back({ PROOF,      "proof"     });
 }
 
-ProofGameFilter::ProofGameFilter(int nWorkers, U64 rndSeed)
-    : nWorkers(nWorkers), rndSeed(rndSeed) {
+ProofGameFilter::ProofGameFilter(int nWorkers, U64 rndSeed, bool rndKernel)
+    : nWorkers(nWorkers), rndSeed(rndSeed), rndKernel(rndKernel) {
     std::once_flag flag;
     call_once(flag, init);
     startTime = currentTime();
@@ -278,6 +278,9 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line,
             if (!pg.computeBlocked(startPos, blocked))
                 blocked = 0xffffffffffffffffULL; // If goal not reachable, consider all pieces blocked
             ProofKernel pk(startPos, pg.getGoalPos(), blocked, log);
+            if (rndKernel)
+                pk.setRandomSeed(rndSeed);
+
             std::vector<PkMove> kernel;
             std::vector<ExtPkMove> extKernel;
             auto res = pk.findProofKernel(kernel, extKernel);
