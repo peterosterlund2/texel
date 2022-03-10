@@ -109,11 +109,13 @@ private:
         int level = 0;
         int d1 = 2;
         int d2 = 3;
+        int d3 = 5;
         U64 maxNodes = 0;
 
         SearchLimits nextLev() { level++; return *this; }
         SearchLimits decD1() { d1--; return *this; }
         SearchLimits decD2() { d2--; return *this; }
+        SearchLimits decD3() { d3--; return *this; }
     };
 
     /** Try to improve the proof kernel move sequence starting from position "idx".

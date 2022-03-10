@@ -1482,6 +1482,11 @@ void ProofGameTest::testFilter6() {
           "extKernel: bPb7-b5 wPa2-a4 bPb5xa4 bPd7-d5 wPc2-c4 bPd5xc4 bPf7-f5 "
           "wPe2-e4 bPf5xe4 bPg7-g5 wPh2-h4 bPg5xh4 bPh4-h3 wPg2-g3 wLBf1-g2 bPh3xg2",
           " unknown: ", true }, // Only test that code does not crash, finding solution too hard
+        { "2rn2N1/nP1p3K/BpBP4/2kN1PBB/3bPn2/1n1n2Q1/5RP1/q1N2r2 b - - 0 1 "
+          "unknown: kernel: dummy "
+          "extKernel: bPe7-e5 wPf2-f5 wRa1-f4 bPe5xf4 wPb2-b4 bPa7-a5 wPb4xa5 "
+          "wPh2-h4 bPg7-g5 wPh4xg5 bPf7-f6 wPg5xf6 wPc2-c6 bPb7-b6 bLBc8-b7 wPc6xb7",
+          " unknown: ", true }, // Only test that code does not crash, finding solution too hard
     };
     testFilterData(v);
 }

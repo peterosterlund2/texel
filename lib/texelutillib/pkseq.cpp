@@ -159,6 +159,8 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
 
     if (idx >= (int)kernel.nodes.size()) {
         int fromSq = -1, toSq = -1;
+        if (lim.d3 <= 0)
+            return true;
         try {
             auto pg = std::unique_ptr<ProofGame>(new ProofGame(TextIO::toFEN(pos),
                                                                TextIO::toFEN(goalPos),
@@ -177,7 +179,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
                              PieceType::EMPTY);
                 tmpKernel.addNode(em);
                 tmpKernel.adjustPrevNextMove(idx);
-                if (improveKernel(tmpKernel, idx, pos, nextLim())) {
+                if (improveKernel(tmpKernel, idx, pos, nextLim().decD3())) {
                     kernel = tmpKernel;
                     return true;
                 }
