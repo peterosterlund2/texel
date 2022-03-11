@@ -132,10 +132,15 @@ PkSequence::combinePawnMoves() {
 
 static U64
 moveMask(const ProofKernel::ExtPkMove& m) {
+    int f = m.fromSquare;
+    int t = m.toSquare;
     U64 mask = 0;
-    if (m.fromSquare != -1)
-        mask |= 1ULL << m.fromSquare;
-    mask |= 1ULL << m.toSquare;
+    if (f != -1) {
+        mask |= 1ULL << f;
+        if (m.movingPiece == PieceType::PAWN && std::abs(f - t) == 16)
+            mask |= 1ULL << ((f + t) / 2); // Double pawn push
+    }
+    mask |= 1ULL << t;
     return mask;
 }
 
