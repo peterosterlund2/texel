@@ -188,6 +188,8 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
                     kernel = tmpKernel;
                     return true;
                 }
+                if (nodes > lim.maxNodes)
+                    return false;
             }
         }
         return false;
@@ -442,6 +444,9 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
 
 bool
 PkSequence::makeMove(Position& pos, UndoInfo& ui, const ExtPkMove& move) {
+    if (move.fromSquare == move.toSquare)
+        return true;
+
     bool white = move.color == PieceColor::WHITE;
 
     int p = pos.getPiece(move.toSquare);
@@ -454,6 +459,10 @@ PkSequence::makeMove(Position& pos, UndoInfo& ui, const ExtPkMove& move) {
     }
 
     if (move.movingPiece == PieceType::EMPTY)
+        return false;
+
+    assert(move.fromSquare != -1);
+    if (pos.getPiece(move.fromSquare) == Piece::EMPTY)
         return false;
 
     int promoteTo = Piece::EMPTY;
