@@ -28,9 +28,14 @@ for line in fileinput.input():
         elif w == "proof:":
             board = chess.Board()
         elif board != None:
-            board.push_san(w)
+            try:
+                board.push_san(w)
+            except ValueError:
+                print("Illegal move: {}".format(w))
+                board.clear()
+                break
     if legal:
-        fen2 = " ".join(board.fen().split()[0:4])
+        fen2 = " ".join(board.fen().split()[0:4]) if board != None else None
         if fen == fen2:
             numLegal += 1
         else:
