@@ -237,7 +237,7 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
 
     // Add constraints preventing remaining pawns from moving too far
     for (int x = 0; x < 8; x++) {
-        int goalYPos[6];  // Required y position of i:th pawn, or -1
+        int goalYPos[ProofKernel::maxPawns]; // Required y position of i:th pawn, or -1
         getGoalPawnYPos(x, goalYPos);
         int np = columns[x].nPawns();
         for (int i = 0; i < np; i++) {
@@ -323,7 +323,7 @@ ExtProofKernel::movePawns(int x, const PawnColumn& col,
 }
 
 void
-ExtProofKernel::getGoalPawnYPos(int x, int (&goalYPos)[6]) const {
+ExtProofKernel::getGoalPawnYPos(int x, int (&goalYPos)[ProofKernel::maxPawns]) const {
     bool allBlack = true;
     std::vector<std::pair<bool,int>> goalPawns; // idx -> (white, y)
     for (int y = 1; y < 7; y++) {

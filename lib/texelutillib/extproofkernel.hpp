@@ -114,7 +114,7 @@ private:
     void movePawns(int x, const PawnColumn& col, std::vector<ExtMove>& varExtPath);
 
     /** For pawns in a file, compute the corresponding Y position in the goal position. */
-    void getGoalPawnYPos(int x, int (&goalYPos)[6]) const;
+    void getGoalPawnYPos(int x, int (&goalYPos)[ProofKernel::maxPawns]) const;
 
     friend std::ostream& operator<<(std::ostream& os, const VarSquare& vsq);
     friend std::ostream& operator<<(std::ostream& os, const ExtMove& move);

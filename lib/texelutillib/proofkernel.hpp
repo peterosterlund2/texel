@@ -161,6 +161,8 @@ public:
     SearchResult findProofKernel(std::vector<PkMove>& proofKernel,
                                  std::vector<ExtPkMove>& extProofKernel);
 
+    static const int maxPawns = 7; // Maximum number of pawns in one column during search
+
 private:
     const Position initialPos;
     const Position goalPos;
@@ -175,7 +177,6 @@ private:
         RIGHT,
     };
 
-    static const int maxPawns = 7; // Maximum number of pawns in one column during search
     static const int nPawnConfigs = (1 << (maxPawns + 1)); // Size of pawn config lookup tables
 
     /** Represents all pawns (0 - maxPawns) on a file. */
