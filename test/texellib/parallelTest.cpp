@@ -97,24 +97,24 @@ getCount(NotifyCounter& nc, int expected) {
 
 TEST(ParallelTest, testCommunicator) {
     Notifier notifier0;
-    NotifyCounter c0(notifier0);
     TranspositionTable& tt = SearchTest::tt;
     ThreadCommunicator root(nullptr, tt, notifier0, false);
+    NotifyCounter c0(notifier0);
     c0.setCommunicator(root);
 
     Notifier notifier1;
-    NotifyCounter c1(notifier1);
     ThreadCommunicator child1(&root, tt, notifier1, false);
+    NotifyCounter c1(notifier1);
     c1.setCommunicator(child1);
 
     Notifier notifier2;
-    NotifyCounter c2(notifier2);
     ThreadCommunicator child2(&root, tt, notifier2, false);
+    NotifyCounter c2(notifier2);
     c2.setCommunicator(child2);
 
     Notifier notifier3;
-    NotifyCounter c3(notifier3);
     ThreadCommunicator child3(&child2, tt, notifier3, false);
+    NotifyCounter c3(notifier3);
     c3.setCommunicator(child3);
 
     ASSERT_EQ(0, c0.getCount());
