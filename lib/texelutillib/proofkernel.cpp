@@ -536,7 +536,7 @@ ProofKernel::genMoves(std::vector<PkMove>& moves, bool sort) {
         genPawnMoves(moves);
     genPieceXPieceMoves(moves);
 
-    if (sort | rndSeed) {
+    if (sort || rndSeed) {
         for (PkMove& m : moves) {
             PkUndoInfo ui;
             makeMove(m, ui);
