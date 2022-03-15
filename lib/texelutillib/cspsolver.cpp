@@ -56,8 +56,8 @@ static std::string bits(const BitSet<N,offs>& mask) {
 #endif
 
 
-CspSolver::CspSolver(std::ostream& log)
-    : log(log) {
+CspSolver::CspSolver(std::ostream& log, bool silent)
+    : log(log), silent(silent) {
 }
 
 int
@@ -133,7 +133,8 @@ CspSolver::solve(std::vector<int>& values) {
     if (nVars == 0)
         return true;
 
-    log << "nVars:" << domain.size() << " nConstr:" << constr.size() << std::endl;
+    if (!silent)
+        log << "nVars:" << domain.size() << " nConstr:" << constr.size() << std::endl;
     assert(constr.size() <= ConstrSet::numBits);
 
     varToConstr.assign(nVars, ConstrSet());
@@ -148,7 +149,8 @@ CspSolver::solve(std::vector<int>& values) {
         return false;
 
     bool ret = solveRecursive(0, values);
-    log << "CSP nodes: " << nodes << std::endl;
+    if (!silent)
+        log << "CSP nodes: " << nodes << std::endl;
     return ret;
 }
 

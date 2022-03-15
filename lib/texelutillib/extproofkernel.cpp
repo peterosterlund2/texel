@@ -44,8 +44,8 @@ const int maxPromoteOneFile = 7;
 
 ExtProofKernel::ExtProofKernel(const Position& initialPos,
                                const Position& goalPos,
-                               std::ostream& log)
-    : initialPos(initialPos), goalPos(goalPos), csp(log), log(log) {
+                               std::ostream& log, bool silent)
+    : initialPos(initialPos), goalPos(goalPos), csp(log, silent), log(log), silent(silent) {
     allPawns.reserve(16);
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {
@@ -66,7 +66,8 @@ ExtProofKernel::ExtProofKernel(const Position& initialPos,
 bool
 ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
                               std::vector<ExtPkMove>& extPath) {
-    log << "kernel: " << path << std::endl;
+    if (!silent)
+        log << "kernel: " << path << std::endl;
 
     struct PromPiece {
         bool white;

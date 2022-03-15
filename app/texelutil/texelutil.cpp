@@ -154,6 +154,7 @@ usage() {
     std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-na] [-i \"initFen\"]\n";
     std::cerr << "           [-ipgn \"initPgnFile\"] \"goalFen\"\n";
     std::cerr << " proofgame -f [-o outfile] [-retry] [-rnd seed] [-rndkernel]\n";
+    std::cerr << " proofkernel [-i \"initFen\"] \"goalFen\"\n";
     std::cerr << " revmoves \"fen\"\n";
     std::cerr << std::flush;
     ::exit(2);
@@ -475,6 +476,31 @@ doProofGameCmd(int argc, char* argv[], int nWorkers) {
         ProofGame::Result result;
         ps.search(opts, result);
     }
+}
+
+static void
+doProofKernelCmd(int argc, char* argv[], int nWorkers) {
+    std::string initFen = TextIO::startPosFEN;
+    int arg = 2;
+    while (arg < argc) {
+        if (arg + 1 < argc && argv[arg] == std::string("-i")) {
+            initFen = argv[arg+1];
+            arg += 2;
+        } else {
+            break;
+        }
+    }
+    if (arg+1 != argc)
+        usage();
+    std::string goalFen = argv[arg];
+
+    Position initPos = TextIO::readFEN(initFen);
+    Position goalPos = TextIO::readFEN(goalFen);
+
+    U64 blocked;
+    ProofGame::computeBlocked(initPos, goalPos, blocked);
+    ProofKernel pk(initPos, goalPos, blocked, std::cout);
+    pk.findAll();
 }
 
 static void
@@ -812,6 +838,8 @@ main(int argc, char* argv[]) {
             mbc.pgnStat(pgnFile, pairMode, std::cout);
         } else if (cmd == "proofgame") {
             doProofGameCmd(argc, argv, nWorkers);
+        } else if (cmd == "proofkernel") {
+            doProofKernelCmd(argc, argv, nWorkers);
         } else if (cmd == "revmoves") {
             if (argc != 3)
                 usage();

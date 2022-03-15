@@ -178,9 +178,31 @@ ProofKernel::operator==(const ProofKernel& other) const {
 ProofKernel::SearchResult
 ProofKernel::findProofKernel(std::vector<PkMove>& proofKernel,
                              std::vector<ExtPkMove>& extProofKernel) {
+    findFirst = true;
     proofKernel.clear();
     extProofKernel.clear();
 
+    initSearch1();
+
+    if (!goalPossible()) {
+        proofKernel = path;
+        return FAIL;
+    }
+
+    initSearch2();
+
+    SearchResult ret = search(0);
+    log << "found:" << (int)ret << " nodes:" << nodes
+        << " csp:" << nCSPs << " cspNodes:" << nCSPNodes << std::endl;
+
+    proofKernel.insert(proofKernel.end(), path.begin(), path.end());
+    extProofKernel.insert(extProofKernel.end(), extPath.begin(), extPath.end());
+
+    return ret;
+}
+
+void
+ProofKernel::initSearch1() {
     path.clear();
     while (deadBishops) {
         int sq = BitBoard::extractSquare(deadBishops);
@@ -194,42 +216,45 @@ ProofKernel::findProofKernel(std::vector<PkMove>& proofKernel,
         if (remainingMoves < 0)
             break;
     }
+}
 
-    if (!goalPossible()) {
-        proofKernel = path;
-        return FAIL;
-    }
-
+void
+ProofKernel::initSearch2() {
     onlyPieceXPiece = false;
     nodes = 0;
     nCSPs = 0;
     nCSPNodes = 0;
     moveStack.resize(remainingMoves);
     failed.resize(1 << 20);
+}
 
-    SearchResult ret = search(0);
-    log << "found:" << (int)ret << " nodes:" << nodes
-        << " csp:" << nCSPs << " cspNodes:" << nCSPNodes << std::endl;
-
-    proofKernel.insert(proofKernel.end(), path.begin(), path.end());
-    extProofKernel.insert(extProofKernel.end(), extPath.begin(), extPath.end());
-
-    return ret;
+void
+ProofKernel::findAll() {
+    findFirst = false;
+    initSearch1();
+    initSearch2();
+    search(0);
 }
 
 ProofKernel::SearchResult
 ProofKernel::search(int ply) {
     nodes++;
-    if ((nodes & ((1ULL << 26) - 1)) == 0) {
+    if ((nodes & ((1ULL << 26) - 1)) == 0 && findFirst) {
         log << "nodes:" << nodes << std::endl;
         log << "path:" << path << std::endl;
     }
 
     if (remainingMoves == 0 && isGoal()) {
-        if (computeExtKernel())
+        if (computeExtKernel()) {
+            if (!findFirst) {
+                for (const PkMove& m : path)
+                    log << ' ' << m;
+                log << '\n';
+            }
             return EXT_PROOF_KERNEL;
-        else
+        } else {
             return PROOF_KERNEL;
+        }
     }
 
     if (remainingMoves <= 0 || !goalPossible())
@@ -254,8 +279,11 @@ ProofKernel::search(int ply) {
 
         unMakeMove(m, ui);
 
-        if (res == EXT_PROOF_KERNEL)
-            return res;
+        if (res == EXT_PROOF_KERNEL) {
+            if (findFirst)
+                return res;
+            hasProofKernel = true;
+        }
         if (res == PROOF_KERNEL)
             hasProofKernel = true;
 
@@ -992,7 +1020,7 @@ ProofKernel::getState(State& state) const {
 
 bool ProofKernel::computeExtKernel() {
     nCSPs++;
-    ExtProofKernel epk(initialPos, goalPos, log);
+    ExtProofKernel epk(initialPos, goalPos, log, !findFirst);
     bool ret = epk.findExtKernel(path, extPath);
     nCSPNodes += epk.getNumNodes();
     return ret;

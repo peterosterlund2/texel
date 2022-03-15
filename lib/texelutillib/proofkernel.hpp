@@ -161,6 +161,9 @@ public:
     SearchResult findProofKernel(std::vector<PkMove>& proofKernel,
                                  std::vector<ExtPkMove>& extProofKernel);
 
+    /** Find all proof kernels. Print result to log stream. */
+    void findAll();
+
     static const int maxPawns = 7; // Maximum number of pawns in one column during search
 
 private:
@@ -263,6 +266,7 @@ private:
 
     U64 deadBishops;  // Mask of bishops initially trapped on first/last row and not present in goal position
 
+    bool findFirst = true;                      // If true, stop after finding one valid proof kernel
     std::vector<PkMove> path;                   // Current path during search
     std::vector<std::vector<PkMove>> moveStack; // Move list storage for each ply during search
     U64 nodes;                                  // Number of visited search nodes
@@ -285,6 +289,10 @@ private:
     /** Extract pawn structure and piece counts from a position. */
     static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
                            int (&pieceCnt)[2][nPieceTypes], U64 blocked);
+
+    /** Initialize search variables. */
+    void initSearch1();
+    void initSearch2();
 
     /** Recursive search function used by findProofKernel(). */
     SearchResult search(int ply);

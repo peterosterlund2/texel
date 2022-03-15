@@ -37,7 +37,7 @@ class ExtProofKernel {
 public:
     /** Constructor. */
     ExtProofKernel(const Position& initialPos, const Position& goalPos,
-                   std::ostream& log = std::cerr);
+                   std::ostream& log = std::cerr, bool silent = false);
 
     using PieceColor = ProofKernel::PieceColor;
     using PieceType = ProofKernel::PieceType;
@@ -120,6 +120,7 @@ private:
     friend std::ostream& operator<<(std::ostream& os, const ExtMove& move);
 
     std::ostream& log;
+    bool silent;
 };
 
 std::ostream& operator<<(std::ostream& os, const ExtProofKernel::VarSquare& vsq);

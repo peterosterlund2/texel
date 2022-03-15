@@ -35,7 +35,7 @@
 class CspSolver {
     friend class CspSolverTest;
 public:
-    CspSolver(std::ostream& log = std::cerr);
+    CspSolver(std::ostream& log = std::cerr, bool silent = false);
 
     /** Minimum supported variable value. */
     constexpr static int minAllowedValue = -16;
@@ -110,6 +110,7 @@ private:
     U64 nodes; // Number of nodes visited by solveRecursive()
 
     std::ostream& log;
+    bool silent;
 };
 
 inline void
