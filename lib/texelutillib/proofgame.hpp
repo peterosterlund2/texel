@@ -209,11 +209,15 @@ private:
                             int excessWPawns, int excessBPawns,
                             int neededMoves[]);
 
+    /** Print assignment cost matrix to log. */
+    void printAssignment(const Assignment<int>& as, int N,
+                         const int (&rowToSq)[16], const int (&colToSq)[16]) const;
+
     /** Find a single piece that makes the assignment problem infeasible.
      *  If such a piece exists, set "infeasibleFrom" and "infeasibleTo" to the
      *  piece square in the current and goal position. */
     void findInfeasibleMove(const Position& pos, const Assignment<int>& as, int N,
-                            int (&rowToSq)[16], int (&colToSq)[16]);
+                            const int (&rowToSq)[16], const int (&colToSq)[16]);
 
     /** Return obstacles between fromSq and toSq when following a shortest path
      *  from fromSq to toSq. Obstacles are squares containing the same piece in

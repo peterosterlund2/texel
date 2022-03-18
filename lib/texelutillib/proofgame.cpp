@@ -899,9 +899,30 @@ ProofGame::computeNeededMoves(const Position& pos, U64 blocked,
 }
 
 void
+ProofGame::printAssignment(const Assignment<int>& as, int N,
+                           const int (&rowToSq)[16], const int (&colToSq)[16]) const {
+    auto sq2Str = [](int sq) -> std::string {
+        if (sq == -1)
+            return "--";
+        return TextIO::squareToString(sq);
+    };
+    std::ostream& os = log;
+    os << "  ";
+    for (int c = 0; c < N; c++)
+        os << "   " << sq2Str(colToSq[c]);
+    os << '\n';
+    for (int r = 0; r < N; r++) {
+        os << sq2Str(rowToSq[r]);
+        for (int c = 0; c < N; c++)
+            os << ' ' << std::setw(4) << as.getCost(r, c);
+        os << '\n';
+    }
+}
+
+void
 ProofGame::findInfeasibleMove(const Position& pos,
                               const Assignment<int>& as, int N,
-                              int (&rowToSq)[16], int (&colToSq)[16]) {
+                              const int (&rowToSq)[16], const int (&colToSq)[16]) {
     findInfeasible = false;
 
     auto wrongBishop = [](int p, int fromSq, int toSq) -> bool {
