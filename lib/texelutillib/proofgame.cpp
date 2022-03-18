@@ -1095,8 +1095,10 @@ U64
 ProofGame::getBlocked(U64 blocked, const Position& pos, int pieceType) const {
     if (pieceType == Piece::WKING) {
         blocked |= BitBoard::bPawnAttacksMask(blocked & pos.pieceTypeBB(Piece::BPAWN));
+        blocked &= ~pos.pieceTypeBB(Piece::WKING);
     } else if (pieceType == Piece::BKING) {
         blocked |= BitBoard::wPawnAttacksMask(blocked & pos.pieceTypeBB(Piece::WPAWN));
+        blocked &= ~pos.pieceTypeBB(Piece::BKING);
     }
     return blocked;
 }

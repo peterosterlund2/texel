@@ -719,6 +719,9 @@ ProofGameTest::testReachable() {
         std::string goal  = "r1bqkbnr/1p1pp1p1/8/5P2/1p1ppPp1/8/P1P4P/RNBQK1NR w KQkq - 0 1";
         ASSERT_GE(hScore(start, goal), 14);
     }
+
+    ASSERT_LE(hScore("1nbqkbnr/4p3/p5P1/1P4p1/4p2P/1P1P3p/2qpQP2/RN2K1NR w - - 0 1",
+                     "k1q2Nr1/1bn2Q2/1bqNRbN1/5RK1/7P/2NPp2p/1q1pn2N/3R1q2 w - - 0 1"), 108);
 }
 
 TEST(ProofGameTest, testRemainingMoves) {
@@ -741,6 +744,10 @@ ProofGameTest::testRemainingMoves() {
                              "8/8/K7/1p2p3/1P2P3/8/8/4k3 w - - 0 1"));
         ASSERT_EQ(INT_MAX, hScore("2k5/5r2/8/1p6/8/K7/7R/8 w - - 0 1",
                                   "2k5/5r2/8/1p6/K7/8/7R/8 w - - 0 1"));
+        int s = hScore("2k5/5r2/8/1p6/K7/8/7R/8 w - - 0 1",
+                       "2k5/5r2/8/1p6/8/K7/7R/8 w - - 0 1");
+        ASSERT_GE(s, 2);
+        ASSERT_LE(s, 4);
     }
 }
 
