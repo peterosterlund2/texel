@@ -244,9 +244,8 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
         for (int i = idx; i < (int)tmpKernel.nodes.size(); i++) {
             if (tmpKernel.nodes[i].id == id)
                 break;
-            if (!makeMove(pos, ui, tmpKernel.nodes[i].move)) {
+            if (!makeMove(pos, ui, tmpKernel.nodes[i].move))
                 return false;
-            }
         }
         return true;
     };
@@ -453,6 +452,8 @@ PkSequence::makeMove(Position& pos, UndoInfo& ui, const ExtPkMove& move) {
     if (move.capture) {
         if (p == Piece::EMPTY || Piece::isWhite(p) == white)
             return false; // Wrong capture piece
+        if (p == Piece::WKING || p == Piece::BKING)
+            return false; // Cannot capture king
     } else {
         if (p != Piece::EMPTY)
             return false; // Target square occupied

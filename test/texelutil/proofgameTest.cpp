@@ -1429,6 +1429,12 @@ void ProofGameTest::testFilter3b() {
           " path: ", true },
         { "B2K2b1/ppp3k1/1n3NR1/1Qqp1n2/qbN2R2/1B5B/6PB/5R1R b - - 0 1 ",
           " illegal: ", true },
+        { "k1q2Nr1/1bn2Q2/1bqNRbN1/5RK1/7P/2NPp2p/1q1pn2N/3R1q2 w - - 0 1 "
+          "unknown: kernel: dummy "
+          "extKernel: wPa2-a4 bPb7-b5 wPa4xb5 bPf7-f5 wPe2-e4 bPf5xe4 bPc7-c5 wPd2-d4 "
+          "bPc5xd4 bPd4-d1 bPd7-d2 bRa8-d3 wPc2xd3 bPg7-g4 wPh2-h4 wLBf1-h3 bPg4xh3 "
+          "bPh7-h6 wPg2-g6 wDBc1-g5 bPh6xg5",
+          " path: ", true },
     };
     testFilterData(v);
 }
