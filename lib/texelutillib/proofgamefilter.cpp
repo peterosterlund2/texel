@@ -263,46 +263,57 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line,
 
     try {
         log << "Finding proof kernel for " << line.fen << std::endl;
-        auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
-        ProofGame pg(TextIO::startPosFEN, line.fen, true, {}, true, log);
-        ProofGame::Result result;
-        int minCost = pg.search(opts, result);
+        int minCost;
+        {
+            auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
+            ProofGame pg(TextIO::startPosFEN, line.fen, false, {}, false, log);
+            ProofGame::Result result;
+            minCost = pg.search(opts, result);
+        }
         if (minCost == INT_MAX) {
             setIllegal("Other");
-        } else if (minCost >= 0) {
-            line.tokenData(LEGAL).clear();
-            std::vector<std::string>& proof = line.tokenData(PROOF);
-            proof = getMovePath(startPos, result.proofGame);
         } else {
-            U64 blocked;
-            if (!pg.computeBlocked(startPos, blocked))
-                blocked = 0xffffffffffffffffULL; // If goal not reachable, consider all pieces blocked
-            ProofKernel pk(startPos, pg.getGoalPos(), blocked, log);
-            if (rndKernel)
-                pk.setRandomSeed(rndSeed);
-
-            std::vector<PkMove> kernel;
-            std::vector<ExtPkMove> extKernel;
-            auto res = pk.findProofKernel(kernel, extKernel);
-            if (res == ProofKernel::FAIL) {
-                setIllegal("No proof kernel");
-                if (!kernel.empty()) {
-                    std::vector<std::string>& forced = line.tokenData(FORCED);
-                    for (const auto& m : kernel)
-                        forced.push_back(toString(m));
-                }
-            } else if (res == ProofKernel::PROOF_KERNEL) {
-                setIllegal("No extended proof kernel");
+            ProofGame pg(TextIO::startPosFEN, line.fen, true, {}, true, log);
+            ProofGame::Result result;
+            auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
+            minCost = pg.search(opts, result);
+            if (minCost == INT_MAX) {
+                setIllegal("Other");
+            } else if (minCost >= 0) {
+                line.tokenData(LEGAL).clear();
+                std::vector<std::string>& proof = line.tokenData(PROOF);
+                proof = getMovePath(startPos, result.proofGame);
             } else {
-                line.tokenData(UNKNOWN).clear();
-                std::vector<std::string>& kernelInfo = line.tokenData(KERNEL);
-                kernelInfo.clear();
-                for (const auto& m : kernel)
-                    kernelInfo.push_back(toString(m));
-                std::vector<std::string>& extKernelInfo = line.tokenData(EXT_KERNEL);
-                extKernelInfo.clear();
-                for (const auto& m : extKernel)
-                    extKernelInfo.push_back(toString(m));
+                U64 blocked;
+                if (!pg.computeBlocked(startPos, blocked))
+                    blocked = 0xffffffffffffffffULL; // If goal not reachable, consider all pieces blocked
+                ProofKernel pk(startPos, pg.getGoalPos(), blocked, log);
+                if (rndKernel)
+                    pk.setRandomSeed(rndSeed);
+
+                std::vector<PkMove> kernel;
+                std::vector<ExtPkMove> extKernel;
+                auto res = pk.findProofKernel(kernel, extKernel);
+                if (res == ProofKernel::FAIL) {
+                    setIllegal("No proof kernel");
+                    if (!kernel.empty()) {
+                        std::vector<std::string>& forced = line.tokenData(FORCED);
+                        for (const auto& m : kernel)
+                            forced.push_back(toString(m));
+                    }
+                } else if (res == ProofKernel::PROOF_KERNEL) {
+                    setIllegal("No extended proof kernel");
+                } else {
+                    line.tokenData(UNKNOWN).clear();
+                    std::vector<std::string>& kernelInfo = line.tokenData(KERNEL);
+                    kernelInfo.clear();
+                    for (const auto& m : kernel)
+                        kernelInfo.push_back(toString(m));
+                    std::vector<std::string>& extKernelInfo = line.tokenData(EXT_KERNEL);
+                    extKernelInfo.clear();
+                    for (const auto& m : extKernel)
+                        extKernelInfo.push_back(toString(m));
+                }
             }
         }
     } catch (const NotImplementedError& e) {
@@ -773,7 +784,7 @@ ProofGameFilter::freePieces(std::vector<MultiBoard>& brdVec, int startIdx,
         std::vector<int> blockingPawns;
         std::vector<int> pawnTargets;
     };
-    static std::vector<Data> dataVec = {
+    static const std::vector<Data> dataVec = {
         { Piece::WROOK,   A1, { }, { A4, B4 } },
         { Piece::WROOK,   H1, { }, { H4, G4 } },
         { Piece::WBISHOP, C1, { B2, D2 }, { D4, B4, D3, B3 } },

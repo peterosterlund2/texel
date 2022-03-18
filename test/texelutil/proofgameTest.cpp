@@ -1427,6 +1427,8 @@ void ProofGameTest::testFilter3b() {
           "bPg5xh4 wPd2-d4 bDBf8-c5 wPd4xc5 bPe7-e6 wLBf1-d5 bPe6xd5 bPf7-f4 wPe2-e4 "
           "wNb1-e3 bPf4xe3",
           " path: ", true },
+        { "B2K2b1/ppp3k1/1n3NR1/1Qqp1n2/qbN2R2/1B5B/6PB/5R1R b - - 0 1 ",
+          " illegal: ", true },
     };
     testFilterData(v);
 }
