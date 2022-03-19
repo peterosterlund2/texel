@@ -151,8 +151,8 @@ usage() {
     std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file\n";
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
-    std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-na] [-i \"initFen\"]\n";
-    std::cerr << "           [-ipgn \"initPgnFile\"] \"goalFen\"\n";
+    std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-na] [-nokernel]\n";
+    std::cerr << "           [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
     std::cerr << " proofgame -f [-o outfile] [-retry] [-rnd seed] [-rndkernel]\n";
     std::cerr << " proofkernel [-i \"initFen\"] \"goalFen\"\n";
     std::cerr << " revmoves \"fen\"\n";
@@ -377,6 +377,7 @@ doProofGameCmd(int argc, char* argv[], int nWorkers) {
     bool dynamic = false;
     bool verbose = false;
     bool useNonAdmissible = false;
+    bool useKernel = true;
 
     // Options used in filtering (-f) mode
     std::string outFile;
@@ -409,6 +410,9 @@ doProofGameCmd(int argc, char* argv[], int nWorkers) {
             arg++;
         } else if (argv[arg] == std::string("-v")) {
             verbose = true;
+            arg++;
+        } else if (argv[arg] == std::string("-nokernel")) {
+            useKernel = false;
             arg++;
         } else if (argv[arg] == std::string("-f")) {
             filter = true;
@@ -465,7 +469,7 @@ doProofGameCmd(int argc, char* argv[], int nWorkers) {
             }
         }
 
-        ProofGame ps(initFen, goalFen, true, initPath);
+        ProofGame ps(initFen, goalFen, useKernel, initPath);
         auto opts = ProofGame::Options()
             .setWeightA(a)
             .setWeightB(b)
