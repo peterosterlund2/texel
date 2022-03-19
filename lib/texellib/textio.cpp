@@ -93,6 +93,14 @@ TextIO::readFEN(const std::string& fen) {
         default: throw ChessParseError("Invalid castling flags");
         }
     }
+    if (pos.getPiece(E1) != Piece::WKING || pos.getPiece(H1) != Piece::WROOK)
+        castleMask &= ~(1 << Position::H1_CASTLE);
+    if (pos.getPiece(E1) != Piece::WKING || pos.getPiece(A1) != Piece::WROOK)
+        castleMask &= ~(1 << Position::A1_CASTLE);
+    if (pos.getPiece(E8) != Piece::BKING || pos.getPiece(H8) != Piece::BROOK)
+        castleMask &= ~(1 << Position::H8_CASTLE);
+    if (pos.getPiece(E8) != Piece::BKING || pos.getPiece(A8) != Piece::BROOK)
+        castleMask &= ~(1 << Position::A8_CASTLE);
     pos.setCastleMask(castleMask);
 
     while (i < fen.length() && fen[i] == ' ')

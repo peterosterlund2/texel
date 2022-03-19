@@ -648,6 +648,10 @@ ProofGameTest::testCastling() {
         ASSERT_TRUE(res);
         ASSERT_EQ(BitBoard::sqMask(E2,E7,E8,A8), blocked);
     }
+    EXPECT_THROW({ // Invalid castling rights
+        ProofGame ps(TextIO::startPosFEN,
+                     "1nbq1Rnr/1p1pk2p/5p2/3p4/1b3p1p/p7/2P1PK2/RNBQ1BNR w q - 0 1", false, {});
+    }, ChessError);
 }
 
 TEST(ProofGameTest, testReachable) {

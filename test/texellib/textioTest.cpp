@@ -72,6 +72,20 @@ TEST(TextIOTest, testReadFEN) {
     pos = TextIO::readFEN(fen);
     EXPECT_EQ(-1, pos.getEpSquare());
 
+    // Make sure bogus castling flags are removed
+    pos = TextIO::readFEN("rnbq1bnr/ppppkppp/4p3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    EXPECT_EQ("rnbq1bnr/ppppkppp/4p3/8/8/8/PPPPPPPP/RNBQKBNR w KQ - 0 1", TextIO::toFEN(pos));
+    pos = TextIO::readFEN("rnbqkbnr/pppppppp/8/8/8/4P3/PPPPKPPP/RNBQ1BNR w KQkq - 0 1");
+    EXPECT_EQ("rnbqkbnr/pppppppp/8/8/8/4P3/PPPPKPPP/RNBQ1BNR w kq - 0 1", TextIO::toFEN(pos));
+    pos = TextIO::readFEN("rnbqkbnr/pppppppp/8/8/7P/8/PPPPPPPR/RNBQKBN1 w KQkq - 0 1");
+    EXPECT_EQ("rnbqkbnr/pppppppp/8/8/7P/8/PPPPPPPR/RNBQKBN1 w Qkq - 0 1", TextIO::toFEN(pos));
+    pos = TextIO::readFEN("rnbqkbnr/pppppppp/8/8/P7/8/RPPPPPPP/1NBQKBNR w KQkq - 0 1");
+    EXPECT_EQ("rnbqkbnr/pppppppp/8/8/P7/8/RPPPPPPP/1NBQKBNR w Kkq - 0 1", TextIO::toFEN(pos));
+    pos = TextIO::readFEN("rnbqkbn1/pppppppr/8/7p/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    EXPECT_EQ("rnbqkbn1/pppppppr/8/7p/8/8/PPPPPPPP/RNBQKBNR w KQq - 0 1", TextIO::toFEN(pos));
+    pos = TextIO::readFEN("1nbqkbnr/rppppppp/8/p7/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    EXPECT_EQ("1nbqkbnr/rppppppp/8/p7/8/8/PPPPPPPP/RNBQKBNR w KQk - 0 1", TextIO::toFEN(pos));
+
     // Test for too many rows (slashes)
     wasError = testFENParseError("8/8/8/8/4k3/8/8/8/KBN5 w - - 0 1");
     EXPECT_EQ(true, wasError);
