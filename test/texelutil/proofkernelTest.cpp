@@ -185,8 +185,7 @@ TEST(ProofKernelTest, testGoal) {
 
 static U64 computeBlocked(const Position& startPos, const Position& goalPos) {
     U64 blocked;
-    ProofGame pg(TextIO::toFEN(startPos), TextIO::toFEN(goalPos), true, {}, false, std::cerr);
-    if (!pg.computeBlocked(startPos, blocked))
+    if (!ProofGame::computeBlocked(startPos, goalPos, blocked))
         blocked = 0xffffffffffffffffULL; // If goal not reachable, consider all pieces blocked
     return blocked;
 }
@@ -848,6 +847,8 @@ ProofKernelTest::testSearch() {
         }
     };
 
+    const std::string startFEN = TextIO::startPosFEN;
+
     test("4k3/pp6/8/8/8/8/PP6/4K3 w - - 0 1", "1b2k3/8/8/8/8/8/8/BN2K3 w - - 0 1",
          true, "wPa0xPb1");
     test("4k3/pp6/8/8/8/8/PP6/4K3 w - - 0 1", "1b2k3/8/8/8/8/8/8/NB2K3 w - - 0 1",
@@ -858,7 +859,6 @@ ProofKernelTest::testSearch() {
     test("2b1k3/1p1p4/8/8/3P4/8/8/4K3 w - - 0 1", "4k3/1p1p4/8/8/3N4/8/8/4K3 w - - 0 1",
          false, "wxLB");
 
-    const std::string startFEN = TextIO::startPosFEN;
     test(startFEN, "3rRQ2/1P2q1q1/NK2brn1/1q3b2/B3k3/1BB4N/RbrrP1Pq/n2br3 w - - 0 1",
          false, "bxLB");
     test(startFEN, "b3b3/1qrN1n2/1Pkppp2/4P2K/1Bp5/bR1bN2Q/1P1PNr2/NBn1B2R w - - 0 1",
@@ -914,12 +914,9 @@ ProofKernelTest::testSearch() {
          true, "wPg0xNh0");
 
     // No extended proof kernel because bishop on wrong color
-    {
-        EXPECT_THROW({
-            test(startFEN, "q2R3N/k2nK2p/bPR2Q1q/2r4N/rr2B2P/3BbN1p/r3q1q1/2Q2n1b b - - 0 1",
-                 false, "");
-        }, ChessError);
-    }
+    test(startFEN, "q2R3N/k2nK2p/bPR2Q1q/2r4N/rr2B2P/3BbN1p/r3q1q1/2Q2n1b b - - 0 1",
+         false, "");
+
     test(startFEN, "1rkQ1r2/b5p1/1nnRrRN1/pRNN4/B4Nb1/1bn1PNP1/3K4/1qn2r2 b - - 0 1",
          false, "");
     test(startFEN, "Rrq3K1/1p3bPQ/P7/B4RNb/1R1n4/kP2nbq1/2PnbpR1/3N1q2 w - - 0 1",
