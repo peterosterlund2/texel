@@ -145,11 +145,10 @@ public:
                               const ShortestPathData* pawnSub,
                               ShortestPathData& spd);
 
-private:
-    /** Initialize static data if not already done. */
-    static void staticInit();
-    static void doStaticInit();
+    /** Initialize static data. */
+    static void staticInitialize();
 
+private:
     /** Compute forced moves at the end of the proof game. Update goalPos to be
      *  the position before the first of "lastMoves" is played. */
     static void computeLastMoves(const Position& startPos, Position& goalPos,

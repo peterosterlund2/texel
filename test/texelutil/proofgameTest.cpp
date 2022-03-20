@@ -460,7 +460,6 @@ TEST(ProofGameTest, testPawnReachable) {
 void
 ProofGameTest::testPawnReachable() {
     {
-        ProofGame::staticInit();
         const int maxCapt = 5; // Max number of captures relevant for pawn movements
         for (int x = 0; x < 8; x++) {
             for (int y = 0; y <= 7; y += 7) {
