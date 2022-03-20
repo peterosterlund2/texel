@@ -191,6 +191,7 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
         }
 
         auto knownIllegal = [&startPos,&goalPos,&log](const UnMove& um) -> bool {
+            log << "Checking move: " << um << std::endl;
             Position tmpPos(goalPos);
             tmpPos.unMakeMove(um.move, um.ui);
             resetMoveCnt(tmpPos);
@@ -231,7 +232,6 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
         for (const UnMove& um : irreversibles) {
             if (unMoves.size() > 1)
                 break;
-            log << "Checking move: " << um << std::endl;
             if (knownIllegal(um)) {
                 rejected = true;
             } else {
