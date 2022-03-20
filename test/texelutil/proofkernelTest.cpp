@@ -1139,3 +1139,40 @@ ProofKernelTest::testExtKernel() {
          "rnbqkbnr/ppp3pp/4p3/4p3/4p3/1P6/P1PPPPPP/R1BQKB1R w KQkq - 0 1",
          "bPd1xNe3", true, "bPe5-e4 bPe6-e5 wNg1-e6 bPd7xe6");
 }
+
+TEST(ProofKernelTest, testListKernels) {
+    ProofKernelTest::testListKernels();
+}
+
+void
+ProofKernelTest::testListKernels() {
+    std::stringstream ss;
+
+    Position initPos = TextIO::readFEN(TextIO::startPosFEN);
+    std::string goalFen = "rnbqkbnr/1p1p1p1p/8/P3P3/3p3p/8/P1P1P1P1/RNBQKBNR w KQkq - 0 1";
+    Position goalPos = TextIO::readFEN(goalFen);
+
+    U64 blocked;
+    ProofGame::computeBlocked(initPos, goalPos, blocked);
+    ProofKernel pk(initPos, goalPos, blocked, ss);
+    pk.findAll();
+
+    std::string line;
+    int nLines = 0;
+    while (true) {
+        std::getline(ss, line);
+        if (!ss || ss.eof())
+            break;
+        nLines++;
+
+        std::vector<std::string> arr;
+        splitString(line, arr);
+        std::sort(arr.begin(), arr.end());
+
+        ASSERT_EQ("bPc1xPd0", arr[0]);
+        ASSERT_EQ("bPg1xPh0", arr[1]);
+        ASSERT_EQ("wPb0xPa1", arr[2]);
+        ASSERT_EQ("wPf0xPe1", arr[3]);
+    }
+    ASSERT_EQ(24, nLines); // 4 independent moves => 4! proof kernels
+}

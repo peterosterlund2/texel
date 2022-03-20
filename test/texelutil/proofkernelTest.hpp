@@ -40,6 +40,7 @@ public:
     static void testSearch();
     static void testExtMoveToString();
     static void testExtKernel();
+    static void testListKernels();
 
 private:
     static void testMove(const Position& pos, const ProofKernel& pk,
