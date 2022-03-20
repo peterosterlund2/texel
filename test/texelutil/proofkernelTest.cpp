@@ -380,18 +380,25 @@ void
 ProofKernelTest::testGoalPossible() {
     auto test = [](const std::string& start, const std::string& goal, bool expected,
                    int minMoves) {
+        auto minMovesToGoal = [](const ProofKernel& pk) -> int {
+            int m1 = pk.minMovesToGoal();
+            int m2 = pk.minMovesToGoalOneColor(ProofKernel::WHITE);
+            int m3 = pk.minMovesToGoalOneColor(ProofKernel::BLACK);
+            return std::max(m1, std::max(m2, m3));
+        };
+
         Position startPos = TextIO::readFEN(start);
         Position goalPos = TextIO::readFEN(goal);
         ProofKernel pk1(startPos, goalPos, computeBlocked(startPos, goalPos));
         ASSERT_EQ(expected, pk1.goalPossible()) << "start: " << start << "\ngoal: " << goal;
-        ASSERT_EQ(minMoves, pk1.minMovesToGoal()) << "start: " << start << "\ngoal: " << goal;
+        ASSERT_EQ(minMoves, minMovesToGoal(pk1)) << "start: " << start << "\ngoal: " << goal;
 
         startPos = PosUtil::swapColors(startPos);
         goalPos = PosUtil::swapColors(goalPos);
         ProofKernel pk2(startPos, goalPos, computeBlocked(startPos, goalPos));
         ASSERT_EQ(expected, pk2.goalPossible())
             << "start: " << TextIO::toFEN(startPos) << "\ngoal: " << TextIO::toFEN(goalPos);
-        ASSERT_EQ(minMoves, pk2.minMovesToGoal()) << "start: " << start << "\ngoal: " << goal;
+        ASSERT_EQ(minMoves, minMovesToGoal(pk2)) << "start: " << start << "\ngoal: " << goal;
     };
 
     const std::string startFEN = TextIO::startPosFEN;
@@ -399,6 +406,18 @@ ProofKernelTest::testGoalPossible() {
     test(startFEN, "2K1Nbk1/p3N1Nr/2PR2p1/2R2R1P/P3rb1B/1brQ2n1/p1q3P1/Nq2nB2 b - - 0 1", false, 4);
     test(startFEN, "2Qr2Bq/1n1K1N1P/1qpnN1kp/5N1q/3B2p1/3b1BP1/R2bb1B1/3rrn2 w - - 0 1 ", true, 4);
     test(startFEN, "rnbqkbnr/n2pp2n/6pp/4p3/2P4P/6P1/N2P1P1N/RNBQKBNR w KQkq - 0 1", false, 3);
+
+    test("4k3/pp6/8/8/8/8/PP6/4K3 w - - 0 1", "4k3/8/8/8/8/8/3B4/2B1K3 w - - 0 1", true, 1);
+    test("4k3/p7/8/8/1P6/8/1P6/4K3 w - - 0 1", "4k3/8/8/8/8/8/3B4/2B1K3 w - - 0 1", true, 0);
+    test("4k3/1p6/8/8/P7/8/P7/4K3 w - - 0 1", "4k3/8/8/8/8/8/2B5/1B2K3 w - - 0 1", true, 0);
+    test("4k3/1p6/8/8/P7/8/P7/4K3 w - - 0 1", "4k3/8/8/8/8/8/3B4/2B1K3 w - - 0 1", false, 2);
+    test("4k3/1p6/8/8/P7/8/P7/4K3 w - - 0 1", "4k3/8/8/8/8/8/2B5/2B1K3 w - - 0 1", true, 1);
+
+    test("4k3/p1p5/8/8/8/8/PP6/4K3 w - - 0 1", "4k3/p7/8/8/8/8/8/1B2K3 w - - 0 1", true, 1);
+    test("4k3/p7/8/8/8/8/PP6/4K3 w - - 0 1", "4k3/p7/8/8/8/8/8/1B2K3 w - - 0 1", false, 1);
+
+    test("r3k3/8/8/8/8/8/PP6/4K3 w q - 0 1", "r3k3/8/8/8/8/8/8/1B2K3 w q - 0 1", false, 1);
+    test("r3k3/8/8/8/8/8/PP6/4K3 w q - 0 1", "r3k3/8/8/8/8/8/8/1B2K3 w - - 0 1", true, 0);
 }
 
 TEST(ProofKernelTest, testMoveToString) {
@@ -923,6 +942,9 @@ ProofKernelTest::testSearch() {
          false, "");
     test("3bk3/1P6/8/8/8/8/8/4K3 w - - 0 1", "B3k3/8/8/8/8/8/8/4K3 w - - 0 1",
          false, "");
+
+    test(startFEN, "r1Q2B1n/KB1rrBr1/1nBqn3/1R6/br6/3NqBb1/8/1b1B2kb w - - 0 1",
+         true, "*");
 }
 
 TEST(ProofKernelTest, testExtMoveToString) {

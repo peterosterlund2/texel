@@ -535,18 +535,22 @@ ProofKernel::minMovesToGoal() const {
 int
 ProofKernel::minMovesToGoalOneColor(PieceColor c) const {
     int availIdx = -100;
-    int needed[8], minDist[8];
+    int neededPawns[8], minDist[8];
+    int maxBishProm[2] = { 0, 0 };
     for (int i = 0; i < 8; i++) {
         int n = goalColumns[i].nPawns(c) - columns[i].nPawns(c);
-        needed[i] = n;
-        if (n < 0)
+        neededPawns[i] = n;
+        if (n < 0) {
             availIdx = i;
+            if (columns[i].canPromote(c, Direction::FORWARD))
+                maxBishProm[(int)columns[i].promotionSquareType(c)] += -n;
+        }
         minDist[i] = i - availIdx;
     }
     availIdx = 100;
     int cnt = 0;
     for (int i = 7; i >= 0; i--) {
-        int n = needed[i];
+        int n = neededPawns[i];
         if (n < 0) {
             availIdx = i;
         } else if (n > 0) {
@@ -554,6 +558,10 @@ ProofKernel::minMovesToGoalOneColor(PieceColor c) const {
             cnt += n * minDst;
         }
     }
+
+    cnt = std::max(cnt, -(maxBishProm[(int)SquareColor::LIGHT] + excessCnt[c][LIGHT_BISHOP]));
+    cnt = std::max(cnt, -(maxBishProm[(int)SquareColor::DARK ] + excessCnt[c][DARK_BISHOP]));
+
     return cnt;
 }
 
