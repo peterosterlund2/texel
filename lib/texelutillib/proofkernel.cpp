@@ -240,7 +240,7 @@ ProofKernel::SearchResult
 ProofKernel::search(int ply) {
     nodes++;
     if ((nodes & ((1ULL << 26) - 1)) == 0 && findFirst) {
-        log << "nodes:" << nodes << std::endl;
+        log << "nodes:" << nodes << " csp:" << nCSPs << std::endl;
         log << "path:" << path << std::endl;
     }
 
@@ -1028,7 +1028,8 @@ ProofKernel::getState(State& state) const {
 
 bool ProofKernel::computeExtKernel() {
     nCSPs++;
-    ExtProofKernel epk(initialPos, goalPos, log, !findFirst);
+    bool cspLog = nCSPs <= 1000 || (BitUtil::lastBit(nCSPs) - BitUtil::firstBit(nCSPs) <= 2);
+    ExtProofKernel epk(initialPos, goalPos, log, !findFirst || !cspLog);
     bool ret = epk.findExtKernel(path, extPath);
     nCSPNodes += epk.getNumNodes();
     return ret;
