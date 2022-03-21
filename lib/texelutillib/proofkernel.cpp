@@ -28,6 +28,7 @@
 #include "textio.hpp"
 #include "stloutput.hpp"
 #include <cassert>
+#include <climits>
 
 
 ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked,
@@ -225,7 +226,7 @@ ProofKernel::initSearch2() {
     nCSPs = 0;
     nCSPNodes = 0;
     moveStack.resize(remainingMoves);
-    failed.resize(1 << 20);
+    ht.setSize(19, 24);
 }
 
 void
@@ -262,8 +263,7 @@ ProofKernel::search(int ply) {
 
     State myState;
     getState(myState);
-    const U64 idx = myState.hashKey() & (failed.size() - 1);
-    if (failed[idx] == myState)
+    if (ht.probe(myState))
         return FAIL; // Already searched, no solution exists
 
     bool hasProofKernel = false;
@@ -290,7 +290,7 @@ ProofKernel::search(int ply) {
         path.pop_back();
     }
     if (!hasProofKernel) {
-        failed[idx] = myState;
+        ht.insert(myState);
         return FAIL;
     }
     return PROOF_KERNEL;
@@ -1023,7 +1023,61 @@ ProofKernel::getState(State& state) const {
     counts <<= 1;
     if (onlyPieceXPiece)
         counts |= 1;
+    counts <<= 8;
+    counts |= remainingMoves;
     state.pieceCounts = counts;
+}
+
+void
+ProofKernel::HashTable::setSize(int logSizeMin, int logSizeMax) {
+    int sizeMin = 1 << logSizeMin;
+    failed.resize(sizeMin);
+    freeSpace = sizeMin * 3 / 4;
+    this->logSizeMax = logSizeMax;
+}
+
+bool
+ProofKernel::HashTable::probe(const State& myState) const {
+    const U64 idx = myState.hashKey() & (failed.size() - 1);
+    const U64 bucket = idx & ~3;
+    for (int i = 0; i < 4; i++)
+        if (failed[bucket+i] == myState)
+            return true;
+    return false;
+}
+
+void
+ProofKernel::HashTable::insert(const State& myState) {
+    const U64 idx = myState.hashKey() & (failed.size() - 1);
+    const U64 bucket = idx & ~3;
+    const int slot = idx & 3;
+    int minDepth = 32;
+    U64 insertIdx = 0;
+    for (int i = 0; i < 4; i++) {
+        U64 idx2 = bucket + ((slot + i) & 3);
+        int d = failed[idx2].getDepth();
+        if (d < minDepth) {
+            insertIdx = idx2;
+            minDepth = d;
+        }
+    }
+    failed[insertIdx] = myState;
+    freeSpace--;
+    if (freeSpace <= 0) {
+        freeSpace = INT_MAX;
+        if ((int)failed.size() < (1 << logSizeMax))
+            grow();
+    }
+}
+
+void
+ProofKernel::HashTable::grow() {
+    HashTable tmp;
+    tmp.setSize(logSizeMax, logSizeMax);
+    for (const State& s : failed)
+        if (s.getDepth() > 0)
+            tmp.insert(s);
+    failed.swap(tmp.failed);
 }
 
 bool ProofKernel::computeExtKernel() {

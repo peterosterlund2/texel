@@ -280,11 +280,24 @@ private:
         U64 pieceCounts = 0;
         U64 hashKey() const;
         bool operator==(const State& other) const;
+        int getDepth() const { return pieceCounts & 0xff; }
     };
     void getState(State& state) const;
 
-    // Cache of states already known not to lead to a goal state
-    std::vector<State> failed;
+    class HashTable {
+    public:
+        void setSize(int logSizeMin, int logSizeMax);
+        bool probe(const State& myState) const;
+        void insert(const State& myState);
+    private:
+        void grow();
+
+        // Cache of states already known not to lead to a goal state
+        vector_aligned<State> failed;
+        int logSizeMax = 0;
+        int freeSpace = 0;
+    };
+    HashTable ht;
 
     /** Extract pawn structure and piece counts from a position. */
     static void posToState(const Position& pos, std::array<PawnColumn,8>& columns,
