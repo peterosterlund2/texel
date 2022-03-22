@@ -544,6 +544,7 @@ ProofKernelTest::testMoveGen() {
         Position startPos = TextIO::readFEN(start);
         Position goalPos = TextIO::readFEN(goal);
         ProofKernel pk(startPos, goalPos, computeBlocked(startPos, goalPos));
+        pk.remainingCaptures[0] = pk.remainingCaptures[1] = 1;
         pk.onlyPieceXPiece = onlyPieceXPiece;
         std::vector<PkMove> moves;
         pk.genMoves(moves);

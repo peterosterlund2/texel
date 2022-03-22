@@ -615,6 +615,8 @@ ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
                 if (!canMove(col, fromIdx, colNp))
                     continue;
                 PieceColor c = col.getPawn(fromIdx);
+                if (remainingCaptures[1-c] <= 0)
+                    continue;
                 for (int toIdx = 0; toIdx < oColNp; toIdx++) {
                     if (c == oCol.getPawn(toIdx))
                         continue; // Cannot capture own pawn
@@ -652,6 +654,8 @@ ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
                 if (!canMove(col, fromIdx, colNp))
                     continue;
                 PieceColor c = col.getPawn(fromIdx);
+                if (remainingCaptures[1-c] <= 0)
+                    continue;
                 PieceColor oc = otherColor(c);
                 for (int t = QUEEN; t < PAWN; t++) {
                     PieceType taken = (PieceType)t;
@@ -691,6 +695,8 @@ ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
                 if (!canMove(col, fromIdx, colNp))
                     continue;
                 PieceColor c = col.getPawn(fromIdx);
+                if (remainingCaptures[1-c] <= 0)
+                    continue;
                 PieceColor oc = otherColor(c);
                 for (int promFile = 0; promFile < 8; promFile++) {
                     if (columns[promFile].nAllowedPromotions(oc, false) <= 0)
@@ -730,6 +736,8 @@ ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
                 continue;
             PieceColor oc = col.getPawn(toIdx);
             PieceColor c = otherColor(oc);
+            if (remainingCaptures[1-c] <= 0)
+                continue;
             moves.push_back(PkMove::pieceXPawn(c, x, toIdx));
         }
     }
@@ -739,6 +747,8 @@ void
 ProofKernel::genPieceXPieceMoves(std::vector<PkMove>& moves) {
     for (int i = 0; i < 2; i++) {
         PieceColor c  = i == 0 ? WHITE : BLACK;
+        if (remainingCaptures[1-c] <= 0)
+            continue;
         PieceColor oc = i == 0 ? BLACK : WHITE;
         for (int j = 0; j < PAWN; j++)
             if (pieceCnt[oc][j] > 0)
