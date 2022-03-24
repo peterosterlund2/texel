@@ -35,6 +35,8 @@
 
 #include "gtest/gtest.h"
 
+// Enable to also run slow tests
+//#define RUN_SLOW_TESTS
 
 void
 ProofGameTest::checkBlockedConsistency(ProofGame& ps, Position& pos) {
@@ -1277,6 +1279,10 @@ TEST(ProofGameTest, testFilter6) {
     ProofGameTest::testFilter6();
 }
 
+TEST(ProofGameTest, testFilter7) {
+    ProofGameTest::testFilter7();
+}
+
 namespace {
     struct FilterData {
         std::string fen;
@@ -1505,12 +1511,26 @@ void ProofGameTest::testFilter6() {
           "extKernel: bPe7-e5 wPf2-f5 wRa1-f4 bPe5xf4 wPb2-b4 bPa7-a5 wPb4xa5 "
           "wPh2-h4 bPg7-g5 wPh4xg5 bPf7-f6 wPg5xf6 wPc2-c6 bPb7-b6 bLBc8-b7 wPc6xb7",
           " unknown: ", true }, // Only test that code does not crash, finding solution too hard
-#if 0 // Takes too much time
+#ifdef RUN_SLOW_TESTS
         { "2n3N1/bp4N1/B1pB1bpN/2N1p3/2q3r1/rPQn3Q/2P2pNq/Nb1k3K w - - 0 1 "
           "unknown: kernel: dummy "
           "extKernel: bPd7-d5 wPe2-e4 bPd5xe4 wPf2-f4 bPg7-g5 wPf4xg5 wPg5-g8 wPg2-g7 "
           "wRa1-g6 bPh7xg6 bPa7-a3 wPb2-b3 wRh1-b2 bPa3xb2",
           " unknown: ", true }, // Only test that code does not crash, finding solution too hard
+#endif
+    };
+    testFilterData(v);
+}
+
+
+void ProofGameTest::testFilter7() {
+    std::vector<FilterData> v = {
+#ifdef RUN_SLOW_TESTS
+        { "3rB1Br/3p1p2/bp1rnBp1/1QNnqNP1/2PP1Q2/8/2kRbP2/K4bq1 b - - 1 3 "
+          "unknown: kernel: dummy "
+          "extKernel: bPa7-a5 wPb2-b4 bPa5xb4 bPc7-c4 wQd1-b3 bPc4xb3 bPe7-e4 wPd2-d4 "
+          "wRa1-d3 bPe4xd3 wPh2-h6 bPg7-g6 bDBf8-g7 wPh6xg7",
+          " path: ", true },
 #endif
     };
     testFilterData(v);

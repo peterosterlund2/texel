@@ -60,7 +60,7 @@ private:
     struct MoveData {
         int id;                     // Graph node ID
         ExtPkMove move;
-        bool pseudoLegal = false;   // True if move is known to be pseudo legal
+        bool pseudoLegal = false;   // True if move is known to be or have been pseudo legal
         bool movedEarly = false;    // True if piece move has already been moved to
                                     // an earlier point in the sequence
         std::vector<int> dependsOn; // IDs of moves that must be played before this move

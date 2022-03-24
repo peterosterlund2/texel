@@ -60,6 +60,7 @@ public:
     static void testFilter4b();
     static void testFilter5();
     static void testFilter6();
+    static void testFilter7();
     static void testFilterPath();
     static void testPkSequence();
     static void testMultiBoard();

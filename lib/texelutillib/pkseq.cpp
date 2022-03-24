@@ -463,8 +463,13 @@ PkSequence::makeMove(Position& pos, UndoInfo& ui, const ExtPkMove& move) {
         return false;
 
     assert(move.fromSquare != -1);
-    if (pos.getPiece(move.fromSquare) == Piece::EMPTY)
+    int pFrom = pos.getPiece(move.fromSquare);
+    if (pFrom == Piece::EMPTY)
         return false;
+
+    if (pFrom == Piece::WKING || pFrom == Piece::BKING)
+        if (BitBoard::getKingDistance(move.fromSquare, move.toSquare) != 1)
+            return false; // Avoid interpreting a 2 step move as castling
 
     int promoteTo = Piece::EMPTY;
     if (move.promotedPiece != PieceType::EMPTY)
