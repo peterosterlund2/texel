@@ -34,8 +34,12 @@
 #include "syzygy/rtb-probe.hpp"
 #include "parameters.hpp"
 #include "util/timeUtil.hpp"
+#include "util/random.hpp"
 #include "chesstool.hpp"
 #include "tbgen.hpp"
+#include "proofgame.hpp"
+#include "proofkernel.hpp"
+#include "threadpool.hpp"
 
 #include <fstream>
 #include <iomanip>
@@ -789,4 +793,253 @@ PosGenerator::tbgenTest(const std::vector<std::string>& tbTypes) {
         double t1 = currentTime();
         std::cout << tbType << " nPos:" << nPos << " compare time:" << (t1-t0) << std::endl;
     }
+}
+
+struct KingData {
+    int wKing;
+    int bKing;
+    int castleMask;
+};
+
+const int a1C = 1 << Position::A1_CASTLE;
+const int h1C = 1 << Position::H1_CASTLE;
+const int a8C = 1 << Position::A8_CASTLE;
+const int h8C = 1 << Position::H8_CASTLE;
+
+static
+void computeKingData(std::vector<KingData>& kingTable) {
+    for (int k1 = 0; k1 < 64; k1++) {
+        for (int k2 = 0; k2 < 64; k2++) {
+            if (BitBoard::getKingDistance(k1, k2) <= 1)
+                continue;
+            for (int castleMask = 0; castleMask < 16; castleMask++) {
+                bool a1 = castleMask & a1C;
+                bool h1 = castleMask & h1C;
+                bool a8 = castleMask & a8C;
+                bool h8 = castleMask & h8C;
+                if (k1 != E1 && (a1 || h1))
+                    continue;
+                if (k2 != E8 && (a8 || h8))
+                    continue;
+                kingTable.push_back({k1, k2, castleMask});
+            }
+        }
+    }
+}
+
+const int pawn   = 0;
+const int knight = 1;
+const int bishop = 2;
+const int rook   = 3;
+const int queen  = 4;
+const int king   = 5;
+
+void
+PosGenerator::randomLegal(int n, U64 rndSeed, int nWorkers, std::ostream& os) {
+    std::vector<KingData> kingTable;
+    computeKingData(kingTable);
+    const int nKingCombs = 3969;
+    assert(kingTable.size() == nKingCombs);
+
+    Position startPos = TextIO::readFEN(TextIO::startPosFEN);
+    std::mutex mutex;
+
+    const double nPossible = 1.0 *
+        2 *                 // Side to move
+        nKingCombs *        // King arrangements, including castling flags
+        (1ULL << 62) *      // Occupied squares for non-kings
+        (1ULL << 30) *      // Piece color for non-kings
+        std::pow(5, 30) *   // Non-king piece types
+        6;                  // En passant possibilities
+    const double nEstLegal = 4.8e44; // Estimated number of legal chess positions
+    const U64 nTries = (U64)(nPossible / nEstLegal * n);
+    {
+        std::stringstream ss;
+        ss.precision(10);
+        ss << "multiplier: " << (nPossible / nTries);
+        std::cerr << ss.str() << std::endl;
+    }
+
+    ThreadPool<int> pool(nWorkers);
+    const U64 chunkSize = 100000000;
+    for (U64 c = 0; c < nTries; c += chunkSize) {
+        U64 seed = rndSeed + hashU64(c);
+        U64 stop = std::min(chunkSize, nTries - c);
+        auto func = [seed,&os,&kingTable,&startPos,&mutex,stop](int workerNo) {
+            Position pos;
+            int pieces[64] = {0}; // Piece/color for each square
+            Random rand(seed);
+            for (U64 i = 0; i < stop; i++) {
+                U64 r = rand.nextU64();
+
+                bool wtm = (r & 1) != 0;
+                U64 occupied = r >> 2;                     // 62 occupied bits
+                int nPieces = BitUtil::bitCount(occupied); // Not counting kings
+                const int maxPieces = 30;  // Max number of pieces, excluding kings
+                if (nPieces > maxPieces)
+                    continue; // Too many pieces
+
+                r = rand.nextU64() & ((1 << maxPieces) - 1);
+                U64 whitePieces = r & ((1 << nPieces) - 1);
+                if (whitePieces != r)
+                    continue; // Non-existing pieces must have color 0
+
+                int nWhite = BitUtil::bitCount(whitePieces);
+                if (nWhite > 15 || nPieces - nWhite > 15)
+                    continue; // Too many white/black pieces
+
+                bool fail = false;
+                for (int p = nPieces; p < maxPieces; p++)
+                    if (rand.nextInt<5>() != pawn) {
+                        fail = true;
+                        break; // Non-existing pieces must have type pawn
+                    }
+                if (fail)
+                    continue;
+
+                const int kingCombIdx = rand.nextInt<nKingCombs>();
+                const int wk = kingTable[kingCombIdx].wKing;
+                const int bk = kingTable[kingCombIdx].bKing;
+                const int k1 = std::min(wk, bk);
+                const int k2 = std::max(wk, bk);
+
+                U64 mask = occupied;
+                occupied = 0; // Re-compute occupied to take king squares into account
+                while (mask) {
+                    int sq = BitBoard::extractSquare(mask);
+                    if (sq >= k1) {
+                        sq++;
+                        if (sq >= k2)
+                            sq++;
+                    }
+                    int p = rand.nextInt<5>();
+                    if (p == pawn && (sq <= H1 || sq >= A8)) { // Pawn on first/last rank
+                        fail = true;
+                        break;
+                    }
+                    bool white = (whitePieces & 1) != 0;
+                    whitePieces >>= 1;
+                    pieces[sq] = (white << 3) | p;
+                    occupied |= 1ULL << sq;
+                }
+                if (fail)
+                    continue;
+
+                const int castleMask = kingTable[kingCombIdx].castleMask;
+                const int epCode = rand.nextInt<6>();
+                randomLegalSlowPath(startPos, pos, pieces, wtm, occupied, wk, bk,
+                                    castleMask, epCode, os, mutex);
+            }
+            return 0;
+        };
+        pool.addTask(func);
+    }
+    pool.getAllResults([](int){});
+}
+
+void
+PosGenerator::randomLegalSlowPath(const Position& startPos, Position& pos,
+                                  int pieces[64], bool wtm, U64 occupied,
+                                  int wk, int bk, int castleMask, int epCode,
+                                  std::ostream& os, std::mutex& mutex) {
+    pieces[wk] = (1 << 3) | king;
+    occupied |= 1ULL << wk;
+    pieces[bk] = (0 << 3) | king;
+    occupied |= 1ULL << bk;
+
+    auto hasPiece = [&pieces,occupied](int x, int y, bool wtm, int pieceType) -> bool {
+        int sq = Square::getSquare(x, y);
+        int p = ((wtm ? 1 : 0) << 3) | pieceType;
+        if ((occupied & (1ULL << sq)) == 0)
+            return false;
+        return pieces[sq] == p;
+    };
+
+    int epSquare = -1;
+    if (epCode != 0) {
+        const int y3 = wtm ? 4 : 3;
+        const int y2 = wtm ? 5 : 2;
+        const int y1 = wtm ? 6 : 1;
+        for (int x = 0; x < 8; x++) {
+            if (!hasPiece(x, y3, !wtm, pawn))
+                continue;
+            if (occupied & (1ULL << Square::getSquare(x, y2)))
+                continue;
+            if (occupied & (1ULL << Square::getSquare(x, y1)))
+                continue;
+            bool leftOk = x > 0 && hasPiece(x-1, y3, wtm, pawn);
+            bool rightOk = x < 7 && hasPiece(x+1, y3, wtm, pawn);
+            if (!leftOk && !rightOk)
+                continue;
+            if (--epCode == 0) {
+                epSquare = 1ULL << Square::getSquare(x, y2);
+                break;
+            }
+        }
+        if (epSquare == -1)
+            return;
+    }
+
+    if (castleMask != 0) {
+        if ((castleMask & a1C) && !hasPiece(0, 0, true, rook))
+            return;
+        if ((castleMask & h1C) && !hasPiece(7, 0, true, rook))
+            return;
+        if ((castleMask & a8C) && !hasPiece(0, 7, false, rook))
+            return;
+        if ((castleMask & h8C) && !hasPiece(7, 7, false, rook))
+            return;
+    }
+
+    for (int sq = 0; sq < 64; sq++) {
+        if (occupied & (1ULL << sq)) {
+            int p = pieces[sq];
+            bool white = p >= 8;
+            p &= 7;
+            int pt;
+            switch (p) {
+            case pawn  : pt = Piece::WPAWN; break;
+            case knight: pt = Piece::WKNIGHT; break;
+            case bishop: pt = Piece::WBISHOP; break;
+            case rook  : pt = Piece::WROOK; break;
+            case queen : pt = Piece::WQUEEN; break;
+            case king  : pt = Piece::WKING; break;
+            default: assert(false); return;
+            }
+            if (!white)
+                pt = Piece::makeBlack(pt);
+            pos.setPiece(sq, pt);
+        } else {
+            pos.clearPiece(sq);
+        }
+    }
+    pos.setWhiteMove(wtm);
+    pos.setCastleMask(castleMask);
+    pos.setEpSquare(epSquare);
+
+    if (MoveGen::canTakeKing(pos))
+        return; // King capture possible
+
+    std::string fen = TextIO::toFEN(pos);
+    try {
+        std::stringstream ss;
+        ProofGame pg(TextIO::startPosFEN, fen, false, {}, false, ss);
+        auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
+        ProofGame::Result result;
+        int minCost = pg.search(opts, result);
+        if (minCost == INT_MAX)
+            return;
+
+        U64 blocked;
+        if (!pg.computeBlocked(pos, blocked))
+            return;
+        ProofKernel pk(startPos, pos, blocked, ss);
+        if (!pk.isGoalPossible())
+            return;
+    } catch (const ChessParseError& e) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> L(mutex);
+    os << TextIO::toFEN(pos) << std::endl;
 }

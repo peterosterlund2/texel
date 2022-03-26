@@ -164,6 +164,9 @@ public:
     /** Find all proof kernels. Print result to log stream. */
     void findAll();
 
+    /** Return false if it can be determined without search that there is no proof kernel. */
+    bool isGoalPossible();
+
     static const int maxPawns = 7; // Maximum number of pawns in one column during search
 
 private:

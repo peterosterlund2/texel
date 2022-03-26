@@ -202,6 +202,12 @@ ProofKernel::findProofKernel(std::vector<PkMove>& proofKernel,
     return ret;
 }
 
+bool
+ProofKernel::isGoalPossible() {
+    initSearch1();
+    return goalPossible();
+}
+
 void
 ProofKernel::initSearch1() {
     path.clear();

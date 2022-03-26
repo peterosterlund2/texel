@@ -26,8 +26,12 @@
 #ifndef POSGEN_HPP_
 #define POSGEN_HPP_
 
+#include "util/util.hpp"
 #include <string>
 #include <vector>
+#include <mutex>
+
+class Position;
 
 class PosGenerator {
 public:
@@ -61,8 +65,18 @@ public:
     /** Compare tbgen probe results to GTB DTM probe results, report any differences. */
     static void tbgenTest(const std::vector<std::string>& tbTypes);
 
+    /** Generate approximately "n" random legal chess positions. Some illegal
+     *  positions are likely to be generated too. Output the FENs for the
+     *  generated positions to "os". */
+    static void randomLegal(int n, U64 rndSeed, int nWorkers, std::ostream& os);
+
 private:
     static void genQvsN();
+
+    static void randomLegalSlowPath(const Position& startPos, Position& pos,
+                                    int pieces[64], bool wtm, U64 occupied,
+                                    int wk, int bk, int castleMask, int epCode,
+                                    std::ostream& os, std::mutex& mutex);
 };
 
 

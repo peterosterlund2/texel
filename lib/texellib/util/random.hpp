@@ -33,14 +33,22 @@
 /** Pseudo-random number generator. */
 class Random {
 public:
+    /** Constructor using a seed based on the current time. */
     Random();
 
+    /** Constructor using a specified random number seed. */
     explicit Random(U64 seed);
 
+    /** Re-initialize the object using the specified seed. */
     void setSeed(U64 seed);
 
+    /** Return a number >= 0 and < modulo. */
     int nextInt(int modulo);
 
+    /** Faster version of nextInt(int) when the modulo is known at compile time .*/
+    template<short modulo> int nextInt();
+
+    /** Return a pseudo-random 64-bit number. */
     U64 nextU64();
 
 private:
@@ -62,6 +70,18 @@ inline U64 hashU64(U64 v) {
 inline U64
 Random::nextU64() {
     return gen();
+}
+
+template<short modulo>
+inline int
+Random::nextInt() {
+    constexpr int N = 1 << 30;
+    constexpr int maxVal = (N / modulo) * modulo;
+    while (true) {
+        int r = nextU64() & (N - 1);
+        if (r < maxVal)
+            return r % modulo;
+    }
 }
 
 #endif /* RANDOM_HPP_ */

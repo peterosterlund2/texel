@@ -116,6 +116,7 @@ usage() {
     std::cerr << "                                  original evaluation\n";
     std::cerr << "\n";
     std::cerr << " genfen qvsn : Generate all positions of a given type\n";
+    std::cerr << " rndfen n [seed] : Generate about n random legal (and some illegal) positions\n";
     std::cerr << "\n";
     std::cerr << " tblist nPieces : Print all tablebase types\n";
     std::cerr << " dtmstat type1 [type2 ...] : Generate tablebase DTM statistics\n";
@@ -656,6 +657,14 @@ main(int argc, char* argv[]) {
         } else if (cmd == "genfen") {
             if ((argc < 3) || !PosGenerator::generate(argv[2]))
                 usage();
+        } else if (cmd == "rndfen") {
+            int n = 0;
+            U64 rndSeed = currentTimeMillis();
+            if (argc < 3 || argc > 4 || !str2Num(argv[2], n) || n < 1)
+                usage();
+            if (argc == 4 && !str2Num(argv[3], rndSeed))
+                usage();
+            PosGenerator::randomLegal(n, rndSeed, nWorkers, std::cout);
         } else if (cmd == "tblist") {
             int nPieces;
             if ((argc != 3) || !str2Num(argv[2], nPieces) || nPieces < 2)
