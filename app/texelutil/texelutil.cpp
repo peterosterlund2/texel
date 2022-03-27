@@ -117,6 +117,7 @@ usage() {
     std::cerr << "\n";
     std::cerr << " genfen qvsn : Generate all positions of a given type\n";
     std::cerr << " rndfen n [seed] : Generate about n random legal (and some illegal) positions\n";
+    std::cerr << " rndtest [seed1 [seed2]] : Write random binary data to standard output\n";
     std::cerr << "\n";
     std::cerr << " tblist nPieces : Print all tablebase types\n";
     std::cerr << " dtmstat type1 [type2 ...] : Generate tablebase DTM statistics\n";
@@ -665,6 +666,20 @@ main(int argc, char* argv[]) {
             if (argc == 4 && !str2Num(argv[3], rndSeed))
                 usage();
             PosGenerator::randomLegal(n, rndSeed, nWorkers, std::cout);
+        } else if (cmd == "rndtest") {
+            U64 seed1 = currentTimeMillis();
+            U64 seed2 = 0;
+            if (argc > 2 && !str2Num(argv[2], seed1))
+                usage();
+            if (argc > 3 && !str2Num(argv[3], seed2))
+                usage();
+            if (argc > 4)
+                usage();
+            Random rnd(seed1, seed2);
+            while (true) {
+                U64 r = rnd.nextU64();
+                std::cout.write((const char*)&r, sizeof(r));
+            }
         } else if (cmd == "tblist") {
             int nPieces;
             if ((argc != 3) || !str2Num(argv[2], nPieces) || nPieces < 2)
