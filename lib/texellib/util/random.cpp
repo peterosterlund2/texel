@@ -27,20 +27,28 @@
 #include "timeUtil.hpp"
 
 Random::Random()
-    : gen(currentTimeMillis()) {
+    : Random(currentTimeMillis(), 0) {
 }
 
-Random::Random(U64 seed)
-    : gen(seed) {
+Random::Random(U64 seed1, U64 seed2) {
+    setSeed(seed1, seed2);
 }
 
 void
-Random::setSeed(U64 seed) {
-    gen.seed(seed);
+Random::setSeed(U64 seed1, U64 seed2) {
+    for (int i = 0; i < 4; i++)
+        s[i] = hashU64(seed1 + hashU64(i + 1));
+    for (int i = 2; i < 4; i++)
+        s[i] ^= hashU64(seed2 + hashU64(i + 5));
 }
 
 int
 Random::nextInt(int modulo) {
-    std::uniform_int_distribution<int> dist(0, modulo-1);
-    return dist(gen);
+    int N = 1 << 30;
+    int maxVal = (N / modulo) * modulo;
+    while (true) {
+        int r = nextU64() & (N - 1);
+        if (r < maxVal)
+            return r % modulo;
+    }
 }

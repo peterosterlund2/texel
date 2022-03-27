@@ -28,7 +28,6 @@
 
 #include "util.hpp"
 
-#include <random>
 
 /** Pseudo-random number generator. */
 class Random {
@@ -37,10 +36,10 @@ public:
     Random();
 
     /** Constructor using a specified random number seed. */
-    explicit Random(U64 seed);
+    explicit Random(U64 seed1, U64 seed2 = 0);
 
     /** Re-initialize the object using the specified seed. */
-    void setSeed(U64 seed);
+    void setSeed(U64 seed1, U64 seed2 = 0);
 
     /** Return a number >= 0 and < modulo. */
     int nextInt(int modulo);
@@ -52,24 +51,27 @@ public:
     U64 nextU64();
 
 private:
-    std::mt19937_64 gen;
+    U64 s[4];
+
+    static U64 rotl(U64 x, int k);
 };
 
-
-/** "Scrambles" a 64 bit number. The sequence hashU64(i) for i=1,2,3,...
- *   passes "dieharder -a -Y 1". */
-inline U64 hashU64(U64 v) {
-    v *= 0x7CF9ADC6FE4A7653ULL;
-    v ^= v >> 37;
-    v *= 0xC25D3F49433E7607ULL;
-    v ^= v >> 43;
-    return v;
+inline U64
+Random::rotl(U64 x, int k) {
+    return (x << k) | (x >> (64 - k));
 }
-
 
 inline U64
 Random::nextU64() {
-    return gen();
+    U64 result = rotl(s[0] + s[3], 23) + s[0];
+    U64 t = s[1] << 17;
+    s[2] ^= s[0];
+    s[3] ^= s[1];
+    s[1] ^= s[2];
+    s[0] ^= s[3];
+    s[2] ^= t;
+    s[3] = rotl(s[3], 45);
+    return result;
 }
 
 template<short modulo>
@@ -82,6 +84,17 @@ Random::nextInt() {
         if (r < maxVal)
             return r % modulo;
     }
+}
+
+
+/** "Scrambles" a 64 bit number. The sequence hashU64(i) for i=1,2,3,...
+ *   passes "dieharder -a -Y 1". */
+inline U64 hashU64(U64 v) {
+    v *= 0x7CF9ADC6FE4A7653ULL;
+    v ^= v >> 37;
+    v *= 0xC25D3F49433E7607ULL;
+    v ^= v >> 43;
+    return v;
 }
 
 #endif /* RANDOM_HPP_ */

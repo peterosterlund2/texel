@@ -863,12 +863,12 @@ PosGenerator::randomLegal(int n, U64 rndSeed, int nWorkers, std::ostream& os) {
     ThreadPool<int> pool(nWorkers);
     const U64 chunkSize = 100000000;
     for (U64 c = 0; c < nTries; c += chunkSize) {
-        U64 seed = rndSeed + hashU64(c);
+        U64 seed2 = hashU64(c+1);
         U64 stop = std::min(chunkSize, nTries - c);
-        auto func = [seed,&os,&kingTable,&startPos,&mutex,stop](int workerNo) {
+        auto func = [rndSeed,seed2,&os,&kingTable,&startPos,&mutex,stop](int workerNo) {
             Position pos;
             int pieces[64] = {0}; // Piece/color for each square
-            Random rand(seed);
+            Random rand(rndSeed, seed2);
             for (U64 i = 0; i < stop; i++) {
                 U64 r = rand.nextU64();
 
