@@ -78,6 +78,7 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
     int nPromoted = 0;
 
     Position currPos(initialPos); // Keep track of pieces for "pawn/piece takes piece" moves
+    currPos.setCastleMask(goalPos.getCastleMask());
     // Return square of a non-pawn piece of given type
     auto getSquare = [&promoted,&nPromoted,&currPos](bool white, PieceType p) -> VarSquare {
         for (int i = nPromoted - 1; i >= 0; i--) {
@@ -98,6 +99,10 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
             m &= BitBoard::maskDarkSq;
         else if (p == PieceType::LIGHT_BISHOP)
             m &= BitBoard::maskLightSq;
+        if (currPos.a1Castle()) m &= ~(1ULL << A1);
+        if (currPos.h1Castle()) m &= ~(1ULL << H1);
+        if (currPos.a8Castle()) m &= ~(1ULL << A8);
+        if (currPos.h8Castle()) m &= ~(1ULL << H8);
         assert(m != 0);
 
         int sq = BitBoard::firstSquare(m);

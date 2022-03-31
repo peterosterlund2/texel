@@ -266,6 +266,7 @@ private:
     int remainingMoves;       // Remaining moves for both colors combined
     int remainingCaptures[2]; // Remaining number of pieces to be captured for each color
     bool onlyPieceXPiece = false;
+    int minRooks[2];          // Number of required rooks on the board for both colors (due to castling)
 
     U64 deadBishops;  // Mask of bishops initially trapped on first/last row and not present in goal position
 

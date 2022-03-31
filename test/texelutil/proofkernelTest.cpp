@@ -946,6 +946,20 @@ ProofKernelTest::testSearch() {
 
     test(startFEN, "r1Q2B1n/KB1rrBr1/1nBqn3/1R6/br6/3NqBb1/8/1b1B2kb w - - 0 1",
          true, "*");
+
+    // Must not move a rook if the corresponding castling flag is set
+    test("r3k3/p7/P7/8/8/8/8/4K3 w q - 0 1", "r3k3/8/8/8/8/8/1B6/4K3 w q - 0 1",
+         false, "");
+    test("r3k3/p7/P7/8/8/8/8/4K3 w - - 0 1", "r3k3/8/8/8/8/8/1B6/4K3 w - - 0 1",
+         true, "wPa0xRb0");
+    test("r3k2r/p7/P7/8/8/8/8/4K3 w kq - 0 1", "r3k2r/8/8/8/8/8/1B6/4K3 w kq - 0 1",
+         false, "");
+    test("r3k2r/p7/P7/8/8/8/8/4K3 w q - 0 1", "r3k2r/8/8/8/8/8/1B6/4K3 w q - 0 1",
+         true, "wPa0xRb0");
+    test("r3k2r/p7/P7/8/8/8/8/4K3 w k - 0 1", "r3k2r/8/8/8/8/8/1B6/4K3 w k - 0 1",
+         true, "wPa0xRb0");
+    test(startFEN, "4k1br/2QN1nq1/PbB1NB1b/4Q3/b1N4b/5b1B/8/RRbBn2K w k - 0 1",
+         true, "*");
 }
 
 TEST(ProofKernelTest, testExtMoveToString) {
@@ -1078,7 +1092,7 @@ ProofKernelTest::testExtKernel() {
     test("rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPB/RNBQK1NR w KQkq - 0 1",
          "rnbqkbn1/p1ppppp1/p7/8/8/8/PPP1PPP1/RNBQK1NR w KQq - 0 1",
          "bPb1xQa1 bPh0xDBgN wPd0xNc1 wPc1xRb1",
-         true, "wQd1-a6 bPb7xa6 bPh7-h2 wDBc1-g1 bPh2xg1N bNg1-c5 wPd4xc5 bRa8-b6 wPc5xb6");
+         true, "wQd1-a6 bPb7xa6 bPh7-h2 wDBc1-g1 bPh2xg1N bNg1-c5 wPd4xc5 bRh8-b6 wPc5xb6");
     test("r1bqkbnr/p1pppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
          "R1bqkbnr/p1pppppp/8/8/8/8/P1PPPPPP/RNBQKBNR w KQk - 0 1",
          "wPb0xRaR", true, "wPb2-b7 wPb7xa8R");
@@ -1091,10 +1105,10 @@ ProofKernelTest::testExtKernel() {
          "bxPg0 wPe0xgd1", true, "bxg2 bPg7-g1N bNg1-d3 wPe2xd3");
     test(TextIO::startPosFEN, "r1bqkb2/pppppp1p/8/8/6P1/2P3P1/PPP1PP2/R1BQKB1R w KQq - 0 1",
          "wPg0xNf1 wPf1xNg1 wPd0xgc1 wPh0xRg0 bxN bxN", true,
-         "bNb8-f3 wPg2xf3 bPg7-g3 bNg8-g4 wPf3xg4 bPg3-g1N bNg1-c3 wPd2xc3 bRa8-g3 wPh2xg3 bxb1 bxg1");
+         "bNb8-f3 wPg2xf3 bPg7-g3 bNg8-g4 wPf3xg4 bPg3-g1N bNg1-c3 wPd2xc3 bRh8-g3 wPh2xg3 bxb1 bxg1");
     test(TextIO::startPosFEN, "rnbqkbnr/ppp1pp2/2p3p1/6p1/8/8/PPPPPP1P/R1BQKB2 w Qkq - 0 1",
          "bPg1xNf1 bPf1xNg0 bPd1xgc1 bPh1xRg1", true,
-         "wNb1-f6 bPg7xf6 wPg2-g6 wNg1-g5 bPf6xg5 wPg6-g8N wNg8-c6 bPd7xc6 wRa1-g6 bPh7xg6");
+         "wNb1-f6 bPg7xf6 wPg2-g6 wNg1-g5 bPf6xg5 wPg6-g8N wNg8-c6 bPd7xc6 wRh1-g6 bPh7xg6");
     test(TextIO::startPosFEN, "r1bqkb1r/pppppp1p/8/8/8/2P2P2/PPP1PP1P/RNBQKBNR w KQkq - 0 1",
          "wPg0xNf1 wPd0xgc1 wxN", true,
          "bNb8-f3 wPg2xf3 bPg7-g1N bNg1-c3 wPd2xc3 wxg8");
@@ -1139,6 +1153,10 @@ ProofKernelTest::testExtKernel() {
     test("rnbqkbnr/pppp2pp/4p3/4p3/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1",
          "rnbqkbnr/ppp3pp/4p3/4p3/4p3/1P6/P1PPPPPP/R1BQKB1R w KQkq - 0 1",
          "bPd1xNe3", true, "bPe5-e4 bPe6-e5 wNg1-e6 bPd7xe6");
+
+    // Must move h8 rook because of castling rights
+    test(TextIO::startPosFEN, "rB2k1bq/1N1N1p2/pN1K2Pn/3B1n1N/3nB1nq/1R1P1Q2/n6Q/1Q2b3 w q - 0 1",
+         "wPa0xRb1", true, "wPa2-a4 bRh8-b5 wPa4xb5");
 }
 
 TEST(ProofKernelTest, testListKernels) {

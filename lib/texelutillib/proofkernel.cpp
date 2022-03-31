@@ -38,6 +38,8 @@ ProofKernel::ProofKernel(const Position& initialPos, const Position& goalPos, U6
         columns[i] = PawnColumn(i);
     posToState(initialPos, columns, pieceCnt, blocked);
     posToState(goalPos, goalColumns, goalCnt, blocked);
+    minRooks[WHITE] = (goalPos.a1Castle() ? 1 : 0) + (goalPos.h1Castle() ? 1 : 0);
+    minRooks[BLACK] = (goalPos.a8Castle() ? 1 : 0) + (goalPos.h8Castle() ? 1 : 0);
 
     auto isBlocked = [&blocked](int x, int y) -> bool {
         int sq = Square::getSquare(x, y);
@@ -665,7 +667,7 @@ ProofKernel::genPawnMoves(std::vector<PkMove>& moves) {
                 PieceColor oc = otherColor(c);
                 for (int t = QUEEN; t < PAWN; t++) {
                     PieceType taken = (PieceType)t;
-                    if (pieceCnt[oc][taken] == 0)
+                    if (pieceCnt[oc][taken] <= (t == ROOK ? minRooks[oc] : 0))
                         continue;
                     for (int toIdx = 0; toIdx <= oColNp; toIdx++) {
                         if (!canInsert(oCol, toIdx, oColNp))
@@ -757,7 +759,7 @@ ProofKernel::genPieceXPieceMoves(std::vector<PkMove>& moves) {
             continue;
         PieceColor oc = i == 0 ? BLACK : WHITE;
         for (int j = 0; j < PAWN; j++)
-            if (pieceCnt[oc][j] > 0)
+            if (pieceCnt[oc][j] > (j == ROOK ? minRooks[oc] : 0))
                 moves.push_back(PkMove::pieceXPiece(c, (PieceType)j));
     }
 }
