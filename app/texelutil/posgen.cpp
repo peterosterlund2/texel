@@ -972,7 +972,7 @@ PosGenerator::randomLegalSlowPath(const Position& startPos, Position& pos,
             if (!leftOk && !rightOk)
                 continue;
             if (--epCode == 0) {
-                epSquare = 1ULL << Square::getSquare(x, y2);
+                epSquare = Square::getSquare(x, y2);
                 break;
             }
         }
