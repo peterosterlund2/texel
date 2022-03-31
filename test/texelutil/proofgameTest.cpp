@@ -1621,6 +1621,16 @@ void ProofGameTest::testFilterPath() {
         bool infeasible = pg.isInfeasible(fromSq, toSq);
         ASSERT_FALSE(infeasible);
     }
+    {
+        Position pos;
+        std::string goalFen  = "n1n2R2/3b4/Q1q1Bp2/2q5/RBrPPN1P/QNP1P1p1/4p3/1k2K1QR w K - 0 1";
+        getPathPos(goalFen + " "
+                   "unknown: kernel: dummy "
+                   "extKernel: wPd2-d3 bPe7-e3 bRa8-e4 wPd3xe4 wxa7 wPg2-g4 bPh7-h5 wPg4xh5 "
+                   "wPb2-b4 bPc7-c5 wPb4xc5 bPd7-d3 wPe2xd3 bPe3-e2 bDBf8-e3 wPf2xe3", pos);
+        ASSERT_EQ(E1, pos.getKingSq(true));
+        ASSERT_TRUE(pos.h1Castle());
+    }
 }
 
 TEST(ProofGameTest, testPkSequence) {

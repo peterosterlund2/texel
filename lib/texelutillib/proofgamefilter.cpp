@@ -577,7 +577,7 @@ ProofGameFilter::decidePromotions(std::vector<ExtPkMove>& extKernel,
             return BitBoard::bitCount(mask);
         };
         MultiBoard tmpBrd(lastBrd);
-        tmpBrd.expel();
+        tmpBrd.expel(goalPos.getCastleMask());
         Position lastBrdPos;
         tmpBrd.toPos(lastBrdPos);
         for (int pti = PieceType::QUEEN; pti <= PieceType::KNIGHT; pti++) {
@@ -731,11 +731,11 @@ ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int 
     freePieces(brdVec, endIdx, initPos, goalPos);
 
     Position startPos(initPos);
-    brdVec[startIdx].expel();
+    brdVec[startIdx].expel(goalPos.getCastleMask());
     brdVec[startIdx].toPos(startPos);
 
     Position endPos(initPos);
-    brdVec[endIdx].expel();
+    brdVec[endIdx].expel(goalPos.getCastleMask());
     brdVec[endIdx].toPos(endPos);
 
     ProofGame::Result result;
@@ -755,7 +755,7 @@ ProofGameFilter::computePath(std::vector<MultiBoard>& brdVec, int startIdx, int 
            << " fen2= " << TextIO::toFEN(endPos);
         if (endIdx < (int)brdVec.size() - 1) {
             Position lastPos(initPos);
-            brdVec[brdVec.size() - 1].expel();
+            brdVec[brdVec.size() - 1].expel(goalPos.getCastleMask());
             brdVec[brdVec.size() - 1].toPos(lastPos);
             ss << " fen3= " << TextIO::toFEN(lastPos);
         }
@@ -1176,7 +1176,7 @@ MultiBoard::removePieceNo(int square, int pieceNo) {
 }
 
 void
-MultiBoard::expel() {
+MultiBoard::expel(int castleMask) {
     auto getDist = [this](int fromSq, int toSq, bool isKing) {
         int d = BitBoard::getKingDistance(fromSq, toSq);
         if (isKing) {
@@ -1218,17 +1218,23 @@ MultiBoard::expel() {
     for (int i = 0; i < 2; i++) {
         bool white = i == 0;
         int king = white ? Piece::WKING : Piece::BKING;
-        int fromSq = white ? wKingSq : bKingSq;
-        U64 notAllowed = pos.occupiedBB() | PosUtil::attackedSquares(pos, !white);
         int bestSq = -1;
-        for (int toSq = 0; toSq < 64; toSq++) {
-            if (notAllowed & (1ULL << toSq))
-                continue;
-            if (bestSq == -1 || getDist(fromSq, toSq, true) < getDist(fromSq, bestSq, true))
-                bestSq = toSq;
+        if (white && (castleMask & ((1 << Position::A1_CASTLE) | (1 << Position::H1_CASTLE)))) {
+            bestSq = wKingSq;
+        } else if (!white && (castleMask & ((1 << Position::A8_CASTLE) | (1 << Position::H8_CASTLE)))) {
+            bestSq = bKingSq;
+        } else {
+            int fromSq = white ? wKingSq : bKingSq;
+            U64 notAllowed = pos.occupiedBB() | PosUtil::attackedSquares(pos, !white);
+            for (int toSq = 0; toSq < 64; toSq++) {
+                if (notAllowed & (1ULL << toSq))
+                    continue;
+                if (bestSq == -1 || getDist(fromSq, toSq, true) < getDist(fromSq, bestSq, true))
+                    bestSq = toSq;
+            }
+            if (bestSq == -1)
+                throw ChessError("Cannot expel king on square " + TextIO::squareToString(fromSq));
         }
-        if (bestSq == -1)
-            throw ChessError("Cannot expel king on square " + TextIO::squareToString(fromSq));
         pos.setPiece(bestSq, king);
         addPiece(bestSq, king);
     }

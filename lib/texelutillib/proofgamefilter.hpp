@@ -224,7 +224,7 @@ public:
 
     /** Move pieces so there is at most one piece on each square.
      *  Also move kings out of check. */
-    void expel();
+    void expel(int castleMask);
 
     /** Return true if it is possible to push a pawn at least up to toSq without
      *  interference from any other pawn. Also return true if there is no pawn
