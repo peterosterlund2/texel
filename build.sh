@@ -143,6 +143,7 @@ cmake --build build/win32     -j ${para} || exit 2
 cmake --build build/win32old  -j ${para} || exit 2
 cmake --build build/android64 -j ${para} || exit 2
 cmake --build build/android32 -j ${para} || exit 2
+make -C doc
 
 # Copy to bin and strip executables
 mkdir -p bin
@@ -187,8 +188,9 @@ rm -rf texel${VER}.7z texel${VER}
 mkdir texel${VER}
 cp --parents -r \
    CMakeLists.txt build.sh app bin cmake lib test \
-   COPYING readme.txt texelbook.bin \
+   COPYING readme.txt doc texelbook.bin \
    texel${VER}/
+rm doc/.gitignore
 chmod -R ug+w texel${VER}
 7za a texel${VER}.7z texel${VER}
 rm -rf texel${VER}

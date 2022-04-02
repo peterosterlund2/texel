@@ -9,6 +9,7 @@
 /.settings
 **/CMakeFiles
 **/Makefile
+!/doc/Makefile
 **/cmake_install.cmake
 .ninja*
 /build.ninja
