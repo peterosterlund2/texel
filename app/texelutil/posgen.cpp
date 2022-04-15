@@ -806,6 +806,8 @@ const int h1C = 1 << Position::H1_CASTLE;
 const int a8C = 1 << Position::A8_CASTLE;
 const int h8C = 1 << Position::H8_CASTLE;
 
+const int nKingCombs = 3969;
+
 static
 void computeKingData(std::vector<KingData>& kingTable) {
     for (int k1 = 0; k1 < 64; k1++) {
@@ -838,7 +840,6 @@ void
 PosGenerator::randomLegal(int n, U64 rndSeed, int nWorkers, std::ostream& os) {
     std::vector<KingData> kingTable;
     computeKingData(kingTable);
-    const int nKingCombs = 3969;
     assert(kingTable.size() == nKingCombs);
 
     Position startPos = TextIO::readFEN(TextIO::startPosFEN);
@@ -1036,7 +1037,7 @@ PosGenerator::randomLegalSlowPath(const Position& startPos, Position& pos,
         ProofKernel pk(startPos, pos, blocked, ss);
         if (!pk.isGoalPossible())
             return;
-    } catch (const ChessParseError& e) {
+    } catch (const ChessParseError&) {
         return;
     }
 
