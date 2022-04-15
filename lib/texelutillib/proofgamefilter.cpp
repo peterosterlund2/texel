@@ -137,17 +137,18 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
                 line.eraseToken(INFO);
             }
 
-            r.status = line.getStatus();
             if (firstIteration)
-                statusCnt[(int)r.status]++;
+                statusCnt[(int)Legality::INITIAL]++;
 
             r.id = nStarted++;
-            r.reportProgress = firstIteration;
+            r.reportProgress = false;
 
-            auto func = [this,&log,&startPos,maxNodesPrevIteration,r](int workerNo) mutable {
+            auto func = [this,&log,&startPos,maxNodesPrevIteration,r,firstIteration](int workerNo) mutable {
                 std::stringstream strLog;
                 std::ostream& localLog = nWorkers == 1 ? log : strLog;
-                switch (r.status) {
+                Legality status = r.line.getStatus();
+                r.status = firstIteration ? Legality::INITIAL : status;
+                switch (status) {
                 case Legality::INITIAL:
                     computeExtProofKernel(startPos, r.line, localLog);
                     r.workRemains = true;
