@@ -43,6 +43,7 @@
 
 #include <fstream>
 #include <iomanip>
+#include <climits>
 
 bool
 PosGenerator::generate(const std::string& type) {
