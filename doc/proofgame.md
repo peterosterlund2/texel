@@ -442,8 +442,8 @@ This algorithm can handle fairly complicated cases, for example:
 The white king is checked by the knight on b5, so the last move must have been a
 knight move from either c3 or d6 to b5. Proof kernel searches can determine that
 the last move was not a capture, because then the prior positions would not have
-a proof kernel. Since white was in check before the last move, case 2 applies,
-so both prior positions are recursively analyzed. In both cases it is found that
+a proof kernel. Since white is in check in the goal position, case 2 applies, so
+both prior positions are recursively analyzed. In both cases it is found that
 the white bishop on c4 must have gotten there by capturing a piece, since
 otherwise the black king could have been captured. Proof kernel searches however
 show that all positions before a capture on c4 lack a proof kernel. Therefore it
@@ -536,7 +536,7 @@ Blocked squares can easily be taken into account when formulating the shortest
 path problems.
 
 For kings the shortest path calculation also takes into account that if a pawn
-is blocked, the squares attacked by that pawn can never be use by the opponent
+is blocked, the squares attacked by that pawn can never be used by the opponent
 king. For example:
 
 | Start | Goal |
@@ -588,8 +588,7 @@ the node. The heuristic function can handle the following cases:
   the set can move. If any of the unmovable pieces are not at their goal
   squares, this means that the goal position cannot be reached. If all unmovable
   pieces are at their goal squares, it means that those squares are blocked,
-  which can prevent some other piece from reaching its goal position. For
-  example:
+  which can prevent some other piece from reaching its goal square. For example:
 
   | Start | Goal |
   | :---: | :---: |
@@ -635,7 +634,7 @@ additional methods are used to improve its reliability:
   1. Captures are tried before non-captures. The idea is that early captures
      reduce the size of the remaining search space.
 
-  2. Moves getting kings closer to their target position are tried early. The
+  2. Moves getting kings closer to their target squares are tried early. The
      idea is that kings move slowly and must also avoid attacked squares while
      moving, so getting them close to their targets early should simplify
      finding a solution.
@@ -663,7 +662,7 @@ additional methods are used to improve its reliability:
   | ![Image](svg/non_admissible_goal.svg) | ![Image](svg/non_admissible_best.svg) |
 
   In the best node found during search, only two pieces are not at their goal
-  positions. Ra1 needs to move to a4 and Ba7 needs to move to g1. Because the
+  squares. Ra1 needs to move to a4 and Ba7 needs to move to g1. Because the
   heuristic function ignores other pieces, it concludes that at least one move
   is needed for Ra1 to get to a4 and one move for Ba7 to get to g1. It therefore
   returns the value 2 (plies). The real number of moves required to reach the
@@ -725,10 +724,10 @@ of encountered random legal positions.
 #### Random proof kernel
 
 For difficult positions finding a solution is sometimes easier if a different
-proof kernel is used when constructing the path. The `-rndkernel` texelutil
-option can be used to randomize the move ordering during proof kernel search,
-thereby letting the search find different proof kernels than the default search
-would find. This option is not used by default since the search can take
+proof kernel is used when constructing the initial path. The `-rndkernel`
+texelutil option can be used to randomize the move ordering during proof kernel
+search, thereby letting the search find different proof kernels than the default
+search would find. This option is not used by default since the search can take
 significantly longer if the move ordering is bad.
 
 Using several attempts with randomized proof kernel search and different random
@@ -737,13 +736,12 @@ encountered random legal positions.
 
 ## Difficult cases
 
-It seems inevitable that some positions will be too hard to be solved
-automatically by the program. This does not mean that a human must solve the
-problem completely unassisted though. If the program fails to find a solution it
-logs the found proof kernel, the extended proof kernel, the initial path (if
-found) and the moves leading to the best position found during search (if
-found). This information can be inspected by the human to determine what the
-problem is.
+It seems inevitable that some positions will be too hard to solve automatically
+by the program. This does not mean that a human must solve the problem
+completely unassisted though. If the program fails to find a solution it logs
+the found proof kernel, the extended proof kernel, the initial path (if found)
+and the moves leading to the best position found during search (if found). This
+information can be inspected by the human to determine what the problem is.
 
 If the position is legal but no proof game is found, the move sequence
 corresponding to the best position found during search could be loaded into a
@@ -754,7 +752,7 @@ If the position is illegal but still has an extended proof kernel, the
 `texelutil proofkernel` function can be used to get a list of all possible proof
 kernels. This list can sometimes be used to prove useful properties such as "the
 white a pawn must capture the black b pawn" or "the black c pawn does not
-capture anything", which can then be used as a building block in the full
+capture anything", which can then be used as building blocks in the full
 illegality proof.
 
 # `texelutil` command line syntax
