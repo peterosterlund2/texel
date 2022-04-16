@@ -128,8 +128,8 @@ A state in the proof kernel space is defined as follows:
 
 1. There are 8 files, corresponding to the a-h files in a normal chess
    position.
-2. Each file contains 0 or more pawns in a specified order. This arrangent of
-   pawns is refered to as a *pawn column*. Note that there are no actual squares
+2. Each file contains 0 or more pawns in a specified order. This arrangement of
+   pawns is referred to as a *pawn column*. Note that there are no actual squares
    in this state. Only the order of the pawns matters.
 3. The number of non-pawn pieces for each piece type and color is included in
    the state, but the position of the non-pawn pieces are not included in the
@@ -166,7 +166,7 @@ A move in the proof kernel space is described by a string that has the following
    needed because unlike regular chess moves, the same side can make several
    moves in a row in the proof kernel space.
 
-2. The type of the moving piece. However, because the position of none-pawn
+2. The type of the moving piece. However, because the position of non-pawn
    pieces is not included in the state, this part is either "P" or an empty
    string.
 
@@ -190,7 +190,8 @@ A move in the proof kernel space is described by a string that has the following
 
 8. The index in the pawn column of the moving pawn after the capture, or the
    index of the captured pawn before it was captured. For moves not involving
-   pawns, this is an empty string.
+   pawns, this is an empty string. For pawn promotions, the promoted piece is
+   used instead of the index.
 
 Some examples could make this easier to understand:
 
@@ -248,7 +249,7 @@ complete. There are some tricks available to speed up the search though:
    3. If a pawn column contains too few pawns, additional captures are needed,
       but since a pawn can only move to an adjacent column in each move,
       additional captures are needed if the closest available pawn is far away.
-      If the number of required captures are larger than the number of remaining
+      If the number of required captures is larger than the number of remaining
       moves, the node can be pruned.
 
    4. If no additional captures are made, the maximum number of dark/light
@@ -267,8 +268,8 @@ complete. There are some tricks available to speed up the search though:
 
 These techniques work quite well in practice. Most positions are either illegal
 or so "close" to illegal that pruning removes most of the search tree, or they
-are legal "with a wide margin" so that move ordering does a good job of finding
-a solution without having to explore too much of the search space.
+are legal "by a wide margin" so that move ordering does a good job of finding a
+solution without having to explore too much of the search space.
 
 There are of course hard positions too, where a large search tree is needed, but
 those positions tend to be rare in random samples of positions. The total time
@@ -509,7 +510,7 @@ a2 to c8 is computed assuming that no other pieces (except for blocked squares)
 are present on the board. There are well known algorithm for solving such
 shortest path problems efficiently.
 
-In many cases it is not given which piece in the start position should go to
+In many cases it is not a given which piece in the start position should go to
 which square in the goal position. Consider the following example:
 
 | Start | Goal |
@@ -565,9 +566,9 @@ the node. The heuristic function can handle the following cases:
   | :---: |
   | ![Image](svg/pawn_cone_1.svg) |
 
-  The marked squares correspond to squares on which a white pawn can reach f5,
+  The marked squares correspond to squares from which a white pawn can reach f5,
   assuming there are enough available captures for the pawn. Because of the way
-  pawn moves, the number of white pawns in such a pawn cone can never increase.
+  pawns move, the number of white pawns in such a pawn cone can never increase.
   (For black the pawn cone has the opposite direction.) This means that if a
   pawn cone is found that contains more pawns in the goal position than in the
   current position, the goal position cannot be reached.
