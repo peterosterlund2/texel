@@ -67,11 +67,30 @@ therefore have one more property:
 
 4. N is not too large.
 
-This is what the ChessPositionRanking project does. It defines S such that N =
-8.7e45 and provides conversion functions between integers and elements in S.
+This is roughly (but see next section) what the ChessPositionRanking project
+does. It defines S such that N = 8.7e45 and provides conversion functions
+between integers and elements in S.
 
 Given a suitable S, the remaining problem is to determine if a random element in
 S is a legal chess position or not.
+
+## Handling duplicate positions in S
+
+It may be more convenient to let S be a multiset, so that the same element can
+appear more than once in S. Such a multiset can also be used to estimate the
+number of legal chess positions if the following property also holds:
+
+5. For each legal position P_i, it is possible to calculate how many times (m_i)
+   it occurs in the multiset S.
+
+An unbiased estimate of the number of legal chess positions is then
+
+```
+(sum 1/m_i) / sample_size * N
+```
+
+where the sum is taken over all legal chess positions P_i in the sample. This is
+how the ChessPositionRanking project actually defines S.
 
 # Determining if a specific chess position is legal
 
