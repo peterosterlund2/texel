@@ -575,7 +575,7 @@ the node. The heuristic function can handle the following cases:
 * There are too few remaining pieces in the current position.
 
 * The assignment problem has no solution. This can happen for several reasons,
-  but a common case is that a bishop needs to get to a a8 (or another corner
+  but a common case is that a bishop needs to get to a8 (or another corner
   square), but there is a blocked pawn on b7 preventing any bishop from reaching
   a8.
 
