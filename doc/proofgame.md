@@ -526,7 +526,7 @@ For the proof game problem, the relaxed problem is constructed by assuming that
 pieces do not interfere with each other. For example, if a piece needs to move
 from a2 in the start position to c8 in the goal position, a shortest path from
 a2 to c8 is computed assuming that no other pieces (except for blocked squares)
-are present on the board. There are well known algorithm for solving such
+are present on the board. There are well known algorithms for solving such
 shortest path problems efficiently.
 
 In many cases it is not a given which piece in the start position should go to
@@ -1058,7 +1058,7 @@ texelutil rndfen 10 | texelutil proofgame -f -o out 2>/dev/null
 
 [7] A* search algorithm: https://en.wikipedia.org/wiki/A*_search_algorithm
 
-[8] Best-first search: https://en.wikipedia.org/wiki/Best-first_search
+[8] Breadth-first search: https://en.wikipedia.org/wiki/Breadth-first_search
 
 [9] Shortest path problem: https://en.wikipedia.org/wiki/Shortest_path_problem
 
