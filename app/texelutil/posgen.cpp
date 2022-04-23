@@ -1043,5 +1043,5 @@ PosGenerator::randomLegalSlowPath(const Position& startPos, Position& pos,
     }
 
     std::lock_guard<std::mutex> L(mutex);
-    os << TextIO::toFEN(pos) << std::endl;
+    os << fen << std::endl;
 }
