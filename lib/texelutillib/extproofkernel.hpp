@@ -37,7 +37,7 @@ class ExtProofKernel {
 public:
     /** Constructor. */
     ExtProofKernel(const Position& initialPos, const Position& goalPos,
-                   std::ostream& log = std::cerr, bool silent = false);
+                   std::ostream& log = std::clog, bool silent = false);
 
     using PieceColor = ProofKernel::PieceColor;
     using PieceType = ProofKernel::PieceType;

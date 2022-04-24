@@ -35,7 +35,7 @@
 class CspSolver {
     friend class CspSolverTest;
 public:
-    CspSolver(std::ostream& log = std::cerr, bool silent = false);
+    CspSolver(std::ostream& log = std::clog, bool silent = false);
 
     /** Minimum supported variable value. */
     constexpr static int minAllowedValue = -16;

@@ -51,7 +51,7 @@ class ProofKernel {
 public:
     /** Constructor. */
     ProofKernel(const Position& initialPos, const Position& goalPos, U64 blocked,
-                std::ostream& log = std::cerr);
+                std::ostream& log = std::clog);
 
     /** Set random seed used for breaking ties between positions having the same
      *  priority in the A* search. */

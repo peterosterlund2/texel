@@ -103,7 +103,7 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
                                  bool firstIteration,
                                  bool showProgress, bool retry,
                                  int& maxNodesAllPos) {
-    std::ostream& log = std::cerr;
+    std::ostream& log = std::clog;
     bool workRemains = false;
     const Position startPos = TextIO::readFEN(TextIO::startPosFEN);
 
