@@ -190,7 +190,7 @@ cp --parents -r \
    CMakeLists.txt build.sh app bin cmake lib test \
    COPYING readme.txt doc texelbook.bin \
    texel${VER}/
-rm doc/.gitignore
+rm texel${VER}/doc/.gitignore
 chmod -R ug+w texel${VER}
 7za a texel${VER}.7z texel${VER}
 rm -rf texel${VER}
