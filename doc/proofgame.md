@@ -539,7 +539,7 @@ which square in the goal position. Consider the following example:
 The knight on a2 can reach c3 in 1 move and c8 in 4 moves. The knight on f2 can
 reach c3 in 2 moves and c8 in 3 moves. If the a2 knight goes to c3 and the f2
 knight goes to c8, the total cost is 1+3=4. If the a2 knight goes to c8 and the
-f2 knight goes to c3, the total cost is 4+2=5. Finding the best way to decide
+f2 knight goes to c3, the total cost is 4+2=6. Finding the best way to decide
 which piece should go where can be formulated as an instance of the *assignment
 problem*, which can be solved efficiently using the *Hungarian method*.
 
