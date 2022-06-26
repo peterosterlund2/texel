@@ -697,6 +697,65 @@ ChessTool::searchPositions(std::istream& is, int baseTime, int increment) {
 }
 
 void
+ChessTool::fen2bin(std::istream& is, const std::string& outFile) {
+    struct Record {
+        S8 wKing;         // 64,65,66 = Ke1 with castling flags K, Q, KQ
+        S8 bKing;
+        S8 nPieces[9];    // No of pieces of type WQ, WR, WB, WN, WP, BQ, BR, BB, BN (cumulative)
+        S8 squares[30];   // Position for each piece, -1 for captured pieces
+        S8 halfMoveClock;
+        S16 searchScore;
+    };
+    static_assert(sizeof(Record) == 44, "Unsupported struct packing");
+
+    std::ofstream os;
+    os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
+    os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+    Position pos;
+    Record r;
+    std::string line;
+    while (true) {
+        std::getline(is, line);
+        if (!is || is.eof())
+            break;
+
+        std::vector<std::string> fields;
+        splitString(line, " : ", fields);
+
+        pos = TextIO::readFEN(fields[0]);
+        bool flip = !pos.isWhiteMove();
+        if (flip)
+            pos = PosUtil::swapColors(pos);
+
+        r.wKing = pos.getKingSq(true);
+        r.bKing = pos.getKingSq(false);
+        r.halfMoveClock = pos.getHalfMoveClock();
+        if (!str2Num(fields[2], r.searchScore))
+            throw ChessParseError("Invalid score: " + line);
+        if (flip)
+            r.searchScore *= -1;
+
+        int p = 0;
+        int i = 0;
+        for (Piece::Type pt : {Piece::WQUEEN, Piece::WROOK, Piece::WBISHOP, Piece::WKNIGHT, Piece::WPAWN,
+                               Piece::BQUEEN, Piece::BROOK, Piece::BBISHOP, Piece::BKNIGHT, Piece::BPAWN}) {
+            U64 mask = pos.pieceTypeBB(pt);
+            while (mask) {
+                int sq = BitBoard::extractSquare(mask);
+                r.squares[i++] = sq;
+            }
+            if (p < 9)
+                r.nPieces[p++] = i;
+        }
+        while (i < 30)
+            r.squares[i++] = -1;
+
+        os.write((const char*)&r, sizeof(Record));
+    }
+}
+
+void
 ChessTool::evalEffect(std::istream& is, const std::vector<ParamValue>& parValues) {
     std::vector<PositionInfo> positions;
     readFENFile(is, positions);

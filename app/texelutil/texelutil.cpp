@@ -93,11 +93,14 @@ usage() {
     std::cerr << "                                     -m treat bishop and knight as same type\n";
     std::cerr << "        mtrl [-m] wQ wR wB [wN] wP bQ bR bB [bN] bP : material satisfies pattern\n";
     std::cerr << "                                     -m treat bishop and knight as same type\n";
+    std::cerr << "\n";
 #if !_MSC_VER
     std::cerr << " search script : Update search score in FEN file by running script on all lines\n";
 #endif
     std::cerr << " qsearch : Update positions in FEN file to position at end of q-search\n";
     std::cerr << " searchfens time inc : Search all positions in FEN file\n";
+    std::cerr << " fen2bin outFile     : Convert FEN+score data to binary format\n";
+    std::cerr << "\n";
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
     std::cerr << " evaleffect evalfile : Print eval improvement when parameters are changed\n";
     std::cerr << " pawnadv  : Compute evaluation error for different pawn advantage\n";
@@ -612,6 +615,11 @@ main(int argc, char* argv[]) {
                 !str2Num(argv[3], increment) || (increment < 0))
                 usage();
             chessTool.searchPositions(std::cin, baseTime, increment);
+        } else if (cmd == "fen2bin") {
+            if (argc != 3)
+                usage();
+            std::string outFile = argv[2];
+            chessTool.fen2bin(std::cin, outFile);
         } else if (cmd == "outliers") {
             int threshold;
             if ((argc < 3) || !str2Num(argv[2], threshold))
