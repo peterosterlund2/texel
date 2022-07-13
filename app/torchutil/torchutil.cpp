@@ -91,7 +91,8 @@ struct Record {
 static_assert(sizeof(Record) == 44, "Unsupported struct packing");
 
 
-void toSparse(const Record& r, std::vector<int>& idxVec) {
+void
+toSparse(const Record& r, std::vector<int>& idxVec) {
     int pieceType = 0;
     int k1 = r.wKing;
     int k2 = r.bKing;
@@ -107,8 +108,9 @@ void toSparse(const Record& r, std::vector<int>& idxVec) {
 }
 
 template <typename DataSet>
-void getData(DataSet& ds, size_t beg, size_t end,
-             torch::Tensor& in, torch::Tensor& out) {
+void
+getData(DataSet& ds, size_t beg, size_t end,
+        torch::Tensor& in, torch::Tensor& out) {
     int batchSize = end - beg;
     Record r;
     std::vector<int> idxVec1;
@@ -154,11 +156,13 @@ DataSet::DataSet(const std::string& filename) {
     size = fs.tellg() / sizeof(Record);
 }
 
-inline S64 DataSet::getSize() const {
+inline S64
+DataSet::getSize() const {
     return size;
 }
 
-void DataSet::getItem(S64 idx, Record& r) {
+void
+DataSet::getItem(S64 idx, Record& r) {
     S64 offs = idx * sizeof(Record);
     fs.seekg(offs, std::ios_base::beg);
     fs.read((char*)&r, sizeof(Record));
@@ -280,7 +284,8 @@ Net::forward(torch::Tensor x) {
 
 // ------------------------------------------------------------------------------
 
-void setLR(torch::optim::Optimizer& opt, double lr) {
+void
+setLR(torch::optim::Optimizer& opt, double lr) {
     for (auto& group : opt.param_groups()) {
         if (group.has_options()) {
             auto& options = static_cast<torch::optim::OptimizerOptions&>(group.options());
@@ -289,11 +294,13 @@ void setLR(torch::optim::Optimizer& opt, double lr) {
     }
 }
 
-torch::Tensor toProb(torch::Tensor score) {
+torch::Tensor
+toProb(torch::Tensor score) {
     return 1 / (1 + pow(10, score * (-113.0 / 400)));
 }
 
-void train(const std::string& inFile) {
+void
+train(const std::string& inFile) {
     auto dev = torch::kCUDA;
     const double t0 = currentTime();
 
@@ -410,9 +417,9 @@ void
 usage() {
     std::cerr << "Usage: torchutil cmd params\n";
     std::cerr << "cmd is one of:\n";
-    std::cerr << " train infile\n";
-    std::cerr << " eval modelfile fen\n";
-    std::cerr << " subset infile nPos outfile\n";
+    std::cerr << " train infile       : Train network from data in infile\n";
+    std::cerr << " eval modelfile fen : Evalute position using a saved network\n";
+    std::cerr << " subset infile nPos outfile : Extract positions from infile, write to outfile\n";
     std::cerr << std::flush;
     ::exit(2);
 }
