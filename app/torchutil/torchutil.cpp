@@ -395,8 +395,14 @@ void train(const std::string& inFile) {
     }
 }
 
-// net.load_state_dict(torch.load("net"))
-// torch.save(net.state_dict(), "net")
+// ------------------------------------------------------------------------------
+
+void
+eval(const std::string& modelFile, const std::string& fen) {
+    auto netP = std::make_shared<Net>();
+    Net& net = *netP;
+    torch::load(netP, modelFile.c_str());
+}
 
 // ------------------------------------------------------------------------------
 
@@ -405,6 +411,7 @@ usage() {
     std::cerr << "Usage: torchutil cmd params\n";
     std::cerr << "cmd is one of:\n";
     std::cerr << " train infile\n";
+    std::cerr << " eval modelfile fen\n";
     std::cerr << " subset infile nPos outfile\n";
     std::cerr << std::flush;
     ::exit(2);
@@ -421,6 +428,12 @@ int main(int argc, const char* argv[]) {
                 usage();
             std::string inFile = argv[2];
             train(inFile);
+        } else if (cmd == "eval") {
+            if (argc != 4)
+                usage();
+            std::string modelFile = argv[2];
+            std::string fen = argv[3];
+            eval(modelFile, fen);
         } else if (cmd == "subset") {
             if (argc != 5)
                 usage();
