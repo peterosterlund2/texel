@@ -13,6 +13,7 @@ set(src_texelutillib
   bookbuild.cpp       bookbuild.hpp
   gametree.cpp        gametree.hpp
                       gametreeutil.hpp
+  nnutil.cpp          nnutil.hpp
   posutil.cpp         posutil.hpp
   revmovegen.cpp      revmovegen.hpp
                       stloutput.hpp

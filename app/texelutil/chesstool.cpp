@@ -39,6 +39,7 @@
 #include "logger.hpp"
 #include "random.hpp"
 #include "posutil.hpp"
+#include "nnutil.hpp"
 
 #include <queue>
 #include <unordered_set>
@@ -698,16 +699,7 @@ ChessTool::searchPositions(std::istream& is, int baseTime, int increment) {
 
 void
 ChessTool::fen2bin(std::istream& is, const std::string& outFile) {
-    struct Record {
-        S8 wKing;         // 64,65,66 = Ke1 with castling flags K, Q, KQ
-        S8 bKing;
-        S8 nPieces[9];    // No of pieces of type WQ, WR, WB, WN, WP, BQ, BR, BB, BN (cumulative)
-        S8 squares[30];   // Position for each piece, -1 for captured pieces
-        S8 halfMoveClock;
-        S16 searchScore;
-    };
-    static_assert(sizeof(Record) == 44, "Unsupported struct packing");
-
+    using Record = NNUtil::Record;
     std::ofstream os;
     os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
     os.exceptions(std::ifstream::failbit | std::ifstream::badbit);

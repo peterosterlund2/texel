@@ -1,6 +1,7 @@
 #include "util.hpp"
 #include "random.hpp"
 #include "timeUtil.hpp"
+#include "nnutil.hpp"
 
 #include <torch/torch.h>
 #include <vector>
@@ -79,17 +80,7 @@ RandPerm::getNumBits(U64 upperBound) {
 // ------------------------------------------------------------------------------
 
 const int inFeatures = 2 * 64 * 10 * 64;
-
-struct Record {
-    S8 wKing;         // 64,65,66 = Ke1 with castling flags K, Q, KQ
-    S8 bKing;
-    S8 nPieces[9];    // No of pieces of type WQ, WR, WB, WN, WP, BQ, BR, BB, BN (cumulative)
-    S8 squares[30];   // Position for each piece, -1 for captured pieces
-    S8 halfMoveClock;
-    S16 searchScore;
-};
-static_assert(sizeof(Record) == 44, "Unsupported struct packing");
-
+using Record = NNUtil::Record;
 
 void
 toSparse(const Record& r, std::vector<int>& idxVec) {
