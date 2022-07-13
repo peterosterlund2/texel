@@ -1,3 +1,4 @@
+#include "util.hpp"
 #include "random.hpp"
 #include "timeUtil.hpp"
 
@@ -9,11 +10,6 @@
 #include <cstdint>
 #include <bitset>
 #include <chrono>
-
-using S8 = int8_t;
-using S16 = int16_t;
-using S64 = int64_t;
-using U64 = uint64_t;
 
 // ------------------------------------------------------------------------------
 
@@ -140,7 +136,7 @@ void getData(DataSet& ds, size_t beg, size_t end,
 
 class DataSet {
 public:
-    DataSet();
+    DataSet(const std::string& filename);
 
     S64 getSize() const;
     void getItem(S64 idx, Record& r);
@@ -150,8 +146,8 @@ private:
     S64 size;
 };
 
-DataSet::DataSet() {
-    std::string filename("positions.bin");
+DataSet::DataSet(const std::string& filename) {
+    fs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     fs.open(filename.c_str(), std::ios_base::in |
                               std::ios_base::binary);
     fs.seekg(0, std::ios_base::end);
@@ -235,6 +231,24 @@ SubDataSet<Base>::getItem(S64 idx, Record& r) {
 
 // ------------------------------------------------------------------------------
 
+void
+extractSubset(const std::string& inFile, S64 nPos, const std::string& outFile) {
+    DataSet allData(inFile);
+    ShuffledDataSet<DataSet> shuffled(allData, 17);
+    Record r;
+
+    std::ofstream os;
+    os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
+    os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+    for (S64 i = 0; i < nPos; i++) {
+        shuffled.getItem(i, r);
+        os.write((const char*)&r, sizeof(Record));
+    }
+}
+
+// ------------------------------------------------------------------------------
+
 class Net : public torch::nn::Module {
 public:
     Net();
@@ -279,7 +293,7 @@ torch::Tensor toProb(torch::Tensor score) {
     return 1 / (1 + pow(10, score * (-113.0 / 400)));
 }
 
-void train() {
+void train(const std::string& inFile) {
     auto dev = torch::kCUDA;
     const double t0 = currentTime();
 
@@ -293,7 +307,7 @@ void train() {
             nPars += p.numel();
     std::cout << "Number of parameters: " << nPars << std::endl;
 
-    DataSet allData;
+    DataSet allData(inFile);
     const size_t nData = allData.getSize();
     const size_t nTrain = nData * 9 / 10;
     const size_t nValidate = nData - nTrain;
@@ -381,35 +395,45 @@ void train() {
     }
 }
 
+// net.load_state_dict(torch.load("net"))
+// torch.save(net.state_dict(), "net")
+
+// ------------------------------------------------------------------------------
+
 void
-extractSubset() {
-    DataSet allData;
-    ShuffledDataSet<DataSet> shuffled(allData, 17);
-    Record r;
-
-    std::ofstream os;
-    os.open("out.bin", std::ios_base::out | std::ios_base::binary);
-    os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-
-    for (size_t i = 0; i < 10'000'000; i++) {
-        shuffled.getItem(i, r);
-        os.write((const char*)&r, sizeof(Record));
-    }
+usage() {
+    std::cerr << "Usage: torchutil cmd params\n";
+    std::cerr << "cmd is one of:\n";
+    std::cerr << " train infile\n";
+    std::cerr << " subset infile nPos outfile\n";
+    std::cerr << std::flush;
+    ::exit(2);
 }
 
-/*
-def train():
-    // net.load_state_dict(torch.load("net"))
-
-    torch.save(net.state_dict(), "net")
-
-if __name__ == '__main__':
-//    net.load_state_dict(torch.load("net"))
-//    net = net.to("cpu")
-//    net.eval()
-*/
-
 int main(int argc, const char* argv[]) {
-//    extractSubset();
-    train();
+    try {
+        if (argc < 2)
+            usage();
+
+        std::string cmd = argv[1];
+        if (cmd == "train") {
+            if (argc != 3)
+                usage();
+            std::string inFile = argv[2];
+            train(inFile);
+        } else if (cmd == "subset") {
+            if (argc != 5)
+                usage();
+            std::string inFile = argv[2];
+            S64 nPos;
+            if (!str2Num(argv[3], nPos) || nPos <= 0)
+                usage();
+            std::string outFile = argv[4];
+            extractSubset(inFile, nPos, outFile);
+        } else {
+            usage();
+        }
+    } catch (std::exception& ex) {
+        std::cerr << "Error: " << ex.what() << std::endl;
+    }
 }
