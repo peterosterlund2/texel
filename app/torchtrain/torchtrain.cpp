@@ -1,3 +1,5 @@
+#include "random.hpp"
+
 #include <torch/torch.h>
 #include <vector>
 #include <iostream>
@@ -13,14 +15,6 @@ using S64 = int64_t;
 using U64 = uint64_t;
 
 // ------------------------------------------------------------------------------
-
-inline U64 hashU64(U64 v) {
-    v *= 0x7CF9ADC6FE4A7653ULL;
-    v ^= v >> 37;
-    v *= 0xC25D3F49433E7607ULL;
-    v ^= v >> 43;
-    return v;
-}
 
 double currentTime() {
     using namespace std::chrono;
