@@ -5,7 +5,7 @@ set(src_bookgui
   )
 
 set(all_ok false)
-if(NOT CMAKE_CROSS_COMPILING)
+if(NOT CMAKE_CROSSCOMPILING)
   find_package(PkgConfig)
   if(PKG_CONFIG_FOUND)
     pkg_check_modules(GTKMM IMPORTED_TARGET gtkmm-3.0)
