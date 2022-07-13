@@ -1,4 +1,5 @@
 #include "random.hpp"
+#include "timeUtil.hpp"
 
 #include <torch/torch.h>
 #include <vector>
@@ -15,13 +16,6 @@ using S64 = int64_t;
 using U64 = uint64_t;
 
 // ------------------------------------------------------------------------------
-
-double currentTime() {
-    using namespace std::chrono;
-    auto t = high_resolution_clock::now();
-    auto t0 = t.time_since_epoch();
-    return duration<double>(t0).count();
-}
 
 /** Generates a pseudo-random permutation of 0, 1, ..., upperBound-1. */
 class RandPerm {
