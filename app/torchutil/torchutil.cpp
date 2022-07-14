@@ -424,34 +424,51 @@ train(const std::string& inFile) {
 
 void
 eval(const std::string& modelFile, const std::string& fen) {
-    Position pos = TextIO::readFEN(fen);
-
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
     torch::load(netP, modelFile.c_str());
     net.to(torch::kCPU);
 
-    Record r;
-    NNUtil::posToRecord(pos, 0, r);
-
-    std::vector<int> idxVec;
-    toSparse(r, idxVec);
-    const int nnz = idxVec.size();
-
-    torch::Tensor indices = torch::empty({2, nnz}, torch::kI64);
-    auto acc = indices.accessor<S64,2>();
-    for (int i = 0; i < nnz; i++) {
-        acc[0][i] = 0;
-        acc[1][i] = idxVec[i];
-    }
+    bool fromStdIn = fen == "-";
+    std::istream& is = std::cin;
 
     c10::NoGradGuard noGrad;
-    torch::Tensor values = torch::ones({nnz}, torch::kF32);
-    torch::Tensor in = sparse_coo_tensor(indices, values, {1, inFeatures});
+    while (true) {
+        Position pos;
+        if (fromStdIn) {
+            std::string line;
+            std::getline(is, line);
+            if (!is || is.eof())
+                break;
+            pos = TextIO::readFEN(line);
+        } else {
+            pos = TextIO::readFEN(fen);
+        }
 
-    torch::Tensor out = net.forward(in);
-    double val = out.item<double>();
-    std::cout << "val: " << val << " prob: " << toProb(val) << std::endl;
+        Record r;
+        NNUtil::posToRecord(pos, 0, r);
+
+        std::vector<int> idxVec;
+        toSparse(r, idxVec);
+        const int nnz = idxVec.size();
+
+        torch::Tensor indices = torch::empty({2, nnz}, torch::kI64);
+        auto acc = indices.accessor<S64,2>();
+        for (int i = 0; i < nnz; i++) {
+            acc[0][i] = 0;
+            acc[1][i] = idxVec[i];
+        }
+
+        torch::Tensor values = torch::ones({nnz}, torch::kF32);
+        torch::Tensor in = sparse_coo_tensor(indices, values, {1, inFeatures});
+
+        torch::Tensor out = net.forward(in);
+        double val = out.item<double>();
+        std::cout << "val: " << val << " prob: " << toProb(val) << std::endl;
+
+        if (!fromStdIn)
+            break;
+    }
 }
 
 // ------------------------------------------------------------------------------
