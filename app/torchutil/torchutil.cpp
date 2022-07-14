@@ -1,6 +1,32 @@
+/*
+    Texel - A UCI chess engine.
+    Copyright (C) 2022  Peter Österlund, peterosterlund2@gmail.com
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+ * torchutil.cpp
+ *
+ *  Created on: Jul 11, 2022
+ *      Author: petero
+ */
+
 #include "util.hpp"
 #include "random.hpp"
 #include "timeUtil.hpp"
+#include "textio.hpp"
 #include "nnutil.hpp"
 
 #include <torch/torch.h>
@@ -285,8 +311,9 @@ setLR(torch::optim::Optimizer& opt, double lr) {
     }
 }
 
-torch::Tensor
-toProb(torch::Tensor score) {
+template <typename T>
+T
+toProb(T score) {
     return 1 / (1 + pow(10, score * (-113.0 / 400)));
 }
 
@@ -397,9 +424,34 @@ train(const std::string& inFile) {
 
 void
 eval(const std::string& modelFile, const std::string& fen) {
+    Position pos = TextIO::readFEN(fen);
+
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
     torch::load(netP, modelFile.c_str());
+    net.to(torch::kCPU);
+
+    Record r;
+    NNUtil::posToRecord(pos, 0, r);
+
+    std::vector<int> idxVec;
+    toSparse(r, idxVec);
+    const int nnz = idxVec.size();
+
+    torch::Tensor indices = torch::empty({2, nnz}, torch::kI64);
+    auto acc = indices.accessor<S64,2>();
+    for (int i = 0; i < nnz; i++) {
+        acc[0][i] = 0;
+        acc[1][i] = idxVec[i];
+    }
+
+    c10::NoGradGuard noGrad;
+    torch::Tensor values = torch::ones({nnz}, torch::kF32);
+    torch::Tensor in = sparse_coo_tensor(indices, values, {1, inFeatures});
+
+    torch::Tensor out = net.forward(in);
+    double val = out.item<double>();
+    std::cout << "val: " << val << " prob: " << toProb(val) << std::endl;
 }
 
 // ------------------------------------------------------------------------------
@@ -409,7 +461,7 @@ usage() {
     std::cerr << "Usage: torchutil cmd params\n";
     std::cerr << "cmd is one of:\n";
     std::cerr << " train infile       : Train network from data in infile\n";
-    std::cerr << " eval modelfile fen : Evalute position using a saved network\n";
+    std::cerr << " eval modelfile fen : Evaluate position using a saved network\n";
     std::cerr << " subset infile nPos outfile : Extract positions from infile, write to outfile\n";
     std::cerr << std::flush;
     ::exit(2);
