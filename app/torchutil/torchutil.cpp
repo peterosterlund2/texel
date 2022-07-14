@@ -28,6 +28,7 @@
 #include "timeUtil.hpp"
 #include "textio.hpp"
 #include "nnutil.hpp"
+#include "square.hpp"
 
 #include <torch/torch.h>
 #include <vector>
@@ -105,50 +106,54 @@ RandPerm::getNumBits(U64 upperBound) {
 
 // ------------------------------------------------------------------------------
 
-const int inFeatures = 2 * 64 * 10 * 64;
+const int inFeatures = 64 * 10 * 64;
 using Record = NNUtil::Record;
 
 void
-toSparse(const Record& r, std::vector<int>& idxVec) {
+toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) {
     int pieceType = 0;
     int k1 = r.wKing;
-    int k2 = r.bKing;
+    int k2 = Square::mirrorY(r.bKing);
     for (int i = 0; i < 30; i++) {
         while (pieceType < 9 && i >= r.nPieces[pieceType])
             pieceType++;
         int sq = r.squares[i];
         if (sq == -1)
             continue;
-        idxVec.push_back(((     k1) * 10 + pieceType) * 64 + sq);
-        idxVec.push_back(((64 + k2) * 10 + pieceType) * 64 + sq);
+        int oPieceType = (pieceType + 5) % 10;
+        idxVecW.push_back((k1 * 10 +  pieceType) * 64 + sq);
+        idxVecB.push_back((k2 * 10 + oPieceType) * 64 + Square::mirrorY(sq));
     }
 }
 
 template <typename DataSet>
 void
 getData(DataSet& ds, size_t beg, size_t end,
-        torch::Tensor& in, torch::Tensor& out) {
+        torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out) {
     int batchSize = end - beg;
     Record r;
-    std::vector<int> idxVec1;
+    std::vector<int> idxVec1W;
+    std::vector<int> idxVec1B;
     std::vector<int> idxVec2;
     out = torch::empty({batchSize, 1}, torch::kF32);
     for (int b = 0; b < batchSize; b++) {
         ds.getItem(beg + b, r);
-        toSparse(r, idxVec1);
-        idxVec2.resize(idxVec1.size(), b);
+        toSparse(r, idxVec1W, idxVec1B);
+        idxVec2.resize(idxVec1W.size(), b);
         out[b][0] = r.searchScore * 1e-2;
     }
-    int nnz = idxVec1.size();
+    int nnz = idxVec1W.size();
 
-    torch::Tensor indices = torch::empty({2, nnz}, torch::kI64);
-    auto acc = indices.accessor<S64,2>();
-    for (int i = 0; i < nnz; i++) {
-        acc[0][i] = idxVec2[i];
-        acc[1][i] = idxVec1[i];
+    for (int c = 0; c < 2; c++) {
+        torch::Tensor indices = torch::empty({2, nnz}, torch::kI64);
+        auto acc = indices.accessor<S64,2>();
+        for (int i = 0; i < nnz; i++) {
+            acc[0][i] = idxVec2[i];
+            acc[1][i] = c == 0 ? idxVec1W[i] : idxVec1B[i];
+        }
+        torch::Tensor values = torch::ones({nnz}, torch::kF32);
+        (c == 0 ? inW : inB) = sparse_coo_tensor(indices, values, {batchSize, inFeatures});
     }
-    torch::Tensor values = torch::ones({nnz}, torch::kF32);
-    in = sparse_coo_tensor(indices, values, {batchSize, inFeatures});
 }
 
 // ------------------------------------------------------------------------------
@@ -274,7 +279,7 @@ class Net : public torch::nn::Module {
 public:
     Net();
 
-    torch::Tensor forward(torch::Tensor x);
+    torch::Tensor forward(torch::Tensor xW, torch::Tensor xB);
 
 private:
     torch::nn::Linear lin1 = nullptr; const int n1 = 256;
@@ -285,14 +290,17 @@ private:
 
 Net::Net() {
     lin1 = register_module("lin1", torch::nn::Linear(inFeatures, n1));
-    lin2 = register_module("lin2", torch::nn::Linear(n1, n2));
+    lin2 = register_module("lin2", torch::nn::Linear(n1*2, n2));
     lin3 = register_module("lin3", torch::nn::Linear(n2, n3));
     lin4 = register_module("lin4", torch::nn::Linear(n3, 1));
 }
 
 torch::Tensor
-Net::forward(torch::Tensor x) {
-    x = torch::relu(lin1->forward(x));
+Net::forward(torch::Tensor xW, torch::Tensor xB) {
+    xW = torch::relu(lin1->forward(xW));
+    xB = torch::relu(lin1->forward(xB));
+    torch::Tensor x = torch::hstack({xW, xB});
+
     x = torch::relu(lin2->forward(x));
     x = torch::relu(lin3->forward(x));
     x = lin4->forward(x);
@@ -360,14 +368,15 @@ train(const std::string& inFile) {
         for (size_t batch = 0, beg = 0; beg < nTrain; batch++, beg += batchSize) {
             size_t end = std::min(beg + batchSize, nTrain);
 
-            torch::Tensor input;
+            torch::Tensor inputW, inputB;
             torch::Tensor target;
-            getData(epochTrainData, beg, end, input, target);
-            input = input.to(dev);
+            getData(epochTrainData, beg, end, inputW, inputB, target);
+            inputW = inputW.to(dev);
+            inputB = inputB.to(dev);
             target = target.to(dev);
 
             optimizer.zero_grad();
-            torch::Tensor output = net.forward(input);
+            torch::Tensor output = net.forward(inputW, inputB);
 
             torch::Tensor loss = mse_loss(toProb(output), toProb(target));
             loss.backward();
@@ -393,13 +402,14 @@ train(const std::string& inFile) {
             for (size_t batch = 0, beg = 0; beg < nValidate; batch++, beg += batchSize) {
                 size_t end = std::min(beg + batchSize, nValidate);
 
-                torch::Tensor input;
+                torch::Tensor inputW, inputB;
                 torch::Tensor target;
-                getData(validateData, beg, end, input, target);
-                input = input.to(dev);
+                getData(validateData, beg, end, inputW, inputB, target);
+                inputW = inputW.to(dev);
+                inputB = inputB.to(dev);
                 target = target.to(dev);
 
-                torch::Tensor output = net.forward(input);
+                torch::Tensor output = net.forward(inputW, inputB);
                 torch::Tensor loss = mse_loss(toProb(output), toProb(target));
                 lossSum += loss;
                 lossNum += 1;
@@ -448,21 +458,24 @@ eval(const std::string& modelFile, const std::string& fen) {
         Record r;
         NNUtil::posToRecord(pos, 0, r);
 
-        std::vector<int> idxVec;
-        toSparse(r, idxVec);
-        const int nnz = idxVec.size();
+        std::vector<int> idxVecW, idxVecB;
+        toSparse(r, idxVecW, idxVecB);
+        const int nnz = idxVecW.size();
 
-        torch::Tensor indices = torch::empty({2, nnz}, torch::kI64);
-        auto acc = indices.accessor<S64,2>();
-        for (int i = 0; i < nnz; i++) {
-            acc[0][i] = 0;
-            acc[1][i] = idxVec[i];
+        torch::Tensor inW, inB;
+
+        for (int c = 0; c < 2; c++) {
+            torch::Tensor indices = torch::empty({2, nnz}, torch::kI64);
+            auto acc = indices.accessor<S64,2>();
+            for (int i = 0; i < nnz; i++) {
+                acc[0][i] = 0;
+                acc[1][i] = c == 0 ? idxVecW[i] : idxVecB[i];
+            }
+            torch::Tensor values = torch::ones({nnz}, torch::kF32);
+            (c == 0 ? inW : inB) = sparse_coo_tensor(indices, values, {1, inFeatures});
         }
 
-        torch::Tensor values = torch::ones({nnz}, torch::kF32);
-        torch::Tensor in = sparse_coo_tensor(indices, values, {1, inFeatures});
-
-        torch::Tensor out = net.forward(in);
+        torch::Tensor out = net.forward(inW, inB);
         double val = out.item<double>();
         std::cout << "val: " << val << " prob: " << toProb(val) << std::endl;
 
