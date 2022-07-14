@@ -716,33 +716,12 @@ ChessTool::fen2bin(std::istream& is, const std::string& outFile) {
         splitString(line, " : ", fields);
 
         pos = TextIO::readFEN(fields[0]);
-        bool flip = !pos.isWhiteMove();
-        if (flip)
-            pos = PosUtil::swapColors(pos);
 
-        r.wKing = pos.getKingSq(true);
-        r.bKing = pos.getKingSq(false);
-        r.halfMoveClock = pos.getHalfMoveClock();
-        if (!str2Num(fields[2], r.searchScore))
+        int searchScore;
+        if (!str2Num(fields[2], searchScore))
             throw ChessParseError("Invalid score: " + line);
-        if (flip)
-            r.searchScore *= -1;
 
-        int p = 0;
-        int i = 0;
-        for (Piece::Type pt : {Piece::WQUEEN, Piece::WROOK, Piece::WBISHOP, Piece::WKNIGHT, Piece::WPAWN,
-                               Piece::BQUEEN, Piece::BROOK, Piece::BBISHOP, Piece::BKNIGHT, Piece::BPAWN}) {
-            U64 mask = pos.pieceTypeBB(pt);
-            while (mask) {
-                int sq = BitBoard::extractSquare(mask);
-                r.squares[i++] = sq;
-            }
-            if (p < 9)
-                r.nPieces[p++] = i;
-        }
-        while (i < 30)
-            r.squares[i++] = -1;
-
+        NNUtil::posToRecord(pos, searchScore, r);
         os.write((const char*)&r, sizeof(Record));
     }
 }

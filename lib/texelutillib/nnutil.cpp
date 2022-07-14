@@ -24,4 +24,34 @@
  */
 
 #include "nnutil.hpp"
+#include "position.hpp"
+#include "posutil.hpp"
 
+void
+NNUtil::posToRecord(Position& pos, int searchScore, Record& r) {
+    r.searchScore = searchScore;
+
+    if (!pos.isWhiteMove()) {
+        pos = PosUtil::swapColors(pos);
+        r.searchScore *= -1;
+    }
+
+    r.wKing = pos.getKingSq(true);
+    r.bKing = pos.getKingSq(false);
+    r.halfMoveClock = pos.getHalfMoveClock();
+
+    int p = 0;
+    int i = 0;
+    for (Piece::Type pt : {Piece::WQUEEN, Piece::WROOK, Piece::WBISHOP, Piece::WKNIGHT, Piece::WPAWN,
+                           Piece::BQUEEN, Piece::BROOK, Piece::BBISHOP, Piece::BKNIGHT, Piece::BPAWN}) {
+        U64 mask = pos.pieceTypeBB(pt);
+        while (mask) {
+            int sq = BitBoard::extractSquare(mask);
+            r.squares[i++] = sq;
+        }
+        if (p < 9)
+            r.nPieces[p++] = i;
+    }
+    while (i < 30)
+        r.squares[i++] = -1;
+}

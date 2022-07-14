@@ -28,6 +28,7 @@
 
 #include "util.hpp"
 
+class Position;
 
 class NNUtil {
 public:
@@ -41,9 +42,8 @@ public:
     };
     static_assert(sizeof(Record) == 44, "Unsupported struct packing");
 
-
-
-
+    /** Convert a Position object to Record format. "pos" may get modified. */
+    static void posToRecord(Position& pos, int searchScore, Record& r);
 };
 
 #endif /* NNUTIL_HPP_ */
