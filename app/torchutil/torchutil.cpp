@@ -344,7 +344,7 @@ train(const std::string& inFile) {
     const size_t nData = allData.getSize();
     const size_t nTrain = nData * 9 / 10;
     const size_t nValidate = nData - nTrain;
-    const int batchSize = 8192;
+    const int batchSize = 16*1024;
     std::cout << "nData    : " << nData << std::endl;
     std::cout << "nTrain   : " << nTrain << " (" << (nTrain / batchSize) << " batches)" << std::endl;
     std::cout << "nValidate: " << nValidate << " (" << (nValidate / batchSize) << " batches)" << std::endl;
@@ -357,7 +357,7 @@ train(const std::string& inFile) {
     SubSet trainData(allShuffled, 0, nTrain);
     SubSet validateData(allShuffled, nTrain, nData);
 
-    double lr = 5e-4;
+    double lr = 1e-3;
     torch::optim::Adam optimizer(net.parameters(), lr);
     for (int epoch = 1; epoch <= 30; epoch++) {
         ShuffledDataSet<SubSet> epochTrainData(trainData, epoch);
