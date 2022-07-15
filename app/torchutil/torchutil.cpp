@@ -106,7 +106,7 @@ RandPerm::getNumBits(U64 upperBound) {
 
 // ------------------------------------------------------------------------------
 
-const int inFeatures = 64 * 10 * 64;
+const int inFeatures = 64 * 10 * 64 + 64 * 10;
 using Record = NNUtil::Record;
 
 void
@@ -121,8 +121,11 @@ toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) 
         if (sq == -1)
             continue;
         int oPieceType = (pieceType + 5) % 10;
+        int mSq = Square::mirrorY(sq);
         idxVecW.push_back((k1 * 10 +  pieceType) * 64 + sq);
-        idxVecB.push_back((k2 * 10 + oPieceType) * 64 + Square::mirrorY(sq));
+        idxVecW.push_back(64 * 10 * 64 + pieceType * 64 + sq);
+        idxVecB.push_back((k2 * 10 + oPieceType) * 64 + mSq);
+        idxVecB.push_back(64 * 10 * 64 + oPieceType * 64 + mSq);
     }
 }
 
