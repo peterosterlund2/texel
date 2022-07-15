@@ -297,12 +297,12 @@ Net::Net() {
 
 torch::Tensor
 Net::forward(torch::Tensor xW, torch::Tensor xB) {
-    xW = torch::relu(lin1->forward(xW));
-    xB = torch::relu(lin1->forward(xB));
+    xW = torch::clamp(lin1->forward(xW), 0.0f, 1.0f);
+    xB = torch::clamp(lin1->forward(xB), 0.0f, 1.0f);
     torch::Tensor x = torch::hstack({xW, xB});
 
-    x = torch::relu(lin2->forward(x));
-    x = torch::relu(lin3->forward(x));
+    x = torch::clamp(lin2->forward(x), 0.0f, 1.0f);
+    x = torch::clamp(lin3->forward(x), 0.0f, 1.0f);
     x = lin4->forward(x);
     return x;
 }
