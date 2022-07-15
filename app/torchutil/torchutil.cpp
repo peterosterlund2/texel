@@ -106,7 +106,7 @@ RandPerm::getNumBits(U64 upperBound) {
 
 // ------------------------------------------------------------------------------
 
-const int inFeatures = 64 * 10 * 64 + 64 * 10;
+const int inFeatures = 32 * 10 * 64 + 10 * 64;
 using Record = NNUtil::Record;
 
 void
@@ -114,6 +114,19 @@ toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) 
     int pieceType = 0;
     int k1 = r.wKing;
     int k2 = Square::mirrorY(r.bKing);
+
+    auto addIndex = [](std::vector<int>& idxVec, int k, int pieceType, int sq) {
+        int x = Square::getX(k);
+        int y = Square::getY(k);
+        if (x >= 4) {
+            x = Square::mirrorX(x);
+            sq = Square::mirrorX(sq);
+        }
+        int kIdx = y * 4 + x;
+        idxVec.push_back((kIdx * 10 +  pieceType) * 64 + sq);
+        idxVec.push_back(32 * 10 * 64 + pieceType * 64 + sq);
+    };
+
     for (int i = 0; i < 30; i++) {
         while (pieceType < 9 && i >= r.nPieces[pieceType])
             pieceType++;
@@ -122,10 +135,8 @@ toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) 
             continue;
         int oPieceType = (pieceType + 5) % 10;
         int mSq = Square::mirrorY(sq);
-        idxVecW.push_back((k1 * 10 +  pieceType) * 64 + sq);
-        idxVecW.push_back(64 * 10 * 64 + pieceType * 64 + sq);
-        idxVecB.push_back((k2 * 10 + oPieceType) * 64 + mSq);
-        idxVecB.push_back(64 * 10 * 64 + oPieceType * 64 + mSq);
+        addIndex(idxVecW, k1, pieceType, sq);
+        addIndex(idxVecB, k2, oPieceType, mSq);
     }
 }
 
