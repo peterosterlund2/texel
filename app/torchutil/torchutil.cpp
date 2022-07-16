@@ -501,12 +501,63 @@ eval(const std::string& modelFile, const std::string& fen) {
 // ------------------------------------------------------------------------------
 
 void
+featureStats(const std::string& inFile) {
+    DataSet allData(inFile);
+    const size_t nData = allData.getSize();
+    std::vector<S64> stats(inFeatures);
+    std::vector<int> idxVecW, idxVecB;
+    Record r;
+    for (size_t i = 0; i < nData; i++) {
+        allData.getItem(i, r);
+        idxVecW.clear();
+        idxVecB.clear();
+        toSparse(r, idxVecW, idxVecB);
+        for (int idx : idxVecW)
+            stats[idx]++;
+        for (int idx : idxVecB)
+            stats[idx]++;
+    }
+    for (int i = 0; i < inFeatures; i++) {
+        std::stringstream ss;
+        if (i < 32 * 10 * 64) {
+            int tmp = i;
+            int sq = tmp % 64; tmp /= 64;
+            int pt = tmp % 10; tmp /= 10;
+            int kx = tmp % 4; tmp /= 4;
+            int ky = tmp;
+            if ((pt == 4 || pt == 9) && (Square::getY(sq) == 0 || Square::getY(sq) == 7))
+                continue;
+            int kSq = Square::getSquare(kx, ky);
+            if (sq == kSq)
+                continue;
+            sq = Square::mirrorX(sq);
+            kSq = Square::mirrorX(kSq);
+            ss << 'K' << TextIO::squareToString(kSq) << ',';
+            ss << "QRBNPqrbnp"[pt] << TextIO::squareToString(sq);
+        } else {
+            int tmp = i - 32 * 10 * 64;
+            int sq = tmp % 64; tmp /= 64;
+            int pt = tmp;
+            if ((pt == 4 || pt == 9) && (Square::getY(sq) == 0 || Square::getY(sq) == 7))
+                continue;
+            sq = Square::mirrorX(sq);
+            ss << "QRBNPqrbnp"[pt] << TextIO::squareToString(sq);
+        }
+        std::cout << i << ' ' << stats[i] << ' ' << ss.str() << std::endl;
+    }
+}
+
+// ------------------------------------------------------------------------------
+
+void
 usage() {
     std::cerr << "Usage: torchutil cmd params\n";
     std::cerr << "cmd is one of:\n";
     std::cerr << " train infile       : Train network from data in infile\n";
     std::cerr << " eval modelfile fen : Evaluate position using a saved network\n";
     std::cerr << " subset infile nPos outfile : Extract positions from infile, write to outfile\n";
+    std::cerr << " featstat infile    : Print feature activation stats from training data\n";
+
     std::cerr << std::flush;
     ::exit(2);
 }
@@ -537,6 +588,11 @@ int main(int argc, const char* argv[]) {
                 usage();
             std::string outFile = argv[4];
             extractSubset(inFile, nPos, outFile);
+        } else if (cmd == "featstat") {
+            if (argc != 3)
+                usage();
+            std::string inFile = argv[2];
+            featureStats(inFile);
         } else {
             usage();
         }
