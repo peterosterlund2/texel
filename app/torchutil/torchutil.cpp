@@ -410,7 +410,7 @@ train(const std::string& inFile) {
         }
 
         {
-            c10::NoGradGuard noGrad;
+            c10::InferenceMode guard;
             lossSum *= 0;
             lossNum = 0;
             for (size_t batch = 0, beg = 0; beg < nValidate; batch++, beg += batchSize) {
@@ -456,7 +456,7 @@ eval(const std::string& modelFile, const std::string& fen) {
     bool fromStdIn = fen == "-";
     std::istream& is = std::cin;
 
-    c10::NoGradGuard noGrad;
+    c10::InferenceMode guard;
     while (true) {
         Position pos;
         if (fromStdIn) {
