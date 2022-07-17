@@ -41,7 +41,8 @@
 
 // ------------------------------------------------------------------------------
 
-/** Generates a pseudo-random permutation of 0, 1, ..., upperBound-1. */
+/** Generates a pseudo-random permutation of 0, 1, ..., upperBound-1.
+ *  See: https://en.wikipedia.org/wiki/Feistel_cipher */
 class RandPerm {
 public:
     RandPerm(U64 upperBound, U64 seed);
