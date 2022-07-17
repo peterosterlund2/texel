@@ -44,6 +44,9 @@ public:
 
     /** Convert a Position object to Record format. "pos" may get modified. */
     static void posToRecord(Position& pos, int searchScore, Record& r);
+
+    /** Convert a Record to Position format. */
+    static void recordToPos(const Record& r, Position& pos, int& searchScore);
 };
 
 #endif /* NNUTIL_HPP_ */

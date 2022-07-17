@@ -448,6 +448,32 @@ train(const std::string& inFile) {
 // ------------------------------------------------------------------------------
 
 void
+writeValidationData(const std::string& inFile, std::ostream& os) {
+    DataSet allData(inFile);
+    const size_t nData = allData.getSize();
+    const size_t nTrain = nData * 9 / 10;
+
+    U64 seed0 = 0;
+    using ShuffledSet = ShuffledDataSet<DataSet>;
+    ShuffledSet allShuffled(allData, seed0);
+
+    using SubSet = SubDataSet<ShuffledSet>;
+    SubSet validateData(allShuffled, nTrain, nData);
+
+    const size_t nValidate = validateData.getSize();
+    Record r;
+    Position pos;
+    for (size_t i = 0; i < nValidate; i++) {
+        validateData.getItem(i, r);
+        int score;
+        NNUtil::recordToPos(r, pos, score);
+        os << TextIO::toFEN(pos) << " : " << score << std::endl;
+    }
+}
+
+// ------------------------------------------------------------------------------
+
+void
 eval(const std::string& modelFile, const std::string& fen) {
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
@@ -557,6 +583,7 @@ usage() {
     std::cerr << " train infile       : Train network from data in infile\n";
     std::cerr << " eval modelfile fen : Evaluate position using a saved network\n";
     std::cerr << " subset infile nPos outfile : Extract positions from infile, write to outfile\n";
+    std::cerr << " getvalidation infile : Extract validation data, write in FEN format\n";
     std::cerr << " featstat infile    : Print feature activation stats from training data\n";
 
     std::cerr << std::flush;
@@ -589,6 +616,11 @@ int main(int argc, const char* argv[]) {
                 usage();
             std::string outFile = argv[4];
             extractSubset(inFile, nPos, outFile);
+        } else if (cmd == "getvalidation") {
+            if (argc != 3)
+                usage();
+            std::string inFile = argv[2];
+            writeValidationData(inFile, std::cout);
         } else if (cmd == "featstat") {
             if (argc != 3)
                 usage();

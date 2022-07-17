@@ -27,6 +27,9 @@
 #include "position.hpp"
 #include "posutil.hpp"
 
+static Piece::Type ptVec[] = { Piece::WQUEEN, Piece::WROOK, Piece::WBISHOP, Piece::WKNIGHT, Piece::WPAWN,
+                               Piece::BQUEEN, Piece::BROOK, Piece::BBISHOP, Piece::BKNIGHT, Piece::BPAWN};
+
 void
 NNUtil::posToRecord(Position& pos, int searchScore, Record& r) {
     r.searchScore = searchScore;
@@ -42,8 +45,7 @@ NNUtil::posToRecord(Position& pos, int searchScore, Record& r) {
 
     int p = 0;
     int i = 0;
-    for (Piece::Type pt : {Piece::WQUEEN, Piece::WROOK, Piece::WBISHOP, Piece::WKNIGHT, Piece::WPAWN,
-                           Piece::BQUEEN, Piece::BROOK, Piece::BBISHOP, Piece::BKNIGHT, Piece::BPAWN}) {
+    for (Piece::Type pt : ptVec) {
         U64 mask = pos.pieceTypeBB(pt);
         while (mask) {
             int sq = BitBoard::extractSquare(mask);
@@ -54,4 +56,31 @@ NNUtil::posToRecord(Position& pos, int searchScore, Record& r) {
     }
     while (i < 30)
         r.squares[i++] = -1;
+}
+
+void
+NNUtil::recordToPos(const Record& r, Position& pos, int& searchScore) {
+    for (int sq = 0; sq < 64; sq++)
+        pos.clearPiece(sq);
+
+    pos.setPiece(r.wKing, Piece::WKING);
+    pos.setPiece(r.bKing, Piece::BKING);
+
+    int pieceType = 0;
+    for (int i = 0; i < 30; i++) {
+        while (pieceType < 9 && i >= r.nPieces[pieceType])
+            pieceType++;
+        int sq = r.squares[i];
+        if (sq == -1)
+            continue;
+        pos.setPiece(sq, ptVec[pieceType]);
+    }
+
+    pos.setWhiteMove(true);
+    pos.setCastleMask(0);
+    pos.setEpSquare(-1);
+    pos.setHalfMoveClock(r.halfMoveClock);
+    pos.setFullMoveCounter(1);
+
+    searchScore = r.searchScore;
 }
