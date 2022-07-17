@@ -39,8 +39,13 @@ NNUtil::posToRecord(Position& pos, int searchScore, Record& r) {
         r.searchScore *= -1;
     }
 
-    r.wKing = pos.getKingSq(true);
-    r.bKing = pos.getKingSq(false);
+    auto castleSquare = [](int square, int castleMask, bool wtm) -> int {
+        int mask = wtm ? (castleMask & 3) : (castleMask >> 2);
+        return mask ? (63 + mask) : square;
+    };
+    int castleMask = pos.getCastleMask();
+    r.wKing = castleSquare(pos.getKingSq(true), castleMask, true);
+    r.bKing = castleSquare(pos.getKingSq(false), castleMask, false);
     r.halfMoveClock = pos.getHalfMoveClock();
 
     int p = 0;
@@ -63,8 +68,20 @@ NNUtil::recordToPos(const Record& r, Position& pos, int& searchScore) {
     for (int sq = 0; sq < 64; sq++)
         pos.clearPiece(sq);
 
-    pos.setPiece(r.wKing, Piece::WKING);
-    pos.setPiece(r.bKing, Piece::BKING);
+    int castleMask = 0;
+    int wk = r.wKing;
+    int bk = r.bKing;
+    if (wk >= 64) {
+        castleMask |= (wk - 63);
+        wk = E1;
+    }
+    if (bk >= 64) {
+        castleMask |= (bk - 63) << 2;
+        bk = E8;
+    }
+    pos.setPiece(wk, Piece::WKING);
+    pos.setPiece(bk, Piece::BKING);
+    pos.setCastleMask(castleMask);
 
     int pieceType = 0;
     for (int i = 0; i < 30; i++) {
@@ -77,7 +94,6 @@ NNUtil::recordToPos(const Record& r, Position& pos, int& searchScore) {
     }
 
     pos.setWhiteMove(true);
-    pos.setCastleMask(0);
     pos.setEpSquare(-1);
     pos.setHalfMoveClock(r.halfMoveClock);
     pos.setFullMoveCounter(1);

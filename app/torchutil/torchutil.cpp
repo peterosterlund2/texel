@@ -106,26 +106,34 @@ RandPerm::getNumBits(U64 upperBound) {
 
 // ------------------------------------------------------------------------------
 
-const int inFeatures = 32 * 10 * 64 + 10 * 64 + 10;
+const int inFeats1 = 35 * 10 * 64;
+const int inFeats2 =      10 * 64;
+const int inFeats3 =      10;
+const int inFeatures = inFeats1 + inFeats2 + inFeats3;
 using Record = NNUtil::Record;
 
 void
 toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) {
     int pieceType = 0;
     int k1 = r.wKing;
-    int k2 = Square::mirrorY(r.bKing);
+    int k2 = r.bKing < 64 ? Square::mirrorY(r.bKing) : r.bKing;
 
     auto addIndex = [](std::vector<int>& idxVec, int k, int pieceType, int sq) {
-        int x = Square::getX(k);
-        int y = Square::getY(k);
-        if (x >= 4) {
-            x = Square::mirrorX(x);
-            sq = Square::mirrorX(sq);
+        int kIdx;
+        if (k < 64) {
+            int x = Square::getX(k);
+            int y = Square::getY(k);
+            if (x >= 4) {
+                x = Square::mirrorX(x);
+                sq = Square::mirrorX(sq);
+            }
+            kIdx = y * 4 + x;
+        } else {
+            kIdx = k - 32;
         }
-        int kIdx = y * 4 + x;
         idxVec.push_back((kIdx * 10 +  pieceType) * 64 + sq);
-        idxVec.push_back(32 * 10 * 64 + pieceType * 64 + sq);
-        idxVec.push_back(32 * 10 * 64 + 10 * 64 + pieceType);
+        idxVec.push_back(inFeats1 + pieceType * 64 + sq);
+        idxVec.push_back(inFeats1 + inFeats2 + pieceType);
     };
 
     for (int i = 0; i < 30; i++) {
@@ -546,7 +554,7 @@ featureStats(const std::string& inFile) {
     }
     for (int i = 0; i < inFeatures; i++) {
         std::stringstream ss;
-        if (i < 32 * 10 * 64) {
+        if (i < inFeats1) {
             int tmp = i;
             int sq = tmp % 64; tmp /= 64;
             int pt = tmp % 10; tmp /= 10;
@@ -557,18 +565,38 @@ featureStats(const std::string& inFile) {
             int kSq = Square::getSquare(kx, ky);
             if (sq == kSq)
                 continue;
-            sq = Square::mirrorX(sq);
-            kSq = Square::mirrorX(kSq);
-            ss << 'K' << TextIO::squareToString(kSq) << ',';
+            if (ky < 8) {
+                sq = Square::mirrorX(sq);
+                kSq = Square::mirrorX(kSq);
+                ss << 'K' << TextIO::squareToString(kSq) << ',';
+            } else {
+                if (sq == E1)
+                    continue;
+                ss << 'K';
+                if ((kx + 1) & 1) {
+                    if (sq == A1 && pt != 1)
+                        continue; // Must be white rook on A1
+                    ss << 'A';
+                }
+                if ((kx + 1) & 2) {
+                    if (sq == H1 && pt != 1)
+                        continue; // Must be white rook on H1
+                    ss << 'H';
+                }
+                ss << ',';
+            }
             ss << "QRBNPqrbnp"[pt] << TextIO::squareToString(sq);
-        } else {
-            int tmp = i - 32 * 10 * 64;
+        } else if (i < inFeats1 + inFeats2) {
+            int tmp = i - inFeats1;
             int sq = tmp % 64; tmp /= 64;
             int pt = tmp;
             if ((pt == 4 || pt == 9) && (Square::getY(sq) == 0 || Square::getY(sq) == 7))
                 continue;
             sq = Square::mirrorX(sq);
             ss << "QRBNPqrbnp"[pt] << TextIO::squareToString(sq);
+        } else {
+            int pt = i - inFeats1 - inFeats2;
+            ss << "QRBNPqrbnp"[pt];
         }
         std::cout << i << ' ' << stats[i] << ' ' << ss.str() << std::endl;
     }

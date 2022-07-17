@@ -2,6 +2,7 @@ set(src_texelutiltest
   bookBuildTest.cpp   bookBuildTest.hpp
   cspsolverTest.cpp   cspsolverTest.hpp
   gameTreeTest.cpp
+  nnutilTest.cpp      nnutilTest.hpp
   proofgameTest.cpp   proofgameTest.hpp
   proofkernelTest.cpp proofkernelTest.hpp
   revmovegenTest.cpp  revmovegenTest.hpp
