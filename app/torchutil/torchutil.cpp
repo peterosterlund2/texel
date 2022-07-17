@@ -106,7 +106,13 @@ RandPerm::getNumBits(U64 upperBound) {
 
 // ------------------------------------------------------------------------------
 
+#define USE_CASTLING 0
+
+#if USE_CASTLING
 const int inFeats1 = 35 * 10 * 64;
+#else
+const int inFeats1 = 32 * 10 * 64;
+#endif
 const int inFeats2 =      10 * 64;
 const int inFeats3 =      10;
 const int inFeatures = inFeats1 + inFeats2 + inFeats3;
@@ -115,8 +121,13 @@ using Record = NNUtil::Record;
 void
 toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) {
     int pieceType = 0;
+#if USE_CASTLING
     int k1 = r.wKing;
     int k2 = r.bKing < 64 ? Square::mirrorY(r.bKing) : r.bKing;
+#else
+    int k1 = r.wKing < 64 ? r.wKing : E1;
+    int k2 = Square::mirrorY(r.bKing < 64 ? r.bKing : E8);
+#endif
 
     auto addIndex = [](std::vector<int>& idxVec, int k, int pieceType, int sq) {
         int kIdx;
