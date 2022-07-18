@@ -361,7 +361,7 @@ toProb(T score) {
 }
 
 void
-train(const std::string& inFile) {
+train(const std::string& inFile, U64 seed) {
     auto dev = torch::kCUDA;
     const double t0 = currentTime();
 
@@ -395,7 +395,7 @@ train(const std::string& inFile) {
     double lr = 1e-3;
     torch::optim::Adam optimizer(net.parameters(), lr);
     for (int epoch = 1; epoch <= 30; epoch++) {
-        ShuffledDataSet<SubSet> epochTrainData(trainData, epoch);
+        ShuffledDataSet<SubSet> epochTrainData(trainData, hashU64(seed) + epoch);
         std::cout << "Epoch: " << epoch << " lr: " << lr << std::endl;
 
         torch::Tensor lossSum = torch::zeros({}, torch::kF32).to(dev);
@@ -640,7 +640,8 @@ int main(int argc, const char* argv[]) {
             if (argc != 3)
                 usage();
             std::string inFile = argv[2];
-            train(inFile);
+            U64 seed = (U64)(currentTime() * 1000);
+            train(inFile, seed);
         } else if (cmd == "eval") {
             if (argc != 4)
                 usage();
