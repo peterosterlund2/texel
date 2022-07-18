@@ -316,6 +316,10 @@ public:
 
     torch::Tensor forward(torch::Tensor xW, torch::Tensor xB);
 
+    /** Clamp weights to remain within a range that is compatible
+     *  with later quantization. */
+    void clamp();
+
     /** Write weight/bias matrices to files in current directory. */
     void printWeights(int epoch) const;
 
@@ -343,6 +347,20 @@ Net::forward(torch::Tensor xW, torch::Tensor xB) {
     x = torch::clamp(lin3->forward(x), 0.0f, 1.0f);
     x = lin4->forward(x);
     return x;
+}
+
+void
+Net::clamp() {
+    c10::NoGradGuard guard;
+
+    auto clampLayer = [](torch::nn::Linear lin) {
+        float maxVal = 127.0f / 64.0f;
+        lin->weight.clamp_(-maxVal, maxVal);
+        lin->bias.clamp_(-maxVal, maxVal);
+    };
+    clampLayer(lin2);
+    clampLayer(lin3);
+    clampLayer(lin4);
 }
 
 void
@@ -464,6 +482,7 @@ train(const std::string& inFile, U64 seed) {
             torch::Tensor loss = mse_loss(toProb(output), toProb(target));
             loss.backward();
             optimizer.step();
+            net.clamp();
 
             lossSum += loss;
             lossNum += 1;
