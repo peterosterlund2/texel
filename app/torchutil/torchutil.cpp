@@ -316,6 +316,9 @@ public:
 
     torch::Tensor forward(torch::Tensor xW, torch::Tensor xB);
 
+    /** Write weight/bias matrices to files in current directory. */
+    void printWeights(int epoch) const;
+
 private:
     torch::nn::Linear lin1 = nullptr; const int n1 = 256;
     torch::nn::Linear lin2 = nullptr; const int n2 = 32;
@@ -340,6 +343,50 @@ Net::forward(torch::Tensor xW, torch::Tensor xB) {
     x = torch::clamp(lin3->forward(x), 0.0f, 1.0f);
     x = lin4->forward(x);
     return x;
+}
+
+void
+Net::printWeights(int epoch) const {
+    auto getName = [](const std::string& baseName, int epoch) {
+        std::stringstream ss;
+        ss << baseName << std::setfill('0') << std::setw(2) << epoch << ".txt";
+        return ss.str();
+    };
+
+    auto printTensor = [](const std::string& filename, torch::Tensor x) {
+        x = x.to(torch::kCPU);
+        if (x.dim() == 1) {
+            x = x.reshape({x.size(0), 1});
+        } else if (x.dim() == 2) {
+            x = x.t();
+        }
+
+        std::ofstream os;
+        os.open(filename.c_str(), std::ios_base::out | std::ios_base::binary);
+        os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+        size_t rows = x.size(0);
+        size_t cols = x.size(1);
+        auto acc = x.accessor<float,2>();
+        for (size_t r = 0; r < rows; r++) {
+            for (size_t c = 0; c < cols; c++) {
+                if (c > 0)
+                    os << ' ';
+                os << acc[r][c];
+            }
+            os << '\n';
+        }
+    };
+
+    auto printLin = [&](torch::nn::Linear lin, const std::string& name) {
+        printTensor(getName(name + "w", epoch), lin->weight);
+        printTensor(getName(name + "b", epoch), lin->bias);
+    };
+
+    printLin(lin1, "lin1");
+    printLin(lin2, "lin2");
+    printLin(lin3, "lin3");
+    printLin(lin4, "lin4");
 }
 
 // ------------------------------------------------------------------------------
@@ -394,6 +441,7 @@ train(const std::string& inFile, U64 seed) {
 
     double lr = 1e-3;
     torch::optim::Adam optimizer(net.parameters(), lr);
+    net.printWeights(0);
     for (int epoch = 1; epoch <= 30; epoch++) {
         ShuffledDataSet<SubSet> epochTrainData(trainData, hashU64(seed) + epoch);
         std::cout << "Epoch: " << epoch << " lr: " << lr << std::endl;
@@ -462,6 +510,7 @@ train(const std::string& inFile, U64 seed) {
 
         lr *= 0.8;
         setLR(optimizer, lr);
+        net.printWeights(epoch);
     }
 }
 
