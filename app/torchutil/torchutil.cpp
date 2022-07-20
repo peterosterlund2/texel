@@ -458,7 +458,8 @@ train(const std::string& inFile, U64 seed) {
     SubSet validateData(allShuffled, nTrain, nData);
 
     double lr = 1e-3;
-    torch::optim::Adam optimizer(net.parameters(), lr);
+    auto opts = torch::optim::AdamOptions(lr).weight_decay(1e-6);
+    torch::optim::Adam optimizer(net.parameters(), opts);
     net.printWeights(0);
     for (int epoch = 1; epoch <= 30; epoch++) {
         ShuffledDataSet<SubSet> epochTrainData(trainData, hashU64(seed) + epoch);
