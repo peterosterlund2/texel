@@ -19,6 +19,11 @@ set(src_hw
   hw/parallel.cpp         hw/parallel.hpp
   )
 
+set(src_nn
+  nn/nneval.cpp           nn/nneval.hpp
+  nn/nntypes.cpp          nn/nntypes.hpp
+  )
+
 set(src_tb
   tb/kpkTable.cpp
   tb/krkpTable.cpp
@@ -81,12 +86,12 @@ set(src_texellib
   )
 
 add_library(texellib STATIC
-  ${src_book} ${src_debug} ${src_hw} ${src_tb} ${src_util}
+  ${src_book} ${src_debug} ${src_hw} ${src_nn} ${src_tb} ${src_util}
   ${src_gtb} ${src_syzygy}
   ${src_texellib}
   )
 target_include_directories(texellib
-  PUBLIC . book debug hw tb util
+  PUBLIC . book debug hw nn tb util
   PRIVATE tb/gtb/sysport tb/gtb/compression tb/gtb/compression/lzma
   )
 
