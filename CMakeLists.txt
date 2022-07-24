@@ -86,6 +86,7 @@ foreach(flag_var
     string(REGEX REPLACE "-DNDEBUG" "" ${flag_var} "${${flag_var}}")
   endif()
 endforeach()
+add_compiler_flag_if_supported("-fno-stack-protector")
 
 # Enable CPU architecture
 if(CPU_TYPE STREQUAL "corei7")
