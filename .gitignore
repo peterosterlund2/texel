@@ -1,7 +1,6 @@
 /build
 /bin
 /texel*.7z
-*~
 /TAGS
 /CMakeCache.txt
 /.cproject
