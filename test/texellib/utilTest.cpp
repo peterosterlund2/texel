@@ -26,7 +26,7 @@
 #include "util.hpp"
 #include "timeUtil.hpp"
 #include "histogram.hpp"
-#include "binfile.hpp"
+#include "nntypes.hpp"
 
 #include <iostream>
 #include <memory>
@@ -236,4 +236,36 @@ TEST(UtilTest, binFileTest) {
 
     for (int i = 0; i < n; i++)
         ASSERT_EQ(buf[i], bufr[i]);
+}
+
+template <typename T, int N>
+static void fillArray(T (&arr)[N], Random& rnd) {
+    static_assert(sizeof(T) <= sizeof(int), "Unsupported array type");
+    S64 minVal = std::numeric_limits<T>::min();
+    S64 maxVal = std::numeric_limits<T>::max();
+    for (int i = 0; i < N; i++)
+        arr[i] = rnd.nextU64() % (maxVal - minVal + 1) + minVal;
+}
+
+TEST(UtilTest, nnDataTest) {
+    auto netP = NetData::create();
+    NetData& net = *netP;
+    Random rnd;
+    fillArray(net.weight1.data, rnd);
+    fillArray(net.bias1.data, rnd);
+    fillArray(net.lin2.weight.data, rnd);
+    fillArray(net.lin2.bias.data, rnd);
+    fillArray(net.lin3.weight.data, rnd);
+    fillArray(net.lin3.bias.data, rnd);
+    fillArray(net.lin4.weight.data, rnd);
+    fillArray(net.lin4.bias.data, rnd);
+
+    std::stringstream ss;
+    net.save(ss);
+
+    auto net2P = NetData::create();
+    NetData& net2 = *net2P;
+    net2.load(ss);
+
+    ASSERT_EQ(net.weight1.data[0], net2.weight1.data[0]);
 }

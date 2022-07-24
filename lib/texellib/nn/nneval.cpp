@@ -26,8 +26,9 @@
 #include "nneval.hpp"
 
 
-NNEvaluator::NNEvaluator()
-    : lin2(netData.lin2),
+NNEvaluator::NNEvaluator(NetData& netData)
+    : netData(netData),
+      lin2(netData.lin2),
       lin3(netData.lin3),
       lin4(netData.lin4) {
 }

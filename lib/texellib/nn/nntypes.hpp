@@ -30,6 +30,7 @@
 #include "random.hpp"
 #include "binfile.hpp"
 #include <limits>
+#include <memory>
 
 // ------------------------------------------------------------------------------
 
@@ -161,9 +162,12 @@ Layer<nIn,nOut>::evalLinear(const Vector<S8,nIn>& in) {
 
 // ------------------------------------------------------------------------------
 
-/** Holds all neural network data required for position evaluation.
- *  Note that this object is very large, so it should not be allocated on the stack. */
-struct NetData {
+/** Holds all neural network data required for position evaluation. */
+class NetData {
+public:
+    /** Create an instance. This object is very large so allocating it on the stack is not supported. */
+    static std::shared_ptr<NetData> create();
+
     static constexpr int inFeatures = 32 * 10 * 64;
     static constexpr int n1 = 256;
     static constexpr int n2 = 32;
@@ -184,6 +188,10 @@ struct NetData {
 
     /** Return a hash value corresponding to all data in this object. */
     U64 computeHash() const;
+
+private:
+    NetData() = default;
+    NetData(const NetData& other) = delete;
 };
 
 

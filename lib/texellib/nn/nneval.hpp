@@ -37,7 +37,7 @@ struct UndoInfo;
 class NNEvaluator {
 public:
     /** Constructor. */
-    NNEvaluator();
+    NNEvaluator(NetData& netData);
 
     /** Set current position. */
     void setPos(const Position& pos);
@@ -56,7 +56,7 @@ public:
 private:
     int squares[64]; // Piece type for each square
 
-    NetData netData;
+    NetData& netData;
 
     static constexpr int n1 = NetData::n1;
     static constexpr int n2 = NetData::n2;

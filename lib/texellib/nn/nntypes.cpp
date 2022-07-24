@@ -28,6 +28,11 @@
 
 static const int netVersion = 0;
 
+std::shared_ptr<NetData>
+NetData::create() {
+    return std::shared_ptr<NetData>(new NetData);
+}
+
 void
 NetData::save(std::ostream& os) const {
     BinaryFileWriter writer(os);
