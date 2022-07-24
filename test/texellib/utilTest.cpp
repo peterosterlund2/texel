@@ -26,6 +26,7 @@
 #include "util.hpp"
 #include "timeUtil.hpp"
 #include "histogram.hpp"
+#include "binfile.hpp"
 
 #include <iostream>
 #include <memory>
@@ -169,4 +170,70 @@ TEST(UtilTest, testHistogram) {
     }
     for (int i = 0; i < maxV; i++)
         EXPECT_EQ(i==0?0:1, hist.get(i));
+}
+
+TEST(UtilTest, binFileTest) {
+    std::stringstream ss;
+
+    S8 v1 = -18;
+    U8 v2 = 150;
+    S16 v3 = -10000;
+    U16 v4 = 1234;
+    S32 v5 = 1000000;
+    U32 v6 = 3000000000;
+    S64 v7 = -1;
+    U64 v8 = 1ULL << 50;
+
+    const int n = 40000;
+    S16 buf[n];
+    for (int i = 0; i < n; i++)
+        buf[i] = i >= 32768 ? (i - 65536) : i;
+
+    {
+        BinaryFileWriter writer(ss);
+        writer.writeScalar(v1);
+        writer.writeScalar(v2);
+        writer.writeScalar(v3);
+        writer.writeScalar(v4);
+        writer.writeScalar(v5);
+        writer.writeScalar(v6);
+        writer.writeScalar(v7);
+        writer.writeScalar(v8);
+        writer.writeArray(buf, n);
+    }
+
+    S8 v1r;
+    U8 v2r;
+    S16 v3r;
+    U16 v4r;
+    S32 v5r;
+    U32 v6r;
+    S64 v7r;
+    U64 v8r;
+    S16 bufr[n];
+
+    {
+        BinaryFileReader reader(ss);
+        reader.readScalar(v1r);
+        reader.readScalar(v2r);
+        reader.readScalar(v3r);
+        reader.readScalar(v4r);
+        reader.readScalar(v5r);
+        reader.readScalar(v6r);
+        reader.readScalar(v7r);
+        reader.readScalar(v8r);
+        reader.readArray(bufr, n);
+    }
+
+    ASSERT_EQ(v1, v1r);
+    ASSERT_EQ(v2, v2r);
+    ASSERT_EQ(v3, v3r);
+    ASSERT_EQ(v4, v4r);
+    ASSERT_EQ(v5, v5r);
+    ASSERT_EQ(v6, v6r);
+    ASSERT_EQ(v7, v7r);
+    ASSERT_EQ(v8, v8r);
+
+    for (int i = 0; i < n; i++)
+        ASSERT_EQ(buf[i], bufr[i]);
 }

@@ -54,6 +54,7 @@ set(src_util
   )
 
 set(src_texellib
+                          binfile.hpp
   bitBoard.cpp            bitBoard.hpp
                           chessError.hpp
   computerPlayer.cpp      computerPlayer.hpp
