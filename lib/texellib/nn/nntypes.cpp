@@ -26,7 +26,9 @@
 #include "nntypes.hpp"
 #include "chessError.hpp"
 
+static const U64 magicHeader = 0xb3828c6bdf56c56cULL;
 static const int netVersion = 0;
+
 
 std::shared_ptr<NetData>
 NetData::create() {
@@ -36,6 +38,7 @@ NetData::create() {
 void
 NetData::save(std::ostream& os) const {
     BinaryFileWriter writer(os);
+    writer.writeScalar(magicHeader);
     writer.writeScalar(netVersion);
 
     writer.writeArray(&weight1.data[0], COUNT_OF(weight1.data));
@@ -50,6 +53,11 @@ NetData::save(std::ostream& os) const {
 void
 NetData::load(std::istream& is) {
     BinaryFileReader reader(is);
+
+    U64 header;
+    reader.readScalar(header);
+    if (header != magicHeader)
+        throw ChessError("Incorrect file type");
 
     int ver;
     reader.readScalar(ver);
