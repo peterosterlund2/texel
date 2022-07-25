@@ -28,6 +28,7 @@
 
 #include "nntypes.hpp"
 #include "util.hpp"
+#include "piece.hpp"
 
 class Position;
 class Move;
@@ -53,8 +54,17 @@ public:
      *         Positive values are good for the side to make the next move. */
     int eval();
 
+    /** Initialize static data. */
+    static void staticInitialize();
+
 private:
+    void computeL1WB();
+    void computeL1Out();
+
     int squares[64]; // Piece type for each square
+    bool wtm;
+    int wKingSq;
+    int bKingSq;
 
     NetData& netData;
 
@@ -69,6 +79,8 @@ private:
     Layer<n1*2, n2> lin2;
     Layer<n2  , n3> lin3;
     Layer<n3  , 1 > lin4;
+
+    static int ptValue[Piece::nPieceTypes];
 };
 
 #endif /* NNEVAL_HPP_ */

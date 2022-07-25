@@ -28,7 +28,7 @@
 #include "timeUtil.hpp"
 #include "textio.hpp"
 #include "nnutil.hpp"
-#include "nntypes.hpp"
+#include "nneval.hpp"
 #include "square.hpp"
 
 #include <torch/torch.h>
@@ -450,7 +450,7 @@ void scaleCopy(const std::vector<float>& in, int nElem, T* out, int scaleFactor,
 void
 Net::quantize(NetData& qNet) const {
     // Apply factorized weights to non-factorized weights
-    torch::Tensor lin1W = lin1->weight.t();
+    torch::Tensor lin1W = lin1->weight.t().clone();
     torch::Tensor lin1B = lin1->bias;
     {
         auto acc = lin1W.accessor<float,2>();
@@ -668,6 +668,11 @@ eval(const std::string& modelFile, const std::string& fen) {
     torch::load(netP, modelFile.c_str());
     net.to(torch::kCPU);
 
+    std::shared_ptr<NetData> qNetP = NetData::create();
+    NetData& qNet = *qNetP;
+    net.quantize(qNet);
+    NNEvaluator qEval(qNet);
+
     bool fromStdIn = fen == "-";
     std::istream& is = std::cin;
 
@@ -706,7 +711,13 @@ eval(const std::string& modelFile, const std::string& fen) {
 
         torch::Tensor out = net.forward(inW, inB);
         double val = out.item<double>();
-        std::cout << "val: " << val << " prob: " << toProb(val) << std::endl;
+
+        qEval.setPos(pos);
+        int qVal = qEval.eval();
+
+        std::cout << "val: " << (val*100.0f) << " prob: " << toProb(val)
+                  << " qVal: " << qVal << " qProb: " << toProb(qVal * 0.01)
+                  << std::endl;
 
         if (!fromStdIn)
             break;

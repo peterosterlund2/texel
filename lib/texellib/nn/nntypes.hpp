@@ -173,7 +173,7 @@ public:
     static constexpr int n2 = 32;
     static constexpr int n3 = 32;
 
-    Matrix<S16, n1, inFeatures> weight1;
+    Matrix<S16, inFeatures, n1> weight1;
     Vector<S16, n1> bias1;
 
     LayerData<n1*2, n2> lin2;
