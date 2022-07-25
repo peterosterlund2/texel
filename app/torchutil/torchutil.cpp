@@ -28,6 +28,7 @@
 #include "timeUtil.hpp"
 #include "textio.hpp"
 #include "nnutil.hpp"
+#include "nntypes.hpp"
 #include "square.hpp"
 
 #include <torch/torch.h>
@@ -38,6 +39,7 @@
 #include <cstdint>
 #include <bitset>
 #include <chrono>
+#include <cmath>
 
 // ------------------------------------------------------------------------------
 
@@ -110,14 +112,23 @@ RandPerm::getNumBits(U64 upperBound) {
 #define USE_CASTLING 0
 
 #if USE_CASTLING
-const int inFeats1 = 35 * 10 * 64;
+const int nKIdx = 35;
 #else
-const int inFeats1 = 32 * 10 * 64;
+const int nKIdx = 32;
 #endif
-const int inFeats2 =      10 * 64;
-const int inFeats3 =      10;
+const int inFeats1 = nKIdx * 10 * 64;
+const int inFeats2 =         10 * 64;
+const int inFeats3 =         10;
 const int inFeatures = inFeats1 + inFeats2 + inFeats3;
 using Record = NNUtil::Record;
+
+void
+toIndex(int kIdx, int pieceType, int sq,
+        int& idx1, int& idx2, int& idx3) {
+    idx1 = (kIdx * 10 + pieceType) * 64 + sq;
+    idx2 = inFeats1 + pieceType * 64 + sq;
+    idx3 = inFeats1 + inFeats2 + pieceType;
+}
 
 void
 toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) {
@@ -131,6 +142,7 @@ toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) 
 #endif
 
     auto addIndex = [](std::vector<int>& idxVec, int k, int pieceType, int sq) {
+        int idx1, idx2, idx3;
         int kIdx;
         if (k < 64) {
             int x = Square::getX(k);
@@ -143,9 +155,10 @@ toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) 
         } else {
             kIdx = k - 32;
         }
-        idxVec.push_back((kIdx * 10 +  pieceType) * 64 + sq);
-        idxVec.push_back(inFeats1 + pieceType * 64 + sq);
-        idxVec.push_back(inFeats1 + inFeats2 + pieceType);
+        toIndex(kIdx, pieceType, sq, idx1, idx2, idx3);
+        idxVec.push_back(idx1);
+        idxVec.push_back(idx2);
+        idxVec.push_back(idx3);
     };
 
     for (int i = 0; i < 30; i++) {
@@ -323,6 +336,9 @@ public:
     /** Write weight/bias matrices to files in current directory. */
     void printWeights(int epoch) const;
 
+    /** Create quantized net. */
+    void quantize(NetData& qNet) const;
+
 private:
     torch::nn::Linear lin1 = nullptr; const int n1 = 256;
     torch::nn::Linear lin2 = nullptr; const int n2 = 32;
@@ -405,6 +421,69 @@ Net::printWeights(int epoch) const {
     printLin(lin2, "lin2");
     printLin(lin3, "lin3");
     printLin(lin4, "lin4");
+}
+
+std::vector<float> toVec(torch::Tensor x) {
+    if (x.dim() == 1)
+        x = x.reshape({x.size(0), 1});
+    const int M = x.size(0);
+    const int N = x.size(1);
+    auto acc = x.accessor<float,2>();
+    std::vector<float> ret(M * N);
+    for (int r = 0; r < M; r++)
+        for (int c = 0; c < N; c++)
+            ret[r*N+c] = acc[r][c];
+    return ret;
+}
+
+template <typename T>
+void scaleCopy(const std::vector<float>& in, int nElem, T* out, int scaleFactor, int offs) {
+    long minVal = std::numeric_limits<T>::min();
+    long maxVal = std::numeric_limits<T>::max();
+    for (int i = 0; i < nElem; i++) {
+        long val = std::lround(in[i] * scaleFactor) + offs;
+        val = clamp(val, minVal, maxVal);
+        out[i] = val;
+    }
+}
+
+void
+Net::quantize(NetData& qNet) const {
+    // Apply factorized weights to non-factorized weights
+    torch::Tensor lin1W = lin1->weight.t();
+    torch::Tensor lin1B = lin1->bias;
+    {
+        auto acc = lin1W.accessor<float,2>();
+        for (int kIdx = 0; kIdx < nKIdx; kIdx++)
+            for (int pieceType = 0; pieceType < 10; pieceType++)
+                for (int sq = 0; sq < 64; sq++) {
+                    int idx1, idx2, idx3;
+                    toIndex(kIdx, pieceType, sq, idx1, idx2, idx3);
+                    for (int i = 0; i < n1; i++)
+                        acc[idx1][i] += acc[idx2][i] + acc[idx3][i];
+                }
+        lin1W = lin1W.narrow(0, 0, inFeats1);
+    }
+
+    std::vector<float> data = toVec(lin1W);
+    scaleCopy(data, inFeats1*n1, &qNet.weight1.data[0], 127, 0);
+    data = toVec(lin1B);
+    scaleCopy(data, n1, &qNet.bias1.data[0], 127, 0);
+
+    data = toVec(lin2->weight);
+    scaleCopy(data, n1*2*n2, &qNet.lin2.weight.data[0], 64, 0);
+    data = toVec(lin2->bias);
+    scaleCopy(data, n2, &qNet.lin2.bias.data[0], 64*127, 32);
+
+    data = toVec(lin3->weight);
+    scaleCopy(data, n2*n3, &qNet.lin3.weight.data[0], 64, 0);
+    data = toVec(lin3->bias);
+    scaleCopy(data, n3, &qNet.lin3.bias.data[0], 64*127, 32);
+
+    data = toVec(lin4->weight);
+    scaleCopy(data, n3*1, &qNet.lin4.weight.data[0], 64, 0);
+    data = toVec(lin4->bias);
+    scaleCopy(data, 1, &qNet.lin4.bias.data[0], 64*127, 32);
 }
 
 // ------------------------------------------------------------------------------
@@ -532,6 +611,26 @@ train(const std::string& inFile, U64 seed) {
         setLR(optimizer, lr);
         net.printWeights(epoch);
     }
+}
+
+// ------------------------------------------------------------------------------
+
+void
+quantize(const std::string& inFile, const std::string& outFile) {
+    auto netP = std::make_shared<Net>();
+    Net& net = *netP;
+    torch::load(netP, inFile.c_str());
+    net.to(torch::kCPU);
+
+    std::shared_ptr<NetData> qNetP = NetData::create();
+    NetData& qNet = *qNetP;
+
+    net.quantize(qNet);
+
+    std::ofstream os;
+    os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
+    qNet.save(os);
 }
 
 // ------------------------------------------------------------------------------
@@ -689,11 +788,12 @@ void
 usage() {
     std::cerr << "Usage: torchutil cmd params\n";
     std::cerr << "cmd is one of:\n";
-    std::cerr << " train infile       : Train network from data in infile\n";
-    std::cerr << " eval modelfile fen : Evaluate position using a saved network\n";
+    std::cerr << " train infile         : Train network from data in infile\n";
+    std::cerr << " quant infile outfile : Quantize infile, write result to outfile\n";
+    std::cerr << " eval modelfile fen   : Evaluate position using a saved network\n";
     std::cerr << " subset infile nPos outfile : Extract positions from infile, write to outfile\n";
     std::cerr << " getvalidation infile : Extract validation data, write in FEN format\n";
-    std::cerr << " featstat infile    : Print feature activation stats from training data\n";
+    std::cerr << " featstat infile      : Print feature activation stats from training data\n";
 
     std::cerr << std::flush;
     ::exit(2);
@@ -711,6 +811,12 @@ int main(int argc, const char* argv[]) {
             std::string inFile = argv[2];
             U64 seed = (U64)(currentTime() * 1000);
             train(inFile, seed);
+        } else if (cmd == "quant") {
+            if (argc != 4)
+                usage();
+            std::string inFile = argv[2];
+            std::string outFile = argv[3];
+            quantize(inFile, outFile);
         } else if (cmd == "eval") {
             if (argc != 4)
                 usage();
