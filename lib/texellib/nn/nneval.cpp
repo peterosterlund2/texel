@@ -122,7 +122,7 @@ NNEvaluator::computeL1Out() {
         const auto& l1OutC = (wtm == (c == 0)) ? l1OutW : l1OutB;
         int i0 = c * n1;
         for (int i = 0; i < n1; i++)
-            l1Out(i0 + i) = clamp(l1OutC(i), (S16)0, (S16)127);
+            l1Out(i0 + i) = clamp(l1OutC(i) >> 2, 0, 127);
     }
 }
 

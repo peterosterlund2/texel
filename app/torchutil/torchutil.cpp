@@ -466,9 +466,9 @@ Net::quantize(NetData& qNet) const {
     }
 
     std::vector<float> data = toVec(lin1W);
-    scaleCopy(data, inFeats1*n1, &qNet.weight1.data[0], 127, 0);
+    scaleCopy(data, inFeats1*n1, &qNet.weight1.data[0], 4*127, 0);
     data = toVec(lin1B);
-    scaleCopy(data, n1, &qNet.bias1.data[0], 127, 0);
+    scaleCopy(data, n1, &qNet.bias1.data[0], 4*127, 2);
 
     data = toVec(lin2->weight);
     scaleCopy(data, n1*2*n2, &qNet.lin2.weight.data[0], 64, 0);
