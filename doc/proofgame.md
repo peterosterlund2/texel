@@ -416,7 +416,7 @@ the CSPs encountered when analyzing extended proof kernels.
 Some positions can be proven illegal by considering what the last move leading
 to the position must have been. A generic reverse move generator is used to get
 a list of candidate positions that could have preceded the position. If all
-candiate positions can be proven illegal, it can be concluded that the original
+candidate positions can be proven illegal, it can be concluded that the original
 position is illegal too.
 
 The reverse move generator can statically determine that some moves are illegal.
