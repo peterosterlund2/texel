@@ -68,7 +68,7 @@ public:
     enum Oper { LE, GE };
     /** Add constraint "var_v1 OP var_v2 + offs", where OP is LE (<=) or GE (>=). */
     void addIneq(int v1, Oper op, int v2, int offs);
-    /** Add contraint var_v1 = var_v2 + offs. */
+    /** Add constraint var_v1 = var_v2 + offs. */
     void addEq(int v1, int v2, int offs);
 
     /** Solve the CSP.
