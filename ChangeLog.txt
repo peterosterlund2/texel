@@ -1,3 +1,39 @@
+2023-06-10: Texel 1.08
+New features:
+- Allow arbitrary hash table sizes up to 1TiB of memory.
+- Add "contempt" UCI parameter.
+- Add automatic contempt depending on opponent name.
+- Add support for 7 man syzygy tablebases.
+- Add "runcmd" Windows program. Useful for GUIs that don't allow specifying
+  command line arguments to the engine.
+Bug fixes:
+- Fix crash in Windows NUMA/CPU discovery code.
+- Fixed rare crash when running in cluster mode.
+- Changed default "ponder" UCI option value to false.
+Time management:
+- More dynamic time management.
+- Better time allocation for ponder on games.
+Search:
+- Use depth-dependent singular extension threshold.
+- Add tempo bonus.
+Reduced strength:
+- Add MaxNPS UCI parameter.
+- Make reduced strength work for Threads > 1.
+- Add UCI_LimitStrength and UCI_Elo support, range -625 - 2540.
+Infrastructure:
+- Use CMake instead of a handwritten Makefile.
+- Use Google Test framework instead of CUTE.
+texelutil:
+- Use C++ threads instead of OpenMP.
+- Build texelutil with reduced functionality even if Armadillo and GSL libraries
+  are not found.
+- Add a reverse move generator, "texelutil revmoves".
+- Improve "texelutil proofgame" for random positions.
+- Add "texelutil rndfen" to generate random positions.
+Documentation:
+- Document how to estimate number of legal chess positions.
+- Document the Texel tablebase probing algorithm.
+
 2017-09-30: Texel 1.07 (ELO: +35)
 Search:
 - More aggressive LMR in expected CUT nodes.
