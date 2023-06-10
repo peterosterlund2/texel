@@ -6,6 +6,7 @@
 /.cproject
 /.project
 /.settings
+/.vscode
 **/CMakeFiles
 **/Makefile
 !/doc/Makefile
