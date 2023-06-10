@@ -210,7 +210,7 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
                 auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
                 ProofGame::Result result;
                 ret = ps.search(opts, result) == INT_MAX;
-            } catch (ChessError& e) {
+            } catch (ChessError&) {
                 ret = true;
             }
             if (ret)

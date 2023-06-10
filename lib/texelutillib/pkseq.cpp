@@ -172,7 +172,7 @@ PkSequence::improveKernel(Graph& kernel, int idx, const Position& pos,
                                                                false, {}, true, log));
             if (!pg->isInfeasible(fromSq, toSq))
                 return true;
-        } catch (const ChessError& e) {
+        } catch (const ChessError&) {
             return true; // Cannot determine feasibility
         }
         if (fromSq != -1 && toSq != -1) {
