@@ -1,16 +1,19 @@
+set(src_pg
+                         pg/assignment.hpp
+                         pg/bitSet.hpp
+  pg/cspsolver.cpp       pg/cspsolver.hpp
+  pg/extproofkernel.cpp  pg/extproofkernel.hpp
+  pg/pkseq.cpp           pg/pkseq.hpp
+  pg/proofgame.cpp       pg/proofgame.hpp
+  pg/proofgamefilter.cpp pg/proofgamefilter.hpp
+  pg/proofkernel.cpp     pg/proofkernel.hpp
+  )
+
 set(src_texelutillib
-                      assignment.hpp
-                      bitSet.hpp
   bookbuild.cpp       bookbuild.hpp
-  cspsolver.cpp       cspsolver.hpp
-  extproofkernel.cpp  extproofkernel.hpp
   gametree.cpp        gametree.hpp
                       gametreeutil.hpp
-  pkseq.cpp           pkseq.hpp
   posutil.cpp         posutil.hpp
-  proofgame.cpp       proofgame.hpp
-  proofgamefilter.cpp proofgamefilter.hpp
-  proofkernel.cpp     proofkernel.hpp
   revmovegen.cpp      revmovegen.hpp
                       stloutput.hpp
                       threadpool.hpp
@@ -18,11 +21,12 @@ set(src_texelutillib
   )
 
 add_library(texelutillib STATIC
+  ${src_pg}
   ${src_texelutillib}
   )
 target_link_libraries(texelutillib
   PUBLIC texellib
   )
 target_include_directories(texelutillib
-  INTERFACE .
+  PUBLIC . pg
   )
