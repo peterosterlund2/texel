@@ -9,6 +9,15 @@ set(src_debug
   debug/treeLogger.cpp    debug/treeLogger.hpp
   )
 
+set(src_hw
+                          hw/alignedAlloc.hpp
+  hw/cluster.cpp          hw/cluster.hpp
+  hw/clustertt.cpp        hw/clustertt.hpp
+  hw/largePageAlloc.cpp   hw/largePageAlloc.hpp
+  hw/numa.cpp             hw/numa.hpp
+  hw/parallel.cpp         hw/parallel.hpp
+  )
+
 set(src_gtb
   gtb/compression/lzma/Lzma86Dec.c
   gtb/compression/lzma/LzFind.c
@@ -30,7 +39,6 @@ set(src_syzygy
   )
 
 set(src_util
-                          util/alignedAlloc.hpp
   util/random.cpp         util/random.hpp
   util/timeUtil.cpp       util/timeUtil.hpp
   util/util.cpp           util/util.hpp
@@ -39,8 +47,6 @@ set(src_util
 set(src_texellib
   bitBoard.cpp            bitBoard.hpp
                           chessError.hpp
-  cluster.cpp             cluster.hpp
-  clustertt.cpp           clustertt.hpp
   computerPlayer.cpp      computerPlayer.hpp
                           constants.hpp
   endGameEval.cpp         endGameEval.hpp
@@ -52,12 +58,9 @@ set(src_texellib
   kpkTable.cpp
   krkpTable.cpp
   krpkrTable.cpp
-  largePageAlloc.cpp      largePageAlloc.hpp
   material.cpp            material.hpp
   move.cpp                move.hpp
   moveGen.cpp             moveGen.hpp
-  numa.cpp                numa.hpp
-  parallel.cpp            parallel.hpp
   parameters.cpp          parameters.hpp
   piece.cpp               piece.hpp
                           player.hpp
@@ -73,12 +76,12 @@ set(src_texellib
   )
 
 add_library(texellib STATIC
-  ${src_book} ${src_debug} ${src_util}
+  ${src_book} ${src_debug} ${src_hw} ${src_util}
   ${src_gtb} ${src_syzygy}
   ${src_texellib}
   )
 target_include_directories(texellib
-  PUBLIC . book debug util
+  PUBLIC . book debug hw util
   PRIVATE gtb/sysport gtb/compression gtb/compression/lzma
   )
 
