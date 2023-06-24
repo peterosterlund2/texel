@@ -26,7 +26,7 @@
 #ifndef MATCHBOOKCREATOR_HPP_
 #define MATCHBOOKCREATOR_HPP_
 
-#include "util/util.hpp"
+#include "util.hpp"
 #include "move.hpp"
 #include <ostream>
 #include <vector>

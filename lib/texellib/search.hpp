@@ -33,7 +33,7 @@
 #include "searchUtil.hpp"
 #include "parallel.hpp"
 #include "parameters.hpp"
-#include "util/util.hpp"
+#include "util.hpp"
 
 #include <limits>
 #include <memory>

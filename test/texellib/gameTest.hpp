@@ -26,7 +26,7 @@
 #ifndef GAMETEST_HPP_
 #define GAMETEST_HPP_
 
-#include "util/util.hpp"
+#include "util.hpp"
 
 class Position;
 class Evaluate;

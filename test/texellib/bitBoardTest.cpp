@@ -25,7 +25,7 @@
 
 #include "bitBoard.hpp"
 #include "textio.hpp"
-#include "util/random.hpp"
+#include "random.hpp"
 
 #include <algorithm>
 

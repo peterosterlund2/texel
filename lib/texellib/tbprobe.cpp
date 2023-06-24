@@ -30,7 +30,7 @@
 #include "position.hpp"
 #include "moveGen.hpp"
 #include "constants.hpp"
-#include "util/timeUtil.hpp"
+#include "timeUtil.hpp"
 
 #include <limits>
 #include <unordered_map>

@@ -29,7 +29,7 @@
 #include "position.hpp"
 #include "textio.hpp"
 #include "posutil.hpp"
-#include "util/util.hpp"
+#include "util.hpp"
 #include "stloutput.hpp"
 
 #include "gtest/gtest.h"

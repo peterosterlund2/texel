@@ -26,7 +26,7 @@
 #ifndef ENDGAMEEVAL_HPP_
 #define ENDGAMEEVAL_HPP_
 
-#include "util/util.hpp"
+#include "util.hpp"
 
 class Position;
 

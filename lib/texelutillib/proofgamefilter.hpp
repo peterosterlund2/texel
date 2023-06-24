@@ -26,7 +26,7 @@
 #ifndef PROOFGAMEFILTER_HPP_
 #define PROOFGAMEFILTER_HPP_
 
-#include "util/util.hpp"
+#include "util.hpp"
 #include "proofgame.hpp"
 #include "proofkernel.hpp"
 

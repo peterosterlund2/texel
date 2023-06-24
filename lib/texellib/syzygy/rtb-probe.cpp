@@ -7,9 +7,9 @@
   this code to other chess engines.
 */
 
-#include "../piece.hpp"
-#include "../position.hpp"
-#include "../moveGen.hpp"
+#include "piece.hpp"
+#include "position.hpp"
+#include "moveGen.hpp"
 
 #include <type_traits>
 

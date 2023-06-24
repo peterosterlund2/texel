@@ -25,7 +25,7 @@
 
 #include "clustertt.hpp"
 #include "cluster.hpp"
-#include "util/logger.hpp"
+#include "logger.hpp"
 #include "treeLogger.hpp"
 
 #include <limits.h>

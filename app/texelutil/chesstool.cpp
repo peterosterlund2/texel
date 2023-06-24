@@ -35,9 +35,9 @@
 #include "tbprobe.hpp"
 #include "tbpath.hpp"
 #include "stloutput.hpp"
-#include "util/timeUtil.hpp"
-#include "util/logger.hpp"
-#include "util/random.hpp"
+#include "timeUtil.hpp"
+#include "logger.hpp"
+#include "random.hpp"
 #include "posutil.hpp"
 
 #include <queue>

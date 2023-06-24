@@ -24,7 +24,7 @@
  */
 
 #include "spsa.hpp"
-#include "util/timeUtil.hpp"
+#include "timeUtil.hpp"
 #include "parameters.hpp"
 #include "chesstool.hpp"
 #include "threadpool.hpp"

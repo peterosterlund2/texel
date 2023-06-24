@@ -27,7 +27,7 @@
 #define POSUTIL_HPP_
 
 #include "piece.hpp"
-#include "util/util.hpp"
+#include "util.hpp"
 
 class Position;
 

@@ -32,7 +32,7 @@
 #include <gsl/gsl_randist.h>
 #include <memory>
 #include <cmath>
-#include "util/random.hpp"
+#include "random.hpp"
 
 /** Run SPSA optimization. */
 class Spsa {

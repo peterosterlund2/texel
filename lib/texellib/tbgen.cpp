@@ -24,7 +24,7 @@
  */
 
 #include "tbgen.hpp"
-#include "util/timeUtil.hpp"
+#include "timeUtil.hpp"
 #include "textio.hpp"
 #include "constants.hpp"
 #include "transpositionTable.hpp"

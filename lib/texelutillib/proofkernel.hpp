@@ -27,8 +27,8 @@
 #define PROOFKERNEL_HPP_
 
 #include "position.hpp"
-#include "util/util.hpp"
-#include "util/random.hpp"
+#include "util.hpp"
+#include "random.hpp"
 #include "chessError.hpp"
 #include <array>
 

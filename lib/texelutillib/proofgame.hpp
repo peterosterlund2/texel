@@ -26,7 +26,7 @@
 #ifndef PROOFGAME_HPP_
 #define PROOFGAME_HPP_
 
-#include "util/util.hpp"
+#include "util.hpp"
 #include "position.hpp"
 #include "assignment.hpp"
 

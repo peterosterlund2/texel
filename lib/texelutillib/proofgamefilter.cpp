@@ -27,7 +27,7 @@
 #include "textio.hpp"
 #include "posutil.hpp"
 #include "pkseq.hpp"
-#include "util/timeUtil.hpp"
+#include "timeUtil.hpp"
 #include "threadpool.hpp"
 
 #include <iostream>

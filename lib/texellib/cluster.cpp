@@ -26,7 +26,7 @@
 #include "cluster.hpp"
 #include "clustertt.hpp"
 #include "numa.hpp"
-#include "util/logger.hpp"
+#include "logger.hpp"
 #include <thread>
 #include <iostream>
 

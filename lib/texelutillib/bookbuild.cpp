@@ -28,7 +28,7 @@
 #include "gametreeutil.hpp"
 #include "moveGen.hpp"
 #include "search.hpp"
-#include "util/histogram.hpp"
+#include "histogram.hpp"
 #include "textio.hpp"
 #include <random>
 

@@ -27,7 +27,7 @@
 #define GAMETREE_HPP_
 
 #include "position.hpp"
-#include "util/util.hpp"
+#include "util.hpp"
 
 #include <map>
 #include <memory>

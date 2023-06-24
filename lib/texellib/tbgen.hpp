@@ -26,7 +26,7 @@
 #ifndef TBGEN_HPP_
 #define TBGEN_HPP_
 
-#include "util/util.hpp"
+#include "util.hpp"
 
 #include <algorithm>
 #include <cassert>

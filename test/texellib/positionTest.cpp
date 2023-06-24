@@ -28,7 +28,7 @@
 #include "piece.hpp"
 #include "material.hpp"
 #include "textio.hpp"
-#include "util/timeUtil.hpp"
+#include "timeUtil.hpp"
 
 #include <vector>
 #include <set>

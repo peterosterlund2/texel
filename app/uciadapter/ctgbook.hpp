@@ -26,8 +26,8 @@
 #ifndef CTGBOOK_HPP_
 #define CTGBOOK_HPP_
 
-#include "util/util.hpp"
-#include "util/random.hpp"
+#include "util.hpp"
+#include "random.hpp"
 #include "position.hpp"
 
 #include <vector>

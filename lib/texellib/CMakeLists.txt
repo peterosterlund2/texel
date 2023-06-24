@@ -73,7 +73,7 @@ add_library(texellib STATIC
   ${src_util}
   )
 target_include_directories(texellib
-  INTERFACE .
+  PUBLIC . util
   PRIVATE gtb/sysport gtb/compression gtb/compression/lzma
   )
 

@@ -31,7 +31,7 @@
 #include "position.hpp"
 #include "textio.hpp"
 #include "searchUtil.hpp"
-#include "util/logger.hpp"
+#include "logger.hpp"
 
 #include <vector>
 #include <memory>

@@ -23,9 +23,9 @@
  *      Author: petero
  */
 
-#include "util/util.hpp"
-#include "util/timeUtil.hpp"
-#include "util/histogram.hpp"
+#include "util.hpp"
+#include "timeUtil.hpp"
+#include "histogram.hpp"
 
 #include <iostream>
 #include <memory>

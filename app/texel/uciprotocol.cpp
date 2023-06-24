@@ -27,7 +27,7 @@
 #include "searchparams.hpp"
 #include "computerPlayer.hpp"
 #include "textio.hpp"
-#include "util/logger.hpp"
+#include "logger.hpp"
 #include "cluster.hpp"
 
 #include <iostream>

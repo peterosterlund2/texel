@@ -28,7 +28,7 @@
 #include "revmovegen.hpp"
 #include "proofkernel.hpp"
 #include "textio.hpp"
-#include "util/timeUtil.hpp"
+#include "timeUtil.hpp"
 
 #include <iostream>
 #include <climits>

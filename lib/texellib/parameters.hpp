@@ -26,7 +26,7 @@
 #ifndef PARAMETERS_HPP_
 #define PARAMETERS_HPP_
 
-#include "util/util.hpp"
+#include "util.hpp"
 #include "piece.hpp"
 #include "square.hpp"
 

@@ -29,7 +29,7 @@
 #include "evaluate.hpp"
 #include "searchUtil.hpp"
 #include "constants.hpp"
-#include "util/timeUtil.hpp"
+#include "timeUtil.hpp"
 
 #include <memory>
 #include <vector>

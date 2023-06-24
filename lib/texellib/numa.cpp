@@ -24,8 +24,8 @@
  */
 
 #include "numa.hpp"
-#include "util/util.hpp"
-#include "util/logger.hpp"
+#include "util.hpp"
+#include "logger.hpp"
 #include "bitBoard.hpp"
 
 #include <map>

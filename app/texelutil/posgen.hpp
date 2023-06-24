@@ -26,7 +26,7 @@
 #ifndef POSGEN_HPP_
 #define POSGEN_HPP_
 
-#include "util/util.hpp"
+#include "util.hpp"
 #include <string>
 #include <vector>
 #include <mutex>

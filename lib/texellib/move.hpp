@@ -27,7 +27,7 @@
 #define MOVE_HPP_
 
 #include <iosfwd>
-#include "util/util.hpp"
+#include "util.hpp"
 
 /** Represents a chess move. */
 class Move {

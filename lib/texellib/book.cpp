@@ -29,7 +29,7 @@
 #include "polyglot.hpp"
 #include "parameters.hpp"
 #include "textio.hpp"
-#include "util/timeUtil.hpp"
+#include "timeUtil.hpp"
 
 #include <fstream>
 #include <iomanip>

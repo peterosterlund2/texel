@@ -28,7 +28,7 @@
 
 #include "piece.hpp"
 #include "position.hpp"
-#include "util/alignedAlloc.hpp"
+#include "alignedAlloc.hpp"
 
 #if _MSC_VER
 #include <xmmintrin.h>

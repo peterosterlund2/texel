@@ -29,7 +29,7 @@
 #include "evaluate.hpp"
 #include "moveGen.hpp"
 #include "textio.hpp"
-#include "util/timeUtil.hpp"
+#include "timeUtil.hpp"
 #include "evaluateTest.hpp"
 
 #include <iostream>

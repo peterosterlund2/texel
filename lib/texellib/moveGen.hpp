@@ -28,7 +28,7 @@
 
 #include "move.hpp"
 #include "position.hpp"
-#include "util/util.hpp"
+#include "util.hpp"
 
 #include <cassert>
 

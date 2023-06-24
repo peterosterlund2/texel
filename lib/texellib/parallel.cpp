@@ -33,7 +33,7 @@
 #include "killerTable.hpp"
 #include "textio.hpp"
 #include "treeLogger.hpp"
-#include "util/logger.hpp"
+#include "logger.hpp"
 
 #include <cmath>
 #include <cassert>

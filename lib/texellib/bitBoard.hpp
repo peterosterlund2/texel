@@ -26,8 +26,8 @@
 #ifndef BITBOARD_HPP_
 #define BITBOARD_HPP_
 
-#include "util/util.hpp"
-#include "util/alignedAlloc.hpp"
+#include "util.hpp"
+#include "alignedAlloc.hpp"
 #include "square.hpp"
 
 #if _MSC_VER

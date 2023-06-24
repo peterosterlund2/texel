@@ -32,8 +32,8 @@
 #include "tbprobe.hpp"
 #include "treeLogger.hpp"
 #include "textio.hpp"
-#include "util/logger.hpp"
-#include "util/random.hpp"
+#include "logger.hpp"
+#include "random.hpp"
 
 #include <iostream>
 #include <iomanip>
