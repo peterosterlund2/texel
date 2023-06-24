@@ -1,3 +1,8 @@
+set(src_book
+  book/book.cpp           book/book.hpp
+  book/polyglot.cpp       book/polyglot.hpp
+  )
+
 set(src_gtb
   gtb/compression/lzma/Lzma86Dec.c
   gtb/compression/lzma/LzFind.c
@@ -29,7 +34,6 @@ set(src_util
 
 set(src_texellib
   bitBoard.cpp            bitBoard.hpp
-  book.cpp                book.hpp
                           chessError.hpp
   cluster.cpp             cluster.hpp
   clustertt.cpp           clustertt.hpp
@@ -53,7 +57,6 @@ set(src_texellib
   parameters.cpp          parameters.hpp
   piece.cpp               piece.hpp
                           player.hpp
-  polyglot.cpp            polyglot.hpp
   position.cpp            position.hpp
   search.cpp              search.hpp
                           searchUtil.hpp
@@ -67,13 +70,14 @@ set(src_texellib
   )
 
 add_library(texellib STATIC
+  ${src_book}
   ${src_gtb}
   ${src_syzygy}
   ${src_texellib}
   ${src_util}
   )
 target_include_directories(texellib
-  PUBLIC . util
+  PUBLIC . book util
   PRIVATE gtb/sysport gtb/compression gtb/compression/lzma
   )
 
