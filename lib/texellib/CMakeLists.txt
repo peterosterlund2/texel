@@ -3,6 +3,12 @@ set(src_book
   book/polyglot.cpp       book/polyglot.hpp
   )
 
+set(src_debug
+                          debug/histogram.hpp
+  debug/logger.cpp        debug/logger.hpp
+  debug/treeLogger.cpp    debug/treeLogger.hpp
+  )
+
 set(src_gtb
   gtb/compression/lzma/Lzma86Dec.c
   gtb/compression/lzma/LzFind.c
@@ -25,8 +31,6 @@ set(src_syzygy
 
 set(src_util
                           util/alignedAlloc.hpp
-                          util/histogram.hpp
-  util/logger.cpp         util/logger.hpp
   util/random.cpp         util/random.hpp
   util/timeUtil.cpp       util/timeUtil.hpp
   util/util.cpp           util/util.hpp
@@ -65,19 +69,16 @@ set(src_texellib
   tbprobe.cpp             tbprobe.hpp
   textio.cpp              textio.hpp
   transpositionTable.cpp  transpositionTable.hpp
-  treeLogger.cpp          treeLogger.hpp
   undoInfo.hpp
   )
 
 add_library(texellib STATIC
-  ${src_book}
-  ${src_gtb}
-  ${src_syzygy}
+  ${src_book} ${src_debug} ${src_util}
+  ${src_gtb} ${src_syzygy}
   ${src_texellib}
-  ${src_util}
   )
 target_include_directories(texellib
-  PUBLIC . book util
+  PUBLIC . book debug util
   PRIVATE gtb/sysport gtb/compression gtb/compression/lzma
   )
 
