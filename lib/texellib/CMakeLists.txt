@@ -18,24 +18,32 @@ set(src_hw
   hw/parallel.cpp         hw/parallel.hpp
   )
 
+set(src_tb
+  tb/kpkTable.cpp
+  tb/krkpTable.cpp
+  tb/krpkrTable.cpp
+  tb/tbgen.cpp            tb/tbgen.hpp
+  tb/tbprobe.cpp          tb/tbprobe.hpp
+  )
+
 set(src_gtb
-  gtb/compression/lzma/Lzma86Dec.c
-  gtb/compression/lzma/LzFind.c
-  gtb/compression/lzma/Lzma86Enc.c
-  gtb/compression/lzma/LzmaDec.c
-  gtb/compression/lzma/Alloc.c
-  gtb/compression/lzma/Bra86.c
-  gtb/compression/lzma/LzmaEnc.c
-  gtb/compression/wrap.c
-  gtb/gtb-dec.c
-  gtb/gtb-att.c
-  gtb/sysport/sysport.c
-  gtb/gtb-probe.c
+  tb/gtb/compression/lzma/Lzma86Dec.c
+  tb/gtb/compression/lzma/LzFind.c
+  tb/gtb/compression/lzma/Lzma86Enc.c
+  tb/gtb/compression/lzma/LzmaDec.c
+  tb/gtb/compression/lzma/Alloc.c
+  tb/gtb/compression/lzma/Bra86.c
+  tb/gtb/compression/lzma/LzmaEnc.c
+  tb/gtb/compression/wrap.c
+  tb/gtb/gtb-dec.c
+  tb/gtb/gtb-att.c
+  tb/gtb/sysport/sysport.c
+  tb/gtb/gtb-probe.c
   )
 
 set(src_syzygy
-  syzygy/rtb-probe.cpp    syzygy/rtb-probe.hpp
-                          syzygy/rtb-core-impl.hpp
+  tb/syzygy/rtb-probe.cpp tb/syzygy/rtb-probe.hpp
+                          tb/syzygy/rtb-core-impl.hpp
   )
 
 set(src_util
@@ -55,9 +63,6 @@ set(src_texellib
   history.cpp             history.hpp
   humanPlayer.cpp         humanPlayer.hpp
   killerTable.cpp         killerTable.hpp
-  kpkTable.cpp
-  krkpTable.cpp
-  krpkrTable.cpp
   material.cpp            material.hpp
   move.cpp                move.hpp
   moveGen.cpp             moveGen.hpp
@@ -68,21 +73,19 @@ set(src_texellib
   search.cpp              search.hpp
                           searchUtil.hpp
                           square.hpp
-  tbgen.cpp               tbgen.hpp
-  tbprobe.cpp             tbprobe.hpp
   textio.cpp              textio.hpp
   transpositionTable.cpp  transpositionTable.hpp
   undoInfo.hpp
   )
 
 add_library(texellib STATIC
-  ${src_book} ${src_debug} ${src_hw} ${src_util}
+  ${src_book} ${src_debug} ${src_hw} ${src_tb} ${src_util}
   ${src_gtb} ${src_syzygy}
   ${src_texellib}
   )
 target_include_directories(texellib
-  PUBLIC . book debug hw util
-  PRIVATE gtb/sysport gtb/compression gtb/compression/lzma
+  PUBLIC . book debug hw tb util
+  PRIVATE tb/gtb/sysport tb/gtb/compression tb/gtb/compression/lzma
   )
 
 if(UNIX AND NOT ANDROID)
