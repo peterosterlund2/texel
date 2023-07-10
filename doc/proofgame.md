@@ -252,7 +252,7 @@ complete. There are some tricks available to speed up the search though:
 
    1. A pawn column is said to be *complete* if it is equal to the pawn column
       in the goal state, or if it can become equal by performing some
-      non-capture promotions of pawns in the column. With this definition if
+      non-capture promotions of pawns in the column. With this definition it
       follows that a move can at most make two pawn columns complete. This means
       that if the number of incomplete pawn columns is larger than 2 times the
       number of remaining moves, the goal state cannot be reached, so the node
