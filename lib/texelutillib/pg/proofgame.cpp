@@ -125,12 +125,12 @@ ProofGame::ProofGame(const std::string& start, const std::string& goal,
 
     pathDataCache.resize(1);
 
-    Matrix<int> m(8, 8);
+    Assign::Matrix<int> m(8, 8);
     captureAP[0] = Assignment<int>(m);
     captureAP[1] = Assignment<int>(m);
     for (int c = 0; c < 2; c++) {
         for (int n = 0; n <= maxMoveAPSize; n++) {
-            Matrix<int> m(n, n);
+            Assign::Matrix<int> m(n, n);
             moveAP[c][n] = Assignment<int>(m);
         }
     }

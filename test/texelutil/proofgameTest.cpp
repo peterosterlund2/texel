@@ -1009,7 +1009,8 @@ ProofGameTest::testCaptureSquares() {
             0, 0, 0, 1, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 1, 0, 0
         };
-        Matrix<int> m(8, 8);
+
+        Assign::Matrix<int> m(8, 8);
         const int bigCost = ProofGame::bigCost;
         for (int i = 0; i < 8; i++)
             for (int j = 0; j < 8; j++)

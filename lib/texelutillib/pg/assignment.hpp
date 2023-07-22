@@ -30,6 +30,7 @@
 #include <cassert>
 #include <limits>
 
+namespace Assign {
 
 template<typename T>
 class Matrix {
@@ -51,10 +52,13 @@ private:
     int cols_;
 };
 
+}
 
 template <typename WeightType>
 class Assignment {
 public:
+    template <typename T> using Matrix = Assign::Matrix<T>;
+
     /**
      * Create a weighted assignment problem instance with weight matrix 'w'.
      */
@@ -112,6 +116,7 @@ private:
     std::vector<int> Mx2, My2;
 };
 
+namespace Assign {
 
 template<typename T>
 inline Matrix<T>::Matrix(int rows, int cols)
@@ -153,6 +158,7 @@ Matrix<T>::printMatrix(bool negate) const {
     }
 }
 
+}
 
 template <typename WeightType>
 inline const typename Assignment<WeightType>::State&
