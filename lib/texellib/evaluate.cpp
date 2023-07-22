@@ -27,7 +27,13 @@
 #include "endGameEval.hpp"
 #include "constants.hpp"
 #include "parameters.hpp"
+#include "chessError.hpp"
+#include "incbin.h"
 #include <vector>
+
+extern "C" {
+#include "Lzma86Dec.h"
+}
 
 int Evaluate::pieceValueOrder[Piece::nPieceTypes] = {
     0,
@@ -45,6 +51,9 @@ int Evaluate::castleMaskFactor[256];
 
 static StaticInitializer<Evaluate> evInit;
 
+INCBIN_EXTERN(char, NNData);
+// const char* gNNDataData;
+// const unsigned int gNNDataSize;
 
 void
 Evaluate::staticInitialize() {
@@ -139,6 +148,7 @@ Evaluate::Evaluate(EvalHashTables& et)
       materialHash(et.materialHash),
       kingSafetyHash(et.kingSafetyHash),
       evalHash(et.evalHash),
+      nnEval(et.nnEval),
       wKingZone(0), bKingZone(0),
       wKingAttacks(0), bKingAttacks(0),
       wAttacksBB(0), bAttacksBB(0),
@@ -159,6 +169,9 @@ Evaluate::evalPosPrint(const Position& pos) {
 template <bool print>
 inline int
 Evaluate::evalPos(const Position& pos) {
+    nnEval.setPos(pos);
+    return nnEval.eval();
+
     const bool useHashTable = !print;
     EvalHashData* ehd = nullptr;
     U64 key = pos.historyHash();
@@ -1403,6 +1416,31 @@ Evaluate::kingSafetyKPPart(const Position& pos) {
 std::unique_ptr<Evaluate::EvalHashTables>
 Evaluate::getEvalHashTables() {
     return make_unique<EvalHashTables>();
+}
+
+Evaluate::EvalHashTables::EvalHashTables()
+    : nnEval(initNetData()) {
+    pawnHash.resize(1 << 16);
+    kingSafetyHash.resize(1 << 15);
+    materialHash.resize(1 << 14);
+}
+
+NetData&
+Evaluate::EvalHashTables::initNetData() {
+    netData = NetData::create();
+
+    size_t unCompressedSize = netData->computeSize();
+    std::vector<unsigned char> unComprData(unCompressedSize);
+    unsigned char* compressedData = (unsigned char*)gNNDataData;
+    size_t compressedSize = gNNDataSize;
+    int res = Lzma86_Decode(unComprData.data(), &unCompressedSize, compressedData, &compressedSize);
+    if (res != SZ_OK)
+        throw ChessError("Failed to decompress network data");
+
+    std::string nnData((char*)unComprData.data(), unCompressedSize);
+    std::stringstream is(nnData);
+    netData->load(is);
+    return *netData;
 }
 
 int

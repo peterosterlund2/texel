@@ -29,6 +29,7 @@
 #include "piece.hpp"
 #include "position.hpp"
 #include "alignedAlloc.hpp"
+#include "nneval.hpp"
 
 #if _MSC_VER
 #include <xmmintrin.h>
@@ -89,6 +90,11 @@ public:
 
         using EvalHashType = std::array<EvalHashData,(1<<16)>;
         EvalHashType evalHash;
+
+        std::shared_ptr<NetData> netData;
+        NNEvaluator nnEval;
+    private:
+        NetData& initNetData();
     };
 
     /** Constructor. */
@@ -204,7 +210,9 @@ private:
     vector_aligned<KingSafetyHashData>& kingSafetyHash;
     EvalHashTables::EvalHashType& evalHash;
 
-     // King safety variables
+    NNEvaluator& nnEval;
+
+    // King safety variables
     U64 wKingZone, bKingZone;       // Squares close to king that are worth attacking
     int wKingAttacks, bKingAttacks; // Number of attacks close to white/black king
     U64 wAttacksBB, bAttacksBB;     // Attacks by pieces and pawns, but not king
@@ -239,13 +247,6 @@ Evaluate::KingSafetyHashData::KingSafetyHashData()
 inline
 Evaluate::EvalHashData::EvalHashData()
     : data(0xffffffffffff0000ULL) {
-}
-
-inline
-Evaluate::EvalHashTables::EvalHashTables() {
-    pawnHash.resize(1 << 16);
-    kingSafetyHash.resize(1 << 15);
-    materialHash.resize(1 << 14);
 }
 
 inline void

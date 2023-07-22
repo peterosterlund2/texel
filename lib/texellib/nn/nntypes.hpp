@@ -102,6 +102,7 @@ public:
     void save(BinaryFileWriter& writer) const;
     void load(BinaryFileReader& reader);
     U64 computeHash() const;
+    int computeSize() const;
 };
 
 template <int nIn, int nOut>
@@ -125,6 +126,15 @@ LayerData<nIn,nOut>::computeHash() const {
     ret = hashU64(ret + weight.computeHash());
     ret = hashU64(ret + bias.computeHash());
     return ret;
+}
+
+template <int nIn, int nOut>
+int
+LayerData<nIn,nOut>::computeSize() const {
+    int s = 0;
+    s += COUNT_OF(weight.data) * sizeof(weight.data[0]);
+    s += COUNT_OF(bias.data) * sizeof(bias.data[0]);
+    return s;
 }
 
 // ------------------------------------------------------------------------------
@@ -188,6 +198,9 @@ public:
 
     /** Return a hash value corresponding to all data in this object. */
     U64 computeHash() const;
+
+    /** Return the size of the serialized network data. */
+    int computeSize() const;
 
 private:
     NetData() = default;

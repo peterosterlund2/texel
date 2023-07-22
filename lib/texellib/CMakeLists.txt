@@ -20,6 +20,8 @@ set(src_hw
   )
 
 set(src_nn
+                          nn/incbin.h
+  nn/nndata.cpp
   nn/nneval.cpp           nn/nneval.hpp
   nn/nntypes.cpp          nn/nntypes.hpp
   )
@@ -94,6 +96,13 @@ target_include_directories(texellib
   PUBLIC . book debug hw nn tb util
   PRIVATE tb/gtb/sysport tb/gtb/compression tb/gtb/compression/lzma
   )
+
+set(NNDATA_FILE ${texel_SOURCE_DIR}/nndata.tbin.compr)
+target_compile_definitions(texellib
+  PRIVATE "NNDATA_FILE=\"${NNDATA_FILE}\""
+  )
+set_source_files_properties(nn/nndata.cpp
+  PROPERTIES OBJECT_DEPENDS ${NNDATA_FILE})
 
 if(UNIX AND NOT ANDROID)
   find_library(RT_LIB rt)

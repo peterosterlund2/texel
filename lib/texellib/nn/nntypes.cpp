@@ -87,3 +87,15 @@ NetData::computeHash() const {
     ret = hashU64(ret + lin4.computeHash());
     return ret;
 }
+
+int
+NetData::computeSize() const {
+    U64 s = sizeof(U64) + sizeof(int); // header, ver
+    s += COUNT_OF(weight1.data) * sizeof(weight1.data[0]);
+    s += COUNT_OF(bias1.data) * sizeof(bias1.data[0]);
+    s += lin2.computeSize();
+    s += lin3.computeSize();
+    s += lin4.computeSize();
+    s += sizeof(U64); // hash
+    return s;
+}
