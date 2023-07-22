@@ -37,9 +37,7 @@ public:
 
     static std::vector<U64> nullHist;
     static TranspositionTable tt;
-    static ThreadCommunicator comm;
-    static Search::SearchTables st;
-    static TreeLogger treeLog;
+    static std::shared_ptr<Search> getSearch(Position& pos);
 
     static void testNegaScout();
     static void testDraw50();
