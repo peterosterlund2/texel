@@ -13,7 +13,8 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
   set_property(CACHE CPU_TYPE PROPERTY STRINGS
     generic
     athlon64-sse3
-    corei7)
+    corei7
+    avx2)
 endif()
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR
    CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
@@ -89,7 +90,12 @@ endforeach()
 add_compiler_flag_if_supported("-fno-stack-protector")
 
 # Enable CPU architecture
-if(CPU_TYPE STREQUAL "corei7")
+if(CPU_TYPE STREQUAL "avx2")
+  require_compiler_flag("-march=corei7")
+  add_compile_options("-march=corei7")
+  require_compiler_flag("-mavx2")
+  add_compile_options("-mavx2")
+elseif(CPU_TYPE STREQUAL "corei7")
   require_compiler_flag("-march=corei7")
   add_compile_options("-march=corei7")
 elseif(CPU_TYPE STREQUAL "athlon64-sse3")
