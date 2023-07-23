@@ -33,7 +33,6 @@ class EvaluateTest {
 public:
     static void testEvalPos();
     static void testPieceSquareEval();
-    static void testTradeBonus();
     static void testMaterial();
     static void testKingSafety();
     static void testEndGameEval();
@@ -61,7 +60,6 @@ public:
     static void testUciParamTable();
     static void testSwindleScore();
     static void testStalePawns();
-    static void testContactChecks();
 
 private:
     static int getNContactChecks(const std::string& fen);

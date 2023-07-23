@@ -128,7 +128,6 @@ EvaluateTest::testEvalPos() {
     pos.makeMove(TextIO::stringToMove(pos, "Nc6"), ui);
     pos.makeMove(TextIO::stringToMove(pos, "Bb5"), ui);
     pos.makeMove(TextIO::stringToMove(pos, "Nge7"), ui);
-    EXPECT_GE(moveScore(pos, "O-O"), 0);     // Castling is good
     EXPECT_LT(moveScore(pos, "Ke2"), 0);     // Losing right to castle is bad
     EXPECT_LT(moveScore(pos, "Kf1"), 0);
     EXPECT_LT(moveScore(pos, "Rg1"), 0);
@@ -141,20 +140,6 @@ EvaluateTest::testEvalPos() {
     EXPECT_EQ(false, pos.h1Castle());
     int cs2 = evalWhite(pos);
     EXPECT_GE(cs2, cs1 - 7);    // No bonus for useless castle right
-
-    // Test rook open file bonus
-    pos = TextIO::readFEN("r4rk1/1pp1qppp/3b1n2/4p3/2B1P1b1/1QN2N2/PP3PPP/R3R1K1 w - - 0 1");
-    int ms1 = moveScore(pos, "Red1");
-    int ms2 = moveScore(pos, "Rec1");
-    int ms3 = moveScore(pos, "Rac1");
-    int ms4 = moveScore(pos, "Rad1");
-    EXPECT_GT(ms1, 0);        // Good to have rook on open file
-//    EXPECT_GT(ms2, 0);        // Good to have rook on half-open file
-    EXPECT_GT(ms1, ms2);      // Open file better than half-open file
-    EXPECT_GE(ms3, -3);
-    EXPECT_GT(ms4, 0);
-//    EXPECT_GT(ms4, ms1);
-//    EXPECT_GT(ms3, ms2);
 
     pos = TextIO::readFEN("r3kb1r/p3pp1p/bpPq1np1/4N3/2pP4/2N1PQ2/P1PB1PPP/R3K2R b KQkq - 0 12");
     EXPECT_GT(moveScore(pos, "O-O-O"), 0);    // Black long castle is bad for black
@@ -190,15 +175,12 @@ TEST(EvaluateTest, testPieceSquareEval) {
 void
 EvaluateTest::testPieceSquareEval() {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
-    int score = evalWhite(pos);
-    EXPECT_EQ(tempoBonusMG, score);      // Should be zero + tempo bonus, by symmetry
     UndoInfo ui;
     pos.makeMove(TextIO::stringToMove(pos, "e4"), ui);
-    score = evalWhite(pos);
+    int score = evalWhite(pos);
     EXPECT_GT(score, 0);     // Centralizing a pawn is a good thing
     pos.makeMove(TextIO::stringToMove(pos, "e5"), ui);
     score = evalWhite(pos);
-    EXPECT_EQ(tempoBonusMG, score);      // Should be zero + tempo bonus, by symmetry
     EXPECT_GT(moveScore(pos, "Nf3"), 0);      // Developing knight is good
     pos.makeMove(TextIO::stringToMove(pos, "Nf3"), ui);
     EXPECT_LT(moveScore(pos, "Nc6"), 0);      // Developing knight is good
@@ -211,47 +193,10 @@ EvaluateTest::testPieceSquareEval() {
     pos.makeMove(TextIO::stringToMove(pos, "Nxc6"), ui);
     int score2 = evalWhite(pos);
     EXPECT_LT(score2, score);                 // Bishop worth more than knight in this case
-//    EXPECT_GE(moveScore(pos, "Qe2"), -9);    // Queen away from edge is good
-
-    pos = TextIO::readFEN("5k2/4nppp/p1n5/1pp1p3/4P3/2P1BN2/PP3PPP/3R2K1 w - - 0 1");
-    EXPECT_GT(moveScore(pos, "Rd7"), 0);      // Rook on 7:th rank is good
-//    EXPECT_GE(moveScore(pos, "Rd8"), 0);      // Rook on 8:th rank also good
-    pos.setPiece(TextIO::getSquare("a1"), Piece::WROOK);
-    pos.setPiece(TextIO::getSquare("d1"), Piece::EMPTY);
-    EXPECT_GE(moveScore(pos, "Rac1") + tempoBonusMG, 0); // Rook on c-f files considered good
 
     pos = TextIO::readFEN("r4rk1/pppRRppp/1q4b1/n7/8/2N3B1/PPP1QPPP/6K1 w - - 0 1");
     score = evalWhite(pos);
     EXPECT_GT(score, 100); // Two rooks on 7:th rank is very good
-}
-
-TEST(EvaluateTest, testTradeBonus) {
-    EvaluateTest::testTradeBonus();
-}
-
-void
-EvaluateTest::testTradeBonus() {
-    std::string fen = "8/5k2/6r1/2p1p3/3p4/2P2N2/3PPP2/4K1R1 w - - 0 1";
-    Position pos = TextIO::readFEN(fen);
-    int score1 = evalWhite(pos);
-    UndoInfo ui;
-    pos.makeMove(TextIO::stringToMove(pos, "Rxg6"), ui);
-    pos.makeMove(TextIO::stringToMove(pos, "Kxg6"), ui);
-    int score2 = evalWhite(pos);
-    EXPECT_GT(score2, score1);    // White ahead, trading pieces is good
-
-    pos = TextIO::readFEN(fen);
-    pos.makeMove(TextIO::stringToMove(pos, "cxd4"), ui);
-    pos.makeMove(TextIO::stringToMove(pos, "cxd4"), ui);
-    score2 = evalWhite(pos);
-    EXPECT_LT(score2, score1);    // White ahead, trading pawns is bad
-
-    pos = TextIO::readFEN("8/8/1b2b3/4kp2/5N2/4NKP1/6B1/8 w - - 0 62");
-    score1 = evalWhite(pos);
-    pos.makeMove(TextIO::stringToMove(pos, "Nxe6"), ui);
-    pos.makeMove(TextIO::stringToMove(pos, "Kxe6"), ui);
-    score2 = evalWhite(pos);
-    EXPECT_GT(score2, score1); // White ahead, trading pieces is good
 }
 
 static int material(const Position& pos) {
@@ -305,59 +250,12 @@ EvaluateTest::testMaterial() {
     evalFEN("r1bq4/pppp1kpp/2n2n2/2b1p3/4P3/8/PPPP1PPP/RNBQ1RK1 w - - 0 1");
 }
 
-static void movePiece(Position& pos, const std::string& from, const std::string& to) {
-    int f = TextIO::getSquare(from);
-    int t = TextIO::getSquare(to);
-    int p = pos.getPiece(f);
-    pos.setPiece(f, Piece::EMPTY);
-    pos.setPiece(t, p);
-}
-
 TEST(EvaluateTest, testKingSafety) {
     EvaluateTest::testKingSafety();
 }
 
 void
 EvaluateTest::testKingSafety() {
-    Position pos = TextIO::readFEN("r3kb1r/p1p1pppp/b2q1n2/4N3/3P4/2N1PQ2/P2B1PPP/R3R1K1 w kq - 0 1");
-    int s1 = evalWhite(pos);
-    movePiece(pos, "g7", "b7");
-    int s2 = evalWhite(pos);
-    EXPECT_LT(s2, s1);    // Half-open g-file is bad for white
-
-    // Trapping rook with own king is bad
-    pos = TextIO::readFEN("rnbqk1nr/pppp1ppp/8/8/1bBpP3/8/PPP2PPP/RNBQK1NR w KQkq - 2 4");
-    s1 = evalWhite(pos);
-    pos = TextIO::readFEN("rnbqk1nr/pppp1ppp/8/8/1bBpP3/8/PPP2PPP/RNBQ1KNR w kq - 2 4");
-    s2 = evalWhite(pos);
-    EXPECT_LT(s2, s1 + 3);
-
-//    pos = TextIO::readFEN("rnbqk1nr/pppp1ppp/8/8/1bBpPB2/8/PPP1QPPP/RN1K2NR w kq - 0 1");
-//    s1 = evalWhite(pos);
-//    movePiece(pos, "d1", "c1"); // rnbqk1nr/pppp1ppp/8/8/1bBpPB2/8/PPP1QPPP/RNK3NR w kq - 0 1
-//    s2 = evalWhite(pos);
-//    EXPECT_LE(s2, s1 + 8);
-
-    // Opposite castling
-    pos = TextIO::readFEN("rnbq1rk1/1p2ppbp/p2p1np1/8/3NP3/2N1BP2/PPPQ2PP/2KR1B1R w - - 0 1");
-    int sKc1Ph2 = evalWhite(pos);
-    movePiece(pos, "c1", "b1");
-    int sKb1Ph2 = evalWhite(pos);
-    movePiece(pos, "h2", "h3");
-    int sKb1Ph3 = evalWhite(pos);
-    movePiece(pos, "b1", "c1");
-    int sKc1Ph3 = evalWhite(pos);
-    EXPECT_LE(std::abs((sKb1Ph3 - sKb1Ph2) - (sKc1Ph3 - sKc1Ph2)), 2); // Pawn storm bonus same if own king moves within its flank
-
-    int sKg8Ph3 = evalWhite(pos);
-    movePiece(pos, "h3", "h2");
-    int sKg8Ph2 = evalWhite(pos);
-    movePiece(pos, "g8", "h8");
-    int sKh8Ph2 = evalWhite(pos);
-    movePiece(pos, "h2", "h3");
-    int sKh8Ph3 = evalWhite(pos);
-    EXPECT_LE(std::abs((sKg8Ph3 - sKg8Ph2) - (sKh8Ph3 - sKh8Ph2)), 2); // Pawn storm bonus same if other king moves within its flank
-
     // Test symmetry of king safety evaluation
     evalFEN("rnbq1r1k/pppp1ppp/4pn2/2b5/8/5NP1/PPPPPPBP/RNBQ1RK1 w - - 0 1");
     evalFEN("rn3r1k/pppq1ppp/3p1n2/2b1p3/8/5NPb/PPPPPPBP/RNBQ1RK1 w - - 0 1");
@@ -1480,44 +1378,4 @@ EvaluateTest::testStalePawns() {
     pos = TextIO::readFEN("r2q1rk1/pb2bppp/1pn2n2/2p1pP2/2PpP3/3P4/PP2B1PP/RNBQNRK1 b - - 0 1");
     sp = Evaluate::computeStalePawns(pos);
     EXPECT_EQ(BitBoard::sqMask(C4,C5,D3,D4,E4,E5,F7), sp);
-}
-
-int
-EvaluateTest::getNContactChecks(const std::string& fen) {
-    Position pos = TextIO::readFEN(fen);
-    Position symPos = PosUtil::swapColors(pos);
-    std::string symFen = TextIO::toFEN(symPos);
-
-    static std::shared_ptr<Evaluate::EvalHashTables> et;
-    if (!et)
-        et = Evaluate::getEvalHashTables();
-    Evaluate eval(*et);
-    evalPos(eval, pos, false, false);
-    int nContact = eval.getNContactChecks(pos);
-
-    evalPos(eval, symPos, false, false);
-    int nContact2 = eval.getNContactChecks(symPos);
-    EXPECT_EQ(-nContact, nContact2) << (fen + " == " + symFen);
-
-    return nContact;
-}
-
-TEST(EvaluateTest, testContactChecks) {
-    EvaluateTest::testContactChecks();
-}
-
-void
-EvaluateTest::testContactChecks() {
-    EXPECT_EQ(0, getNContactChecks(TextIO::startPosFEN));
-    EXPECT_EQ(1, getNContactChecks("r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1"));
-    EXPECT_EQ(0, getNContactChecks("r1bqkb1r/pppp1ppp/2n4n/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1"));
-    EXPECT_EQ(0, getNContactChecks("r1b1kbnr/ppppqppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1"));
-    EXPECT_EQ(0, getNContactChecks("r1b1kbnr/ppppqppp/2n5/4p2Q/2B1P3/5R2/PPPP1PPP/RNB1K1N1 w Qkq - 0 1")); //
-    EXPECT_EQ(0, getNContactChecks("2b1kbnr/ppprqppp/2n5/4p2Q/2B1P3/5R2/PPPP1PPP/RNB1K1N1 w Qk - 0 1"));
-    EXPECT_EQ(1, getNContactChecks("r2q1rk1/pbppppbp/1pn3p1/6N1/3PP2Q/2N5/PPPB1PP1/2KRR3 w - - 0 1"));
-    EXPECT_EQ(2, getNContactChecks("r2q1rk1/pbpppp2/1pn3pQ/8/4P3/2BP1N2/PPP1NPP1/2KRR3 w - - 0 1"));
-    EXPECT_EQ(1, getNContactChecks("r4rk1/pbpppp2/1p4pQ/8/nq1BP3/2NP1N2/PPP2PP1/2KRR3 w - - 0 1"));
-    EXPECT_EQ(2, getNContactChecks("rnbq1rk1/pppppp1p/5PpQ/6N1/8/8/PPPPP1PP/RNB1KB1R w KQ - 0 1"));
-    EXPECT_EQ(2, getNContactChecks("rnbq1rk1/ppppp3/6K1/4Q3/8/5N2/PPPPP1P1/RNB2B1R w - - 0 1"));
-    EXPECT_EQ(0, getNContactChecks("r1b1qr2/pp2npp1/1b2p2k/nP1pP1NP/6Q1/2P5/P4PP1/RNB1K2R b KQ - 2 14"));
 }
