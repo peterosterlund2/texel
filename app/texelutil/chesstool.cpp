@@ -658,7 +658,7 @@ ChessTool::searchPositions(std::istream& is, int baseTime, int increment) {
                     splitString(line, " : ", fields);
                     try {
                         pos = TextIO::readFEN(fields[0]);
-                    } catch (ChessParseError& cpe) {
+                    } catch (ChessParseError&) {
                         abort = true;
                         throw;
                     }
