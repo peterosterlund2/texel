@@ -1233,38 +1233,7 @@ ChessTool::printParams() {
     printTableNxN<8>(qt1b, "qt1b", os);
     printTableNxN<8>(qt2b, "qt2b", os);
     printTableNxN<8>(rt1b, "rt1b", os);
-    printTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", os);
-    printTableNxN<8>(protectedPawnBonus, "protectedPawnBonus", os);
-    printTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", os);
-    printTable(protectBonus, "protectBonus", os);
 
-    printTable(rookMobScore, "rookMobScore", os);
-    printTable(bishMobScore, "bishMobScore", os);
-    printTable(knightMobScore, "knightMobScore", os);
-    printTable(queenMobScore, "queenMobScore", os);
-    printTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", os);
-    printTableNxN<6>(connectedPPBonus, "connectedPPBonus", os);
-    printTable(passedPawnBonusX, "passedPawnBonusX", os);
-    printTable(passedPawnBonusY, "passedPawnBonusY", os);
-    printTable(ppBlockerBonus, "ppBlockerBonus", os);
-    printTable(candidatePassedBonus, "candidatePassedBonus", os);
-    printTable(QvsRRBonus, "QvsRRBonus", os);
-    printTable(RvsMBonus, "RvsMBonus", os);
-    printTable(RvsMMBonus, "RvsMMBonus", os);
-    printTable(bishopPairValue, "bishopPairValue", os);
-    printTable(rookEGDrawFactor, "rookEGDrawFactor", os);
-    printTable(RvsBPDrawFactor, "RvsBPDrawFactor", os);
-    printTable(castleFactor, "castleFactor", os);
-    printTable(pawnShelterTable, "pawnShelterTable", os);
-    printTable(pawnStormTable, "pawnStormTable", os);
-    printTable(pawnStormMissingPenalty, "pawnStormMissingPenalty", os);
-    printTable(kingAttackWeight, "kingAttackWeight", os);
-    printTable(qContactCheckBonus, "qContactCheckBonus", os);
-    printTable(pieceKingAttackBonus, "pieceKingAttackBonus", os);
-    printTable(kingPPSupportK, "kingPPSupportK", os);
-    printTable(kingPPSupportP, "kingPPSupportP", os);
-    printTable(pawnDoubledPenalty, "pawnDoubledPenalty", os);
-    printTable(pawnIsolatedPenalty, "pawnIsolatedPenalty", os);
     printTable(halfMoveFactor, "halfMoveFactor", os);
     printTable(stalePawnFactor, "stalePawnFactor", os);
 
@@ -1274,18 +1243,6 @@ ChessTool::printParams() {
     os << "rV : " << rV << std::endl;
     os << "qV : " << qV << std::endl;
 
-    os << "pawnIslandPenalty        : " << pawnIslandPenalty << std::endl;
-    os << "pawnBackwardPenalty      : " << pawnBackwardPenalty << std::endl;
-    os << "pawnSemiBackwardPenalty1 : " << pawnSemiBackwardPenalty1 << std::endl;
-    os << "pawnSemiBackwardPenalty2 : " << pawnSemiBackwardPenalty2 << std::endl;
-    os << "pawnRaceBonus            : " << pawnRaceBonus << std::endl;
-    os << "passedPawnEGFactor       : " << passedPawnEGFactor << std::endl;
-    os << "RBehindPP1               : " << RBehindPP1 << std::endl;
-    os << "RBehindPP2               : " << RBehindPP2 << std::endl;
-    os << "activePawnPenalty        : " << activePawnPenalty << std::endl;
-
-    os << "QvsRMBonus1         : " << QvsRMBonus1 << std::endl;
-    os << "QvsRMBonus2         : " << QvsRMBonus2 << std::endl;
     os << "knightVsQueenBonus1 : " << knightVsQueenBonus1 << std::endl;
     os << "knightVsQueenBonus2 : " << knightVsQueenBonus2 << std::endl;
     os << "knightVsQueenBonus3 : " << knightVsQueenBonus3 << std::endl;
@@ -1293,55 +1250,6 @@ ChessTool::printParams() {
     os << "krpkbBonus           : " << krpkbBonus << std::endl;
     os << "krpkbPenalty         : " << krpkbPenalty << std::endl;
     os << "krpknBonus           : " << krpknBonus << std::endl;
-    os << "RvsBPBonus           : " << RvsBPBonus << std::endl;
-
-    os << "pawnTradePenalty    : " << pawnTradePenalty << std::endl;
-    os << "pawnTradeThreshold  : " << pawnTradeThreshold << std::endl;
-
-    os << "threatBonus1     : " << threatBonus1 << std::endl;
-    os << "threatBonus2     : " << threatBonus2 << std::endl;
-    os << "latentAttackBonus: " << latentAttackBonus << std::endl;
-
-    os << "rookHalfOpenBonus     : " << rookHalfOpenBonus << std::endl;
-    os << "rookOpenBonus         : " << rookOpenBonus << std::endl;
-    os << "rookDouble7thRowBonus : " << rookDouble7thRowBonus << std::endl;
-    os << "trappedRookPenalty1   : " << trappedRookPenalty1 << std::endl;
-    os << "trappedRookPenalty2   : " << trappedRookPenalty2 << std::endl;
-
-    os << "bishopPairPawnPenalty : " << bishopPairPawnPenalty << std::endl;
-    os << "trappedBishopPenalty  : " << trappedBishopPenalty << std::endl;
-    os << "oppoBishopPenalty     : " << oppoBishopPenalty << std::endl;
-
-    os << "kingSafetyHalfOpenBCDEFG1 : " << kingSafetyHalfOpenBCDEFG1 << std::endl;
-    os << "kingSafetyHalfOpenBCDEFG2 : " << kingSafetyHalfOpenBCDEFG2 << std::endl;
-    os << "kingSafetyHalfOpenAH1     : " << kingSafetyHalfOpenAH1 << std::endl;
-    os << "kingSafetyHalfOpenAH2     : " << kingSafetyHalfOpenAH2 << std::endl;
-    os << "kingSafetyWeight1         : " << kingSafetyWeight1 << std::endl;
-    os << "kingSafetyWeight2         : " << kingSafetyWeight2 << std::endl;
-    os << "kingSafetyWeight3         : " << kingSafetyWeight3 << std::endl;
-    os << "kingSafetyWeight4         : " << kingSafetyWeight4 << std::endl;
-    os << "kingSafetyThreshold       : " << kingSafetyThreshold << std::endl;
-    os << "pawnStormBonus            : " << pawnStormBonus << std::endl;
-
-    os << "tempoBonusMG : " << tempoBonusMG << std::endl;
-    os << "tempoBonusEG : " << tempoBonusEG << std::endl;
-
-    os << "pawnLoMtrl          : " << pawnLoMtrl << std::endl;
-    os << "pawnHiMtrl          : " << pawnHiMtrl << std::endl;
-    os << "minorLoMtrl         : " << minorLoMtrl << std::endl;
-    os << "minorHiMtrl         : " << minorHiMtrl << std::endl;
-    os << "castleLoMtrl        : " << castleLoMtrl << std::endl;
-    os << "castleHiMtrl        : " << castleHiMtrl << std::endl;
-    os << "queenLoMtrl         : " << queenLoMtrl << std::endl;
-    os << "queenHiMtrl         : " << queenHiMtrl << std::endl;
-    os << "passedPawnLoMtrl    : " << passedPawnLoMtrl << std::endl;
-    os << "passedPawnHiMtrl    : " << passedPawnHiMtrl << std::endl;
-    os << "kingSafetyLoMtrl    : " << kingSafetyLoMtrl << std::endl;
-    os << "kingSafetyHiMtrl    : " << kingSafetyHiMtrl << std::endl;
-    os << "oppoBishopLoMtrl    : " << oppoBishopLoMtrl << std::endl;
-    os << "oppoBishopHiMtrl    : " << oppoBishopHiMtrl << std::endl;
-    os << "knightOutpostLoMtrl : " << knightOutpostLoMtrl << std::endl;
-    os << "knightOutpostHiMtrl : " << knightOutpostHiMtrl << std::endl;
 
     os << "moEvalWeight   : " << moEvalWeight << std::endl;
     os << "moHangPenalty1 : " << moHangPenalty1 << std::endl;
@@ -1436,38 +1344,7 @@ ChessTool::patchParams(const std::string& directory) {
     replaceTableNxN<8>(qt1b, "qt1b", cppFile);
     replaceTableNxN<8>(qt2b, "qt2b", cppFile);
     replaceTableNxN<8>(rt1b, "rt1b", cppFile);
-    replaceTableNxN<8>(knightOutpostBonus, "knightOutpostBonus", cppFile);
-    replaceTableNxN<8>(protectedPawnBonus, "protectedPawnBonus", cppFile);
-    replaceTableNxN<8>(attackedPawnBonus, "attackedPawnBonus", cppFile);
-    replaceTable(protectBonus, "protectBonus", cppFile);
 
-    replaceTable(rookMobScore, "rookMobScore", cppFile);
-    replaceTable(bishMobScore, "bishMobScore", cppFile);
-    replaceTable(knightMobScore, "knightMobScore", cppFile);
-    replaceTable(queenMobScore, "queenMobScore", cppFile);
-    replaceTableNxN<4>(majorPieceRedundancy, "majorPieceRedundancy", cppFile);
-    replaceTableNxN<6>(connectedPPBonus, "connectedPPBonus", cppFile);
-    replaceTable(passedPawnBonusX, "passedPawnBonusX", cppFile);
-    replaceTable(passedPawnBonusY, "passedPawnBonusY", cppFile);
-    replaceTable(ppBlockerBonus, "ppBlockerBonus", cppFile);
-    replaceTable(candidatePassedBonus, "candidatePassedBonus", cppFile);
-    replaceTable(QvsRRBonus, "QvsRRBonus", cppFile);
-    replaceTable(RvsMBonus, "RvsMBonus", cppFile);
-    replaceTable(RvsMMBonus, "RvsMMBonus", cppFile);
-    replaceTable(bishopPairValue, "bishopPairValue", cppFile);
-    replaceTable(rookEGDrawFactor, "rookEGDrawFactor", cppFile);
-    replaceTable(RvsBPDrawFactor, "RvsBPDrawFactor", cppFile);
-    replaceTable(castleFactor, "castleFactor", cppFile);
-    replaceTable(pawnShelterTable, "pawnShelterTable", cppFile);
-    replaceTable(pawnStormTable, "pawnStormTable", cppFile);
-    replaceTable(pawnStormMissingPenalty, "pawnStormMissingPenalty", cppFile);
-    replaceTable(kingAttackWeight, "kingAttackWeight", cppFile);
-    replaceTable(qContactCheckBonus, "qContactCheckBonus", cppFile);
-    replaceTable(pieceKingAttackBonus, "pieceKingAttackBonus", cppFile);
-    replaceTable(kingPPSupportK, "kingPPSupportK", cppFile);
-    replaceTable(kingPPSupportP, "kingPPSupportP", cppFile);
-    replaceTable(pawnDoubledPenalty, "pawnDoubledPenalty", cppFile);
-    replaceTable(pawnIsolatedPenalty, "pawnIsolatedPenalty", cppFile);
     replaceTable(halfMoveFactor, "halfMoveFactor", cppFile);
     replaceTable(stalePawnFactor, "stalePawnFactor", cppFile);
 
@@ -1477,18 +1354,6 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(rV, "rV", hppFile);
     replaceValue(qV, "qV", hppFile);
 
-    replaceValue(pawnIslandPenalty, "pawnIslandPenalty", hppFile);
-    replaceValue(pawnBackwardPenalty, "pawnBackwardPenalty", hppFile);
-    replaceValue(pawnSemiBackwardPenalty1, "pawnSemiBackwardPenalty1", hppFile);
-    replaceValue(pawnSemiBackwardPenalty2, "pawnSemiBackwardPenalty2", hppFile);
-    replaceValue(pawnRaceBonus, "pawnRaceBonus", hppFile);
-    replaceValue(passedPawnEGFactor, "passedPawnEGFactor", hppFile);
-    replaceValue(RBehindPP1, "RBehindPP1", hppFile);
-    replaceValue(RBehindPP2, "RBehindPP2", hppFile);
-    replaceValue(activePawnPenalty, "activePawnPenalty", hppFile);
-
-    replaceValue(QvsRMBonus1, "QvsRMBonus1", hppFile);
-    replaceValue(QvsRMBonus2, "QvsRMBonus2", hppFile);
     replaceValue(knightVsQueenBonus1, "knightVsQueenBonus1", hppFile);
     replaceValue(knightVsQueenBonus2, "knightVsQueenBonus2", hppFile);
     replaceValue(knightVsQueenBonus3, "knightVsQueenBonus3", hppFile);
@@ -1496,55 +1361,6 @@ ChessTool::patchParams(const std::string& directory) {
     replaceValue(krpkbBonus,   "krpkbBonus", hppFile);
     replaceValue(krpkbPenalty, "krpkbPenalty", hppFile);
     replaceValue(krpknBonus,   "krpknBonus", hppFile);
-    replaceValue(RvsBPBonus,   "RvsBPBonus", hppFile);
-
-    replaceValue(pawnTradePenalty, "pawnTradePenalty", hppFile);
-    replaceValue(pawnTradeThreshold, "pawnTradeThreshold", hppFile);
-
-    replaceValue(threatBonus1, "threatBonus1", hppFile);
-    replaceValue(threatBonus2, "threatBonus2", hppFile);
-    replaceValue(latentAttackBonus, "latentAttackBonus", hppFile);
-
-    replaceValue(rookHalfOpenBonus, "rookHalfOpenBonus", hppFile);
-    replaceValue(rookOpenBonus, "rookOpenBonus", hppFile);
-    replaceValue(rookDouble7thRowBonus, "rookDouble7thRowBonus", hppFile);
-    replaceValue(trappedRookPenalty1, "trappedRookPenalty1", hppFile);
-    replaceValue(trappedRookPenalty2, "trappedRookPenalty2", hppFile);
-
-    replaceValue(bishopPairPawnPenalty, "bishopPairPawnPenalty", hppFile);
-    replaceValue(trappedBishopPenalty, "trappedBishopPenalty", hppFile);
-    replaceValue(oppoBishopPenalty, "oppoBishopPenalty", hppFile);
-
-    replaceValue(kingSafetyHalfOpenBCDEFG1, "kingSafetyHalfOpenBCDEFG1", hppFile);
-    replaceValue(kingSafetyHalfOpenBCDEFG2, "kingSafetyHalfOpenBCDEFG2", hppFile);
-    replaceValue(kingSafetyHalfOpenAH1, "kingSafetyHalfOpenAH1", hppFile);
-    replaceValue(kingSafetyHalfOpenAH2, "kingSafetyHalfOpenAH2", hppFile);
-    replaceValue(kingSafetyWeight1, "kingSafetyWeight1", hppFile);
-    replaceValue(kingSafetyWeight2, "kingSafetyWeight2", hppFile);
-    replaceValue(kingSafetyWeight3, "kingSafetyWeight3", hppFile);
-    replaceValue(kingSafetyWeight4, "kingSafetyWeight4", hppFile);
-    replaceValue(kingSafetyThreshold, "kingSafetyThreshold", hppFile);
-    replaceValue(pawnStormBonus, "pawnStormBonus", hppFile);
-
-    replaceValue(tempoBonusMG, "tempoBonusMG", hppFile);
-    replaceValue(tempoBonusEG, "tempoBonusEG", hppFile);
-
-    replaceValue(pawnLoMtrl, "pawnLoMtrl", hppFile);
-    replaceValue(pawnHiMtrl, "pawnHiMtrl", hppFile);
-    replaceValue(minorLoMtrl, "minorLoMtrl", hppFile);
-    replaceValue(minorHiMtrl, "minorHiMtrl", hppFile);
-    replaceValue(castleLoMtrl, "castleLoMtrl", hppFile);
-    replaceValue(castleHiMtrl, "castleHiMtrl", hppFile);
-    replaceValue(queenLoMtrl, "queenLoMtrl", hppFile);
-    replaceValue(queenHiMtrl, "queenHiMtrl", hppFile);
-    replaceValue(passedPawnLoMtrl, "passedPawnLoMtrl", hppFile);
-    replaceValue(passedPawnHiMtrl, "passedPawnHiMtrl", hppFile);
-    replaceValue(kingSafetyLoMtrl, "kingSafetyLoMtrl", hppFile);
-    replaceValue(kingSafetyHiMtrl, "kingSafetyHiMtrl", hppFile);
-    replaceValue(oppoBishopLoMtrl, "oppoBishopLoMtrl", hppFile);
-    replaceValue(oppoBishopHiMtrl, "oppoBishopHiMtrl", hppFile);
-    replaceValue(knightOutpostLoMtrl, "knightOutpostLoMtrl", hppFile);
-    replaceValue(knightOutpostHiMtrl, "knightOutpostHiMtrl", hppFile);
 
 //    replaceValue(moEvalWeight, "moEvalWeight", hppFile);
 //    replaceValue(moHangPenalty1, "moHangPenalty1", hppFile);

@@ -37,7 +37,6 @@ public:
      * this function has special knowledge about the current material balance, and 0
      * is returned otherwise. */
     template <bool doEval> static int endGameEval(const Position& pos,
-                                                  U64 passedPawns,
                                                   int oldScore);
 
     /** King evaluation when no pawns left. */

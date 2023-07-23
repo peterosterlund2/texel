@@ -78,18 +78,6 @@ DEFINE_PARAM(rV);
 DEFINE_PARAM(qV);
 DEFINE_PARAM(kV);
 
-DEFINE_PARAM(pawnIslandPenalty);
-DEFINE_PARAM(pawnBackwardPenalty);
-DEFINE_PARAM(pawnSemiBackwardPenalty1);
-DEFINE_PARAM(pawnSemiBackwardPenalty2);
-DEFINE_PARAM(pawnRaceBonus);
-DEFINE_PARAM(passedPawnEGFactor);
-DEFINE_PARAM(RBehindPP1);
-DEFINE_PARAM(RBehindPP2);
-DEFINE_PARAM(activePawnPenalty);
-
-DEFINE_PARAM(QvsRMBonus1);
-DEFINE_PARAM(QvsRMBonus2);
 DEFINE_PARAM(knightVsQueenBonus1);
 DEFINE_PARAM(knightVsQueenBonus2);
 DEFINE_PARAM(knightVsQueenBonus3);
@@ -97,56 +85,6 @@ DEFINE_PARAM(krkpBonus);
 DEFINE_PARAM(krpkbBonus);
 DEFINE_PARAM(krpkbPenalty);
 DEFINE_PARAM(krpknBonus);
-DEFINE_PARAM(RvsBPBonus);
-
-DEFINE_PARAM(pawnTradePenalty);
-DEFINE_PARAM(pawnTradeThreshold);
-
-DEFINE_PARAM(threatBonus1);
-DEFINE_PARAM(threatBonus2);
-DEFINE_PARAM(latentAttackBonus);
-
-DEFINE_PARAM(rookHalfOpenBonus);
-DEFINE_PARAM(rookOpenBonus);
-DEFINE_PARAM(rookDouble7thRowBonus);
-DEFINE_PARAM(trappedRookPenalty1);
-DEFINE_PARAM(trappedRookPenalty2);
-
-DEFINE_PARAM(bishopPairPawnPenalty);
-DEFINE_PARAM(trappedBishopPenalty);
-DEFINE_PARAM(oppoBishopPenalty);
-
-DEFINE_PARAM(kingSafetyHalfOpenBCDEFG1);
-DEFINE_PARAM(kingSafetyHalfOpenBCDEFG2);
-DEFINE_PARAM(kingSafetyHalfOpenAH1);
-DEFINE_PARAM(kingSafetyHalfOpenAH2);
-DEFINE_PARAM(kingSafetyWeight1);
-DEFINE_PARAM(kingSafetyWeight2);
-DEFINE_PARAM(kingSafetyWeight3);
-DEFINE_PARAM(kingSafetyWeight4);
-DEFINE_PARAM(kingSafetyThreshold);
-DEFINE_PARAM(pawnStormBonus);
-
-DEFINE_PARAM(tempoBonusMG);
-DEFINE_PARAM(tempoBonusEG);
-
-DEFINE_PARAM(pawnLoMtrl);
-DEFINE_PARAM(pawnHiMtrl);
-DEFINE_PARAM(minorLoMtrl);
-DEFINE_PARAM(minorHiMtrl);
-DEFINE_PARAM(castleLoMtrl);
-DEFINE_PARAM(castleHiMtrl);
-DEFINE_PARAM(queenLoMtrl);
-DEFINE_PARAM(queenHiMtrl);
-DEFINE_PARAM(passedPawnLoMtrl);
-DEFINE_PARAM(passedPawnHiMtrl);
-DEFINE_PARAM(kingSafetyLoMtrl);
-DEFINE_PARAM(kingSafetyHiMtrl);
-DEFINE_PARAM(oppoBishopLoMtrl);
-DEFINE_PARAM(oppoBishopHiMtrl);
-DEFINE_PARAM(knightOutpostLoMtrl);
-DEFINE_PARAM(knightOutpostHiMtrl);
-
 
 DEFINE_PARAM(aspirationWindow);
 DEFINE_PARAM(rootLMRMoveCount);
@@ -411,214 +349,6 @@ ParamTable<64> rt1b { -200, 200, useUciParam,
 };
 ParamTableMirrored<64> rt1w(rt1b);
 
-ParamTable<64> knightOutpostBonus { 0, 150, useUciParam,
-    {   0,   0,   0,   0,   0,   0,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0,
-        0,  26,  41,  43,  43,  41,  26,   0,
-        0,  23,  39,  37,  37,  39,  23,   0,
-        0,   0,  29,  34,  34,  29,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0 },
-    {   0,   0,   0,   0,   0,   0,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0,
-        0,   1,   2,   3,   3,   2,   1,   0,
-        0,   4,   5,   6,   6,   5,   4,   0,
-        0,   0,   7,   8,   8,   7,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0 }
-};
-
-ParamTable<64> protectedPawnBonus { -50, 150, useUciParam,
-    {   0,   0,   0,   0,   0,   0,   0,   0,
-      127, 123,  95, 124, 124,  95, 123, 127,
-       30,  41,  54,  68,  68,  54,  41,  30,
-        5,  10,  19,  20,  20,  19,  10,   5,
-        7,  10,   9,  12,  12,   9,  10,   7,
-       14,  13,  22,  16,  16,  22,  13,  14,
-        0,   0,   0,   0,   0,   0,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0 },
-    {   0,   0,   0,   0,   0,   0,   0,   0,
-        1,   2,   3,   4,   4,   3,   2,   1,
-        5,   6,   7,   8,   8,   7,   6,   5,
-        9,  10,  11,  12,  12,  11,  10,   9,
-       13,  14,  15,  16,  16,  15,  14,  13,
-       17,  18,  19,  20,  20,  19,  18,  17,
-        0,   0,   0,   0,   0,   0,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0 }
-};
-
-ParamTable<64> attackedPawnBonus { -150, 100, useUciParam,
-    {   0,   0,   0,   0,   0,   0,   0,   0,
-      -20, -43,  22,  -2,  -2,  22, -43, -20,
-        7,  -1,  14,  19,  19,  14,  -1,   7,
-      -12,  -8,  -8,   7,   7,  -8,  -8, -12,
-      -36,   0, -18,  10,  10, -18,   0, -36,
-      -83, -29, -63, -49, -49, -63, -29, -83,
-        0,   0,   0,   0,   0,   0,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0 },
-    {   0,   0,   0,   0,   0,   0,   0,   0,
-        1,   2,   3,   4,   4,   3,   2,   1,
-        5,   6,   7,   8,   8,   7,   6,   5,
-        9,  10,  11,  12,  12,  11,  10,   9,
-       13,  14,  15,  16,  16,  15,  14,  13,
-       17,  18,  19,  20,  20,  19,  18,  17,
-        0,   0,   0,   0,   0,   0,   0,   0,
-        0,   0,   0,   0,   0,   0,   0,   0 }
-};
-
-ParamTable<4> protectBonus { -50, 50, useUciParam,
-    {  0, 11, 10,  1 },
-    {  1,  2,  3,  4 }
-};
-
-ParamTable<15> rookMobScore { -50, 50, useUciParam,
-    {-23,-12, -8, -1, -1,  5,  9, 12, 16, 20, 24, 26, 26, 23, 28 },
-    {   1, 2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 }
-};
-ParamTable<14> bishMobScore = { -50, 50, useUciParam,
-    {-18,-11, -1,  6, 13, 19, 24, 28, 31, 35, 36, 39, 41, 39 },
-    {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14 }
-};
-ParamTable<28> knightMobScore { -200, 200, useUciParam,
-    {-31,-48, 25,-40,-14, -2,  5,-56,-24, -4,  9, 15,-26,-26,-19,-11, -2,  4,  6,-24,-24,-18,-12, -4,  1,  5,  9,  6 },
-    {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 23, 24, 25, 26 }
-};
-ParamTable<28> queenMobScore { -100, 100, useUciParam,
-    {  7,  3, -2, -3, -1,  1,  3,  5,  8, 10, 13, 16, 20, 23, 26, 31, 35, 38, 42, 46, 49, 48, 50, 48, 47, 40, 54, 37 },
-    {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28 }
-};
-
-ParamTable<36> connectedPPBonus { -200, 400, useUciParam,
-    {  -2,  -6,   3,   7,   9,  -5,
-       -6,  -4,  -1,   9,  14,   8,
-        3,  -1,  16,   9,  23,  21,
-        7,   9,   9,  37,   0,  46,
-        9,  14,  23,   0, 113, -27,
-       -5,   8,  21,  46, -27, 362 },
-    {   1,   2,   4,   7,  11,  16,
-        2,   3,   5,   8,  12,  17,
-        4,   5,   6,   9,  13,  18,
-        7,   8,   9,  10,  14,  19,
-       11,  12,  13,  14,  15,  20,
-       16,  17,  18,  19,  20,  21 }
-};
-
-ParamTable<8> passedPawnBonusX { -200, 200, useUciParam,
-    {  0,  4, -2, -5, -5, -2,  4,  0 },
-    {  0,  1,  2,  3,  3,  2,  1,  0 }
-};
-
-ParamTable<8> passedPawnBonusY { -200, 200, useUciParam,
-    {  0,  3,  4, 14, 35, 64,103,  0 },
-    {  0,  1,  2,  3,  4,  5,  6,  0 }
-};
-
-ParamTable<10> ppBlockerBonus { -50, 50, useUciParam,
-    { 25, 29, 13, -9, 50,  1,  4,  3, -1,  9 },
-    {  1,  2,  3,  4,  5,  6,  7,  8,  9, 10 }
-};
-
-ParamTable<8> candidatePassedBonus { -200, 200, useUciParam,
-    { -1,  0,  5, 14, 42, 30, -1, -1 },
-    {  0,  1,  2,  3,  4,  5,  0,  0 }
-};
-
-ParamTable<16> majorPieceRedundancy { -200, 200, useUciParam,
-    {   0, -88,   0,   0,
-       88,   0,   0,   0,
-        0,   0,   0,  96,
-        0,   0, -96,   0 },
-    {   0,  -1,   0,   0,
-        1,   0,   0,   0,
-        0,   0,   0,   2,
-        0,   0,  -2,   0 }
-};
-
-ParamTable<5> QvsRRBonus { -200, 200, useUciParam,
-    {-21, -3, 23, 32, 38 },
-    {  1,  2,  3,  4,  5 }
-};
-
-ParamTable<7> RvsMBonus { -200, 200, useUciParam,
-    { 27, 47, 57, 52, 45,-12,-64 },
-    {  1,  2,  3,  4,  5,  6,  7 }
-};
-
-ParamTable<7> RvsMMBonus { -200, 200, useUciParam,
-    {-73,-73, -4, 19, 19, 33, 52 },
-    {   1,   1,  2,  3,  4,  5,  6 }
-};
-
-ParamTable<4> bishopPairValue { 0, 200, useUciParam,
-    { 71, 70, 60, 54 },
-    {  1,  2,  3,  4 }
-};
-
-ParamTable<7> rookEGDrawFactor { 0, 255, useUciParam,
-    { 71, 75,110,139,136,154,158 },
-    {  1,  2,  3,  4,  5,  6,  7 }
-};
-
-ParamTable<7> RvsBPDrawFactor { 0, 255, useUciParam,
-    {128, 90, 93,133,118,229,189 },
-    {  0,  1,  2,  3,  4,  5,  6 }
-};
-ParamTable<4> castleFactor { 0, 128, useUciParam,
-    { 64, 43, 27, 11 },
-    {  1,  2,  3,  4 }
-};
-
-ParamTable<9> pawnShelterTable { -100, 100, useUciParam,
-    { 17, 31,-16,  3, 19,  4, -1, 14, 10 },
-    {  1,  2,  3,  4,  5,  6,  7,  8,  9 }
-};
-
-ParamTable<9> pawnStormTable { -400, 100, useUciParam,
-    {-105,-47,-262, 43, 55,  9, 13,-15,-13 },
-    {  1,   2,   3,  4,  5,  6,  7,  8,  9 }
-};
-ParamTable<4> pawnStormMissingPenalty { -400, 100, useUciParam,
-    {  0, 20, 70, 90 },
-    {  0,  1,  2,  3 }
-};
-
-ParamTable<14> kingAttackWeight { 0, 400, useUciParam,
-    {  0,  3,  0,  6,  6, 13, 25, 47, 62, 97,104,147,207,321 },
-    {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13 }
-};
-
-ParamTable<5> qContactCheckBonus { -1000, 1000, useUciParam,
-    {-512,-188,  0,188,512 },
-    {  -2,  -1,  0,   1,   2 }
-};
-
-ParamTable<7> pieceKingAttackBonus { -1000, 1000, useUciParam,
-    {-51,-26,-10,  0, 10, 26, 51 },
-    { -3, -2, -1,  0,  1,  2,  3 }
-};
-
-ParamTable<5> kingPPSupportK { 0, 200, useUciParam,
-    { 41, 71, 66, 60, 97 },
-    {  1,  2,  3,  4,  5 }
-};
-
-ParamTable<8> kingPPSupportP { 1, 64, useUciParam,
-    {  0,  3,  4,  9, 15, 21, 32,  0 },
-    {  0,  1,  2,  3,  4,  5,  0,  0 }
-};
-
-ParamTable<8> pawnDoubledPenalty { 0, 50, useUciParam,
-    { 41, 22, 20, 15, 15, 20, 22, 41 },
-    {  1,  2,  3,  4,  4,  3,  2,  1 }
-};
-
-ParamTable<8> pawnIsolatedPenalty { 0, 50, useUciParam,
-    {  1, 11,  6, 11, 11,  6, 11,  1 },
-    {  1,  2,  3,  4,  4,  3,  2,  1 }
-};
-
 ParamTable<10> halfMoveFactor { 0, 192, useUciParam,
     {128,128,128,128, 31, 19, 12,  9,  5,  3 },
     {  0,  0,  0,  0,  1,  2,  3,  4,  5,  6 }
@@ -674,18 +404,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(qV, "QueenValue");
     REGISTER_PARAM(kV, "KingValue");
 
-    REGISTER_PARAM(pawnIslandPenalty, "PawnIslandPenalty");
-    REGISTER_PARAM(pawnBackwardPenalty, "PawnBackwardPenalty");
-    REGISTER_PARAM(pawnSemiBackwardPenalty1, "PawnSemiBackwardPenalty1");
-    REGISTER_PARAM(pawnSemiBackwardPenalty2, "PawnSemiBackwardPenalty2");
-    REGISTER_PARAM(pawnRaceBonus, "PawnRaceBonus");
-    REGISTER_PARAM(passedPawnEGFactor, "PassedPawnEGFactor");
-    REGISTER_PARAM(RBehindPP1, "RookBehindPassedPawn1");
-    REGISTER_PARAM(RBehindPP2, "RookBehindPassedPawn2");
-    REGISTER_PARAM(activePawnPenalty, "ActivePawnPenalty");
-
-    REGISTER_PARAM(QvsRMBonus1, "QueenVsRookMinorBonus1");
-    REGISTER_PARAM(QvsRMBonus2, "QueenVsRookMinorBonus2");
     REGISTER_PARAM(knightVsQueenBonus1, "KnightVsQueenBonus1");
     REGISTER_PARAM(knightVsQueenBonus2, "KnightVsQueenBonus2");
     REGISTER_PARAM(knightVsQueenBonus3, "KnightVsQueenBonus3");
@@ -693,55 +411,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(krpkbBonus, "RookPawnVsBishopBonus");
     REGISTER_PARAM(krpkbPenalty, "RookPawnVsBishopPenalty");
     REGISTER_PARAM(krpknBonus, "RookPawnVsKnightBonus");
-    REGISTER_PARAM(RvsBPBonus, "RookVsBishopPawnBonus");
-
-    REGISTER_PARAM(pawnTradePenalty, "PawnTradePenalty");
-    REGISTER_PARAM(pawnTradeThreshold, "PawnTradeThreshold");
-
-    REGISTER_PARAM(threatBonus1, "ThreatBonus1");
-    REGISTER_PARAM(threatBonus2, "ThreatBonus2");
-    REGISTER_PARAM(latentAttackBonus, "LatentAttackBonus");
-
-    REGISTER_PARAM(rookHalfOpenBonus, "RookHalfOpenBonus");
-    REGISTER_PARAM(rookOpenBonus, "RookOpenBonus");
-    REGISTER_PARAM(rookDouble7thRowBonus, "RookDouble7thRowBonus");
-    REGISTER_PARAM(trappedRookPenalty1, "TrappedRookPenalty1");
-    REGISTER_PARAM(trappedRookPenalty2, "TrappedRookPenalty2");
-
-    REGISTER_PARAM(bishopPairPawnPenalty, "BishopPairPawnPenalty");
-    REGISTER_PARAM(trappedBishopPenalty, "TrappedBishopPenalty");
-    REGISTER_PARAM(oppoBishopPenalty, "OppositeBishopPenalty");
-
-    REGISTER_PARAM(kingSafetyHalfOpenBCDEFG1, "KingSafetyHalfOpenBCDEFG1");
-    REGISTER_PARAM(kingSafetyHalfOpenBCDEFG2, "KingSafetyHalfOpenBCDEFG2");
-    REGISTER_PARAM(kingSafetyHalfOpenAH1, "KingSafetyHalfOpenAH1");
-    REGISTER_PARAM(kingSafetyHalfOpenAH2, "KingSafetyHalfOpenAH2");
-    REGISTER_PARAM(kingSafetyWeight1, "KingSafetyWeight1");
-    REGISTER_PARAM(kingSafetyWeight2, "KingSafetyWeight2");
-    REGISTER_PARAM(kingSafetyWeight3, "KingSafetyWeight3");
-    REGISTER_PARAM(kingSafetyWeight4, "KingSafetyWeight4");
-    REGISTER_PARAM(kingSafetyThreshold, "KingSafetyThreshold");
-    REGISTER_PARAM(pawnStormBonus, "PawnStormBonus");
-
-    REGISTER_PARAM(tempoBonusMG, "TempoBonusMG");
-    REGISTER_PARAM(tempoBonusEG, "TempoBonusEG");
-
-    REGISTER_PARAM(pawnLoMtrl, "PawnLoMtrl");
-    REGISTER_PARAM(pawnHiMtrl, "PawnHiMtrl");
-    REGISTER_PARAM(minorLoMtrl, "MinorLoMtrl");
-    REGISTER_PARAM(minorHiMtrl, "MinorHiMtrl");
-    REGISTER_PARAM(castleLoMtrl, "CastleLoMtrl");
-    REGISTER_PARAM(castleHiMtrl, "CastleHiMtrl");
-    REGISTER_PARAM(queenLoMtrl, "QueenLoMtrl");
-    REGISTER_PARAM(queenHiMtrl, "QueenHiMtrl");
-    REGISTER_PARAM(passedPawnLoMtrl, "PassedPawnLoMtrl");
-    REGISTER_PARAM(passedPawnHiMtrl, "PassedPawnHiMtrl");
-    REGISTER_PARAM(kingSafetyLoMtrl, "KingSafetyLoMtrl");
-    REGISTER_PARAM(kingSafetyHiMtrl, "KingSafetyHiMtrl");
-    REGISTER_PARAM(oppoBishopLoMtrl, "OppositeBishopLoMtrl");
-    REGISTER_PARAM(oppoBishopHiMtrl, "OppositeBishopHiMtrl");
-    REGISTER_PARAM(knightOutpostLoMtrl, "KnightOutpostLoMtrl");
-    REGISTER_PARAM(knightOutpostHiMtrl, "KnightOutpostHiMtrl");
 
     // Evaluation tables
     kt1b.registerParams("KingTableMG", *this);
@@ -756,37 +425,6 @@ Parameters::Parameters() {
     qt2b.registerParams("QueenTableEG", *this);
     rt1b.registerParams("RookTable", *this);
 
-    knightOutpostBonus.registerParams("KnightOutpostBonus", *this);
-    protectedPawnBonus.registerParams("ProtectedPawnBonus", *this);
-    attackedPawnBonus.registerParams("AttackedPawnBonus", *this);
-    protectBonus.registerParams("ProtectBonus", *this);
-    rookMobScore.registerParams("RookMobility", *this);
-    bishMobScore.registerParams("BishopMobility", *this);
-    knightMobScore.registerParams("KnightMobility", *this);
-    queenMobScore.registerParams("QueenMobility", *this);
-    majorPieceRedundancy.registerParams("MajorPieceRedundancy", *this);
-    connectedPPBonus.registerParams("ConnectedPPBonus", *this);
-    passedPawnBonusX.registerParams("PassedPawnBonusX", *this);
-    passedPawnBonusY.registerParams("PassedPawnBonusY", *this);
-    ppBlockerBonus.registerParams("PassedPawnBlockerBonus", *this);
-    candidatePassedBonus.registerParams("CandidatePassedPawnBonus", *this);
-    QvsRRBonus.registerParams("QueenVs2RookBonus", *this);
-    RvsMBonus.registerParams("RookVsMinorBonus", *this);
-    RvsMMBonus.registerParams("RookVs2MinorBonus", *this);
-    bishopPairValue.registerParams("BishopPairValue", *this);
-    rookEGDrawFactor.registerParams("RookEndGameDrawFactor", *this);
-    RvsBPDrawFactor.registerParams("RookVsBishopPawnDrawFactor", *this);
-    castleFactor.registerParams("CastleFactor", *this);
-    pawnShelterTable.registerParams("PawnShelterTable", *this);
-    pawnStormTable.registerParams("PawnStormTable", *this);
-    pawnStormMissingPenalty.registerParams("PawnStormMissingPenalty", *this);
-    kingAttackWeight.registerParams("KingAttackWeight", *this);
-    qContactCheckBonus.registerParams("QueenContactCheckBonus", *this);
-    pieceKingAttackBonus.registerParams("PieceKingAttackBonus", *this);
-    kingPPSupportK.registerParams("KingPassedPawnSupportK", *this);
-    kingPPSupportP.registerParams("KingPassedPawnSupportP", *this);
-    pawnDoubledPenalty.registerParams("PawnDoubledPenalty", *this);
-    pawnIsolatedPenalty.registerParams("PawnIsolatedPenalty", *this);
     halfMoveFactor.registerParams("HalfMoveFactor", *this);
     stalePawnFactor.registerParams("StalePawnFactor", *this);
 

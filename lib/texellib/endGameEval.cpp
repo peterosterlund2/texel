@@ -49,13 +49,13 @@ const int EndGameEval::winKingTable[64] = {
 };
 
 
-template int EndGameEval::endGameEval<false>(const Position&, U64, int);
-template int EndGameEval::endGameEval<true>(const Position&, U64, int);
+template int EndGameEval::endGameEval<false>(const Position&, int);
+template int EndGameEval::endGameEval<true>(const Position&, int);
 
 /** Implements special knowledge for some endgame situations. */
 template <bool doEval>
 int
-EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
+EndGameEval::endGameEval(const Position& pos, int oldScore) {
     int score = oldScore;
     const int wMtrlPawns = pos.wMtrlPawns();
     const int bMtrlPawns = pos.bMtrlPawns();
@@ -559,50 +559,6 @@ EndGameEval::endGameEval(const Position& pos, U64 passedPawns, int oldScore) {
                 return score;
             }
         }
-    }
-
-    auto getPawnAsymmetry = [passedPawns, &pos]() {
-        int f1 = BitBoard::southFill(pos.pieceTypeBB(Piece::WPAWN)) & 0xff;
-        int f2 = BitBoard::southFill(pos.pieceTypeBB(Piece::BPAWN)) & 0xff;
-        int asymmetry = BitBoard::bitCount((f1 & ~f2) | (f2 & ~f1));
-        U64 passedPawnsW = passedPawns & pos.pieceTypeBB(Piece::WPAWN);
-        U64 passedPawnsB = passedPawns & pos.pieceTypeBB(Piece::BPAWN);
-        asymmetry += BitBoard::bitCount(passedPawnsW) + BitBoard::bitCount(passedPawnsB);
-        return asymmetry;
-    };
-
-    // Account for draw factor in rook endgames
-    if ((nWR == 1) && (nBR == 1) &&
-        (pos.pieceTypeBB(Piece::WQUEEN, Piece::WBISHOP, Piece::WKNIGHT,
-                         Piece::BQUEEN, Piece::BBISHOP, Piece::BKNIGHT) == 0) &&
-        (BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) > 1)) {
-        if (!doEval) return 1;
-        int asymmetry = getPawnAsymmetry();
-        score = score * rookEGDrawFactor[std::min(asymmetry, 6)] / 128;
-        return score;
-    }
-
-    // Correction for draw factor in RvsB endgames
-    if ((nWR == 1) &&
-        (BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP)) == 1) &&
-        (pos.pieceTypeBB(Piece::WQUEEN, Piece::WBISHOP, Piece::WKNIGHT,
-                         Piece::BQUEEN, Piece::BROOK, Piece::BKNIGHT) == 0) &&
-        (wMtrlPawns - bMtrlPawns == -pV)) {
-        if (!doEval) return 1;
-        int asymmetry = getPawnAsymmetry();
-        score = score * RvsBPDrawFactor[std::min(asymmetry, 6)] / 128;
-        return score;
-    }
-    // Correction for draw factor in RvsB endgames
-    if ((nBR == 1) &&
-        (BitBoard::bitCount(pos.pieceTypeBB(Piece::WBISHOP)) == 1) &&
-        (pos.pieceTypeBB(Piece::BQUEEN, Piece::BBISHOP, Piece::BKNIGHT,
-                         Piece::WQUEEN, Piece::WROOK, Piece::WKNIGHT) == 0) &&
-        (wMtrlPawns - bMtrlPawns == pV)) {
-        if (!doEval) return 1;
-        int asymmetry = getPawnAsymmetry();
-        score = score * RvsBPDrawFactor[std::min(asymmetry, 6)] / 128;
-        return score;
     }
 
     if (!doEval) return 0;

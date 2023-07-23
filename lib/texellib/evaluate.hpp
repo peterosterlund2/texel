@@ -45,13 +45,6 @@ private:
         PawnHashData();
         U64 key;
         S16 current;        // For hash replacement policy
-        S16 score;          // Positive score means good for white
-        S16 passedBonusW;
-        S16 passedBonusB;
-        U64 passedPawns;    // The most advanced passed pawns for each file
-                            // Contains both white and black pawns
-        U64 outPostsW;      // Possible outpost squares for white
-        U64 outPostsB;
         U64 stalePawns;     // Pawns that can not be used for "pawn breaks"
     };
 
@@ -59,21 +52,7 @@ private:
         MaterialHashData();
         int id;
         int score;
-        S16 pawnIPF;
-        S16 knightIPF;
-        S16 castleIPF, queenIPF;
-        S16 wPassedPawnIPF, bPassedPawnIPF;
-        S16 kingSafetyIPF;
-        S16 diffColorBishopIPF;
-        S16 knightOutPostIPF;
         U8 endGame;
-    };
-
-    struct KingSafetyHashData {
-        KingSafetyHashData();
-        U64 key;
-        int score;
-        S16 current;        // For hash replacement policy
     };
 
     struct EvalHashData {
@@ -86,7 +65,6 @@ public:
         EvalHashTables();
         std::vector<PawnHashData> pawnHash;
         std::vector<MaterialHashData> materialHash;
-        vector_aligned<KingSafetyHashData> kingSafetyHash;
 
         using EvalHashType = std::array<EvalHashData,(1<<16)>;
         EvalHashType evalHash;
@@ -143,7 +121,6 @@ public:
     static int interpolate(int v1, int v2, int k);
 
     static void staticInitialize();
-    static void updateEvalParams();
 
 private:
     template <bool print> int evalPos(const Position& pos);
@@ -159,14 +136,8 @@ private:
     /** Compute material score. */
     void computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool print) const;
 
-    /** Implement the "when ahead trade pieces, when behind trade pawns" rule. */
-    int tradeBonus(const Position& pos, int wCorr, int bCorr) const;
-
-    /** Score castling ability. */
-    int castleBonus(const Position& pos);
-
     PawnHashData& getPawnHashEntry(U64 key);
-    int pawnBonus(const Position& pos);
+    void pawnBonus(const Position& pos);
 
     /** Compute set of pawns that can not participate in "pawn breaks". */
     static U64 computeStalePawns(const Position& pos);
@@ -174,52 +145,15 @@ private:
     /** Compute pawn hash data for pos. */
     void computePawnHashData(const Position& pos, PawnHashData& ph);
 
-    /** Compute rook bonus. Rook on open/half-open file. */
-    int rookBonus(const Position& pos);
-
-    /** Compute bishop evaluation. */
-    int bishopEval(const Position& pos, int oldScore);
-
-    /** Compute knight evaluation. */
-    int knightEval(const Position& pos);
-
-    /** Bonus for threatening opponent pieces. */
-    int threatBonus(const Position& pos);
-
-    /** Bonus for own pieces protected by pawns. */
-    int protectBonus(const Position& pos);
-
-    /** Compute king safety for both kings. */
-    int kingSafety(const Position& pos);
-
-    /** Compute number of white contact checks minus number of black contact checks. */
-    int getNContactChecks(const Position& pos) const;
-
-    KingSafetyHashData& getKingSafetyHashEntry(U64 key);
-    int kingSafetyKPPart(const Position& pos);
-
-    static int castleMaskFactor[256];
-    static int knightMobScoreA[64][9];
-
     std::vector<PawnHashData>& pawnHash;
     const PawnHashData* phd;
 
     std::vector<MaterialHashData>& materialHash;
     const MaterialHashData* mhd;
 
-    vector_aligned<KingSafetyHashData>& kingSafetyHash;
     EvalHashTables::EvalHashType& evalHash;
 
     NNEvaluator& nnEval;
-
-    // King safety variables
-    U64 wKingZone, bKingZone;       // Squares close to king that are worth attacking
-    int wKingAttacks, bKingAttacks; // Number of attacks close to white/black king
-    U64 wAttacksBB, bAttacksBB;     // Attacks by pieces and pawns, but not king
-    U64 wPawnAttacks, bPawnAttacks; // Squares attacked by white/black pawns
-    U64 wQueenContactChecks;        // White queen checks adjacent to black king
-    U64 bQueenContactChecks;
-    U64 wContactSupport, bContactSupport; // Attacks from P,N,B,R,K
 
     int whiteContempt; // Assume white is this many centipawns stronger than black
 };
@@ -228,20 +162,12 @@ private:
 inline
 Evaluate::PawnHashData::PawnHashData()
     : key((U64)-1), // Non-zero to avoid collision for positions with no pawns
-      current(0), score(0),
-      passedBonusW(0),
-      passedBonusB(0),
-      passedPawns(0) {
+      current(0) {
 }
 
 inline
 Evaluate::MaterialHashData::MaterialHashData()
     : id(-1), score(0) {
-}
-
-inline
-Evaluate::KingSafetyHashData::KingSafetyHashData()
-    : key((U64)-1), score(0), current(0) {
 }
 
 inline
@@ -326,41 +252,6 @@ inline Evaluate::EvalHashData&
 Evaluate::getEvalHashEntry(U64 key) {
     int e0 = (int)key & (evalHash.size() - 1);
     return evalHash[e0];
-}
-
-inline Evaluate::KingSafetyHashData&
-Evaluate::getKingSafetyHashEntry(U64 key) {
-    int e0 = (int)key & (kingSafetyHash.size() - 2);
-    int e1 = e0 + 1;
-    if (kingSafetyHash[e0].key == key) {
-        kingSafetyHash[e0].current = 1;
-        kingSafetyHash[e1].current = 0;
-        return kingSafetyHash[e0];
-    }
-    if (kingSafetyHash[e1].key == key) {
-        kingSafetyHash[e1].current = 1;
-        kingSafetyHash[e0].current = 0;
-        return kingSafetyHash[e1];
-    }
-    if (kingSafetyHash[e0].current) {
-        kingSafetyHash[e1].current = 1;
-        kingSafetyHash[e0].current = 0;
-        return kingSafetyHash[e1];
-    } else {
-        kingSafetyHash[e0].current = 1;
-        kingSafetyHash[e1].current = 0;
-        return kingSafetyHash[e0];
-    }
-}
-
-inline int
-Evaluate::getNContactChecks(const Position& pos) const {
-    int nContact = 0;
-    nContact += BitBoard::bitCount(wQueenContactChecks & ~bAttacksBB &
-                                   wContactSupport & ~pos.whiteBB());
-    nContact -= BitBoard::bitCount(bQueenContactChecks & ~wAttacksBB &
-                                   bContactSupport & ~pos.blackBB());
-    return nContact;
 }
 
 #endif /* EVALUATE_HPP_ */

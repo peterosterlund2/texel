@@ -160,12 +160,6 @@ EvaluateTest::testEvalPos() {
     pos.setPiece(Square::getSquare(3, 2), Piece::WBISHOP);
     sc2 = evalWhite(pos);
     EXPECT_GT(sc2, sc1);      // Easier to win if bishops on same color
-
-    // Test bishop mobility
-    pos = TextIO::readFEN("r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3");
-    sc1 = moveScore(pos, "Bd3") - protectBonus[1];
-    sc2 = moveScore(pos, "Bc4");
-    EXPECT_GT(sc2, sc1);
 }
 
 TEST(EvaluateTest, testPieceSquareEval) {
@@ -305,6 +299,18 @@ evalEgFen(const std::string& fen, int fuzz = 0) {
     return evalFEN(fen);
 }
 
+static const int tempoBonusEG = 3;
+
+/** Return true if score is within tempoBonus of 0. */
+static bool isDraw(int score) {
+    if (abs(score) <= tempoBonusEG) {
+        return true;
+    } else {
+        std::cout << "score:" << score << std::endl;
+        return false;
+    }
+}
+
 TEST(EvaluateTest, testEndGameEval) {
     EvaluateTest::testEndGameEval();
 }
@@ -315,15 +321,15 @@ EvaluateTest::testEndGameEval() {
     pos.setPiece(Square::getSquare(4, 1), Piece::WKING);
     pos.setPiece(Square::getSquare(4, 6), Piece::BKING);
     int score = evalWhite(pos, true);
-    EXPECT_EQ(tempoBonusEG, score);
+    EXPECT_TRUE(isDraw(score));
 
     pos.setPiece(Square::getSquare(3, 1), Piece::WBISHOP);
     score = evalWhite(pos, true);
-    EXPECT_EQ(tempoBonusEG, score); // Insufficient material to mate
+    EXPECT_TRUE(isDraw(score)); // Insufficient material to mate
 
     pos.setPiece(Square::getSquare(3, 1), Piece::WKNIGHT);
     score = evalWhite(pos, true);
-    EXPECT_EQ(tempoBonusEG, score); // Insufficient material to mate
+    EXPECT_TRUE(isDraw(score)); // Insufficient material to mate
 
     pos.setPiece(Square::getSquare(3, 1), Piece::WROOK);
     score = evalWhite(pos, true);
@@ -352,7 +358,7 @@ EvaluateTest::testEndGameEval() {
 
     // KNNK is a draw
     score = evalFEN("8/8/4k3/8/8/3NK3/3N4/8 w - - 0 1", true);
-    EXPECT_EQ(tempoBonusEG, score);
+    EXPECT_TRUE(isDraw(score));
 
     const int nV = ::nV;
     score = evalFEN("8/8/8/4k3/N6N/P2K4/8/8 b - - 0 66", true);
@@ -459,16 +465,6 @@ EvaluateTest::testEndGameSymmetry() {
         EXPECT_EQ(score3, score1);
         int score4 = evalFEN("8/8/8/2k4K/2r4R/8/8/8 w - - 0 1", true);
         EXPECT_EQ(score4, score1);
-    }
-}
-
-/** Return true if score is within tempoBonus of 0. */
-static bool isDraw(int score) {
-    if (abs(score) <= tempoBonusEG) {
-        return true;
-    } else {
-        std::cout << "score:" << score << std::endl;
-        return false;
     }
 }
 
