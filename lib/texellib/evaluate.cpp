@@ -108,9 +108,6 @@ Evaluate::evalPosPrint(const Position& pos) {
 template <bool print>
 inline int
 Evaluate::evalPos(const Position& pos) {
-    nnEval.setPos(pos);
-    return nnEval.eval();
-
     const bool useHashTable = !print;
     EvalHashData* ehd = nullptr;
     U64 key = pos.historyHash();
@@ -120,7 +117,10 @@ Evaluate::evalPos(const Position& pos) {
             return (ehd->data & 0xffff) - (1 << 15);
     }
 
-    int score = 0;
+    nnEval.setPos(pos);
+    int score = nnEval.eval();
+
+#if 0
     score += materialScore(pos, print);
 
     score += pieceSquareEval(pos);
@@ -157,6 +157,7 @@ Evaluate::evalPos(const Position& pos) {
 
     if (!pos.isWhiteMove())
         score = -score;
+#endif
 
     if (useHashTable)
         ehd->data = (key & 0xffffffffffff0000ULL) + (score + (1 << 15));
