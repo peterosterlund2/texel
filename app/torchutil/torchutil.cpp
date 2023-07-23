@@ -41,6 +41,10 @@
 #include <chrono>
 #include <cmath>
 
+extern "C" {
+#include "tb/gtb/compression/lzma/Lzma86Enc.h"
+}
+
 // ------------------------------------------------------------------------------
 
 /** Generates a pseudo-random permutation of 0, 1, ..., upperBound-1.
@@ -627,10 +631,42 @@ quantize(const std::string& inFile, const std::string& outFile) {
 
     net.quantize(qNet);
 
-    std::ofstream os;
-    os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
-    qNet.save(os);
+    {
+        std::ofstream os;
+        os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
+        qNet.save(os);
+    }
+
+
+    { // Save compressed network using lzma from Gaviota tablebase code
+        std::stringstream ss;
+        qNet.save(ss);
+        std::string data = ss.str();
+
+        size_t outSize = data.size();
+        std::vector<unsigned char> comprData(outSize);
+
+        unsigned char* unCompressedData = (unsigned char*)&data[0];
+        size_t unCompressedSize = data.size();
+
+        int level = 9;
+        unsigned int memory = 64*1024*1024;
+        int filter = SZ_FILTER_NO;
+
+        int res = Lzma86_Encode(comprData.data(), &outSize,
+                                unCompressedData, unCompressedSize,
+                                level, memory, filter);
+        if (res != SZ_OK)
+            throw ChessError("Failed to compress data");
+
+        std::ofstream os;
+        os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        std::string comprName = outFile + ".compr";
+        os.open(comprName.c_str(), std::ios_base::out | std::ios_base::binary);
+        BinaryFileWriter writer(os);
+        writer.writeArray(comprData.data(), outSize);
+    }
 }
 
 // ------------------------------------------------------------------------------
