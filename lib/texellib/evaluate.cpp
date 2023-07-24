@@ -127,8 +127,6 @@ Evaluate::evalPos(const Position& pos) {
     if (print) std::cout << "info string eval mtrl   :" << score << std::endl;
 
 #if 0
-    score += pieceSquareEval(pos);
-    if (print) std::cout << "info string eval pst    :" << score << std::endl;
     pawnBonus(pos);
 #endif
 
@@ -203,24 +201,6 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     mhd.id = pos.materialId();
     mhd.score = score;
     mhd.endGame = EndGameEval::endGameEval<false>(pos, 0);
-}
-
-int
-Evaluate::pieceSquareEval(const Position& pos) {
-    int score = 0;
-
-    // Kings/pawns
-    if (pos.wMtrlPawns() + pos.bMtrlPawns() == 0) { // Use symmetric tables if no pawns left
-        if (pos.wMtrl() > pos.bMtrl())
-            score += EndGameEval::mateEval(pos.getKingSq(true), pos.getKingSq(false));
-        else if (pos.wMtrl() < pos.bMtrl())
-            score -= EndGameEval::mateEval(pos.getKingSq(false), pos.getKingSq(true));
-        else
-            score += EndGameEval::winKingTable[pos.getKingSq(true)] -
-                     EndGameEval::winKingTable[pos.getKingSq(false)];
-    }
-
-    return score;
 }
 
 void

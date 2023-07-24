@@ -39,12 +39,12 @@ public:
     template <bool doEval> static int endGameEval(const Position& pos,
                                                   int oldScore);
 
+private:
     /** King evaluation when no pawns left. */
     static int mateEval(int k1, int k2);
 
     static const int winKingTable[64];
 
-private:
     /** Return true if the side with the bishop can not win because the opponent
      * has a fortress draw. */
     template <bool whiteBishop> static bool isBishopPawnDraw(const Position& pos);

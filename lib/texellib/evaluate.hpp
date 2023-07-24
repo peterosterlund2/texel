@@ -127,9 +127,6 @@ private:
 
     EvalHashData& getEvalHashEntry(U64 key);
 
-    /** Compute score based on piece square tables. Positive values are good for white. */
-    int pieceSquareEval(const Position& pos);
-
     /** Get material score */
     int materialScore(const Position& pos, bool print);
 
