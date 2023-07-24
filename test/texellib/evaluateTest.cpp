@@ -1103,8 +1103,6 @@ ParamTable<10> uciParTable { 0, 100, true,
     { 0,1,2,3,-4,4,3,2,0,-1 }
 };
 
-ParamTableMirrored<10> uciParTableM(uciParTable);
-
 TEST(EvaluateTest, testUciParamTable) {
     EvaluateTest::testUciParamTable();
 }
@@ -1115,16 +1113,8 @@ EvaluateTest::testUciParamTable() {
     EXPECT_EQ(2, uciParTable[1]);
     EXPECT_EQ(3, uciParTable[2]);
 
-    EXPECT_EQ(-2, uciParTableM[0]);
-    EXPECT_EQ(0, uciParTableM[1]);
-    EXPECT_EQ(3, uciParTableM[2]);
-    EXPECT_EQ(0, uciParTableM[9]);
-    EXPECT_EQ(2, uciParTableM[8]);
-    EXPECT_EQ(3, uciParTableM[7]);
-
     uciParTable.registerParams("uciParTable", Parameters::instance());
     const int* table = uciParTable.getTable();
-    const int* tableM = uciParTableM.getTable();
 
     Parameters::instance().set("uciParTable1", "11");
     {
@@ -1132,8 +1122,6 @@ EvaluateTest::testUciParamTable() {
         for (int i = 0; i < 10; i++) {
             EXPECT_EQ(expected[i], uciParTable[i]);
             EXPECT_EQ(expected[i], table[i]);
-            EXPECT_EQ(expected[10-1-i], uciParTableM[i]);
-            EXPECT_EQ(expected[10-1-i], tableM[i]);
         }
     }
 
@@ -1143,8 +1131,6 @@ EvaluateTest::testUciParamTable() {
         for (int i = 0; i < 10; i++) {
             EXPECT_EQ(expected[i], uciParTable[i]);
             EXPECT_EQ(expected[i], table[i]);
-            EXPECT_EQ(expected[10-1-i], uciParTableM[i]);
-            EXPECT_EQ(expected[10-1-i], tableM[i]);
         }
     }
 
@@ -1154,8 +1140,6 @@ EvaluateTest::testUciParamTable() {
         for (int i = 0; i < 10; i++) {
             EXPECT_EQ(expected[i], uciParTable[i]);
             EXPECT_EQ(expected[i], table[i]);
-            EXPECT_EQ(expected[10-1-i], uciParTableM[i]);
-            EXPECT_EQ(expected[10-1-i], tableM[i]);
         }
     }
 
@@ -1165,8 +1149,6 @@ EvaluateTest::testUciParamTable() {
         for (int i = 0; i < 10; i++) {
             EXPECT_EQ(expected[i], uciParTable[i]);
             EXPECT_EQ(expected[i], table[i]);
-            EXPECT_EQ(expected[10-1-i], uciParTableM[i]);
-            EXPECT_EQ(expected[10-1-i], tableM[i]);
         }
     }
 }

@@ -41,55 +41,15 @@ int Evaluate::pieceValueOrder[Piece::nPieceTypes] = {
     5, 4, 3, 2, 2, 1
 };
 
-
-static const int empty[64] = { 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                               0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                               0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-                               0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0};
-
-static StaticInitializer<Evaluate> evInit;
-
 INCBIN_EXTERN(char, NNData);
 // const char* gNNDataData;
 // const unsigned int gNNDataSize;
 
-void
-Evaluate::staticInitialize() {
-    psTab1[Piece::EMPTY]   = empty;
-    psTab1[Piece::WKING]   = kt1w.getTable();
-    psTab1[Piece::WQUEEN]  = qt1w.getTable();
-    psTab1[Piece::WROOK]   = rt1w.getTable();
-    psTab1[Piece::WBISHOP] = bt1w.getTable();
-    psTab1[Piece::WKNIGHT] = nt1w.getTable();
-    psTab1[Piece::WPAWN]   = pt1w.getTable();
-    psTab1[Piece::BKING]   = kt1b.getTable();
-    psTab1[Piece::BQUEEN]  = qt1b.getTable();
-    psTab1[Piece::BROOK]   = rt1b.getTable();
-    psTab1[Piece::BBISHOP] = bt1b.getTable();
-    psTab1[Piece::BKNIGHT] = nt1b.getTable();
-    psTab1[Piece::BPAWN]   = pt1b.getTable();
-
-    psTab2[Piece::EMPTY]   = empty;
-    psTab2[Piece::WKING]   = kt2w.getTable();
-    psTab2[Piece::WQUEEN]  = qt2w.getTable();
-    psTab2[Piece::WROOK]   = rt1w.getTable();
-    psTab2[Piece::WBISHOP] = bt2w.getTable();
-    psTab2[Piece::WKNIGHT] = nt2w.getTable();
-    psTab2[Piece::WPAWN]   = pt2w.getTable();
-    psTab2[Piece::BKING]   = kt2b.getTable();
-    psTab2[Piece::BQUEEN]  = qt2b.getTable();
-    psTab2[Piece::BROOK]   = rt1b.getTable();
-    psTab2[Piece::BBISHOP] = bt2b.getTable();
-    psTab2[Piece::BKNIGHT] = nt2b.getTable();
-    psTab2[Piece::BPAWN]   = pt2b.getTable();
-}
-
-const int* Evaluate::psTab1[Piece::nPieceTypes];
-const int* Evaluate::psTab2[Piece::nPieceTypes];
-
 Evaluate::Evaluate(EvalHashTables& et)
     : pawnHash(et.pawnHash),
+      phd(nullptr),
       materialHash(et.materialHash),
+      mhd(nullptr),
       evalHash(et.evalHash),
       nnEval(et.nnEval),
       whiteContempt(0) {

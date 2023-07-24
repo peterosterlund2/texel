@@ -80,9 +80,6 @@ public:
 
     static int pieceValueOrder[Piece::nPieceTypes];
 
-    static const int* psTab1[Piece::nPieceTypes];
-    static const int* psTab2[Piece::nPieceTypes];
-
     /** Get evaluation hash tables. */
     static std::unique_ptr<EvalHashTables> getEvalHashTables();
 
@@ -119,8 +116,6 @@ public:
 
     /** Compute v1 + (v2-v1)*k/IPOLMAX */
     static int interpolate(int v1, int v2, int k);
-
-    static void staticInitialize();
 
 private:
     template <bool print> int evalPos(const Position& pos);

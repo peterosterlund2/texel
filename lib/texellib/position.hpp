@@ -156,10 +156,6 @@ public:
     int getHalfMoveClock() const;
     void setHalfMoveClock(int hm);
 
-    /** Return incrementally updated piece square table score for middle game and endgame. */
-    int psScore1(int piece) const;
-    int psScore2(int piece) const;
-
     /** BitBoard for all squares occupied by a piece type. */
     U64 pieceTypeBB(Piece::Type piece) const;
     /** BitBoard for all squares occupied by several piece types. */
@@ -215,10 +211,6 @@ private:
     int bMtrlPawns_;         // Total value of all black pawns
 
     int squares[64];
-
-    // Piece square table scores
-    short psScore1_[Piece::nPieceTypes];
-    short psScore2_[Piece::nPieceTypes];
 
     // Bitboards
     U64 pieceTypeBB_[Piece::nPieceTypes];
@@ -594,14 +586,6 @@ inline int Position::getHalfMoveClock() const {
 
 inline void Position::setHalfMoveClock(int hm) {
     halfMoveClock = hm;
-}
-
-inline int Position::psScore1(int piece) const {
-    return psScore1_[piece];
-}
-
-inline int Position::psScore2(int piece) const {
-    return psScore2_[piece];
 }
 
 inline U64 Position::pieceTypeBB(Piece::Type piece) const {

@@ -305,27 +305,6 @@ private:
 };
 
 template <int N>
-class ParamTableMirrored {
-public:
-    explicit ParamTableMirrored(ParamTable<N>& orig0) : orig(orig0) {
-        orig.addListener([this]() {
-            if (N == 64) {
-                for (int sq = 0; sq < N; sq++)
-                    table[sq] = orig[Square::mirrorY(sq)];
-            } else {
-                for (int i = 0; i < N; i++)
-                    table[i] = orig[N-1-i];
-            }
-        });
-    }
-    int operator[](int i) const { return table[i]; }
-    const int* getTable() const { return table; }
-private:
-    int table[N];
-    ParamTable<N>& orig;
-};
-
-template <int N>
 ParamTable<N>::ParamTable(int minVal0, int maxVal0, bool uci0,
                           std::initializer_list<int> table0,
                           std::initializer_list<int> parNo0)
@@ -421,9 +400,6 @@ DECLARE_PARAM(krkpBonus,           107, 0, 400, useUciParam);
 DECLARE_PARAM(krpkbBonus,          131, -200, 200, useUciParam);
 DECLARE_PARAM(krpkbPenalty,        69,  0, 128, useUciParam);
 DECLARE_PARAM(krpknBonus,          149, 0, 400, useUciParam);
-
-extern ParamTable<64>         kt1b, kt2b, pt1b, pt2b, nt1b, nt2b, bt1b, bt2b, qt1b, qt2b, rt1b;
-extern ParamTableMirrored<64> kt1w, kt2w, pt1w, pt2w, nt1w, nt2w, bt1w, bt2w, qt1w, qt2w, rt1w;
 
 extern ParamTable<10> halfMoveFactor;
 extern ParamTable<9> stalePawnFactor;

@@ -53,11 +53,8 @@ Position::staticInitialize() {
 Position::Position() {
     for (int i = 0; i < 64; i++)
         squares[i] = Piece::EMPTY;
-    for (int i = 0; i < Piece::nPieceTypes; i++) {
-        psScore1_[i] = 0;
-        psScore2_[i] = 0;
+    for (int i = 0; i < Piece::nPieceTypes; i++)
         pieceTypeBB_[i] = 0;
-    }
     whiteBB_ = blackBB_ = 0;
     whiteMove = true;
     castleMask = 0;
@@ -124,12 +121,6 @@ Position::setPiece(int square, int piece) {
             }
         }
     }
-
-    // Update piece/square table scores
-    psScore1_[removedPiece] -= Evaluate::psTab1[removedPiece][square];
-    psScore2_[removedPiece] -= Evaluate::psTab2[removedPiece][square];
-    psScore1_[piece]        += Evaluate::psTab1[piece][square];
-    psScore2_[piece]        += Evaluate::psTab2[piece][square];
 }
 
 void
@@ -166,10 +157,6 @@ Position::clearPiece(int square) {
             }
         }
     }
-
-    // Update piece/square table scores
-    psScore1_[removedPiece] -= Evaluate::psTab1[removedPiece][square];
-    psScore2_[removedPiece] -= Evaluate::psTab2[removedPiece][square];
 }
 
 U64
@@ -318,9 +305,6 @@ Position::movePieceNotPawn(int from, int to) {
         blackBB_ &= ~sqMaskF;
         blackBB_ |= sqMaskT;
     }
-
-    psScore1_[piece] += Evaluate::psTab1[piece][to] - Evaluate::psTab1[piece][from];
-    psScore2_[piece] += Evaluate::psTab2[piece][to] - Evaluate::psTab2[piece][from];
 }
 
 // ----------------------------------------------------------------------------
@@ -344,11 +328,8 @@ Position::serialize(SerializeData& data) const {
 
 void
 Position::deSerialize(const SerializeData& data) {
-    for (int i = 0; i < Piece::nPieceTypes; i++) {
-        psScore1_[i] = 0;
-        psScore2_[i] = 0;
+    for (int i = 0; i < Piece::nPieceTypes; i++)
         pieceTypeBB_[i] = 0;
-    }
     whiteBB_ = blackBB_ = 0;
     wMtrl_ = bMtrl_ = -::kV;
     wMtrlPawns_ = bMtrlPawns_ = 0;
@@ -387,8 +368,6 @@ Position::deSerialize(const SerializeData& data) {
                     }
                 }
             }
-            psScore1_[piece] += Evaluate::psTab1[piece][square];
-            psScore2_[piece] += Evaluate::psTab2[piece][square];
         }
     }
 
