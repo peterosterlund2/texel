@@ -22,6 +22,19 @@ mkdir -p build/Release
            -DUSE_PREFETCH=on
 ) &
 
+# Windows 64-bit, no popcount
+mkdir -p build/win64nopop
+(cd build/win64nopop &&
+     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
+           -DUSE_WIN7=on \
+           -DCPU_TYPE=avx2 \
+           -DUSE_CTZ=on \
+           -DUSE_LARGE_PAGES=on \
+           -DUSE_NUMA=on \
+           -DUSE_POPCNT=off \
+           -DUSE_PREFETCH=on
+) &
+
 # Windows 64-bit
 mkdir -p build/win64
 (cd build/win64 &&
@@ -76,11 +89,12 @@ wait
 
 # Build all
 para=8
-cmake --build build/Release   -j ${para} || exit 2
-cmake --build build/win64     -j ${para} || exit 2
-cmake --build build/win64bmi  -j ${para} || exit 2
-cmake --build build/win64cl   -j ${para} || exit 2
-cmake --build build/android64 -j ${para} || exit 2
+cmake --build build/Release    -j ${para} || exit 2
+cmake --build build/win64      -j ${para} || exit 2
+cmake --build build/win64nopop -j ${para} || exit 2
+cmake --build build/win64bmi   -j ${para} || exit 2
+cmake --build build/win64cl    -j ${para} || exit 2
+cmake --build build/android64  -j ${para} || exit 2
 make -C doc
 
 # Copy to bin and strip executables
@@ -95,6 +109,9 @@ cp build/win64/runcmd.exe bin/runcmd.exe
 x86_64-w64-mingw32-strip bin/runcmd.exe
 cp build/win64/texelutil.exe bin/texelutil.exe
 x86_64-w64-mingw32-strip bin/texelutil.exe
+
+cp build/win64nopop/texel.exe bin/texel64nopop.exe
+x86_64-w64-mingw32-strip bin/texel64nopop.exe
 
 cp build/win64bmi/texel.exe bin/texel64bmi.exe
 x86_64-w64-mingw32-strip bin/texel64bmi.exe
