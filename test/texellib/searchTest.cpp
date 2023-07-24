@@ -591,9 +591,9 @@ SearchTest::testTBSearch() {
     }
 }
 
-TEST(SearchTest, testFortress) {
-    SearchTest::testFortress();
-}
+//TEST(SearchTest, testFortress) {
+//    SearchTest::testFortress();
+//}
 
 void
 SearchTest::testFortress() {

@@ -119,18 +119,24 @@ Evaluate::evalPos(const Position& pos) {
 
     nnEval.setPos(pos);
     int score = nnEval.eval();
+    if (!pos.isWhiteMove())
+        score = -score;
+    if (print) std::cout << "info string eval nn     :" << score << std::endl;
+
+    score += materialScore(pos, print);
+    if (print) std::cout << "info string eval mtrl   :" << score << std::endl;
 
 #if 0
-    score += materialScore(pos, print);
-
     score += pieceSquareEval(pos);
     if (print) std::cout << "info string eval pst    :" << score << std::endl;
     pawnBonus(pos);
+#endif
 
     if (mhd->endGame)
         score = EndGameEval::endGameEval<true>(pos, score);
     if (print) std::cout << "info string eval endgame:" << score << std::endl;
 
+#if 0
     if ((whiteContempt != 0) && !mhd->endGame) {
         int mtrlPawns = pos.wMtrlPawns() + pos.bMtrlPawns();
         int mtrl = pos.wMtrl() + pos.bMtrl();
@@ -154,10 +160,10 @@ Evaluate::evalPos(const Position& pos) {
         score = score * stalePawnFactor[nStale] / 128;
     }
     if (print) std::cout << "info string eval staleP :" << score << std::endl;
+#endif
 
     if (!pos.isWhiteMove())
         score = -score;
-#endif
 
     if (useHashTable)
         ehd->data = (key & 0xffffffffffff0000ULL) + (score + (1 << 15));

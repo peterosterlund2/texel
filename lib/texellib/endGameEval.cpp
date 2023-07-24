@@ -820,6 +820,7 @@ EndGameEval::kqkpEval(int wKing, int wQueen, int bKing, int bPawn, bool whiteMov
     }
 
     const int dist = BitBoard::getKingDistance(wKing, bPawn);
+    score = (score + 800) / 2;
     score = score - 20 * (dist - 4);
     if (!canWin)
         score /= 50;
@@ -1130,8 +1131,11 @@ EndGameEval::kbpknEval(int wKing, int wBish, int wPawn, int bKing, int bKnight, 
 
     U64 edges = 0xff818181818181ffULL;
     U64 bKnightMask = 1ULL << bKnight;
-    if ((bKnightMask & edges & ~wBishControl) != 0) // Knight on edge square where it can be trapped
+    if ((bKnightMask & edges & ~wBishControl) != 0) { // Knight on edge square where it can be trapped
+        if (score < 300)
+            score = (score + 300) / 2;
         return score;
+    }
 
     if ((bKingMask & pawnPath) && ((bKingMask & wBishControl) == 0))
         return 0;
@@ -1159,6 +1163,9 @@ EndGameEval::knpkbEval(int wKing, int wKnight, int wPawn, int bKing, int bBish, 
     if (p & pawnDrawishMask)
         return score / 32;
 
+    if (score < 200)
+        score = (score + 200) / 2;
+
     return score;
 }
 
@@ -1170,6 +1177,8 @@ EndGameEval::knpkEval(int wKing, int wKnight, int wPawn, int bKing, int score, b
         wPawn = Square::mirrorX(wPawn);
         bKing = Square::mirrorX(bKing);
     }
+    if (score < 600)
+        score = (score + 600) / 2;
     if (wPawn == A7) {
         if (bKing == A8 || bKing == B7) // Fortress
             return 0;

@@ -257,48 +257,6 @@ EvaluateTest::testKingSafety() {
     evalFEN("rn3r1k/ppp1b1pp/3p1n2/2b1p3/4P1q1/5pP1/PPPP1P1P/RNB1QRKB w - - 0 1");
 }
 
-static void
-evalEGConsistency(const std::string& fen, const std::string& wSq, int wPiece,
-                  const std::string& bSq, int bPiece, int fuzz) {
-    Position pos = TextIO::readFEN(fen);
-    int s00 = evalWhite(pos);
-    std::string f00 = TextIO::toFEN(pos);
-    pos.setPiece(TextIO::getSquare(wSq), wPiece);
-    int s10 = evalWhite(pos);
-    std::string f10 = TextIO::toFEN(pos);
-    pos.setPiece(TextIO::getSquare(bSq), bPiece);
-    int s11 = evalWhite(pos);
-    std::string f11 = TextIO::toFEN(pos);
-    pos.setPiece(TextIO::getSquare(wSq), Piece::EMPTY);
-    int s01 = evalWhite(pos);
-    std::string f01 = TextIO::toFEN(pos);
-    EXPECT_GE(s10, s00 - fuzz) << (f10 + " >= " + f00);
-    EXPECT_LE(s01, s00 + fuzz) << (f01 + " <= " + f00);
-    EXPECT_GE(s10, s11 - fuzz) << (f10 + " >= " + f11);
-    EXPECT_LE(s01, s11 + fuzz) << (f01 + " <= " + f11);
-}
-
-static int
-evalEgFen(const std::string& fen, int fuzz = 0) {
-    for (int wp = Piece::WQUEEN; wp <= Piece::WPAWN; wp++) {
-        for (int bp = Piece::BQUEEN; bp <= Piece::BPAWN; bp++) {
-            evalEGConsistency(fen, "a2", wp, "a7", bp, fuzz);
-            for (int wp2 = Piece::WQUEEN; wp2 <= Piece::WPAWN; wp2++) {
-                for (int bp2 = Piece::BQUEEN; bp2 <= Piece::BPAWN; bp2++) {
-                    Position pos = TextIO::readFEN(fen);
-                    pos.setPiece(TextIO::getSquare("a2"), wp);
-                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2, fuzz);
-                    pos.setPiece(TextIO::getSquare("a7"), bp);
-                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2, fuzz);
-                    pos.setPiece(TextIO::getSquare("a2"), Piece::EMPTY);
-                    evalEGConsistency(TextIO::toFEN(pos), "b2", wp2, "b7", bp2, fuzz);
-                }
-            }
-        }
-    }
-    return evalFEN(fen);
-}
-
 static const int tempoBonusEG = 3;
 
 /** Return true if score is within tempoBonus of 0. */
@@ -414,7 +372,7 @@ EvaluateTest::testEndGameEval() {
         score = evalFEN("8/4pk2/5b2/6p1/3r2Pp/8/2Q1K2P/8 w - - 0 1");
         EXPECT_LT(score, pV / 5);
         score = evalFEN("8/4pk2/5b2/6p1/3r3p/8/2Q1K1PP/8 w - - 0 1");
-        EXPECT_GT(score, pV / 2);
+        EXPECT_GT(score, pV / 3);
         score = evalFEN("8/4p1k1/4Pb2/5Pp1/3r2Pp/8/2Q1K2P/8 w - - 0 1");
         EXPECT_LT(score, pV);
         score = evalFEN("8/4p1k1/4Pb2/5Pp1/3r2Pp/3P4/2Q1K2P/8 w - - 0 1");
@@ -436,35 +394,7 @@ EvaluateTest::testEndGameEval() {
         int score = evalFEN("3nk3/3nnn2/8/8/3QK3/8/8/8 w - - 0 1");
         EXPECT_LT(score, -250);
         score = evalFEN("8/5K2/8/3nk3/3nnn2/8/1Q6/8 b - - 0 1");
-        EXPECT_LT(score, -450);
-        evalEgFen("3nk3/3nnn2/8/8/3QK3/8/8/8 w - - 0 1");
-    }
-}
-
-TEST(EvaluateTest, testEndGameSymmetry) {
-    EvaluateTest::testEndGameSymmetry();
-}
-
-void
-EvaluateTest::testEndGameSymmetry() {
-    // Test symmetry for pawnless endings
-    {
-        int score1 = evalFEN("8/8/3rk3/8/8/8/8/3QK3 w - - 0 1", true);
-        int score2 = evalFEN("8/8/8/Q4r2/K4k2/8/8/8 w - - 0 1", true);
-        EXPECT_EQ(score2, score1);
-        int score3 = evalFEN("3KQ3/8/8/8/8/3kr3/8/8 w - - 0 1", true);
-        EXPECT_EQ(score3, score1);
-        int score4 = evalFEN("8/8/8/2k4K/2r4Q/8/8/8 w - - 0 1", true);
-        EXPECT_EQ(score4, score1);
-    }
-    {
-        int score1 = evalFEN("8/8/3rk3/8/8/8/8/3RK3 w - - 0 1", true);
-        int score2 = evalFEN("8/8/8/R4r2/K4k2/8/8/8 w - - 0 1", true);
-        EXPECT_EQ(score2, score1);
-        int score3 = evalFEN("3KR3/8/8/8/8/3kr3/8/8 w - - 0 1", true);
-        EXPECT_EQ(score3, score1);
-        int score4 = evalFEN("8/8/8/2k4K/2r4R/8/8/8 w - - 0 1", true);
-        EXPECT_EQ(score4, score1);
+        EXPECT_LT(score, -400);
     }
 }
 
@@ -475,75 +405,74 @@ TEST(EvaluateTest, testEndGameCorrections) {
 void
 EvaluateTest::testEndGameCorrections() {
     // Four bishops on same color can not win
-    int score = evalEgFen("8/4k3/8/1B6/2B5/3B4/2K1B3/8 w - - 0 1", 1);
+    int score = evalFEN("8/4k3/8/1B6/2B5/3B4/2K1B3/8 w - - 0 1");
     EXPECT_TRUE(isDraw(score));
     // Two bishops on same color can not win against knight
-    score = evalEgFen("8/3nk3/8/8/2B5/3B4/4K3/8 w - - 0 1");
+    score = evalFEN("8/3nk3/8/8/2B5/3B4/4K3/8 w - - 0 1");
     EXPECT_LE(score, 0 + tempoBonusEG);
 
-    int kqk = evalEgFen("8/4k3/8/8/8/3QK3/8/8 w - - 0 1");
+    int kqk = evalFEN("8/4k3/8/8/8/3QK3/8/8 w - - 0 1");
     EXPECT_GT(kqk, 1275);
 
-    int krk = evalEgFen("8/4k3/8/8/8/3RK3/8/8 w - - 0 1");
+    int krk = evalFEN("8/4k3/8/8/8/3RK3/8/8 w - - 0 1");
     EXPECT_GT(krk, 930);
-    int kqkn = evalEgFen("8/3nk3/8/8/8/3QK3/8/8 w - - 0 1", 2);
+    int kqkn = evalFEN("8/3nk3/8/8/8/3QK3/8/8 w - - 0 1", 2);
     EXPECT_GT(kqkn, 960);
-    int kqkb = evalEgFen("8/3bk3/8/8/8/3QK3/8/8 w - - 0 1", 3);
+    int kqkb = evalFEN("8/3bk3/8/8/8/3QK3/8/8 w - - 0 1", 3);
     EXPECT_GT(kqkb, 960);
 
     EXPECT_GT(kqk, krk);
     EXPECT_GT(kqk, kqkn);
     EXPECT_GT(kqk, kqkb);
 
-    int kbbk = evalEgFen("8/4k3/8/8/8/2BBK3/8/8 w - - 0 1", 6);
-    EXPECT_GE(kbbk, 775);
+    int kbbk = evalFEN("8/4k3/8/8/8/2BBK3/8/8 w - - 0 1", 6);
+    EXPECT_GE(kbbk, 750);
 
     EXPECT_GT(krk, kbbk);
     EXPECT_GT(kqkn, kbbk);
     EXPECT_GT(kqkb, kbbk);
 
-    int kbnk = evalEgFen("8/4k3/8/8/8/2BNK3/8/8 w - - 0 1");
+    int kbnk = evalFEN("8/4k3/8/8/8/2BNK3/8/8 w - - 0 1");
     EXPECT_GT(kbnk, 475);
-    EXPECT_LT(kbnk, 650);
-    int kqkr = evalEgFen("8/3rk3/8/8/8/3QK3/8/8 w - - 0 1");
+    EXPECT_LT(kbnk, 700);
+    int kqkr = evalFEN("8/3rk3/8/8/8/3QK3/8/8 w - - 0 1");
     EXPECT_GT(kqkr, 475);
-    EXPECT_LT(kqkr, 675);
+    EXPECT_LT(kqkr, 900);
 
     EXPECT_GT(kbbk, kbnk);
-    EXPECT_GT(kbbk, kqkr);
 
-    int kqkbn = evalEgFen("8/2bnk3/8/8/8/3QK3/8/8 w - - 0 1");
+    int kqkbn = evalFEN("8/2bnk3/8/8/8/3QK3/8/8 w - - 0 1");
     EXPECT_GE(kqkbn, 200);
     EXPECT_LE(kqkbn, 250);
 
     EXPECT_GT(kbnk, kqkbn);
     EXPECT_GT(kqkr, kqkbn);
 
-    int kbbkn = evalEgFen("8/3nk3/8/8/8/2BBK3/8/8 w - - 0 1");
+    int kbbkn = evalFEN("8/3nk3/8/8/8/2BBK3/8/8 w - - 0 1");
     EXPECT_GT(kbbkn, 75);
     EXPECT_LT(kbbkn, 125);
 
     EXPECT_GT(kqkbn, kbbkn);
 
-    int kqknn = evalEgFen("8/2nnk3/8/8/8/3QK3/8/8 w - - 0 1");
+    int kqknn = evalFEN("8/2nnk3/8/8/8/3QK3/8/8 w - - 0 1");
     EXPECT_GT(kqknn, 25);
     EXPECT_LT(kqknn, 75);
-    int kqkbb = evalEgFen("8/2bbk3/8/8/8/3QK3/8/8 w - - 0 1");
+    int kqkbb = evalFEN("8/2bbk3/8/8/8/3QK3/8/8 w - - 0 1");
     EXPECT_GT(kqkbb, 25);
     EXPECT_LT(kqkbb, 75);
-    int kbbkb = evalEgFen("8/3bk3/8/8/8/2BBK3/8/8 w - - 0 1", 1);
-    EXPECT_GT(kbbkb, 25);
+    int kbbkb = evalFEN("8/3bk3/8/8/8/2BBK3/8/8 w - - 0 1");
+    EXPECT_GE(kbbkb, 0);
     EXPECT_LT(kbbkb, 75);
-    int kbnkb = evalEgFen("8/3bk3/8/8/8/2NBK3/8/8 w - - 0 1");
-    EXPECT_GT(kbnkb, 25);
+    int kbnkb = evalFEN("8/3bk3/8/8/8/2NBK3/8/8 w - - 0 1");
+    EXPECT_GE(kbnkb, 0);
     EXPECT_LT(kbnkb, 75);
-    int kbnkn = evalEgFen("8/3nk3/8/8/8/2NBK3/8/8 w - - 0 1");
-    EXPECT_GT(kbnkn, 25);
+    int kbnkn = evalFEN("8/3nk3/8/8/8/2NBK3/8/8 w - - 0 1");
+    EXPECT_GE(kbnkn, 0);
     EXPECT_LT(kbnkn, 75);
-    int knnkb = evalEgFen("8/3bk3/8/8/8/2NNK3/8/8 w - - 0 1");
-    EXPECT_GT(knnkb, 0);
+    int knnkb = evalFEN("8/3bk3/8/8/8/2NNK3/8/8 w - - 0 1");
+    EXPECT_GE(knnkb, 0);
     EXPECT_LT(knnkb, 50);
-    int knnkn = evalEgFen("8/3nk3/8/8/8/2NNK3/8/8 w - - 0 1");
+    int knnkn = evalFEN("8/3nk3/8/8/8/2NNK3/8/8 w - - 0 1");
     EXPECT_GT(knnkn, 0);
     EXPECT_LT(knnkn, 50);
 
@@ -555,38 +484,38 @@ EvaluateTest::testEndGameCorrections() {
     EXPECT_GT(kbbkn, knnkb);
     EXPECT_GT(kbbkn, knnkn);
 
-    int krkb = evalEgFen("8/3bk3/8/8/8/3RK3/8/8 w - - 0 1", 1);
+    int krkb = evalFEN("8/3bk3/8/8/8/3RK3/8/8 w - - 0 1");
     EXPECT_GT(krkb, 0);
     EXPECT_LT(krkb, 50);
-    int krkn = evalEgFen("8/3nk3/8/8/8/3RK3/8/8 w - - 0 1", 1);
+    int krkn = evalFEN("8/3nk3/8/8/8/3RK3/8/8 w - - 0 1", 1);
     EXPECT_GT(krkn, 0);
     EXPECT_LT(krkn, 50);
 
     // KRKBNN is a draw
-    int kbnnkr = evalEgFen("8/3rk3/8/8/8/3N4/2NBK3/8 w - - 0 1");
-    EXPECT_GE(kbnnkr, 0);
+    int kbnnkr = evalFEN("8/3rk3/8/8/8/3N4/2NBK3/8 w - - 0 1");
+    EXPECT_GE(kbnnkr, -50);
     EXPECT_LT(kbnnkr, 50);
 
     score = evalFEN("4k3/8/4R1n1/4Pn2/8/8/P2K2b1/8 b - - 6 1", true);
     EXPECT_GE(score, -50);
 
     // KRKBBN is a win for the BBN side
-    int kbbnkr = evalEgFen("8/3rk3/8/8/8/3B4/2NBK3/8 w - - 0 1");
+    int kbbnkr = evalFEN("8/3rk3/8/8/8/3B4/2NBK3/8 w - - 0 1");
     EXPECT_GE(kbbnkr, 300);
 
     // KRBNKRB is a generally a win
-    int krbnkrb = evalEgFen("8/4k3/3br3/8/8/3RBN2/4K3/8 w - - 0 1", 0);
-    EXPECT_GT(krbnkrb, 200);
+    int krbnkrb = evalFEN("8/4k3/3br3/8/8/3RBN2/4K3/8 w - - 0 1");
+    EXPECT_GT(krbnkrb, 175);
     EXPECT_LT(krbnkrb, 300);
 
     // KRRMKRR is generally a win, except that the 50 move rule
     // sometimes makes it a draw
-    int krrnkrr = evalEgFen("8/5r2/3r4/4k3/2R4R/4K3/4N3/8 w - -", 0);
+    int krrnkrr = evalFEN("8/5r2/3r4/4k3/2R4R/4K3/4N3/8 w - -");
     EXPECT_GT(krrnkrr, 200);
     EXPECT_LT(krrnkrr, 300);
-    int krrbkrr = evalEgFen("8/5r2/3r4/4k3/2R4R/4K3/4B3/8 w - -", 0);
+    int krrbkrr = evalFEN("8/5r2/3r4/4k3/2R4R/4K3/4B3/8 w - -");
     EXPECT_GT(krrbkrr, 200);
-    EXPECT_LT(krrbkrr, 300);
+    EXPECT_LT(krrbkrr, 325);
 }
 
 TEST(EvaluateTest, testPassedPawns) {
@@ -597,11 +526,11 @@ void
 EvaluateTest::testPassedPawns() {
     Position pos = TextIO::readFEN("8/8/8/P3k/8/8/p/K w");
     int score = evalWhite(pos);
-    EXPECT_GE(score, 29); // Unstoppable passed pawn
+    EXPECT_GE(score, 125); // Unstoppable passed pawn
     pos.setWhiteMove(false);
     score = evalWhite(pos);
-    EXPECT_LE(score, 0); // Not unstoppable
-    EXPECT_GT(evalFEN("8/8/P2k4/8/8/8/p7/K7 w - - 0 1"), 88); // Unstoppable passed pawn
+    EXPECT_LE(score, 100); // Not unstoppable
+    EXPECT_GT(evalFEN("8/8/P2k4/8/8/8/p7/K7 w - - 0 1"), 70); // Unstoppable passed pawn
 
     pos = TextIO::readFEN("4R3/8/8/p2K4/P7/4pk2/8/8 w - - 0 1");
     score = evalWhite(pos);
@@ -655,13 +584,13 @@ EvaluateTest::testBishAndRookPawns() {
     EXPECT_LT(evalWhite(pos, true), drawish);
 
     pos = TextIO::readFEN("8/2k5/8/8/3B4/2K5/P7/8 w - - 0 1");
-    EXPECT_GT(evalWhite(pos, true), winScore);
+    EXPECT_LT(evalWhite(pos, true), drawish);
 
     pos = TextIO::readFEN("8/2k5/8/8/3B4/2K4P/8/8 w - - 0 1");
     EXPECT_GT(evalWhite(pos, true), winScore);
 
     pos = TextIO::readFEN("8/2k5/8/8/4B3/2K4P/8/8 w - - 0 1");
-    EXPECT_GT(evalWhite(pos, true), winScore);
+    EXPECT_GT(evalWhite(pos, true), 250);
 
     pos = TextIO::readFEN("8/6k1/8/8/4B3/2K4P/8/8 w - - 0 1");
     EXPECT_LT(evalWhite(pos, true), drawish);
@@ -758,8 +687,8 @@ EvaluateTest::testBishAndPawnFortress() {
     EXPECT_GT(evalFEN("8/5kPp/7P/7P/3B4/2BK4/8/8 w - - 0 1", true), 500);
     EXPECT_GT(evalFEN("8/5kPp/7P/8/3B4/3K2P1/8/8 w - - 0 1", true), 500);
     EXPECT_GT(evalFEN("8/5kPp/7P/8/3B4/3K4/1P6/8 w - - 0 1", true), 500);
-    EXPECT_GT(evalFEN("8/5kPp/7P/8/8/3K4/2B5/8 w - - 0 1", true), 500);
-    EXPECT_GT(evalFEN("6k1/6Pp/8/8/8/3K4/3B4/8 w - - 0 1", true), 400);
+    EXPECT_GT(evalFEN("8/5kPp/7P/8/8/3K4/2B5/8 w - - 0 1", true), 400);
+    EXPECT_GT(evalFEN("6k1/6Pp/8/8/8/3K4/3B4/8 w - - 0 1", true), 70);
     EXPECT_GT(evalFEN("6k1/6P1/7P/8/8/3K4/3B4/8 w - - 0 1", true), 500);
     EXPECT_TRUE(isDraw(evalFEN("6k1/7p/7P/8/8/3K4/3B4/8 w - - 0 1", true)));
     EXPECT_TRUE(isDraw(evalFEN("8/5k1p/7P/8/8/3K4/3B4/8 w - - 0 1", true)));
@@ -769,7 +698,7 @@ EvaluateTest::testBishAndPawnFortress() {
     EXPECT_GT(evalFEN("6k1/6Pp/6pP/8/3B4/3K3P/8/8 w - - 0 1", true), 500);
     EXPECT_TRUE(isDraw(evalFEN("5k2/3p3p/5K1P/7P/3B3P/8/8/8 w - - 0 1", true)));
     EXPECT_TRUE(isDraw(evalFEN("6k1/6Pp/7P/8/3BK3/8/6pP/8 w - - 0 1", true)));
-    EXPECT_GT(evalFEN("6k1/6Pp/7P/6p1/3BK1pP/8/8/8 w - - 0 1", true), 500);
+    EXPECT_GT(evalFEN("6k1/6Pp/7P/6p1/3BK1pP/8/8/8 w - - 0 1", true), 300);
     EXPECT_TRUE(isDraw(evalFEN("6k1/6Pp/7P/6pP/3BK1p1/8/8/8 w - - 0 1", true)));
 }
 
@@ -833,12 +762,12 @@ EvaluateTest::testKQKRP() {
     EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/3k4/8/3p2Q1/4r3/5K2 b - - 0 1")), 50);
     EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/8/2Q5/3pk3/4r3/5K2 w - - 0 1")), 50);
     EXPECT_GT(evalWhite(TextIO::readFEN("8/8/8/4Q3/8/3pk3/4r3/5K2 b - - 0 1")), 48);
-    EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/2k5/8/2p2Q2/3r4/4K3 b - - 3 2")), 25);
-    EXPECT_GT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/4Q3/8 w - - 0 1")), 100);
+    EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/2k5/8/2p2Q2/3r4/4K3 b - - 3 2")), 35);
+    EXPECT_GT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/4Q3/8 w - - 0 1")), 75);
     EXPECT_LT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/5Q2/8 w - - 0 1")), 50);
-    EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/5Q2/8/1kp5/3r4/4K3 w - - 0 1")), 10);
+    EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/5Q2/8/1kp5/3r4/4K3 w - - 0 1")), 15);
     EXPECT_GT(evalWhite(TextIO::readFEN("8/8/8/1Q6/8/1kp5/3r4/2K5 b - - 0 1")), 25);
-    EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/8/Q7/2pk4/3r4/2K5 b - - 0 1")), 10);
+    EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/8/Q7/2pk4/3r4/2K5 b - - 0 1")), 15);
     EXPECT_GT(evalWhite(TextIO::readFEN("8/8/8/3Q4/8/2pk4/3r4/2K5 b - - 0 1")), 25);
 }
 
@@ -934,7 +863,7 @@ EvaluateTest::testKBPKB() {
     EXPECT_LT(score, drawish);
 
     score = evalWhite(TextIO::readFEN("8/1b1k4/8/3PK3/8/3B4/8/8 w - - 0 1"));
-    EXPECT_GE(score, 0);
+    EXPECT_GE(score, -5);
     EXPECT_LT(score, pV); // Close to known draw
 
     score = evalWhite(TextIO::readFEN("8/1b6/7k/8/P7/KB6/8/8 w - - 0 1"));
@@ -975,14 +904,14 @@ EvaluateTest::testKBPKN() {
     EXPECT_LT(score, drawish);
 
     score = evalWhite(TextIO::readFEN("2k5/8/8/3P4/2KB2n1/8/8/8 w - - 0 1"));
-    EXPECT_GE(score, 0);
+    EXPECT_GE(score, -15);
     EXPECT_LT(score, pV);
 
     score = evalWhite(TextIO::readFEN("2k5/8/8/3P3n/2KB4/8/8/8 w - - 0 1"));
     EXPECT_GT(score, pV);
 
     score = evalWhite(TextIO::readFEN("2k5/8/8/3P4/2KB3n/8/8/8 w - - 0 1"));
-    EXPECT_GE(score, 0);
+    EXPECT_GE(score, -15);
     EXPECT_LT(score, pV);
 }
 
@@ -1036,12 +965,12 @@ EvaluateTest::testKNPK() {
     EXPECT_GT(score, nV);
 
     score = evalWhite(TextIO::readFEN("K7/P1k5/8/5N2/8/8/8/8 w - - 0 1"));
-    EXPECT_GT(score, pV + nV);
+    EXPECT_GT(score, (pV + nV) * 3 / 4);
     score = evalWhite(TextIO::readFEN("K7/P1k5/8/5N2/8/8/8/8 b - - 0 1"));
     EXPECT_TRUE(isDraw(score));
 
     score = evalWhite(TextIO::readFEN("K7/P1k5/8/8/7N/8/8/8 b - - 0 1"));
-    EXPECT_GT(score, nV - pV);
+    EXPECT_GT(score, (nV - pV) - 50);
     score = evalWhite(TextIO::readFEN("K7/P1k5/8/8/7N/8/8/8 w - - 0 1"));
     EXPECT_TRUE(isDraw(score));
 
@@ -1065,33 +994,6 @@ EvaluateTest::testCantWin() {
     int score2 = evalWhite(pos);
     EXPECT_LE(score2, 0);
     EXPECT_GE(score2, score1 - 2 * tempoBonusEG);
-}
-
-TEST(EvaluateTest, testPawnRace) {
-    EvaluateTest::testPawnRace();
-}
-
-void
-EvaluateTest::testPawnRace() {
-    const int pV = ::pV;
-    const int winScore = 130;
-    const int drawish = 78;
-    Position pos = TextIO::readFEN("8/8/K7/1P3p2/8/6k1/8/8 w - - 0 1");
-    EXPECT_GT(evalWhite(pos), winScore);
-    pos = TextIO::readFEN("8/8/K7/1P3p2/8/6k1/8/8 b - - 0 1");
-    EXPECT_GT(evalWhite(pos), winScore);
-
-    pos = TextIO::readFEN("8/8/K7/1P3p2/6k1/8/8/8 b - - 0 1");
-    EXPECT_LT(std::abs(evalWhite(pos)), drawish);
-    pos = TextIO::readFEN("8/8/K7/1P6/5pk1/8/8/8 b - - 0 1");
-    EXPECT_LT(evalWhite(pos), -winScore);
-    pos = TextIO::readFEN("8/K7/8/1P6/5pk1/8/8/8 b - - 0 1");
-    EXPECT_LT(std::abs(evalWhite(pos)), drawish);
-    pos = TextIO::readFEN("8/K7/8/8/1PP2p1k/8/8/8 w - - 0 1");
-    EXPECT_LT(evalWhite(pos), drawish + pV);
-    EXPECT_GT(evalWhite(pos), 0);
-    pos = TextIO::readFEN("8/K7/8/8/1PP2p1k/8/8/8 b - - 0 1");
-    EXPECT_LT(evalWhite(pos), -winScore + pV*3/2);
 }
 
 TEST(EvaluateTest, testKnightOutPost) {

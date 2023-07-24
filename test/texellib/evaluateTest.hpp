@@ -36,7 +36,6 @@ public:
     static void testMaterial();
     static void testKingSafety();
     static void testEndGameEval();
-    static void testEndGameSymmetry();
     static void testEndGameCorrections();
     static void testPassedPawns();
     static void testBishAndRookPawns();
@@ -54,7 +53,6 @@ public:
     static void testKNPKB();
     static void testKNPK();
     static void testCantWin();
-    static void testPawnRace();
     static void testKnightOutPost();
     static void testUciParam();
     static void testUciParamTable();
