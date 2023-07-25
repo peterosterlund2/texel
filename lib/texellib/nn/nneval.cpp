@@ -47,7 +47,7 @@ NNEvaluator::staticInitialize() {
 }
 
 
-NNEvaluator::NNEvaluator(NetData& netData)
+NNEvaluator::NNEvaluator(const NetData& netData)
     : wtm(true), wKingSq(-1), bKingSq(-1),
       netData(netData),
       lin2(netData.lin2),

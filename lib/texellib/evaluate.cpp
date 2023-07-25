@@ -268,22 +268,24 @@ Evaluate::EvalHashTables::EvalHashTables()
     materialHash.resize(1 << 14);
 }
 
-NetData&
+const NetData&
 Evaluate::EvalHashTables::initNetData() {
-    netData = NetData::create();
+    static std::shared_ptr<NetData> staticNetData = []() {
+        std::shared_ptr<NetData> netData = NetData::create();
+        size_t unCompressedSize = netData->computeSize();
+        std::vector<unsigned char> unComprData(unCompressedSize);
+        unsigned char* compressedData = (unsigned char*)gNNDataData;
+        size_t compressedSize = gNNDataSize;
+        int res = Lzma86_Decode(unComprData.data(), &unCompressedSize, compressedData, &compressedSize);
+        if (res != SZ_OK)
+            throw ChessError("Failed to decompress network data");
 
-    size_t unCompressedSize = netData->computeSize();
-    std::vector<unsigned char> unComprData(unCompressedSize);
-    unsigned char* compressedData = (unsigned char*)gNNDataData;
-    size_t compressedSize = gNNDataSize;
-    int res = Lzma86_Decode(unComprData.data(), &unCompressedSize, compressedData, &compressedSize);
-    if (res != SZ_OK)
-        throw ChessError("Failed to decompress network data");
-
-    std::string nnData((char*)unComprData.data(), unCompressedSize);
-    std::stringstream is(nnData);
-    netData->load(is);
-    return *netData;
+        std::string nnData((char*)unComprData.data(), unCompressedSize);
+        std::stringstream is(nnData);
+        netData->load(is);
+        return netData;
+    }();
+    return *staticNetData;
 }
 
 int
