@@ -318,6 +318,10 @@ you have access to a terminal environment:
 The following options can be enabled to activate CPU, OS and compiler specific
 features. Not all options are available for all operating systems and compilers:
 
+USE_SSSE3
+
+  Use SSSE3 instructions to speed up neural network evaluation.
+
 USE_AVX2
 
   Use AVX2 instructions to speed up neural network evaluation.

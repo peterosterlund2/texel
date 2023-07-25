@@ -147,6 +147,10 @@ if(UNIX AND NOT ANDROID)
   endif()
 endif()
 
+if(USE_SSSE3)
+  target_compile_definitions(texellib
+    PUBLIC "HAS_SSSE3")
+endif()
 if(USE_AVX2)
   target_compile_definitions(texellib
     PUBLIC "HAS_AVX2")

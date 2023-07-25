@@ -31,6 +31,9 @@
 #ifdef HAS_AVX2
 #include <immintrin.h>
 #endif
+#ifdef HAS_SSSE3
+#include <smmintrin.h>
+#endif
 
 
 // ------------------------------------------------------------------------------
@@ -43,6 +46,18 @@ avx2_hadd_32(__m256i v) {
     v = _mm256_hadd_epi32(v, v);
     v = _mm256_hadd_epi32(v, v);
     return _mm256_extract_epi32(v, 0) + _mm256_extract_epi32(v, 4);
+}
+
+#endif
+
+#ifdef HAS_SSSE3
+
+/** Return the sum of the 4 32-bit values in an SSSE3 128-bit register. */
+inline S32
+ssse3_hadd_32(__m128i v) {
+    v = _mm_hadd_epi32(v, v);
+    v = _mm_hadd_epi32(v, v);
+    return _mm_cvtsi128_si32(v);
 }
 
 #endif
@@ -67,6 +82,24 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 sum = _mm256_add_epi32(sum, d);         // Accumulate 8 sums
             }
             result(i) += avx2_hadd_32(sum);             // Combine 8 32-bit values to one
+        }
+        return;
+    }
+#endif
+#ifdef HAS_SSSE3
+    if (nIn % 16 == 0) {
+        // Note that this only works because all elements in "in" are non-negative
+        __m128i ones16 = _mm_set_epi16(1,1,1,1,1,1,1,1);
+        for (int i = 0; i < nOut; i++) {
+            __m128i sum = _mm_set_epi32(0, 0, 0, 0);
+            for (int j = 0; j < nIn; j += 16) {
+                __m128i a = _mm_loadu_si128((const __m128i*)&weight(i,j));
+                __m128i b = _mm_loadu_si128((const __m128i*)&in(j));
+                __m128i d = _mm_maddubs_epi16(b, a); // d[i]=a[2i]*b[2i]+a[2i+1]*b[2i+1], requires b>=0
+                d = _mm_madd_epi16(d, ones16);       // Pairwise sum of 16-bit values to 32-bit values
+                sum = _mm_add_epi32(sum, d);         // Accumulate 4 sums
+            }
+            result(i) += ssse3_hadd_32(sum);         // Combine 4 32-bit values to one
         }
         return;
     }
