@@ -8,6 +8,7 @@ set(src_texellibtest
   killerTableTest.cpp
   moveGenTest.cpp
   moveTest.cpp
+  nnTest.cpp
   parallelTest.cpp
   pieceTest.cpp
   polyglotTest.cpp

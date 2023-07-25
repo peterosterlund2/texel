@@ -24,6 +24,7 @@
  */
 
 #include "nneval.hpp"
+#include "vectorop.hpp"
 #include "position.hpp"
 
 

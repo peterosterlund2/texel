@@ -24,6 +24,7 @@ set(src_nn
   nn/nndata.cpp
   nn/nneval.cpp           nn/nneval.hpp
   nn/nntypes.cpp          nn/nntypes.hpp
+                          nn/vectorop.hpp
   )
 
 set(src_tb

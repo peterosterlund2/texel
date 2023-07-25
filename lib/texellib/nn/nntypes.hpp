@@ -79,18 +79,6 @@ Vector<T,N>::computeHash() const {
     return ret;
 }
 
-/** Compute result += weight * in, where "*" is matrix multiplication. */
-template <int nIn, int nOut>
-void
-matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector<S8,nIn>& in) {
-    for (int i = 0; i < nOut; i++) {
-        S32 sum = 0;
-        for (int j = 0; j < nIn; j++)
-            sum += weight(i,j) * in(j);
-        result(i) += sum;
-    }
-}
-
 // ------------------------------------------------------------------------------
 
 template <int nIn, int nOut>
@@ -153,22 +141,6 @@ public:
     Vector<S32,nOut> linOutput;  // Result after applying weight and bias
     Vector<S8,nOut> output;      // Result after clipped relu and narrowing
 };
-
-template <int nIn, int nOut>
-inline void
-Layer<nIn,nOut>::forward(const Vector<S8,nIn>& in) {
-    evalLinear(in);
-    for (int i = 0; i < nOut; i++)
-        output(i) = static_cast<S8>(clamp(linOutput(i) >> 6, 0, 127));
-}
-
-template <int nIn, int nOut>
-inline void
-Layer<nIn,nOut>::evalLinear(const Vector<S8,nIn>& in) {
-    for (int i = 0; i < nOut; i++)
-        linOutput(i) = data.bias(i);
-    matMul(linOutput, data.weight, in);
-}
 
 // ------------------------------------------------------------------------------
 
