@@ -13,7 +13,8 @@ rm -rf build bin
 mkdir -p build/Release
 (cd build/Release &&
      cmake ../.. -DCMAKE_BUILD_TYPE=Release \
-           -DCPU_TYPE=avx2 \
+           -DCPU_TYPE=corei7 \
+           -DUSE_AVX2=on \
            -DUSE_BMI2=on \
            -DUSE_CTZ=on \
            -DUSE_LARGE_PAGES=on \
@@ -27,7 +28,8 @@ mkdir -p build/win64nopop
 (cd build/win64nopop &&
      cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
            -DUSE_WIN7=on \
-           -DCPU_TYPE=avx2 \
+           -DCPU_TYPE=corei7 \
+           -DUSE_AVX2=on \
            -DUSE_CTZ=on \
            -DUSE_LARGE_PAGES=on \
            -DUSE_NUMA=on \
@@ -40,7 +42,8 @@ mkdir -p build/win64
 (cd build/win64 &&
      cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
            -DUSE_WIN7=on \
-           -DCPU_TYPE=avx2 \
+           -DCPU_TYPE=corei7 \
+           -DUSE_AVX2=on \
            -DUSE_CTZ=on \
            -DUSE_LARGE_PAGES=on \
            -DUSE_NUMA=on \
@@ -53,7 +56,8 @@ mkdir -p build/win64bmi
 (cd build/win64bmi &&
      cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
            -DUSE_WIN7=on \
-           -DCPU_TYPE=avx2 \
+           -DCPU_TYPE=corei7 \
+           -DUSE_AVX2=on \
            -DUSE_BMI2=on \
            -DUSE_CTZ=on \
            -DUSE_LARGE_PAGES=on \
@@ -67,7 +71,8 @@ mkdir -p build/win64cl
 (cd build/win64cl &&
      cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
            -DUSE_WIN7=on \
-           -DCPU_TYPE=avx2 \
+           -DCPU_TYPE=corei7 \
+           -DUSE_AVX2=on \
            -DUSE_CLUSTER=on \
            -DUSE_CTZ=on \
            -DUSE_LARGE_PAGES=on \

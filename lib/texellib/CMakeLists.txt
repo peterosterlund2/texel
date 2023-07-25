@@ -147,7 +147,7 @@ if(UNIX AND NOT ANDROID)
   endif()
 endif()
 
-if(CPU_TYPE STREQUAL "avx2")
+if(USE_AVX2)
   target_compile_definitions(texellib
     PUBLIC "HAS_AVX2")
 endif()

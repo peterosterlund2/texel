@@ -13,12 +13,12 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
   set_property(CACHE CPU_TYPE PROPERTY STRINGS
     generic
     athlon64-sse3
-    corei7
-    avx2)
+    corei7)
 endif()
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR
    CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
-  option(USE_BMI2 "Use BMI2 CPU instructions to speed up move generation" OFF)
+  option(USE_AVX2 "Use AVX2 CPU instructions" OFF)
+  option(USE_BMI2 "Use BMI2 CPU instructions" OFF)
 endif()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_" OR
    CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
@@ -90,17 +90,16 @@ endforeach()
 add_compiler_flag_if_supported("-fno-stack-protector")
 
 # Enable CPU architecture
-if(CPU_TYPE STREQUAL "avx2")
-  require_compiler_flag("-march=corei7")
-  add_compile_options("-march=corei7")
-  require_compiler_flag("-mavx2")
-  add_compile_options("-mavx2")
-elseif(CPU_TYPE STREQUAL "corei7")
+if(CPU_TYPE STREQUAL "corei7")
   require_compiler_flag("-march=corei7")
   add_compile_options("-march=corei7")
 elseif(CPU_TYPE STREQUAL "athlon64-sse3")
   require_compiler_flag("-march=athlon64-sse3")
   add_compile_options("-march=athlon64-sse3")
+endif()
+
+if(USE_AVX2)
+  add_compiler_flag_if_supported("-mavx2")
 endif()
 
 # Set Windows target version
