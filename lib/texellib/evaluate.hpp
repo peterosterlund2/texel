@@ -28,7 +28,6 @@
 
 #include "piece.hpp"
 #include "position.hpp"
-#include "alignedAlloc.hpp"
 #include "nneval.hpp"
 
 #if _MSC_VER
