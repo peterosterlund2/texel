@@ -14,13 +14,30 @@ Pre-compiled executables
 The Texel distribution contains the following pre-compiled executables
 located in the bin directory:
 
-texel-arm64      : For the armv8-a 64-bit architecture. Should work on most modern
-                   Android devices.
-texel64          : For 64-bit Linux Intel systems with AVX2 and POPCOUNT.
-texel64.exe      : For 64-bit Windows 7 or later Intel systems with AVX2 and POPCOUNT.
-texel64nopop.exe : For 64-bit Windows 7 or later Intel systems with AVX2.
-texel64bmi.exe   : For 64-bit Windows 7 or later Intel systems with AVX2, BMI2 and POPCOUNT.
-texel64cl.exe    : Cluster version of texel64.exe. Requires Microsoft MPI to be installed.
+texel64-avx2-bmi.exe:
+  For Windows 7 or later x86-64 systems using AVX2, POPCOUNT and BMI2
+  instructions.
+
+texel64-avx2-pop.exe:
+  For Windows 7 or later x86-64 systems using AVX2 and POPCOUNT instructions.
+
+texel64-avx2.exe:
+  For Windows 7 or later x86-64 systems using AVX2 instructions.
+
+texel64-ssse3.exe
+  For Windows x86-64 systems with SSSE3 support.
+
+texel64cl.exe:
+  Cluster version of texel64-avx2-pop.exe.
+  Requires Microsoft MPI to be installed.
+
+texel-arm64:
+  For the ARMv8-A 64-bit architecture.
+  Should work on most modern Android devices.
+
+texel64:
+  For Linux x86-64 systems with AVX2 and POPCOUNT support.
+
 
 If you need an executable for a different system, see the "Compiling" section
 below.

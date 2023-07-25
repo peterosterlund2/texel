@@ -23,9 +23,24 @@ mkdir -p build/Release
            -DUSE_PREFETCH=on
 ) &
 
-# Windows 64-bit, no popcount
-mkdir -p build/win64nopop
-(cd build/win64nopop &&
+
+# Windows 64-bit, SSSE3
+mkdir -p build/win64_ssse3
+(cd build/win64_ssse3 &&
+     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
+           -DUSE_WIN7=off \
+           -DCPU_TYPE=athlon64-sse3 \
+           -DUSE_SSSE3=on \
+           -DUSE_CTZ=on \
+           -DUSE_LARGE_PAGES=on \
+           -DUSE_NUMA=on \
+           -DUSE_POPCNT=off \
+           -DUSE_PREFETCH=on
+) &
+
+# Windows 64-bit, AVX2
+mkdir -p build/win64_avx2
+(cd build/win64_avx2 &&
      cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
            -DUSE_WIN7=on \
            -DCPU_TYPE=corei7 \
@@ -37,7 +52,7 @@ mkdir -p build/win64nopop
            -DUSE_PREFETCH=on
 ) &
 
-# Windows 64-bit
+# Windows 64-bit, AVX2 + POPCNT
 mkdir -p build/win64
 (cd build/win64 &&
      cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
@@ -51,9 +66,9 @@ mkdir -p build/win64
            -DUSE_PREFETCH=on
 ) &
 
-# Windows 64-bit with BMI2
-mkdir -p build/win64bmi
-(cd build/win64bmi &&
+# Windows 64-bit with AVX2 + POPCNT + BMI2
+mkdir -p build/win64_bmi
+(cd build/win64_bmi &&
      cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
            -DUSE_WIN7=on \
            -DCPU_TYPE=corei7 \
@@ -81,6 +96,7 @@ mkdir -p build/win64cl
            -DUSE_PREFETCH=on
 ) &
 
+
 # Android 64-bit
 mkdir -p build/android64
 (cd build/android64 &&
@@ -94,12 +110,13 @@ wait
 
 # Build all
 para=8
-cmake --build build/Release    -j ${para} || exit 2
-cmake --build build/win64      -j ${para} || exit 2
-cmake --build build/win64nopop -j ${para} || exit 2
-cmake --build build/win64bmi   -j ${para} || exit 2
-cmake --build build/win64cl    -j ${para} || exit 2
-cmake --build build/android64  -j ${para} || exit 2
+cmake --build build/Release     -j ${para} || exit 2
+cmake --build build/win64_ssse3 -j ${para} || exit 2
+cmake --build build/win64_avx2  -j ${para} || exit 2
+cmake --build build/win64       -j ${para} || exit 2
+cmake --build build/win64_bmi   -j ${para} || exit 2
+cmake --build build/win64cl     -j ${para} || exit 2
+cmake --build build/android64   -j ${para} || exit 2
 make -C doc
 
 # Copy to bin and strip executables
@@ -108,18 +125,21 @@ mkdir -p bin
 cp build/Release/texel bin/texel64
 strip bin/texel64
 
-cp build/win64/texel.exe bin/texel64.exe
-x86_64-w64-mingw32-strip bin/texel64.exe
+cp build/win64_ssse3/texel.exe bin/texel64-ssse3.exe
+x86_64-w64-mingw32-strip bin/texel64-ssse3.exe
+
+cp build/win64_avx2/texel.exe bin/texel64-avx2.exe
+x86_64-w64-mingw32-strip bin/texel64-avx2.exe
+
+cp build/win64/texel.exe bin/texel64-avx2-pop.exe
+x86_64-w64-mingw32-strip bin/texel64-avx2-pop.exe
 cp build/win64/runcmd.exe bin/runcmd.exe
 x86_64-w64-mingw32-strip bin/runcmd.exe
 cp build/win64/texelutil.exe bin/texelutil.exe
 x86_64-w64-mingw32-strip bin/texelutil.exe
 
-cp build/win64nopop/texel.exe bin/texel64nopop.exe
-x86_64-w64-mingw32-strip bin/texel64nopop.exe
-
-cp build/win64bmi/texel.exe bin/texel64bmi.exe
-x86_64-w64-mingw32-strip bin/texel64bmi.exe
+cp build/win64_bmi/texel.exe bin/texel64-avx2-bmi.exe
+x86_64-w64-mingw32-strip bin/texel64-avx2-bmi.exe
 
 cp build/win64cl/texel.exe bin/texel64cl.exe
 x86_64-w64-mingw32-strip bin/texel64cl.exe
