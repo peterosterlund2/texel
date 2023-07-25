@@ -28,12 +28,51 @@
 
 #include "nntypes.hpp"
 
+#ifdef HAS_AVX2
+#include <immintrin.h>
+#endif
+
+
+// ------------------------------------------------------------------------------
+
+#ifdef HAS_AVX2
+
+/** Return the sum of the 8 32-bit values in an AVX2 256-bit register. */
+inline S32
+avx2_hadd_32(__m256i v) {
+    v = _mm256_hadd_epi32(v, v);
+    v = _mm256_hadd_epi32(v, v);
+    return _mm256_extract_epi32(v, 0) + _mm256_extract_epi32(v, 4);
+}
+
+#endif
+
 // ------------------------------------------------------------------------------
 
 /** Compute result += weight * in, where "*" is matrix multiplication. */
 template <int nIn, int nOut>
 void
 matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector<S8,nIn>& in) {
+#ifdef HAS_AVX2
+    if (nIn % 32 == 0) {
+        // Note that this only works because all elements in "in" are non-negative
+        __m256i ones16 = _mm256_set_epi16(1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1);
+        for (int i = 0; i < nOut; i++) {
+            __m256i sum = _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, 0);
+            for (int j = 0; j < nIn; j += 32) {
+                __m256i a = _mm256_loadu_si256((const __m256i*)&weight(i,j));
+                __m256i b = _mm256_loadu_si256((const __m256i*)&in(j));
+                __m256i d = _mm256_maddubs_epi16(b, a); // d[i]=a[2i]*b[2i]+a[2i+1]*b[2i+1], requires b>=0
+                d = _mm256_madd_epi16(d, ones16);       // Pairwise sum of 16-bit values to 32-bit values
+                sum = _mm256_add_epi32(sum, d);         // Accumulate 8 sums
+            }
+            result(i) += avx2_hadd_32(sum);             // Combine 8 32-bit values to one
+        }
+        return;
+    }
+#endif
+
+    // Generic fallback
     for (int i = 0; i < nOut; i++) {
         S32 sum = 0;
         for (int j = 0; j < nIn; j++)

@@ -147,6 +147,11 @@ if(UNIX AND NOT ANDROID)
   endif()
 endif()
 
+if(CPU_TYPE STREQUAL "avx2")
+  target_compile_definitions(texellib
+    PUBLIC "HAS_AVX2")
+endif()
+
 if(USE_BMI2)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
       CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
