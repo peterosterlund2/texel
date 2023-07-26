@@ -25,6 +25,6 @@
 
 #include "incbin.h"
 
-INCBIN(char, NNData, NNDATA_FILE);
-// const char* gNNDataData;
+INCBIN(NNData, NNDATA_FILE);
+// const unsigned char* gNNDataData;
 // const unsigned int gNNDataSize;

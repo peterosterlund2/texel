@@ -41,8 +41,8 @@ int Evaluate::pieceValueOrder[Piece::nPieceTypes] = {
     5, 4, 3, 2, 2, 1
 };
 
-INCBIN_EXTERN(char, NNData);
-// const char* gNNDataData;
+INCBIN_EXTERN(NNData);
+// const unsigned char* gNNDataData;
 // const unsigned int gNNDataSize;
 
 Evaluate::Evaluate(EvalHashTables& et)
@@ -274,7 +274,7 @@ Evaluate::EvalHashTables::initNetData() {
         std::shared_ptr<NetData> netData = NetData::create();
         size_t unCompressedSize = netData->computeSize();
         std::vector<unsigned char> unComprData(unCompressedSize);
-        unsigned char* compressedData = (unsigned char*)gNNDataData;
+        const unsigned char* compressedData = gNNDataData;
         size_t compressedSize = gNNDataSize;
         int res = Lzma86_Decode(unComprData.data(), &unCompressedSize, compressedData, &compressedSize);
         if (res != SZ_OK)
