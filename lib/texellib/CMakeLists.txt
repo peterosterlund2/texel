@@ -171,6 +171,10 @@ if(USE_NEON)
   target_compile_definitions(texellib
     PUBLIC "HAS_NEON")
 endif()
+if(USE_NEON_DOT)
+  target_compile_definitions(texellib
+    PUBLIC "HAS_NEON_DOT")
+endif()
 
 if(USE_BMI2)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR

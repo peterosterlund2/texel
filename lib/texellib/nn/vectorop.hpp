@@ -35,7 +35,7 @@
 #include <smmintrin.h>
 #endif
 
-#ifdef HAS_NEON
+#if defined(HAS_NEON) || defined(HAS_NEON_DOT)
 #include <arm_neon.h>
 #endif
 
@@ -103,6 +103,36 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 sum = _mm_add_epi32(sum, d);         // Accumulate 4 sums
             }
             result(i) += ssse3_hadd_32(sum);         // Combine 4 32-bit values to one
+        }
+        return;
+    }
+#endif
+#ifdef HAS_NEON_DOT
+    if (nIn % 16 == 0) {
+        if (nOut % 2 != 0) {
+            for (int i = 0; i < nOut; i++) {
+                int32x4_t sum = {0,0,0,0};
+                for (int j = 0; j < nIn; j += 16) {
+                    int8x16_t w = vld1q_s8((const int8_t*)&weight(i,j));
+                    int8x16_t d = vld1q_s8((const int8_t*)&in(j));
+                    sum = vdotq_s32(sum, w, d);
+                }
+                result(i) += vaddvq_s32(sum);
+            }
+        } else {
+            for (int i = 0; i < nOut; i += 2) {
+                int32x4_t sum1 = {0,0,0,0};
+                int32x4_t sum2 = {0,0,0,0};
+                for (int j = 0; j < nIn; j += 16) {
+                    int8x16_t d = vld1q_s8((const int8_t*)&in(j));
+                    int8x16_t w1 = vld1q_s8((const int8_t*)&weight(i,j));
+                    sum1 = vdotq_s32(sum1, w1, d);
+                    int8x16_t w2 = vld1q_s8((const int8_t*)&weight(i+1,j));
+                    sum2 = vdotq_s32(sum2, w2, d);
+                }
+                result(i  ) += vaddvq_s32(sum1);
+                result(i+1) += vaddvq_s32(sum2);
+            }
         }
         return;
     }

@@ -28,6 +28,7 @@ endif()
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR
    CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7-a")
   option(USE_NEON "Use NEON CPU instructions" OFF)
+  option(USE_NEON_DOT "Use NEON dot product CPU instructions" OFF)
 endif()
 option(USE_CTZ "Use CTZ (BitScanForward) CPU instructions" OFF)
 option(USE_PREFETCH "Use prefetch CPU instructions" OFF)
