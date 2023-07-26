@@ -35,6 +35,9 @@
 #include <smmintrin.h>
 #endif
 
+#ifdef HAS_NEON
+#include <arm_neon.h>
+#endif
 
 // ------------------------------------------------------------------------------
 
@@ -100,6 +103,24 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 sum = _mm_add_epi32(sum, d);         // Accumulate 4 sums
             }
             result(i) += ssse3_hadd_32(sum);         // Combine 4 32-bit values to one
+        }
+        return;
+    }
+#endif
+#ifdef HAS_NEON
+    if (nIn % 16 == 0) {
+        for (int i = 0; i < nOut; i++) {
+            int32x4_t sum = {0,0,0,0};
+            for (int j = 0; j < nIn; j += 16) {
+                int8x8_t w = vld1_s8((const int8_t*)&weight(i,j));
+                int8x8_t d = vld1_s8((const int8_t*)&in(j));
+                int16x8_t s = vmull_s8(d, w);
+                w = vld1_s8((const int8_t*)&weight(i,j+8));
+                d = vld1_s8((const int8_t*)&in(j+8));
+                s = vmlal_s8(s, d, w);
+                sum = vpadalq_s16(sum, s);
+            }
+            result(i) += vaddvq_s32(sum);
         }
         return;
     }

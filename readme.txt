@@ -352,6 +352,10 @@ USE_POPCNT
   Use CPU popcount instructions to speed up counting of number of 1 bits in a
   bitboard object.
 
+USE_NEON
+
+  Use NEON instructions (for ARM CPUs) to speed up neural network evaluation.
+
 USE_CTZ
 
   Use a special CPU instruction to find the first 1 bit in a bitboard object.

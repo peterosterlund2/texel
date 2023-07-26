@@ -25,6 +25,10 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_" OR
    CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
   option(USE_POPCNT "Use popcount CPU instructions" OFF)
 endif()
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR
+   CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7-a")
+  option(USE_NEON "Use NEON CPU instructions" OFF)
+endif()
 option(USE_CTZ "Use CTZ (BitScanForward) CPU instructions" OFF)
 option(USE_PREFETCH "Use prefetch CPU instructions" OFF)
 if(NOT ANDROID)

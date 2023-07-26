@@ -167,6 +167,11 @@ if(USE_AVX2)
     PUBLIC "HAS_AVX2")
 endif()
 
+if(USE_NEON)
+  target_compile_definitions(texellib
+    PUBLIC "HAS_NEON")
+endif()
+
 if(USE_BMI2)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
       CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
