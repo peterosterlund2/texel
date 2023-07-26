@@ -21,7 +21,6 @@ set(src_hw
 
 set(src_nn
                           nn/incbin.h
-  nn/nndata.cpp
   nn/nneval.cpp           nn/nneval.hpp
   nn/nntypes.cpp          nn/nntypes.hpp
                           nn/vectorop.hpp
@@ -88,21 +87,33 @@ set(src_texellib
   undoInfo.hpp
   )
 
+set(NNDATA_FILE ${texel_SOURCE_DIR}/nndata.tbin.compr)
+set(src_nndata ${CMAKE_CURRENT_BINARY_DIR}/nndata.cpp)
+configure_file(nn/nndata.cpp.in ${src_nndata})
+
+if(MSVC)
+  add_executable(incbin nn/incbin.c)
+  set(nndata_gen ${CMAKE_CURRENT_BINARY_DIR}/nndata_gen.c)
+  add_custom_command(
+    OUTPUT ${nndata_gen}
+    COMMAND $<TARGET_FILE:incbin> ${src_nndata} -o ${nndata_gen}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS incbin ${src_nndata} ${NNDATA_FILE}
+    )
+endif()
+
 add_library(texellib STATIC
   ${src_book} ${src_debug} ${src_hw} ${src_nn} ${src_tb} ${src_util}
   ${src_gtb} ${src_syzygy}
   ${src_texellib}
+  ${src_nndata} ${nndata_gen}
   )
 target_include_directories(texellib
   PUBLIC . book debug hw nn tb util
   PRIVATE tb/gtb/sysport tb/gtb/compression tb/gtb/compression/lzma
   )
 
-set(NNDATA_FILE ${texel_SOURCE_DIR}/nndata.tbin.compr)
-target_compile_definitions(texellib
-  PRIVATE "NNDATA_FILE=\"${NNDATA_FILE}\""
-  )
-set_source_files_properties(nn/nndata.cpp
+set_source_files_properties(${src_nndata}
   PROPERTIES OBJECT_DEPENDS ${NNDATA_FILE})
 
 if(UNIX AND NOT ANDROID)
