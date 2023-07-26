@@ -66,7 +66,7 @@ ssse3_hadd_32(__m128i v) {
 
 /** Compute result += weight * in, where "*" is matrix multiplication. */
 template <int nIn, int nOut>
-void
+inline void
 matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector<S8,nIn>& in) {
 #ifdef HAS_AVX2
     if (nIn % 32 == 0) {
