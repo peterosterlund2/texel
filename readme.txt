@@ -35,6 +35,10 @@ texel-arm64:
   For the ARMv8-A 64-bit architecture.
   Should work on most modern Android devices.
 
+texel-arm64-dot:
+  For the ARMv8-A 64-bit architecture with dot product CPU instruction.
+  Should work on many modern Android devices.
+
 texel64:
   For Linux x86-64 systems with AVX2 and POPCOUNT support.
 

@@ -172,6 +172,9 @@ if(USE_NEON)
     PUBLIC "HAS_NEON")
 endif()
 if(USE_NEON_DOT)
+  require_compiler_flag("-march=armv8.2-a+dotprod")
+  target_compile_options(texellib
+    PUBLIC "-march=armv8.2-a+dotprod")
   target_compile_definitions(texellib
     PUBLIC "HAS_NEON_DOT")
 endif()

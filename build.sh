@@ -97,26 +97,40 @@ mkdir -p build/win64cl
 ) &
 
 
-# Android 64-bit
+# Android 64-bit with NEON
 mkdir -p build/android64
 (cd build/android64 &&
-     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/android64.cmake \
+     cmake -DCMAKE_TOOLCHAIN_FILE=$NDK/build/cmake/android.toolchain.cmake \
+           -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-21 ../.. \
            -DCMAKE_BUILD_TYPE=Release \
            -DUSE_CTZ=on \
-           -DUSE_PREFETCH=on
+           -DUSE_PREFETCH=on \
+           -DUSE_NEON=on
+) &
+
+# Android 64-bit with NEON and dot product
+mkdir -p build/android64_dot
+(cd build/android64_dot &&
+     cmake -DCMAKE_TOOLCHAIN_FILE=$NDK/build/cmake/android.toolchain.cmake \
+           -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-21 ../.. \
+           -DCMAKE_BUILD_TYPE=Release \
+           -DUSE_CTZ=on \
+           -DUSE_PREFETCH=on \
+           -DUSE_NEON_DOT=on
 ) &
 
 wait
 
 # Build all
 para=8
-cmake --build build/Release     -j ${para} || exit 2
-cmake --build build/win64_ssse3 -j ${para} || exit 2
-cmake --build build/win64_avx2  -j ${para} || exit 2
-cmake --build build/win64       -j ${para} || exit 2
-cmake --build build/win64_bmi   -j ${para} || exit 2
-cmake --build build/win64cl     -j ${para} || exit 2
-cmake --build build/android64   -j ${para} || exit 2
+cmake --build build/Release       -j ${para} || exit 2
+cmake --build build/win64_ssse3   -j ${para} || exit 2
+cmake --build build/win64_avx2    -j ${para} || exit 2
+cmake --build build/win64         -j ${para} || exit 2
+cmake --build build/win64_bmi     -j ${para} || exit 2
+cmake --build build/win64cl       -j ${para} || exit 2
+cmake --build build/android64     -j ${para} || exit 2
+cmake --build build/android64_dot -j ${para} || exit 2
 make -C doc
 
 # Copy to bin and strip executables
@@ -146,6 +160,9 @@ x86_64-w64-mingw32-strip bin/texel64cl.exe
 
 cp build/android64/texel bin/texel-arm64
 aarch64-linux-android-strip bin/texel-arm64
+
+cp build/android64_dot/texel bin/texel-arm64-dot
+aarch64-linux-android-strip bin/texel-arm64-dot
 
 # Create archive
 VER=$(echo -e 'uci\nquit' | bin/texel64 | grep 'id name' | awk '{print $4}' | tr -d .)
