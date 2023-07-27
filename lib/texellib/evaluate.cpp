@@ -94,7 +94,6 @@ Evaluate::evalPos(const Position& pos) {
         score = EndGameEval::endGameEval<true>(pos, score);
     if (print) std::cout << "info string eval endgame:" << score << std::endl;
 
-#if 0
     if ((whiteContempt != 0) && !mhd->endGame) {
         int mtrlPawns = pos.wMtrlPawns() + pos.bMtrlPawns();
         int mtrl = pos.wMtrl() + pos.bMtrl();
@@ -104,6 +103,7 @@ Evaluate::evalPos(const Position& pos) {
         if (print) std::cout << "info string eval contemp:" << score << ' ' << piecePlay << std::endl;
     }
 
+#if 0
     if (pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) {
         int hmc = clamp(pos.getHalfMoveClock() / 10, 0, 9);
         score = score * halfMoveFactor[hmc] / 128;
