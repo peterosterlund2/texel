@@ -360,6 +360,11 @@ USE_NEON
 
   Use NEON instructions (for ARM CPUs) to speed up neural network evaluation.
 
+USE_NEON_DOT
+
+  Use NEON and dot product instructions (for ARM CPUs) to speed up neural
+  network evaluation.
+
 USE_CTZ
 
   Use a special CPU instruction to find the first 1 bit in a bitboard object.
