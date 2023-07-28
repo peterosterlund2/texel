@@ -156,7 +156,6 @@ Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool 
     int wCorr = correctionNvsQ(nWN, nBQ);
     int bCorr = correctionNvsQ(nBN, nWQ);
     score += wCorr - bCorr;
-    if (print) std::cout << "info string eval qncorr :" << score << std::endl;
 
     mhd.id = pos.materialId();
     mhd.score = score;

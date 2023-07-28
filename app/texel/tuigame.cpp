@@ -192,11 +192,7 @@ TUIGame::play() {
         {
             auto et = Evaluate::getEvalHashTables();
             Evaluate eval(*et);
-            int evScore = eval.evalPos(getPos()) * (getPos().isWhiteMove() ? 1 : -1);
-            std::stringstream ss;
-            ss.precision(2);
-            ss << std::fixed << "Eval: " << (evScore / 100.0);
-            std::cout << ss.str() << std::endl;
+            eval.evalPosPrint(getPos());
         }
 
         // Check game state
