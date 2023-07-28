@@ -59,6 +59,7 @@ void
 Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
              int posHashListSize0) {
     pos = pos0;
+    eval.connectPosition(pos);
     posHashList = posHashList0;
     posHashListSize = posHashListSize0;
     posHashFirstNew = posHashListSize;
@@ -134,7 +135,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
     if ((maxDepth < 0) || (maxDepth > MAX_SEARCH_DEPTH))
         maxDepth = MAX_SEARCH_DEPTH;
     maxPV = std::min(maxPV, (int)rootMoves.size());
-    const int evalScore = eval.evalPos(pos);
+    const int evalScore = eval.evalPos();
     initSearchTreeInfo();
     ht.reScale();
     comm.sendInitSearch(pos, posHashList, posHashListSize, clearHistory,
@@ -564,7 +565,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
                 const int maxSwindle = maxFrustrated;
                 if (depth < drawSwindleReduction) {
                     if (evalScore == UNKNOWN_SCORE)
-                        evalScore = eval.evalPos(pos);
+                        evalScore = eval.evalPos();
                     score = Evaluate::swindleScore(evalScore, tbEnt.getEvalScore());
                     cutOff = true;
                 } else if (alpha >= maxSwindle) {
@@ -624,7 +625,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
     const bool normalBound = !isLoseScore(alpha) && !isWinScore(beta);
     if (normalBound && !inCheck && (depth < 4) && (beta == alpha + 1) && !singularSearch) {
         if (evalScore == UNKNOWN_SCORE) {
-            evalScore = eval.evalPos(pos);
+            evalScore = eval.evalPos();
         }
         const int razorMargin = (depth <= 1) ? (int)razorMargin1 : (int)razorMargin2;
         if (evalScore < beta - razorMargin) {
@@ -654,7 +655,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             else if (depth <= 3) margin = reverseFutilityMargin3;
             else                 margin = reverseFutilityMargin4;
             if (evalScore == UNKNOWN_SCORE)
-                evalScore = eval.evalPos(pos);
+                evalScore = eval.evalPos();
             if (evalScore - margin >= beta) {
                 emptyMove.setScore(evalScore - margin);
                 if (useTT) tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
@@ -681,7 +682,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         }
         if (nullOk) {
             if (evalScore == UNKNOWN_SCORE)
-                evalScore = eval.evalPos(pos);
+                evalScore = eval.evalPos();
             if (evalScore < beta)
                 nullOk = false;
         }
@@ -741,7 +742,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
         else if (depth <= 3) margin = futilityMargin3;
         else                 margin = futilityMargin4;
         if (evalScore == UNKNOWN_SCORE)
-            evalScore = eval.evalPos(pos);
+            evalScore = eval.evalPos();
         futilityScore = evalScore + margin;
         if (futilityScore <= alpha)
             futilityPrune = true;
@@ -1193,7 +1194,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
         if ((depth == 0) && (q0Eval != UNKNOWN_SCORE)) {
             score = q0Eval;
         } else {
-            score = eval.evalPos(pos);
+            score = eval.evalPos();
             if (depth == 0)
                 q0Eval = score;
         }
@@ -1311,7 +1312,7 @@ Search::quiescePos(int alpha, int beta, int ply, int depth, const bool inCheck) 
         if ((depth == 0) && (q0Eval != UNKNOWN_SCORE)) {
             score = q0Eval;
         } else {
-            score = eval.evalPos(pos);
+            score = eval.evalPos();
             if (depth == 0)
                 q0Eval = score;
         }

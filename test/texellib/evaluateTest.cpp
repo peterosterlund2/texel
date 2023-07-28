@@ -54,7 +54,8 @@ evalPos(Evaluate& eval, const Position& pos, bool evalMirror, bool testMirror) {
     EXPECT_EQ(pos.wMtrlPawns(), pos2.wMtrlPawns());
     EXPECT_EQ(pos.bMtrlPawns(), pos2.bMtrlPawns());
 
-    int evalScore = eval.evalPos(pos);
+    eval.connectPosition(pos);
+    int evalScore = eval.evalPos();
 
     if (evalMirror) {
         Position mir = PosUtil::mirrorX(pos);

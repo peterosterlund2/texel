@@ -547,7 +547,8 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
             sc.init(pos, nullHist, 0);
             qScore = sc.quiesce(-mate0, mate0, 0, 0, MoveGen::inCheck(pos));
             Evaluate ev(*et);
-            evScore = ev.evalPos(pos);
+            ev.connectPosition(pos);
+            evScore = ev.evalPos();
             if (std::abs(s2p.getProb(qScore) - s2p.getProb(evScore)) > 0.25) {
                 rejected++;
                 return;

@@ -55,48 +55,53 @@ Evaluate::Evaluate(EvalHashTables& et)
       whiteContempt(0) {
 }
 
-int
-Evaluate::evalPos(const Position& pos) {
-    return evalPos<false>(pos);
+void
+Evaluate::connectPosition(const Position& pos) {
+    posP = &pos;
 }
 
 int
-Evaluate::evalPosPrint(const Position& pos) {
-    return evalPos<true>(pos);
+Evaluate::evalPos() {
+    return evalPos<false>();
+}
+
+int
+Evaluate::evalPosPrint() {
+    return evalPos<true>();
 }
 
 template <bool print>
 inline int
-Evaluate::evalPos(const Position& pos) {
+Evaluate::evalPos() {
     const bool useHashTable = !print;
     EvalHashData* ehd = nullptr;
-    U64 key = pos.historyHash();
+    U64 key = posP->historyHash();
     if (useHashTable) {
         ehd = &getEvalHashEntry(key);
         if ((ehd->data ^ key) < (1 << 16))
             return (ehd->data & 0xffff) - (1 << 15);
     }
 
-    nnEval.setPos(pos);
+    nnEval.setPos(*posP);
     int score = nnEval.eval();
-    if (!pos.isWhiteMove())
+    if (!posP->isWhiteMove())
         score = -score;
     if (print) std::cout << "info string eval nn     :" << score << std::endl;
 
-    score += materialScore(pos, print);
+    score += materialScore(print);
     if (print) std::cout << "info string eval mtrl   :" << score << std::endl;
 
 #if 0
-    pawnBonus(pos);
+    pawnBonus();
 #endif
 
     if (mhd->endGame)
-        score = EndGameEval::endGameEval<true>(pos, score);
+        score = EndGameEval::endGameEval<true>(*posP, score);
     if (print) std::cout << "info string eval endgame:" << score << std::endl;
 
     if ((whiteContempt != 0) && !mhd->endGame) {
-        int mtrlPawns = pos.wMtrlPawns() + pos.bMtrlPawns();
-        int mtrl = pos.wMtrl() + pos.bMtrl();
+        int mtrlPawns = posP->wMtrlPawns() + posP->bMtrlPawns();
+        int mtrl = posP->wMtrl() + posP->bMtrl();
         int hiMtrl = (rV + bV*2 + nV*2) * 2;
         int piecePlay = interpolate(mtrl - mtrlPawns, 0, 64, hiMtrl, 128);
         score += whiteContempt * piecePlay / 128;
@@ -104,23 +109,23 @@ Evaluate::evalPos(const Position& pos) {
     }
 
 #if 0
-    if (pos.pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) {
-        int hmc = clamp(pos.getHalfMoveClock() / 10, 0, 9);
+    if (posP->pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) {
+        int hmc = clamp(posP->getHalfMoveClock() / 10, 0, 9);
         score = score * halfMoveFactor[hmc] / 128;
     }
     if (print) std::cout << "info string eval halfmove:" << score << std::endl;
 
     if (score > 0) {
-        int nStale = BitBoard::bitCount(BitBoard::southFill(phd->stalePawns & pos.pieceTypeBB(Piece::WPAWN)) & 0xff);
+        int nStale = BitBoard::bitCount(BitBoard::southFill(phd->stalePawns & posP->pieceTypeBB(Piece::WPAWN)) & 0xff);
         score = score * stalePawnFactor[nStale] / 128;
     } else if (score < 0) {
-        int nStale = BitBoard::bitCount(BitBoard::southFill(phd->stalePawns & pos.pieceTypeBB(Piece::BPAWN)) & 0xff);
+        int nStale = BitBoard::bitCount(BitBoard::southFill(phd->stalePawns & posP->pieceTypeBB(Piece::BPAWN)) & 0xff);
         score = score * stalePawnFactor[nStale] / 128;
     }
     if (print) std::cout << "info string eval staleP :" << score << std::endl;
 #endif
 
-    if (!pos.isWhiteMove())
+    if (!posP->isWhiteMove())
         score = -score;
 
     if (useHashTable)
@@ -146,28 +151,28 @@ static inline int correctionNvsQ(int n, int q) {
 }
 
 void
-Evaluate::computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool print) const {
+Evaluate::computeMaterialScore(MaterialHashData& mhd, bool print) const {
     int score = 0;
 
-    const int nWQ = BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN));
-    const int nBQ = BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN));
-    const int nWN = BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT));
-    const int nBN = BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT));
+    const int nWQ = BitBoard::bitCount(posP->pieceTypeBB(Piece::WQUEEN));
+    const int nBQ = BitBoard::bitCount(posP->pieceTypeBB(Piece::BQUEEN));
+    const int nWN = BitBoard::bitCount(posP->pieceTypeBB(Piece::WKNIGHT));
+    const int nBN = BitBoard::bitCount(posP->pieceTypeBB(Piece::BKNIGHT));
     int wCorr = correctionNvsQ(nWN, nBQ);
     int bCorr = correctionNvsQ(nBN, nWQ);
     score += wCorr - bCorr;
 
-    mhd.id = pos.materialId();
+    mhd.id = posP->materialId();
     mhd.score = score;
-    mhd.endGame = EndGameEval::endGameEval<false>(pos, 0);
+    mhd.endGame = EndGameEval::endGameEval<false>(*posP, 0);
 }
 
 void
-Evaluate::pawnBonus(const Position& pos) {
-    U64 key = pos.pawnZobristHash();
+Evaluate::pawnBonus() {
+    U64 key = posP->pawnZobristHash();
     PawnHashData& phd = getPawnHashEntry(key);
     if (phd.key != key)
-        computePawnHashData(pos, phd);
+        computePawnHashData(phd);
     this->phd = &phd;
 }
 
@@ -243,16 +248,16 @@ Evaluate::computeStalePawns(const Position& pos) {
 }
 
 void
-Evaluate::computePawnHashData(const Position& pos, PawnHashData& ph) {
-    const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
-    const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
-    U64 wPawnAttacks = BitBoard::wPawnAttacksMask(pos.pieceTypeBB(Piece::WPAWN));
-    U64 bPawnAttacks = BitBoard::bPawnAttacksMask(pos.pieceTypeBB(Piece::BPAWN));
+Evaluate::computePawnHashData(PawnHashData& ph) {
+    const U64 wPawns = posP->pieceTypeBB(Piece::WPAWN);
+    const U64 bPawns = posP->pieceTypeBB(Piece::BPAWN);
+    U64 wPawnAttacks = BitBoard::wPawnAttacksMask(posP->pieceTypeBB(Piece::WPAWN));
+    U64 bPawnAttacks = BitBoard::bPawnAttacksMask(posP->pieceTypeBB(Piece::BPAWN));
     U64 passedPawnsW = wPawns & ~BitBoard::southFill(bPawns | bPawnAttacks | (wPawns >> 8));
     U64 passedPawnsB = bPawns & ~BitBoard::northFill(wPawns | wPawnAttacks | (bPawns << 8));
-    U64 stalePawns = computeStalePawns(pos) & ~passedPawnsW & ~passedPawnsB;
+    U64 stalePawns = computeStalePawns(*posP) & ~passedPawnsW & ~passedPawnsB;
 
-    ph.key = pos.pawnZobristHash();
+    ph.key = posP->pawnZobristHash();
     ph.stalePawns = stalePawns;
 }
 

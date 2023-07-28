@@ -84,14 +84,17 @@ public:
     /** Prefetch hash table cache lines. */
     void prefetch(U64 key);
 
+    /** Connect a position to this evaluation object. */
+    void connectPosition(const Position& pos);
+
     /**
      * Static evaluation of a position.
-     * @param pos The position to evaluate.
+     * The current position in the connected Position object is evaluated.
      * @return The evaluation score, measured in centipawns.
      *         Positive values are good for the side to make the next move.
      */
-    int evalPos(const Position& pos);
-    int evalPosPrint(const Position& pos);
+    int evalPos();
+    int evalPosPrint();
 
     void setWhiteContempt(int contempt);
     int getWhiteContempt() const;
@@ -116,24 +119,27 @@ public:
     static int interpolate(int v1, int v2, int k);
 
 private:
-    template <bool print> int evalPos(const Position& pos);
+    template <bool print> int evalPos();
 
     EvalHashData& getEvalHashEntry(U64 key);
 
     /** Get material score */
-    int materialScore(const Position& pos, bool print);
+    int materialScore(bool print);
 
     /** Compute material score. */
-    void computeMaterialScore(const Position& pos, MaterialHashData& mhd, bool print) const;
+    void computeMaterialScore(MaterialHashData& mhd, bool print) const;
 
     PawnHashData& getPawnHashEntry(U64 key);
-    void pawnBonus(const Position& pos);
+    void pawnBonus();
 
     /** Compute set of pawns that can not participate in "pawn breaks". */
     static U64 computeStalePawns(const Position& pos);
 
     /** Compute pawn hash data for pos. */
-    void computePawnHashData(const Position& pos, PawnHashData& ph);
+    void computePawnHashData(PawnHashData& ph);
+
+    /** Holds the position to evaluate. */
+    const Position* posP = nullptr;
 
     std::vector<PawnHashData>& pawnHash;
     const PawnHashData* phd;
@@ -203,12 +209,12 @@ Evaluate::interpolate(int v1, int v2, int k) {
 }
 
 inline int
-Evaluate::materialScore(const Position& pos, bool print) {
-    int mId = pos.materialId();
+Evaluate::materialScore(bool print) {
+    int mId = posP->materialId();
     int key = (mId >> 16) * 40507 + mId;
     MaterialHashData& newMhd = materialHash[key & (materialHash.size() - 1)];
     if ((newMhd.id != mId) || print)
-        computeMaterialScore(pos, newMhd, print);
+        computeMaterialScore(newMhd, print);
     mhd = &newMhd;
     return newMhd.score;
 }

@@ -40,7 +40,7 @@ static std::mutex mutex;
 void
 SearchTreeSamplerReal::doSample(const Position& pos, Evaluate& eval, int q0Eval) {
     if (q0Eval == UNKNOWN_SCORE)
-        q0Eval = eval.evalPos(pos);
+        q0Eval = eval.evalPos();
     if (!pos.isWhiteMove())
         q0Eval = -q0Eval;
 

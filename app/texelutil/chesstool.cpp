@@ -1744,7 +1744,8 @@ ChessTool::computeMoveOrderObjective(std::vector<PositionInfo>& positions, const
 
 void
 ChessTool::staticScoreMoveListQuiet(Position& pos, Evaluate& eval, MoveList& moves) {
-    int score0 = eval.evalPos(pos);
+    eval.connectPosition(pos);
+    int score0 = eval.evalPos();
     bool wtm = pos.isWhiteMove();
     UndoInfo ui;
     for (int i = 0; i < moves.size; i++) {
@@ -1769,7 +1770,7 @@ ChessTool::staticScoreMoveListQuiet(Position& pos, Evaluate& eval, MoveList& mov
         score += seeScore * moSeeBonus / 32;
 
         pos.makeMove(m, ui);
-        int score1 = -eval.evalPos(pos);
+        int score1 = -eval.evalPos();
         score += (score1 - score0) * moEvalWeight / 32;
 
         int currHang = 0;

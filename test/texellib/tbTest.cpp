@@ -254,7 +254,8 @@ TBTest::kpkTest() {
                     } else {
                         ASSERT_LE(score, 0);
                     }
-                    int evalWhite = evaluate.evalPos(pos);
+                    evaluate.connectPosition(pos);
+                    int evalWhite = evaluate.evalPos();
                     if (!pos.isWhiteMove())
                         evalWhite = -evalWhite;
                     const int tempoBonusEG = 3;
