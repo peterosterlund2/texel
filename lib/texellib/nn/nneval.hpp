@@ -31,23 +31,24 @@
 #include "piece.hpp"
 
 class Position;
-class Move;
-struct UndoInfo;
+class NNTest;
 
 /** Handles position evaluation using a neural network. */
 class NNEvaluator {
+    friend class NNTest;
 public:
     /** Constructor. */
     NNEvaluator(const NetData& netData);
 
-    /** Set current position. */
-    void setPos(const Position& pos);
+    /** Set position object used for non-incremental evaluation. */
+    void connectPosition(const Position& pos);
 
-    /** Modify current position by making a move. */
-    void makeMove(const Move& move);
+    /** Set a square to a piece value. Use Piece::EMPTY to clear a square. */
+    void setPiece(int square, int oldPiece, int newPiece);
 
-    /** Modify current position by undoing a move. */
-    void unMakeMove(const Move& move, const UndoInfo& ui);
+    /** Clear incrementally updated state. Needed if position has changed
+     *  in an unknown way. */
+    void forceFullEval();
 
     /** Static evaluation of the current position.
      * @return The evaluation score, measured in centipawns.
@@ -61,24 +62,26 @@ private:
     void computeL1WB();
     void computeL1Out();
 
-    int squares[64]; // Piece type for each square
-    bool wtm;
-    int wKingSq;
-    int bKingSq;
-
-    const NetData& netData;
-
     static constexpr int n1 = NetData::n1;
     static constexpr int n2 = NetData::n2;
     static constexpr int n3 = NetData::n3;
 
-    Vector<S16, n1> l1OutW; // Linear output corresponding to white king, incrementally updated
-    Vector<S16, n1> l1OutB; // Linear output corresponding to black king, incrementally updated
-    Vector<S8, 2*n1> l1Out; // l1Out{W,B} after clipped relu and narrowing
+    Vector<S16, n1> l1Out[2];      // Linear output corresponding to white/black king, incrementally updated
+    Vector<S8, 2*n1> l1OutClipped; // l1Out after scaling, clipped ReLU and narrowing, reordered by wtm
 
     Layer<n1*2, n2> lin2;
     Layer<n2  , n3> lin3;
     Layer<n3  , 1 > lin4;
+
+    // White/black king square corresponding to l1Out[i], or -1 if l1Out[i] not valid
+    int kingSqComputed[2] = {-1, -1};
+
+    std::vector<int> toAdd[2]; // Input features to add to l1Out to make it up to date
+    std::vector<int> toSub[2]; // Input features to subtract from l1Out to make it up to date
+
+    const Position* posP = nullptr; // Connected Position object
+
+    const NetData& netData;
 
     static int ptValue[Piece::nPieceTypes];
 };

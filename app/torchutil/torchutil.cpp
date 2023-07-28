@@ -748,7 +748,8 @@ eval(const std::string& modelFile, const std::string& fen) {
         torch::Tensor out = net.forward(inW, inB);
         double val = out.item<double>();
 
-        qEval.setPos(pos);
+        qEval.connectPosition(pos);
+        pos.connectNNEval(&qEval);
         int qVal = qEval.eval();
 
         std::cout << "val: " << (val*100.0f) << " prob: " << toProb(val)

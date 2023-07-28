@@ -40,6 +40,38 @@
 namespace TBProbeData {
     extern int maxPieces;
 }
+class NNEvaluator;
+
+
+/** Non-static data used by the Position class. Having this data in a separate
+ *  class makes it easier to customize the copy/assigment member functions. */
+struct PositionBase {
+    int wMtrl_;              // Total value of all white pieces and pawns
+    int bMtrl_;              // Total value of all black pieces and pawns
+    int wMtrlPawns_;         // Total value of all white pawns
+    int bMtrlPawns_;         // Total value of all black pawns
+
+    int squares[64];
+
+    // Bitboards
+    U64 pieceTypeBB_[Piece::nPieceTypes];
+    U64 whiteBB_, blackBB_;
+
+    bool whiteMove;
+
+    /** Number of half-moves since last 50-move reset. */
+    int halfMoveClock;
+
+    /** Game move number, starting from 1. */
+    int fullMoveCounter;
+
+    int castleMask;
+    int epSquare;
+
+    U64 hashKey;           // Cached Zobrist hash key
+    U64 pHashKey;          // Cached Zobrist pawn hash key
+    MatId matId;           // Cached material identifier
+};
 
 /**
  * Stores the state of a chess position.
@@ -48,7 +80,7 @@ namespace TBProbeData {
  * for three-fold repetition draw detection, and is better stored
  * in a separate hash table.
  */
-class Position {
+class Position : private PositionBase {
 public:
     /** Bit definitions for the castleMask bit mask. */
     static const int A1_CASTLE = 0; /** White long castle. */
@@ -58,6 +90,17 @@ public:
 
     /** Initialize board to empty position. */
     Position();
+    Position(const Position& other);
+    Position(Position&& other);
+    Position& operator=(const Position& other);
+    Position& operator=(Position&& other);
+
+    /**
+     * Connect an NNEvaluator to this position, so that it gets
+     * incrementally updated when the position is changed.
+     * @param nnEval The evaluator to connect, or nullptr to disconnect.
+     */
+    void connectNNEval(NNEvaluator* nnEval) const;
 
     bool operator==(const Position& other) const;
 
@@ -200,36 +243,15 @@ public:
     void deSerialize(const SerializeData& data);
 
 private:
+    /** The connected NN evaluator, or nullptr. */
+    mutable NNEvaluator* nnEval = nullptr;
+
     /** Move a non-pawn piece to an empty square. */
     void movePieceNotPawn(int from, int to);
     void movePieceNotPawnB(int from, int to);
 
-
-    int wMtrl_;              // Total value of all white pieces and pawns
-    int bMtrl_;              // Total value of all black pieces and pawns
-    int wMtrlPawns_;         // Total value of all white pawns
-    int bMtrlPawns_;         // Total value of all black pawns
-
-    int squares[64];
-
-    // Bitboards
-    U64 pieceTypeBB_[Piece::nPieceTypes];
-    U64 whiteBB_, blackBB_;
-
-    bool whiteMove;
-
-    /** Number of half-moves since last 50-move reset. */
-    int halfMoveClock;
-
-    /** Game move number, starting from 1. */
-    int fullMoveCounter;
-
-    int castleMask;
-    int epSquare;
-
-    U64 hashKey;           // Cached Zobrist hash key
-    U64 pHashKey;          // Cached Zobrist pawn hash key
-    MatId matId;           // Cached material identifier
+    /** Force next NN evaluation to be non-incremental. */
+    void forceFullEval();
 
     static U8 castleSqMask[64]; // Castle masks retained for each square
 
@@ -423,8 +445,8 @@ Position::unMakeMove(const Move& move, const UndoInfo& ui) {
     hashKey ^= whiteHashKey;
     whiteMove = !whiteMove;
     int p = squares[move.to()];
-    setPiece(move.from(), p);
     setPiece(move.to(), ui.capturedPiece);
+    setPiece(move.from(), p);
     setCastleMask(ui.castleMask);
     setEpSquare(ui.epSquare);
     halfMoveClock = ui.halfMoveClock;

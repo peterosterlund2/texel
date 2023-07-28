@@ -27,7 +27,6 @@
 #include "vectorop.hpp"
 #include "position.hpp"
 
-
 int NNEvaluator::ptValue[Piece::nPieceTypes];
 
 static StaticInitializer<NNEvaluator> nnInit;
@@ -49,81 +48,134 @@ NNEvaluator::staticInitialize() {
 
 
 NNEvaluator::NNEvaluator(const NetData& netData)
-    : wtm(true), wKingSq(-1), bKingSq(-1),
-      netData(netData),
-      lin2(netData.lin2),
+    : lin2(netData.lin2),
       lin3(netData.lin3),
-      lin4(netData.lin4) {
-    for (int sq = 0; sq < 64; sq++)
-        squares[sq] = Piece::EMPTY;
+      lin4(netData.lin4),
+      netData(netData) {
 }
 
 void
-NNEvaluator::setPos(const Position& pos) {
-    for (int sq = 0; sq < 64; sq++)
-        squares[sq] = pos.getPiece(sq);
-    wtm = pos.isWhiteMove();
-    wKingSq = pos.getKingSq(true);
-    bKingSq = pos.getKingSq(false);
+NNEvaluator::connectPosition(const Position& pos) {
+    posP = &pos;
+    forceFullEval();
 }
 
 void
-NNEvaluator::makeMove(const Move& move) {
-
+NNEvaluator::forceFullEval() {
+    for (int c = 0; c < 2; c++) {
+        kingSqComputed[c] = -1;
+        toAdd[c].clear();
+        toSub[c].clear();
+    }
 }
 
-void
-NNEvaluator::unMakeMove(const Move& move, const UndoInfo& ui) {
+/** Return the row in the first layer weight matrix corresponding
+ *  to king + piece type + square. */
+static inline int
+getIndex(int kSq, int pt, int sq, bool white) {
+    if (!white) {
+        kSq = Square::mirrorY(kSq);
+        pt = (pt >= 5) ? (pt - 5) : (pt + 5);
+        sq = Square::mirrorY(sq);
+    }
+    int x = Square::getX(kSq);
+    int y = Square::getY(kSq);
+    if (x >= 4) {
+        x = Square::mirrorX(x);
+        sq = Square::mirrorX(sq);
+    }
+    int kIdx = y * 4 + x;
+    return (kIdx * 10 + pt) * 64 + sq;
+};
 
+void
+NNEvaluator::setPiece(int square, int oldPiece, int newPiece) {
+    auto isNonKing = [](int p) {
+        return p != Piece::EMPTY && p != Piece::WKING && p != Piece::BKING;
+    };
+
+    for (int c = 0; c < 2; c++) {
+        int kSq = kingSqComputed[c];
+        if (kSq == -1)
+            continue;
+
+        if (isNonKing(oldPiece)) {
+            int pt = ptValue[oldPiece];
+            int idx = getIndex(kSq, pt, square, c == 0);
+            if (!toAdd[c].empty() && toAdd[c].back() == idx)
+                toAdd[c].pop_back();
+            else
+                toSub[c].push_back(idx);
+        }
+
+        if (isNonKing(newPiece)) {
+            int pt = ptValue[newPiece];
+            int idx = getIndex(kSq, pt, square, c == 0);
+            if (!toSub[c].empty() && toSub[c].back() == idx)
+                toSub[c].pop_back();
+            else
+                toAdd[c].push_back(idx);
+        }
+    }
 }
 
 void
 NNEvaluator::computeL1WB() {
-    for (int i = 0; i < n1; i++) {
-        l1OutW(i) = netData.bias1(i);
-        l1OutB(i) = netData.bias1(i);
+    bool doFull[2];
+    int kingSq[2];
+    kingSq[0] = posP->getKingSq(true);
+    kingSq[1] = posP->getKingSq(false);
+    for (int c = 0; c < 2; c++) {
+        doFull[c] = kingSqComputed[c] != kingSq[c];
+        if (!doFull[c]) {
+            for (int idx : toAdd[c])
+                for (int i = 0; i < n1; i++)
+                    l1Out[c](i) += netData.weight1(idx, i);
+            for (int idx : toSub[c])
+                for (int i = 0; i < n1; i++)
+                    l1Out[c](i) -= netData.weight1(idx, i);
+        }
+        toAdd[c].clear();
+        toSub[c].clear();
     }
 
-    auto getIndex = [](int kSq, int pt, int sq) {
-        int kIdx;
-        int x = Square::getX(kSq);
-        int y = Square::getY(kSq);
-        if (x >= 4) {
-            x = Square::mirrorX(x);
-            sq = Square::mirrorX(sq);
+    if (!doFull[0] && !doFull[1])
+        return;
+
+    for (int c = 0; c < 2; c++) {
+        if (doFull[c]) {
+            for (int i = 0; i < n1; i++)
+                l1Out[c](i) = netData.bias1(i);
+            kingSqComputed[c] = posP->getKingSq(c == 0);
         }
-        kIdx = y * 4 + x;
-        return (kIdx * 10 + pt) * 64 + sq;
-    };
+    }
 
     for (int sq = 0; sq < 64; sq++) {
-        const int p = squares[sq];
+        const int p = posP->getPiece(sq);
         if (p == Piece::EMPTY || p == Piece::WKING || p == Piece::BKING)
             continue;
         int pt = ptValue[p];
-        {
-            int idx = getIndex(wKingSq, pt, sq);
+        if (doFull[0]) {
+            int idx = getIndex(kingSqComputed[0], pt, sq, true);
             for (int i = 0; i < n1; i++)
-                l1OutW(i) += netData.weight1(idx, i);
+                l1Out[0](i) += netData.weight1(idx, i);
         }
-        {
-            int oKSq = Square::mirrorY(bKingSq);
-            int oPt = (pt + 5) % 10;
-            int oSq = Square::mirrorY(sq);
-            int idx = getIndex(oKSq, oPt, oSq);
+        if (doFull[1]) {
+            int idx = getIndex(kingSqComputed[1], pt, sq, false);
             for (int i = 0; i < n1; i++)
-                l1OutB(i) += netData.weight1(idx, i);
+                l1Out[1](i) += netData.weight1(idx, i);
         }
     }
 }
 
 void
 NNEvaluator::computeL1Out() {
+    bool wtm = posP->isWhiteMove();
     for (int c = 0; c < 2; c++) {
-        const auto& l1OutC = (wtm == (c == 0)) ? l1OutW : l1OutB;
+        const auto& l1OutC = l1Out[wtm ? c : (1-c)];
         int i0 = c * n1;
         for (int i = 0; i < n1; i++)
-            l1Out(i0 + i) = clamp(l1OutC(i) >> 2, 0, 127);
+            l1OutClipped(i0 + i) = clamp(l1OutC(i) >> 2, 0, 127);
     }
 }
 
@@ -132,7 +184,7 @@ NNEvaluator::eval() {
     computeL1WB();
     computeL1Out();
 
-    lin2.forward(l1Out);
+    lin2.forward(l1OutClipped);
     lin3.forward(lin2.output);
     lin4.evalLinear(lin3.output);
 

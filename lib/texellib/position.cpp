@@ -27,6 +27,7 @@
 #include "evaluate.hpp"
 #include "textio.hpp"
 #include "parameters.hpp"
+#include "nneval.hpp"
 
 #include <iostream>
 #include <cassert>
@@ -66,10 +67,49 @@ Position::Position() {
     wMtrlPawns_ = bMtrlPawns_ = 0;
 }
 
+Position::Position(const Position& other)
+    : PositionBase(other) {
+    forceFullEval();
+}
+
+Position::Position(Position&& other)
+    : PositionBase(other) {
+    forceFullEval();
+}
+
+Position&
+Position::operator=(const Position& other) {
+    (PositionBase&)(*this) = other;
+    forceFullEval();
+    return *this;
+}
+
+Position&
+Position::operator=(Position&& other) {
+    (PositionBase&)(*this) = other;
+    forceFullEval();
+    return *this;
+}
+
+void
+Position::connectNNEval(NNEvaluator* nnEval) const {
+    this->nnEval = nnEval;
+    if (nnEval)
+        nnEval->forceFullEval();
+}
+
+void
+Position::forceFullEval() {
+    if (nnEval)
+        nnEval->forceFullEval();
+}
+
 void
 Position::setPiece(int square, int piece) {
     int removedPiece = squares[square];
     squares[square] = piece;
+    if (nnEval)
+        nnEval->setPiece(square, removedPiece, piece);
 
     // Update hash key
     hashKey ^= psHashKeys[removedPiece][square];
@@ -127,6 +167,8 @@ void
 Position::clearPiece(int square) {
     int removedPiece = squares[square];
     squares[square] = Piece::EMPTY;
+    if (nnEval)
+        nnEval->setPiece(square, removedPiece, Piece::EMPTY);
 
     // Update hash key
     hashKey ^= psHashKeys[removedPiece][square];
@@ -290,6 +332,10 @@ Position::movePieceNotPawn(int from, int to) {
     const int piece = squares[from];
     hashKey ^= psHashKeys[piece][from];
     hashKey ^= psHashKeys[piece][to];
+    if (nnEval) {
+        nnEval->setPiece(from, piece, Piece::EMPTY);
+        nnEval->setPiece(to, Piece::EMPTY, piece);
+    }
 
     squares[from] = Piece::EMPTY;
     squares[to] = piece;
@@ -388,6 +434,7 @@ Position::deSerialize(const SerializeData& data) {
     hash ^= castleHashKeys[castleMask];
     hash ^= epHashKeys[(epSquare >= 0) ? Square::getX(epSquare) + 1 : 0];
     hashKey = hash;
+    forceFullEval();
 }
 
 // ----------------------------------------------------------------------------

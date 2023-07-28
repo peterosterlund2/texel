@@ -57,7 +57,11 @@ Evaluate::Evaluate(EvalHashTables& et)
 
 void
 Evaluate::connectPosition(const Position& pos) {
+    if (posP)
+        posP->connectNNEval(nullptr);
     posP = &pos;
+    nnEval.connectPosition(pos);
+    pos.connectNNEval(&nnEval);
 }
 
 int
@@ -82,7 +86,6 @@ Evaluate::evalPos() {
             return (ehd->data & 0xffff) - (1 << 15);
     }
 
-    nnEval.setPos(*posP);
     int score = nnEval.eval();
     if (!posP->isWhiteMove())
         score = -score;

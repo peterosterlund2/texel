@@ -139,7 +139,7 @@ public:
 
     const LayerData<nIn,nOut>& data;
     Vector<S32,nOut> linOutput;  // Result after applying weight and bias
-    Vector<S8,nOut> output;      // Result after clipped relu and narrowing
+    Vector<S8,nOut> output;      // Result after scaling, clipped ReLU and narrowing
 };
 
 // ------------------------------------------------------------------------------

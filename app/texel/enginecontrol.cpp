@@ -480,10 +480,12 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
     int whiteContempt = getWhiteContempt(pos.isWhiteMove());
     sc->setWhiteContempt(whiteContempt);
     if (analyseMode || infinite) {
-        Evaluate eval(*et);
-        eval.connectPosition(pos);
+        Position pos2(pos);
+        auto et2 = Evaluate::getEvalHashTables();
+        Evaluate eval(*et2);
+        eval.connectPosition(pos2);
         eval.setWhiteContempt(whiteContempt);
-        int evScore = eval.evalPosPrint() * (pos.isWhiteMove() ? 1 : -1);
+        int evScore = eval.evalPosPrint() * (pos2.isWhiteMove() ? 1 : -1);
         std::stringstream ss;
         ss.precision(2);
         ss << std::fixed << (evScore / 100.0);
