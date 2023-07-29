@@ -64,8 +64,8 @@ void
 NNEvaluator::forceFullEval() {
     for (int c = 0; c < 2; c++) {
         kingSqComputed[c] = -1;
-        toAdd[c].clear();
-        toSub[c].clear();
+        toAddLen[c] = 0;
+        toSubLen[c] = 0;
     }
 }
 
@@ -102,19 +102,31 @@ NNEvaluator::setPiece(int square, int oldPiece, int newPiece) {
         if (isNonKing(oldPiece)) {
             int pt = ptValue[oldPiece];
             int idx = getIndex(kSq, pt, square, c == 0);
-            if (!toAdd[c].empty() && toAdd[c].back() == idx)
-                toAdd[c].pop_back();
-            else
-                toSub[c].push_back(idx);
+            if (toAddLen[c] > 0 && toAdd[c][toAddLen[c]-1] == idx)
+                toAddLen[c]--;
+            else if (toSubLen[c] < maxIncr)
+                toSub[c][toSubLen[c]++] = idx;
+            else {
+                kingSqComputed[c] = -1;
+                toAddLen[c] = 0;
+                toSubLen[c] = 0;
+                continue;
+            }
         }
 
         if (isNonKing(newPiece)) {
             int pt = ptValue[newPiece];
             int idx = getIndex(kSq, pt, square, c == 0);
-            if (!toSub[c].empty() && toSub[c].back() == idx)
-                toSub[c].pop_back();
-            else
-                toAdd[c].push_back(idx);
+            if (toSubLen[c] > 0 && toSub[c][toSubLen[c]-1] == idx)
+                toSubLen[c]--;
+            else if (toAddLen[c] < maxIncr)
+                toAdd[c][toAddLen[c]++] = idx;
+            else {
+                kingSqComputed[c] = -1;
+                toAddLen[c] = 0;
+                toSubLen[c] = 0;
+                continue;
+            }
         }
     }
 }
@@ -128,15 +140,19 @@ NNEvaluator::computeL1WB() {
     for (int c = 0; c < 2; c++) {
         doFull[c] = kingSqComputed[c] != kingSq[c];
         if (!doFull[c]) {
-            for (int idx : toAdd[c])
+            for (int k = 0; k < toAddLen[c]; k++) {
+                int idx = toAdd[c][k];
                 for (int i = 0; i < n1; i++)
                     l1Out[c](i) += netData.weight1(idx, i);
-            for (int idx : toSub[c])
+            }
+            for (int k = 0; k < toSubLen[c]; k++) {
+                int idx = toSub[c][k];
                 for (int i = 0; i < n1; i++)
                     l1Out[c](i) -= netData.weight1(idx, i);
+            }
         }
-        toAdd[c].clear();
-        toSub[c].clear();
+        toAddLen[c] = 0;
+        toSubLen[c] = 0;
     }
 
     if (!doFull[0] && !doFull[1])

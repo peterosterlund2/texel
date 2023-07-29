@@ -76,8 +76,11 @@ private:
     // White/black king square corresponding to l1Out[i], or -1 if l1Out[i] not valid
     int kingSqComputed[2] = {-1, -1};
 
-    std::vector<int> toAdd[2]; // Input features to add to l1Out to make it up to date
-    std::vector<int> toSub[2]; // Input features to subtract from l1Out to make it up to date
+    static constexpr int maxIncr = 16;
+    int toAdd[2][maxIncr]; // Input features to add to l1Out to make it up to date
+    int toSub[2][maxIncr]; // Input features to subtract from l1Out to make it up to date
+    int toAddLen[2] = {0, 0};
+    int toSubLen[2] = {0, 0};
 
     const Position* posP = nullptr; // Connected Position object
 
