@@ -1,9 +1,12 @@
+2023-07-30: Texel 1.09 (ELO: +252)
+- Implement NNUE evaluation.
+
 2023-06-10: Texel 1.08
 New features:
 - Allow arbitrary hash table sizes up to 1TiB of memory.
 - Add "contempt" UCI parameter.
 - Add automatic contempt depending on opponent name.
-- Add support for 7 man syzygy tablebases.
+- Add support for 7 man Syzygy tablebases.
 - Add "runcmd" Windows program. Useful for GUIs that don't allow specifying
   command line arguments to the engine.
 Bug fixes:
