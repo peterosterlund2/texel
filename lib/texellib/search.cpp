@@ -86,8 +86,7 @@ Search::timeLimit(int minTimeLimit, int maxTimeLimit, int earlyStopPercent) {
 
 void
 Search::setStrength(int strength, U64 randomSeed, int maxNPS) {
-    if (strength < 0) strength = 0;
-    if (strength > 1000) strength = 1000;
+    strength = clamp(strength, 0, 1000);
     this->strength = strength;
     weak = strength < 1000;
     this->randomSeed = randomSeed;
@@ -1094,7 +1093,7 @@ Search::getRootMoves(const MoveList& rootMovesIn,
     for (int i = 0; i < rootMoves.size; i++)
         selectBest(rootMoves, i);
 
-    // If strength is < 10%, only include a subset of the root moves.
+    // If strength is < 20%, only include a subset of the root moves.
     // At least one move is always included though.
     std::vector<bool> includedMoves(rootMoves.size);
     U64 rndL = pos.zobristHash() ^ randomSeed;
