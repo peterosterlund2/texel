@@ -150,7 +150,11 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 s = vmlal_s8(s, d, w);
                 sum = vpadalq_s16(sum, s);
             }
+#ifdef __ARM_EABI__
+            result(i) += sum[0] + sum[1] + sum[2] + sum[3];
+#else
             result(i) += vaddvq_s32(sum);
+#endif
         }
         return;
     }
