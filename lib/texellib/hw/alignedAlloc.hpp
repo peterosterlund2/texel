@@ -40,6 +40,9 @@ private:
 public:
     using value_type = T;
 
+    AlignedAllocator() {}
+    template <typename U> AlignedAllocator(const AlignedAllocator<U>& other) {}
+
     T* allocate(size_t n) {
         size_t needed_size = n*sizeof(T) + sizeof(U64) + ALIGN;
         void* mem = malloc(needed_size);
