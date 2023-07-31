@@ -6,6 +6,10 @@ project(texel
   DESCRIPTION "Texel chess engine and utilities"
   LANGUAGES CXX C)
 
+set(is_64bit false)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(is_64bit true)
+endif()
 
 # Options
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
@@ -15,11 +19,13 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     athlon64-sse3
     corei7)
 endif()
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_" OR
    CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
   option(USE_SSSE3 "Use SSSE3 CPU instructions" OFF)
   option(USE_AVX2 "Use AVX2 CPU instructions" OFF)
-  option(USE_BMI2 "Use BMI2 CPU instructions" OFF)
+  if(is_64bit)
+    option(USE_BMI2 "Use BMI2 CPU instructions" OFF)
+  endif()
 endif()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_" OR
    CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
