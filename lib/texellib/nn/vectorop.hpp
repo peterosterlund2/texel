@@ -65,6 +65,19 @@ ssse3_hadd_32(__m128i v) {
 
 #endif
 
+#if defined(HAS_NEON) || defined(HAS_NEON_DOT)
+
+inline S32
+neon_hadd_32(int32x4_t sum) {
+#ifdef __ARM_EABI__
+    return sum[0] + sum[1] + sum[2] + sum[3];
+#else
+    return vaddvq_s32(sum);
+#endif
+}
+
+#endif
+
 // ------------------------------------------------------------------------------
 
 /** Compute result += weight * in, where "*" is matrix multiplication. */
@@ -117,7 +130,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                     int8x16_t d = vld1q_s8((const int8_t*)&in(j));
                     sum = vdotq_s32(sum, w, d);
                 }
-                result(i) += vaddvq_s32(sum);
+                result(i) += neon_hadd_32(sum);
             }
         } else {
             for (int i = 0; i < nOut; i += 2) {
@@ -130,8 +143,8 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                     int8x16_t w2 = vld1q_s8((const int8_t*)&weight(i+1,j));
                     sum2 = vdotq_s32(sum2, w2, d);
                 }
-                result(i  ) += vaddvq_s32(sum1);
-                result(i+1) += vaddvq_s32(sum2);
+                result(i  ) += neon_hadd_32(sum1);
+                result(i+1) += neon_hadd_32(sum2);
             }
         }
         return;
@@ -150,11 +163,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 s = vmlal_s8(s, d, w);
                 sum = vpadalq_s16(sum, s);
             }
-#ifdef __ARM_EABI__
-            result(i) += sum[0] + sum[1] + sum[2] + sum[3];
-#else
-            result(i) += vaddvq_s32(sum);
-#endif
+            result(i) += neon_hadd_32(sum);
         }
         return;
     }
