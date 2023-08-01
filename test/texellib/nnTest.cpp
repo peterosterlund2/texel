@@ -43,7 +43,7 @@ TEST(NNTest, testMatMul) {
 void
 NNTest::testMatMul() {
     {
-        Matrix<S8,1,32> w;
+        alignas(32) Matrix<S8,1,32> w;
         Vector<S8,32> in;
         Vector<S32,1> res;
         res(0) = 0;
@@ -56,7 +56,7 @@ NNTest::testMatMul() {
     }
 
     {
-        Matrix<S8,1,32> w;
+        alignas(32) Matrix<S8,1,32> w;
         Vector<S8,32> in;
         Vector<S32,1> res;
         res(0) = 0;
@@ -69,7 +69,7 @@ NNTest::testMatMul() {
     }
 
     {
-        Matrix<S8,2,32> w;
+        alignas(32) Matrix<S8,2,32> w;
         Vector<S8,32> in;
         Vector<S32,2> res;
         for (int i = 0; i < 2; i++) {
@@ -85,7 +85,7 @@ NNTest::testMatMul() {
     }
 
     {
-        Matrix<S8,32,512> w;
+        alignas(32) Matrix<S8,32,512> w;
         Vector<S8,512> in;
         Vector<S32,32> res;
         for (int i = 0; i < 32; i++) {

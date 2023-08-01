@@ -25,6 +25,7 @@
 
 #include "nntypes.hpp"
 #include "chessError.hpp"
+#include "alignedAlloc.hpp"
 
 static const U64 magicHeader = 0xb3828c6bdf56c56cULL;
 static const int netVersion = 0;
@@ -32,7 +33,11 @@ static const int netVersion = 0;
 
 std::shared_ptr<NetData>
 NetData::create() {
-    return std::shared_ptr<NetData>(new NetData);
+    auto ret = std::shared_ptr<NetData>(AlignedAllocator<NetData>().allocate(1),
+                                        [](NetData* p) {
+                                            AlignedAllocator<NetData>().deallocate(p, 1);
+                                        });
+    return ret;
 }
 
 void

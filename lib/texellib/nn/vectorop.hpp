@@ -67,6 +67,7 @@ ssse3_hadd_32(__m128i v) {
 
 #if defined(HAS_NEON) || defined(HAS_NEON_DOT)
 
+/** Return the sum of the 4 32-bit values in a NEON 128-bit register. */
 inline S32
 neon_hadd_32(int32x4_t sum) {
 #ifdef __ARM_EABI__
@@ -91,7 +92,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
         for (int i = 0; i < nOut; i++) {
             __m256i sum = _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, 0);
             for (int j = 0; j < nIn; j += 32) {
-                __m256i a = _mm256_loadu_si256((const __m256i*)&weight(i,j));
+                __m256i a = _mm256_load_si256((const __m256i*)&weight(i,j));
                 __m256i b = _mm256_loadu_si256((const __m256i*)&in(j));
                 __m256i d = _mm256_maddubs_epi16(b, a); // d[i]=a[2i]*b[2i]+a[2i+1]*b[2i+1], requires b>=0
                 d = _mm256_madd_epi16(d, ones16);       // Pairwise sum of 16-bit values to 32-bit values
