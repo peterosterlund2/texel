@@ -197,4 +197,161 @@ Layer<nIn,nOut>::evalLinear(const Vector<S8,nIn>& in) {
     matMul(linOutput, data.weight, in);
 }
 
+// ------------------------------------------------------------------------------
+
+/** Add/subtract rows of "weight1" to/from "l1Out". */
+template <int n1, int inFeatures>
+void
+addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1,
+              const int* toAdd, int toAddLen,
+              const int* toSub, int toSubLen) {
+#ifdef HAS_AVX2
+    if (n1 % 128 == 0) {
+        for (int i = 0; i < n1; i += 128) {
+            __m256i s1 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*0));
+            __m256i s2 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*1));
+            __m256i s3 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*2));
+            __m256i s4 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*3));
+            __m256i s5 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*4));
+            __m256i s6 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*5));
+            __m256i s7 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*6));
+            __m256i s8 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*7));
+            for (int k = 0; k < toAddLen; k++) {
+                int idx = toAdd[k];
+                s1 = _mm256_add_epi16(s1, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*0)));
+                s2 = _mm256_add_epi16(s2, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*1)));
+                s3 = _mm256_add_epi16(s3, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*2)));
+                s4 = _mm256_add_epi16(s4, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*3)));
+                s5 = _mm256_add_epi16(s5, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*4)));
+                s6 = _mm256_add_epi16(s6, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*5)));
+                s7 = _mm256_add_epi16(s7, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*6)));
+                s8 = _mm256_add_epi16(s8, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*7)));
+            }
+            for (int k = 0; k < toSubLen; k++) {
+                int idx = toSub[k];
+                s1 = _mm256_sub_epi16(s1, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*0)));
+                s2 = _mm256_sub_epi16(s2, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*1)));
+                s3 = _mm256_sub_epi16(s3, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*2)));
+                s4 = _mm256_sub_epi16(s4, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*3)));
+                s5 = _mm256_sub_epi16(s5, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*4)));
+                s6 = _mm256_sub_epi16(s6, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*5)));
+                s7 = _mm256_sub_epi16(s7, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*6)));
+                s8 = _mm256_sub_epi16(s8, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*7)));
+            }
+            _mm256_storeu_si256((__m256i*)&l1Out(i+16*0), s1);
+            _mm256_storeu_si256((__m256i*)&l1Out(i+16*1), s2);
+            _mm256_storeu_si256((__m256i*)&l1Out(i+16*2), s3);
+            _mm256_storeu_si256((__m256i*)&l1Out(i+16*3), s4);
+            _mm256_storeu_si256((__m256i*)&l1Out(i+16*4), s5);
+            _mm256_storeu_si256((__m256i*)&l1Out(i+16*5), s6);
+            _mm256_storeu_si256((__m256i*)&l1Out(i+16*6), s7);
+            _mm256_storeu_si256((__m256i*)&l1Out(i+16*7), s8);
+        }
+        return;
+    }
+#endif
+#ifdef HAS_SSSE3
+    if (n1 % 64 == 0) {
+        for (int i = 0; i < n1; i += 64) {
+            __m128i s1 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*0));
+            __m128i s2 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*1));
+            __m128i s3 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*2));
+            __m128i s4 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*3));
+            __m128i s5 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*4));
+            __m128i s6 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*5));
+            __m128i s7 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*6));
+            __m128i s8 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*7));
+            for (int k = 0; k < toAddLen; k++) {
+                int idx = toAdd[k];
+                s1 = _mm_add_epi16(s1, _mm_load_si128((const __m128i*)&weight1(idx, i+8*0)));
+                s2 = _mm_add_epi16(s2, _mm_load_si128((const __m128i*)&weight1(idx, i+8*1)));
+                s3 = _mm_add_epi16(s3, _mm_load_si128((const __m128i*)&weight1(idx, i+8*2)));
+                s4 = _mm_add_epi16(s4, _mm_load_si128((const __m128i*)&weight1(idx, i+8*3)));
+                s5 = _mm_add_epi16(s5, _mm_load_si128((const __m128i*)&weight1(idx, i+8*4)));
+                s6 = _mm_add_epi16(s6, _mm_load_si128((const __m128i*)&weight1(idx, i+8*5)));
+                s7 = _mm_add_epi16(s7, _mm_load_si128((const __m128i*)&weight1(idx, i+8*6)));
+                s8 = _mm_add_epi16(s8, _mm_load_si128((const __m128i*)&weight1(idx, i+8*7)));
+            }
+            for (int k = 0; k < toSubLen; k++) {
+                int idx = toSub[k];
+                s1 = _mm_sub_epi16(s1, _mm_load_si128((const __m128i*)&weight1(idx, i+8*0)));
+                s2 = _mm_sub_epi16(s2, _mm_load_si128((const __m128i*)&weight1(idx, i+8*1)));
+                s3 = _mm_sub_epi16(s3, _mm_load_si128((const __m128i*)&weight1(idx, i+8*2)));
+                s4 = _mm_sub_epi16(s4, _mm_load_si128((const __m128i*)&weight1(idx, i+8*3)));
+                s5 = _mm_sub_epi16(s5, _mm_load_si128((const __m128i*)&weight1(idx, i+8*4)));
+                s6 = _mm_sub_epi16(s6, _mm_load_si128((const __m128i*)&weight1(idx, i+8*5)));
+                s7 = _mm_sub_epi16(s7, _mm_load_si128((const __m128i*)&weight1(idx, i+8*6)));
+                s8 = _mm_sub_epi16(s8, _mm_load_si128((const __m128i*)&weight1(idx, i+8*7)));
+            }
+            _mm_storeu_si128((__m128i*)&l1Out(i+8*0), s1);
+            _mm_storeu_si128((__m128i*)&l1Out(i+8*1), s2);
+            _mm_storeu_si128((__m128i*)&l1Out(i+8*2), s3);
+            _mm_storeu_si128((__m128i*)&l1Out(i+8*3), s4);
+            _mm_storeu_si128((__m128i*)&l1Out(i+8*4), s5);
+            _mm_storeu_si128((__m128i*)&l1Out(i+8*5), s6);
+            _mm_storeu_si128((__m128i*)&l1Out(i+8*6), s7);
+            _mm_storeu_si128((__m128i*)&l1Out(i+8*7), s8);
+        }
+        return;
+    }
+#endif
+#if defined(HAS_NEON) || defined(HAS_NEON_DOT)
+    if (n1 % 64 == 0) {
+        for (int i = 0; i < n1; i += 64) {
+            int16x8_t s1 = vld1q_s16((const int16_t*)&l1Out(i+8*0));
+            int16x8_t s2 = vld1q_s16((const int16_t*)&l1Out(i+8*1));
+            int16x8_t s3 = vld1q_s16((const int16_t*)&l1Out(i+8*2));
+            int16x8_t s4 = vld1q_s16((const int16_t*)&l1Out(i+8*3));
+            int16x8_t s5 = vld1q_s16((const int16_t*)&l1Out(i+8*4));
+            int16x8_t s6 = vld1q_s16((const int16_t*)&l1Out(i+8*5));
+            int16x8_t s7 = vld1q_s16((const int16_t*)&l1Out(i+8*6));
+            int16x8_t s8 = vld1q_s16((const int16_t*)&l1Out(i+8*7));
+            for (int k = 0; k < toAddLen; k++) {
+                int idx = toAdd[k];
+                s1 = vaddq_s16(s1, vld1q_s16((const int16_t*)&weight1(idx, i+8*0)));
+                s2 = vaddq_s16(s2, vld1q_s16((const int16_t*)&weight1(idx, i+8*1)));
+                s3 = vaddq_s16(s3, vld1q_s16((const int16_t*)&weight1(idx, i+8*2)));
+                s4 = vaddq_s16(s4, vld1q_s16((const int16_t*)&weight1(idx, i+8*3)));
+                s5 = vaddq_s16(s5, vld1q_s16((const int16_t*)&weight1(idx, i+8*4)));
+                s6 = vaddq_s16(s6, vld1q_s16((const int16_t*)&weight1(idx, i+8*5)));
+                s7 = vaddq_s16(s7, vld1q_s16((const int16_t*)&weight1(idx, i+8*6)));
+                s8 = vaddq_s16(s8, vld1q_s16((const int16_t*)&weight1(idx, i+8*7)));
+            }
+            for (int k = 0; k < toSubLen; k++) {
+                int idx = toSub[k];
+                s1 = vsubq_s16(s1, vld1q_s16((const int16_t*)&weight1(idx, i+8*0)));
+                s2 = vsubq_s16(s2, vld1q_s16((const int16_t*)&weight1(idx, i+8*1)));
+                s3 = vsubq_s16(s3, vld1q_s16((const int16_t*)&weight1(idx, i+8*2)));
+                s4 = vsubq_s16(s4, vld1q_s16((const int16_t*)&weight1(idx, i+8*3)));
+                s5 = vsubq_s16(s5, vld1q_s16((const int16_t*)&weight1(idx, i+8*4)));
+                s6 = vsubq_s16(s6, vld1q_s16((const int16_t*)&weight1(idx, i+8*5)));
+                s7 = vsubq_s16(s7, vld1q_s16((const int16_t*)&weight1(idx, i+8*6)));
+                s8 = vsubq_s16(s8, vld1q_s16((const int16_t*)&weight1(idx, i+8*7)));
+            }
+            vst1q_s16((int16_t*)&l1Out(i+8*0), s1);
+            vst1q_s16((int16_t*)&l1Out(i+8*1), s2);
+            vst1q_s16((int16_t*)&l1Out(i+8*2), s3);
+            vst1q_s16((int16_t*)&l1Out(i+8*3), s4);
+            vst1q_s16((int16_t*)&l1Out(i+8*4), s5);
+            vst1q_s16((int16_t*)&l1Out(i+8*5), s6);
+            vst1q_s16((int16_t*)&l1Out(i+8*6), s7);
+            vst1q_s16((int16_t*)&l1Out(i+8*7), s8);
+        }
+        return;
+    }
+#endif
+
+    // Generic fallback
+    for (int k = 0; k < toAddLen; k++) {
+        int idx = toAdd[k];
+        for (int i = 0; i < n1; i++)
+            l1Out(i) += weight1(idx, i);
+    }
+    for (int k = 0; k < toSubLen; k++) {
+        int idx = toSub[k];
+        for (int i = 0; i < n1; i++)
+            l1Out(i) -= weight1(idx, i);
+    }
+}
+
 #endif /* VECTOROP_HPP_ */

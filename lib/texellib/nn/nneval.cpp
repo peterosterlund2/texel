@@ -139,18 +139,8 @@ NNEvaluator::computeL1WB() {
     kingSq[1] = posP->getKingSq(false);
     for (int c = 0; c < 2; c++) {
         doFull[c] = kingSqComputed[c] != kingSq[c];
-        if (!doFull[c]) {
-            for (int k = 0; k < toAddLen[c]; k++) {
-                int idx = toAdd[c][k];
-                for (int i = 0; i < n1; i++)
-                    l1Out[c](i) += netData.weight1(idx, i);
-            }
-            for (int k = 0; k < toSubLen[c]; k++) {
-                int idx = toSub[c][k];
-                for (int i = 0; i < n1; i++)
-                    l1Out[c](i) -= netData.weight1(idx, i);
-            }
-        }
+        if (!doFull[c])
+            addSubWeights(l1Out[c], netData.weight1, toAdd[c], toAddLen[c], toSub[c], toSubLen[c]);
         toAddLen[c] = 0;
         toSubLen[c] = 0;
     }
@@ -166,22 +156,21 @@ NNEvaluator::computeL1WB() {
         }
     }
 
+    int add[2][32];
+    int len[2] = {0, 0};
     for (int sq = 0; sq < 64; sq++) {
         const int p = posP->getPiece(sq);
         if (p == Piece::EMPTY || p == Piece::WKING || p == Piece::BKING)
             continue;
         int pt = ptValue[p];
-        if (doFull[0]) {
-            int idx = getIndex(kingSqComputed[0], pt, sq, true);
-            for (int i = 0; i < n1; i++)
-                l1Out[0](i) += netData.weight1(idx, i);
-        }
-        if (doFull[1]) {
-            int idx = getIndex(kingSqComputed[1], pt, sq, false);
-            for (int i = 0; i < n1; i++)
-                l1Out[1](i) += netData.weight1(idx, i);
-        }
+        if (doFull[0])
+            add[0][len[0]++] = getIndex(kingSqComputed[0], pt, sq, true);
+        if (doFull[1])
+            add[1][len[1]++] = getIndex(kingSqComputed[1], pt, sq, false);
     }
+    for (int c = 0; c < 2; c++)
+        if (doFull[c])
+            addSubWeights(l1Out[c], netData.weight1, add[c], len[c], add[c], 0);
 }
 
 void
