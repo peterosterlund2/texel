@@ -68,10 +68,6 @@ evalPos(Evaluate& eval, const Position& pos, bool evalMirror, bool testMirror) {
     return evalScore;
 }
 
-int evalPos(Evaluate& eval, const Position& pos) {
-    return evalPos(eval, pos, true, true);
-}
-
 /** Return static evaluation score for white, regardless of whose turn it is to move. */
 int
 evalWhite(const Position& pos, bool testMirror) {

@@ -63,9 +63,10 @@ NNEvaluator::connectPosition(const Position& pos) {
 void
 NNEvaluator::forceFullEval() {
     for (int c = 0; c < 2; c++) {
-        kingSqComputed[c] = -1;
-        toAddLen[c] = 0;
-        toSubLen[c] = 0;
+        FirstLayerState& s = linState[c];
+        s.kingSqComputed = -1;
+        s.toAddLen = 0;
+        s.toSubLen = 0;
     }
 }
 
@@ -95,21 +96,22 @@ NNEvaluator::setPiece(int square, int oldPiece, int newPiece) {
     };
 
     for (int c = 0; c < 2; c++) {
-        int kSq = kingSqComputed[c];
+        FirstLayerState& s = linState[c];
+        int kSq = s.kingSqComputed;
         if (kSq == -1)
             continue;
 
         if (isNonKing(oldPiece)) {
             int pt = ptValue[oldPiece];
             int idx = getIndex(kSq, pt, square, c == 0);
-            if (toAddLen[c] > 0 && toAdd[c][toAddLen[c]-1] == idx)
-                toAddLen[c]--;
-            else if (toSubLen[c] < maxIncr)
-                toSub[c][toSubLen[c]++] = idx;
+            if (s.toAddLen > 0 && s.toAdd[s.toAddLen-1] == idx)
+                s.toAddLen--;
+            else if (s.toSubLen < maxIncr)
+                s.toSub[s.toSubLen++] = idx;
             else {
-                kingSqComputed[c] = -1;
-                toAddLen[c] = 0;
-                toSubLen[c] = 0;
+                s.kingSqComputed = -1;
+                s.toAddLen = 0;
+                s.toSubLen = 0;
                 continue;
             }
         }
@@ -117,14 +119,14 @@ NNEvaluator::setPiece(int square, int oldPiece, int newPiece) {
         if (isNonKing(newPiece)) {
             int pt = ptValue[newPiece];
             int idx = getIndex(kSq, pt, square, c == 0);
-            if (toSubLen[c] > 0 && toSub[c][toSubLen[c]-1] == idx)
-                toSubLen[c]--;
-            else if (toAddLen[c] < maxIncr)
-                toAdd[c][toAddLen[c]++] = idx;
+            if (s.toSubLen > 0 && s.toSub[s.toSubLen-1] == idx)
+                s.toSubLen--;
+            else if (s.toAddLen < maxIncr)
+                s.toAdd[s.toAddLen++] = idx;
             else {
-                kingSqComputed[c] = -1;
-                toAddLen[c] = 0;
-                toSubLen[c] = 0;
+                s.kingSqComputed = -1;
+                s.toAddLen = 0;
+                s.toSubLen = 0;
                 continue;
             }
         }
@@ -138,11 +140,12 @@ NNEvaluator::computeL1WB() {
     kingSq[0] = posP->getKingSq(true);
     kingSq[1] = posP->getKingSq(false);
     for (int c = 0; c < 2; c++) {
-        doFull[c] = kingSqComputed[c] != kingSq[c];
+        FirstLayerState& s = linState[c];
+        doFull[c] = s.kingSqComputed != kingSq[c];
         if (!doFull[c])
-            addSubWeights(l1Out[c], netData.weight1, toAdd[c], toAddLen[c], toSub[c], toSubLen[c]);
-        toAddLen[c] = 0;
-        toSubLen[c] = 0;
+            addSubWeights(s.l1Out, netData.weight1, s.toAdd, s.toAddLen, s.toSub, s.toSubLen);
+        s.toAddLen = 0;
+        s.toSubLen = 0;
     }
 
     if (!doFull[0] && !doFull[1])
@@ -150,9 +153,10 @@ NNEvaluator::computeL1WB() {
 
     for (int c = 0; c < 2; c++) {
         if (doFull[c]) {
+            FirstLayerState& s = linState[c];
             for (int i = 0; i < n1; i++)
-                l1Out[c](i) = netData.bias1(i);
-            kingSqComputed[c] = posP->getKingSq(c == 0);
+                s.l1Out(i) = netData.bias1(i);
+            s.kingSqComputed = posP->getKingSq(c == 0);
         }
     }
 
@@ -163,21 +167,26 @@ NNEvaluator::computeL1WB() {
         if (p == Piece::EMPTY || p == Piece::WKING || p == Piece::BKING)
             continue;
         int pt = ptValue[p];
-        if (doFull[0])
-            add[0][len[0]++] = getIndex(kingSqComputed[0], pt, sq, true);
-        if (doFull[1])
-            add[1][len[1]++] = getIndex(kingSqComputed[1], pt, sq, false);
+        for (int c = 0; c < 2; c++) {
+            if (doFull[c]) {
+                FirstLayerState& s = linState[c];
+                add[c][len[c]++] = getIndex(s.kingSqComputed, pt, sq, c == 0);
+            }
+        }
     }
-    for (int c = 0; c < 2; c++)
-        if (doFull[c])
-            addSubWeights(l1Out[c], netData.weight1, add[c], len[c], add[c], 0);
+    for (int c = 0; c < 2; c++) {
+        if (doFull[c]) {
+            FirstLayerState& s = linState[c];
+            addSubWeights(s.l1Out, netData.weight1, add[c], len[c], add[c], 0);
+        }
+    }
 }
 
 void
 NNEvaluator::computeL1Out() {
     bool wtm = posP->isWhiteMove();
     for (int c = 0; c < 2; c++) {
-        const auto& l1OutC = l1Out[wtm ? c : (1-c)];
+        const Vector<S16, n1>& l1OutC = linState[wtm ? c : (1-c)].l1Out;
         int i0 = c * n1;
         for (int i = 0; i < n1; i++)
             l1OutClipped(i0 + i) = clamp(l1OutC(i) >> 2, 0, 127);

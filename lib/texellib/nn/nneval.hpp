@@ -38,7 +38,7 @@ class NNEvaluator {
     friend class NNTest;
 public:
     /** Constructor. */
-    NNEvaluator(const NetData& netData);
+    explicit NNEvaluator(const NetData& netData);
 
     /** Set position object used for non-incremental evaluation. */
     void connectPosition(const Position& pos);
@@ -66,27 +66,28 @@ private:
     static constexpr int n2 = NetData::n2;
     static constexpr int n3 = NetData::n3;
 
-    Vector<S16, n1> l1Out[2];      // Linear output corresponding to white/black king, incrementally updated
+    static constexpr int maxIncr = 16;
+
+    struct FirstLayerState {
+        Vector<S16, n1> l1Out;   // Linear output corresponding to one side, incrementally updated
+        int toAdd[maxIncr];      // Input features to add to l1Out to make it up to date
+        int toSub[maxIncr];      // Input features to subtract from l1Out to make it up to date
+        int toAddLen = 0;        // Number of entries in toAdd
+        int toSubLen = 0;        // Number of entries in toSub
+        int kingSqComputed = -1; // King square corresponding to l1Out, or -1 if l1Out not valid
+    };
+    FirstLayerState linState[2];
+
     Vector<S8, 2*n1> l1OutClipped; // l1Out after scaling, clipped ReLU and narrowing, reordered by wtm
 
     Layer<n1*2, n2> lin2;
     Layer<n2  , n3> lin3;
     Layer<n3  , 1 > lin4;
 
-    // White/black king square corresponding to l1Out[i], or -1 if l1Out[i] not valid
-    int kingSqComputed[2] = {-1, -1};
-
-    static constexpr int maxIncr = 16;
-    int toAdd[2][maxIncr]; // Input features to add to l1Out to make it up to date
-    int toSub[2][maxIncr]; // Input features to subtract from l1Out to make it up to date
-    int toAddLen[2] = {0, 0};
-    int toSubLen[2] = {0, 0};
-
     const Position* posP = nullptr; // Connected Position object
+    const NetData& netData;         // Network weight/bias
 
-    const NetData& netData;
-
-    static int ptValue[Piece::nPieceTypes];
+    static int ptValue[Piece::nPieceTypes]; // Conversion from Piece to piece values used by NN
 };
 
 #endif /* NNEVAL_HPP_ */
