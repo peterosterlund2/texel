@@ -441,45 +441,6 @@ Position::getKingSq(bool white) const {
 }
 
 inline void
-Position::unMakeMove(const Move& move, const UndoInfo& ui) {
-    hashKey ^= whiteHashKey;
-    whiteMove = !whiteMove;
-    int p = squares[move.to()];
-    setPiece(move.to(), ui.capturedPiece);
-    setPiece(move.from(), p);
-    setCastleMask(ui.castleMask);
-    setEpSquare(ui.epSquare);
-    halfMoveClock = ui.halfMoveClock;
-    bool wtm = whiteMove;
-    if (move.promoteTo() != Piece::EMPTY) {
-        p = wtm ? Piece::WPAWN : Piece::BPAWN;
-        setPiece(move.from(), p);
-    }
-    if (!wtm)
-        fullMoveCounter--;
-
-    // Handle castling
-    int king = wtm ? Piece::WKING : Piece::BKING;
-    if (p == king) {
-        int k0 = move.from();
-        if (move.to() == k0 + 2) { // O-O
-            movePieceNotPawn(k0 + 1, k0 + 3);
-        } else if (move.to() == k0 - 2) { // O-O-O
-            movePieceNotPawn(k0 - 1, k0 - 4);
-        }
-    }
-
-    // Handle en passant
-    if (move.to() == epSquare) {
-        if (p == Piece::WPAWN) {
-            setPiece(move.to() - 8, Piece::BPAWN);
-        } else if (p == Piece::BPAWN) {
-            setPiece(move.to() + 8, Piece::WPAWN);
-        }
-    }
-}
-
-inline void
 Position::unMakeMoveB(const Move& move, const UndoInfo& ui) {
     int p = squares[move.to()];
     setPieceB(move.from(), p);
