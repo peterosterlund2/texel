@@ -44,7 +44,7 @@ class NNEvaluator;
 
 
 /** Non-static data used by the Position class. Having this data in a separate
- *  class makes it easier to customize the copy/assigment member functions. */
+ *  class makes it easier to customize the copy/assignment member functions. */
 struct PositionBase {
     int wMtrl_;              // Total value of all white pieces and pawns
     int bMtrl_;              // Total value of all black pieces and pawns
