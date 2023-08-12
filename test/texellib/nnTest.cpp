@@ -51,6 +51,7 @@ NNTest::testMatMul() {
             w(0,i) = i+1;
             in(i) = i+2;
         }
+        prepareMatMul(w);
         matMul(res, w, in);
         ASSERT_EQ(11968, res(0));
     }
@@ -64,6 +65,7 @@ NNTest::testMatMul() {
             w(0,i) = (i & 1) ? -(i+1) : (i+1);
             in(i) = i+2;
         }
+        prepareMatMul(w);
         matMul(res, w, in);
         ASSERT_EQ(-544, res(0));
     }
@@ -79,6 +81,7 @@ NNTest::testMatMul() {
             }
             res(i) = 0;
         }
+        prepareMatMul(w);
         matMul(res, w, in);
         ASSERT_EQ(127*127*32, res(0));
         ASSERT_EQ(-127*127*32, res(1));
@@ -96,6 +99,7 @@ NNTest::testMatMul() {
         for (int j = 0; j < 512; j++)
             in(j) = (j * j + 1) % 11;
 
+        prepareMatMul(w);
         matMul(res, w, in);
         std::vector<int> expected = {
             -627, -820, -1077, -1270, -1271, -952, -889, -954,

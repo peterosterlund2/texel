@@ -26,6 +26,7 @@
 #include "nntypes.hpp"
 #include "chessError.hpp"
 #include "alignedAlloc.hpp"
+#include "vectorop.hpp"
 
 static const U64 magicHeader = 0xb3828c6bdf56c56cULL;
 static const int netVersion = 0;
@@ -33,7 +34,7 @@ static const int netVersion = 0;
 
 std::shared_ptr<NetData>
 NetData::create() {
-    auto ret = std::shared_ptr<NetData>(AlignedAllocator<NetData>().allocate(1),
+    auto ret = std::shared_ptr<NetData>(new (AlignedAllocator<NetData>().allocate(1)) NetData,
                                         [](NetData* p) {
                                             AlignedAllocator<NetData>().deallocate(p, 1);
                                         });
@@ -80,6 +81,10 @@ NetData::load(std::istream& is) {
 
     if (hash != computeHash())
         throw ChessError("Network checksum error");
+
+    prepareMatMul(lin2.weight);
+    prepareMatMul(lin3.weight);
+    prepareMatMul(lin4.weight);
 }
 
 U64

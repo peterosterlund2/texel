@@ -81,13 +81,90 @@ neon_hadd_32(int32x4_t sum) {
 
 // ------------------------------------------------------------------------------
 
-/** Compute result += weight * in, where "*" is matrix multiplication. */
+/** Rearrange data in "weight" to be compatible with assumptions in matMul(). */
+template <int nIn, int nOut>
+inline void
+prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
+#ifdef HAS_AVX2
+    if ((nIn % 8 == 0) && (nOut % 32) == 0) {
+        Matrix<S8,nOut,nIn> w2;
+        auto weight2 = [&w2](int i, int j) -> S8& {
+            int idx = j * 8 + i * nIn;
+            return w2(0, idx);
+        };
+        for (int i = 0; i < nOut; i += 8) {
+            for (int j = 0; j < nIn; j += 4) {
+                S8* start = &weight2(i, j);
+                for (int y = 0; y < 8; y++)
+                    for (int x = 0; x < 4; x++)
+                        *start++ = weight(i+y, j+x);
+            }
+        }
+        weight = w2;
+        return;
+    }
+#endif
+#if defined(HAS_SSSE3) || defined(HAS_NEON_DOT)
+    if ((nIn % 8 == 0) && (nOut % 16) == 0) {
+        Matrix<S8,nOut,nIn> w2;
+        auto weight2 = [&w2](int i, int j) -> S8& {
+            int idx = j * 4 + i * nIn;
+            return w2(0, idx);
+        };
+        for (int i = 0; i < nOut; i += 4) {
+            for (int j = 0; j < nIn; j += 4) {
+                S8* start = &weight2(i, j);
+                for (int y = 0; y < 4; y++)
+                    for (int x = 0; x < 4; x++)
+                        *start++ = weight(i+y, j+x);
+            }
+        }
+        weight = w2;
+        return;
+    }
+#endif
+}
+
+/** Compute result += weight * in, where "*" is matrix multiplication.
+ * Note that the AVX2/SSSE3 implementations assume all elements in "in" are >= 0. */
 template <int nIn, int nOut>
 inline void
 matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector<S8,nIn>& in) {
 #ifdef HAS_AVX2
+    if ((nIn % 8 == 0) && (nOut % 32) == 0) {
+        __m256i ones16 = _mm256_set_epi16(1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1);
+        for (int i = 0; i < nOut; i += 32) {
+            __m256i sum1 = _mm256_loadu_si256((const __m256i*)&result(i+8*0));
+            __m256i sum2 = _mm256_loadu_si256((const __m256i*)&result(i+8*1));
+            __m256i sum3 = _mm256_loadu_si256((const __m256i*)&result(i+8*2));
+            __m256i sum4 = _mm256_loadu_si256((const __m256i*)&result(i+8*3));
+            for (int j = 0; j < nIn; j += 8) {
+                auto f = [&weight,&ones16](__m256i b, int i, int j, __m256i& sum) {
+                    int idx = j * 8 + i * nIn;
+                    __m256i a = _mm256_load_si256((const __m256i*)&weight(0, idx));
+                    __m256i d = _mm256_maddubs_epi16(b, a); // d[i]=a[2i]*b[2i]+a[2i+1]*b[2i+1], requires b>=0
+                    d = _mm256_madd_epi16(d, ones16);       // Pairwise sum of 16-bit values to 32-bit values
+                    sum = _mm256_add_epi32(sum, d);         // Accumulate 8 sums
+                };
+                __m256i b = _mm256_set1_epi32(*(int*)&in(j+4*0));
+                f(b, i+8*0, j+4*0, sum1);
+                f(b, i+8*1, j+4*0, sum2);
+                f(b, i+8*2, j+4*0, sum3);
+                f(b, i+8*3, j+4*0, sum4);
+                b = _mm256_set1_epi32(*(int*)&in(j+4*1));
+                f(b, i+8*0, j+4*1, sum1);
+                f(b, i+8*1, j+4*1, sum2);
+                f(b, i+8*2, j+4*1, sum3);
+                f(b, i+8*3, j+4*1, sum4);
+            }
+            _mm256_storeu_si256((__m256i*)&result(i+8*0), sum1);
+            _mm256_storeu_si256((__m256i*)&result(i+8*1), sum2);
+            _mm256_storeu_si256((__m256i*)&result(i+8*2), sum3);
+            _mm256_storeu_si256((__m256i*)&result(i+8*3), sum4);
+        }
+        return;
+    }
     if (nIn % 32 == 0) {
-        // Note that this only works because all elements in "in" are non-negative
         __m256i ones16 = _mm256_set_epi16(1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1);
         for (int i = 0; i < nOut; i++) {
             __m256i sum = _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, 0);
@@ -104,8 +181,40 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
     }
 #endif
 #ifdef HAS_SSSE3
+    if ((nIn % 8 == 0) && (nOut % 16) == 0) {
+        __m128i ones16 = _mm_set_epi16(1,1,1,1,1,1,1,1);
+        for (int i = 0; i < nOut; i += 16) {
+            __m128i sum1 = _mm_loadu_si128((const __m128i*)&result(i+4*0));
+            __m128i sum2 = _mm_loadu_si128((const __m128i*)&result(i+4*1));
+            __m128i sum3 = _mm_loadu_si128((const __m128i*)&result(i+4*2));
+            __m128i sum4 = _mm_loadu_si128((const __m128i*)&result(i+4*3));
+            for (int j = 0; j < nIn; j += 8) {
+                auto f = [&weight,&ones16](__m128i b, int i, int j, __m128i& sum) {
+                    int idx = j * 4 + i * nIn;
+                    __m128i a = _mm_load_si128((const __m128i*)&weight(0, idx));
+                    __m128i d = _mm_maddubs_epi16(b, a); // d[i]=a[2i]*b[2i]+a[2i+1]*b[2i+1], requires b>=0
+                    d = _mm_madd_epi16(d, ones16);       // Pairwise sum of 16-bit values to 32-bit values
+                    sum = _mm_add_epi32(sum, d);         // Accumulate 4 sums
+                };
+                __m128i b = _mm_set1_epi32(*(int*)&in(j+4*0));
+                f(b, i+4*0, j+4*0, sum1);
+                f(b, i+4*1, j+4*0, sum2);
+                f(b, i+4*2, j+4*0, sum3);
+                f(b, i+4*3, j+4*0, sum4);
+                b = _mm_set1_epi32(*(int*)&in(j+4*1));
+                f(b, i+4*0, j+4*1, sum1);
+                f(b, i+4*1, j+4*1, sum2);
+                f(b, i+4*2, j+4*1, sum3);
+                f(b, i+4*3, j+4*1, sum4);
+            }
+            _mm_storeu_si128((__m128i*)&result(i+4*0), sum1);
+            _mm_storeu_si128((__m128i*)&result(i+4*1), sum2);
+            _mm_storeu_si128((__m128i*)&result(i+4*2), sum3);
+            _mm_storeu_si128((__m128i*)&result(i+4*3), sum4);
+        }
+        return;
+    }
     if (nIn % 16 == 0) {
-        // Note that this only works because all elements in "in" are non-negative
         __m128i ones16 = _mm_set_epi16(1,1,1,1,1,1,1,1);
         for (int i = 0; i < nOut; i++) {
             __m128i sum = _mm_set_epi32(0, 0, 0, 0);
@@ -122,6 +231,36 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
     }
 #endif
 #ifdef HAS_NEON_DOT
+    if ((nIn % 8 == 0) && (nOut % 16) == 0) {
+        for (int i = 0; i < nOut; i += 16) {
+            int32x4_t sum1 = vld1q_s32((const int32_t*)&result(i+4*0));
+            int32x4_t sum2 = vld1q_s32((const int32_t*)&result(i+4*1));
+            int32x4_t sum3 = vld1q_s32((const int32_t*)&result(i+4*2));
+            int32x4_t sum4 = vld1q_s32((const int32_t*)&result(i+4*3));
+            for (int j = 0; j < nIn; j += 8) {
+                auto f = [&weight](int8x16_t b, int i, int j, int32x4_t& sum) {
+                    int idx = j * 4 + i * nIn;
+                    int8x16_t w = vld1q_s8((const int8_t*)&weight(0, idx));
+                    sum = vdotq_s32(sum, w, b);
+                };
+                int8x16_t b = vreinterpretq_s8_s32(vdupq_n_s32(*(int32_t*)&in(j+4*0)));
+                f(b, i+4*0, j+4*0, sum1);
+                f(b, i+4*1, j+4*0, sum2);
+                f(b, i+4*2, j+4*0, sum3);
+                f(b, i+4*3, j+4*0, sum4);
+                b = vreinterpretq_s8_s32(vdupq_n_s32(*(int32_t*)&in(j+4*1)));
+                f(b, i+4*0, j+4*1, sum1);
+                f(b, i+4*1, j+4*1, sum2);
+                f(b, i+4*2, j+4*1, sum3);
+                f(b, i+4*3, j+4*1, sum4);
+            }
+            vst1q_s32((int32_t*)&result(i+4*0), sum1);
+            vst1q_s32((int32_t*)&result(i+4*1), sum2);
+            vst1q_s32((int32_t*)&result(i+4*2), sum3);
+            vst1q_s32((int32_t*)&result(i+4*3), sum4);
+        }
+        return;
+    }
     if (nIn % 16 == 0) {
         if (nOut % 2 != 0) {
             for (int i = 0; i < nOut; i++) {
