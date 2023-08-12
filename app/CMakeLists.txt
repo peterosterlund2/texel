@@ -1,6 +1,7 @@
 add_subdirectory(texel)
 add_subdirectory(texelutil)
 add_subdirectory(uciadapter)
+add_subdirectory(syncengine)
 add_subdirectory(bookgui)
 add_subdirectory(runcmd)
 add_subdirectory(torchutil)
