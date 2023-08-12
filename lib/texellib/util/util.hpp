@@ -73,13 +73,9 @@ public:
 };
 
 template <typename T>
-T clamp(T val, T min, T max) {
-    if (val < min)
-        return min;
-    else if (val > max)
-        return max;
-    else
-        return val;
+inline T
+clamp(T val, T min, T max) {
+    return std::min(std::max(val, min), max);
 }
 
 // ----------------------------------------------------------------------------

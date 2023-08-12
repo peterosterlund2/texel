@@ -118,6 +118,7 @@ if(USE_SSSE3)
 endif()
 if(USE_AVX2)
   add_compiler_flag_if_supported("-mavx2")
+  add_compiler_flag_if_supported("/arch:AVX2")
 endif()
 
 # Set Windows target version
