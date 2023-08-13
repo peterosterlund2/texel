@@ -126,7 +126,11 @@ const int inFeats3 =         10;
 const int inFeatures = inFeats1 + inFeats2 + inFeats3;
 using Record = NNUtil::Record;
 
-void
+/** Compute feature indices for a king+piece combination.
+ * idx1 is computed from kIdx, pieceType and sq.
+ * idx2 is computed from pieceType and sq. Corresponds to piece square tables.
+ * idx3 is computed from pieceType. Corresponds to piece values. */
+static void
 toIndex(int kIdx, int pieceType, int sq,
         int& idx1, int& idx2, int& idx3) {
     idx1 = (kIdx * 10 + pieceType) * 64 + sq;
@@ -134,7 +138,9 @@ toIndex(int kIdx, int pieceType, int sq,
     idx3 = inFeats1 + inFeats2 + pieceType;
 }
 
-void
+/** Given a position, compute which features it activates for both white and
+ *  black side. */
+static void
 toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) {
     int pieceType = 0;
 #if USE_CASTLING
@@ -178,8 +184,13 @@ toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) 
     }
 }
 
+/** Get a batch of training data from ds[beg:end].
+ * @param inW, inB: Shape (batchSize, inFeatures). The sparse binary inputs for
+ *                  white/black corresponding to the training positions.
+ * @param out:      Shape (batchSize, 1). The corresponding desired outputs
+ *                  (position evaluation score). */
 template <typename DataSet>
-void
+static void
 getData(DataSet& ds, size_t beg, size_t end,
         torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out) {
     int batchSize = end - beg;
@@ -210,11 +221,14 @@ getData(DataSet& ds, size_t beg, size_t end,
 
 // ------------------------------------------------------------------------------
 
+/** A data set that reads the data records from a file. */
 class DataSet {
 public:
     DataSet(const std::string& filename);
 
+    /** Get number of records in the data set. */
     S64 getSize() const;
+    /** Get the idx:th record in the data set. */
     void getItem(S64 idx, Record& r);
 
 private:
@@ -244,6 +258,7 @@ DataSet::getItem(S64 idx, Record& r) {
 
 // ------------------------------------------------------------------------------
 
+/** A randomly shuffled version of the base data set. */
 template <typename Base>
 class ShuffledDataSet {
 public:
@@ -276,6 +291,7 @@ ShuffledDataSet<Base>::getItem(S64 idx, Record& r) {
 
 // ------------------------------------------------------------------------------
 
+/** A subset of the base data set. */
 template <typename Base>
 class SubDataSet {
 public:
@@ -309,7 +325,8 @@ SubDataSet<Base>::getItem(S64 idx, Record& r) {
 
 // ------------------------------------------------------------------------------
 
-void
+/** Extract a random sample of nPos records from "inFile", write to "outFile". */
+static void
 extractSubset(const std::string& inFile, S64 nPos, const std::string& outFile) {
     DataSet allData(inFile);
     ShuffledDataSet<DataSet> shuffled(allData, 17);
@@ -327,6 +344,7 @@ extractSubset(const std::string& inFile, S64 nPos, const std::string& outFile) {
 
 // ------------------------------------------------------------------------------
 
+/** A PyTorch net that will be used as evaluation function after quantization. */
 class Net : public torch::nn::Module {
 public:
     Net();
@@ -427,7 +445,9 @@ Net::printWeights(int epoch) const {
     printLin(lin4, "lin4");
 }
 
-std::vector<float> toVec(torch::Tensor x) {
+/** Convert a 1D or 2D tensor to a 1D vector, using row-major order for a 2D tensor. */
+static std::vector<float>
+toVec(torch::Tensor x) {
     if (x.dim() == 1)
         x = x.reshape({x.size(0), 1});
     const int M = x.size(0);
@@ -440,8 +460,11 @@ std::vector<float> toVec(torch::Tensor x) {
     return ret;
 }
 
+/** Compute out[i] = in[i] * scaleFactor + offs, clamped to the range of T. */
 template <typename T>
-void scaleCopy(const std::vector<float>& in, int nElem, T* out, int scaleFactor, int offs) {
+static void
+scaleCopy(const std::vector<float>& in, T* out, int scaleFactor, int offs) {
+    int nElem = in.size();
     long minVal = std::numeric_limits<T>::min();
     long maxVal = std::numeric_limits<T>::max();
     for (int i = 0; i < nElem; i++) {
@@ -470,29 +493,60 @@ Net::quantize(NetData& qNet) const {
     }
 
     std::vector<float> data = toVec(lin1W);
-    scaleCopy(data, inFeats1*n1, &qNet.weight1.data[0], 4*127, 0);
+    scaleCopy(data, &qNet.weight1.data[0], 4*127, 0);
     data = toVec(lin1B);
-    scaleCopy(data, n1, &qNet.bias1.data[0], 4*127, 2);
+    scaleCopy(data, &qNet.bias1.data[0], 4*127, 2);
 
     data = toVec(lin2->weight);
-    scaleCopy(data, n1*2*n2, &qNet.lin2.weight.data[0], 64, 0);
+    scaleCopy(data, &qNet.lin2.weight.data[0], 64, 0);
     data = toVec(lin2->bias);
-    scaleCopy(data, n2, &qNet.lin2.bias.data[0], 64*127, 32);
+    scaleCopy(data, &qNet.lin2.bias.data[0], 64*127, 32);
 
     data = toVec(lin3->weight);
-    scaleCopy(data, n2*n3, &qNet.lin3.weight.data[0], 64, 0);
+    scaleCopy(data, &qNet.lin3.weight.data[0], 64, 0);
     data = toVec(lin3->bias);
-    scaleCopy(data, n3, &qNet.lin3.bias.data[0], 64*127, 32);
+    scaleCopy(data, &qNet.lin3.bias.data[0], 64*127, 32);
 
     data = toVec(lin4->weight);
-    scaleCopy(data, n3*1, &qNet.lin4.weight.data[0], 64, 0);
+    scaleCopy(data, &qNet.lin4.weight.data[0], 64, 0);
     data = toVec(lin4->bias);
-    scaleCopy(data, 1, &qNet.lin4.bias.data[0], 64*127, 32);
+    scaleCopy(data, &qNet.lin4.bias.data[0], 64*127, 32);
 }
 
 // ------------------------------------------------------------------------------
 
-void
+/** Splits a data set in a training part and a validation part. */
+class SplitData {
+public:
+    using ShuffledSet = ShuffledDataSet<DataSet>;
+    using SubSet = SubDataSet<ShuffledSet>;
+
+    /** Constructor. */
+    SplitData(DataSet& allData)
+        : nData(allData.getSize()),
+          nTrain(nData * 9 / 10),
+          seed0(0),
+          allShuffled(allData, seed0),
+          trainData(allShuffled, 0, nTrain),
+          validateData(allShuffled, nTrain, nData) {
+    }
+
+    /** Get training data. */
+    SubSet& getTrainData() { return trainData; }
+    /** Get validation data. */
+    SubSet& getValidateData() { return validateData; }
+
+private:
+    const size_t nData;
+    const size_t nTrain;
+    const U64 seed0;
+    ShuffledSet allShuffled;
+    SubSet trainData;
+    SubSet validateData;
+};
+
+/** Set learning rate for an optimizer. */
+static void
 setLR(torch::optim::Optimizer& opt, double lr) {
     for (auto& group : opt.param_groups()) {
         if (group.has_options()) {
@@ -502,13 +556,17 @@ setLR(torch::optim::Optimizer& opt, double lr) {
     }
 }
 
+/** Convert a decimal score (1.0 = 1 pawn) to an expected score in the [0,1] range. */
 template <typename T>
-T
+static T
 toProb(T score) {
-    return 1 / (1 + pow(10, score * (-113.0 / 400)));
+    double k = -113.0 / 400 * log(10);
+    return 1 / (1 + exp(score * k));
 }
 
-void
+/** Train a network using training data from "inFile". After each training epoch,
+ *  the current net is saved in PyTorch format in the file modelNN.pt. */
+static void
 train(const std::string& inFile, U64 seed) {
     auto dev = torch::kCUDA;
     const double t0 = currentTime();
@@ -524,21 +582,18 @@ train(const std::string& inFile, U64 seed) {
     std::cout << "Number of parameters: " << nPars << std::endl;
 
     DataSet allData(inFile);
+    SplitData split(allData);
+    auto& trainData = split.getTrainData();
+    auto& validateData = split.getValidateData();
+    using SubSet = SplitData::SubSet;
+
     const size_t nData = allData.getSize();
-    const size_t nTrain = nData * 9 / 10;
-    const size_t nValidate = nData - nTrain;
+    const size_t nTrain = trainData.getSize();
+    const size_t nValidate = validateData.getSize();
     const int batchSize = 16*1024;
     std::cout << "nData    : " << nData << std::endl;
     std::cout << "nTrain   : " << nTrain << " (" << (nTrain / batchSize) << " batches)" << std::endl;
     std::cout << "nValidate: " << nValidate << " (" << (nValidate / batchSize) << " batches)" << std::endl;
-
-    U64 seed0 = 0;
-    using ShuffledSet = ShuffledDataSet<DataSet>;
-    ShuffledSet allShuffled(allData, seed0);
-
-    using SubSet = SubDataSet<ShuffledSet>;
-    SubSet trainData(allShuffled, 0, nTrain);
-    SubSet validateData(allShuffled, nTrain, nData);
 
     double lr = 1e-3;
     auto opts = torch::optim::AdamOptions(lr).weight_decay(1e-6);
@@ -619,7 +674,9 @@ train(const std::string& inFile, U64 seed) {
 
 // ------------------------------------------------------------------------------
 
-void
+/** Convert a serialized floating point network of type Net in "inFile" to a
+ *  quantized integer network of type NetData written to "outFile". */
+static void
 quantize(const std::string& inFile, const std::string& outFile) {
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
@@ -671,19 +728,14 @@ quantize(const std::string& inFile, const std::string& outFile) {
 
 // ------------------------------------------------------------------------------
 
-void
+/** If "inFile" were to be used to train a network, some of the training data
+ *  would be set aside for validation. This function writes that validation data
+ *  to "os". */
+static void
 writeValidationData(const std::string& inFile, std::ostream& os) {
     DataSet allData(inFile);
-    const size_t nData = allData.getSize();
-    const size_t nTrain = nData * 9 / 10;
-
-    U64 seed0 = 0;
-    using ShuffledSet = ShuffledDataSet<DataSet>;
-    ShuffledSet allShuffled(allData, seed0);
-
-    using SubSet = SubDataSet<ShuffledSet>;
-    SubSet validateData(allShuffled, nTrain, nData);
-
+    SplitData split(allData);
+    auto& validateData = split.getValidateData();
     const size_t nValidate = validateData.getSize();
     Record r;
     Position pos;
@@ -697,7 +749,11 @@ writeValidationData(const std::string& inFile, std::ostream& os) {
 
 // ------------------------------------------------------------------------------
 
-void
+/** Evaluate one or more chess positions using both a floating point network
+ *  (read from "modelFile") and a corresponding quantized network.
+ *  If "fen" is "-", read a sequence of positions in fen format from standard
+ *  input, otherwise evaluate the position given by "fen". */
+static void
 eval(const std::string& modelFile, const std::string& fen) {
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
@@ -763,7 +819,9 @@ eval(const std::string& modelFile, const std::string& fen) {
 
 // ------------------------------------------------------------------------------
 
-void
+/** Given training data in "inFile", for each input feature, calculate how many
+ *  data points activates it. Print result to standard output. */
+static void
 featureStats(const std::string& inFile) {
     DataSet allData(inFile);
     const size_t nData = allData.getSize();
@@ -832,7 +890,8 @@ featureStats(const std::string& inFile) {
 
 // ------------------------------------------------------------------------------
 
-void
+/** Print usage information to standard error and exit program. */
+static void
 usage() {
     std::cerr << "Usage: torchutil cmd params\n";
     std::cerr << "cmd is one of:\n";
@@ -847,7 +906,8 @@ usage() {
     ::exit(2);
 }
 
-int main(int argc, const char* argv[]) {
+int
+main(int argc, const char* argv[]) {
     try {
         if (argc < 2)
             usage();
