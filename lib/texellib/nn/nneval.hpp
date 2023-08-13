@@ -88,9 +88,9 @@ private:
 
     Vector<S8, 2*n1> l1OutClipped; // l1Out after scaling, clipped ReLU and narrowing, reordered by wtm
 
-    using Layer2 = Layer<n1*2, n2>;
-    using Layer3 = Layer<n2  , n3>;
-    using Layer4 = Layer<n3  , 1 >;
+    using Layer2 = Layer<n1*2, n2, true >;
+    using Layer3 = Layer<n2  , n3, false>;
+    using Layer4 = Layer<n3  , 1 , false>;
 
     Layer2::Output layer2Out;
     Layer3::Output layer3Out;

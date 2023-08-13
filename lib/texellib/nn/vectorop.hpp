@@ -128,7 +128,7 @@ prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
 
 /** Compute result += weight * in, where "*" is matrix multiplication.
  * Note that the AVX2/SSSE3 implementations assume all elements in "in" are >= 0. */
-template <int nIn, int nOut>
+template <bool sparse, int nIn, int nOut>
 inline void
 matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector<S8,nIn>& in) {
 #ifdef HAS_AVX2
@@ -140,6 +140,8 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
             __m256i sum3 = _mm256_load_si256((const __m256i*)&result(i+8*2));
             __m256i sum4 = _mm256_load_si256((const __m256i*)&result(i+8*3));
             for (int j = 0; j < nIn; j += 8) {
+                if (sparse && *(U64*)&in(j) == 0)
+                    continue;
                 auto f = [&weight,&ones16](__m256i b, int i, int j, __m256i& sum) {
                     int idx = j * 8 + i * nIn;
                     __m256i a = _mm256_load_si256((const __m256i*)&weight(0, idx));
@@ -190,6 +192,8 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
             __m128i sum3 = _mm_load_si128((const __m128i*)&result(i+4*2));
             __m128i sum4 = _mm_load_si128((const __m128i*)&result(i+4*3));
             for (int j = 0; j < nIn; j += 8) {
+//                if (sparse && *(U64*)&in(j) == 0)
+//                    continue;
                 auto f = [&weight,&ones16](__m128i b, int i, int j, __m128i& sum) {
                     int idx = j * 4 + i * nIn;
                     __m128i a = _mm_load_si128((const __m128i*)&weight(0, idx));
@@ -239,6 +243,8 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
             int32x4_t sum3 = vld1q_s32((const int32_t*)&result(i+4*2));
             int32x4_t sum4 = vld1q_s32((const int32_t*)&result(i+4*3));
             for (int j = 0; j < nIn; j += 8) {
+                if (sparse && *(U64*)&in(j) == 0)
+                    continue;
                 auto f = [&weight](int8x16_t b, int i, int j, int32x4_t& sum) {
                     int idx = j * 4 + i * nIn;
                     int8x16_t w = vld1q_s8((const int8_t*)&weight(0, idx));
@@ -351,19 +357,19 @@ copyVec(Vector<T,nEnts>& dst, const Vector<T,nEnts>& src) {
 
 // ------------------------------------------------------------------------------
 
-template <int nIn, int nOut>
+template <int nIn, int nOut, bool sparse>
 inline void
-Layer<nIn,nOut>::forward(const Vector<S8,nIn>& in, Output& out) {
+Layer<nIn,nOut,sparse>::forward(const Vector<S8,nIn>& in, Output& out) {
     evalLinear(in, out);
     for (int i = 0; i < nOut; i++)
         out.output(i) = static_cast<S8>(clamp(out.linOutput(i) >> 6, 0, 127));
 }
 
-template <int nIn, int nOut>
+template <int nIn, int nOut, bool sparse>
 inline void
-Layer<nIn,nOut>::evalLinear(const Vector<S8,nIn>& in, Output& out) {
+Layer<nIn,nOut,sparse>::evalLinear(const Vector<S8,nIn>& in, Output& out) {
     copyVec(out.linOutput, data.bias);
-    matMul(out.linOutput, data.weight, in);
+    matMul<sparse>(out.linOutput, data.weight, in);
 }
 
 // ------------------------------------------------------------------------------

@@ -127,7 +127,7 @@ LayerData<nIn,nOut>::computeSize() const {
 
 // ------------------------------------------------------------------------------
 
-template <int nIn, int nOut>
+template <int nIn, int nOut, bool sparse>
 class Layer {
 public:
     Layer(const LayerData<nIn,nOut>& data) : data(data) {}
