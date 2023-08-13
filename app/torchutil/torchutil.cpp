@@ -728,6 +728,34 @@ quantize(const std::string& inFile, const std::string& outFile) {
 
 // ------------------------------------------------------------------------------
 
+static void writeFEN(std::ostream& os, const std::string& fen,
+                     double result, int searchScore, int qScore, int gameNo,
+                     const std::string& extra = "") {
+    os << fen << " : "
+       << result << " : "
+       << searchScore << " : "
+       << qScore << " : "
+       << gameNo;
+    if (!extra.empty())
+        os << " : " << extra;
+    os << '\n';
+}
+
+/** Write data set to "os" in FEN format. */
+template <typename DataSet>
+void
+writeDataSetFen(DataSet& ds, std::ostream& os) {
+    const size_t n = ds.getSize();
+    Record r;
+    Position pos;
+    for (size_t i = 0; i < n; i++) {
+        ds.getItem(i, r);
+        int score;
+        NNUtil::recordToPos(r, pos, score);
+        writeFEN(os, TextIO::toFEN(pos), -1, score, -1, -1);
+    }
+}
+
 /** If "inFile" were to be used to train a network, some of the training data
  *  would be set aside for validation. This function writes that validation data
  *  to "os". */
@@ -736,15 +764,14 @@ writeValidationData(const std::string& inFile, std::ostream& os) {
     DataSet allData(inFile);
     SplitData split(allData);
     auto& validateData = split.getValidateData();
-    const size_t nValidate = validateData.getSize();
-    Record r;
-    Position pos;
-    for (size_t i = 0; i < nValidate; i++) {
-        validateData.getItem(i, r);
-        int score;
-        NNUtil::recordToPos(r, pos, score);
-        os << TextIO::toFEN(pos) << " : " << score << std::endl;
-    }
+    writeDataSetFen(validateData, os);
+}
+
+/** Convert a data set binary file "inFile" to FEN format written to "os". */
+static void
+bin2Fen(const std::string& inFile, std::ostream& os) {
+    DataSet allData(inFile);
+    writeDataSetFen(allData, os);
 }
 
 // ------------------------------------------------------------------------------
@@ -899,7 +926,8 @@ usage() {
     std::cerr << " quant infile outfile : Quantize infile, write result to outfile\n";
     std::cerr << " eval modelfile fen   : Evaluate position using a saved network\n";
     std::cerr << " subset infile nPos outfile : Extract positions from infile, write to outfile\n";
-    std::cerr << " getvalidation infile : Extract validation data, write in FEN format\n";
+    std::cerr << " bin2fen infile       : Read binary data, write in FEN format to stdout\n";
+    std::cerr << " getvalidation infile : Extract validation data, write in FEN format to stdout\n";
     std::cerr << " featstat infile      : Print feature activation stats from training data\n";
 
     std::cerr << std::flush;
@@ -940,6 +968,11 @@ main(int argc, const char* argv[]) {
                 usage();
             std::string outFile = argv[4];
             extractSubset(inFile, nPos, outFile);
+        } else if (cmd == "bin2fen") {
+            if (argc != 3)
+                usage();
+            std::string inFile = argv[2];
+            bin2Fen(inFile, std::cout);
         } else if (cmd == "getvalidation") {
             if (argc != 3)
                 usage();
