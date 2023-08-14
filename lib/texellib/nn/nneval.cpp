@@ -187,9 +187,7 @@ NNEvaluator::computeL1Out() {
     bool wtm = posP->isWhiteMove();
     for (int c = 0; c < 2; c++) {
         const Vector<S16, n1>& l1OutC = linState[wtm ? c : (1-c)].l1Out;
-        int i0 = c * n1;
-        for (int i = 0; i < n1; i++)
-            l1OutClipped(i0 + i) = clamp(l1OutC(i) >> 2, 0, 127);
+        scaleClipPack(&l1OutClipped(c * n1), l1OutC);
     }
 }
 

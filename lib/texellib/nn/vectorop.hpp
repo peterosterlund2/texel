@@ -493,4 +493,80 @@ addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1
     }
 }
 
+// ------------------------------------------------------------------------------
+
+template <int n1>
+inline void
+scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
+#ifdef HAS_AVX2
+    if (n1 % 128 == 0) {
+        __m256i zero = _mm256_set1_epi8(0);
+        __m256i idx = _mm256_set_epi32(7, 6, 3, 2, 5, 4, 1, 0);
+        for (int i = 0; i < n1; i += 128) {
+            auto f = [&](int i) {
+                __m256i a = _mm256_loadu_si256((const __m256i*)&l1OutC(i));
+                __m256i b = _mm256_loadu_si256((const __m256i*)&l1OutC(i+16));
+                a = _mm256_srai_epi16(a, 2);
+                b = _mm256_srai_epi16(b, 2);
+                __m256i r = _mm256_packs_epi16(a, b);   // a0 a1 b0 b1 a2 a3 b2 b3
+                r = _mm256_max_epi8(r, zero);
+                r = _mm256_permutevar8x32_epi32(r, idx);
+                _mm256_storeu_si256((__m256i*)&out[i], r);
+            };
+            f(i+32*0);
+            f(i+32*1);
+            f(i+32*2);
+            f(i+32*3);
+        }
+        return;
+    }
+#endif
+#ifdef HAS_SSSE3
+    if (n1 % 64 == 0) {
+        __m128i zero = _mm_set1_epi8(0);
+        for (int i = 0; i < n1; i += 64) {
+            auto f = [&](int i) {
+                __m128i a = _mm_loadu_si128((const __m128i*)&l1OutC(i));
+                __m128i b = _mm_loadu_si128((const __m128i*)&l1OutC(i+8));
+                a = _mm_srai_epi16(a, 2);
+                b = _mm_srai_epi16(b, 2);
+                __m128i r = _mm_packs_epi16(a, b);
+                r = _mm_max_epi8(r, zero);
+                _mm_storeu_si128((__m128i*)&out[i], r);
+            };
+            f(i+16*0);
+            f(i+16*1);
+            f(i+16*2);
+            f(i+16*3);
+        }
+        return;
+    }
+#endif
+#if defined(HAS_NEON) || defined(HAS_NEON_DOT)
+    if (n1 % 64 == 0) {
+        int8x16_t zero = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
+        for (int i = 0; i < n1; i += 64) {
+            auto f = [&](int i) {
+                int16x8_t a = vld1q_s16((const int16_t*)&l1OutC(i));
+                int16x8_t b = vld1q_s16((const int16_t*)&l1OutC(i+8));
+                int8x8_t a2 = vqshrn_n_s16(a, 2);
+                int8x8_t b2 = vqshrn_n_s16(b, 2);
+                int8x16_t r = vcombine_s8(a2, b2);
+                r = vmaxq_s8(r, zero);
+                vst1q_s8((int8_t*)&out[i], r);
+            };
+            f(i+16*0);
+            f(i+16*1);
+            f(i+16*2);
+            f(i+16*3);
+        }
+        return;
+    }
+#endif
+
+    // Generic fallback
+    for (int i = 0; i < n1; i++)
+        out[i] = clamp(l1OutC(i) >> 2, 0, 127);
+}
+
 #endif /* VECTOROP_HPP_ */

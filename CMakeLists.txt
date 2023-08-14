@@ -115,6 +115,7 @@ endif()
 
 if(USE_SSSE3)
   add_compiler_flag_if_supported("-mssse3")
+  add_compiler_flag_if_supported("-msse4.1")
 endif()
 if(USE_AVX2)
   add_compiler_flag_if_supported("-mavx2")
