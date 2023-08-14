@@ -83,7 +83,7 @@ neon_hadd_32(int32x4_t sum) {
 
 /** Rearrange data in "weight" to be compatible with assumptions in matMul(). */
 template <int nIn, int nOut>
-inline void
+void
 prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
 #ifdef HAS_AVX2
     if ((nIn % 8 == 0) && (nOut % 32) == 0) {
