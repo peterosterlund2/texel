@@ -523,15 +523,16 @@ scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
 #endif
 #ifdef HAS_SSSE3
     if (n1 % 64 == 0) {
-        __m128i zero = _mm_set1_epi8(0);
+        __m128i zero = _mm_set1_epi16(0);
         for (int i = 0; i < n1; i += 64) {
             auto f = [&](int i) {
                 __m128i a = _mm_loadu_si128((const __m128i*)&l1OutC(i));
                 __m128i b = _mm_loadu_si128((const __m128i*)&l1OutC(i+8));
                 a = _mm_srai_epi16(a, 2);
                 b = _mm_srai_epi16(b, 2);
+                a = _mm_max_epi16(a, zero);
+                b = _mm_max_epi16(b, zero);
                 __m128i r = _mm_packs_epi16(a, b);
-                r = _mm_max_epi8(r, zero);
                 _mm_storeu_si128((__m128i*)&out[i], r);
             };
             f(i+16*0);
