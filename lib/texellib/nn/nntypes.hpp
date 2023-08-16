@@ -132,14 +132,17 @@ class Layer {
 public:
     Layer(const LayerData<nIn,nOut>& data) : data(data) {}
 
+    struct Output {
+        Vector<S32,nOut> linOutput;  // Result after applying weight and bias
+        Vector<S8,nOut> output;      // Result after scaling, clipped ReLU and narrowing
+    };
+
     /** Compute output from input. */
-    void forward(const Vector<S8,nIn>& in);
+    void forward(const Vector<S8,nIn>& in, Output& out);
     /** Compute linOutput from input. */
-    void evalLinear(const Vector<S8,nIn>& in);
+    void evalLinear(const Vector<S8,nIn>& in, Output& out);
 
     const LayerData<nIn,nOut>& data;
-    Vector<S32,nOut> linOutput;  // Result after applying weight and bias
-    Vector<S8,nOut> output;      // Result after scaling, clipped ReLU and narrowing
 };
 
 // ------------------------------------------------------------------------------
@@ -147,7 +150,8 @@ public:
 /** Holds all neural network data required for position evaluation. */
 class NetData {
 public:
-    /** Create an instance. This object is very large so allocating it on the stack is not supported. */
+    /** Create an instance. This object is very large and needs special alignment,
+     *  so allocating it on the stack is not supported. */
     static std::shared_ptr<NetData> create();
 
     static constexpr int inFeatures = 32 * 10 * 64;

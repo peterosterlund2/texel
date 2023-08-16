@@ -51,7 +51,7 @@ Evaluate::Evaluate(EvalHashTables& et)
       materialHash(et.materialHash),
       mhd(nullptr),
       evalHash(et.evalHash),
-      nnEval(et.nnEval),
+      nnEval(*et.nnEval),
       whiteContempt(0) {
 }
 
@@ -269,10 +269,10 @@ Evaluate::getEvalHashTables() {
     return make_unique<EvalHashTables>();
 }
 
-Evaluate::EvalHashTables::EvalHashTables()
-    : nnEval(initNetData()) {
+Evaluate::EvalHashTables::EvalHashTables() {
     pawnHash.resize(1 << 16);
     materialHash.resize(1 << 14);
+    nnEval = NNEvaluator::create(initNetData());
 }
 
 const NetData&

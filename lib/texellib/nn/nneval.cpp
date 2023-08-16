@@ -47,11 +47,21 @@ NNEvaluator::staticInitialize() {
 }
 
 
+std::shared_ptr<NNEvaluator>
+NNEvaluator::create(const NetData& netData) {
+    NNEvaluator* mem = AlignedAllocator<NNEvaluator>().allocate(1);
+    return std::shared_ptr<NNEvaluator>(new (mem) NNEvaluator(netData),
+                                        [](NNEvaluator* p) {
+        AlignedAllocator<NNEvaluator>().deallocate(p, 1);
+    });
+}
+
 NNEvaluator::NNEvaluator(const NetData& netData)
-    : lin2(netData.lin2),
-      lin3(netData.lin3),
-      lin4(netData.lin4),
+    : layer2(netData.lin2),
+      layer3(netData.lin3),
+      layer4(netData.lin4),
       netData(netData) {
+    static_assert(sizeof(FirstLayerState) % 32 == 0, "Bad alignment");
 }
 
 void
@@ -196,9 +206,9 @@ NNEvaluator::eval() {
     computeL1WB();
     computeL1Out();
 
-    lin2.forward(l1OutClipped);
-    lin3.forward(lin2.output);
-    lin4.evalLinear(lin3.output);
+    layer2.forward(l1OutClipped, layer2Out);
+    layer3.forward(layer2Out.output, layer3Out);
+    layer4.evalLinear(layer3Out.output, layer4Out);
 
-    return lin4.linOutput(0) * 100 / (127 * 64);
+    return layer4Out.linOutput(0) * 100 / (127 * 64);
 }

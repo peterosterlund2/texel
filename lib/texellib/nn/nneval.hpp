@@ -37,8 +37,9 @@ class NNTest;
 class NNEvaluator {
     friend class NNTest;
 public:
-    /** Constructor. */
-    explicit NNEvaluator(const NetData& netData);
+    /** Create an instance. This object needs special alignment,
+     *  so allocating it on the stack is not supported. */
+    static std::shared_ptr<NNEvaluator> create(const NetData& netData);
 
     /** Set position object used for non-incremental evaluation. */
     void connectPosition(const Position& pos);
@@ -59,6 +60,9 @@ public:
     static void staticInitialize();
 
 private:
+    /** Constructor. */
+    explicit NNEvaluator(const NetData& netData);
+
     void computeL1WB();
     void computeL1Out();
 
@@ -75,14 +79,23 @@ private:
         int toAddLen = 0;        // Number of entries in toAdd
         int toSubLen = 0;        // Number of entries in toSub
         int kingSqComputed = -1; // King square corresponding to l1Out, or -1 if l1Out not valid
+        int pad[5];              // To make size a multiple of 32 bytes
     };
     FirstLayerState linState[2];
 
     Vector<S8, 2*n1> l1OutClipped; // l1Out after scaling, clipped ReLU and narrowing, reordered by wtm
 
-    Layer<n1*2, n2> lin2;
-    Layer<n2  , n3> lin3;
-    Layer<n3  , 1 > lin4;
+    using Layer2 = Layer<n1*2, n2>;
+    using Layer3 = Layer<n2  , n3>;
+    using Layer4 = Layer<n3  , 1 >;
+
+    Layer2::Output layer2Out;
+    Layer3::Output layer3Out;
+    Layer4::Output layer4Out;
+
+    Layer2 layer2;
+    Layer3 layer3;
+    Layer4 layer4;
 
     const Position* posP = nullptr; // Connected Position object
     const NetData& netData;         // Network weight/bias

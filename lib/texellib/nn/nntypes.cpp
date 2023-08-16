@@ -34,11 +34,10 @@ static const int netVersion = 0;
 
 std::shared_ptr<NetData>
 NetData::create() {
-    auto ret = std::shared_ptr<NetData>(new (AlignedAllocator<NetData>().allocate(1)) NetData,
-                                        [](NetData* p) {
-                                            AlignedAllocator<NetData>().deallocate(p, 1);
-                                        });
-    return ret;
+    return std::shared_ptr<NetData>(new (AlignedAllocator<NetData>().allocate(1)) NetData,
+                                    [](NetData* p) {
+        AlignedAllocator<NetData>().deallocate(p, 1);
+    });
 }
 
 void

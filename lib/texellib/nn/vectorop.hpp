@@ -134,10 +134,10 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
     if ((nIn % 8 == 0) && (nOut % 32) == 0) {
         __m256i ones16 = _mm256_set_epi16(1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1);
         for (int i = 0; i < nOut; i += 32) {
-            __m256i sum1 = _mm256_loadu_si256((const __m256i*)&result(i+8*0));
-            __m256i sum2 = _mm256_loadu_si256((const __m256i*)&result(i+8*1));
-            __m256i sum3 = _mm256_loadu_si256((const __m256i*)&result(i+8*2));
-            __m256i sum4 = _mm256_loadu_si256((const __m256i*)&result(i+8*3));
+            __m256i sum1 = _mm256_load_si256((const __m256i*)&result(i+8*0));
+            __m256i sum2 = _mm256_load_si256((const __m256i*)&result(i+8*1));
+            __m256i sum3 = _mm256_load_si256((const __m256i*)&result(i+8*2));
+            __m256i sum4 = _mm256_load_si256((const __m256i*)&result(i+8*3));
             for (int j = 0; j < nIn; j += 8) {
                 auto f = [&weight,&ones16](__m256i b, int i, int j, __m256i& sum) {
                     int idx = j * 8 + i * nIn;
@@ -157,10 +157,10 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 f(b, i+8*2, j+4*1, sum3);
                 f(b, i+8*3, j+4*1, sum4);
             }
-            _mm256_storeu_si256((__m256i*)&result(i+8*0), sum1);
-            _mm256_storeu_si256((__m256i*)&result(i+8*1), sum2);
-            _mm256_storeu_si256((__m256i*)&result(i+8*2), sum3);
-            _mm256_storeu_si256((__m256i*)&result(i+8*3), sum4);
+            _mm256_store_si256((__m256i*)&result(i+8*0), sum1);
+            _mm256_store_si256((__m256i*)&result(i+8*1), sum2);
+            _mm256_store_si256((__m256i*)&result(i+8*2), sum3);
+            _mm256_store_si256((__m256i*)&result(i+8*3), sum4);
         }
         return;
     }
@@ -170,7 +170,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
             __m256i sum = _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, 0);
             for (int j = 0; j < nIn; j += 32) {
                 __m256i a = _mm256_load_si256((const __m256i*)&weight(i,j));
-                __m256i b = _mm256_loadu_si256((const __m256i*)&in(j));
+                __m256i b = _mm256_load_si256((const __m256i*)&in(j));
                 __m256i d = _mm256_maddubs_epi16(b, a); // d[i]=a[2i]*b[2i]+a[2i+1]*b[2i+1], requires b>=0
                 d = _mm256_madd_epi16(d, ones16);       // Pairwise sum of 16-bit values to 32-bit values
                 sum = _mm256_add_epi32(sum, d);         // Accumulate 8 sums
@@ -184,10 +184,10 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
     if ((nIn % 8 == 0) && (nOut % 16) == 0) {
         __m128i ones16 = _mm_set_epi16(1,1,1,1,1,1,1,1);
         for (int i = 0; i < nOut; i += 16) {
-            __m128i sum1 = _mm_loadu_si128((const __m128i*)&result(i+4*0));
-            __m128i sum2 = _mm_loadu_si128((const __m128i*)&result(i+4*1));
-            __m128i sum3 = _mm_loadu_si128((const __m128i*)&result(i+4*2));
-            __m128i sum4 = _mm_loadu_si128((const __m128i*)&result(i+4*3));
+            __m128i sum1 = _mm_load_si128((const __m128i*)&result(i+4*0));
+            __m128i sum2 = _mm_load_si128((const __m128i*)&result(i+4*1));
+            __m128i sum3 = _mm_load_si128((const __m128i*)&result(i+4*2));
+            __m128i sum4 = _mm_load_si128((const __m128i*)&result(i+4*3));
             for (int j = 0; j < nIn; j += 8) {
                 auto f = [&weight,&ones16](__m128i b, int i, int j, __m128i& sum) {
                     int idx = j * 4 + i * nIn;
@@ -207,10 +207,10 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 f(b, i+4*2, j+4*1, sum3);
                 f(b, i+4*3, j+4*1, sum4);
             }
-            _mm_storeu_si128((__m128i*)&result(i+4*0), sum1);
-            _mm_storeu_si128((__m128i*)&result(i+4*1), sum2);
-            _mm_storeu_si128((__m128i*)&result(i+4*2), sum3);
-            _mm_storeu_si128((__m128i*)&result(i+4*3), sum4);
+            _mm_store_si128((__m128i*)&result(i+4*0), sum1);
+            _mm_store_si128((__m128i*)&result(i+4*1), sum2);
+            _mm_store_si128((__m128i*)&result(i+4*2), sum3);
+            _mm_store_si128((__m128i*)&result(i+4*3), sum4);
         }
         return;
     }
@@ -219,8 +219,8 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
         for (int i = 0; i < nOut; i++) {
             __m128i sum = _mm_set_epi32(0, 0, 0, 0);
             for (int j = 0; j < nIn; j += 16) {
-                __m128i a = _mm_loadu_si128((const __m128i*)&weight(i,j));
-                __m128i b = _mm_loadu_si128((const __m128i*)&in(j));
+                __m128i a = _mm_load_si128((const __m128i*)&weight(i,j));
+                __m128i b = _mm_load_si128((const __m128i*)&in(j));
                 __m128i d = _mm_maddubs_epi16(b, a); // d[i]=a[2i]*b[2i]+a[2i+1]*b[2i+1], requires b>=0
                 d = _mm_madd_epi16(d, ones16);       // Pairwise sum of 16-bit values to 32-bit values
                 sum = _mm_add_epi32(sum, d);         // Accumulate 4 sums
@@ -322,18 +322,18 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
 
 template <int nIn, int nOut>
 inline void
-Layer<nIn,nOut>::forward(const Vector<S8,nIn>& in) {
-    evalLinear(in);
+Layer<nIn,nOut>::forward(const Vector<S8,nIn>& in, Output& out) {
+    evalLinear(in, out);
     for (int i = 0; i < nOut; i++)
-        output(i) = static_cast<S8>(clamp(linOutput(i) >> 6, 0, 127));
+        out.output(i) = static_cast<S8>(clamp(out.linOutput(i) >> 6, 0, 127));
 }
 
 template <int nIn, int nOut>
 inline void
-Layer<nIn,nOut>::evalLinear(const Vector<S8,nIn>& in) {
+Layer<nIn,nOut>::evalLinear(const Vector<S8,nIn>& in, Output& out) {
     for (int i = 0; i < nOut; i++)
-        linOutput(i) = data.bias(i);
-    matMul(linOutput, data.weight, in);
+        out.linOutput(i) = data.bias(i);
+    matMul(out.linOutput, data.weight, in);
 }
 
 // ------------------------------------------------------------------------------
@@ -347,14 +347,14 @@ addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1
 #ifdef HAS_AVX2
     if (n1 % 128 == 0) {
         for (int i = 0; i < n1; i += 128) {
-            __m256i s1 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*0));
-            __m256i s2 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*1));
-            __m256i s3 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*2));
-            __m256i s4 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*3));
-            __m256i s5 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*4));
-            __m256i s6 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*5));
-            __m256i s7 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*6));
-            __m256i s8 = _mm256_loadu_si256((const __m256i*)&l1Out(i+16*7));
+            __m256i s1 = _mm256_load_si256((const __m256i*)&l1Out(i+16*0));
+            __m256i s2 = _mm256_load_si256((const __m256i*)&l1Out(i+16*1));
+            __m256i s3 = _mm256_load_si256((const __m256i*)&l1Out(i+16*2));
+            __m256i s4 = _mm256_load_si256((const __m256i*)&l1Out(i+16*3));
+            __m256i s5 = _mm256_load_si256((const __m256i*)&l1Out(i+16*4));
+            __m256i s6 = _mm256_load_si256((const __m256i*)&l1Out(i+16*5));
+            __m256i s7 = _mm256_load_si256((const __m256i*)&l1Out(i+16*6));
+            __m256i s8 = _mm256_load_si256((const __m256i*)&l1Out(i+16*7));
             for (int k = 0; k < toAddLen; k++) {
                 int idx = toAdd[k];
                 s1 = _mm256_add_epi16(s1, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*0)));
@@ -377,14 +377,14 @@ addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1
                 s7 = _mm256_sub_epi16(s7, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*6)));
                 s8 = _mm256_sub_epi16(s8, _mm256_load_si256((const __m256i*)&weight1(idx, i+16*7)));
             }
-            _mm256_storeu_si256((__m256i*)&l1Out(i+16*0), s1);
-            _mm256_storeu_si256((__m256i*)&l1Out(i+16*1), s2);
-            _mm256_storeu_si256((__m256i*)&l1Out(i+16*2), s3);
-            _mm256_storeu_si256((__m256i*)&l1Out(i+16*3), s4);
-            _mm256_storeu_si256((__m256i*)&l1Out(i+16*4), s5);
-            _mm256_storeu_si256((__m256i*)&l1Out(i+16*5), s6);
-            _mm256_storeu_si256((__m256i*)&l1Out(i+16*6), s7);
-            _mm256_storeu_si256((__m256i*)&l1Out(i+16*7), s8);
+            _mm256_store_si256((__m256i*)&l1Out(i+16*0), s1);
+            _mm256_store_si256((__m256i*)&l1Out(i+16*1), s2);
+            _mm256_store_si256((__m256i*)&l1Out(i+16*2), s3);
+            _mm256_store_si256((__m256i*)&l1Out(i+16*3), s4);
+            _mm256_store_si256((__m256i*)&l1Out(i+16*4), s5);
+            _mm256_store_si256((__m256i*)&l1Out(i+16*5), s6);
+            _mm256_store_si256((__m256i*)&l1Out(i+16*6), s7);
+            _mm256_store_si256((__m256i*)&l1Out(i+16*7), s8);
         }
         return;
     }
@@ -392,14 +392,14 @@ addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1
 #ifdef HAS_SSSE3
     if (n1 % 64 == 0) {
         for (int i = 0; i < n1; i += 64) {
-            __m128i s1 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*0));
-            __m128i s2 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*1));
-            __m128i s3 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*2));
-            __m128i s4 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*3));
-            __m128i s5 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*4));
-            __m128i s6 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*5));
-            __m128i s7 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*6));
-            __m128i s8 = _mm_loadu_si128((const __m128i*)&l1Out(i+8*7));
+            __m128i s1 = _mm_load_si128((const __m128i*)&l1Out(i+8*0));
+            __m128i s2 = _mm_load_si128((const __m128i*)&l1Out(i+8*1));
+            __m128i s3 = _mm_load_si128((const __m128i*)&l1Out(i+8*2));
+            __m128i s4 = _mm_load_si128((const __m128i*)&l1Out(i+8*3));
+            __m128i s5 = _mm_load_si128((const __m128i*)&l1Out(i+8*4));
+            __m128i s6 = _mm_load_si128((const __m128i*)&l1Out(i+8*5));
+            __m128i s7 = _mm_load_si128((const __m128i*)&l1Out(i+8*6));
+            __m128i s8 = _mm_load_si128((const __m128i*)&l1Out(i+8*7));
             for (int k = 0; k < toAddLen; k++) {
                 int idx = toAdd[k];
                 s1 = _mm_add_epi16(s1, _mm_load_si128((const __m128i*)&weight1(idx, i+8*0)));
@@ -422,14 +422,14 @@ addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1
                 s7 = _mm_sub_epi16(s7, _mm_load_si128((const __m128i*)&weight1(idx, i+8*6)));
                 s8 = _mm_sub_epi16(s8, _mm_load_si128((const __m128i*)&weight1(idx, i+8*7)));
             }
-            _mm_storeu_si128((__m128i*)&l1Out(i+8*0), s1);
-            _mm_storeu_si128((__m128i*)&l1Out(i+8*1), s2);
-            _mm_storeu_si128((__m128i*)&l1Out(i+8*2), s3);
-            _mm_storeu_si128((__m128i*)&l1Out(i+8*3), s4);
-            _mm_storeu_si128((__m128i*)&l1Out(i+8*4), s5);
-            _mm_storeu_si128((__m128i*)&l1Out(i+8*5), s6);
-            _mm_storeu_si128((__m128i*)&l1Out(i+8*6), s7);
-            _mm_storeu_si128((__m128i*)&l1Out(i+8*7), s8);
+            _mm_store_si128((__m128i*)&l1Out(i+8*0), s1);
+            _mm_store_si128((__m128i*)&l1Out(i+8*1), s2);
+            _mm_store_si128((__m128i*)&l1Out(i+8*2), s3);
+            _mm_store_si128((__m128i*)&l1Out(i+8*3), s4);
+            _mm_store_si128((__m128i*)&l1Out(i+8*4), s5);
+            _mm_store_si128((__m128i*)&l1Out(i+8*5), s6);
+            _mm_store_si128((__m128i*)&l1Out(i+8*6), s7);
+            _mm_store_si128((__m128i*)&l1Out(i+8*7), s8);
         }
         return;
     }
@@ -504,14 +504,14 @@ scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
         __m256i idx = _mm256_set_epi32(7, 6, 3, 2, 5, 4, 1, 0);
         for (int i = 0; i < n1; i += 128) {
             auto f = [&](int i) {
-                __m256i a = _mm256_loadu_si256((const __m256i*)&l1OutC(i));
-                __m256i b = _mm256_loadu_si256((const __m256i*)&l1OutC(i+16));
+                __m256i a = _mm256_load_si256((const __m256i*)&l1OutC(i));
+                __m256i b = _mm256_load_si256((const __m256i*)&l1OutC(i+16));
                 a = _mm256_srai_epi16(a, 2);
                 b = _mm256_srai_epi16(b, 2);
                 __m256i r = _mm256_packs_epi16(a, b);   // a0 a1 b0 b1 a2 a3 b2 b3
                 r = _mm256_max_epi8(r, zero);
                 r = _mm256_permutevar8x32_epi32(r, idx);
-                _mm256_storeu_si256((__m256i*)&out[i], r);
+                _mm256_store_si256((__m256i*)&out[i], r);
             };
             f(i+32*0);
             f(i+32*1);
@@ -526,14 +526,14 @@ scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
         __m128i zero = _mm_set1_epi16(0);
         for (int i = 0; i < n1; i += 64) {
             auto f = [&](int i) {
-                __m128i a = _mm_loadu_si128((const __m128i*)&l1OutC(i));
-                __m128i b = _mm_loadu_si128((const __m128i*)&l1OutC(i+8));
+                __m128i a = _mm_load_si128((const __m128i*)&l1OutC(i));
+                __m128i b = _mm_load_si128((const __m128i*)&l1OutC(i+8));
                 a = _mm_srai_epi16(a, 2);
                 b = _mm_srai_epi16(b, 2);
                 a = _mm_max_epi16(a, zero);
                 b = _mm_max_epi16(b, zero);
                 __m128i r = _mm_packs_epi16(a, b);
-                _mm_storeu_si128((__m128i*)&out[i], r);
+                _mm_store_si128((__m128i*)&out[i], r);
             };
             f(i+16*0);
             f(i+16*1);

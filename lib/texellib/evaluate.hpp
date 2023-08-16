@@ -68,7 +68,7 @@ public:
         using EvalHashType = std::array<EvalHashData,(1<<16)>;
         EvalHashType evalHash;
 
-        NNEvaluator nnEval;
+        std::shared_ptr<NNEvaluator> nnEval;
     private:
         const NetData& initNetData();
     };

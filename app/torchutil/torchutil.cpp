@@ -790,7 +790,7 @@ eval(const std::string& modelFile, const std::string& fen) {
     std::shared_ptr<NetData> qNetP = NetData::create();
     NetData& qNet = *qNetP;
     net.quantize(qNet);
-    NNEvaluator qEval(qNet);
+    std::shared_ptr<NNEvaluator> qEval = NNEvaluator::create(qNet);
 
     bool fromStdIn = fen == "-";
     std::istream& is = std::cin;
@@ -831,9 +831,9 @@ eval(const std::string& modelFile, const std::string& fen) {
         torch::Tensor out = net.forward(inW, inB);
         double val = out.item<double>();
 
-        qEval.connectPosition(pos);
-        pos.connectNNEval(&qEval);
-        int qVal = qEval.eval();
+        qEval->connectPosition(pos);
+        pos.connectNNEval(qEval.get());
+        int qVal = qEval->eval();
 
         std::cout << "val: " << (val*100.0f) << " prob: " << toProb(val)
                   << " qVal: " << qVal << " qProb: " << toProb(qVal * 0.01)
