@@ -331,8 +331,7 @@ Layer<nIn,nOut>::forward(const Vector<S8,nIn>& in, Output& out) {
 template <int nIn, int nOut>
 inline void
 Layer<nIn,nOut>::evalLinear(const Vector<S8,nIn>& in, Output& out) {
-    for (int i = 0; i < nOut; i++)
-        out.linOutput(i) = data.bias(i);
+    out.linOutput = data.bias;
     matMul(out.linOutput, data.weight, in);
 }
 
