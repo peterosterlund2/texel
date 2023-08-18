@@ -27,6 +27,7 @@
 #define VECTOROP_HPP_
 
 #include "nntypes.hpp"
+#include <type_traits>
 
 #ifdef HAS_AVX2
 #include <immintrin.h>
@@ -320,6 +321,36 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
 
 // ------------------------------------------------------------------------------
 
+/** Copy a memory-aligned vector. */
+template <typename T, int nEnts>
+inline void
+copyVec(Vector<T,nEnts>& dst, const Vector<T,nEnts>& src) {
+    static_assert(std::is_integral<T>::value, "Unsupported type");
+#ifdef HAS_AVX2
+    constexpr int n = sizeof(T) * nEnts;
+          U8* dstP = (      U8*)&dst(0);
+    const U8* srcP = (const U8*)&src(0);
+    if (n % 128 == 0) {
+        for (int i = 0; i < n; i += 128) {
+            __m256i v1 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*0]));
+            __m256i v2 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*1]));
+            __m256i v3 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*2]));
+            __m256i v4 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*3]));
+            _mm256_store_si256((__m256i*)&dstP[i+32*0], v1);
+            _mm256_store_si256((__m256i*)&dstP[i+32*1], v2);
+            _mm256_store_si256((__m256i*)&dstP[i+32*2], v3);
+            _mm256_store_si256((__m256i*)&dstP[i+32*3], v4);
+        }
+        return;
+    }
+#endif
+
+    // Generic fallback
+    dst = src;
+}
+
+// ------------------------------------------------------------------------------
+
 template <int nIn, int nOut>
 inline void
 Layer<nIn,nOut>::forward(const Vector<S8,nIn>& in, Output& out) {
@@ -331,7 +362,7 @@ Layer<nIn,nOut>::forward(const Vector<S8,nIn>& in, Output& out) {
 template <int nIn, int nOut>
 inline void
 Layer<nIn,nOut>::evalLinear(const Vector<S8,nIn>& in, Output& out) {
-    out.linOutput = data.bias;
+    copyVec(out.linOutput, data.bias);
     matMul(out.linOutput, data.weight, in);
 }
 

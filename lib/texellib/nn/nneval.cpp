@@ -164,7 +164,7 @@ NNEvaluator::computeL1WB() {
     for (int c = 0; c < 2; c++) {
         if (doFull[c]) {
             FirstLayerState& s = linState[c];
-            s.l1Out = netData.bias1;
+            copyVec(s.l1Out, netData.bias1);
             s.kingSqComputed = posP->getKingSq(c == 0);
         }
     }
