@@ -325,21 +325,27 @@ SubDataSet<Base>::getItem(S64 idx, Record& r) {
 
 // ------------------------------------------------------------------------------
 
+/** Write the first "nPos" positions from "ds" to "outFile". */
+template <typename DataSet>
+static void
+writeDataSet(DataSet& ds, S64 nPos, const std::string& outFile) {
+    std::ofstream os;
+    os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
+    os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+    Record r;
+    for (S64 i = 0; i < nPos; i++) {
+        ds.getItem(i, r);
+        os.write((const char*)&r, sizeof(Record));
+    }
+}
+
 /** Extract a random sample of nPos records from "inFile", write to "outFile". */
 static void
 extractSubset(const std::string& inFile, S64 nPos, const std::string& outFile) {
     DataSet allData(inFile);
     ShuffledDataSet<DataSet> shuffled(allData, 17);
-    Record r;
-
-    std::ofstream os;
-    os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
-    os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-
-    for (S64 i = 0; i < nPos; i++) {
-        shuffled.getItem(i, r);
-        os.write((const char*)&r, sizeof(Record));
-    }
+    writeDataSet(shuffled, nPos, outFile);
 }
 
 // ------------------------------------------------------------------------------
@@ -799,11 +805,11 @@ writeDataSetFen(DataSet& ds, std::ostream& os) {
  *  would be set aside for validation. This function writes that validation data
  *  to "os". */
 static void
-writeValidationData(const std::string& inFile, std::ostream& os) {
+extractValidationData(const std::string& inFile, const std::string& outFile) {
     DataSet allData(inFile);
     SplitData split(allData);
     auto& validateData = split.getValidateData();
-    writeDataSetFen(validateData, os);
+    writeDataSet(validateData, validateData.getSize(), outFile);
 }
 
 /** Convert a data set binary file "inFile" to FEN format written to "os". */
@@ -967,7 +973,7 @@ usage() {
     std::cerr << " eval modelfile fen   : Evaluate position using a saved network\n";
     std::cerr << " subset infile nPos outfile : Extract positions from infile, write to outfile\n";
     std::cerr << " bin2fen infile       : Read binary data, write in FEN format to stdout\n";
-    std::cerr << " getvalidation infile : Extract validation data, write in FEN format to stdout\n";
+    std::cerr << " getvalidation infile outfile : Extract validation data in binary format\n";
     std::cerr << " featstat infile      : Print feature activation stats from training data\n";
 
     std::cerr << std::flush;
@@ -1014,10 +1020,11 @@ main(int argc, const char* argv[]) {
             std::string inFile = argv[2];
             bin2Fen(inFile, std::cout);
         } else if (cmd == "getvalidation") {
-            if (argc != 3)
+            if (argc != 4)
                 usage();
             std::string inFile = argv[2];
-            writeValidationData(inFile, std::cout);
+            std::string outFile = argv[3];
+            extractValidationData(inFile, outFile);
         } else if (cmd == "featstat") {
             if (argc != 3)
                 usage();
