@@ -747,25 +747,36 @@ vecMinMax(const Vector<T,N>& m, int& minVal, int& maxVal) {
 /** Print network statistics to stdout. */
 static void
 printStats(const NetData& net) {
-    const int inFeatures = NetData::inFeatures;
-    const int n1         = NetData::n1;
-
     int minOut = INT_MAX;
     int maxOut = -INT_MAX;
-    for (int f = 0; f < n1; f++) {
-        int minOutF = net.bias1(f);
-        int maxOutF = net.bias1(f);
-        std::vector<int> w;
-        for (int i = 0; i < inFeatures; i++)
-            w.push_back(net.weight1(i, f));
-        std::sort(w.begin(), w.end());
-        int maxPieces = 30;
-        for (int i = 0; i < maxPieces; i++) {
-            minOutF += std::min(0, (int)w[i]);
-            maxOutF += std::max(0, (int)w[inFeatures - 1 - i]);
+    for (int f = 0; f < NetData::n1; f++) {
+        for (int kIdx = 0; kIdx < nKIdx; kIdx++) {
+            int minOutF = net.bias1(f);
+            int maxOutF = net.bias1(f);
+            std::vector<int> wMin, wMax;
+            for (int sq = 0; sq < 64; sq++) {
+                int minSqV = INT_MAX;
+                int maxSqV = INT_MIN;
+                for (int pt = 0; pt < 10; pt++) {
+                    int idx1, idx2, idx3;
+                    toIndex(kIdx, pt, sq, idx1, idx2, idx3);
+                    int val = net.weight1(idx1, f);
+                    minSqV = std::min(minSqV, val);
+                    maxSqV = std::max(maxSqV, val);
+                }
+                wMin.push_back(minSqV);
+                wMax.push_back(maxSqV);
+            }
+            std::sort(wMin.begin(), wMin.end());
+            std::sort(wMax.begin(), wMax.end());
+            int maxPieces = 30;
+            for (int i = 0; i < maxPieces; i++) {
+                minOutF += std::min(0, (int)wMin[i]);
+                maxOutF += std::max(0, (int)wMax[(int)wMax.size() - 1 - i]);
+            }
+            minOut = std::min(minOut, minOutF);
+            maxOut = std::max(maxOut, maxOutF);
         }
-        minOut = std::min(minOut, minOutF);
-        maxOut = std::max(maxOut, maxOutF);
     }
     std::cout << "Layer           min   max" << std::endl;
     std::cout << "L1 out     : " << std::setw(6) << minOut << std::setw(6) << maxOut << std::endl;
