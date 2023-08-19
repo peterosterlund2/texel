@@ -40,6 +40,7 @@
 #include <bitset>
 #include <chrono>
 #include <cmath>
+#include <climits>
 
 extern "C" {
 #include "tb/gtb/compression/lzma/Lzma86Enc.h"
@@ -719,6 +720,74 @@ train(const std::string& inFile, U64 seed) {
 
 // ------------------------------------------------------------------------------
 
+template <typename T, int M, int N>
+static void
+matMinMax(const Matrix<T,M,N>& m, int& minVal, int& maxVal) {
+    minVal = INT_MAX;
+    maxVal = INT_MIN;
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            minVal = std::min(minVal, (int)m(i, j));
+            maxVal = std::max(maxVal, (int)m(i, j));
+        }
+    }
+}
+
+template <typename T, int N>
+static void
+vecMinMax(const Vector<T,N>& m, int& minVal, int& maxVal) {
+    minVal = INT_MAX;
+    maxVal = INT_MIN;
+    for (int i = 0; i < N; i++) {
+        minVal = std::min(minVal, (int)m(i));
+        maxVal = std::max(maxVal, (int)m(i));
+    }
+}
+
+/** Print network statistics to stdout. */
+static void
+printStats(const NetData& net) {
+    const int inFeatures = NetData::inFeatures;
+    const int n1         = NetData::n1;
+
+    int minOut = INT_MAX;
+    int maxOut = -INT_MAX;
+    for (int f = 0; f < n1; f++) {
+        int minOutF = net.bias1(f);
+        int maxOutF = net.bias1(f);
+        std::vector<int> w;
+        for (int i = 0; i < inFeatures; i++)
+            w.push_back(net.weight1(i, f));
+        std::sort(w.begin(), w.end());
+        int maxPieces = 30;
+        for (int i = 0; i < maxPieces; i++) {
+            minOutF += std::min(0, (int)w[i]);
+            maxOutF += std::max(0, (int)w[inFeatures - 1 - i]);
+        }
+        minOut = std::min(minOut, minOutF);
+        maxOut = std::max(maxOut, maxOutF);
+    }
+    std::cout << "Layer           min   max" << std::endl;
+    std::cout << "L1 out     : " << std::setw(6) << minOut << std::setw(6) << maxOut << std::endl;
+
+    int minV, maxV;
+
+    matMinMax(net.lin2.weight, minV, maxV);
+    std::cout << "L2 weights : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+    vecMinMax(net.lin2.bias, minV, maxV);
+    std::cout << "L2 bias    : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+
+    matMinMax(net.lin3.weight, minV, maxV);
+    std::cout << "L3 weights : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+    vecMinMax(net.lin3.bias, minV, maxV);
+    std::cout << "L3 bias    : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+
+    matMinMax(net.lin4.weight, minV, maxV);
+    std::cout << "L4 weights : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+    vecMinMax(net.lin4.bias, minV, maxV);
+    std::cout << "L4 bias    : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+}
+
 /** Convert a serialized floating point network of type Net in "inFile" to a
  *  quantized integer network of type NetData written to "outFile". */
 static void
@@ -761,6 +830,7 @@ quantize(const std::string& inFile, const std::string& outFile,
         if (res != SZ_OK)
             throw ChessError("Failed to compress data");
 
+        std::cout << "Compressed size: " << outSize << std::endl;
         std::ofstream os;
         os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         std::string comprName = outFile + ".compr";
@@ -768,6 +838,8 @@ quantize(const std::string& inFile, const std::string& outFile,
         BinaryFileWriter writer(os);
         writer.writeArray(comprData.data(), outSize);
     }
+
+    printStats(qNet);
 
     if (!validationFile.empty()) {
         DataSet ds(validationFile);
