@@ -56,6 +56,9 @@ public:
      *         Positive values are good for the side to make the next move. */
     int eval();
 
+    /** Get the first layer output for feature f. 0 <= f < 2*n1. */
+    int getL1OutClipped(int f) const;
+
     /** Initialize static data. */
     static void staticInitialize();
 
@@ -102,5 +105,10 @@ private:
 
     static int ptValue[Piece::nPieceTypes]; // Conversion from Piece to piece values used by NN
 };
+
+inline int
+NNEvaluator::getL1OutClipped(int f) const {
+    return l1OutClipped(f);
+}
 
 #endif /* NNEVAL_HPP_ */

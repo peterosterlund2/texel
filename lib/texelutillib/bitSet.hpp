@@ -53,6 +53,11 @@ public:
         return *this;
     }
 
+    void clear() {
+        for (int i = 0; i < nWords; i++)
+            data[i] = 0;
+    }
+
     bool operator==(const BitSet& b) const {
         for (int i = 0; i < nWords; i++)
             if (data[i] != b.data[i])
@@ -159,7 +164,7 @@ public:
     int bitCount() const {
         int cnt = 0;
         for (int i = 0; i < nWords; i++)
-            cnt += BitBoard::bitCount(data[i]);
+            cnt += BitUtil::bitCount(data[i]);
         return cnt;
     }
 

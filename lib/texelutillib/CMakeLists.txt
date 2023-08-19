@@ -1,6 +1,5 @@
 set(src_pg
                          pg/assignment.hpp
-                         pg/bitSet.hpp
   pg/cspsolver.cpp       pg/cspsolver.hpp
   pg/extproofkernel.cpp  pg/extproofkernel.hpp
   pg/pkseq.cpp           pg/pkseq.hpp
@@ -10,6 +9,7 @@ set(src_pg
   )
 
 set(src_texelutillib
+                      bitSet.hpp
   bookbuild.cpp       bookbuild.hpp
   gametree.cpp        gametree.hpp
                       gametreeutil.hpp

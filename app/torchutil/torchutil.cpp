@@ -30,6 +30,7 @@
 #include "nnutil.hpp"
 #include "nneval.hpp"
 #include "square.hpp"
+#include "bitSet.hpp"
 
 #include <torch/torch.h>
 #include <vector>
@@ -593,16 +594,15 @@ getQLoss(DataSet& ds, const NetData& qNet) {
     std::shared_ptr<NNEvaluator> qEval = NNEvaluator::create(qNet);
     Record r;
     Position pos;
+    qEval->connectPosition(pos);
+    pos.connectNNEval(qEval.get());
     S64 nPos = ds.getSize();
     for (S64 i = 0; i < nPos; i++) {
         ds.getItem(i, r);
         int target;
         NNUtil::recordToPos(r, pos, target);
 
-        qEval->connectPosition(pos);
-        pos.connectNNEval(qEval.get());
         int qVal = qEval->eval();
-
         double err = toProb(qVal*0.01) - toProb(target*0.01);
         qLoss += err*err;
     }
@@ -815,11 +815,132 @@ printStats(const NetData& net) {
     std::cout << "L4 bias    : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
 }
 
+/** Permute first layer features to make the first layer output sparse. */
+template <typename DataSet>
+static void
+permuteFeatures(NetData& net, DataSet& ds) {
+    constexpr int maxN = 1024 * 1024 * 8;
+    using BitSet = BitSet<maxN>;
+
+    std::vector<BitSet> featureActivations(NetData::n1);
+    const int nPos = std::min(maxN/2, (int)ds.getSize());
+    {
+        std::cout << "Evaluating..." << std::endl;
+        std::shared_ptr<NetData> copyNetP = NetData::create();
+        NetData& copyNet = *copyNetP;
+        copyNet = net;
+        copyNet.prepareMatMul();
+        std::shared_ptr<NNEvaluator> qEval = NNEvaluator::create(copyNet);
+        Record r;
+        Position pos;
+        qEval->connectPosition(pos);
+        pos.connectNNEval(qEval.get());
+        for (int i = 0; i < nPos; i++) {
+            ds.getItem(i, r);
+            int target;
+            NNUtil::recordToPos(r, pos, target);
+            qEval->eval();
+            for (int f = 0; f < NetData::n1; f++) {
+                if (qEval->getL1OutClipped(f) != 0)
+                    featureActivations[f].setBit(2*i+0);
+                if (qEval->getL1OutClipped(f+NetData::n1) != 0)
+                    featureActivations[f].setBit(2*i+1);
+            }
+        }
+    }
+
+    std::vector<int> remainingF;
+    for (int f = 0; f < NetData::n1; f++)
+        remainingF.push_back(f);
+
+    std::vector<BitSet> tmpSets(2);
+    BitSet& currAct = tmpSets[0];
+    BitSet& tmpSet = tmpSets[1];
+    int grpSize = 0;
+
+    std::vector<int> permutation;
+    {
+        std::cout << "Permuting..." << std::endl;
+        const int maxGrpSize = 8;
+        int iter = 0;
+        int oldTot = 0;
+        double numNonZero = 0;
+        while (!remainingF.empty()) {
+            if (grpSize == maxGrpSize) {
+                currAct.clear();
+                grpSize = 0;
+                oldTot = 0;
+                std::cout << "---" << std::endl;
+            }
+
+            int bestI = -1;
+            int bestCnt = 0;
+            for (int i = 0; i < (int)remainingF.size(); i++) {
+                int f = remainingF[i];
+                tmpSet = currAct;
+                tmpSet |= featureActivations[f];
+                int totCnt = tmpSet.bitCount();
+                if (bestI == -1 || totCnt < bestCnt) {
+                    bestI = i;
+                    bestCnt = totCnt;
+                }
+            }
+            int bestF = remainingF[bestI];
+            int newCnt = featureActivations[bestF].bitCount();
+            currAct |= featureActivations[bestF];
+            int totCnt = currAct.bitCount();
+
+            remainingF[bestI] = remainingF[(int)remainingF.size()-1];
+            remainingF.pop_back();
+
+            std::cout << "i: " << std::setw(3) << iter
+                      << " f: " << std::setw(3) << bestF
+                      << " new: " << std::setw(8) << newCnt
+                      << " inc: " << std::setw(8) << (totCnt - oldTot)
+                      << " tot: " << std::setw(8) << totCnt
+                      << " p: " << ((double)totCnt / (2*nPos))
+                      << std::endl;
+
+            if (grpSize == maxGrpSize - 1)
+                numNonZero += (double)totCnt / (2*nPos);
+
+            permutation.push_back(bestF);
+            oldTot = totCnt;
+            grpSize++;
+            iter++;
+        }
+        std::cout << "nonZero: " << (numNonZero / (iter / maxGrpSize)) << std::endl;
+    }
+
+    auto newW1 = ::make_unique<decltype(net.weight1)>();
+    auto newB1 = ::make_unique<decltype(net.bias1)>();
+    for (int newF = 0; newF < NetData::n1; newF++) {
+        int oldF = permutation[newF];
+        for (int i = 0; i < NetData::inFeatures; i++)
+            (*newW1)(i, newF) = net.weight1(i, oldF);
+        (*newB1)(newF) = net.bias1(oldF);
+    }
+    net.weight1 = *newW1;
+    net.bias1 = *newB1;
+
+    auto newW2 = ::make_unique<decltype(net.lin2.weight)>();
+    for (int newF = 0; newF < NetData::n1; newF++) {
+        int oldF = permutation[newF];
+        int n1 = NetData::n1;
+        for (int i = 0; i < NetData::n2; i++) {
+            (*newW2)(i, newF+n1*0) = net.lin2.weight(i, oldF+n1*0);
+            (*newW2)(i, newF+n1*1) = net.lin2.weight(i, oldF+n1*1);
+        }
+    }
+    net.lin2.weight = *newW2;
+}
+
 /** Convert a serialized floating point network of type Net in "inFile" to a
  *  quantized integer network of type NetData written to "outFile". */
 static void
 quantize(const std::string& inFile, const std::string& outFile,
-         bool compress, const std::string& validationFile) {
+         const std::string& validationFile,
+         bool compress, bool permute, bool qLoss) {
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
     torch::load(netP, inFile.c_str());
@@ -828,6 +949,11 @@ quantize(const std::string& inFile, const std::string& outFile,
     std::shared_ptr<NetData> qNetP = NetData::create();
     NetData& qNet = *qNetP;
     net.quantize(qNet);
+
+    if (permute) {
+        DataSet ds(validationFile);
+        permuteFeatures(qNet, ds);
+    }
 
     {
         std::ofstream os;
@@ -868,7 +994,7 @@ quantize(const std::string& inFile, const std::string& outFile,
 
     printStats(qNet);
 
-    if (!validationFile.empty()) {
+    if (qLoss) {
         DataSet ds(validationFile);
         qNet.prepareMatMul();
         double qLoss = getQLoss(ds, qNet);
@@ -1075,9 +1201,11 @@ usage() {
     std::cerr << "cmd is one of:\n";
     std::cerr << " train infile\n";
     std::cerr << "   Train network from data in infile\n";
-    std::cerr << " quant [-c] infile outfile [validationFile]\n";
+    std::cerr << " quant [-c] [-p] [-ql] infile outfile [validationFile]\n";
     std::cerr << "   Quantize infile, write result to outfile\n";
-    std::cerr << "   -c : Also create compressed network\n";
+    std::cerr << "   -c  : Also create compressed network\n";
+    std::cerr << "   -p  : Permute weights for sparsity using validationFile\n";
+    std::cerr << "   -ql : Compute RMS loss for quantized net using validationFile\n";
     std::cerr << " eval modelfile fen\n";
     std::cerr << "   Evaluate position using a saved network\n";
     std::cerr << " subset infile nPos outfile\n";
@@ -1100,8 +1228,46 @@ checkFileExists(const std::string& filename) {
         throw ChessError("File not found: " + filename);
 }
 
+static void
+doQuantize(int argc, char* argv[]) {
+    bool compress = false;
+    bool permute = false;
+    bool qLoss = false;
+
+    argc -= 2;
+    argv += 2;
+    while (argc > 0) {
+        std::string arg = argv[0];
+        if (arg == "-c") {
+            compress = true;
+            argc--;
+            argv++;
+        } else if (arg == "-p") {
+            permute = true;
+            argc--;
+            argv++;
+        } else if (arg == "-ql") {
+            qLoss = true;
+            argc--;
+            argv++;
+        } else
+            break;
+    }
+    if (argc < 2 || argc > 3)
+        usage();
+    std::string inFile = argv[0];
+    std::string outFile = argv[1];
+    std::string validationFile = (argc == 3) ? argv[2] : "";
+    if ((permute || qLoss) && validationFile.empty())
+        usage();
+    checkFileExists(inFile);
+    if (!validationFile.empty())
+        checkFileExists(validationFile);
+    quantize(inFile, outFile, validationFile, compress, permute, qLoss);
+}
+
 int
-main(int argc, const char* argv[]) {
+main(int argc, char* argv[]) {
     try {
         if (argc < 2)
             usage();
@@ -1115,20 +1281,7 @@ main(int argc, const char* argv[]) {
             U64 seed = (U64)(currentTime() * 1000);
             train(inFile, seed);
         } else if (cmd == "quant") {
-            if (argc < 4)
-                usage();
-            bool compr = false;
-            if (argv[2] == std::string("-c"))
-                compr = true;
-            if (argc > 5 + compr)
-                usage();
-            std::string inFile = argv[2+compr];
-            std::string outFile = argv[3+compr];
-            std::string validationFile = (argc == 5+compr) ? argv[4+compr] : "";
-            checkFileExists(inFile);
-            if (!validationFile.empty())
-                checkFileExists(validationFile);
-            quantize(inFile, outFile, compr, validationFile);
+            doQuantize(argc, argv);
         } else if (cmd == "eval") {
             if (argc != 4)
                 usage();
