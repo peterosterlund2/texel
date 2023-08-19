@@ -722,7 +722,8 @@ train(const std::string& inFile, U64 seed) {
 /** Convert a serialized floating point network of type Net in "inFile" to a
  *  quantized integer network of type NetData written to "outFile". */
 static void
-quantize(const std::string& inFile, const std::string& outFile) {
+quantize(const std::string& inFile, const std::string& outFile,
+         const std::string& validationFile) {
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
     torch::load(netP, inFile.c_str());
@@ -730,7 +731,6 @@ quantize(const std::string& inFile, const std::string& outFile) {
 
     std::shared_ptr<NetData> qNetP = NetData::create();
     NetData& qNet = *qNetP;
-
     net.quantize(qNet);
 
     {
@@ -739,7 +739,6 @@ quantize(const std::string& inFile, const std::string& outFile) {
         os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
         qNet.save(os);
     }
-
 
     { // Save compressed network using lzma from Gaviota tablebase code
         std::stringstream ss;
@@ -768,6 +767,13 @@ quantize(const std::string& inFile, const std::string& outFile) {
         os.open(comprName.c_str(), std::ios_base::out | std::ios_base::binary);
         BinaryFileWriter writer(os);
         writer.writeArray(comprData.data(), outSize);
+    }
+
+    if (!validationFile.empty()) {
+        DataSet ds(validationFile);
+        qNet.prepareMatMul();
+        double qLoss = getQLoss(ds, qNet);
+        std::cout << "Quantized error: " << qLoss << std::endl;
     }
 }
 
@@ -968,13 +974,20 @@ static void
 usage() {
     std::cerr << "Usage: torchutil cmd params\n";
     std::cerr << "cmd is one of:\n";
-    std::cerr << " train infile         : Train network from data in infile\n";
-    std::cerr << " quant infile outfile : Quantize infile, write result to outfile\n";
-    std::cerr << " eval modelfile fen   : Evaluate position using a saved network\n";
-    std::cerr << " subset infile nPos outfile : Extract positions from infile, write to outfile\n";
-    std::cerr << " bin2fen infile       : Read binary data, write in FEN format to stdout\n";
-    std::cerr << " getvalidation infile outfile : Extract validation data in binary format\n";
-    std::cerr << " featstat infile      : Print feature activation stats from training data\n";
+    std::cerr << " train infile\n";
+    std::cerr << "   Train network from data in infile\n";
+    std::cerr << " quant infile outfile [validationFile]\n";
+    std::cerr << "   Quantize infile, write result to outfile\n";
+    std::cerr << " eval modelfile fen\n";
+    std::cerr << "   Evaluate position using a saved network\n";
+    std::cerr << " subset infile nPos outfile\n";
+    std::cerr << "   Extract positions from infile, write to outfile\n";
+    std::cerr << " bin2fen infile\n";
+    std::cerr << "   Read binary data, write in FEN format to stdout\n";
+    std::cerr << " getvalidation infile outfile\n";
+    std::cerr << "   Extract validation data in binary format\n";
+    std::cerr << " featstat infile\n";
+    std::cerr << "   Print feature activation stats from training data\n";
 
     std::cerr << std::flush;
     ::exit(2);
@@ -994,11 +1007,12 @@ main(int argc, const char* argv[]) {
             U64 seed = (U64)(currentTime() * 1000);
             train(inFile, seed);
         } else if (cmd == "quant") {
-            if (argc != 4)
+            if (argc < 4 || argc > 5)
                 usage();
             std::string inFile = argv[2];
             std::string outFile = argv[3];
-            quantize(inFile, outFile);
+            std::string validationFile = (argc == 5) ? argv[4] : "";
+            quantize(inFile, outFile, validationFile);
         } else if (cmd == "eval") {
             if (argc != 4)
                 usage();
