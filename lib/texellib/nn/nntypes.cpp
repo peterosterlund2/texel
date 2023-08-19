@@ -80,10 +80,14 @@ NetData::load(std::istream& is) {
 
     if (hash != computeHash())
         throw ChessError("Network checksum error");
+    prepareMatMul();
+}
 
-    prepareMatMul(lin2.weight);
-    prepareMatMul(lin3.weight);
-    prepareMatMul(lin4.weight);
+void
+NetData::prepareMatMul() {
+    ::prepareMatMul(lin2.weight);
+    ::prepareMatMul(lin3.weight);
+    ::prepareMatMul(lin4.weight);
 }
 
 U64

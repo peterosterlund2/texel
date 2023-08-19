@@ -169,8 +169,12 @@ public:
     /** Serialize this object to "os". */
     void save(std::ostream& os) const;
 
-    /** Deserialize this object from "is".  */
+    /** Deserialize this object from "is".
+     *  Also calls prepareMatMul(). */
     void load(std::istream& is);
+
+    /** Prepare net for SIMD-optimized code. */
+    void prepareMatMul();
 
     /** Return a hash value corresponding to all data in this object. */
     U64 computeHash() const;

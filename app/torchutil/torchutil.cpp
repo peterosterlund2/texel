@@ -790,6 +790,7 @@ eval(const std::string& modelFile, const std::string& fen) {
     std::shared_ptr<NetData> qNetP = NetData::create();
     NetData& qNet = *qNetP;
     net.quantize(qNet);
+    qNet.prepareMatMul();
     std::shared_ptr<NNEvaluator> qEval = NNEvaluator::create(qNet);
 
     bool fromStdIn = fen == "-";
