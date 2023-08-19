@@ -487,14 +487,27 @@ Net::quantize(NetData& qNet) const {
     torch::Tensor lin1W = lin1->weight.t().clone();
     torch::Tensor lin1B = lin1->bias;
     {
+        auto sameSquare = [](int kIdx, int sq) -> bool {
+            int x = Square::getX(sq);
+            int y = Square::getY(sq);
+            if (x >= 4)
+                return false;
+            return kIdx == y * 4 + x;
+        };
         auto acc = lin1W.accessor<float,2>();
         for (int kIdx = 0; kIdx < nKIdx; kIdx++)
             for (int pieceType = 0; pieceType < 10; pieceType++)
                 for (int sq = 0; sq < 64; sq++) {
+                    bool illegalPawn = (sq < 8 || sq >= 56) && (pieceType == 4 || pieceType == 9);
+                    bool illegal = illegalPawn || sameSquare(kIdx, sq);
                     int idx1, idx2, idx3;
                     toIndex(kIdx, pieceType, sq, idx1, idx2, idx3);
-                    for (int i = 0; i < n1; i++)
-                        acc[idx1][i] += acc[idx2][i] + acc[idx3][i];
+                    for (int i = 0; i < n1; i++) {
+                        if (illegal)
+                            acc[idx1][i] = 0;
+                        else
+                            acc[idx1][i] += acc[idx2][i] + acc[idx3][i];
+                    }
                 }
         lin1W = lin1W.narrow(0, 0, inFeats1);
     }
