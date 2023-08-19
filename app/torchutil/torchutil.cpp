@@ -803,7 +803,7 @@ printStats(const NetData& net) {
  *  quantized integer network of type NetData written to "outFile". */
 static void
 quantize(const std::string& inFile, const std::string& outFile,
-         const std::string& validationFile) {
+         bool compress, const std::string& validationFile) {
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
     torch::load(netP, inFile.c_str());
@@ -820,7 +820,7 @@ quantize(const std::string& inFile, const std::string& outFile,
         qNet.save(os);
     }
 
-    { // Save compressed network using lzma from Gaviota tablebase code
+    if (compress) { // Save compressed network using lzma from Gaviota tablebase code
         std::stringstream ss;
         qNet.save(ss);
         std::string data = ss.str();
@@ -1059,8 +1059,9 @@ usage() {
     std::cerr << "cmd is one of:\n";
     std::cerr << " train infile\n";
     std::cerr << "   Train network from data in infile\n";
-    std::cerr << " quant infile outfile [validationFile]\n";
+    std::cerr << " quant [-c] infile outfile [validationFile]\n";
     std::cerr << "   Quantize infile, write result to outfile\n";
+    std::cerr << "   -c : Also create compressed network\n";
     std::cerr << " eval modelfile fen\n";
     std::cerr << "   Evaluate position using a saved network\n";
     std::cerr << " subset infile nPos outfile\n";
@@ -1090,12 +1091,17 @@ main(int argc, const char* argv[]) {
             U64 seed = (U64)(currentTime() * 1000);
             train(inFile, seed);
         } else if (cmd == "quant") {
-            if (argc < 4 || argc > 5)
+            if (argc < 4)
                 usage();
-            std::string inFile = argv[2];
-            std::string outFile = argv[3];
-            std::string validationFile = (argc == 5) ? argv[4] : "";
-            quantize(inFile, outFile, validationFile);
+            bool compr = false;
+            if (argv[2] == std::string("-c"))
+                compr = true;
+            if (argc > 5 + compr)
+                usage();
+            std::string inFile = argv[2+compr];
+            std::string outFile = argv[3+compr];
+            std::string validationFile = (argc == 5+compr) ? argv[4+compr] : "";
+            quantize(inFile, outFile, compr, validationFile);
         } else if (cmd == "eval") {
             if (argc != 4)
                 usage();
