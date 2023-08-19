@@ -564,6 +564,31 @@ toProb(T score) {
     return 1 / (1 + exp(score * k));
 }
 
+/** Compute RMS loss for a quantized network over a data set. */
+template <typename DataSet>
+static double
+getQLoss(DataSet& ds, const NetData& qNet) {
+    double qLoss = 0;
+    std::shared_ptr<NNEvaluator> qEval = NNEvaluator::create(qNet);
+    Record r;
+    Position pos;
+    S64 nPos = ds.getSize();
+    for (S64 i = 0; i < nPos; i++) {
+        ds.getItem(i, r);
+        int target;
+        NNUtil::recordToPos(r, pos, target);
+
+        qEval->connectPosition(pos);
+        pos.connectNNEval(qEval.get());
+        int qVal = qEval->eval();
+
+        double err = toProb(qVal*0.01) - toProb(target*0.01);
+        qLoss += err*err;
+    }
+    qLoss = sqrt(qLoss / nPos);
+    return qLoss;
+}
+
 /** Train a network using training data from "inFile". After each training epoch,
  *  the current net is saved in PyTorch format in the file modelNN.pt. */
 static void
@@ -637,26 +662,40 @@ train(const std::string& inFile, U64 seed) {
         }
 
         {
-            c10::InferenceMode guard;
-            lossSum *= 0;
-            lossNum = 0;
-            for (size_t batch = 0, beg = 0; beg < nValidate; batch++, beg += batchSize) {
-                size_t end = std::min(beg + batchSize, nValidate);
+            {
+                c10::InferenceMode guard;
+                lossSum *= 0;
+                lossNum = 0;
+                for (size_t batch = 0, beg = 0; beg < nValidate; batch++, beg += batchSize) {
+                    size_t end = std::min(beg + batchSize, nValidate);
 
-                torch::Tensor inputW, inputB;
-                torch::Tensor target;
-                getData(validateData, beg, end, inputW, inputB, target);
-                inputW = inputW.to(dev);
-                inputB = inputB.to(dev);
-                target = target.to(dev);
+                    torch::Tensor inputW, inputB;
+                    torch::Tensor target;
+                    getData(validateData, beg, end, inputW, inputB, target);
+                    inputW = inputW.to(dev);
+                    inputB = inputB.to(dev);
+                    target = target.to(dev);
 
-                torch::Tensor output = net.forward(inputW, inputB);
-                torch::Tensor loss = mse_loss(toProb(output), toProb(target));
-                lossSum += loss;
-                lossNum += 1;
+                    torch::Tensor output = net.forward(inputW, inputB);
+                    torch::Tensor loss = mse_loss(toProb(output), toProb(target));
+                    lossSum += loss;
+                    lossNum += 1;
+                }
             }
+            double qLoss;
+            {
+                std::shared_ptr<NetData> qNetP = NetData::create();
+                NetData& qNet = *qNetP;
+                net.to(torch::kCPU);
+                net.quantize(qNet);
+                net.to(torch::kCUDA);
+                qNet.prepareMatMul();
+                qLoss = getQLoss(validateData, qNet);
+            }
+
             std::cout << "Validation error: "
                       << std::sqrt(lossSum.item<float>() / lossNum)
+                      << " Quantized eror: " << qLoss
                       << std::endl;
         }
 
