@@ -1093,6 +1093,13 @@ usage() {
     ::exit(2);
 }
 
+static void
+checkFileExists(const std::string& filename) {
+    std::ifstream f(filename.c_str());
+    if (!f.good())
+        throw ChessError("File not found: " + filename);
+}
+
 int
 main(int argc, const char* argv[]) {
     try {
@@ -1104,6 +1111,7 @@ main(int argc, const char* argv[]) {
             if (argc != 3)
                 usage();
             std::string inFile = argv[2];
+            checkFileExists(inFile);
             U64 seed = (U64)(currentTime() * 1000);
             train(inFile, seed);
         } else if (cmd == "quant") {
@@ -1117,12 +1125,16 @@ main(int argc, const char* argv[]) {
             std::string inFile = argv[2+compr];
             std::string outFile = argv[3+compr];
             std::string validationFile = (argc == 5+compr) ? argv[4+compr] : "";
+            checkFileExists(inFile);
+            if (!validationFile.empty())
+                checkFileExists(validationFile);
             quantize(inFile, outFile, compr, validationFile);
         } else if (cmd == "eval") {
             if (argc != 4)
                 usage();
             std::string modelFile = argv[2];
             std::string fen = argv[3];
+            checkFileExists(modelFile);
             eval(modelFile, fen);
         } else if (cmd == "subset") {
             if (argc != 5)
@@ -1132,22 +1144,26 @@ main(int argc, const char* argv[]) {
             if (!str2Num(argv[3], nPos) || nPos <= 0)
                 usage();
             std::string outFile = argv[4];
+            checkFileExists(inFile);
             extractSubset(inFile, nPos, outFile);
         } else if (cmd == "bin2fen") {
             if (argc != 3)
                 usage();
             std::string inFile = argv[2];
+            checkFileExists(inFile);
             bin2Fen(inFile, std::cout);
         } else if (cmd == "getvalidation") {
             if (argc != 4)
                 usage();
             std::string inFile = argv[2];
             std::string outFile = argv[3];
+            checkFileExists(inFile);
             extractValidationData(inFile, outFile);
         } else if (cmd == "featstat") {
             if (argc != 3)
                 usage();
             std::string inFile = argv[2];
+            checkFileExists(inFile);
             featureStats(inFile);
         } else {
             usage();
