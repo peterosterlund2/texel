@@ -525,7 +525,7 @@ addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1
 
 // ------------------------------------------------------------------------------
 
-template <int n1>
+template <int shift, int n1>
 inline void
 scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
 #ifdef HAS_AVX2
@@ -536,8 +536,8 @@ scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
             auto f = [&](int i) {
                 __m256i a = _mm256_load_si256((const __m256i*)&l1OutC(i));
                 __m256i b = _mm256_load_si256((const __m256i*)&l1OutC(i+16));
-                a = _mm256_srai_epi16(a, 2);
-                b = _mm256_srai_epi16(b, 2);
+                a = _mm256_srai_epi16(a, shift);
+                b = _mm256_srai_epi16(b, shift);
                 __m256i r = _mm256_packs_epi16(a, b);   // a0 a1 b0 b1 a2 a3 b2 b3
                 r = _mm256_max_epi8(r, zero);
                 r = _mm256_permutevar8x32_epi32(r, idx);
@@ -558,8 +558,8 @@ scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
             auto f = [&](int i) {
                 __m128i a = _mm_load_si128((const __m128i*)&l1OutC(i));
                 __m128i b = _mm_load_si128((const __m128i*)&l1OutC(i+8));
-                a = _mm_srai_epi16(a, 2);
-                b = _mm_srai_epi16(b, 2);
+                a = _mm_srai_epi16(a, shift);
+                b = _mm_srai_epi16(b, shift);
                 a = _mm_max_epi16(a, zero);
                 b = _mm_max_epi16(b, zero);
                 __m128i r = _mm_packs_epi16(a, b);
@@ -580,8 +580,8 @@ scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
             auto f = [&](int i) {
                 int16x8_t a = vld1q_s16((const int16_t*)&l1OutC(i));
                 int16x8_t b = vld1q_s16((const int16_t*)&l1OutC(i+8));
-                int8x8_t a2 = vqshrn_n_s16(a, 2);
-                int8x8_t b2 = vqshrn_n_s16(b, 2);
+                int8x8_t a2 = vqshrn_n_s16(a, shift);
+                int8x8_t b2 = vqshrn_n_s16(b, shift);
                 int8x16_t r = vcombine_s8(a2, b2);
                 r = vmaxq_s8(r, zero);
                 vst1q_s8((int8_t*)&out[i], r);
@@ -597,7 +597,7 @@ scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
 
     // Generic fallback
     for (int i = 0; i < n1; i++)
-        out[i] = clamp(l1OutC(i) >> 2, 0, 127);
+        out[i] = clamp(l1OutC(i) >> shift, 0, 127);
 }
 
 #endif /* VECTOROP_HPP_ */

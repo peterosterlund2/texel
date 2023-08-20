@@ -196,7 +196,7 @@ NNEvaluator::computeL1Out() {
     bool wtm = posP->isWhiteMove();
     for (int c = 0; c < 2; c++) {
         const Vector<S16, n1>& l1OutC = linState[wtm ? c : (1-c)].l1Out;
-        scaleClipPack(&l1OutClipped(c * n1), l1OutC);
+        scaleClipPack<NetData::l1Shift>(&l1OutClipped(c * n1), l1OutC);
     }
 }
 

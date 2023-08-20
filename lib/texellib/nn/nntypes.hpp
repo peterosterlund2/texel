@@ -159,6 +159,7 @@ public:
     static constexpr int n2 = 32;
     static constexpr int n3 = 32;
 
+    static constexpr int l1Shift = 2;
     Matrix<S16, inFeatures, n1> weight1;
     Vector<S16, n1> bias1;
 
