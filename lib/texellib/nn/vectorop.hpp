@@ -544,7 +544,7 @@ scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
 #endif
 #if defined(HAS_NEON) || defined(HAS_NEON_DOT)
     if (n1 % 64 == 0) {
-        int8x16_t zero = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
+        int8x16_t zero = vdupq_n_s8(0);
         for (int i = 0; i < n1; i += 64) {
             auto f = [&](int i) {
                 int16x8_t a = vld1q_s16((const int16_t*)&l1OutC(i));
