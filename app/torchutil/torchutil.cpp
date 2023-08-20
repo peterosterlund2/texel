@@ -766,26 +766,28 @@ printStats(const NetData& net) {
         for (int kIdx = 0; kIdx < nKIdx; kIdx++) {
             int minOutF = net.bias1(f);
             int maxOutF = net.bias1(f);
-            std::vector<int> wMin, wMax;
-            for (int sq = 0; sq < 64; sq++) {
-                int minSqV = INT_MAX;
-                int maxSqV = INT_MIN;
-                for (int pt = 0; pt < 10; pt++) {
-                    int idx1, idx2, idx3;
-                    toIndex(kIdx, pt, sq, idx1, idx2, idx3);
-                    int val = net.weight1(idx1, f);
-                    minSqV = std::min(minSqV, val);
-                    maxSqV = std::max(maxSqV, val);
+            for (int c = 0; c < 2; c++) {
+                std::vector<int> wMin, wMax;
+                for (int sq = 0; sq < 64; sq++) {
+                    int minSqV = INT_MAX;
+                    int maxSqV = INT_MIN;
+                    for (int pt = 0; pt < 5; pt++) {
+                        int idx1, idx2, idx3;
+                        toIndex(kIdx, c*5+pt, sq, idx1, idx2, idx3);
+                        int val = net.weight1(idx1, f);
+                        minSqV = std::min(minSqV, val);
+                        maxSqV = std::max(maxSqV, val);
+                    }
+                    wMin.push_back(minSqV);
+                    wMax.push_back(maxSqV);
                 }
-                wMin.push_back(minSqV);
-                wMax.push_back(maxSqV);
-            }
-            std::sort(wMin.begin(), wMin.end());
-            std::sort(wMax.begin(), wMax.end());
-            int maxPieces = 30;
-            for (int i = 0; i < maxPieces; i++) {
-                minOutF += std::min(0, (int)wMin[i]);
-                maxOutF += std::max(0, (int)wMax[(int)wMax.size() - 1 - i]);
+                std::sort(wMin.begin(), wMin.end());
+                std::sort(wMax.begin(), wMax.end());
+                int maxPieces = 15;
+                for (int i = 0; i < maxPieces; i++) {
+                    minOutF += std::min(0, (int)wMin[i]);
+                    maxOutF += std::max(0, (int)wMax[(int)wMax.size() - 1 - i]);
+                }
             }
             minOut = std::min(minOut, minOutF);
             maxOut = std::max(maxOut, maxOutF);
