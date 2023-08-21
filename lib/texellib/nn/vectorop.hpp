@@ -229,16 +229,14 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
             __m128i sum2 = _mm_load_si128((const __m128i*)&result(i+4*1));
             __m128i sum3 = _mm_load_si128((const __m128i*)&result(i+4*2));
             __m128i sum4 = _mm_load_si128((const __m128i*)&result(i+4*3));
-            for (int j = 0; j < nIn; j += 8) {
-//                if (sparse && *(U64*)&in(j) == 0)
-//                    continue;
-                auto process4x4 = [&](__m128i b, int i, int j, __m128i& sum) {
-                    int idx = j * 4 + i * nIn;
-                    __m128i a = _mm_load_si128((const __m128i*)&weight(0, idx));
-                    __m128i d = _mm_maddubs_epi16(b, a); // d[i]=a[2i]*b[2i]+a[2i+1]*b[2i+1], requires b>=0
-                    d = _mm_madd_epi16(d, ones16);       // Pairwise sum of 16-bit values to 32-bit values
-                    sum = _mm_add_epi32(sum, d);         // Accumulate 4 sums
-                };
+            auto process4x4 = [&](__m128i b, int i, int j, __m128i& sum) {
+                int idx = j * 4 + i * nIn;
+                __m128i a = _mm_load_si128((const __m128i*)&weight(0, idx));
+                __m128i d = _mm_maddubs_epi16(b, a); // d[i]=a[2i]*b[2i]+a[2i+1]*b[2i+1], requires b>=0
+                d = _mm_madd_epi16(d, ones16);       // Pairwise sum of 16-bit values to 32-bit values
+                sum = _mm_add_epi32(sum, d);         // Accumulate 4 sums
+            };
+            auto process16x8 = [&](int j) {
                 __m128i b = _mm_set1_epi32(*(int*)&in(j+4*0));
                 process4x4(b, i+4*0, j+4*0, sum1);
                 process4x4(b, i+4*1, j+4*0, sum2);
@@ -249,6 +247,19 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 process4x4(b, i+4*1, j+4*1, sum2);
                 process4x4(b, i+4*2, j+4*1, sum3);
                 process4x4(b, i+4*3, j+4*1, sum4);
+            };
+            if (sparse) {
+                for (int j0 = 0; j0 < nIn; j0 += 64*8) {
+                    U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
+                    for (int k = BitUtil::bitCount(mask); k > 0; k--) {
+                        int j = j0 + BitUtil::firstBit(mask) * 8;
+                        mask &= mask - 1;
+                        process16x8(j);
+                    }
+                }
+            } else {
+                for (int j = 0; j < nIn; j += 8)
+                    process16x8(j);
             }
             _mm_store_si128((__m128i*)&result(i+4*0), sum1);
             _mm_store_si128((__m128i*)&result(i+4*1), sum2);
