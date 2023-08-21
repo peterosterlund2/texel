@@ -125,6 +125,25 @@ prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
         return;
     }
 #endif
+#ifdef HAS_NEON
+    if ((nIn % 8 == 0) && (nOut % 16) == 0) {
+        Matrix<S8,nOut,nIn> w2;
+        auto weight2 = [&w2](int i, int j) -> S8& {
+            int idx = j * 4 + i * nIn;
+            return w2(0, idx);
+        };
+        for (int i = 0; i < nOut; i += 4) {
+            for (int j = 0; j < nIn; j += 2) {
+                S8* start = &weight2(i, j);
+                for (int y = 0; y < 4; y++)
+                    for (int x = 0; x < 2; x++)
+                        *start++ = weight(i+y, j+x);
+            }
+        }
+        weight = w2;
+        return;
+    }
+#endif
 }
 
 /** Return a bitmask describing which 8-byte blocks of "v" contain at least one
@@ -140,6 +159,19 @@ getNonZeroBlocks(const S8* v, int nElem) {
             __m256i val = _mm256_load_si256((const __m256i*)&v[e*8]);
             val = _mm256_cmpgt_epi64(val, zero);
             U64 m = _mm256_movemask_pd((__m256d)val);
+            mask |= m << e;
+        }
+        return mask;
+    }
+#endif
+#if (defined(HAS_NEON) || defined(HAS_NEON_DOT)) && !defined(__ARM_EABI__)
+    if ((nElem % 2) == 0) {
+        uint64x2_t bits = {1, 2};
+        for (int e = 0; e < nElem; e += 2) {
+            uint64x2_t val = vld1q_u64((const uint64_t*)&v[e*8]);
+            val = vtstq_u64(val, val);
+            val = vandq_u64(val, bits);
+            U64 m = vaddvq_u64(val);
             mask |= m << e;
         }
         return mask;
@@ -291,14 +323,12 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
             int32x4_t sum2 = vld1q_s32((const int32_t*)&result(i+4*1));
             int32x4_t sum3 = vld1q_s32((const int32_t*)&result(i+4*2));
             int32x4_t sum4 = vld1q_s32((const int32_t*)&result(i+4*3));
-            for (int j = 0; j < nIn; j += 8) {
-                if (sparse && *(U64*)&in(j) == 0)
-                    continue;
-                auto process4x4 = [&weight](int8x16_t b, int i, int j, int32x4_t& sum) {
-                    int idx = j * 4 + i * nIn;
-                    int8x16_t w = vld1q_s8((const int8_t*)&weight(0, idx));
-                    sum = vdotq_s32(sum, w, b);
-                };
+            auto process4x4 = [&](int8x16_t b, int i, int j, int32x4_t& sum) {
+                int idx = j * 4 + i * nIn;
+                int8x16_t w = vld1q_s8((const int8_t*)&weight(0, idx));
+                sum = vdotq_s32(sum, w, b);
+            };
+            auto process16x8 = [&](int j) {
                 int8x16_t b = vreinterpretq_s8_s32(vdupq_n_s32(*(int32_t*)&in(j+4*0)));
                 process4x4(b, i+4*0, j+4*0, sum1);
                 process4x4(b, i+4*1, j+4*0, sum2);
@@ -309,6 +339,19 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 process4x4(b, i+4*1, j+4*1, sum2);
                 process4x4(b, i+4*2, j+4*1, sum3);
                 process4x4(b, i+4*3, j+4*1, sum4);
+            };
+            if (sparse) {
+                for (int j0 = 0; j0 < nIn; j0 += 64*8) {
+                    U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
+                    for (int k = BitUtil::bitCount(mask); k > 0; k--) {
+                        int j = j0 + BitUtil::firstBit(mask) * 8;
+                        mask &= mask - 1;
+                        process16x8(j);
+                    }
+                }
+            } else {
+                for (int j = 0; j < nIn; j += 8)
+                    process16x8(j);
             }
             vst1q_s32((int32_t*)&result(i+4*0), sum1);
             vst1q_s32((int32_t*)&result(i+4*1), sum2);
@@ -347,6 +390,50 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
     }
 #endif
 #ifdef HAS_NEON
+    if ((nIn % 8 == 0) && (nOut % 16) == 0) {
+        for (int i = 0; i < nOut; i += 16) {
+            int32x4_t sum1 = vld1q_s32((const int32_t*)&result(i+4*0));
+            int32x4_t sum2 = vld1q_s32((const int32_t*)&result(i+4*1));
+            int32x4_t sum3 = vld1q_s32((const int32_t*)&result(i+4*2));
+            int32x4_t sum4 = vld1q_s32((const int32_t*)&result(i+4*3));
+            auto process4x4 = [&](int8x8_t b0, int8x8_t b1, int i, int j, int32x4_t& sum) {
+                int idx = j * 4 + i * nIn;
+                int8x8_t w = vld1_s8((const int8_t*)&weight(0, idx));
+                int16x8_t s = vmull_s8(b0, w);
+                w = vld1_s8((const int8_t*)&weight(0, idx + 8));
+                s = vmlal_s8(s, b1, w);
+                sum = vpadalq_s16(sum, s);
+            };
+            auto process16x4 = [&](int j) {
+                int8x8_t b0 = vreinterpret_s8_s16(vdup_n_s16(*(int16_t*)&in(j+2*0)));
+                int8x8_t b1 = vreinterpret_s8_s16(vdup_n_s16(*(int16_t*)&in(j+2*1)));
+                process4x4(b0, b1, i+4*0, j+4*0, sum1);
+                process4x4(b0, b1, i+4*1, j+4*0, sum2);
+                process4x4(b0, b1, i+4*2, j+4*0, sum3);
+                process4x4(b0, b1, i+4*3, j+4*0, sum4);
+            };
+            if (sparse) {
+                for (int j0 = 0; j0 < nIn; j0 += 64*8) {
+                    U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
+                    for (int k = BitUtil::bitCount(mask); k > 0; k--) {
+                        int j = j0 + BitUtil::firstBit(mask) * 8;
+                        mask &= mask - 1;
+                        process16x4(j);
+                        process16x4(j+4);
+                    }
+                }
+
+            } else {
+                for (int j = 0; j < nIn; j += 4)
+                    process16x4(j);
+            }
+            vst1q_s32((int32_t*)&result(i+4*0), sum1);
+            vst1q_s32((int32_t*)&result(i+4*1), sum2);
+            vst1q_s32((int32_t*)&result(i+4*2), sum3);
+            vst1q_s32((int32_t*)&result(i+4*3), sum4);
+        }
+        return;
+    }
     if (nIn % 16 == 0) {
         for (int i = 0; i < nOut; i++) {
             int32x4_t sum = {0,0,0,0};
