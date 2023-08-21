@@ -27,7 +27,7 @@ mkdir -p build/Release
 # Windows 64-bit, SSSE3
 mkdir -p build/win64_ssse3
 (cd build/win64_ssse3 &&
-     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
+     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64_clang.cmake \
            -DUSE_WIN7=off \
            -DCPU_TYPE=athlon64-sse3 \
            -DUSE_SSSE3=on \
@@ -41,7 +41,7 @@ mkdir -p build/win64_ssse3
 # Windows 64-bit, AVX2
 mkdir -p build/win64_avx2
 (cd build/win64_avx2 &&
-     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
+     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64_clang.cmake \
            -DUSE_WIN7=on \
            -DCPU_TYPE=corei7 \
            -DUSE_AVX2=on \
@@ -55,7 +55,7 @@ mkdir -p build/win64_avx2
 # Windows 64-bit, AVX2 + POPCNT
 mkdir -p build/win64
 (cd build/win64 &&
-     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
+     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64_clang.cmake \
            -DUSE_WIN7=on \
            -DCPU_TYPE=corei7 \
            -DUSE_AVX2=on \
@@ -69,7 +69,7 @@ mkdir -p build/win64
 # Windows 64-bit with AVX2 + POPCNT + BMI2
 mkdir -p build/win64_bmi
 (cd build/win64_bmi &&
-     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
+     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64_clang.cmake \
            -DUSE_WIN7=on \
            -DCPU_TYPE=corei7 \
            -DUSE_AVX2=on \
@@ -84,7 +84,7 @@ mkdir -p build/win64_bmi
 # Windows 64-bit with cluster support
 mkdir -p build/win64cl
 (cd build/win64cl &&
-     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64.cmake \
+     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64_clang.cmake \
            -DUSE_WIN7=on \
            -DCPU_TYPE=corei7 \
            -DUSE_AVX2=on \
