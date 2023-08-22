@@ -158,7 +158,7 @@ getNonZeroBlocks(const S8* v, int nElem) {
         for (int e = 0; e < nElem; e += 4) {
             __m256i val = _mm256_load_si256((const __m256i*)&v[e*8]);
             val = _mm256_cmpgt_epi64(val, zero);
-            U64 m = _mm256_movemask_pd((__m256d)val);
+            U64 m = _mm256_movemask_pd(_mm256_castsi256_pd(val));
             mask |= m << e;
         }
         return mask;
