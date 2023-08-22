@@ -41,7 +41,7 @@ static StaticInitializer<ComputerPlayer> cpInit;
 
 void
 ComputerPlayer::staticInitialize() {
-    std::string name = "Texel 1.10a8";
+    std::string name = "Texel 1.10a9";
     if (sizeof(char*) == 4)
         name += " 32-bit";
     engineName = name;

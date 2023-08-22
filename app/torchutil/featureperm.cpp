@@ -28,7 +28,7 @@
 #include <iostream>
 
 
-const int maxGrpSize = 8;
+const int maxGrpSize = 4;
 
 FeaturePerm::FeaturePerm(NetData& net)
     : net(net) {

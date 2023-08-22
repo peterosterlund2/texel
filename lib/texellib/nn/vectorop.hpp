@@ -146,38 +146,47 @@ prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
 #endif
 }
 
-/** Return a bitmask describing which 8-byte blocks of "v" contain at least one
+/** Return a bitmask describing which 4-byte blocks of "v" contain at least one
  *  non-zero element.
- *  "nElem" is the number of 8-byte blocks to check. 0 < nElem <= 64. */
+ *  "nElem" is the number of 4-byte blocks to check. 0 < nElem <= 64. */
 inline U64
 getNonZeroBlocks(const S8* v, int nElem) {
     U64 mask = 0;
 #ifdef HAS_AVX2
-    if ((nElem % 4) == 0) {
+    if ((nElem % 8) == 0) {
         __m256i zero = _mm256_setzero_si256();
+        for (int e = 0; e < nElem; e += 8) {
+            __m256i val = _mm256_load_si256((const __m256i*)&v[e*4]);
+            val = _mm256_cmpgt_epi32(val, zero);
+            U64 m = _mm256_movemask_ps(_mm256_castsi256_ps(val));
+            mask |= m << e;
+        }
+        return mask;
+    }
+#endif
+#ifdef HAS_SSSE3
+    if ((nElem % 8) == 0) {
+        __m128i zero = _mm_setzero_si128();
         for (int e = 0; e < nElem; e += 4) {
-            __m256i val = _mm256_load_si256((const __m256i*)&v[e*8]);
-            val = _mm256_cmpgt_epi64(val, zero);
-            U64 m = _mm256_movemask_pd(_mm256_castsi256_pd(val));
+            __m128i val = _mm_load_si128((const __m128i*)&v[e*4]);
+            val = _mm_cmpgt_epi32(val, zero);
+            U64 m = _mm_movemask_ps(_mm_castsi128_ps(val));
             mask |= m << e;
         }
         return mask;
     }
 #endif
 #if defined(HAS_NEON) || defined(HAS_NEON_DOT)
-    if ((nElem % 2) == 0) {
-        uint64x2_t bits = {1, 2};
-        for (int e = 0; e < nElem; e += 2) {
-            uint64x2_t val = vld1q_u64((const uint64_t*)&v[e*8]);
-#if defined(__ARM_EABI__)
-            val = vorrq_u64(val, vshrq_n_u64(val, 32));
+    if ((nElem % 4) == 0) {
+        uint32x4_t bits = {1, 2, 4, 8};
+        for (int e = 0; e < nElem; e += 4) {
+            uint32x4_t val = vld1q_u32((const uint32_t*)&v[e*4]);
             val = vtstq_u32(val, val);
-            val = vandq_u64(val, bits);
-            U64 m = val[0] + val[1];
+            val = vandq_u32(val, bits);
+#ifdef __ARM_EABI__
+            U64 m = val[0] + val[1] + val[2] + val[3];
 #else
-            val = vtstq_u64(val, val);
-            val = vandq_u64(val, bits);
-            U64 m = vaddvq_u64(val);
+            U64 m = vaddvq_u32(val);
 #endif
             mask |= m << e;
         }
@@ -187,7 +196,7 @@ getNonZeroBlocks(const S8* v, int nElem) {
 
     // Generic fallback
     for (int i = 0; i < nElem; i++)
-        if (*(U64*)&v[i*8] != 0)
+        if (*(U32*)&v[i*4] != 0)
             mask |= 1ULL << i;
     return mask;
 }
@@ -212,30 +221,25 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 d = _mm256_madd_epi16(d, ones16);       // Pairwise sum of 16-bit values to 32-bit values
                 sum = _mm256_add_epi32(sum, d);         // Accumulate 8 sums
             };
-            auto process32x8 = [&](int j) {
+            auto process32x4 = [&](int j) {
                 __m256i b = _mm256_set1_epi32(*(int*)&in(j+4*0));
                 process8x4(b, i+8*0, j+4*0, sum1);
                 process8x4(b, i+8*1, j+4*0, sum2);
                 process8x4(b, i+8*2, j+4*0, sum3);
                 process8x4(b, i+8*3, j+4*0, sum4);
-                b = _mm256_set1_epi32(*(int*)&in(j+4*1));
-                process8x4(b, i+8*0, j+4*1, sum1);
-                process8x4(b, i+8*1, j+4*1, sum2);
-                process8x4(b, i+8*2, j+4*1, sum3);
-                process8x4(b, i+8*3, j+4*1, sum4);
             };
             if (sparse) {
-                for (int j0 = 0; j0 < nIn; j0 += 64*8) {
+                for (int j0 = 0; j0 < nIn; j0 += 64*4) {
                     U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
                     for (int k = BitUtil::bitCount(mask); k > 0; k--) {
-                        int j = j0 + BitUtil::firstBit(mask) * 8;
+                        int j = j0 + BitUtil::firstBit(mask) * 4;
                         mask &= mask - 1;
-                        process32x8(j);
+                        process32x4(j);
                     }
                 }
             } else {
-                for (int j = 0; j < nIn; j += 8)
-                    process32x8(j);
+                for (int j = 0; j < nIn; j += 4)
+                    process32x4(j);
             }
             _mm256_store_si256((__m256i*)&result(i+8*0), sum1);
             _mm256_store_si256((__m256i*)&result(i+8*1), sum2);
@@ -275,30 +279,27 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 d = _mm_madd_epi16(d, ones16);       // Pairwise sum of 16-bit values to 32-bit values
                 sum = _mm_add_epi32(sum, d);         // Accumulate 4 sums
             };
-            auto process16x8 = [&](int j) {
+            auto process16x4 = [&](int j) {
                 __m128i b = _mm_set1_epi32(*(int*)&in(j+4*0));
                 process4x4(b, i+4*0, j+4*0, sum1);
                 process4x4(b, i+4*1, j+4*0, sum2);
                 process4x4(b, i+4*2, j+4*0, sum3);
                 process4x4(b, i+4*3, j+4*0, sum4);
-                b = _mm_set1_epi32(*(int*)&in(j+4*1));
-                process4x4(b, i+4*0, j+4*1, sum1);
-                process4x4(b, i+4*1, j+4*1, sum2);
-                process4x4(b, i+4*2, j+4*1, sum3);
-                process4x4(b, i+4*3, j+4*1, sum4);
             };
             if (sparse) {
-                for (int j0 = 0; j0 < nIn; j0 += 64*8) {
+                for (int j0 = 0; j0 < nIn; j0 += 64*4) {
                     U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
                     for (int k = BitUtil::bitCount(mask); k > 0; k--) {
-                        int j = j0 + BitUtil::firstBit(mask) * 8;
+                        int j = j0 + BitUtil::firstBit(mask) * 4;
                         mask &= mask - 1;
-                        process16x8(j);
+                        process16x4(j);
                     }
                 }
             } else {
-                for (int j = 0; j < nIn; j += 8)
-                    process16x8(j);
+                for (int j = 0; j < nIn; j += 8) {
+                    process16x4(j);
+                    process16x4(j+4);
+                }
             }
             _mm_store_si128((__m128i*)&result(i+4*0), sum1);
             _mm_store_si128((__m128i*)&result(i+4*1), sum2);
@@ -335,30 +336,27 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 int8x16_t w = vld1q_s8((const int8_t*)&weight(0, idx));
                 sum = vdotq_s32(sum, w, b);
             };
-            auto process16x8 = [&](int j) {
+            auto process16x4 = [&](int j) {
                 int8x16_t b = vreinterpretq_s8_s32(vdupq_n_s32(*(int32_t*)&in(j+4*0)));
                 process4x4(b, i+4*0, j+4*0, sum1);
                 process4x4(b, i+4*1, j+4*0, sum2);
                 process4x4(b, i+4*2, j+4*0, sum3);
                 process4x4(b, i+4*3, j+4*0, sum4);
-                b = vreinterpretq_s8_s32(vdupq_n_s32(*(int32_t*)&in(j+4*1)));
-                process4x4(b, i+4*0, j+4*1, sum1);
-                process4x4(b, i+4*1, j+4*1, sum2);
-                process4x4(b, i+4*2, j+4*1, sum3);
-                process4x4(b, i+4*3, j+4*1, sum4);
             };
             if (sparse) {
-                for (int j0 = 0; j0 < nIn; j0 += 64*8) {
+                for (int j0 = 0; j0 < nIn; j0 += 64*4) {
                     U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
                     for (int k = BitUtil::bitCount(mask); k > 0; k--) {
-                        int j = j0 + BitUtil::firstBit(mask) * 8;
+                        int j = j0 + BitUtil::firstBit(mask) * 4;
                         mask &= mask - 1;
-                        process16x8(j);
+                        process16x4(j);
                     }
                 }
             } else {
-                for (int j = 0; j < nIn; j += 8)
-                    process16x8(j);
+                for (int j = 0; j < nIn; j += 8) {
+                    process16x4(j);
+                    process16x4(j+4);
+                }
             }
             vst1q_s32((int32_t*)&result(i+4*0), sum1);
             vst1q_s32((int32_t*)&result(i+4*1), sum2);
@@ -420,13 +418,12 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 process4x4(b0, b1, i+4*3, j+4*0, sum4);
             };
             if (sparse) {
-                for (int j0 = 0; j0 < nIn; j0 += 64*8) {
+                for (int j0 = 0; j0 < nIn; j0 += 64*4) {
                     U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
                     for (int k = BitUtil::bitCount(mask); k > 0; k--) {
-                        int j = j0 + BitUtil::firstBit(mask) * 8;
+                        int j = j0 + BitUtil::firstBit(mask) * 4;
                         mask &= mask - 1;
                         process16x4(j);
-                        process16x4(j+4);
                     }
                 }
 
