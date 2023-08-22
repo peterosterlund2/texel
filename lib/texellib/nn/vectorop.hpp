@@ -164,14 +164,21 @@ getNonZeroBlocks(const S8* v, int nElem) {
         return mask;
     }
 #endif
-#if (defined(HAS_NEON) || defined(HAS_NEON_DOT)) && !defined(__ARM_EABI__)
+#if defined(HAS_NEON) || defined(HAS_NEON_DOT)
     if ((nElem % 2) == 0) {
         uint64x2_t bits = {1, 2};
         for (int e = 0; e < nElem; e += 2) {
             uint64x2_t val = vld1q_u64((const uint64_t*)&v[e*8]);
+#if defined(__ARM_EABI__)
+            val = vorrq_u64(val, vshrq_n_u64(val, 32));
+            val = vtstq_u32(val, val);
+            val = vandq_u64(val, bits);
+            U64 m = val[0] + val[1];
+#else
             val = vtstq_u64(val, val);
             val = vandq_u64(val, bits);
             U64 m = vaddvq_u64(val);
+#endif
             mask |= m << e;
         }
         return mask;
