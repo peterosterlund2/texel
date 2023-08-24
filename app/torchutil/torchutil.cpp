@@ -912,27 +912,24 @@ permuteFeatures(NetData& net, DataSet& ds) {
         std::cout << "nonZero: " << (numNonZero / (iter / maxGrpSize)) << std::endl;
     }
 
-    auto newW1 = ::make_unique<decltype(net.weight1)>();
-    auto newB1 = ::make_unique<decltype(net.bias1)>();
-    for (int newF = 0; newF < NetData::n1; newF++) {
+    int n1 = NetData::n1;
+    for (int newF = 0; newF < n1; newF++) {
         int oldF = permutation[newF];
         for (int i = 0; i < NetData::inFeatures; i++)
-            (*newW1)(i, newF) = net.weight1(i, oldF);
-        (*newB1)(newF) = net.bias1(oldF);
-    }
-    net.weight1 = *newW1;
-    net.bias1 = *newB1;
-
-    auto newW2 = ::make_unique<decltype(net.lin2.weight)>();
-    for (int newF = 0; newF < NetData::n1; newF++) {
-        int oldF = permutation[newF];
-        int n1 = NetData::n1;
+            std::swap(net.weight1(i, newF), net.weight1(i, oldF));
+        std::swap(net.bias1(newF), net.bias1(oldF));
         for (int i = 0; i < NetData::n2; i++) {
-            (*newW2)(i, newF+n1*0) = net.lin2.weight(i, oldF+n1*0);
-            (*newW2)(i, newF+n1*1) = net.lin2.weight(i, oldF+n1*1);
+            std::swap(net.lin2.weight(i, newF+n1*0), net.lin2.weight(i, oldF+n1*0));
+            std::swap(net.lin2.weight(i, newF+n1*1), net.lin2.weight(i, oldF+n1*1));
+        }
+        permutation[newF] = newF;
+        for (int x = newF+1; x < n1; x++) {
+            if (permutation[x] == newF) {
+                permutation[x] = oldF;
+                break;
+            }
         }
     }
-    net.lin2.weight = *newW2;
 }
 
 /** Convert a serialized floating point network of type Net in "inFile" to a
