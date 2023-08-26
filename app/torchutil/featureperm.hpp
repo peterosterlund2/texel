@@ -44,12 +44,19 @@ public:
 
     /** Permute net to minimize the number of non-zero groups for the given
      *  feature activations. */
-    void permute(const std::vector<BitSet>& featureActivations, int nPos);
+    void permute(const std::vector<BitSet>& featureActivations, int nPos,
+                 bool useLocalSearch, U64 rndSeed);
 
 private:
     /** Compute initial feature permutation using a greedy algorithm. */
     void computeGreedyPerm(const std::vector<BitSet>& featureActivations,
-                           int nPos, std::vector<int>& permutation);
+                           int nPos, std::vector<int>& permutation,
+                           std::vector<int>& groupCount);
+
+    /** Run a local optimization algorithm to improve the permutation. */
+    void localOptimize(const std::vector<BitSet>& featureActivations,
+                       int nPos, U64 rndSeed, std::vector<int>& permutation,
+                       std::vector<int>& groupCount);
 
     /** Permutes the first layer features according to permutation vector.
      *  Overwrites "permutation". */

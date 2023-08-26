@@ -24,8 +24,11 @@
  */
 
 #include "featureperm.hpp"
+#include "random.hpp"
+#include "timeUtil.hpp"
 
 #include <iostream>
+#include <cassert>
 
 
 const int maxGrpSize = 4;
@@ -35,17 +38,20 @@ FeaturePerm::FeaturePerm(NetData& net)
 }
 
 void
-FeaturePerm::permute(const std::vector<BitSet>& featureActivations, int nPos) {
+FeaturePerm::permute(const std::vector<BitSet>& featureActivations, int nPos,
+                     bool useLocalSearch, U64 rndSeed) {
     std::vector<int> permutation;
-    computeGreedyPerm(featureActivations, nPos, permutation);
+    std::vector<int> groupCount;
+    computeGreedyPerm(featureActivations, nPos, permutation, groupCount);
+    if (useLocalSearch)
+        localOptimize(featureActivations, nPos, rndSeed, permutation, groupCount);
     permuteNet(permutation);
 }
 
 void
 FeaturePerm::computeGreedyPerm(const std::vector<BitSet>& featureActivations,
-                               int nPos, std::vector<int>& permutation) {
-    permutation.clear();
-
+                               int nPos, std::vector<int>& permutation,
+                               std::vector<int>& groupCount) {
     std::vector<int> remainingF;
     for (int f = 0; f < NetData::n1; f++)
         remainingF.push_back(f);
@@ -56,6 +62,7 @@ FeaturePerm::computeGreedyPerm(const std::vector<BitSet>& featureActivations,
     int grpSize = 0;
 
     std::cout << "Computing greedy permutation..." << std::endl;
+    permutation.clear();
     int iter = 0;
     int oldTot = 0;
     double numNonZero = 0;
@@ -95,17 +102,86 @@ FeaturePerm::computeGreedyPerm(const std::vector<BitSet>& featureActivations,
                   << " p: " << ((double)totCnt / (2*nPos))
                   << std::endl;
 
-        if (grpSize == maxGrpSize - 1)
+        if (grpSize == maxGrpSize - 1) {
             numNonZero += (double)totCnt / (2*nPos);
+            groupCount.push_back(totCnt);
+        }
 
         permutation.push_back(bestF);
         oldTot = totCnt;
         grpSize++;
         iter++;
     }
-    std::cout << "nonZero: " << (numNonZero / (iter / maxGrpSize)) << std::endl;
+    std::cout << "non-zero prob: " << (numNonZero / (iter / maxGrpSize)) << std::endl;
 }
 
+void
+FeaturePerm::localOptimize(const std::vector<BitSet>& featureActivations,
+                           int nPos, U64 rndSeed, std::vector<int>& permutation,
+                           std::vector<int>& groupCount) {
+    int nFeats = NetData::n1;
+    assert(nFeats % maxGrpSize == 0);
+    int nGroups = nFeats / maxGrpSize;
+
+    auto activationProb = [nPos,nGroups](S64 totCnt) {
+        return (double)totCnt / (2*nPos) / nGroups;
+    };
+
+    S64 totCnt = 0; // Total number of times a group is non-zero
+    for (int g = 0; g < nGroups; g++)
+        totCnt += groupCount[g];
+    const double initProb = activationProb(totCnt);
+
+    auto getGroupCount = [&featureActivations,&permutation](int g) -> int {
+        int f0 = g * maxGrpSize;
+        BitSet bs(featureActivations[permutation[f0]]);
+        for (int i = 1; i < maxGrpSize; i++)
+            bs |= featureActivations[permutation[f0+i]];
+        return bs.bitCount();
+    };
+
+    if (rndSeed == 0) {
+        rndSeed = currentTimeMillis();
+        std::cout << "Random seed: " << rndSeed << std::endl;
+    }
+    Random rnd(rndSeed);
+    int iter = 0;
+    int nFails = 0;
+    while (nFails < 30000) {
+        int f1 = rnd.nextInt(nFeats);
+        int f2;
+        do {
+            f2 = rnd.nextInt(nFeats);
+        } while (f1 / maxGrpSize == f2 / maxGrpSize);
+
+        int g1 = f1 / maxGrpSize;
+        int g2 = f2 / maxGrpSize;
+
+        int oldG1Cnt = groupCount[g1];
+        int oldG2Cnt = groupCount[g2];
+
+        std::swap(permutation[f1], permutation[f2]);
+
+        int g1Cnt = getGroupCount(g1);
+        int g2Cnt = getGroupCount(g2);
+
+        int delta = g1Cnt + g2Cnt - (oldG1Cnt + oldG2Cnt);
+        if (delta < 0) {
+            groupCount[g1] = g1Cnt;
+            groupCount[g2] = g2Cnt;
+            totCnt += delta;
+            double actProb = activationProb(totCnt);
+            nFails = 0;
+            std::cout << "i: " << iter << " f1: " << f1 << " f2: " << f2 << " delta: " << delta
+                      << " prob: " << actProb << " (" << (actProb/initProb) << ")"
+                      << std::endl;
+        } else {
+            std::swap(permutation[f1], permutation[f2]);
+            nFails++;
+        }
+        iter++;
+    }
+}
 
 void
 FeaturePerm::permuteNet(std::vector<int>& permutation) {

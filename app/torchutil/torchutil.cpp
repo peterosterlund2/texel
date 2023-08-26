@@ -859,7 +859,8 @@ printStats(const NetData& net) {
 /** Permute first layer features to make the first layer output sparse. */
 template <typename DataSet>
 static void
-permuteFeatures(NetData& net, DataSet& ds, int nWorkers) {
+permuteFeatures(NetData& net, DataSet& ds, bool useLocalSearch, U64 rndSeed,
+                int nWorkers) {
     using BitSet = FeaturePerm::BitSet;
     std::vector<BitSet> featureActivations(NetData::n1);
     const int nPos = std::min(BitSet::numBits/2, (int)ds.getSize());
@@ -912,7 +913,7 @@ permuteFeatures(NetData& net, DataSet& ds, int nWorkers) {
     }
 
     FeaturePerm fp(net);
-    fp.permute(featureActivations, nPos);
+    fp.permute(featureActivations, nPos, useLocalSearch, rndSeed);
 }
 
 /** Convert a serialized floating point network of type Net in "inFile" to a
@@ -920,7 +921,8 @@ permuteFeatures(NetData& net, DataSet& ds, int nWorkers) {
 static void
 quantize(const std::string& inFile, const std::string& outFile,
          const std::string& validationFile,
-         bool compress, bool permute, bool qLoss, int nWorkers) {
+         bool compress, bool permute, bool useLocalSearch, U64 rndSeed,
+         bool qLoss, int nWorkers) {
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
     torch::load(netP, inFile.c_str());
@@ -932,7 +934,7 @@ quantize(const std::string& inFile, const std::string& outFile,
 
     if (permute) {
         DataSet ds(validationFile);
-        permuteFeatures(qNet, ds, nWorkers);
+        permuteFeatures(qNet, ds, useLocalSearch, rndSeed, nWorkers);
     }
 
     {
@@ -1182,11 +1184,12 @@ usage() {
     std::cerr << "cmd is one of:\n";
     std::cerr << " train infile\n";
     std::cerr << "   Train network from data in infile\n";
-    std::cerr << " quant [-c] [-p] [-ql] infile outfile [validationFile]\n";
+    std::cerr << " quant [-c] [-p|-pl] [-ql] infile outfile [validationFile]\n";
     std::cerr << "   Quantize infile, write result to outfile\n";
-    std::cerr << "   -c  : Also create compressed network\n";
-    std::cerr << "   -p  : Permute features for sparsity using validationFile\n";
-    std::cerr << "   -ql : Compute RMS loss for quantized net using validationFile\n";
+    std::cerr << "   -c       : Also create compressed network\n";
+    std::cerr << "   -p       : Permute features for sparsity using validationFile\n";
+    std::cerr << "   -pl seed : Permute features using local search. seed=0 uses current time\n";
+    std::cerr << "   -ql      : Compute RMS loss for quantized net using validationFile\n";
     std::cerr << " eval modelfile fen\n";
     std::cerr << "   Evaluate position using a saved network\n";
     std::cerr << " subset infile nPos outfile\n";
@@ -1213,6 +1216,8 @@ static void
 doQuantize(int argc, char* argv[], int nWorkers) {
     bool compress = false;
     bool permute = false;
+    bool useLocalSearch = false;
+    U64 rndSeed = 0;
     bool qLoss = false;
 
     argc -= 2;
@@ -1227,6 +1232,13 @@ doQuantize(int argc, char* argv[], int nWorkers) {
             permute = true;
             argc--;
             argv++;
+        } else if (argc >= 2 && arg == "-pl") {
+            if (!str2Num(argv[1], rndSeed))
+                usage();
+            permute = true;
+            useLocalSearch = true;
+            argc -= 2;
+            argv += 2;
         } else if (arg == "-ql") {
             qLoss = true;
             argc--;
@@ -1244,7 +1256,8 @@ doQuantize(int argc, char* argv[], int nWorkers) {
     checkFileExists(inFile);
     if (!validationFile.empty())
         checkFileExists(validationFile);
-    quantize(inFile, outFile, validationFile, compress, permute, qLoss, nWorkers);
+    quantize(inFile, outFile, validationFile, compress, permute,
+             useLocalSearch, rndSeed, qLoss, nWorkers);
 }
 
 int
