@@ -30,6 +30,7 @@
 #include "nnutil.hpp"
 #include "nneval.hpp"
 #include "square.hpp"
+#include "threadpool.hpp"
 #include "featureperm.hpp"
 
 #include <torch/torch.h>
@@ -227,6 +228,7 @@ getData(DataSet& ds, size_t beg, size_t end,
 class DataSet {
 public:
     DataSet(const std::string& filename);
+    DataSet(const DataSet& other);
 
     /** Get number of records in the data set. */
     S64 getSize() const;
@@ -234,16 +236,30 @@ public:
     void getItem(S64 idx, Record& r);
 
 private:
+    void openFile();
+
+    std::string filename;
     std::fstream fs;
     S64 size;
 };
 
-DataSet::DataSet(const std::string& filename) {
+DataSet::DataSet(const DataSet& other)
+    : filename(other.filename), size(other.size) {
+    openFile();
+}
+
+DataSet::DataSet(const std::string& filename)
+    : filename(filename) {
+    openFile();
+    size = fs.tellg() / sizeof(Record);
+}
+
+void
+DataSet::openFile() {
     fs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     fs.open(filename.c_str(), std::ios_base::in |
                               std::ios_base::binary);
     fs.seekg(0, std::ios_base::end);
-    size = fs.tellg() / sizeof(Record);
 }
 
 inline S64
@@ -589,23 +605,48 @@ toProb(T score) {
 /** Compute RMS loss for a quantized network over a data set. */
 template <typename DataSet>
 static double
-getQLoss(DataSet& ds, const NetData& qNet) {
-    double qLoss = 0;
-    std::shared_ptr<NNEvaluator> qEval = NNEvaluator::create(qNet);
-    Record r;
-    Position pos;
-    qEval->connectPosition(pos);
-    pos.connectNNEval(qEval.get());
-    S64 nPos = ds.getSize();
-    for (S64 i = 0; i < nPos; i++) {
-        ds.getItem(i, r);
-        int target;
-        NNUtil::recordToPos(r, pos, target);
+getQLoss(DataSet& ds, const NetData& qNet, int nWorkers) {
+    struct ThreadData {
+        DataSet ds;
+        std::shared_ptr<NNEvaluator> qEval;
+        Record r;
+        Position pos;
+        ThreadData(DataSet& ds, const NetData& net) : ds(ds) {
+            qEval = NNEvaluator::create(net);
+            qEval->connectPosition(pos);
+            pos.connectNNEval(qEval.get());
+        }
+    };
+    std::vector<std::shared_ptr<ThreadData>> tdVec(nWorkers);
+    for (int i = 0; i < nWorkers; i++)
+        tdVec[i] = std::make_shared<ThreadData>(ds, qNet);
 
-        int qVal = qEval->eval();
-        double err = toProb(qVal*0.01) - toProb(target*0.01);
-        qLoss += err*err;
+    S64 nPos = ds.getSize();
+    double qLoss = 0;
+    const int batchSize = 32*1024;
+    ThreadPool<double> pool(nWorkers);
+    for (S64 i = 0; i < nPos; i += batchSize) {
+        S64 beginIdx = i;
+        S64 endIdx = std::min(i + batchSize, nPos);
+        auto func = [&tdVec,beginIdx,endIdx](int workerNo) {
+            ThreadData& td = *tdVec[workerNo];
+            double qLoss = 0;
+            for (S64 i = beginIdx; i < endIdx; i++) {
+                td.ds.getItem(i, td.r);
+                int target;
+                NNUtil::recordToPos(td.r, td.pos, target);
+
+                int qVal = td.qEval->eval();
+                double err = toProb(qVal*0.01) - toProb(target*0.01);
+                qLoss += err*err;
+            }
+            return qLoss;
+        };
+        pool.addTask(func);
     }
+    pool.getAllResults([&qLoss](double batchLoss) {
+        qLoss += batchLoss;
+    });
     qLoss = sqrt(qLoss / nPos);
     return qLoss;
 }
@@ -613,7 +654,7 @@ getQLoss(DataSet& ds, const NetData& qNet) {
 /** Train a network using training data from "inFile". After each training epoch,
  *  the current net is saved in PyTorch format in the file modelNN.pt. */
 static void
-train(const std::string& inFile, U64 seed) {
+train(const std::string& inFile, U64 seed, int nWorkers) {
     auto dev = torch::kCUDA;
     const double t0 = currentTime();
 
@@ -711,7 +752,7 @@ train(const std::string& inFile, U64 seed) {
                 net.quantize(qNet);
                 net.to(torch::kCUDA);
                 qNet.prepareMatMul();
-                qLoss = getQLoss(validateData, qNet);
+                qLoss = getQLoss(validateData, qNet, nWorkers);
             }
 
             std::cout << "Validation error: "
@@ -818,7 +859,7 @@ printStats(const NetData& net) {
 /** Permute first layer features to make the first layer output sparse. */
 template <typename DataSet>
 static void
-permuteFeatures(NetData& net, DataSet& ds) {
+permuteFeatures(NetData& net, DataSet& ds, int nWorkers) {
     using BitSet = FeaturePerm::BitSet;
     std::vector<BitSet> featureActivations(NetData::n1);
     const int nPos = std::min(BitSet::numBits/2, (int)ds.getSize());
@@ -828,23 +869,46 @@ permuteFeatures(NetData& net, DataSet& ds) {
         NetData& copyNet = *copyNetP;
         copyNet = net;
         copyNet.prepareMatMul();
-        std::shared_ptr<NNEvaluator> qEval = NNEvaluator::create(copyNet);
-        Record r;
-        Position pos;
-        qEval->connectPosition(pos);
-        pos.connectNNEval(qEval.get());
-        for (int i = 0; i < nPos; i++) {
-            ds.getItem(i, r);
-            int target;
-            NNUtil::recordToPos(r, pos, target);
-            qEval->eval();
-            for (int f = 0; f < NetData::n1; f++) {
-                if (qEval->getL1OutClipped(f) != 0)
-                    featureActivations[f].setBit(2*i+0);
-                if (qEval->getL1OutClipped(f+NetData::n1) != 0)
-                    featureActivations[f].setBit(2*i+1);
+
+        struct ThreadData {
+            DataSet ds;
+            std::shared_ptr<NNEvaluator> qEval;
+            Record r;
+            Position pos;
+            ThreadData(DataSet& ds, const NetData& net) : ds(ds) {
+                qEval = NNEvaluator::create(net);
+                qEval->connectPosition(pos);
+                pos.connectNNEval(qEval.get());
             }
+        };
+        std::vector<std::shared_ptr<ThreadData>> tdVec(nWorkers);
+        for (int i = 0; i < nWorkers; i++)
+            tdVec[i] = std::make_shared<ThreadData>(ds, copyNet);
+
+        const int batchSize = 32*1024;
+        ThreadPool<int> pool(nWorkers);
+        for (int i = 0; i < nPos; i += batchSize) {
+            int beginIdx = i;
+            int endIdx = std::min(i + batchSize, nPos);
+            auto func = [&featureActivations,&tdVec,beginIdx,endIdx](int workerNo) {
+                ThreadData& td = *tdVec[workerNo];
+                for (int i = beginIdx; i < endIdx; i++) {
+                    td.ds.getItem(i, td.r);
+                    int target;
+                    NNUtil::recordToPos(td.r, td.pos, target);
+                    td.qEval->eval();
+                    for (int f = 0; f < NetData::n1; f++) {
+                        if (td.qEval->getL1OutClipped(f) != 0)
+                            featureActivations[f].setBit(2*i+0);
+                        if (td.qEval->getL1OutClipped(f+NetData::n1) != 0)
+                            featureActivations[f].setBit(2*i+1);
+                    }
+                }
+                return 0;
+            };
+            pool.addTask(func);
         }
+        pool.getAllResults([](int){});
     }
 
     FeaturePerm fp(net);
@@ -856,7 +920,7 @@ permuteFeatures(NetData& net, DataSet& ds) {
 static void
 quantize(const std::string& inFile, const std::string& outFile,
          const std::string& validationFile,
-         bool compress, bool permute, bool qLoss) {
+         bool compress, bool permute, bool qLoss, int nWorkers) {
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
     torch::load(netP, inFile.c_str());
@@ -868,7 +932,7 @@ quantize(const std::string& inFile, const std::string& outFile,
 
     if (permute) {
         DataSet ds(validationFile);
-        permuteFeatures(qNet, ds);
+        permuteFeatures(qNet, ds, nWorkers);
     }
 
     {
@@ -913,7 +977,7 @@ quantize(const std::string& inFile, const std::string& outFile,
     if (qLoss) {
         DataSet ds(validationFile);
         qNet.prepareMatMul();
-        double qLoss = getQLoss(ds, qNet);
+        double qLoss = getQLoss(ds, qNet, nWorkers);
         std::cout << "Quantized error: " << qLoss << std::endl;
     }
 }
@@ -1113,14 +1177,15 @@ featureStats(const std::string& inFile) {
 /** Print usage information to standard error and exit program. */
 static void
 usage() {
-    std::cerr << "Usage: torchutil cmd params\n";
+    std::cerr << "Usage: torchutil [-j n] cmd params\n";
+    std::cerr << " -j n : Use n worker threads\n";
     std::cerr << "cmd is one of:\n";
     std::cerr << " train infile\n";
     std::cerr << "   Train network from data in infile\n";
     std::cerr << " quant [-c] [-p] [-ql] infile outfile [validationFile]\n";
     std::cerr << "   Quantize infile, write result to outfile\n";
     std::cerr << "   -c  : Also create compressed network\n";
-    std::cerr << "   -p  : Permute weights for sparsity using validationFile\n";
+    std::cerr << "   -p  : Permute features for sparsity using validationFile\n";
     std::cerr << "   -ql : Compute RMS loss for quantized net using validationFile\n";
     std::cerr << " eval modelfile fen\n";
     std::cerr << "   Evaluate position using a saved network\n";
@@ -1145,7 +1210,7 @@ checkFileExists(const std::string& filename) {
 }
 
 static void
-doQuantize(int argc, char* argv[]) {
+doQuantize(int argc, char* argv[], int nWorkers) {
     bool compress = false;
     bool permute = false;
     bool qLoss = false;
@@ -1179,12 +1244,22 @@ doQuantize(int argc, char* argv[]) {
     checkFileExists(inFile);
     if (!validationFile.empty())
         checkFileExists(validationFile);
-    quantize(inFile, outFile, validationFile, compress, permute, qLoss);
+    quantize(inFile, outFile, validationFile, compress, permute, qLoss, nWorkers);
 }
 
 int
 main(int argc, char* argv[]) {
     try {
+        int nWorkers = std::thread::hardware_concurrency();
+        while (true) {
+            if ((argc >= 3) && (std::string(argv[1]) == "-j")) {
+                if (!str2Num(argv[2], nWorkers) || nWorkers <= 0)
+                    usage();
+                argc -= 2;
+                argv += 2;
+            } else
+                break;
+        }
         if (argc < 2)
             usage();
 
@@ -1195,9 +1270,9 @@ main(int argc, char* argv[]) {
             std::string inFile = argv[2];
             checkFileExists(inFile);
             U64 seed = (U64)(currentTime() * 1000);
-            train(inFile, seed);
+            train(inFile, seed, nWorkers);
         } else if (cmd == "quant") {
-            doQuantize(argc, argv);
+            doQuantize(argc, argv, nWorkers);
         } else if (cmd == "eval") {
             if (argc != 4)
                 usage();
