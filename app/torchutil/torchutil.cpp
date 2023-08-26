@@ -30,7 +30,7 @@
 #include "nnutil.hpp"
 #include "nneval.hpp"
 #include "square.hpp"
-#include "bitSet.hpp"
+#include "featureperm.hpp"
 
 #include <torch/torch.h>
 #include <vector>
@@ -819,11 +819,9 @@ printStats(const NetData& net) {
 template <typename DataSet>
 static void
 permuteFeatures(NetData& net, DataSet& ds) {
-    constexpr int maxN = 1024 * 1024 * 8;
-    using BitSet = BitSet<maxN>;
-
+    using BitSet = FeaturePerm::BitSet;
     std::vector<BitSet> featureActivations(NetData::n1);
-    const int nPos = std::min(maxN/2, (int)ds.getSize());
+    const int nPos = std::min(BitSet::numBits/2, (int)ds.getSize());
     {
         std::cout << "Evaluating..." << std::endl;
         std::shared_ptr<NetData> copyNetP = NetData::create();
@@ -849,87 +847,8 @@ permuteFeatures(NetData& net, DataSet& ds) {
         }
     }
 
-    std::vector<int> remainingF;
-    for (int f = 0; f < NetData::n1; f++)
-        remainingF.push_back(f);
-
-    std::vector<BitSet> tmpSets(2);
-    BitSet& currAct = tmpSets[0];
-    BitSet& tmpSet = tmpSets[1];
-    int grpSize = 0;
-
-    std::vector<int> permutation;
-    {
-        std::cout << "Permuting..." << std::endl;
-        const int maxGrpSize = 8;
-        int iter = 0;
-        int oldTot = 0;
-        double numNonZero = 0;
-        while (!remainingF.empty()) {
-            if (grpSize == maxGrpSize) {
-                currAct.clear();
-                grpSize = 0;
-                oldTot = 0;
-                std::cout << "---" << std::endl;
-            }
-
-            int bestI = -1;
-            int bestCnt = 0;
-            for (int i = 0; i < (int)remainingF.size(); i++) {
-                int f = remainingF[i];
-                tmpSet = currAct;
-                tmpSet |= featureActivations[f];
-                int totCnt = tmpSet.bitCount();
-                if (bestI == -1 || totCnt < bestCnt) {
-                    bestI = i;
-                    bestCnt = totCnt;
-                }
-            }
-            int bestF = remainingF[bestI];
-            int newCnt = featureActivations[bestF].bitCount();
-            currAct |= featureActivations[bestF];
-            int totCnt = currAct.bitCount();
-
-            remainingF[bestI] = remainingF[(int)remainingF.size()-1];
-            remainingF.pop_back();
-
-            std::cout << "i: " << std::setw(3) << iter
-                      << " f: " << std::setw(3) << bestF
-                      << " new: " << std::setw(8) << newCnt
-                      << " inc: " << std::setw(8) << (totCnt - oldTot)
-                      << " tot: " << std::setw(8) << totCnt
-                      << " p: " << ((double)totCnt / (2*nPos))
-                      << std::endl;
-
-            if (grpSize == maxGrpSize - 1)
-                numNonZero += (double)totCnt / (2*nPos);
-
-            permutation.push_back(bestF);
-            oldTot = totCnt;
-            grpSize++;
-            iter++;
-        }
-        std::cout << "nonZero: " << (numNonZero / (iter / maxGrpSize)) << std::endl;
-    }
-
-    int n1 = NetData::n1;
-    for (int newF = 0; newF < n1; newF++) {
-        int oldF = permutation[newF];
-        for (int i = 0; i < NetData::inFeatures; i++)
-            std::swap(net.weight1(i, newF), net.weight1(i, oldF));
-        std::swap(net.bias1(newF), net.bias1(oldF));
-        for (int i = 0; i < NetData::n2; i++) {
-            std::swap(net.lin2.weight(i, newF+n1*0), net.lin2.weight(i, oldF+n1*0));
-            std::swap(net.lin2.weight(i, newF+n1*1), net.lin2.weight(i, oldF+n1*1));
-        }
-        permutation[newF] = newF;
-        for (int x = newF+1; x < n1; x++) {
-            if (permutation[x] == newF) {
-                permutation[x] = oldF;
-                break;
-            }
-        }
-    }
+    FeaturePerm fp(net);
+    fp.permute(featureActivations, nPos);
 }
 
 /** Convert a serialized floating point network of type Net in "inFile" to a

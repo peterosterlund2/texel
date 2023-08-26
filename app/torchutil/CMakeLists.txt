@@ -1,5 +1,6 @@
 set(src_torchutil
   torchutil.cpp
+  featureperm.cpp  featureperm.hpp
   )
 
 if(NOT CMAKE_CROSSCOMPILING)
