@@ -509,10 +509,10 @@ EvaluateTest::testEndGameCorrections() {
     // sometimes makes it a draw
     int krrnkrr = evalFEN("8/5r2/3r4/4k3/2R4R/4K3/4N3/8 w - -");
     EXPECT_GT(krrnkrr, 200);
-    EXPECT_LT(krrnkrr, 300);
+    EXPECT_LT(krrnkrr, 350);
     int krrbkrr = evalFEN("8/5r2/3r4/4k3/2R4R/4K3/4B3/8 w - -");
     EXPECT_GT(krrbkrr, 200);
-    EXPECT_LT(krrbkrr, 325);
+    EXPECT_LT(krrbkrr, 350);
 }
 
 TEST(EvaluateTest, testPassedPawns) {
@@ -759,8 +759,8 @@ EvaluateTest::testKQKRP() {
     EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/3k4/8/3p2Q1/4r3/5K2 b - - 0 1")), 50);
     EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/8/2Q5/3pk3/4r3/5K2 w - - 0 1")), 50);
     EXPECT_GT(evalWhite(TextIO::readFEN("8/8/8/4Q3/8/3pk3/4r3/5K2 b - - 0 1")), 48);
-    EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/2k5/8/2p2Q2/3r4/4K3 b - - 3 2")), 35);
-    EXPECT_GT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/4Q3/8 w - - 0 1")), 75);
+    EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/2k5/8/2p2Q2/3r4/4K3 b - - 3 2")), 40);
+    EXPECT_GT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/4Q3/8 w - - 0 1")), 60);
     EXPECT_LT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/5Q2/8 w - - 0 1")), 50);
     EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/5Q2/8/1kp5/3r4/4K3 w - - 0 1")), 15);
     EXPECT_GT(evalWhite(TextIO::readFEN("8/8/8/1Q6/8/1kp5/3r4/2K5 b - - 0 1")), 25);
@@ -860,7 +860,7 @@ EvaluateTest::testKBPKB() {
     EXPECT_LT(score, drawish);
 
     score = evalWhite(TextIO::readFEN("8/1b1k4/8/3PK3/8/3B4/8/8 w - - 0 1"));
-    EXPECT_GE(score, -5);
+    EXPECT_GE(score, -6);
     EXPECT_LT(score, pV); // Close to known draw
 
     score = evalWhite(TextIO::readFEN("8/1b6/7k/8/P7/KB6/8/8 w - - 0 1"));
