@@ -713,7 +713,7 @@ train(const std::string& inFile, U64 seed, int nWorkers) {
             lossSum += loss;
             lossNum += 1;
 
-            if (batch % 200 == 0) {
+            if (batch % 1000 == 0) {
                 printf("t: %8.3f batch: %5ld loss: %g\n",
                        currentTime() - t0,
                        batch,
