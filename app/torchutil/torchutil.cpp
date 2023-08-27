@@ -280,18 +280,18 @@ DataSet::getItem(S64 idx, Record& r) {
 template <typename Base>
 class ShuffledDataSet {
 public:
-    ShuffledDataSet(Base& baseSet, U64 seed);
+    ShuffledDataSet(const Base& baseSet, U64 seed);
 
     S64 getSize() const;
     void getItem(S64 idx, Record& r);
 
 public:
-    Base& baseSet;
+    Base baseSet;
     RandPerm rndPerm;
 };
 
 template <typename Base>
-ShuffledDataSet<Base>::ShuffledDataSet(Base& baseSet, U64 seed)
+ShuffledDataSet<Base>::ShuffledDataSet(const Base& baseSet, U64 seed)
     : baseSet(baseSet), rndPerm(baseSet.getSize(), seed) {
 }
 
@@ -313,19 +313,19 @@ ShuffledDataSet<Base>::getItem(S64 idx, Record& r) {
 template <typename Base>
 class SubDataSet {
 public:
-    SubDataSet(Base& baseSet, U64 beg, U64 end);
+    SubDataSet(const Base& baseSet, U64 beg, U64 end);
 
     S64 getSize() const;
     void getItem(S64 idx, Record& r);
 
 private:
-    Base& baseSet;
+    Base baseSet;
     const U64 beg;
     const U64 end;
 };
 
 template <typename Base>
-SubDataSet<Base>::SubDataSet(Base& baseSet, U64 beg, U64 end)
+SubDataSet<Base>::SubDataSet(const Base& baseSet, U64 beg, U64 end)
     : baseSet(baseSet), beg(beg), end(end) {
 }
 
