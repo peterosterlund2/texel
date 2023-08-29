@@ -209,5 +209,5 @@ NNEvaluator::eval() {
     layer3.forward(layer2Out.output, layer3Out);
     layer4.evalLinear(layer3Out.output, layer4Out);
 
-    return layer4Out.linOutput(0) * 100 / (127 * 64);
+    return layer4Out.linOutput(0) * (100 * 2) / (127 * 64);
 }

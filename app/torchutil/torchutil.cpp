@@ -343,6 +343,7 @@ Net::forward(torch::Tensor xW, torch::Tensor xB) {
     x = torch::clamp(lin2->forward(x), 0.0f, 1.0f);
     x = torch::clamp(lin3->forward(x), 0.0f, 1.0f);
     x = lin4->forward(x);
+    x *= 2;
     return x;
 }
 
