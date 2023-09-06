@@ -1,5 +1,6 @@
 set(src_torchutil
   torchutil.cpp
+  randperm.cpp     randperm.hpp
   featureperm.cpp  featureperm.hpp
   )
 
