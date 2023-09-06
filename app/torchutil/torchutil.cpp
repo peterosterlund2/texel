@@ -654,12 +654,15 @@ getQLoss(DataSet& ds, const NetData& qNet, int nWorkers) {
 /** Train a network using training data from "inFile". After each training epoch,
  *  the current net is saved in PyTorch format in the file modelNN.pt. */
 static void
-train(const std::string& inFile, U64 seed, int nWorkers) {
+train(const std::string& inFile, int nEpochs, double initialLR, U64 seed,
+      const std::string& initialModel, int nWorkers) {
     auto dev = torch::kCUDA;
     const double t0 = currentTime();
 
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
+    if (!initialModel.empty())
+        torch::load(netP, initialModel.c_str());
     net.to(dev);
 
     size_t nPars = 0;
@@ -682,11 +685,11 @@ train(const std::string& inFile, U64 seed, int nWorkers) {
     std::cout << "nTrain   : " << nTrain << " (" << (nTrain / batchSize) << " batches)" << std::endl;
     std::cout << "nValidate: " << nValidate << " (" << (nValidate / batchSize) << " batches)" << std::endl;
 
-    double lr = 1e-3;
+    double lr = initialLR;
     auto opts = torch::optim::AdamOptions(lr).weight_decay(1e-6);
     torch::optim::Adam optimizer(net.parameters(), opts);
     net.printWeights(0);
-    for (int epoch = 1; epoch <= 30; epoch++) {
+    for (int epoch = 1; epoch <= nEpochs; epoch++) {
         ShuffledDataSet<SubSet> epochTrainData(trainData, hashU64(seed) + epoch);
         std::cout << "Epoch: " << epoch << " lr: " << lr << std::endl;
 
@@ -1182,7 +1185,7 @@ usage() {
     std::cerr << "Usage: torchutil [-j n] cmd params\n";
     std::cerr << " -j n : Use n worker threads\n";
     std::cerr << "cmd is one of:\n";
-    std::cerr << " train infile\n";
+    std::cerr << " train [-i modelfile] [-lr rate] [-epochs n] infile\n";
     std::cerr << "   Train network from data in infile\n";
     std::cerr << " quant [-c] [-p|-pl] [-ql] infile outfile [validationFile]\n";
     std::cerr << "   Quantize infile, write result to outfile\n";
@@ -1210,6 +1213,43 @@ checkFileExists(const std::string& filename) {
     std::ifstream f(filename.c_str());
     if (!f.good())
         throw ChessError("File not found: " + filename);
+}
+
+static void
+doTrain(int argc, char* argv[], int nWorkers) {
+    int nEpochs = 40;
+    double initialLR = 1e-3;
+    std::string modelFile;
+    argc -= 2;
+    argv += 2;
+    while (argc > 0) {
+        std::string arg = argv[0];
+        if (argc >= 2 && arg == "-epochs") {
+            if (!str2Num(argv[1], nEpochs) || nEpochs < 1)
+                usage();
+            argc -= 2;
+            argv += 2;
+        } else if (argc >= 2 && arg == "-lr") {
+            if (!str2Num(argv[1], initialLR) || initialLR <= 0)
+                usage();
+            argc -= 2;
+            argv += 2;
+        } else if (argc >= 2 && arg == "-i") {
+            modelFile = argv[1];
+            argc -= 2;
+            argv += 2;
+        } else
+            break;
+    }
+    if (argc != 1)
+        usage();
+
+    std::string inFile = argv[0];
+    checkFileExists(inFile);
+    if (!modelFile.empty())
+        checkFileExists(modelFile);
+    U64 seed = (U64)(currentTime() * 1000);
+    train(inFile, nEpochs, initialLR, seed, modelFile, nWorkers);
 }
 
 static void
@@ -1278,12 +1318,7 @@ main(int argc, char* argv[]) {
 
         std::string cmd = argv[1];
         if (cmd == "train") {
-            if (argc != 3)
-                usage();
-            std::string inFile = argv[2];
-            checkFileExists(inFile);
-            U64 seed = (U64)(currentTime() * 1000);
-            train(inFile, seed, nWorkers);
+            doTrain(argc, argv, nWorkers);
         } else if (cmd == "quant") {
             doQuantize(argc, argv, nWorkers);
         } else if (cmd == "eval") {
