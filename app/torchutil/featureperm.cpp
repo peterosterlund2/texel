@@ -25,6 +25,7 @@
 
 #include "featureperm.hpp"
 #include "random.hpp"
+#include "randperm.hpp"
 #include "timeUtil.hpp"
 
 #include <iostream>
@@ -119,7 +120,8 @@ void
 FeaturePerm::localOptimize(const std::vector<BitSet>& featureActivations,
                            int nPos, U64 rndSeed, std::vector<int>& permutation,
                            std::vector<int>& groupCount) {
-    int nFeats = NetData::n1;
+    const int nFeats = NetData::n1;
+    assert(nFeats == featureActivations.size());
     assert(nFeats % maxGrpSize == 0);
     int nGroups = nFeats / maxGrpSize;
 
@@ -145,42 +147,65 @@ FeaturePerm::localOptimize(const std::vector<BitSet>& featureActivations,
         std::cout << "Random seed: " << rndSeed << std::endl;
     }
     Random rnd(rndSeed);
+
+    std::vector<U8> activeVec(nFeats*nFeats, true);
+    auto active = [&activeVec,nFeats](int f1, int f2) -> U8& {
+        if (f1 > f2)
+            std::swap(f1, f2);
+        return activeVec[f1*nFeats+f2];
+    };
+
     int iter = 0;
-    int nFails = 0;
-    while (nFails < 30000) {
-        int f1 = rnd.nextInt(nFeats);
-        int f2;
-        do {
-            f2 = rnd.nextInt(nFeats);
-        } while (f1 / maxGrpSize == f2 / maxGrpSize);
+    bool improved;
+    do {
+        improved = false;
+        const int N2 = nFeats * nFeats;
+        RandPerm rp(N2, rnd.nextU64());
+        for (int i = 0; i < N2; i++) {
+            int p = rp.perm(i);
+            int f1 = p / nFeats;
+            int f2 = p % nFeats;
+            if (f1 / maxGrpSize == f2 / maxGrpSize)
+                continue; // Same group
+            if (!active(f1,f2))
+                continue;
+            active(f1,f2) = false;
+            iter++;
 
-        int g1 = f1 / maxGrpSize;
-        int g2 = f2 / maxGrpSize;
+            int g1 = f1 / maxGrpSize;
+            int g2 = f2 / maxGrpSize;
 
-        int oldG1Cnt = groupCount[g1];
-        int oldG2Cnt = groupCount[g2];
+            int oldG1Cnt = groupCount[g1];
+            int oldG2Cnt = groupCount[g2];
 
-        std::swap(permutation[f1], permutation[f2]);
-
-        int g1Cnt = getGroupCount(g1);
-        int g2Cnt = getGroupCount(g2);
-
-        int delta = g1Cnt + g2Cnt - (oldG1Cnt + oldG2Cnt);
-        if (delta < 0) {
-            groupCount[g1] = g1Cnt;
-            groupCount[g2] = g2Cnt;
-            totCnt += delta;
-            double actProb = activationProb(totCnt);
-            nFails = 0;
-            std::cout << "i: " << iter << " f1: " << f1 << " f2: " << f2 << " delta: " << delta
-                      << " prob: " << actProb << " (" << (actProb/initProb) << ")"
-                      << std::endl;
-        } else {
             std::swap(permutation[f1], permutation[f2]);
-            nFails++;
+
+            int g1Cnt = getGroupCount(g1);
+            int g2Cnt = getGroupCount(g2);
+
+            int delta = g1Cnt + g2Cnt - (oldG1Cnt + oldG2Cnt);
+            if (delta < 0) {
+                groupCount[g1] = g1Cnt;
+                groupCount[g2] = g2Cnt;
+                totCnt += delta;
+                double actProb = activationProb(totCnt);
+                std::cout << "i: " << iter << " f1: " << f1 << " f2: " << f2 << " delta: " << delta
+                          << " prob: " << actProb << " (" << (actProb/initProb) << ")"
+                          << std::endl;
+                improved = true;
+                auto activateGroup = [&active,nFeats](int g) {
+                    for (int f1 = g*maxGrpSize; f1 < (g+1)*maxGrpSize; f1++)
+                        for (int f2 = 0; f2 < nFeats; f2++)
+                            active(f1,f2) = true;
+                };
+                activateGroup(g1);
+                activateGroup(g2);
+                break;
+            } else {
+                std::swap(permutation[f1], permutation[f2]);
+            }
         }
-        iter++;
-    }
+    } while (improved);
 }
 
 void
