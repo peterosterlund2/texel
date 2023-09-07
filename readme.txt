@@ -269,7 +269,7 @@ Texel uses a so called hybrid MPI design. This means that it uses a single MPI
 process per computer. On each computer it uses threads and shared memory, and
 optionally NUMA awareness.
 
-After texel has been started, use the "Threads" UCI option to control the total
+After Texel has been started, use the "Threads" UCI option to control the total
 number of search threads to use. Texel automatically decides how many threads to
 use for each computer, and can also handle the case where different computers
 have different number of CPUs and cores.
@@ -282,7 +282,7 @@ MPICH is installed on all computers, start Texel like this:
   mpiexec -hosts host1,host2,host3,host4 /path/to/texel
 
 Note that /path/to/texel must be valid for all computers in the cluster, so
-either install texel on all computers or install it on a network disk that is
+either install Texel on all computers or install it on a network disk that is
 mounted on all computers.
 
 Note that it must be possible to ssh from host1 to the other hosts without
@@ -299,7 +299,7 @@ both computers, proceed as follows:
    network.
 3. On all computers, start a command prompt and execute:
    smpd -d 0
-4. Make sure texel is installed in the same directory on all computers.
+4. Make sure Texel is installed in the same directory on all computers.
 5. On the host1 computer, start a command prompt and execute:
    cd /directory/where/texel/is/installed
    mpiexec -hosts 2 host1 host2 texel64cl.exe
@@ -408,7 +408,7 @@ Source code for various tools used during Texel development is provided in the
 app/texelutil directory. Note that this program depends on the libraries
 Armadillo and GSL for full functionality.
 
-Source code for an interactive interface to the texel book building algorithm is
+Source code for an interactive interface to the Texel book building algorithm is
 provided in the app/bookgui directory. It depends on gtkmm-3.0 and probably only
 works in Linux.
 
