@@ -405,8 +405,11 @@ Additional source code
 Source code for Texel's automatic test suite is provided in the test directory.
 
 Source code for various tools used during Texel development is provided in the
-app/texelutil directory. Note that this program depends on the libraries
-Armadillo and GSL for full functionality.
+app/texelutil directory. This program depends on the libraries Armadillo and GSL
+for full functionality.
+
+Source code for neural network training is provided in the app/torchutil
+directory. This program depends on LibTorch, which is the C++ part of PyTorch.
 
 Source code for an interactive interface to the Texel book building algorithm is
 provided in the app/bookgui directory. It depends on gtkmm-3.0 and probably only
