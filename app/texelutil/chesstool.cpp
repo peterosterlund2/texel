@@ -652,7 +652,8 @@ ChessTool::searchPositions(std::istream& is, int baseTime, int increment) {
                         if (!is || is.eof())
                             break;
                         nLines++;
-                        std::cout << "nLines: " << nLines << std::endl;
+                        if (nLines % 1000 == 0)
+                            std::cout << "nLines: " << nLines << std::endl;
                     }
                     std::vector<std::string> fields;
                     splitString(line, " : ", fields);
