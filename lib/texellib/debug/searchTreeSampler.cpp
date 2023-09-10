@@ -85,7 +85,7 @@ SearchTreeSamplerReal::writeToFile(int searchScore) {
         pos.deSerialize(ret.second);
 
         of << TextIO::toFEN(pos)
-           << " eval:" << eval << " search:" << searchScore << std::endl;
+           << " : -1 : " << searchScore << " : " << eval << std::endl;
     }
     samples.clear();
 }
