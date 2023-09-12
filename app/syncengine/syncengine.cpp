@@ -39,11 +39,8 @@
 #include <sys/wait.h>
 
 
-using namespace std;
-
-
 inline bool
-startsWith(const string& str, const string& startsWith) {
+startsWith(const std::string& str, const std::string& startsWith) {
     size_t N = startsWith.length();
     if (str.length() < N)
         return false;
@@ -67,21 +64,21 @@ splitString(const std::string& str, std::vector<std::string>& out)
 
 class Process {
 public:
-    Process(const string& command);
+    Process(const std::string& command);
     ~Process();
 
-    void writeLine(string line);
+    void writeLine(std::string line);
 
-    string readLine();
+    std::string readLine();
 
-    void waitFor(const string& s);
+    void waitFor(const std::string& s);
 
 private:
     int fd[2];
     pid_t childpid;
 };
 
-Process::Process(const string& command) {
+Process::Process(const std::string& command) {
     int fd1[2];		/* parent -> child */
     int fd2[2];		/* child -> parent */
 
@@ -114,7 +111,7 @@ Process::~Process() {
 }
 
 void
-Process::writeLine(string line) {
+Process::writeLine(std::string line) {
     // cout << line << endl;
     line += "\n";
     const int len = line.length();
@@ -122,16 +119,16 @@ Process::writeLine(string line) {
     while (pos < len) {
         int cnt = write(fd[1], &line[pos], len - pos);
         if ((cnt <= 0) || (cnt > len)) {
-            cerr << "pos:" << pos << " len:" << len << " cnt:" << cnt << endl;
+            std::cerr << "pos:" << pos << " len:" << len << " cnt:" << cnt << std::endl;
             throw "write error";
         }
         pos += cnt;
     }
 }
 
-string
+std::string
 Process::readLine() {
-    string ret;
+    std::string ret;
     char buf;
     while (true) {
         int cnt = read(fd[0], &buf, 1);
@@ -146,8 +143,8 @@ Process::readLine() {
 }
 
 void
-Process::waitFor(const string& s) {
-    string line;
+Process::waitFor(const std::string& s) {
+    std::string line;
     do {
         line = readLine();
         std::cout << line << std::endl;
@@ -157,14 +154,14 @@ Process::waitFor(const string& s) {
 // ------------------------------------------------------------
 
 static void usage() {
-    cerr << "Usage: syncengine engine" << endl;
+    std::cerr << "Usage: syncengine engine" << std::endl;
     ::exit(2);
 }
 
 int main(int argc, char* argv[]) {
     if (argc != 2)
         usage();
-    string engine = argv[1];
+    std::string engine = argv[1];
 
     static std::map<std::string,std::string> cmdPairs = {
         { "uci", "uciok" },
@@ -195,6 +192,6 @@ int main(int argc, char* argv[]) {
             }
         }
     } catch (const char* err) {
-        cerr << "Exception: " << err << endl;
+        std::cerr << "Exception: " << err << std::endl;
     }
 }
