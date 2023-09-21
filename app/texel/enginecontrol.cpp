@@ -475,7 +475,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
     sc->timeLimit(minTimeLimit, maxTimeLimit, earlyStopPercentage);
     bool ownBook = UciParams::ownBook->getBoolPar();
     bool analyseMode = UciParams::analyseMode->getBoolPar();
-    int maxPV = (infinite || analyseMode) ? UciParams::multiPV->getIntPar() : 1;
+    int maxPV = UciParams::multiPV->getIntPar();
     int minProbeDepth = UciParams::minProbeDepth->getIntPar();
     int whiteContempt = getWhiteContempt(pos.isWhiteMove());
     sc->setWhiteContempt(whiteContempt);
