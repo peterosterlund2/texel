@@ -695,7 +695,7 @@ train(const std::string& inFile, int nEpochs, double initialLR, U64 seed,
 
             std::cout << "Validation error: "
                       << std::sqrt(lossSum.item<float>() / lossNum)
-                      << " Quantized eror: " << qLoss
+                      << " Quantized error: " << qLoss
                       << std::endl;
         }
 
