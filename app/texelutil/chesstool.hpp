@@ -145,8 +145,9 @@ public:
      *  not generate any output, but it is still useful if the SearchTreeSampler is enabled. */
     void searchPositions(std::istream& is, int baseTime, int increment);
 
-    /** Convert FEN+score data to binary format. */
-    void fen2bin(std::istream& is, const std::string& outFile);
+    /** Convert FEN+score data to binary format.
+     *  If "useResult" is true, use the game result instead of the search score. */
+    void fen2bin(std::istream& is, const std::string& outFile, bool useResult);
 
     /** Print how much position evaluation improves when parValues are applied to evaluation function.
      * Positions with no change are not printed. */

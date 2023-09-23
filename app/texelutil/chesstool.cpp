@@ -699,7 +699,7 @@ ChessTool::searchPositions(std::istream& is, int baseTime, int increment) {
 }
 
 void
-ChessTool::fen2bin(std::istream& is, const std::string& outFile) {
+ChessTool::fen2bin(std::istream& is, const std::string& outFile, bool useResult) {
     using Record = NNUtil::Record;
     std::ofstream os;
     os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
@@ -718,11 +718,27 @@ ChessTool::fen2bin(std::istream& is, const std::string& outFile) {
 
         pos = TextIO::readFEN(fields[0]);
 
-        int searchScore;
-        if (!str2Num(fields[2], searchScore))
-            throw ChessParseError("Invalid score: " + line);
-
-        NNUtil::posToRecord(pos, searchScore, r);
+        int score;
+        if (!useResult) {
+            int searchScore;
+            if (!str2Num(fields[2], searchScore))
+                throw ChessParseError("Invalid score: " + line);
+            score = searchScore;
+        } else {
+            double gameResult;
+            if (!str2Num(fields[1], gameResult))
+                gameResult = -1;
+            if (gameResult == 0.0) {
+                score = -10000;
+            } else if (gameResult == 0.5) {
+                score = 0;
+            } else if (gameResult == 1.0) {
+                score = 10000;
+            } else {
+                throw ChessParseError("Invalid game result: " + line);
+            }
+        }
+        NNUtil::posToRecord(pos, score, r);
         os.write((const char*)&r, sizeof(Record));
     }
 }

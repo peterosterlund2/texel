@@ -99,7 +99,7 @@ usage() {
 #endif
     std::cerr << " qsearch : Update positions in FEN file to position at end of q-search\n";
     std::cerr << " searchfens time inc : Search all positions in FEN file\n";
-    std::cerr << " fen2bin outFile     : Convert FEN+score data to binary format\n";
+    std::cerr << " fen2bin outFile [useResult] : Convert FEN+score data to binary format\n";
     std::cerr << "\n";
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
     std::cerr << " evaleffect evalfile : Print eval improvement when parameters are changed\n";
@@ -616,10 +616,11 @@ main(int argc, char* argv[]) {
                 usage();
             chessTool.searchPositions(std::cin, baseTime, increment);
         } else if (cmd == "fen2bin") {
-            if (argc != 3)
+            if (argc < 3 || argc > 4)
                 usage();
             std::string outFile = argv[2];
-            chessTool.fen2bin(std::cin, outFile);
+            bool useResult = argc == 4 && argv[3] == std::string("useResult");
+            chessTool.fen2bin(std::cin, outFile, useResult);
         } else if (cmd == "outliers") {
             int threshold;
             if ((argc < 3) || !str2Num(argv[2], threshold))
