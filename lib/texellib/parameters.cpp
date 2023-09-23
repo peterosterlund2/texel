@@ -120,7 +120,7 @@ DEFINE_PARAM(maxTimeUsage);
 DEFINE_PARAM(timePonderHitRate);
 
 ParamTable<10> halfMoveFactor { 0, 192, useUciParam,
-    {128,128,128,128, 31, 19, 12,  9,  5,  3 },
+    {128,128,128,128, 44, 35, 29, 25, 20, 17 },
     {  0,  0,  0,  0,  1,  2,  3,  4,  5,  6 }
 };
 

@@ -111,11 +111,11 @@ Evaluate::evalPos() {
         if (print) std::cout << "info string eval contemp:" << score << ' ' << piecePlay << std::endl;
     }
 
-#if 0
     if (posP->pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) {
         int hmc = clamp(posP->getHalfMoveClock() / 10, 0, 9);
         score = score * halfMoveFactor[hmc] / 128;
     }
+#if 0
     if (print) std::cout << "info string eval halfmove:" << score << std::endl;
 
     if (score > 0) {
