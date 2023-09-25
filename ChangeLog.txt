@@ -1,3 +1,30 @@
+2023-09-25: Texel 1.10 (ELO: +173)
+Speed up evaluation:
+- More handwritten code using compiler intrinsics.
+- Switch from gcc to clang for Windows compiles.
+- Cache-line align data for more efficient SIMD load/store.
+- Avoid "horizontal adds" in matrix multiplication by re-arranging weight data
+  ahead of time.
+Better neural network:
+- Train a new network based on new training data evaluated by Texel 1.09.
+- Use both search scores and game results when generating training data.
+- Compute quantized validation error during training.
+- Set unused layer 1 weights to 0 during training, to reduce compressed network
+  size.
+- Print weight/bias statistics during net quantization, to make it possible to
+  see if quantization parameters are reasonable.
+- Permute the quantized net for more efficient sparse handling of the outputs
+  from the first layer.
+Compilation fixes:
+- Fix Visual Studio debug compilation.
+- Fix cygwin/msys2 compilation problems.
+- Better SIMD support for 32-bit CPUs.
+Other:
+- Add source code for "syncengine" program.
+- Allow MultiPV mode also when playing games.
+- Re-introduce evaluation score reduction when the half-move clock is large.
+  No strength improvement but avoids shuffling moves in some situations.
+
 2023-07-30: Texel 1.09 (ELO: +252)
 - Implement NNUE evaluation.
 
