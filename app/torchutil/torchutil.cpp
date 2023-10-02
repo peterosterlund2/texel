@@ -312,7 +312,7 @@ public:
 
     /** Clamp weights to remain within a range that is compatible
      *  with later quantization. */
-    void clamp();
+    void clamp(bool useQAT);
 
     /** Write weight/bias matrices to files in current directory. */
     void printWeights(int epoch) const;
@@ -348,12 +348,23 @@ Net::forward(torch::Tensor xW, torch::Tensor xB) {
 }
 
 void
-Net::clamp() {
+Net::clamp(bool useQAT) {
     c10::NoGradGuard guard;
 
-    auto clampLayer = [](torch::nn::Linear lin) {
+    auto clampLayer = [useQAT](torch::nn::Linear lin) {
         float maxVal = 127.0f / 64.0f;
-        lin->weight.clamp_(-maxVal, maxVal);
+        auto clampRound = [maxVal](torch::Tensor w) {
+            w.clamp_(-maxVal, maxVal);
+            w *= 64.0f;
+            w.round_();
+            w *= 1.0f/64.0f;
+
+        };
+        if (useQAT) {
+            clampRound(lin->weight);
+        } else {
+            lin->weight.clamp_(-maxVal, maxVal);
+        }
         lin->bias.clamp_(-maxVal, maxVal);
     };
     clampLayer(lin2);
@@ -590,7 +601,7 @@ getQLoss(DataSet& ds, const NetData& qNet, int nWorkers) {
 /** Train a network using training data from "inFile". After each training epoch,
  *  the current net is saved in PyTorch format in the file modelNN.pt. */
 static void
-train(const std::string& inFile, int nEpochs, double initialLR, U64 seed,
+train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64 seed,
       const std::string& initialModel, int nWorkers) {
     auto dev = torch::kCUDA;
     const double t0 = currentTime();
@@ -647,7 +658,7 @@ train(const std::string& inFile, int nEpochs, double initialLR, U64 seed,
             torch::Tensor loss = mse_loss(toProb(output), toProb(target));
             loss.backward();
             optimizer.step();
-            net.clamp();
+            net.clamp(useQAT);
 
             lossSum += loss;
             lossNum += 1;
@@ -1121,7 +1132,7 @@ usage() {
     std::cerr << "Usage: torchutil [-j n] cmd params\n";
     std::cerr << " -j n : Use n worker threads\n";
     std::cerr << "cmd is one of:\n";
-    std::cerr << " train [-i modelfile] [-lr rate] [-epochs n] infile\n";
+    std::cerr << " train [-i modelfile] [-lr rate] [-epochs n] [-qat] infile\n";
     std::cerr << "   Train network from data in infile\n";
     std::cerr << " quant [-c] [-p|-pl] [-ql] infile outfile [validationFile]\n";
     std::cerr << "   Quantize infile, write result to outfile\n";
@@ -1156,6 +1167,7 @@ doTrain(int argc, char* argv[], int nWorkers) {
     int nEpochs = 40;
     double initialLR = 1e-3;
     std::string modelFile;
+    bool useQAT = false; // Quantization aware training
     argc -= 2;
     argv += 2;
     while (argc > 0) {
@@ -1174,6 +1186,10 @@ doTrain(int argc, char* argv[], int nWorkers) {
             modelFile = argv[1];
             argc -= 2;
             argv += 2;
+        } else if (arg == "-qat") {
+            useQAT = true;
+            argc--;
+            argv++;
         } else
             break;
     }
@@ -1185,7 +1201,7 @@ doTrain(int argc, char* argv[], int nWorkers) {
     if (!modelFile.empty())
         checkFileExists(modelFile);
     U64 seed = (U64)(currentTime() * 1000);
-    train(inFile, nEpochs, initialLR, seed, modelFile, nWorkers);
+    train(inFile, nEpochs, useQAT, initialLR, seed, modelFile, nWorkers);
 }
 
 static void
