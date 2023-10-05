@@ -99,7 +99,8 @@ usage() {
 #endif
     std::cerr << " qsearch : Update positions in FEN file to position at end of q-search\n";
     std::cerr << " searchfens time inc : Search all positions in FEN file\n";
-    std::cerr << " fen2bin outFile [useResult] : Convert FEN+score data to binary format\n";
+    std::cerr << " fen2bin [-useResult] [-noincheck] outFile\n";
+    std::cerr << "                     : Convert FEN+score data to binary format\n";
     std::cerr << "\n";
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
     std::cerr << " evaleffect evalfile : Print eval improvement when parameters are changed\n";
@@ -287,6 +288,32 @@ doFilterCmd(int argc, char* argv[], ChessTool& chessTool) {
         chessTool.filterTotalMaterial(std::cin, minorEqual, mtrlPattern);
     } else
         usage();
+}
+
+static void
+doFen2Bin(int argc, char* argv[], ChessTool& chessTool) {
+    bool useResult = false;
+    bool noInCheck = false;
+
+    argc -= 2;
+    argv += 2;
+    while (argc > 0) {
+        std::string arg = argv[0];
+        if (arg == "-useResult") {
+            useResult = true;
+            argc--;
+            argv++;
+        } else if (arg == "-noincheck") {
+            noInCheck = true;
+            argc--;
+            argv++;
+        } else
+            break;
+    }
+    if (argc != 1)
+        usage();
+    std::string outFile = argv[0];
+    chessTool.fen2bin(std::cin, outFile, useResult, noInCheck);
 }
 
 static void
@@ -616,11 +643,7 @@ main(int argc, char* argv[]) {
                 usage();
             chessTool.searchPositions(std::cin, baseTime, increment);
         } else if (cmd == "fen2bin") {
-            if (argc < 3 || argc > 4)
-                usage();
-            std::string outFile = argv[2];
-            bool useResult = argc == 4 && argv[3] == std::string("useResult");
-            chessTool.fen2bin(std::cin, outFile, useResult);
+            doFen2Bin(argc, argv, chessTool);
         } else if (cmd == "outliers") {
             int threshold;
             if ((argc < 3) || !str2Num(argv[2], threshold))

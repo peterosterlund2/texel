@@ -146,8 +146,9 @@ public:
     void searchPositions(std::istream& is, int baseTime, int increment);
 
     /** Convert FEN+score data to binary format.
-     *  If "useResult" is true, use the game result instead of the search score. */
-    void fen2bin(std::istream& is, const std::string& outFile, bool useResult);
+     *  If "useResult" is true, use the game result instead of the search score.
+     *  If "noInCheck" is true, ignore positions where side to move is in check. */
+    void fen2bin(std::istream& is, const std::string& outFile, bool useResult, bool noInCheck);
 
     /** Print how much position evaluation improves when parValues are applied to evaluation function.
      * Positions with no change are not printed. */

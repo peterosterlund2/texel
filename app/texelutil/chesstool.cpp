@@ -699,7 +699,7 @@ ChessTool::searchPositions(std::istream& is, int baseTime, int increment) {
 }
 
 void
-ChessTool::fen2bin(std::istream& is, const std::string& outFile, bool useResult) {
+ChessTool::fen2bin(std::istream& is, const std::string& outFile, bool useResult, bool noInCheck) {
     using Record = NNUtil::Record;
     std::ofstream os;
     os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
@@ -717,6 +717,8 @@ ChessTool::fen2bin(std::istream& is, const std::string& outFile, bool useResult)
         splitString(line, " : ", fields);
 
         pos = TextIO::readFEN(fields[0]);
+        if (noInCheck && MoveGen::inCheck(pos))
+            continue;
 
         int score;
         if (!useResult) {
