@@ -147,8 +147,11 @@ public:
 
     /** Convert FEN+score data to binary format.
      *  If "useResult" is true, use the game result instead of the search score.
-     *  If "noInCheck" is true, ignore positions where side to move is in check. */
-    void fen2bin(std::istream& is, const std::string& outFile, bool useResult, bool noInCheck);
+     *  If "noInCheck" is true, ignore positions where side to move is in check.
+     *  If "prLimit" >= 0, ignore positions where search score and evaluation score
+     *    differ more than prLimit, measured in expected outcome. */
+    void fen2bin(std::istream& is, const std::string& outFile, bool useResult,
+                 bool noInCheck, double prLimit);
 
     /** Print how much position evaluation improves when parValues are applied to evaluation function.
      * Positions with no change are not printed. */

@@ -699,12 +699,14 @@ ChessTool::searchPositions(std::istream& is, int baseTime, int increment) {
 }
 
 void
-ChessTool::fen2bin(std::istream& is, const std::string& outFile, bool useResult, bool noInCheck) {
+ChessTool::fen2bin(std::istream& is, const std::string& outFile, bool useResult,
+                   bool noInCheck, double prLimit) {
     using Record = NNUtil::Record;
     std::ofstream os;
     os.open(outFile.c_str(), std::ios_base::out | std::ios_base::binary);
     os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
+    ScoreToProb sp;
     Position pos;
     Record r;
     std::string line;
@@ -717,8 +719,19 @@ ChessTool::fen2bin(std::istream& is, const std::string& outFile, bool useResult,
         splitString(line, " : ", fields);
 
         pos = TextIO::readFEN(fields[0]);
+
         if (noInCheck && MoveGen::inCheck(pos))
             continue;
+        if (prLimit >= 0) {
+            int searchScore;
+            int qScore;
+            if (!str2Num(fields[2], searchScore) || !str2Num(fields[3], qScore))
+                throw ChessParseError("Invalid score: " + line);
+            double p1 = sp.getProb(searchScore);
+            double p2 = sp.getProb(qScore);
+            if (std::abs(p1 - p2) > prLimit)
+                continue;
+        }
 
         int score;
         if (!useResult) {

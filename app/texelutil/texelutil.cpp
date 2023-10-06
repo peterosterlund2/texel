@@ -99,7 +99,7 @@ usage() {
 #endif
     std::cerr << " qsearch : Update positions in FEN file to position at end of q-search\n";
     std::cerr << " searchfens time inc : Search all positions in FEN file\n";
-    std::cerr << " fen2bin [-useResult] [-noincheck] outFile\n";
+    std::cerr << " fen2bin [-useResult] [-noincheck] [-prlimit lim] outFile\n";
     std::cerr << "                     : Convert FEN+score data to binary format\n";
     std::cerr << "\n";
     std::cerr << " outliers threshold  : Print positions with unexpected game result\n";
@@ -294,6 +294,7 @@ static void
 doFen2Bin(int argc, char* argv[], ChessTool& chessTool) {
     bool useResult = false;
     bool noInCheck = false;
+    double prLimit = -1;
 
     argc -= 2;
     argv += 2;
@@ -307,13 +308,18 @@ doFen2Bin(int argc, char* argv[], ChessTool& chessTool) {
             noInCheck = true;
             argc--;
             argv++;
+        } else if (argc > 1 && arg == "-prlimit") {
+            if (!str2Num(argv[1], prLimit) || prLimit < 0.0)
+                usage();
+            argc -= 2;
+            argv += 2;
         } else
             break;
     }
     if (argc != 1)
         usage();
     std::string outFile = argv[0];
-    chessTool.fen2bin(std::cin, outFile, useResult, noInCheck);
+    chessTool.fen2bin(std::cin, outFile, useResult, noInCheck, prLimit);
 }
 
 static void
