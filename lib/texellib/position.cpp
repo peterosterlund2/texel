@@ -230,6 +230,9 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
     int capP = squares[move.to()];
     U64 fromMask = 1ULL << move.from();
 
+    if (nnEval)
+        nnEval->pushState();
+
     int prevEpSquare = epSquare;
     setEpSquare(-1);
 
@@ -284,6 +287,9 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
 
 void
 Position::unMakeMove(const Move& move, const UndoInfo& ui) {
+    NNEvaluator* origNnEval = nnEval;
+    nnEval = nullptr;
+
     hashKey ^= whiteHashKey;
     whiteMove = !whiteMove;
     int p = squares[move.to()];
@@ -319,6 +325,10 @@ Position::unMakeMove(const Move& move, const UndoInfo& ui) {
             setPiece(move.to() + 8, Piece::WPAWN);
         }
     }
+
+    nnEval = origNnEval;
+    if (nnEval)
+        nnEval->popState();
 }
 
 void

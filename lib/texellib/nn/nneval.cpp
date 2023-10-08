@@ -26,6 +26,7 @@
 #include "nneval.hpp"
 #include "vectorop.hpp"
 #include "position.hpp"
+#include <cassert>
 
 int NNEvaluator::ptValue[Piece::nPieceTypes];
 
@@ -62,6 +63,7 @@ NNEvaluator::NNEvaluator(const NetData& netData)
       layer4(netData.lin4),
       netData(netData) {
     static_assert(sizeof(FirstLayerState) % 32 == 0, "Bad alignment");
+    static_assert(sizeof(FirstLayerStack) % 32 == 0, "Bad alignment");
 }
 
 void
@@ -71,13 +73,31 @@ NNEvaluator::connectPosition(const Position& pos) {
 }
 
 void
-NNEvaluator::forceFullEval() {
+NNEvaluator::forceFullEval(bool clearStack) {
+    if (clearStack)
+        stack.stackTop = 0;
+    for (int c = 0; c < 2; c++)
+        getLinState(c).clear();
+}
+
+void
+NNEvaluator::pushState() {
     for (int c = 0; c < 2; c++) {
-        FirstLayerState& s = linState[c];
-        s.kingSqComputed = -1;
-        s.toAddLen = 0;
-        s.toSubLen = 0;
+        FirstLayerState& fls = getLinState(c);
+        if (fls.toAddLen + fls.toSubLen > 0)
+            computeL1WB();
     }
+
+    stack.stackTop++;
+    assert(stack.stackTop < maxStackSize);
+    for (int c = 0; c < 2; c++)
+        stack.flState[stack.stackTop][c] = stack.flState[stack.stackTop-1][c];
+}
+
+void
+NNEvaluator::popState() {
+    assert(stack.stackTop > 0);
+    stack.stackTop--;
 }
 
 /** Return the row in the first layer weight matrix corresponding
@@ -106,7 +126,7 @@ NNEvaluator::setPiece(int square, int oldPiece, int newPiece) {
     };
 
     for (int c = 0; c < 2; c++) {
-        FirstLayerState& s = linState[c];
+        FirstLayerState& s = getLinState(c);
         int kSq = s.kingSqComputed;
         if (kSq == -1)
             continue;
@@ -114,11 +134,9 @@ NNEvaluator::setPiece(int square, int oldPiece, int newPiece) {
         if (isNonKing(oldPiece)) {
             int pt = ptValue[oldPiece];
             int idx = getIndex(kSq, pt, square, c == 0);
-            if (s.toAddLen > 0 && s.toAdd[s.toAddLen-1] == idx)
-                s.toAddLen--;
-            else if (s.toSubLen < maxIncr)
+            if (s.toSubLen < maxIncr) {
                 s.toSub[s.toSubLen++] = idx;
-            else {
+            } else {
                 s.kingSqComputed = -1;
                 s.toAddLen = 0;
                 s.toSubLen = 0;
@@ -129,11 +147,9 @@ NNEvaluator::setPiece(int square, int oldPiece, int newPiece) {
         if (isNonKing(newPiece)) {
             int pt = ptValue[newPiece];
             int idx = getIndex(kSq, pt, square, c == 0);
-            if (s.toSubLen > 0 && s.toSub[s.toSubLen-1] == idx)
-                s.toSubLen--;
-            else if (s.toAddLen < maxIncr)
+            if (s.toAddLen < maxIncr) {
                 s.toAdd[s.toAddLen++] = idx;
-            else {
+            } else {
                 s.kingSqComputed = -1;
                 s.toAddLen = 0;
                 s.toSubLen = 0;
@@ -150,7 +166,7 @@ NNEvaluator::computeL1WB() {
     kingSq[0] = posP->getKingSq(true);
     kingSq[1] = posP->getKingSq(false);
     for (int c = 0; c < 2; c++) {
-        FirstLayerState& s = linState[c];
+        FirstLayerState& s = getLinState(c);
         doFull[c] = s.kingSqComputed != kingSq[c];
         if (!doFull[c])
             addSubWeights(s.l1Out, netData.weight1, s.toAdd, s.toAddLen, s.toSub, s.toSubLen);
@@ -163,7 +179,7 @@ NNEvaluator::computeL1WB() {
 
     for (int c = 0; c < 2; c++) {
         if (doFull[c]) {
-            FirstLayerState& s = linState[c];
+            FirstLayerState& s = getLinState(c);
             copyVec(s.l1Out, netData.bias1);
             s.kingSqComputed = posP->getKingSq(c == 0);
         }
@@ -178,14 +194,14 @@ NNEvaluator::computeL1WB() {
         int pt = ptValue[p];
         for (int c = 0; c < 2; c++) {
             if (doFull[c]) {
-                FirstLayerState& s = linState[c];
+                FirstLayerState& s = getLinState(c);
                 add[c][len[c]++] = getIndex(s.kingSqComputed, pt, sq, c == 0);
             }
         }
     }
     for (int c = 0; c < 2; c++) {
         if (doFull[c]) {
-            FirstLayerState& s = linState[c];
+            FirstLayerState& s = getLinState(c);
             addSubWeights(s.l1Out, netData.weight1, add[c], len[c], add[c], 0);
         }
     }
@@ -195,7 +211,7 @@ void
 NNEvaluator::computeL1Out() {
     bool wtm = posP->isWhiteMove();
     for (int c = 0; c < 2; c++) {
-        const Vector<S16, n1>& l1OutC = linState[wtm ? c : (1-c)].l1Out;
+        const Vector<S16, n1>& l1OutC = getLinState(wtm ? c : (1-c)).l1Out;
         scaleClipPack<NetData::l1Shift>(&l1OutClipped(c * n1), l1OutC);
     }
 }

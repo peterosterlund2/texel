@@ -146,10 +146,10 @@ namespace {
 
     void Evaluator::makeMove(const std::string& move) {
         if (!incremental)
-            et->nnEval->forceFullEval();
+            et->nnEval->forceFullEval(false);
         Position pos2(pos);
         Move m = TextIO::stringToMove(pos2, move);
-        ASSERT_TRUE(!m.isEmpty());
+        ASSERT_TRUE(!m.isEmpty()) << move;
         UndoInfo ui;
         pos.makeMove(m, ui);
         moveStack.push_back(m);
@@ -164,13 +164,13 @@ namespace {
 
     int Evaluator::getEval() {
         if (!incremental)
-            et->nnEval->forceFullEval();
+            et->nnEval->forceFullEval(false);
         return eval.evalPos();
     }
 
     void Evaluator::undo() {
         if (!incremental)
-            et->nnEval->forceFullEval();
+            et->nnEval->forceFullEval(false);
         ASSERT_GT(moveStack.size(), 0);
         pos.unMakeMove(moveStack.back(), undoStack.back());
         moveStack.pop_back();
@@ -250,4 +250,26 @@ NNTest::testIncremental() {
          {"Nf3", "Nc6", "Nh4", "Na5", "Nf3", ":e",
           ":u", ":u", ":u", ":u", ":u", ":e"});
     test(TextIO::startPosFEN, {":e", "Nf3", ":null", "Ng1", ":e"});
+    test("8/5k2/7n/8/8/1P6/4K3/8 w - - 0 1",
+         {":e",
+          "b4", "Ng8", ":e",
+          "b5", "Nh6", ":e",
+          "Kf3", "Ng8", ":e",
+          "b6", "Nh6", ":e",
+          "Ke2", "Ng8", ":e",
+          "b7", "Nh6", ":e",
+          "Kd3", "Ng8", ":e",
+          "Ke4", "Nh6", ":e",
+          "Ke5", "Ng8", ":e",
+          ":u", ":u", ":e",
+          ":u", ":u", ":e",
+          ":u", ":u", ":e",
+          ":u", ":u", ":e",
+          ":u", ":u", ":e",
+          ":u", ":u",
+          ":u", ":u",
+          ":u", ":u",
+          ":u", ":u",
+          "b4", "Ng4", ":e",
+         });
 }

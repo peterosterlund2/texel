@@ -29,6 +29,7 @@
 #include "nntypes.hpp"
 #include "util.hpp"
 #include "piece.hpp"
+#include "constants.hpp"
 
 class Position;
 class NNTest;
@@ -44,12 +45,17 @@ public:
     /** Set position object used for non-incremental evaluation. */
     void connectPosition(const Position& pos);
 
+    /** Push the evaluation state. Called before making a move.*/
+    void pushState();
+    /** Pop the evaluation state. Called after undoing a move. */
+    void popState();
+
     /** Set a square to a piece value. Use Piece::EMPTY to clear a square. */
     void setPiece(int square, int oldPiece, int newPiece);
 
     /** Clear incrementally updated state. Needed if position has changed
      *  in an unknown way. */
-    void forceFullEval();
+    void forceFullEval(bool clearStack = true);
 
     /** Static evaluation of the current position.
      * @return The evaluation score, measured in centipawns.
@@ -69,11 +75,16 @@ private:
     void computeL1WB();
     void computeL1Out();
 
+    struct FirstLayerState;
+    /** Get first layer linear state. */
+    FirstLayerState& getLinState(int c);
+
     static constexpr int n1 = NetData::n1;
     static constexpr int n2 = NetData::n2;
     static constexpr int n3 = NetData::n3;
 
-    static constexpr int maxIncr = 16;
+    static constexpr int maxIncr = 4;
+    static constexpr int maxStackSize = SearchConst::MAX_SEARCH_DEPTH * 2;
 
     struct FirstLayerState {
         Vector<S16, n1> l1Out;   // Linear output corresponding to one side, incrementally updated
@@ -83,8 +94,14 @@ private:
         int toSubLen = 0;        // Number of entries in toSub
         int kingSqComputed = -1; // King square corresponding to l1Out, or -1 if l1Out not valid
         int pad[5];              // To make size a multiple of 32 bytes
+        void clear();
     };
-    FirstLayerState linState[2];
+    struct FirstLayerStack {
+        FirstLayerState flState[maxStackSize][2];
+        int stackTop = 0;   // Current stack entry
+        int pad[7];         // To make size a multiple of 32 bytes
+    };
+    FirstLayerStack stack;
 
     Vector<S8, 2*n1> l1OutClipped; // l1Out after scaling, clipped ReLU and narrowing, reordered by wtm
 
@@ -109,6 +126,18 @@ private:
 inline int
 NNEvaluator::getL1OutClipped(int f) const {
     return l1OutClipped(f);
+}
+
+inline NNEvaluator::FirstLayerState&
+NNEvaluator::getLinState(int c) {
+    return stack.flState[stack.stackTop][c];
+}
+
+inline void
+NNEvaluator::FirstLayerState::clear() {
+    toAddLen = 0;
+    toSubLen = 0;
+    kingSqComputed = -1;
 }
 
 #endif /* NNEVAL_HPP_ */
