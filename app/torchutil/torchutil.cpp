@@ -603,7 +603,7 @@ getQLoss(DataSet& ds, const NetData& qNet, int nWorkers) {
 static void
 train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64 seed,
       const std::string& initialModel, int nWorkers) {
-    auto dev = torch::kCUDA;
+    const auto dev = torch::kCUDA;
     const double t0 = currentTime();
 
     auto netP = std::make_shared<Net>();
@@ -700,7 +700,7 @@ train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64
                 NetData& qNet = *qNetP;
                 net.to(torch::kCPU);
                 net.quantize(qNet);
-                net.to(torch::kCUDA);
+                net.to(dev);
                 qNet.prepareMatMul();
                 qLoss = getQLoss(validateData, qNet, nWorkers);
             }
