@@ -32,8 +32,8 @@
 #include <vector>
 
 
-/** Permute features in the first layer of a neural network to make the output
- *  from the second layer sparse on average. */
+/** Permute features in the first layer of a neural network to make the input
+ *  to the second layer block-sparse on average. */
 class FeaturePerm {
 public:
     /** Constructor. */
