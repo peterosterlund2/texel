@@ -96,8 +96,11 @@ NNEvaluator::pushState() {
 
 void
 NNEvaluator::popState() {
-    assert(stack.stackTop > 0);
-    stack.stackTop--;
+    if (stack.stackTop > 0) {
+        stack.stackTop--;
+    } else {
+        forceFullEval();
+    }
 }
 
 /** Return the row in the first layer weight matrix corresponding
