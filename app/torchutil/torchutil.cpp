@@ -733,8 +733,9 @@ train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64
             torch::save(netP, ss.str().c_str());
         }
 
-        lr *= 0.8;
+        lr *= 0.85;
         setLR(optimizer, lr);
+
         net.printWeights(epoch);
     }
 }
