@@ -317,6 +317,9 @@ public:
     /** Write weight/bias matrices to files in current directory. */
     void printWeights(int epoch) const;
 
+    /** Initialize network weights. */
+    void initWeights();
+
     /** Create quantized net. */
     void quantize(NetData& qNet) const;
 
@@ -345,6 +348,16 @@ Net::forward(torch::Tensor xW, torch::Tensor xB) {
     x = lin4->forward(x);
     x *= 2;
     return x;
+}
+
+void
+Net::initWeights() {
+    c10::NoGradGuard guard;
+
+    // First layer input is sparse, so default initialization
+    // gives smaller values than desired.
+    lin1->weight *= 30;
+    lin1->bias *= 30;
 }
 
 void
@@ -608,8 +621,11 @@ train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64
 
     auto netP = std::make_shared<Net>();
     Net& net = *netP;
-    if (!initialModel.empty())
+    if (initialModel.empty()) {
+        net.initWeights();
+    } else {
         torch::load(netP, initialModel.c_str());
+    }
     net.to(dev);
 
     size_t nPars = 0;
