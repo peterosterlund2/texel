@@ -4,7 +4,7 @@ set(src_torchutil
   featureperm.cpp  featureperm.hpp
   )
 
-if(NOT CMAKE_CROSSCOMPILING)
+if(UNIX AND NOT CMAKE_CROSSCOMPILING)
   find_package(Torch
     HINTS $ENV{LIBTORCH_DIR})
 

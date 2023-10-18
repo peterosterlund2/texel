@@ -45,6 +45,12 @@
 #include <cmath>
 #include <climits>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 extern "C" {
 #include "tb/gtb/compression/lzma/Lzma86Enc.h"
 }
@@ -133,9 +139,9 @@ getData(DataSet& ds, size_t beg, size_t end,
         torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out) {
     int batchSize = end - beg;
     Record r;
-    std::vector<int> idxVec1W;
-    std::vector<int> idxVec1B;
-    std::vector<int> idxVec2;
+    std::vector<int> idxVec1W; idxVec1W.reserve(batchSize * 30);
+    std::vector<int> idxVec1B; idxVec1B.reserve(batchSize * 30);
+    std::vector<int> idxVec2;  idxVec2.reserve(batchSize * 30);
     out = torch::empty({batchSize, 1}, torch::kF32);
     for (int b = 0; b < batchSize; b++) {
         ds.getItem(beg + b, r);
@@ -164,6 +170,7 @@ class DataSet {
 public:
     DataSet(const std::string& filename);
     DataSet(const DataSet& other);
+    ~DataSet();
 
     /** Get number of records in the data set. */
     S64 getSize() const;
@@ -174,7 +181,7 @@ private:
     void openFile();
 
     std::string filename;
-    std::fstream fs;
+    const Record* mapping = nullptr;
     S64 size;
 };
 
@@ -186,15 +193,30 @@ DataSet::DataSet(const DataSet& other)
 DataSet::DataSet(const std::string& filename)
     : filename(filename) {
     openFile();
-    size = fs.tellg() / sizeof(Record);
+}
+
+DataSet::~DataSet() {
+    munmap((void*)mapping, size * sizeof(Record));
 }
 
 void
 DataSet::openFile() {
-    fs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    fs.open(filename.c_str(), std::ios_base::in |
-                              std::ios_base::binary);
-    fs.seekg(0, std::ios_base::end);
+    int fd = open(filename.c_str(), O_RDONLY);
+    if (fd == -1)
+        throw ChessError("Failed to open file");
+
+    struct stat statbuf;
+    int ret = fstat(fd, &statbuf);
+    if (ret == -1)
+        throw ChessError("stat error");
+    size = statbuf.st_size / sizeof(Record);
+
+    mapping = (const Record*)mmap(nullptr, statbuf.st_size,
+                                  PROT_READ, MAP_SHARED, fd, 0);
+    if (mapping == MAP_FAILED)
+        throw ChessError("mmap failed");
+
+    close(fd);
 }
 
 inline S64
@@ -204,9 +226,7 @@ DataSet::getSize() const {
 
 void
 DataSet::getItem(S64 idx, Record& r) {
-    S64 offs = idx * sizeof(Record);
-    fs.seekg(offs, std::ios_base::beg);
-    fs.read((char*)&r, sizeof(Record));
+    r = mapping[idx];
 }
 
 // ------------------------------------------------------------------------------
