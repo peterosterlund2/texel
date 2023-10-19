@@ -40,7 +40,7 @@ template <typename Result>
 class ThreadPool {
 public:
     /** Constructor. Creates nThreads worker threads. */
-    ThreadPool(int nThreads);
+    explicit ThreadPool(int nThreads);
     /** Destructor. */
     ~ThreadPool();
 
