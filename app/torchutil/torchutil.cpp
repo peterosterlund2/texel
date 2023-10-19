@@ -163,6 +163,46 @@ getData(DataSet& ds, size_t beg, size_t end,
     }
 }
 
+template <typename DataSet>
+class DataLoader {
+public:
+    explicit DataLoader(DataSet& ds) : ds(ds), pool(1) {}
+
+    void startGetData(size_t beg, size_t end);
+    void getData(torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out);
+
+private:
+    DataSet& ds;
+    struct Result {
+        torch::Tensor inW;
+        torch::Tensor inB;
+        torch::Tensor out;
+    };
+    ThreadPool<Result> pool;
+};
+
+template <typename DataSet>
+void
+DataLoader<DataSet>::startGetData(size_t beg, size_t end) {
+    auto func = [this,beg,end](int workerNo) -> Result {
+        Result r;
+        ::getData(ds, beg, end, r.inW, r.inB, r.out);
+        return r;
+    };
+    pool.addTask(func);
+}
+
+template <typename DataSet>
+void
+DataLoader<DataSet>::getData(torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out) {
+    Result r;
+    if (!pool.getResult(r))
+        throw ChessError("startGetData() not called");
+    inW = r.inW;
+    inB = r.inB;
+    out = r.out;
+}
+
 // ------------------------------------------------------------------------------
 
 /** A data set that reads the data records from a file. */
@@ -676,14 +716,22 @@ train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64
         ShuffledDataSet<SubSet> epochTrainData(trainData, hashU64(seed) + epoch);
         std::cout << "Epoch: " << epoch << " lr: " << lr << std::endl;
 
+        DataLoader<decltype(epochTrainData)> loader(epochTrainData);
         torch::Tensor lossSum = torch::zeros({}, torch::kF32).to(dev);
         int lossNum = 0;
         for (size_t batch = 0, beg = 0; beg < nTrain; batch++, beg += batchSize) {
             size_t end = std::min(beg + batchSize, nTrain);
 
-            torch::Tensor inputW, inputB;
-            torch::Tensor target;
-            getData(epochTrainData, beg, end, inputW, inputB, target);
+            torch::Tensor inputW, inputB, target;
+            if (beg == 0)
+                loader.startGetData(beg, end);
+            loader.getData(inputW, inputB, target);
+            if (beg + batchSize < nTrain) {
+                size_t nextBeg = beg + batchSize;
+                size_t nextEnd = std::min(nextBeg + batchSize, nTrain);
+                loader.startGetData(nextBeg, nextEnd);
+            }
+
             inputW = inputW.to(dev);
             inputB = inputB.to(dev);
             target = target.to(dev);
