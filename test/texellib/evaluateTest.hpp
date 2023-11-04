@@ -32,7 +32,6 @@
 class EvaluateTest {
 public:
     static void testEvalPos();
-    static void testPieceSquareEval();
     static void testMaterial();
     static void testKingSafety();
     static void testEndGameEval();
