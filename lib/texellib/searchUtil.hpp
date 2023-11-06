@@ -39,7 +39,7 @@ public:
     U8* serialize(U8* buffer) const;
     const U8* deSerialize(const U8* buffer);
 
-    bool allowNullMove;    // Don't allow two null-moves in a row
+    bool allowNullMove;    // True to disable null-move at this ply
     bool abdadaExclusive;  // True to make search avoid searching a subtree that
                            // is already being searched.
     Move bestMove;         // Copy of the best found move at this ply
