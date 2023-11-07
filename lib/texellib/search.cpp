@@ -724,8 +724,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, int recaptureSquare,
             if (score >= beta) {
                 if (isWinScore(score))
                     score = beta;
-                emptyMove.setScore(score);
-                if (useTT) tt.insert(hKey, emptyMove, TType::T_GE, ply, depth, evalScore);
                 logFile.logNodeEnd(sti.nodeIdx, score, TType::T_GE, evalScore, hKey);
                 return score;
             }

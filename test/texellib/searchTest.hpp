@@ -47,6 +47,7 @@ public:
     static void testCheckEvasion();
     static void testStalemateTrap();
     static void testKQKRNullMove();
+    static void testNullMoveVerification();
     static void testSEE();
     static void testScoreMoveList();
     static void testTBSearch();

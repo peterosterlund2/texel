@@ -320,6 +320,20 @@ SearchTest::testKQKRNullMove() {
     EXPECT_EQ(SearchConst::MATE0-18, bestM.score());
 }
 
+TEST(SearchTest, testNullMoveVerification) {
+    SearchTest::testNullMoveVerification();
+}
+
+void
+SearchTest::testNullMoveVerification() {
+    Position pos = TextIO::readFEN("n1N3br/2p1Bpkr/1pP2R1b/pP3Pp1/P5P1/1P1p4/p2P4/K7 w - - 0 1");
+    std::shared_ptr<Search> sc = getSearch(pos);
+    sc->setMinProbeDepth(100);
+    Move bestM = idSearch(*sc, 12);
+    EXPECT_EQ("Ba3", TextIO::moveToString(pos, bestM, false));
+    EXPECT_EQ(SearchConst::MATE0-4, bestM.score());
+}
+
 /** Compute SEE(m) and assure that signSEE and negSEE give matching results. */
 int
 SearchTest::getSEE(Search& sc, const Move& m) {
