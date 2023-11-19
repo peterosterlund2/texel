@@ -161,7 +161,7 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
             if (isEp)
                 board[Square(x, y - dy).asInt()] = oPawn;
             while (epFileMask != 0) {
-                x = BitBoard::extractSquare(epFileMask).asInt();
+                x = BitUtil::extractBit(epFileMask);
                 if (board[Square(x, y + dy).asInt()] != Piece::EMPTY ||
                     board[Square(x, y     ).asInt()] != Piece::EMPTY ||
                     board[Square(x, y - dy).asInt()] != oPawn)
@@ -192,7 +192,7 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
 
                 U64 epMask = getEpMask(pos, m, movingPiece, ui.capturedPiece, includeAllEpSquares);
                 while (epMask != 0) {
-                    int epFile = BitBoard::extractSquare(epMask).asInt();
+                    int epFile = BitUtil::extractBit(epMask);
                     ui.epSquare = epFile == 8 ? Square(-1) : Square(epFile, wtm ? 5 : 2);
                     if (mustBeEpCapture(m, movingPiece, ui.capturedPiece) && m.to() != ui.epSquare)
                         continue;

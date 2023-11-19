@@ -52,6 +52,9 @@ public:
     /** Get the lowest 1 bit from mask. mask must be non-zero. */
     static int firstBit(U64 mask);
 
+    /** Get the lowest 1 bit from mask and remove the corresponding bit in mask. */
+    static int extractBit(U64& mask);
+
     /** Get the highest 1 bit from mask. mask must be non-zero. */
     static int lastBit(U64 mask);
 
@@ -232,6 +235,13 @@ BitUtil::lastBit(U64 mask) {
 }
 
 inline int
+BitUtil::extractBit(U64& mask) {
+    int ret = firstBit(mask);
+    mask &= mask - 1;
+    return ret;
+}
+
+inline int
 BitUtil::bitCount(U64 mask) {
 #ifdef HAS_POPCNT
 #if _MSC_VER
@@ -362,9 +372,7 @@ BitBoard::lastSquare(U64 mask) {
 
 inline Square
 BitBoard::extractSquare(U64& mask) {
-    Square ret = firstSquare(mask);
-    mask &= mask - 1;
-    return ret;
+    return Square(BitUtil::extractBit(mask));
 }
 
 inline int

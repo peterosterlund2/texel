@@ -1351,7 +1351,7 @@ ProofGame::solveAssignment(Assignment<int>& as) {
     U64 colsHandled = 0;
     while (rowsToCheck | colsToCheck) {
         if (rowsToCheck) {
-            int r = BitBoard::extractSquare(rowsToCheck).asInt();
+            int r = BitUtil::extractBit(rowsToCheck);
             if ((nValidR[r] == 1) && !(rowsHandled & (1 << r))) {
                 int c;
                 for (c = 0; c < N; c++)
@@ -1369,7 +1369,7 @@ ProofGame::solveAssignment(Assignment<int>& as) {
             }
         }
         if (colsToCheck) {
-            int c = BitBoard::extractSquare(colsToCheck).asInt();
+            int c = BitUtil::extractBit(colsToCheck);
             if ((nValidC[c] == 1) && !(colsHandled & (1 << c))) {
                 int r;
                 for (r = 0; r < N; r++)
