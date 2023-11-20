@@ -273,9 +273,9 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
                 symTable = false;
     }
 
-    for (int wk = 0; wk < 64; wk++) {
-        int x = Square(wk).getX();
-        int y = Square(wk).getY();
+    for (Square wk : AllSquares()) {
+        int x = wk.getX();
+        int y = wk.getY();
         if (skipSymmetric) {
             if (x >= 4)
                 continue;
@@ -283,15 +283,15 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
                 if (y >= 4 || y < x)
                     continue;
         }
-        for (int bk = 0; bk < 64; bk++) {
-            int x2 = Square(bk).getX();
-            int y2 = Square(bk).getY();
+        for (Square bk : AllSquares()) {
+            int x2 = bk.getX();
+            int y2 = bk.getY();
             if (std::abs(x2-x) < 2 && std::abs(y2-y) < 2)
                 continue;
 
             Position pos;
-            pos.setPiece(Square(wk), Piece::WKING);
-            pos.setPiece(Square(bk), Piece::BKING);
+            pos.setPiece(wk, Piece::WKING);
+            pos.setPiece(bk, Piece::BKING);
             std::vector<int> squares(nPieces, 0);
             int nPlaced = 0;
 
@@ -321,9 +321,9 @@ iteratePositions(const std::string& tbType, bool skipSymmetric, Func func) {
 
                 if (nPlaced == nPieces) {
                     pos.setWhiteMove(true);
-                    bool wKingAttacked = MoveGen::sqAttacked(pos, Square(wk));
+                    bool wKingAttacked = MoveGen::sqAttacked(pos, wk);
                     pos.setWhiteMove(false);
-                    bool bKingAttacked = MoveGen::sqAttacked(pos, Square(bk));
+                    bool bKingAttacked = MoveGen::sqAttacked(pos, bk);
                     for (int side = 0; side < 2; side++) {
                         bool white = side == 0;
                         if (white) {
@@ -810,9 +810,9 @@ const int nKingCombs = 3969;
 
 static
 void computeKingData(std::vector<KingData>& kingTable) {
-    for (int k1 = 0; k1 < 64; k1++) {
-        for (int k2 = 0; k2 < 64; k2++) {
-            if (BitBoard::getKingDistance(Square(k1), Square(k2)) <= 1)
+    for (Square k1 : AllSquares()) {
+        for (Square k2 : AllSquares()) {
+            if (BitBoard::getKingDistance(k1, k2) <= 1)
                 continue;
             for (int castleMask = 0; castleMask < 16; castleMask++) {
                 bool a1 = castleMask & a1C;
@@ -823,7 +823,7 @@ void computeKingData(std::vector<KingData>& kingTable) {
                     continue;
                 if (k2 != E8 && (a8 || h8))
                     continue;
-                kingTable.push_back({k1, k2, castleMask});
+                kingTable.push_back({k1.asInt(), k2.asInt(), castleMask});
             }
         }
     }

@@ -65,8 +65,8 @@ NNUtil::posToRecord(Position& pos, int searchScore, Record& r) {
 
 void
 NNUtil::recordToPos(const Record& r, Position& pos, int& searchScore) {
-    for (int sq = 0; sq < 64; sq++)
-        pos.clearPiece(Square(sq));
+    for (Square sq : AllSquares())
+        pos.clearPiece(sq);
 
     int castleMask = 0;
     int wk = r.wKing;

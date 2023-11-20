@@ -182,13 +182,13 @@ mirrorSquareLeftRight(Square sq) {
 
 void
 mirrorPosLeftRight(Position& pos) {
-    for (int sq = 0; sq < 64; sq++) {
-        int mSq = mirrorSquareLeftRight(Square(sq)).asInt();
-        if (sq < mSq) {
-            int piece1 = pos.getPiece(Square(sq));
-            int piece2 = pos.getPiece(Square(mSq));
-            pos.setPiece(Square(sq), piece2);
-            pos.setPiece(Square(mSq), piece1);
+    for (Square sq : AllSquares()) {
+        Square mSq = mirrorSquareLeftRight(Square(sq));
+        if (sq.asInt() < mSq.asInt()) {
+            int piece1 = pos.getPiece(sq);
+            int piece2 = pos.getPiece(mSq);
+            pos.setPiece(sq, piece2);
+            pos.setPiece(mSq, piece1);
         }
     }
     Square epSquare = pos.getEpSquare();
@@ -207,13 +207,13 @@ mirrorMoveLeftRight(Move& m) {
 }
 void
 mirrorPosColor(Position& pos) {
-    for (int sq = 0; sq < 64; sq++) {
-        int mSq = mirrorSquareColor(Square(sq)).asInt();
-        if (sq < mSq) {
-            int piece1 = pos.getPiece(Square(sq));
-            int piece2 = pos.getPiece(Square(mSq));
-            pos.setPiece(Square(mSq), mirrorPieceColor(piece1));
-            pos.setPiece(Square(sq), mirrorPieceColor(piece2));
+    for (Square sq : AllSquares()) {
+        Square mSq = mirrorSquareColor(Square(sq));
+        if (sq.asInt() < mSq.asInt()) {
+            int piece1 = pos.getPiece(sq);
+            int piece2 = pos.getPiece(mSq);
+            pos.setPiece(mSq, mirrorPieceColor(piece1));
+            pos.setPiece(sq, mirrorPieceColor(piece2));
         }
     }
     pos.setWhiteMove(!pos.isWhiteMove());

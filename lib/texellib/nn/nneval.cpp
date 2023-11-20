@@ -190,15 +190,15 @@ NNEvaluator::computeL1WB() {
 
     int add[2][32];
     int len[2] = {0, 0};
-    for (int sq = 0; sq < 64; sq++) {
-        const int p = posP->getPiece(Square(sq));
+    for (Square sq : AllSquares()) {
+        const int p = posP->getPiece(sq);
         if (p == Piece::EMPTY || p == Piece::WKING || p == Piece::BKING)
             continue;
         int pt = ptValue[p];
         for (int c = 0; c < 2; c++) {
             if (doFull[c]) {
                 FirstLayerState& s = getLinState(c);
-                add[c][len[c]++] = getIndex(s.kingSqComputed, pt, Square(sq), c == 0);
+                add[c][len[c]++] = getIndex(s.kingSqComputed, pt, sq, c == 0);
             }
         }
     }

@@ -154,8 +154,8 @@ void RevMoveGen::genMoves(const Position& pos, std::vector<UnMove>& moves,
         int mask = 1 << 8;
         if (epFileMask != 0) {
             int board[64];
-            for (int i = 0; i < 64; i++)
-                board[i] = pos.getPiece(Square(i));
+            for (Square i : AllSquares())
+                board[i.asInt()] = pos.getPiece(i);
             board[m.from().asInt()] = movingPiece;
             board[m.to().asInt()] = capturedPiece;
             if (isEp)

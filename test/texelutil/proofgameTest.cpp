@@ -231,9 +231,9 @@ ProofGameTest::comparePaths(Piece::Type p, Square sq, U64 blocked, int maxMoves,
                              const std::vector<int>& expected, bool testColorReversed) {
     ProofGame ps(TextIO::startPosFEN, TextIO::startPosFEN, true, {});
     auto spd = ps.shortestPaths(p, sq, blocked, maxMoves);
-    for (int i = 0; i < 64; i++) {
-        ASSERT_EQ(expected[Square(i).mirrorY().asInt()], (int)spd->pathLen[i]);
-        ASSERT_EQ(expected[Square(i).mirrorY().asInt()] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
+    for (Square i : AllSquares()) {
+        ASSERT_EQ(expected[i.mirrorY().asInt()], (int)spd->pathLen[i.asInt()]);
+        ASSERT_EQ(expected[i.mirrorY().asInt()] >= 0, (spd->fromSquares & (1ULL << i)) != 0);
     }
 
     if (testColorReversed) {
@@ -241,8 +241,7 @@ ProofGameTest::comparePaths(Piece::Type p, Square sq, U64 blocked, int maxMoves,
         Square oSq(sq.getX(), 7 - sq.getY());
         U64 oBlocked = 0;
         std::vector<int> oExpected(64);
-        for (int sI = 0; sI < 64; sI++) {
-            Square s(sI);
+        for (Square s : AllSquares()) {
             Square oS(s.getX(), 7 - s.getY());
             if ((1ULL << s) & blocked)
                 oBlocked |= (1ULL << oS);
@@ -1779,8 +1778,8 @@ TEST(ProofGameTest, testMultiBoard) {
 void ProofGameTest::testMultiBoard() {
     {
         MultiBoard brd;
-        for (int i = 0; i < 64; i++) {
-            ASSERT_EQ(0, brd.nPieces(Square(i)));
+        for (Square i : AllSquares()) {
+            ASSERT_EQ(0, brd.nPieces(i));
         }
         brd.addPiece(A2, Piece::WPAWN);
         ASSERT_EQ(1, brd.nPieces(A2));
@@ -1810,8 +1809,8 @@ void ProofGameTest::testMultiBoard() {
         MultiBoard brd(initPos);
         Position pos;
         brd.toPos(pos);
-        for (int sq = 0; sq < 64; sq++) {
-            ASSERT_EQ(pos.getPiece(Square(sq)), initPos.getPiece(Square(sq)));
+        for (Square sq : AllSquares()) {
+            ASSERT_EQ(pos.getPiece(sq), initPos.getPiece(sq));
         }
     }
 }

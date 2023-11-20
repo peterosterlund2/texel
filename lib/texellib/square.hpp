@@ -87,6 +87,27 @@ private:
     int sq;
 };
 
+
+/** An iterator-like class that makes it possible to iterate over
+ * all 64 chess board squares in order, without having an actual
+ * container of squares to iterate over. For example:
+ * for (Square sq : AllSquares()) {
+ *     // Do something with sq
+ * } */
+class AllSquares {
+public:
+    AllSquares() : sq(0) {}
+    AllSquares begin() const { return AllSquares(); }
+    AllSquares end() const { return AllSquares(64); }
+    Square operator*() const { return Square(sq); }
+    AllSquares& operator++() { ++sq; return *this; }
+    bool operator!=(const AllSquares& o) const { return sq != o.sq; }
+private:
+    explicit AllSquares(int sq) : sq(sq) {}
+    int sq; // Current square
+};
+
+
 inline Square::Square()
     : sq(-1) {
 }

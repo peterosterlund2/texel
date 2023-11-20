@@ -263,9 +263,9 @@ TEST(TranspositionTableTest, testHashFuncBackComp) {
     };
 
     for (int p = Piece::EMPTY; p <= Piece::BPAWN; p++) {
-        for (int sq = 0; sq < 64; sq++) {
+        for (Square sq : AllSquares()) {
             Position pos;
-            pos.setPiece(Square(sq), p);
+            pos.setPiece(sq, p);
             addToHash(pos);
         }
     }

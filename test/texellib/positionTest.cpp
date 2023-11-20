@@ -39,8 +39,8 @@
 int
 PositionTest::computeMaterialId(const Position& pos) {
     MatId id;
-    for (int sq = 0; sq < 64; sq++)
-        id.addPiece(pos.getPiece(Square(sq)));
+    for (Square sq : AllSquares())
+        id.addPiece(pos.getPiece(sq));
     return id();
 }
 

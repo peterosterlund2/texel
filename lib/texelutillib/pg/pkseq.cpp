@@ -563,15 +563,15 @@ PkSequence::getPawnMoves(const Graph& kernel, int idx, const Position& inPos,
                          std::vector<ExtPkMove>& pawnMoves) const {
     // Remove all but pawns and kings
     Position tmpPos(inPos);
-    for (int sq = 0; sq < 64; sq++) {
-        int p = tmpPos.getPiece(Square(sq));
+    for (Square sq : AllSquares()) {
+        int p = tmpPos.getPiece(sq);
         switch (p) {
         case Piece::WKING: case Piece::BKING:
         case Piece::WPAWN: case Piece::BPAWN:
         case Piece::EMPTY:
             break;
         default:
-            tmpPos.setPiece(Square(sq), Piece::EMPTY);
+            tmpPos.setPiece(sq, Piece::EMPTY);
         }
     }
 
@@ -653,12 +653,12 @@ PkSequence::getPieceEvasions(const Position& pos, Square fromSq,
     };
 
     std::vector<SquareCost> squares;
-    for (int sq = 0; sq < 64; sq++) {
-        int d = spd.pathLen[sq];
-        if (d <= 0 || pos.getPiece(Square(sq)) != Piece::EMPTY)
+    for (Square sq : AllSquares()) {
+        int d = spd.pathLen[sq.asInt()];
+        if (d <= 0 || pos.getPiece(sq) != Piece::EMPTY)
             continue;
-        int cost = d * 8 + BitBoard::getKingDistance(fromSq, Square(sq));
-        squares.push_back(SquareCost{sq, cost});
+        int cost = d * 8 + BitBoard::getKingDistance(fromSq, sq);
+        squares.push_back(SquareCost{sq.asInt(), cost});
     }
 
     std::sort(squares.begin(), squares.end(),

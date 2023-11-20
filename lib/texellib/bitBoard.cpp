@@ -279,43 +279,43 @@ BitBoard::staticInitialize() {
 
 #ifdef HAS_BMI2
     int tdSize = 0;
-    for (int sq = 0; sq < 64; sq++) {
-        int x = Square(sq).getX();
-        int y = Square(sq).getY();
-        rMasks[sq] = addRookRays(x, y, 0ULL, true);
-        bMasks[sq] = addBishopRays(x, y, 0ULL, true);
-        tdSize += 1 << bitCount(rMasks[sq]);
-        tdSize += 1 << bitCount(bMasks[sq]);
+    for (Square sq : AllSquares()) {
+        int x = sq.getX();
+        int y = sq.getY();
+        rMasks[sq.asInt()] = addRookRays(x, y, 0ULL, true);
+        bMasks[sq.asInt()] = addBishopRays(x, y, 0ULL, true);
+        tdSize += 1 << bitCount(rMasks[sq.asInt()]);
+        tdSize += 1 << bitCount(bMasks[sq.asInt()]);
     }
     tableData.resize(tdSize);
 
     // Rook magics
     int tableUsed = 0;
-    for (int sq = 0; sq < 64; sq++) {
-        int x = Square(sq).getX();
-        int y = Square(sq).getY();
-        int tableSize = 1 << bitCount(rMasks[sq]);
+    for (Square sq : AllSquares()) {
+        int x = sq.getX();
+        int y = sq.getY();
+        int tableSize = 1 << bitCount(rMasks[sq.asInt()]);
         U64* table = &tableData[tableUsed];
         tableUsed += tableSize;
         for (int i = 0; i < tableSize; i++) {
-            U64 p = createPattern(i, rMasks[sq]);
+            U64 p = createPattern(i, rMasks[sq.asInt()]);
             table[i] = addRookRays(x, y, p, false);
         }
-        rTables[sq] = table;
+        rTables[sq.asInt()] = table;
     }
 
     // Bishop magics
-    for (int sq = 0; sq < 64; sq++) {
-        int x = Square(sq).getX();
-        int y = Square(sq).getY();
-        int tableSize = 1 << bitCount(bMasks[sq]);
+    for (Square sq : AllSquares()) {
+        int x = sq.getX();
+        int y = sq.getY();
+        int tableSize = 1 << bitCount(bMasks[sq.asInt()]);
         U64* table = &tableData[tableUsed];
         tableUsed += tableSize;
         for (int i = 0; i < tableSize; i++) {
-            U64 p = createPattern(i, bMasks[sq]);
+            U64 p = createPattern(i, bMasks[sq.asInt()]);
             table[i] = addBishopRays(x, y, p, false);
         }
-        bTables[sq] = table;
+        bTables[sq.asInt()] = table;
     }
 #else
     int rTableSize = 0;

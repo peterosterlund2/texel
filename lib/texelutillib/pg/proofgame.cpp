@@ -78,14 +78,14 @@ ProofGame::staticInitialize() {
 
     for (int c = 0; c < 2; c++) {
         for (int nCapt = maxPawnCapt - 1; nCapt >= 0; nCapt--) {
-            for (int sq = 0; sq < 64; sq++) {
-                int x = Square(sq).getX();
-                U64 m = (c ? wPawnReachable : bPawnReachable)[sq][nCapt + 1];
+            for (Square sq : AllSquares()) {
+                int x = sq.getX();
+                U64 m = (c ? wPawnReachable : bPawnReachable)[sq.asInt()][nCapt + 1];
                 if (x - (nCapt+1) >= 0)
                     m &= ~BitBoard::maskFile[x - (nCapt+1)];
                 if (x + (nCapt+1) < 8)
                     m &= ~BitBoard::maskFile[x + (nCapt+1)];
-                (c ? wPawnReachable : bPawnReachable)[sq][nCapt] = m;
+                (c ? wPawnReachable : bPawnReachable)[sq.asInt()][nCapt] = m;
             }
         }
     }

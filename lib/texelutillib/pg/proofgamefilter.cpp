@@ -1100,8 +1100,7 @@ MultiBoard::MultiBoard() {
 
 MultiBoard::MultiBoard(const Position& pos)
     : MultiBoard() {
-    for (int sqI = 0; sqI < 64; sqI++) {
-        Square sq(sqI);
+    for (Square sq : AllSquares()) {
         int p = pos.getPiece(sq);
         if (p != Piece::EMPTY)
             addPiece(sq, p);
@@ -1192,15 +1191,13 @@ MultiBoard::expel(int castleMask) {
     };
 
     // Move pieces so there is at most one piece per square
-    for (int fromSqI = 0; fromSqI < 64; fromSqI++) {
-        Square fromSq(fromSqI);
+    for (Square fromSq : AllSquares()) {
         while (nPieces(fromSq) > 1) {
             int p = getPiece(fromSq, 0);
             bool isKing = p == Piece::WKING || p == Piece::BKING;
             bool isBishop = p == Piece::WBISHOP || p == Piece::BBISHOP;
             Square bestSq;
-            for (int toSqI = 0; toSqI < 64; toSqI++) {
-                Square toSq(toSqI);
+            for (Square toSq : AllSquares()) {
                 if (nPieces(toSq) > 0)
                     continue;
                 if (isBishop && fromSq.isDark() != toSq.isDark())
@@ -1230,8 +1227,7 @@ MultiBoard::expel(int castleMask) {
         } else {
             Square fromSq = white ? wKingSq : bKingSq;
             U64 notAllowed = pos.occupiedBB() | PosUtil::attackedSquares(pos, !white);
-            for (int toSqI = 0; toSqI < 64; toSqI++) {
-                Square toSq(toSqI);
+            for (Square toSq : AllSquares()) {
                 if (notAllowed & (1ULL << toSq))
                     continue;
                 if (!bestSq.isValid() || getDist(fromSq, toSq, true) < getDist(fromSq, bestSq, true))
@@ -1286,8 +1282,7 @@ MultiBoard::replacePiece(Square square, int oldPiece, int newPiece) {
 
 void
 MultiBoard::toPos(Position& pos) {
-    for (int sqI = 0; sqI < 64; sqI++) {
-        Square sq(sqI);
+    for (Square sq : AllSquares()) {
         int np = nPieces(sq);
         switch (np) {
         case 0:

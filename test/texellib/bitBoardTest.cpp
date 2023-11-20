@@ -55,8 +55,7 @@ TEST(BitBoardTest, testKnightAttacks) {
 }
 
 TEST(BitBoardTest, testPawnAttacks) {
-    for (int sqI = 0; sqI < 64; sqI++) {
-        Square sq(sqI);
+    for (Square sq : AllSquares()) {
         int x = sq.getX();
         int y = sq.getY();
         U64 atk = BitBoard::wPawnAttacksMask(1ULL << sq);
@@ -93,10 +92,8 @@ TEST(BitBoardTest, testPawnAttacks) {
 
 TEST(BitBoardTest, testSquaresBetween) {
     // Tests that the set of nonzero elements is correct
-    for (int sq1I = 0; sq1I < 64; sq1I++) {
-        Square sq1(sq1I);
-        for (int sq2I = 0; sq2I < 64; sq2I++) {
-            Square sq2(sq2I);
+    for (Square sq1 : AllSquares()) {
+        for (Square sq2 : AllSquares()) {
             int d = BitBoard::getDirection(sq1, sq2);
             if (d == 0) {
                 ASSERT_EQ(0, BitBoard::squaresBetween(sq1, sq2));
@@ -142,10 +139,10 @@ static int computeDirection(Square from, Square to) {
 }
 
 TEST(BitBoardTest, testGetDirection) {
-    for (int from = 0; from < 64; from++)
-        for (int to = 0; to < 64; to++)
-            ASSERT_EQ(computeDirection(Square(from), Square(to)),
-                      BitBoard::getDirection(Square(from), Square(to)));
+    for (Square from : AllSquares())
+        for (Square to : AllSquares())
+            ASSERT_EQ(computeDirection(from, to),
+                      BitBoard::getDirection(from, to));
 }
 
 static int computeDistance(Square from, Square to, bool taxi) {
@@ -158,10 +155,8 @@ static int computeDistance(Square from, Square to, bool taxi) {
 }
 
 TEST(BitBoardTest, testGetDistance) {
-    for (int fromI = 0; fromI < 64; fromI++) {
-        Square from(fromI);
-        for (int toI = 0; toI < 64; toI++) {
-            Square to(toI);
+    for (Square from : AllSquares()) {
+        for (Square to : AllSquares()) {
             ASSERT_EQ(computeDistance(from, to, false), BitBoard::getKingDistance(from, to));
             ASSERT_EQ(computeDistance(from, to, true ), BitBoard::getTaxiDistance(from, to));
         }
@@ -169,11 +164,11 @@ TEST(BitBoardTest, testGetDistance) {
 }
 
 TEST(BitBoardTest, testTrailingZeros) {
-    for (int i = 0; i < 64; i++) {
+    for (Square i : AllSquares()) {
         U64 mask = 1ULL << i;
-        ASSERT_EQ(i, BitBoard::firstSquare(mask).asInt());
+        ASSERT_EQ(i, BitBoard::firstSquare(mask));
         U64 mask2 = mask;
-        ASSERT_EQ(i, BitBoard::extractSquare(mask2).asInt());
+        ASSERT_EQ(i, BitBoard::extractSquare(mask2));
         ASSERT_EQ(0, mask2);
     }
     U64 mask = 0xffffffffffffffffULL;
@@ -199,11 +194,11 @@ TEST(BitBoardTest, testLastSquare) {
     for (int i = 0; i < 1000; i++) {
         U64 m = hashU64(i+1);
         ASSERT_NE(0, m);
-        int expected = 0;
-        for (int b = 0; b < 64; b++)
+        Square expected;
+        for (Square b : AllSquares())
             if (m & (1ULL << b))
                 expected = b;
-        ASSERT_EQ(expected, BitBoard::lastSquare(m).asInt());
+        ASSERT_EQ(expected, BitBoard::lastSquare(m));
     }
 }
 
@@ -284,8 +279,7 @@ TEST(BitBoardTest, testMaskAndMirror) {
     EXPECT_EQ(BitBoard::sqMask(E1,F1,G1,H1,E2), 0x10F0ULL);
     EXPECT_EQ(BitBoard::sqMask(G1,H1,H2), 0x80C0ULL);
 
-    for (int sqI = 0; sqI < 64; sqI++) {
-        Square sq(sqI);
+    for (Square sq : AllSquares()) {
         U64 m = 1ULL << sq;
         switch (sq.getX()) {
         case 0:
@@ -387,7 +381,7 @@ TEST(BitBoardTest, testMaskAndMirror) {
         }
     }
 
-    for (int sq = 0; sq < 64; sq++) {
+    for (Square sq : AllSquares()) {
         U64 m = 1ULL << sq;
         ASSERT_EQ(mirrorXSlow(m), BitBoard::mirrorX(m));
         ASSERT_EQ(mirrorYSlow(m), BitBoard::mirrorY(m));

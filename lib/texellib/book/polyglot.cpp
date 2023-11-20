@@ -30,9 +30,9 @@ U64
 PolyglotBook::getHashKey(const Position& pos) {
     // Pieces
     U64 key = 0;
-    for (int sq = 0; sq < 64; sq++) {
+    for (Square sq : AllSquares()) {
         int pVal = -1;
-        switch (pos.getPiece(Square(sq))) {
+        switch (pos.getPiece(sq)) {
         case Piece::BPAWN:   pVal =  0; break;
         case Piece::WPAWN:   pVal =  1; break;
         case Piece::BKNIGHT: pVal =  2; break;
@@ -47,7 +47,7 @@ PolyglotBook::getHashKey(const Position& pos) {
         case Piece::WKING:   pVal = 11; break;
         }
         if (pVal >= 0)
-            key ^= hashRandoms[64 * pVal + sq];
+            key ^= hashRandoms[64 * pVal + sq.asInt()];
     }
 
     // Castle flags
