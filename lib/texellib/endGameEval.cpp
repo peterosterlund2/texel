@@ -37,7 +37,7 @@ const int EndGameEval::distToH1A8[8][8] = { { 0, 1, 2, 3, 4, 5, 6, 7 },
                                             { 6, 7, 6, 5, 4, 3, 2, 1 },
                                             { 7, 6, 5, 4, 3, 2, 1, 0 } };
 
-const int EndGameEval::winKingTable[64] = {
+const SqTbl<int> EndGameEval::winKingTable = {
     0,   4,  10,  10,  10,  10,   4,   0,
     4,  15,  19,  20,  20,  19,  15,   4,
    10,  19,  25,  25,  25,  25,  19,  10,
@@ -571,7 +571,7 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
 
 int
 EndGameEval::mateEval(Square k1, Square k2) {
-    static const int loseKingTable[64] = {
+    static const SqTbl<int> loseKingTable = {
         0,   4,   8,  12,  12,   8,   4,   0,
         4,   8,  12,  16,  16,  12,   8,   4,
         8,  12,  16,  20,  20,  16,  12,   8,
@@ -581,7 +581,7 @@ EndGameEval::mateEval(Square k1, Square k2) {
         4,   8,  12,  16,  16,  12,   8,   4,
         0,   4,   8,  12,  12,   8,   4,   0
     };
-    return winKingTable[k1.asInt()] - loseKingTable[k2.asInt()];
+    return winKingTable[k1] - loseKingTable[k2];
 }
 
 template <bool whiteBishop>
@@ -1092,16 +1092,16 @@ EndGameEval::kbnkEval(Square wKing, Square bKing, bool darkBishop) {
         wKing = wKing.mirrorX();
         bKing = bKing.mirrorX();
     }
-    static const int bkTable[64] = { 17, 15, 12,  9,  7,  4,  2,  0,
-                                     15, 20, 17, 15, 12,  9,  4,  2,
-                                     12, 17, 22, 20, 17, 15,  9,  4,
-                                      9, 15, 20, 25, 22, 17, 12,  7,
-                                      7, 12, 17, 22, 25, 20, 15,  9,
-                                      4,  9, 15, 17, 20, 22, 17, 12,
-                                      2,  4,  9, 12, 15, 17, 20, 15,
-                                      0,  2,  4,  7,  9, 12, 15, 17 };
+    static const SqTbl<int> bkTable = { 17, 15, 12,  9,  7,  4,  2,  0,
+                                        15, 20, 17, 15, 12,  9,  4,  2,
+                                        12, 17, 22, 20, 17, 15,  9,  4,
+                                         9, 15, 20, 25, 22, 17, 12,  7,
+                                         7, 12, 17, 22, 25, 20, 15,  9,
+                                         4,  9, 15, 17, 20, 22, 17, 12,
+                                         2,  4,  9, 12, 15, 17, 20, 15,
+                                         0,  2,  4,  7,  9, 12, 15, 17 };
 
-    score += winKingTable[wKing.asInt()] - bkTable[bKing.asInt()];
+    score += winKingTable[wKing] - bkTable[bKing];
     score -= std::min(0, BitBoard::getTaxiDistance(wKing, bKing) - 3);
     return score;
 }

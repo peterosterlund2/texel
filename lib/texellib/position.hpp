@@ -51,7 +51,7 @@ struct PositionBase {
     int wMtrlPawns_;         // Total value of all white pawns
     int bMtrlPawns_;         // Total value of all black pawns
 
-    int squares[64];
+    SqTbl<int> squares;
 
     // Bitboards
     U64 pieceTypeBB_[Piece::nPieceTypes];
@@ -253,9 +253,9 @@ private:
     /** Force next NN evaluation to be non-incremental. */
     void forceFullEval();
 
-    static U8 castleSqMask[64]; // Castle masks retained for each square
+    static SqTbl<U8> castleSqMask; // Castle masks retained for each square
 
-    const static U64 psHashKeys[Piece::nPieceTypes][64];    // [piece][square]
+    const static SqTbl<U64> psHashKeys[Piece::nPieceTypes];    // [piece][square]
 
     const static U64 whiteHashKey = 0xc98143a7869aa213ULL;
     const static U64 castleHashKeys[16];   // [castleMask]
@@ -295,8 +295,8 @@ Position::pawnZobristHash() const {
 
 inline U64
 Position::kingZobristHash() const {
-    return psHashKeys[Piece::WKING][wKingSq().asInt()] ^
-           psHashKeys[Piece::BKING][bKingSq().asInt()];
+    return psHashKeys[Piece::WKING][wKingSq()] ^
+           psHashKeys[Piece::BKING][bKingSq()];
 }
 
 inline U64
@@ -332,7 +332,7 @@ Position::nPieces() const {
 
 inline bool
 Position::drawRuleEquals(const Position& other) const {
-    for (int i = 0; i < 64; i++)
+    for (Square i : AllSquares())
         if (squares[i] != other.squares[i])
             return false;
     if (whiteMove != other.whiteMove)
@@ -359,19 +359,18 @@ Position::setWhiteMove(bool whiteMove) {
 
 inline int
 Position::getPiece(Square square) const {
-    return squares[square.asInt()];
+    return squares[square];
 }
 
 inline void
 Position::setSEEPiece(Square sq, int piece) {
-    int square = sq.asInt();
-    int removedPiece = squares[square];
+    int removedPiece = squares[sq];
 
     // Update board
-    squares[square] = piece;
+    squares[sq] = piece;
 
     // Update bitboards
-    U64 sqMask = 1ULL << square;
+    U64 sqMask = 1ULL << sq;
     pieceTypeBB_[removedPiece] &= ~sqMask;
     pieceTypeBB_[piece] |= sqMask;
     if (removedPiece != Piece::EMPTY) {
@@ -475,12 +474,11 @@ Position::unMakeMoveB(const Move& move, const UndoInfo& ui) {
 
 inline void
 Position::setPieceB(Square sq, int piece) {
-    int square = sq.asInt();
-    int removedPiece = squares[square];
-    squares[square] = piece;
+    int removedPiece = squares[sq];
+    squares[sq] = piece;
 
     // Update bitboards
-    const U64 sqMask = 1ULL << square;
+    const U64 sqMask = 1ULL << sq;
     pieceTypeBB_[removedPiece] &= ~sqMask;
     pieceTypeBB_[piece] |= sqMask;
 
@@ -501,9 +499,7 @@ Position::setPieceB(Square sq, int piece) {
 }
 
 inline void
-Position::movePieceNotPawnB(Square fromS, Square toS) {
-    const int from = fromS.asInt();
-    const int to = toS.asInt();
+Position::movePieceNotPawnB(Square from, Square to) {
     const int piece = squares[from];
 
     squares[from] = Piece::EMPTY;
@@ -625,7 +621,7 @@ inline int Position::bMtrlPawns() const {
 }
 
 inline U64 Position::getHashKey(int piece, Square square) {
-    return psHashKeys[piece][square.asInt()];
+    return psHashKeys[piece][square];
 }
 
 #endif /* POSITION_HPP_ */

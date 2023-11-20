@@ -28,12 +28,12 @@
 #include <cassert>
 #include <iostream>
 
-U64 BitBoard::kingAttacksTable[64];
-U64 BitBoard::knightAttacksTable[64];
-U64 BitBoard::wPawnAttacksTable[64];
-U64 BitBoard::bPawnAttacksTable[64];
-U64 BitBoard::wPawnBlockerMaskTable[64];
-U64 BitBoard::bPawnBlockerMaskTable[64];
+SqTbl<U64> BitBoard::kingAttacksTable;
+SqTbl<U64> BitBoard::knightAttacksTable;
+SqTbl<U64> BitBoard::wPawnAttacksTable;
+SqTbl<U64> BitBoard::bPawnAttacksTable;
+SqTbl<U64> BitBoard::wPawnBlockerMaskTable;
+SqTbl<U64> BitBoard::bPawnBlockerMaskTable;
 
 const U64 BitBoard::maskFile[8] = {
     0x0101010101010101ULL,
@@ -62,17 +62,17 @@ const U64 BitBoard::maskDarkSq;
 const U64 BitBoard::maskLightSq;
 const U64 BitBoard::maskCorners;
 
-U64* BitBoard::rTables[64];
-U64 BitBoard::rMasks[64];
-int BitBoard::rBits[64] = { 64-12, 64-11, 64-11, 64-11, 64-11, 64-11, 64-11, 64-12,
-                            64-11, 64-10, 64-10, 64-11, 64-10, 64-10, 64-10, 64-11,
-                            64-11, 64-10, 64-10, 64-10, 64-10, 64-10, 64-10, 64-11,
-                            64-11, 64-10, 64-10, 64-10, 64-10, 64-10, 64-10, 64-11,
-                            64-11, 64-10, 64-10, 64-10, 64-10, 64-10, 64-10, 64-11,
-                            64-11, 64-10, 64-10, 64-11, 64-10, 64-10, 64-10, 64-11,
-                            64-10, 64- 9, 64- 9, 64- 9, 64- 9, 64- 9, 64- 9, 64-10,
-                            64-11, 64-10, 64-10, 64-10, 64-10, 64-11, 64-10, 64-11 };
-const U64 BitBoard::rMagics[64] = {
+SqTbl<U64*> BitBoard::rTables;
+SqTbl<U64> BitBoard::rMasks;
+const SqTbl<int> BitBoard::rBits = { 64-12, 64-11, 64-11, 64-11, 64-11, 64-11, 64-11, 64-12,
+                                     64-11, 64-10, 64-10, 64-11, 64-10, 64-10, 64-10, 64-11,
+                                     64-11, 64-10, 64-10, 64-10, 64-10, 64-10, 64-10, 64-11,
+                                     64-11, 64-10, 64-10, 64-10, 64-10, 64-10, 64-10, 64-11,
+                                     64-11, 64-10, 64-10, 64-10, 64-10, 64-10, 64-10, 64-11,
+                                     64-11, 64-10, 64-10, 64-11, 64-10, 64-10, 64-10, 64-11,
+                                     64-10, 64- 9, 64- 9, 64- 9, 64- 9, 64- 9, 64- 9, 64-10,
+                                     64-11, 64-10, 64-10, 64-10, 64-10, 64-11, 64-10, 64-11 };
+const SqTbl<U64> BitBoard::rMagics = {
     0x19a80065ff2bffffULL, 0x3fd80075ffebffffULL, 0x4010000df6f6fffeULL, 0x0050001faffaffffULL,
     0x0050028004ffffb0ULL, 0x7f600280089ffff1ULL, 0x7f5000b0029ffffcULL, 0x5b58004848a7fffaULL,
     0x002a90005547ffffULL, 0x000050007f13ffffULL, 0x007fa0006013ffffULL, 0x006a9005656fffffULL,
@@ -91,17 +91,17 @@ const U64 BitBoard::rMagics[64] = {
     0x000ffff5fff338e6ULL, 0x0007fffdfffe24f6ULL, 0x0003ffef27eebe74ULL, 0x0001ffff23ff605eULL
 };
 
-U64* BitBoard::bTables[64];
-U64 BitBoard::bMasks[64];
-const int BitBoard::bBits[64] = { 64-5, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-5,
-                                  64-4, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-4,
-                                  64-4, 64-4, 64-7, 64-7, 64-7, 64-7, 64-4, 64-4,
-                                  64-5, 64-5, 64-7, 64-9, 64-9, 64-7, 64-5, 64-5,
-                                  64-5, 64-5, 64-7, 64-9, 64-9, 64-7, 64-5, 64-5,
-                                  64-4, 64-4, 64-7, 64-7, 64-7, 64-7, 64-4, 64-4,
-                                  64-4, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-4,
-                                  64-5, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-5 };
-const U64 BitBoard::bMagics[64] = {
+SqTbl<U64*> BitBoard::bTables;
+SqTbl<U64> BitBoard::bMasks;
+const SqTbl<int> BitBoard::bBits = { 64-5, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-5,
+                                     64-4, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-4,
+                                     64-4, 64-4, 64-7, 64-7, 64-7, 64-7, 64-4, 64-4,
+                                     64-5, 64-5, 64-7, 64-9, 64-9, 64-7, 64-5, 64-5,
+                                     64-5, 64-5, 64-7, 64-9, 64-9, 64-7, 64-5, 64-5,
+                                     64-4, 64-4, 64-7, 64-7, 64-7, 64-7, 64-4, 64-4,
+                                     64-4, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-4,
+                                     64-5, 64-4, 64-5, 64-5, 64-5, 64-5, 64-4, 64-5 };
+const SqTbl<U64> BitBoard::bMagics = {
     0x0006eff5367ff600ULL, 0x00345835ba77ff2bULL, 0x00145f68a3f5dab6ULL, 0x003a1863fb56f21dULL,
     0x0012eb6bfe9d93cdULL, 0x000d82827f3420d6ULL, 0x00074bcd9c7fec97ULL, 0x000034fe99f9ffffULL,
     0x0000746f8d6717f6ULL, 0x00003acb32e1a3f7ULL, 0x0000185daf1ffb8aULL, 0x00003a1867f17067ULL,
@@ -162,7 +162,7 @@ const int BitUtil::lastBitTable[64] = {
    13, 18,  8, 12,  7,  6,  5, 63
 };
 
-U64 BitBoard::squaresBetweenTable[64][64];
+SqTbl<SqTbl<U64>> BitBoard::squaresBetweenTable;
 
 static U64 createPattern(int i, U64 mask) {
     U64 ret = 0ULL;
@@ -233,7 +233,7 @@ BitBoard::staticInitialize() {
     }
 
     // Compute king attacks
-    for (int sq = 0; sq < 64; sq++) {
+    for (Square sq : AllSquares()) {
         U64 m = 1ULL << sq;
         U64 mask = (((m >> 1) | (m << 7) | (m >> 9)) & maskAToGFiles) |
                    (((m << 1) | (m << 9) | (m >> 7)) & maskBToHFiles) |
@@ -242,7 +242,7 @@ BitBoard::staticInitialize() {
     }
 
     // Compute knight attacks
-    for (int sq = 0; sq < 64; sq++) {
+    for (Square sq : AllSquares()) {
         U64 m = 1ULL << sq;
         U64 mask = (((m <<  6) | (m >> 10)) & maskAToFFiles) |
                    (((m << 15) | (m >> 17)) & maskAToGFiles) |
@@ -252,15 +252,15 @@ BitBoard::staticInitialize() {
     }
 
     // Compute pawn attacks
-    for (int sq = 0; sq < 64; sq++) {
+    for (Square sq : AllSquares()) {
         U64 m = 1ULL << sq;
         U64 mask = ((m << 7) & maskAToGFiles) | ((m << 9) & maskBToHFiles);
         wPawnAttacksTable[sq] = mask;
         mask = ((m >> 9) & maskAToGFiles) | ((m >> 7) & maskBToHFiles);
         bPawnAttacksTable[sq] = mask;
 
-        int x = Square(sq).getX();
-        int y = Square(sq).getY();
+        int x = sq.getX();
+        int y = sq.getY();
         m = 0;
         for (int y2 = y+1; y2 < 8; y2++) {
             if (x > 0) m |= 1ULL << Square(x-1, y2);
@@ -282,10 +282,10 @@ BitBoard::staticInitialize() {
     for (Square sq : AllSquares()) {
         int x = sq.getX();
         int y = sq.getY();
-        rMasks[sq.asInt()] = addRookRays(x, y, 0ULL, true);
-        bMasks[sq.asInt()] = addBishopRays(x, y, 0ULL, true);
-        tdSize += 1 << bitCount(rMasks[sq.asInt()]);
-        tdSize += 1 << bitCount(bMasks[sq.asInt()]);
+        rMasks[sq] = addRookRays(x, y, 0ULL, true);
+        bMasks[sq] = addBishopRays(x, y, 0ULL, true);
+        tdSize += 1 << bitCount(rMasks[sq]);
+        tdSize += 1 << bitCount(bMasks[sq]);
     }
     tableData.resize(tdSize);
 
@@ -294,43 +294,43 @@ BitBoard::staticInitialize() {
     for (Square sq : AllSquares()) {
         int x = sq.getX();
         int y = sq.getY();
-        int tableSize = 1 << bitCount(rMasks[sq.asInt()]);
+        int tableSize = 1 << bitCount(rMasks[sq]);
         U64* table = &tableData[tableUsed];
         tableUsed += tableSize;
         for (int i = 0; i < tableSize; i++) {
-            U64 p = createPattern(i, rMasks[sq.asInt()]);
+            U64 p = createPattern(i, rMasks[sq]);
             table[i] = addRookRays(x, y, p, false);
         }
-        rTables[sq.asInt()] = table;
+        rTables[sq] = table;
     }
 
     // Bishop magics
     for (Square sq : AllSquares()) {
         int x = sq.getX();
         int y = sq.getY();
-        int tableSize = 1 << bitCount(bMasks[sq.asInt()]);
+        int tableSize = 1 << bitCount(bMasks[sq]);
         U64* table = &tableData[tableUsed];
         tableUsed += tableSize;
         for (int i = 0; i < tableSize; i++) {
-            U64 p = createPattern(i, bMasks[sq.asInt()]);
+            U64 p = createPattern(i, bMasks[sq]);
             table[i] = addBishopRays(x, y, p, false);
         }
-        bTables[sq.asInt()] = table;
+        bTables[sq] = table;
     }
 #else
     int rTableSize = 0;
-    for (int sq = 0; sq < 64; sq++)
+    for (Square sq : AllSquares())
         rTableSize += 1 << (64 - rBits[sq]);
     int bTableSize = 0;
-    for (int sq = 0; sq < 64; sq++)
+    for (Square sq : AllSquares())
         bTableSize += 1 << (64 - bBits[sq]);
     tableData.resize(rTableSize + bTableSize);
 
     // Rook magics
     int tableUsed = 0;
-    for (int sq = 0; sq < 64; sq++) {
-        int x = Square(sq).getX();
-        int y = Square(sq).getY();
+    for (Square sq : AllSquares()) {
+        int x = sq.getX();
+        int y = sq.getY();
         rMasks[sq] = addRookRays(x, y, 0ULL, true);
         int tableSize = 1 << (64 - rBits[sq]);
         U64* table = &tableData[tableUsed];
@@ -352,9 +352,9 @@ BitBoard::staticInitialize() {
     }
 
     // Bishop magics
-    for (int sq = 0; sq < 64; sq++) {
-        int x = Square(sq).getX();
-        int y = Square(sq).getY();
+    for (Square sq : AllSquares()) {
+        int x = sq.getX();
+        int y = sq.getY();
         bMasks[sq] = addBishopRays(x, y, 0ULL, true);
         int tableSize = 1 << (64 - bBits[sq]);
         U64* table = &tableData[tableUsed];
@@ -377,21 +377,21 @@ BitBoard::staticInitialize() {
 #endif
 
     // squaresBetween
-    for (int sq1 = 0; sq1 < 64; sq1++) {
-        for (int j = 0; j < 64; j++)
+    for (Square sq1 : AllSquares()) {
+        for (Square j : AllSquares())
             squaresBetweenTable[sq1][j] = 0;
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
                 if ((dx == 0) && (dy == 0))
                     continue;
                 U64 m = 0;
-                int x = Square(sq1).getX();
-                int y = Square(sq1).getY();
+                int x = sq1.getX();
+                int y = sq1.getY();
                 while (true) {
                     x += dx; y += dy;
                     if ((x < 0) || (x > 7) || (y < 0) || (y > 7))
                         break;
-                    int sq2 = Square(x, y).asInt();
+                    Square sq2(x, y);
                     squaresBetweenTable[sq1][sq2] = m;
                     m |= 1ULL << sq2;
                 }

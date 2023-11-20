@@ -26,6 +26,8 @@
 #ifndef SQUARE_HPP_
 #define SQUARE_HPP_
 
+#include <array>
+
 enum SquareName {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -105,6 +107,18 @@ public:
 private:
     explicit AllSquares(int sq) : sq(sq) {}
     int sq; // Current square
+};
+
+
+/** A table of size 64, indexed by a chess square. */
+template <typename T>
+class SqTbl {
+public:
+    template<typename... Ts> SqTbl(Ts&&... ts) : tbl{{std::forward<Ts>(ts)...}} {}
+    const T& operator[](Square sq) const { return tbl[sq.asInt()]; }
+          T& operator[](Square sq)       { return tbl[sq.asInt()]; }
+private:
+    std::array<T, 64> tbl;
 };
 
 

@@ -34,13 +34,13 @@
 
 const U64 hashEmpty = 0x5fd230cc43568439ULL;
 
-U8 Position::castleSqMask[64];
+SqTbl<U8> Position::castleSqMask;
 
 static StaticInitializer<Position> posInit;
 
 void
 Position::staticInitialize() {
-    for (int i = 0; i < 64; i++)
+    for (Square i : AllSquares())
         castleSqMask[i] = ((1 << A1_CASTLE) | (1 << H1_CASTLE) |
                            (1 << A8_CASTLE) | (1 << H8_CASTLE));
     castleSqMask[A1] &= ~(1 << A1_CASTLE);
@@ -52,7 +52,7 @@ Position::staticInitialize() {
 }
 
 Position::Position() {
-    for (int i = 0; i < 64; i++)
+    for (Square i : AllSquares())
         squares[i] = Piece::EMPTY;
     for (int i = 0; i < Piece::nPieceTypes; i++)
         pieceTypeBB_[i] = 0;
@@ -106,22 +106,21 @@ Position::forceFullEval() {
 
 void
 Position::setPiece(Square sq, int piece) {
-    const int square = sq.asInt();
-    int removedPiece = squares[square];
-    squares[square] = piece;
+    int removedPiece = squares[sq];
+    squares[sq] = piece;
     if (nnEval)
         nnEval->setPiece(sq, removedPiece, piece);
 
     // Update hash key
-    hashKey ^= psHashKeys[removedPiece][square];
-    hashKey ^= psHashKeys[piece][square];
+    hashKey ^= psHashKeys[removedPiece][sq];
+    hashKey ^= psHashKeys[piece][sq];
 
     // Update material identifier
     matId.removePiece(removedPiece);
     matId.addPiece(piece);
 
     // Update bitboards
-    const U64 sqMask = 1ULL << square;
+    const U64 sqMask = 1ULL << sq;
     pieceTypeBB_[removedPiece] &= ~sqMask;
     pieceTypeBB_[piece] |= sqMask;
 
@@ -132,14 +131,14 @@ Position::setPiece(Square sq, int piece) {
             whiteBB_ &= ~sqMask;
             if (removedPiece == Piece::WPAWN) {
                 wMtrlPawns_ -= pVal;
-                pHashKey ^= psHashKeys[Piece::WPAWN][square];
+                pHashKey ^= psHashKeys[Piece::WPAWN][sq];
             }
         } else {
             bMtrl_ -= pVal;
             blackBB_ &= ~sqMask;
             if (removedPiece == Piece::BPAWN) {
                 bMtrlPawns_ -= pVal;
-                pHashKey ^= psHashKeys[Piece::BPAWN][square];
+                pHashKey ^= psHashKeys[Piece::BPAWN][sq];
             }
         }
     }
@@ -151,14 +150,14 @@ Position::setPiece(Square sq, int piece) {
             whiteBB_ |= sqMask;
             if (piece == Piece::WPAWN) {
                 wMtrlPawns_ += pVal;
-                pHashKey ^= psHashKeys[Piece::WPAWN][square];
+                pHashKey ^= psHashKeys[Piece::WPAWN][sq];
             }
         } else {
             bMtrl_ += pVal;
             blackBB_ |= sqMask;
             if (piece == Piece::BPAWN) {
                 bMtrlPawns_ += pVal;
-                pHashKey ^= psHashKeys[Piece::BPAWN][square];
+                pHashKey ^= psHashKeys[Piece::BPAWN][sq];
             }
         }
     }
@@ -166,20 +165,19 @@ Position::setPiece(Square sq, int piece) {
 
 void
 Position::clearPiece(Square sq) {
-    const int square = sq.asInt();
-    int removedPiece = squares[square];
-    squares[square] = Piece::EMPTY;
+    int removedPiece = squares[sq];
+    squares[sq] = Piece::EMPTY;
     if (nnEval)
         nnEval->setPiece(sq, removedPiece, Piece::EMPTY);
 
     // Update hash key
-    hashKey ^= psHashKeys[removedPiece][square];
+    hashKey ^= psHashKeys[removedPiece][sq];
 
     // Update material identifier
     matId.removePiece(removedPiece);
 
     // Update bitboards
-    const U64 sqMask = 1ULL << square;
+    const U64 sqMask = 1ULL << sq;
     pieceTypeBB_[removedPiece] &= ~sqMask;
     pieceTypeBB_[Piece::EMPTY] |= sqMask;
 
@@ -190,14 +188,14 @@ Position::clearPiece(Square sq) {
             whiteBB_ &= ~sqMask;
             if (removedPiece == Piece::WPAWN) {
                 wMtrlPawns_ -= pVal;
-                pHashKey ^= psHashKeys[Piece::WPAWN][square];
+                pHashKey ^= psHashKeys[Piece::WPAWN][sq];
             }
         } else {
             bMtrl_ -= pVal;
             blackBB_ &= ~sqMask;
             if (removedPiece == Piece::BPAWN) {
                 bMtrlPawns_ -= pVal;
-                pHashKey ^= psHashKeys[Piece::BPAWN][square];
+                pHashKey ^= psHashKeys[Piece::BPAWN][sq];
             }
         }
     }
@@ -211,9 +209,9 @@ Position::hashAfterMove(const Move& move) const {
     int capP = getPiece(to);
 
     U64 ret = hashKey ^ whiteHashKey;
-    ret ^= psHashKeys[capP][to.asInt()];
-    ret ^= psHashKeys[p][to.asInt()];
-    ret ^= psHashKeys[p][from.asInt()];
+    ret ^= psHashKeys[capP][to];
+    ret ^= psHashKeys[p][to];
+    ret ^= psHashKeys[p][from];
 
     return ret;
 }
@@ -280,8 +278,8 @@ Position::makeMove(const Move& move, UndoInfo& ui) {
         movePieceNotPawn(move.from(), move.to());
     }
 
-    setCastleMask(getCastleMask() & castleSqMask[move.from().asInt()] &
-                  castleSqMask[move.to().asInt()]);
+    setCastleMask(getCastleMask() & castleSqMask[move.from()] &
+                  castleSqMask[move.to()]);
 
     if (!wtm)
         fullMoveCounter++;
@@ -380,15 +378,13 @@ Position::makeMoveB(const Move& move, UndoInfo& ui) {
 }
 
 void
-Position::movePieceNotPawn(Square fromS, Square toS) {
-    const int from = fromS.asInt();
-    const int to = toS.asInt();
+Position::movePieceNotPawn(Square from, Square to) {
     const int piece = squares[from];
     hashKey ^= psHashKeys[piece][from];
     hashKey ^= psHashKeys[piece][to];
     if (nnEval) {
-        nnEval->setPiece(fromS, piece, Piece::EMPTY);
-        nnEval->setPiece(toS, Piece::EMPTY, piece);
+        nnEval->setPiece(from, piece, Piece::EMPTY);
+        nnEval->setPiece(to, Piece::EMPTY, piece);
     }
 
     squares[from] = Piece::EMPTY;
@@ -415,7 +411,7 @@ Position::serialize(SerializeData& data) const {
         int sq0 = i * 16;
         U64 v = 0;
         for (int sq = 0; sq < 16; sq++)
-            v = (v << 4) | squares[sq0 + sq];
+            v = (v << 4) | squares[Square(sq0 + sq)];
         data.v[i] = v;
     }
     U64 flags = whiteMove;
@@ -442,7 +438,7 @@ Position::deSerialize(const SerializeData& data) {
         for (int sq = 15; sq >= 0; sq--) {
             int piece = v & 0xf;
             v >>= 4;
-            int square = sq0 + sq;
+            Square square(sq0 + sq);
             squares[square] = piece;
 
             U64 key = psHashKeys[piece][square];
@@ -506,7 +502,7 @@ Position::computeZobristHash() {
     U64 hash = hashEmpty;
     pHashKey = hashEmpty;
     matId = {};
-    for (int sq = 0; sq < 64; sq++) {
+    for (Square sq : AllSquares()) {
         int p = squares[sq];
         matId.addPiece(p);
         hash ^= psHashKeys[p][sq];
@@ -521,12 +517,12 @@ Position::computeZobristHash() {
     return hash;
 }
 
-const U64 Position::psHashKeys[Piece::nPieceTypes][64] = {
+const SqTbl<U64> Position::psHashKeys[Piece::nPieceTypes] = {
     {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL,
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL,
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL,
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL
     },
     {
         0x00a0f8864fbfa47bULL, 0x6149a3743bbf7441ULL, 0x2b70bc7b9cf8bcdfULL, 0x80f40e53c2e94e43ULL,

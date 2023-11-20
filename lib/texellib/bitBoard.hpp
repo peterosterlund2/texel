@@ -123,13 +123,13 @@ public:
     /** Shift mask in the SW and SE directions. */
     static U64 bPawnAttacksMask(U64 mask);
 
-    static U64 kingAttacks(Square sq) { return kingAttacksTable[sq.asInt()]; }
-    static U64 knightAttacks(Square sq) { return knightAttacksTable[sq.asInt()]; }
-    static U64 wPawnAttacks(Square sq) { return wPawnAttacksTable[sq.asInt()]; }
-    static U64 bPawnAttacks(Square sq) { return bPawnAttacksTable[sq.asInt()]; }
-    static U64 wPawnBlockerMask(Square sq) { return wPawnBlockerMaskTable[sq.asInt()]; }
-    static U64 bPawnBlockerMask(Square sq) { return bPawnBlockerMaskTable[sq.asInt()]; }
-    static U64 squaresBetween(Square s1, Square s2) { return squaresBetweenTable[s1.asInt()][s2.asInt()]; }
+    static U64 kingAttacks(Square sq) { return kingAttacksTable[sq]; }
+    static U64 knightAttacks(Square sq) { return knightAttacksTable[sq]; }
+    static U64 wPawnAttacks(Square sq) { return wPawnAttacksTable[sq]; }
+    static U64 bPawnAttacks(Square sq) { return bPawnAttacksTable[sq]; }
+    static U64 wPawnBlockerMask(Square sq) { return wPawnBlockerMaskTable[sq]; }
+    static U64 bPawnBlockerMask(Square sq) { return bPawnBlockerMaskTable[sq]; }
+    static U64 squaresBetween(Square s1, Square s2) { return squaresBetweenTable[s1][s2]; }
 
     /** Get direction between two squares, 8*sign(dy) + sign(dx) */
     static int getDirection(Square from, Square to);
@@ -161,26 +161,26 @@ public:
 
 private:
     /** Squares attacked by a king on a given square. */
-    static U64 kingAttacksTable[64];
-    static U64 knightAttacksTable[64];
-    static U64 wPawnAttacksTable[64];
-    static U64 bPawnAttacksTable[64];
+    static SqTbl<U64> kingAttacksTable;
+    static SqTbl<U64> knightAttacksTable;
+    static SqTbl<U64> wPawnAttacksTable;
+    static SqTbl<U64> bPawnAttacksTable;
 
     // Squares preventing a pawn from being a passed pawn, if occupied by enemy pawn
-    static U64 wPawnBlockerMaskTable[64];
-    static U64 bPawnBlockerMaskTable[64];
+    static SqTbl<U64> wPawnBlockerMaskTable;
+    static SqTbl<U64> bPawnBlockerMaskTable;
 
-    static U64 squaresBetweenTable[64][64];
+    static SqTbl<SqTbl<U64>> squaresBetweenTable;
 
-    static U64* rTables[64];
-    static U64 rMasks[64];
-    static int rBits[64];
-    static const U64 rMagics[64];
+    static SqTbl<U64*> rTables;
+    static SqTbl<U64> rMasks;
+    static const SqTbl<int> rBits;
+    static const SqTbl<U64> rMagics;
 
-    static U64* bTables[64];
-    static U64 bMasks[64];
-    static const int bBits[64];
-    static const U64 bMagics[64];
+    static SqTbl<U64*> bTables;
+    static SqTbl<U64> bMasks;
+    static const SqTbl<int> bBits;
+    static const SqTbl<U64> bMagics;
 
     static vector_aligned<U64> tableData;
 
@@ -292,21 +292,19 @@ BitBoard::mirrorY(U64 mask) {
 
 inline U64
 BitBoard::bishopAttacks(Square sq, U64 occupied) {
-    int s = sq.asInt();
 #ifdef HAS_BMI2
-    return bTables[s][pext(occupied, bMasks[s])];
+    return bTables[sq][pext(occupied, bMasks[sq])];
 #else
-    return bTables[s][(int)(((occupied & bMasks[s]) * bMagics[s]) >> bBits[s])];
+    return bTables[sq][(int)(((occupied & bMasks[sq]) * bMagics[sq]) >> bBits[sq])];
 #endif
 }
 
 inline U64
 BitBoard::rookAttacks(Square sq, U64 occupied) {
-    int s = sq.asInt();
 #ifdef HAS_BMI2
-    return rTables[s][pext(occupied, rMasks[s])];
+    return rTables[sq][pext(occupied, rMasks[sq])];
 #else
-    return rTables[s][(int)(((occupied & rMasks[s]) * rMagics[s]) >> rBits[s])];
+    return rTables[sq][(int)(((occupied & rMasks[sq]) * rMagics[sq]) >> rBits[sq])];
 #endif
 }
 

@@ -44,7 +44,7 @@ private:
     /** King evaluation when no pawns left. */
     static int mateEval(Square k1, Square k2);
 
-    static const int winKingTable[64];
+    static const SqTbl<int> winKingTable;
 
     /** Return true if the side with the bishop can not win because the opponent
      * has a fortress draw. */
