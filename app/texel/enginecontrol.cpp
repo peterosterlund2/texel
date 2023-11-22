@@ -669,9 +669,11 @@ EngineControl::getMaxNPS() const {
     if (UciParams::limitStrength->getBoolPar()) {
         int elo = UciParams::elo->getIntPar();
         if (elo < 1350)
-            nps2 = std::min(10000, nps2);
+            nps2 = 10000;
         else if (elo < 2100)
-            nps2 = std::min(100000, nps2);
+            nps2 = 100000;
+        else
+            nps2 = 750000;
     }
     int nps = std::min(nps1, nps2);
     return nps == INT_MAX ? 0 : nps;
