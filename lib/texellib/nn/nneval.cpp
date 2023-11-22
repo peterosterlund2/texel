@@ -53,6 +53,7 @@ NNEvaluator::create(const NetData& netData) {
     NNEvaluator* mem = AlignedAllocator<NNEvaluator>().allocate(1);
     return std::shared_ptr<NNEvaluator>(new (mem) NNEvaluator(netData),
                                         [](NNEvaluator* p) {
+        p->~NNEvaluator();
         AlignedAllocator<NNEvaluator>().deallocate(p, 1);
     });
 }
@@ -66,9 +67,23 @@ NNEvaluator::NNEvaluator(const NetData& netData)
     static_assert(sizeof(FirstLayerStack) % 32 == 0, "Bad alignment");
 }
 
+NNEvaluator::~NNEvaluator() {
+    connectPosition(nullptr);
+}
+
 void
-NNEvaluator::connectPosition(const Position& pos) {
-    posP = &pos;
+NNEvaluator::connectPosition(const Position* pos) {
+    const Position* oldPos = posP;
+    if (pos == oldPos)
+        return;
+
+    posP = nullptr;
+    if (oldPos)
+        oldPos->connectNNEval(nullptr);
+    posP = pos;
+    if (pos)
+        pos->connectNNEval(this);
+
     forceFullEval();
 }
 

@@ -94,6 +94,7 @@ public:
     Position(Position&& other);
     Position& operator=(const Position& other);
     Position& operator=(Position&& other);
+    ~Position();
 
     /**
      * Connect an NNEvaluator to this position, so that it gets

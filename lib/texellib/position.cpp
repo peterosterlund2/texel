@@ -91,11 +91,22 @@ Position::operator=(Position&& other) {
     return *this;
 }
 
+Position::~Position() {
+    connectNNEval(nullptr);
+}
+
 void
 Position::connectNNEval(NNEvaluator* nnEval) const {
+    NNEvaluator* oldNNEval = this->nnEval;
+    if (nnEval == oldNNEval)
+        return;
+
+    this->nnEval = nullptr;
+    if (oldNNEval)
+        oldNNEval->connectPosition(nullptr);
     this->nnEval = nnEval;
     if (nnEval)
-        nnEval->forceFullEval();
+        nnEval->connectPosition(this);
 }
 
 void

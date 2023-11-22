@@ -36,6 +36,7 @@ std::shared_ptr<NetData>
 NetData::create() {
     return std::shared_ptr<NetData>(new (AlignedAllocator<NetData>().allocate(1)) NetData,
                                     [](NetData* p) {
+        p->~NetData();
         AlignedAllocator<NetData>().deallocate(p, 1);
     });
 }

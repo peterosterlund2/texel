@@ -57,11 +57,8 @@ Evaluate::Evaluate(EvalHashTables& et)
 
 void
 Evaluate::connectPosition(const Position& pos) {
-    if (posP)
-        posP->connectNNEval(nullptr);
     posP = &pos;
-    nnEval.connectPosition(pos);
-    pos.connectNNEval(&nnEval);
+    nnEval.connectPosition(&pos);
 }
 
 int

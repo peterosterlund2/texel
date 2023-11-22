@@ -192,8 +192,7 @@ TUIGame::play() {
         {
             auto et = Evaluate::getEvalHashTables();
             Evaluate eval(*et);
-            Position pos(getPos());
-            eval.connectPosition(pos);
+            eval.connectPosition(getPos());
             eval.evalPosPrint();
         }
 

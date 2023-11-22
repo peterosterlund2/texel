@@ -39,12 +39,15 @@ class NNTest;
 class NNEvaluator {
     friend class NNTest;
 public:
+    /** Destructor. */
+    ~NNEvaluator();
+
     /** Create an instance. This object needs special alignment,
      *  so allocating it on the stack is not supported. */
     static std::shared_ptr<NNEvaluator> create(const NetData& netData);
 
     /** Set position object used for non-incremental evaluation. */
-    void connectPosition(const Position& pos);
+    void connectPosition(const Position* pos);
 
     /** Push the evaluation state. Called before making a move.*/
     void pushState();

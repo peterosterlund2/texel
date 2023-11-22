@@ -622,8 +622,7 @@ getQLoss(DataSet& ds, const NetData& qNet, int nWorkers) {
         Position pos;
         ThreadData(DataSet& ds, const NetData& net) : ds(ds) {
             qEval = NNEvaluator::create(net);
-            qEval->connectPosition(pos);
-            pos.connectNNEval(qEval.get());
+            qEval->connectPosition(&pos);
         }
     };
     std::vector<std::shared_ptr<ThreadData>> tdVec(nWorkers);
@@ -902,8 +901,7 @@ permuteFeatures(NetData& net, DataSet& ds, bool useLocalSearch, U64 rndSeed,
             Position pos;
             ThreadData(DataSet& ds, const NetData& net) : ds(ds) {
                 qEval = NNEvaluator::create(net);
-                qEval->connectPosition(pos);
-                pos.connectNNEval(qEval.get());
+                qEval->connectPosition(&pos);
             }
         };
         std::vector<std::shared_ptr<ThreadData>> tdVec(nWorkers);
@@ -1114,8 +1112,7 @@ eval(const std::string& modelFile, const std::string& fen) {
         torch::Tensor out = net.forward(inW, inB);
         double val = out.item<double>();
 
-        qEval->connectPosition(pos);
-        pos.connectNNEval(qEval.get());
+        qEval->connectPosition(&pos);
         int qVal = qEval->eval();
 
         std::cout << "val: " << (val*100.0f) << " prob: " << toProb(val)
