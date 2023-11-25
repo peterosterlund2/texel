@@ -85,19 +85,15 @@ toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) 
     int k2 = Square(r.bKing < 64 ? r.bKing : E8).mirrorY().asInt();
 
     auto addIndex = [](std::vector<int>& idxVec, int k, int pieceType, int sq) {
-        int idx1, idx2, idx3;
-        int kIdx;
-        if (k < 64) {
-            int x = Square(k).getX();
-            int y = Square(k).getY();
-            if (x >= 4) {
-                x = Square(x).mirrorX().asInt();
-                sq = Square(sq).mirrorX().asInt();
-            }
-            kIdx = y * 4 + x;
-        } else {
-            kIdx = k - 32;
+        int x = Square(k).getX();
+        int y = Square(k).getY();
+        if (x >= 4) {
+            x = Square(x).mirrorX().asInt();
+            sq = Square(sq).mirrorX().asInt();
         }
+        int kIdx = y * 4 + x;
+
+        int idx1, idx2, idx3;
         toIndex(kIdx, pieceType, sq, idx1, idx2, idx3);
         idxVec.push_back(idx1);
         idxVec.push_back(idx2);
@@ -1158,26 +1154,9 @@ featureStats(const std::string& inFile) {
             int kSq = Square(kx, ky).asInt();
             if (sq == kSq)
                 continue;
-            if (ky < 8) {
-                sq = Square(sq).mirrorX().asInt();
-                kSq = Square(kSq).mirrorX().asInt();
-                ss << 'K' << TextIO::squareToString(Square(kSq)) << ',';
-            } else {
-                if (sq == E1)
-                    continue;
-                ss << 'K';
-                if ((kx + 1) & 1) {
-                    if (sq == A1 && pt != 1)
-                        continue; // Must be white rook on A1
-                    ss << 'A';
-                }
-                if ((kx + 1) & 2) {
-                    if (sq == H1 && pt != 1)
-                        continue; // Must be white rook on H1
-                    ss << 'H';
-                }
-                ss << ',';
-            }
+            sq = Square(sq).mirrorX().asInt();
+            kSq = Square(kSq).mirrorX().asInt();
+            ss << 'K' << TextIO::squareToString(Square(kSq)) << ',';
             ss << "QRBNPqrbnp"[pt] << TextIO::squareToString(Square(sq));
         } else if (i < inFeats1 + inFeats2) {
             int tmp = i - inFeats1;
