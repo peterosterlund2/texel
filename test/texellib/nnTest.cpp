@@ -272,4 +272,8 @@ NNTest::testIncremental() {
           ":u", ":u",
           "b4", "Ng4", ":e",
          });
+    test(TextIO::startPosFEN,
+         {":e", "Nf3", ":e", "Nf6", ":e", "Rg1", ":e", "Rg8",
+          ":e", "Nc3", ":e", "Nc6", ":e", "Rb1", ":e", "Rb8", ":e",
+         });
 }
