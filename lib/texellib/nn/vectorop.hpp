@@ -232,8 +232,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 for (int j0 = 0; j0 < nIn; j0 += 64*4) {
                     U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
                     for (int k = BitUtil::bitCount(mask); k > 0; k--) {
-                        int j = j0 + BitUtil::firstBit(mask) * 4;
-                        mask &= mask - 1;
+                        int j = j0 + BitUtil::extractBit(mask) * 4;
                         process32x4(j);
                     }
                 }
@@ -290,8 +289,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 for (int j0 = 0; j0 < nIn; j0 += 64*4) {
                     U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
                     for (int k = BitUtil::bitCount(mask); k > 0; k--) {
-                        int j = j0 + BitUtil::firstBit(mask) * 4;
-                        mask &= mask - 1;
+                        int j = j0 + BitUtil::extractBit(mask) * 4;
                         process16x4(j);
                     }
                 }
@@ -347,8 +345,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 for (int j0 = 0; j0 < nIn; j0 += 64*4) {
                     U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
                     for (int k = BitUtil::bitCount(mask); k > 0; k--) {
-                        int j = j0 + BitUtil::firstBit(mask) * 4;
-                        mask &= mask - 1;
+                        int j = j0 + BitUtil::extractBit(mask) * 4;
                         process16x4(j);
                     }
                 }
@@ -421,8 +418,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 for (int j0 = 0; j0 < nIn; j0 += 64*4) {
                     U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
                     for (int k = BitUtil::bitCount(mask); k > 0; k--) {
-                        int j = j0 + BitUtil::firstBit(mask) * 4;
-                        mask &= mask - 1;
+                        int j = j0 + BitUtil::extractBit(mask) * 4;
                         process16x4(j);
                     }
                 }

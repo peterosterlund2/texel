@@ -1426,7 +1426,7 @@ ProofGame::computeBlocked(const Position& pos, const Position& goalPos, U64& blo
     // remaining pawns in the cone of squares that can reach the pawn square.
     U64 m = wGoalPawns & ~blocked;
     while (m) {
-        int sq = BitUtil::firstBit(m); m &= ~(1ULL << sq);
+        int sq = BitUtil::extractBit(m);
         U64 mask = bPawnReachable[sq][maxPawnCapt];
         wUsefulPawnSquares |= mask;
         int nGoal = BitBoard::bitCount(wGoalPawns & mask);
