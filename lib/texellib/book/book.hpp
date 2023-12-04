@@ -69,10 +69,10 @@ private:
     /** Return transformed count used for weighted random selection. */
     int getWeight(int count, bool pgBook);
 
-    static void createBinBook(std::vector<S8>& binBook);
+    static void createBinBook(std::vector<U16>& binBook);
 
     /** Add a sequence of moves, starting from the initial position, to the binary opening book. */
-    static bool addBookLine(const std::string& line, std::vector<S8>& binBook);
+    static bool addBookLine(const std::string& line, std::vector<U16>& binBook);
 
     static int pieceToProm(int p);
 

@@ -166,16 +166,14 @@ Book::initBook() {
     bookMap.clear();
     rndGen.setSeed(currentTimeMillis());
     numBookMoves = 0;
-    std::vector<S8> buf;
+    std::vector<U16> buf;
     createBinBook(buf);
 
     Position startPos(TextIO::readFEN(TextIO::startPosFEN));
     Position pos(startPos);
     UndoInfo ui;
-    for (size_t i = 0; i < buf.size(); i += 2) {
-        int b0 = buf[i]; if (b0 < 0) b0 += 256;
-        int b1 = buf[i+1]; if (b1 < 0) b1 += 256;
-        int move = (b0 << 8) + b1;
+    for (size_t i = 0; i < buf.size(); i++) {
+        int move = buf[i];
         if (move == 0) {
             pos = startPos;
         } else {
@@ -229,7 +227,7 @@ Book::getWeight(int count, bool pgBook) {
 }
 
 void
-Book::createBinBook(std::vector<S8>& binBook) {
+Book::createBinBook(std::vector<U16>& binBook) {
     for (size_t i = 0; bookLines[i]; i++) {
         const char* line = bookLines[i];
         if (!addBookLine(line, binBook)) {
@@ -242,7 +240,7 @@ Book::createBinBook(std::vector<S8>& binBook) {
 
 /** Add a sequence of moves, starting from the initial position, to the binary opening book. */
 bool
-Book::addBookLine(const std::string& line, std::vector<S8>& binBook) {
+Book::addBookLine(const std::string& line, std::vector<U16>& binBook) {
     Position pos(TextIO::readFEN(TextIO::startPosFEN));
     UndoInfo ui;
     std::vector<std::string> strMoves;
@@ -260,12 +258,10 @@ Book::addBookLine(const std::string& line, std::vector<S8>& binBook) {
             return false;
         int prom = pieceToProm(m.promoteTo());
         int val = m.from().asInt() + (m.to().asInt() << 6) + (prom << 12) + (bad << 15);
-        binBook.push_back((S8)(val >> 8));
-        binBook.push_back((S8)(val & 255));
+        binBook.push_back((U16)val);
         pos.makeMove(m, ui);
     }
-    binBook.push_back((S8)0);
-    binBook.push_back((S8)0);
+    binBook.push_back(0);
     return true;
 }
 
