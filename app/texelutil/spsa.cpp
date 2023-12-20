@@ -32,6 +32,7 @@
 #include <memory>
 #include <iostream>
 #include <limits>
+#include <fstream>
 
 #ifdef USE_GSL
 
