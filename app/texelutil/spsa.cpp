@@ -31,6 +31,7 @@
 #include "chessError.hpp"
 #include <memory>
 #include <iostream>
+#include <fstream>
 #include <limits>
 
 #ifdef USE_GSL
