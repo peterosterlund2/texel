@@ -1,10 +1,11 @@
 set(src_torchutil
   torchutil.cpp
+  dataset.cpp      dataset.hpp
   randperm.cpp     randperm.hpp
   featureperm.cpp  featureperm.hpp
   )
 
-if(UNIX AND NOT CMAKE_CROSSCOMPILING)
+if(NOT CMAKE_CROSSCOMPILING)
   find_package(Torch
     HINTS $ENV{LIBTORCH_DIR})
 

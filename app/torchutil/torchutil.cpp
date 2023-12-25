@@ -31,8 +31,8 @@
 #include "nneval.hpp"
 #include "square.hpp"
 #include "threadpool.hpp"
-#include "randperm.hpp"
 #include "featureperm.hpp"
+#include "dataset.hpp"
 
 #include <torch/torch.h>
 #include <vector>
@@ -148,143 +148,128 @@ getData(DataSet& ds, size_t beg, size_t end,
     }
 }
 
-template <typename DataSet>
+/** Loads training data from file into tensors.
+ *  Helper threads ensure that data reading and parsing is performed while processing
+ *  the previous batch of data. */
 class DataLoader {
 public:
-    explicit DataLoader(DataSet& ds) : ds(ds), pool(1) {}
+    /** Constructor. */
+    DataLoader(SplitData& splitData, MemDataSet& validateData, int numEpochs, U64 seed);
 
-    void startGetData(size_t beg, size_t end);
-    void getData(torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out);
+    /** Get tensor data for the next batch of training data.
+     *  @return True if returned data is the last data for the current epoch. */
+    bool getData(torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out);
 
 private:
-    DataSet& ds;
-    struct Result {
+    void startGetData();
+
+    SplitData& splitData;
+    MemDataSet& validateData;
+    const int numEpochs;
+    const int batchSize;
+    const U64 seed;
+
+    MemDataSet trainDataChunk; // Current data chunk
+    MemDataSet nextChunk;      // Chunk that will be needed after trainDataChunk
+    int epoch = 0;             // Epoch corresponding to trainDataChunk
+    int part = 0;              // Chunk number corresponding to trainDataChunk
+    S64 beg = 0;               // Start of batch in trainDataChunk to be returned by
+                               // next call to getData()
+
+    std::shared_ptr<ShuffledDataSet<MemDataSet>> shuffledTrainData; // Shuffled version of trainDataChunk
+
+    struct TensorResult {
         torch::Tensor inW;
         torch::Tensor inB;
         torch::Tensor out;
     };
-    ThreadPool<Result> pool;
+    ThreadPool<TensorResult> tensorWorker; // Converts a batch from trainDataChunk to tensors
+
+    ThreadPool<int> chunkLoader; // Loads data into nextChunk
 };
 
-template <typename DataSet>
-void
-DataLoader<DataSet>::startGetData(size_t beg, size_t end) {
-    auto func = [this,beg,end](int workerNo) -> Result {
-        Result r;
-        ::getData(ds, beg, end, r.inW, r.inB, r.out);
-        return r;
-    };
-    pool.addTask(func);
+inline
+DataLoader::DataLoader(SplitData& splitData, MemDataSet& validateData, int numEpochs, U64 seed)
+    : splitData(splitData), validateData(validateData), numEpochs(numEpochs),
+      batchSize(splitData.getBatchSize()),
+      seed(seed), tensorWorker(1), chunkLoader(1) {
+    splitData.getData(seed, 0, &trainDataChunk, 1, &nextChunk, &validateData);
+    if (splitData.numTrainParts() > 1) {
+        auto func = [](int workerNo) -> int {
+            return 0; // Next chunk already loaded
+        };
+        chunkLoader.addTask(func);
+    }
+    startGetData();
 }
 
-template <typename DataSet>
-void
-DataLoader<DataSet>::getData(torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out) {
-    Result r;
-    if (!pool.getResult(r))
+bool
+DataLoader::getData(torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out) {
+    TensorResult r;
+    if (!tensorWorker.getResult(r))
         throw ChessError("startGetData() not called");
     inW = r.inW;
     inB = r.inB;
     out = r.out;
-}
 
-// ------------------------------------------------------------------------------
+    beg += batchSize;
+    int nParts = splitData.numTrainParts();
+    bool lastInEpoch = part >= nParts - 1 && beg >= trainDataChunk.getSize();
 
-/** A data set that reads the data records from a file. */
-class DataSet {
-public:
-    DataSet(const std::string& filename);
-    DataSet(const DataSet& other);
-    ~DataSet();
-
-    /** Get number of records in the data set. */
-    S64 getSize() const;
-    /** Get the idx:th record in the data set. */
-    void getItem(S64 idx, Record& r);
-
-private:
-    void openFile();
-
-    std::string filename;
-    const Record* mapping = nullptr;
-    S64 size;
-};
-
-DataSet::DataSet(const DataSet& other)
-    : filename(other.filename), size(other.size) {
-    openFile();
-}
-
-DataSet::DataSet(const std::string& filename)
-    : filename(filename) {
-    openFile();
-}
-
-DataSet::~DataSet() {
-    munmap((void*)mapping, size * sizeof(Record));
+    startGetData();
+    return lastInEpoch;
 }
 
 void
-DataSet::openFile() {
-    int fd = open(filename.c_str(), O_RDONLY);
-    if (fd == -1)
-        throw ChessError("Failed to open file");
+DataLoader::startGetData() {
+    int nParts = splitData.numTrainParts();
+    if (epoch >= numEpochs - 1 && part >= nParts - 1 && beg >= trainDataChunk.getSize())
+        return; // No more data to get
 
-    struct stat statbuf;
-    int ret = fstat(fd, &statbuf);
-    if (ret == -1)
-        throw ChessError("stat error");
-    size = statbuf.st_size / sizeof(Record);
+    auto getNextChunk = [this,nParts](int workerNo) -> int {
+        int nextEpoch = epoch;
+        int nextPart = part + 1;
+        if (nextPart >= nParts) {
+            nextPart = 0;
+            nextEpoch++;
+        }
+        U64 seed2 = hashU64(seed) + nextEpoch + 10000;
+        splitData.getData(seed2, nextPart, &nextChunk, -1, nullptr, nullptr);
+        return 0;
+    };
 
-    mapping = (const Record*)mmap(nullptr, statbuf.st_size,
-                                  PROT_READ, MAP_SHARED, fd, 0);
-    if (mapping == MAP_FAILED)
-        throw ChessError("mmap failed");
+    auto getNextData = [this,nParts,getNextChunk](int workerNo) -> TensorResult {
+        if (beg >= trainDataChunk.getSize()) {
+            if (nParts > 1) {
+                int dummy;
+                chunkLoader.getResult(dummy);
+                trainDataChunk.swap(nextChunk);
+            }
+            if (++part >= nParts) {
+                part = 0;
+                epoch++;
+            }
+            beg = 0;
+            shuffledTrainData.reset();
 
-    close(fd);
-}
+            if (nParts > 1) {
+                if (part < nParts - 1 || epoch < numEpochs - 1)
+                    chunkLoader.addTask(getNextChunk);
+            }
+        }
 
-inline S64
-DataSet::getSize() const {
-    return size;
-}
+        if (!shuffledTrainData) {
+            U64 seed2 = hashU64(hashU64(seed) + epoch) + part;
+            shuffledTrainData =
+                std::make_shared<ShuffledDataSet<MemDataSet>>(trainDataChunk, seed2);
+        }
 
-void
-DataSet::getItem(S64 idx, Record& r) {
-    r = mapping[idx];
-}
-
-// ------------------------------------------------------------------------------
-
-/** A randomly shuffled version of the base data set. */
-template <typename Base>
-class ShuffledDataSet {
-public:
-    ShuffledDataSet(const Base& baseSet, U64 seed);
-
-    S64 getSize() const;
-    void getItem(S64 idx, Record& r);
-
-public:
-    Base baseSet;
-    RandPerm rndPerm;
-};
-
-template <typename Base>
-ShuffledDataSet<Base>::ShuffledDataSet(const Base& baseSet, U64 seed)
-    : baseSet(baseSet), rndPerm(baseSet.getSize(), seed) {
-}
-
-template <typename Base>
-inline S64
-ShuffledDataSet<Base>::getSize() const {
-    return baseSet.getSize();
-}
-
-template <typename Base>
-void
-ShuffledDataSet<Base>::getItem(S64 idx, Record& r) {
-    baseSet.getItem(rndPerm.perm(idx), r);
+        S64 end = std::min(beg + batchSize, trainDataChunk.getSize());
+        TensorResult r;
+        ::getData(*shuffledTrainData, beg, end, r.inW, r.inB, r.out);
+        return r;
+    };
+    tensorWorker.addTask(getNextData);
 }
 
 // ------------------------------------------------------------------------------
@@ -341,9 +326,14 @@ writeDataSet(DataSet& ds, S64 nPos, const std::string& outFile) {
 /** Extract a random sample of nPos records from "inFile", write to "outFile". */
 static void
 extractSubset(const std::string& inFile, S64 nPos, const std::string& outFile) {
-    DataSet allData(inFile);
-    ShuffledDataSet<DataSet> shuffled(allData, 17);
-    writeDataSet(shuffled, nPos, outFile);
+    FileDataSet allData(inFile);
+
+    RandPerm rndPerm(allData.getSize(), 17);
+    MemDataSet subSet(allData, [&rndPerm,nPos](S64 idx) {
+        return rndPerm.perm(idx) < (U64)nPos;
+    }, nPos);
+
+    writeDataSet(subSet, nPos, outFile);
 }
 
 // ------------------------------------------------------------------------------
@@ -558,36 +548,6 @@ Net::quantize(NetData& qNet) const {
 
 // ------------------------------------------------------------------------------
 
-/** Splits a data set in a training part and a validation part. */
-class SplitData {
-public:
-    using ShuffledSet = ShuffledDataSet<DataSet>;
-    using SubSet = SubDataSet<ShuffledSet>;
-
-    /** Constructor. */
-    SplitData(DataSet& allData)
-        : nData(allData.getSize()),
-          nTrain(nData * 9 / 10),
-          seed0(0),
-          allShuffled(allData, seed0),
-          trainData(allShuffled, 0, nTrain),
-          validateData(allShuffled, nTrain, nData) {
-    }
-
-    /** Get training data. */
-    SubSet& getTrainData() { return trainData; }
-    /** Get validation data. */
-    SubSet& getValidateData() { return validateData; }
-
-private:
-    const size_t nData;
-    const size_t nTrain;
-    const U64 seed0;
-    ShuffledSet allShuffled;
-    SubSet trainData;
-    SubSet validateData;
-};
-
 /** Set learning rate for an optimizer. */
 static void
 setLR(torch::optim::Optimizer& opt, double lr) {
@@ -608,22 +568,20 @@ toProb(T score) {
 }
 
 /** Compute RMS loss for a quantized network over a data set. */
-template <typename DataSet>
 static double
-getQLoss(DataSet& ds, const NetData& qNet, int nWorkers) {
+getQLoss(MemDataSet& ds, const NetData& qNet, int nWorkers) {
     struct ThreadData {
-        DataSet ds;
         std::shared_ptr<NNEvaluator> qEval;
         Record r;
         Position pos;
-        ThreadData(DataSet& ds, const NetData& net) : ds(ds) {
+        ThreadData(const NetData& net) {
             qEval = NNEvaluator::create(net);
             qEval->connectPosition(&pos);
         }
     };
     std::vector<std::shared_ptr<ThreadData>> tdVec(nWorkers);
     for (int i = 0; i < nWorkers; i++)
-        tdVec[i] = std::make_shared<ThreadData>(ds, qNet);
+        tdVec[i] = std::make_shared<ThreadData>(qNet);
 
     S64 nPos = ds.getSize();
     double qLoss = 0;
@@ -632,11 +590,11 @@ getQLoss(DataSet& ds, const NetData& qNet, int nWorkers) {
     for (S64 i = 0; i < nPos; i += batchSize) {
         S64 beginIdx = i;
         S64 endIdx = std::min(i + batchSize, nPos);
-        auto func = [&tdVec,beginIdx,endIdx](int workerNo) {
+        auto func = [&ds,&tdVec,beginIdx,endIdx](int workerNo) {
             ThreadData& td = *tdVec[workerNo];
             double qLoss = 0;
             for (S64 i = beginIdx; i < endIdx; i++) {
-                td.ds.getItem(i, td.r);
+                ds.getItem(i, td.r);
                 int target;
                 NNUtil::recordToPos(td.r, td.pos, target);
 
@@ -678,18 +636,20 @@ train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64
             nPars += p.numel();
     std::cout << "Number of parameters: " << nPars << std::endl;
 
-    DataSet allData(inFile);
-    SplitData split(allData);
-    auto& trainData = split.getTrainData();
-    auto& validateData = split.getValidateData();
-    using SubSet = SplitData::SubSet;
-
-    const size_t nData = allData.getSize();
-    const size_t nTrain = trainData.getSize();
-    const size_t nValidate = validateData.getSize();
     const int batchSize = 16*1024;
+    FileDataSet allData(inFile);
+    const size_t nData = allData.getSize();
     std::cout << "nData    : " << nData << std::endl;
+
+    SplitData splitData(allData, batchSize);
+    const size_t nTrain = splitData.numTrainData();
     std::cout << "nTrain   : " << nTrain << " (" << (nTrain / batchSize) << " batches)" << std::endl;
+    std::cout << "nParts   : " << splitData.numTrainParts() << std::endl;
+    std::cout << "batchSize: " << batchSize << std::endl;
+
+    MemDataSet validateData;
+    DataLoader loader(splitData, validateData, nEpochs, seed);
+    const size_t nValidate = validateData.getSize();
     std::cout << "nValidate: " << nValidate << " (" << (nValidate / batchSize) << " batches)" << std::endl;
 
     double lr = initialLR;
@@ -697,24 +657,13 @@ train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64
     torch::optim::Adam optimizer(net.parameters(), opts);
     net.printWeights(0);
     for (int epoch = 1; epoch <= nEpochs; epoch++) {
-        ShuffledDataSet<SubSet> epochTrainData(trainData, hashU64(seed) + epoch);
         std::cout << "Epoch: " << epoch << " lr: " << lr << std::endl;
 
-        DataLoader<decltype(epochTrainData)> loader(epochTrainData);
         torch::Tensor lossSum = torch::zeros({}, torch::kF32).to(dev);
         int lossNum = 0;
-        for (size_t batch = 0, beg = 0; beg < nTrain; batch++, beg += batchSize) {
-            size_t end = std::min(beg + batchSize, nTrain);
-
+        for (size_t batch = 0; ; batch++) {
             torch::Tensor inputW, inputB, target;
-            if (beg == 0)
-                loader.startGetData(beg, end);
-            loader.getData(inputW, inputB, target);
-            if (beg + batchSize < nTrain) {
-                size_t nextBeg = beg + batchSize;
-                size_t nextEnd = std::min(nextBeg + batchSize, nTrain);
-                loader.startGetData(nextBeg, nextEnd);
-            }
+            bool lastInEpoch = loader.getData(inputW, inputB, target);
 
             inputW = inputW.to(dev);
             inputB = inputB.to(dev);
@@ -739,6 +688,8 @@ train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64
                 lossSum *= 0;
                 lossNum = 0;
             }
+            if (lastInEpoch)
+                break;
         }
 
         {
@@ -876,9 +827,8 @@ printStats(const NetData& net) {
 }
 
 /** Permute first layer features to make the first layer output sparse. */
-template <typename DataSet>
 static void
-permuteFeatures(NetData& net, DataSet& ds, bool useLocalSearch, U64 rndSeed,
+permuteFeatures(NetData& net, MemDataSet& ds, bool useLocalSearch, U64 rndSeed,
                 int nWorkers) {
     using BitSet = FeaturePerm::BitSet;
     std::vector<BitSet> featureActivations(NetData::n1);
@@ -891,28 +841,27 @@ permuteFeatures(NetData& net, DataSet& ds, bool useLocalSearch, U64 rndSeed,
         copyNet.prepareMatMul();
 
         struct ThreadData {
-            DataSet ds;
             std::shared_ptr<NNEvaluator> qEval;
             Record r;
             Position pos;
-            ThreadData(DataSet& ds, const NetData& net) : ds(ds) {
+            ThreadData(const NetData& net) {
                 qEval = NNEvaluator::create(net);
                 qEval->connectPosition(&pos);
             }
         };
         std::vector<std::shared_ptr<ThreadData>> tdVec(nWorkers);
         for (int i = 0; i < nWorkers; i++)
-            tdVec[i] = std::make_shared<ThreadData>(ds, copyNet);
+            tdVec[i] = std::make_shared<ThreadData>(copyNet);
 
         const int batchSize = 32*1024;
         ThreadPool<int> pool(nWorkers);
         for (int i = 0; i < nPos; i += batchSize) {
             int beginIdx = i;
             int endIdx = std::min(i + batchSize, nPos);
-            auto func = [&featureActivations,&tdVec,beginIdx,endIdx](int workerNo) {
+            auto func = [&ds,&featureActivations,&tdVec,beginIdx,endIdx](int workerNo) {
                 ThreadData& td = *tdVec[workerNo];
                 for (int i = beginIdx; i < endIdx; i++) {
-                    td.ds.getItem(i, td.r);
+                    ds.getItem(i, td.r);
                     int target;
                     NNUtil::recordToPos(td.r, td.pos, target);
                     td.qEval->eval();
@@ -951,8 +900,9 @@ quantize(const std::string& inFile, const std::string& outFile,
     net.quantize(qNet);
 
     if (permute) {
-        DataSet ds(validationFile);
-        permuteFeatures(qNet, ds, useLocalSearch, rndSeed, nWorkers);
+        FileDataSet ds(validationFile);
+        MemDataSet mDs(ds, [](S64 idx) { return true; }, ds.getSize());
+        permuteFeatures(qNet, mDs, useLocalSearch, rndSeed, nWorkers);
     }
 
     {
@@ -995,9 +945,10 @@ quantize(const std::string& inFile, const std::string& outFile,
     printStats(qNet);
 
     if (qLoss) {
-        DataSet ds(validationFile);
+        FileDataSet ds(validationFile);
+        MemDataSet mDs(ds, [](S64 idx) { return true; }, ds.getSize());
         qNet.prepareMatMul();
-        double qLoss = getQLoss(ds, qNet, nWorkers);
+        double qLoss = getQLoss(mDs, qNet, nWorkers);
         std::cout << "Quantized error: " << qLoss << std::endl;
     }
 }
@@ -1017,37 +968,28 @@ static void writeFEN(std::ostream& os, const std::string& fen,
     os << '\n';
 }
 
-/** Write data set to "os" in FEN format. */
-template <typename DataSet>
-void
-writeDataSetFen(DataSet& ds, std::ostream& os) {
-    const size_t n = ds.getSize();
-    Record r;
-    Position pos;
-    for (size_t i = 0; i < n; i++) {
-        ds.getItem(i, r);
-        int score;
-        NNUtil::recordToPos(r, pos, score);
-        writeFEN(os, TextIO::toFEN(pos), -1, score, -1, -1);
-    }
-}
-
 /** If "inFile" were to be used to train a network, some of the training data
  *  would be set aside for validation. This function writes that validation data
  *  to "os". */
 static void
 extractValidationData(const std::string& inFile, const std::string& outFile) {
-    DataSet allData(inFile);
-    SplitData split(allData);
-    auto& validateData = split.getValidateData();
+    FileDataSet allData(inFile);
+    SplitData splitData(allData, 1);
+    MemDataSet validateData;
+    splitData.getData(0, -1, nullptr, -1, nullptr, &validateData);
     writeDataSet(validateData, validateData.getSize(), outFile);
 }
 
 /** Convert a data set binary file "inFile" to FEN format written to "os". */
 static void
 bin2Fen(const std::string& inFile, std::ostream& os) {
-    DataSet allData(inFile);
-    writeDataSetFen(allData, os);
+    FileDataSet ds(inFile);
+    Position pos;
+    ds.forEach([&os,&pos](Record& r) {
+        int score;
+        NNUtil::recordToPos(r, pos, score);
+        writeFEN(os, TextIO::toFEN(pos), -1, score, -1, -1);
+    });
 }
 
 // ------------------------------------------------------------------------------
@@ -1126,13 +1068,10 @@ eval(const std::string& modelFile, const std::string& fen) {
  *  data points activates it. Print result to standard output. */
 static void
 featureStats(const std::string& inFile) {
-    DataSet allData(inFile);
-    const size_t nData = allData.getSize();
+    FileDataSet allData(inFile);
     std::vector<S64> stats(inFeatures);
     std::vector<int> idxVecW, idxVecB;
-    Record r;
-    for (size_t i = 0; i < nData; i++) {
-        allData.getItem(i, r);
+    allData.forEach([&stats,&idxVecW,&idxVecB](Record& r) {
         idxVecW.clear();
         idxVecB.clear();
         toSparse(r, idxVecW, idxVecB);
@@ -1140,7 +1079,8 @@ featureStats(const std::string& inFile) {
             stats[idx]++;
         for (int idx : idxVecB)
             stats[idx]++;
-    }
+    });
+
     for (int i = 0; i < inFeatures; i++) {
         std::stringstream ss;
         if (i < inFeats1) {
