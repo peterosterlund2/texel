@@ -208,7 +208,7 @@ inline void
 matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector<S8,nIn>& in) {
 #ifdef HAS_AVX2
     if ((nIn % 8 == 0) && (nOut % 32) == 0) {
-        __m256i ones16 = _mm256_set_epi16(1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1);
+        __m256i ones16 = _mm256_set1_epi16(1);
         for (int i = 0; i < nOut; i += 32) {
             __m256i sum1 = _mm256_load_si256((const __m256i*)&result(i+8*0));
             __m256i sum2 = _mm256_load_si256((const __m256i*)&result(i+8*1));
@@ -248,9 +248,9 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
         return;
     }
     if (nIn % 32 == 0) {
-        __m256i ones16 = _mm256_set_epi16(1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1);
+        __m256i ones16 = _mm256_set1_epi16(1);
         for (int i = 0; i < nOut; i++) {
-            __m256i sum = _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, 0);
+            __m256i sum = _mm256_set1_epi32(0);
             for (int j = 0; j < nIn; j += 32) {
                 __m256i a = _mm256_load_si256((const __m256i*)&weight(i,j));
                 __m256i b = _mm256_load_si256((const __m256i*)&in(j));
@@ -265,7 +265,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
 #endif
 #ifdef HAS_SSSE3
     if ((nIn % 8 == 0) && (nOut % 16) == 0) {
-        __m128i ones16 = _mm_set_epi16(1,1,1,1,1,1,1,1);
+        __m128i ones16 = _mm_set1_epi16(1);
         for (int i = 0; i < nOut; i += 16) {
             __m128i sum1 = _mm_load_si128((const __m128i*)&result(i+4*0));
             __m128i sum2 = _mm_load_si128((const __m128i*)&result(i+4*1));
@@ -307,9 +307,9 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
         return;
     }
     if (nIn % 16 == 0) {
-        __m128i ones16 = _mm_set_epi16(1,1,1,1,1,1,1,1);
+        __m128i ones16 = _mm_set1_epi16(1);
         for (int i = 0; i < nOut; i++) {
-            __m128i sum = _mm_set_epi32(0, 0, 0, 0);
+            __m128i sum = _mm_set1_epi32(0);
             for (int j = 0; j < nIn; j += 16) {
                 __m128i a = _mm_load_si128((const __m128i*)&weight(i,j));
                 __m128i b = _mm_load_si128((const __m128i*)&in(j));
