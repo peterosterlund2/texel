@@ -97,13 +97,13 @@ private:
         int toAddLen = 0;       // Number of entries in toAdd
         int toSubLen = 0;       // Number of entries in toSub
         Square kingSqComputed;  // King square corresponding to l1Out, or invalid if l1Out not valid
-        int pad[5];             // To make size a multiple of 32 bytes
+        int pad[5];             // To make size a multiple of 64 bytes
         void clear();
     };
     struct FirstLayerStack {
         FirstLayerState flState[maxStackSize][2];
         int stackTop = 0;   // Current stack entry
-        int pad[7];         // To make size a multiple of 32 bytes
+        int pad[15];        // To make size a multiple of 64 bytes
     };
     FirstLayerStack stack;
 

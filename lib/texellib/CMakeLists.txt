@@ -166,6 +166,10 @@ if(USE_AVX2)
   target_compile_definitions(texellib
     PUBLIC "HAS_AVX2")
 endif()
+if(USE_AVX512)
+  target_compile_definitions(texellib
+    PUBLIC "HAS_AVX512")
+endif()
 
 if(USE_NEON)
   target_compile_definitions(texellib

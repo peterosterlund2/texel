@@ -43,9 +43,9 @@ TEST(NNTest, testMatMul) {
 void
 NNTest::testMatMul() {
     {
-        alignas(32) Matrix<S8,1,32> w;
-        alignas(32) Vector<S8,32> in;
-        alignas(32) Vector<S32,1> res;
+        alignas(64) Matrix<S8,1,32> w;
+        alignas(64) Vector<S8,32> in;
+        alignas(64) Vector<S32,1> res;
         res(0) = 0;
         for (int i = 0; i < 32; i++) {
             w(0,i) = i+1;
@@ -57,9 +57,9 @@ NNTest::testMatMul() {
     }
 
     {
-        alignas(32) Matrix<S8,1,32> w;
-        alignas(32) Vector<S8,32> in;
-        alignas(32) Vector<S32,1> res;
+        alignas(64) Matrix<S8,1,32> w;
+        alignas(64) Vector<S8,32> in;
+        alignas(64) Vector<S32,1> res;
         res(0) = 0;
         for (int i = 0; i < 32; i++) {
             w(0,i) = (i & 1) ? -(i+1) : (i+1);
@@ -71,9 +71,9 @@ NNTest::testMatMul() {
     }
 
     {
-        alignas(32) Matrix<S8,2,32> w;
-        alignas(32) Vector<S8,32> in;
-        alignas(32) Vector<S32,2> res;
+        alignas(64) Matrix<S8,2,32> w;
+        alignas(64) Vector<S8,32> in;
+        alignas(64) Vector<S32,2> res;
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 32; j++) {
                 w(i,j) = i == 0 ? 127 : -127;
@@ -88,9 +88,9 @@ NNTest::testMatMul() {
     }
 
     {
-        alignas(32) Matrix<S8,32,512> w;
-        alignas(32) Vector<S8,512> in;
-        alignas(32) Vector<S32,32> res;
+        alignas(64) Matrix<S8,32,512> w;
+        alignas(64) Vector<S8,512> in;
+        alignas(64) Vector<S32,32> res;
         for (int i = 0; i < 32; i++) {
             for (int j = 0; j < 512; j++)
                 w(i,j) = (i + j * 7) % 64 - 32;

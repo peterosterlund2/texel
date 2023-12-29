@@ -14,6 +14,10 @@ Pre-compiled executables
 The Texel distribution contains the following pre-compiled executables
 located in the bin directory:
 
+texel64-avx512.exe
+  For Windows 7 or later x86-64 systems using AVX-512, VNNI, POPCOUNT and BMI2
+  instructions.
+
 texel64-avx2-bmi.exe:
   For Windows 7 or later x86-64 systems using AVX2, POPCOUNT and BMI2
   instructions.
@@ -346,6 +350,10 @@ USE_SSSE3
 USE_AVX2
 
   Use AVX2 instructions to speed up neural network evaluation.
+
+USE_AVX512
+
+  Use AVX-512 instructions to speed up neural network evaluation.
 
 USE_BMI2
 

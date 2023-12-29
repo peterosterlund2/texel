@@ -135,6 +135,7 @@ public:
     struct Output {
         Vector<S32,nOut> linOutput;  // Result after applying weight and bias
         Vector<S8,nOut> output;      // Result after scaling, clipped ReLU and narrowing
+        S8 dummy[64 - nOut];         // To make size a multiple of 64 bytes
     };
 
     /** Compute output from input. */

@@ -63,8 +63,8 @@ NNEvaluator::NNEvaluator(const NetData& netData)
       layer3(netData.lin3),
       layer4(netData.lin4),
       netData(netData) {
-    static_assert(sizeof(FirstLayerState) % 32 == 0, "Bad alignment");
-    static_assert(sizeof(FirstLayerStack) % 32 == 0, "Bad alignment");
+    static_assert(sizeof(FirstLayerState) % 64 == 0, "Bad alignment");
+    static_assert(sizeof(FirstLayerStack) % 64 == 0, "Bad alignment");
 }
 
 NNEvaluator::~NNEvaluator() {

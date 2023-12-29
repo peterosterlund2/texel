@@ -81,6 +81,22 @@ mkdir -p build/win64_bmi
            -DUSE_PREFETCH=on
 ) &
 
+# Windows 64-bit with AVX512 + POPCNT + BMI2
+mkdir -p build/win64_avx512
+(cd build/win64_avx512 &&
+     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64_clang.cmake \
+           -DUSE_WIN7=on \
+           -DCPU_TYPE=corei7 \
+           -DUSE_AVX2=on \
+           -DUSE_AVX512=on \
+           -DUSE_BMI2=on \
+           -DUSE_CTZ=on \
+           -DUSE_LARGE_PAGES=on \
+           -DUSE_NUMA=on \
+           -DUSE_POPCNT=on \
+           -DUSE_PREFETCH=on
+) &
+
 # Windows 64-bit with cluster support
 mkdir -p build/win64cl
 (cd build/win64cl &&
@@ -128,6 +144,7 @@ cmake --build build/win64_ssse3   -j ${para} || exit 2
 cmake --build build/win64_avx2    -j ${para} || exit 2
 cmake --build build/win64         -j ${para} || exit 2
 cmake --build build/win64_bmi     -j ${para} || exit 2
+cmake --build build/win64_avx512  -j ${para} || exit 2
 cmake --build build/win64cl       -j ${para} || exit 2
 cmake --build build/android64     -j ${para} || exit 2
 cmake --build build/android64_dot -j ${para} || exit 2
@@ -154,6 +171,9 @@ x86_64-w64-mingw32-strip bin/texelutil.exe
 
 cp build/win64_bmi/texel.exe bin/texel64-avx2-bmi.exe
 x86_64-w64-mingw32-strip bin/texel64-avx2-bmi.exe
+
+cp build/win64_avx512/texel.exe bin/texel64-avx512.exe
+x86_64-w64-mingw32-strip bin/texel64-avx512.exe
 
 cp build/win64cl/texel.exe bin/texel64cl.exe
 x86_64-w64-mingw32-strip bin/texel64cl.exe

@@ -30,7 +30,7 @@
 #include "bitBoard.hpp"
 #include <type_traits>
 
-#ifdef HAS_AVX2
+#if defined(HAS_AVX2) || defined(HAS_AVX512)
 #include <immintrin.h>
 #endif
 #ifdef HAS_SSSE3
@@ -87,6 +87,25 @@ neon_hadd_32(int32x4_t sum) {
 template <int nIn, int nOut>
 void
 prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
+#ifdef HAS_AVX512
+    if ((nIn % 8 == 0) && (nOut % 32) == 0) {
+        Matrix<S8,nOut,nIn> w2;
+        auto weight2 = [&w2](int i, int j) -> S8& {
+            int idx = j * 16 + i * nIn;
+            return w2(0, idx);
+        };
+        for (int i = 0; i < nOut; i += 16) {
+            for (int j = 0; j < nIn; j += 4) {
+                S8* start = &weight2(i, j);
+                for (int y = 0; y < 16; y++)
+                    for (int x = 0; x < 4; x++)
+                        *start++ = weight(i+y, j+x);
+            }
+        }
+        weight = w2;
+        return;
+    }
+#endif
 #ifdef HAS_AVX2
     if ((nIn % 8 == 0) && (nOut % 32) == 0) {
         Matrix<S8,nOut,nIn> w2;
@@ -202,10 +221,44 @@ getNonZeroBlocks(const S8* v, int nElem) {
 }
 
 /** Compute result += weight * in, where "*" is matrix multiplication.
- * Note that the AVX2/SSSE3 implementations assume all elements in "in" are >= 0. */
+ * Note that the AVX512/AVX2/SSSE3 implementations assume all elements in "in" are >= 0. */
 template <bool sparse, int nIn, int nOut>
 inline void
 matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector<S8,nIn>& in) {
+#ifdef HAS_AVX512
+    if ((nIn % 8 == 0) && (nOut % 32) == 0) {
+        __m512i ones16 = _mm512_set1_epi16(1);
+        for (int i = 0; i < nOut; i += 32) {
+            __m512i sum1 = _mm512_load_si512((const __m512i*)&result(i+16*0));
+            __m512i sum2 = _mm512_load_si512((const __m512i*)&result(i+16*1));
+            auto process16x4 = [&](__m512i b, int i, int j, __m512i& sum) {
+                int idx = j * 16 + i * nIn;
+                __m512i a = _mm512_load_si512((const __m512i*)&weight(0, idx));
+                sum = _mm512_dpbusd_epi32(sum, b, a);
+            };
+            auto process32x4 = [&](int j) {
+                __m512i b = _mm512_set1_epi32(*(int*)&in(j+4*0));
+                process16x4(b, i+16*0, j+4*0, sum1);
+                process16x4(b, i+16*1, j+4*0, sum2);
+            };
+            if (sparse) {
+                for (int j0 = 0; j0 < nIn; j0 += 64*4) {
+                    U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
+                    for (int k = BitUtil::bitCount(mask); k > 0; k--) {
+                        int j = j0 + BitUtil::extractBit(mask) * 4;
+                        process32x4(j);
+                    }
+                }
+            } else {
+                for (int j = 0; j < nIn; j += 4)
+                    process32x4(j);
+            }
+            _mm512_store_si512((__m512i*)&result(i+16*0), sum1);
+            _mm512_store_si512((__m512i*)&result(i+16*1), sum2);
+        }
+        return;
+    }
+#endif
 #ifdef HAS_AVX2
     if ((nIn % 8 == 0) && (nOut % 32) == 0) {
         __m256i ones16 = _mm256_set1_epi16(1);
@@ -422,7 +475,6 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                         process16x4(j);
                     }
                 }
-
             } else {
                 for (int j = 0; j < nIn; j += 4)
                     process16x4(j);
