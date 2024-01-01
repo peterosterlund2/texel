@@ -20,6 +20,7 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     corei7)
 endif()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_" OR
+   CMAKE_SYSTEM_PROCESSOR STREQUAL "x86" OR
    CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
   option(USE_SSSE3 "Use SSSE3 CPU instructions" OFF)
   option(USE_AVX2 "Use AVX2 CPU instructions" OFF)
@@ -36,7 +37,9 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR
   option(USE_NEON "Use NEON CPU instructions" OFF)
   option(USE_NEON_DOT "Use NEON dot product CPU instructions" OFF)
 endif()
-option(USE_CTZ "Use CTZ (BitScanForward) CPU instructions" OFF)
+if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "x86")
+  option(USE_CTZ "Use CTZ (BitScanForward) CPU instructions" OFF)
+endif()
 option(USE_PREFETCH "Use prefetch CPU instructions" OFF)
 if(NOT ANDROID)
   option(USE_LARGE_PAGES "Use large pages when allocating memory" OFF)
