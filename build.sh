@@ -122,7 +122,7 @@ mkdir -p build/android64_dot
 wait
 
 # Build all
-para=8
+para=16
 cmake --build build/Release       -j ${para} || exit 2
 cmake --build build/win64_ssse3   -j ${para} || exit 2
 cmake --build build/win64_avx2    -j ${para} || exit 2
