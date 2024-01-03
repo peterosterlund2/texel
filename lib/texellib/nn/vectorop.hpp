@@ -171,6 +171,17 @@ prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
 inline U64
 getNonZeroBlocks(const S8* v, int nElem) {
     U64 mask = 0;
+#ifdef HAS_AVX512
+    if ((nElem % 16) == 0) {
+        __m512i zero = _mm512_setzero_si512();
+        for (int e = 0; e < nElem; e += 16) {
+            __m512i val = _mm512_load_si512((const __m512i*)&v[e*4]);
+            U64 m = _mm512_cmpgt_epi32_mask(val, zero);
+            mask |= m << e;
+        }
+        return mask;
+    }
+#endif
 #ifdef HAS_AVX2
     if ((nElem % 8) == 0) {
         __m256i zero = _mm256_setzero_si256();
