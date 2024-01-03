@@ -531,22 +531,44 @@ template <typename T, int nEnts>
 inline void
 copyVec(Vector<T,nEnts>& dst, const Vector<T,nEnts>& src) {
     static_assert(std::is_integral<T>::value, "Unsupported type");
-#ifdef HAS_AVX2
-    constexpr int n = sizeof(T) * nEnts;
-          U8* dstP = (      U8*)&dst(0);
-    const U8* srcP = (const U8*)&src(0);
-    if (n % 128 == 0) {
-        for (int i = 0; i < n; i += 128) {
-            __m256i v1 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*0]));
-            __m256i v2 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*1]));
-            __m256i v3 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*2]));
-            __m256i v4 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*3]));
-            _mm256_store_si256((__m256i*)&dstP[i+32*0], v1);
-            _mm256_store_si256((__m256i*)&dstP[i+32*1], v2);
-            _mm256_store_si256((__m256i*)&dstP[i+32*2], v3);
-            _mm256_store_si256((__m256i*)&dstP[i+32*3], v4);
+#ifdef HAS_AVX512
+    {
+        constexpr int n = sizeof(T) * nEnts;
+              U8* dstP = (      U8*)&dst(0);
+        const U8* srcP = (const U8*)&src(0);
+        if (n % 256 == 0) {
+            for (int i = 0; i < n; i += 256) {
+                __m512i v1 = _mm512_load_si512((const __m512i*)(&srcP[i + 64*0]));
+                __m512i v2 = _mm512_load_si512((const __m512i*)(&srcP[i + 64*1]));
+                __m512i v3 = _mm512_load_si512((const __m512i*)(&srcP[i + 64*2]));
+                __m512i v4 = _mm512_load_si512((const __m512i*)(&srcP[i + 64*3]));
+                _mm512_store_si512((__m512i*)&dstP[i+64*0], v1);
+                _mm512_store_si512((__m512i*)&dstP[i+64*1], v2);
+                _mm512_store_si512((__m512i*)&dstP[i+64*2], v3);
+                _mm512_store_si512((__m512i*)&dstP[i+64*3], v4);
+            }
+            return;
         }
-        return;
+    }
+#endif
+#ifdef HAS_AVX2
+    {
+        constexpr int n = sizeof(T) * nEnts;
+              U8* dstP = (      U8*)&dst(0);
+        const U8* srcP = (const U8*)&src(0);
+        if (n % 128 == 0) {
+            for (int i = 0; i < n; i += 128) {
+                __m256i v1 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*0]));
+                __m256i v2 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*1]));
+                __m256i v3 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*2]));
+                __m256i v4 = _mm256_load_si256((const __m256i*)(&srcP[i + 32*3]));
+                _mm256_store_si256((__m256i*)&dstP[i+32*0], v1);
+                _mm256_store_si256((__m256i*)&dstP[i+32*1], v2);
+                _mm256_store_si256((__m256i*)&dstP[i+32*2], v3);
+                _mm256_store_si256((__m256i*)&dstP[i+32*3], v4);
+            }
+            return;
+        }
     }
 #endif
 
