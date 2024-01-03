@@ -87,7 +87,6 @@ mkdir -p build/win64_avx512
      cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64_clang.cmake \
            -DUSE_WIN7=on \
            -DCPU_TYPE=corei7 \
-           -DUSE_AVX2=on \
            -DUSE_AVX512=on \
            -DUSE_BMI2=on \
            -DUSE_CTZ=on \

@@ -158,11 +158,11 @@ if(UNIX AND NOT ANDROID)
   endif()
 endif()
 
-if(USE_SSSE3)
+if(USE_SSSE3 OR USE_AVX2 OR USE_AVX512)
   target_compile_definitions(texellib
     PUBLIC "HAS_SSSE3")
 endif()
-if(USE_AVX2)
+if(USE_AVX2 OR USE_AVX512)
   target_compile_definitions(texellib
     PUBLIC "HAS_AVX2")
 endif()
@@ -171,7 +171,7 @@ if(USE_AVX512)
     PUBLIC "HAS_AVX512")
 endif()
 
-if(USE_NEON)
+if(USE_NEON OR USE_NEON_DOT)
   target_compile_definitions(texellib
     PUBLIC "HAS_NEON")
 endif()
