@@ -568,6 +568,51 @@ void
 addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1,
               const int* toAdd, int toAddLen,
               const int* toSub, int toSubLen) {
+#ifdef HAS_AVX512
+    if (n1 % 256 == 0) {
+        for (int i = 0; i < n1; i += 256) {
+            __m512i s1 = _mm512_load_si512((const __m512i*)&l1Out(i+32*0));
+            __m512i s2 = _mm512_load_si512((const __m512i*)&l1Out(i+32*1));
+            __m512i s3 = _mm512_load_si512((const __m512i*)&l1Out(i+32*2));
+            __m512i s4 = _mm512_load_si512((const __m512i*)&l1Out(i+32*3));
+            __m512i s5 = _mm512_load_si512((const __m512i*)&l1Out(i+32*4));
+            __m512i s6 = _mm512_load_si512((const __m512i*)&l1Out(i+32*5));
+            __m512i s7 = _mm512_load_si512((const __m512i*)&l1Out(i+32*6));
+            __m512i s8 = _mm512_load_si512((const __m512i*)&l1Out(i+32*7));
+            for (int k = 0; k < toAddLen; k++) {
+                int idx = toAdd[k];
+                s1 = _mm512_add_epi16(s1, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*0)));
+                s2 = _mm512_add_epi16(s2, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*1)));
+                s3 = _mm512_add_epi16(s3, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*2)));
+                s4 = _mm512_add_epi16(s4, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*3)));
+                s5 = _mm512_add_epi16(s5, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*4)));
+                s6 = _mm512_add_epi16(s6, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*5)));
+                s7 = _mm512_add_epi16(s7, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*6)));
+                s8 = _mm512_add_epi16(s8, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*7)));
+            }
+            for (int k = 0; k < toSubLen; k++) {
+                int idx = toSub[k];
+                s1 = _mm512_sub_epi16(s1, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*0)));
+                s2 = _mm512_sub_epi16(s2, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*1)));
+                s3 = _mm512_sub_epi16(s3, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*2)));
+                s4 = _mm512_sub_epi16(s4, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*3)));
+                s5 = _mm512_sub_epi16(s5, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*4)));
+                s6 = _mm512_sub_epi16(s6, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*5)));
+                s7 = _mm512_sub_epi16(s7, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*6)));
+                s8 = _mm512_sub_epi16(s8, _mm512_load_si512((const __m512i*)&weight1(idx, i+32*7)));
+            }
+            _mm512_store_si512((__m512i*)&l1Out(i+32*0), s1);
+            _mm512_store_si512((__m512i*)&l1Out(i+32*1), s2);
+            _mm512_store_si512((__m512i*)&l1Out(i+32*2), s3);
+            _mm512_store_si512((__m512i*)&l1Out(i+32*3), s4);
+            _mm512_store_si512((__m512i*)&l1Out(i+32*4), s5);
+            _mm512_store_si512((__m512i*)&l1Out(i+32*5), s6);
+            _mm512_store_si512((__m512i*)&l1Out(i+32*6), s7);
+            _mm512_store_si512((__m512i*)&l1Out(i+32*7), s8);
+        }
+        return;
+    }
+#endif
 #ifdef HAS_AVX2
     if (n1 % 128 == 0) {
         for (int i = 0; i < n1; i += 128) {
