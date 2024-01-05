@@ -397,10 +397,6 @@ USE_CLUSTER
 
   Use MPI to distribute the search to several computers connected in a cluster.
 
-CPU_TYPE
-
-  Type of x86 CPU to generate code for.
-
 USE_WIN7
 
   Compile for Windows 7 and later versions. This is required to be able to take

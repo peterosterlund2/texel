@@ -12,13 +12,6 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 endif()
 
 # Options
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-  set(CPU_TYPE "generic" CACHE STRING "Type of CPU to generate code for")
-  set_property(CACHE CPU_TYPE PROPERTY STRINGS
-    generic
-    athlon64-sse3
-    corei7)
-endif()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_" OR
    CMAKE_SYSTEM_PROCESSOR STREQUAL "x86" OR
    CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
@@ -108,15 +101,7 @@ foreach(flag_var
 endforeach()
 add_compiler_flag_if_supported("-fno-stack-protector")
 
-# Enable CPU architecture
-if(CPU_TYPE STREQUAL "corei7")
-  require_compiler_flag("-march=corei7")
-  add_compile_options("-march=corei7")
-elseif(CPU_TYPE STREQUAL "athlon64-sse3")
-  require_compiler_flag("-march=athlon64-sse3")
-  add_compile_options("-march=athlon64-sse3")
-endif()
-
+# Enable SIMD instructions
 if(USE_SSSE3 OR USE_AVX2 OR USE_AVX512)
   add_compiler_flag_if_supported("-mssse3")
 endif()
