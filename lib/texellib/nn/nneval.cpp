@@ -205,10 +205,10 @@ NNEvaluator::computeL1WB() {
 
     int add[2][32];
     int len[2] = {0, 0};
-    for (Square sq : AllSquares()) {
+    U64 squares = posP->occupiedBB() & ~posP->pieceTypeBB(Piece::WKING, Piece::BKING);
+    while (squares) {
+        Square sq = BitBoard::extractSquare(squares);
         const int p = posP->getPiece(sq);
-        if (p == Piece::EMPTY || p == Piece::WKING || p == Piece::BKING)
-            continue;
         int pt = ptValue[p];
         for (int c = 0; c < 2; c++) {
             if (doFull[c]) {
