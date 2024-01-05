@@ -886,7 +886,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
             if (doFutility) {
                 score = futilityScore;
             } else {
-#ifdef HAS_PREFETCH
+#ifdef USE_PREFETCH
                 U64 nextHash = pos.hashAfterMove(m);
                 tt.prefetch(nextHash);
                 eval.prefetch(nextHash);

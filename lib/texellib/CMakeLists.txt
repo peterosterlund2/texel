@@ -160,27 +160,27 @@ endif()
 
 if(USE_SSSE3 OR USE_AVX2 OR USE_AVX512)
   target_compile_definitions(texellib
-    PUBLIC "HAS_SSSE3")
+    PUBLIC "USE_SSSE3")
 endif()
 if(USE_AVX2 OR USE_AVX512)
   target_compile_definitions(texellib
-    PUBLIC "HAS_AVX2")
+    PUBLIC "USE_AVX2")
 endif()
 if(USE_AVX512)
   target_compile_definitions(texellib
-    PUBLIC "HAS_AVX512")
+    PUBLIC "USE_AVX512")
 endif()
 
 if(USE_NEON OR USE_NEON_DOT)
   target_compile_definitions(texellib
-    PUBLIC "HAS_NEON")
+    PUBLIC "USE_NEON")
 endif()
 if(USE_NEON_DOT)
   require_compiler_flag("-march=armv8.2-a+dotprod")
   target_compile_options(texellib
     PUBLIC "-march=armv8.2-a+dotprod")
   target_compile_definitions(texellib
-    PUBLIC "HAS_NEON_DOT")
+    PUBLIC "USE_NEON_DOT")
 endif()
 
 if(USE_BMI2)
@@ -191,7 +191,7 @@ if(USE_BMI2)
       PUBLIC "-mbmi2")
   endif()
   target_compile_definitions(texellib
-    PUBLIC "HAS_BMI2")
+    PUBLIC "USE_BMI2")
 endif()
 
 if(USE_POPCNT)
@@ -202,17 +202,17 @@ if(USE_POPCNT)
       PUBLIC "-mpopcnt")
   endif()
   target_compile_definitions(texellib
-    PUBLIC "HAS_POPCNT")
+    PUBLIC "USE_POPCNT")
 endif()
 
 if(USE_CTZ)
   target_compile_definitions(texellib
-    PUBLIC "HAS_CTZ")
+    PUBLIC "USE_CTZ")
 endif()
 
 if(USE_PREFETCH)
   target_compile_definitions(texellib
-    PUBLIC "HAS_PREFETCH")
+    PUBLIC "USE_PREFETCH")
 endif()
 
 if(USE_LARGE_PAGES)

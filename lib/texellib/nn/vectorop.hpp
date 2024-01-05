@@ -30,20 +30,20 @@
 #include "bitBoard.hpp"
 #include <type_traits>
 
-#if defined(HAS_AVX2) || defined(HAS_AVX512)
+#if defined(USE_AVX2) || defined(USE_AVX512)
 #include <immintrin.h>
 #endif
-#ifdef HAS_SSSE3
+#ifdef USE_SSSE3
 #include <smmintrin.h>
 #endif
 
-#if defined(HAS_NEON) || defined(HAS_NEON_DOT)
+#if defined(USE_NEON) || defined(USE_NEON_DOT)
 #include <arm_neon.h>
 #endif
 
 // ------------------------------------------------------------------------------
 
-#ifdef HAS_AVX2
+#ifdef USE_AVX2
 
 /** Return the sum of the 8 32-bit values in an AVX2 256-bit register. */
 inline S32
@@ -55,7 +55,7 @@ avx2_hadd_32(__m256i v) {
 
 #endif
 
-#ifdef HAS_SSSE3
+#ifdef USE_SSSE3
 
 /** Return the sum of the 4 32-bit values in an SSSE3 128-bit register. */
 inline S32
@@ -67,7 +67,7 @@ ssse3_hadd_32(__m128i v) {
 
 #endif
 
-#if defined(HAS_NEON) || defined(HAS_NEON_DOT)
+#if defined(USE_NEON) || defined(USE_NEON_DOT)
 
 /** Return the sum of the 4 32-bit values in a NEON 128-bit register. */
 inline S32
@@ -87,7 +87,7 @@ neon_hadd_32(int32x4_t sum) {
 template <int nIn, int nOut>
 void
 prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
-#ifdef HAS_AVX512
+#ifdef USE_AVX512
     if ((nIn % 8 == 0) && (nOut % 32) == 0) {
         Matrix<S8,nOut,nIn> w2;
         auto weight2 = [&w2](int i, int j) -> S8& {
@@ -106,7 +106,7 @@ prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
         return;
     }
 #endif
-#ifdef HAS_AVX2
+#ifdef USE_AVX2
     if ((nIn % 8 == 0) && (nOut % 32) == 0) {
         Matrix<S8,nOut,nIn> w2;
         auto weight2 = [&w2](int i, int j) -> S8& {
@@ -125,7 +125,7 @@ prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
         return;
     }
 #endif
-#if defined(HAS_SSSE3) || defined(HAS_NEON_DOT)
+#if defined(USE_SSSE3) || defined(USE_NEON_DOT)
     if ((nIn % 8 == 0) && (nOut % 16) == 0) {
         Matrix<S8,nOut,nIn> w2;
         auto weight2 = [&w2](int i, int j) -> S8& {
@@ -144,7 +144,7 @@ prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
         return;
     }
 #endif
-#ifdef HAS_NEON
+#ifdef USE_NEON
     if ((nIn % 8 == 0) && (nOut % 16) == 0) {
         Matrix<S8,nOut,nIn> w2;
         auto weight2 = [&w2](int i, int j) -> S8& {
@@ -171,7 +171,7 @@ prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
 inline U64
 getNonZeroBlocks(const S8* v, int nElem) {
     U64 mask = 0;
-#ifdef HAS_AVX512
+#ifdef USE_AVX512
     if ((nElem % 16) == 0) {
         __m512i zero = _mm512_setzero_si512();
         for (int e = 0; e < nElem; e += 16) {
@@ -182,7 +182,7 @@ getNonZeroBlocks(const S8* v, int nElem) {
         return mask;
     }
 #endif
-#ifdef HAS_AVX2
+#ifdef USE_AVX2
     if ((nElem % 8) == 0) {
         __m256i zero = _mm256_setzero_si256();
         for (int e = 0; e < nElem; e += 8) {
@@ -194,7 +194,7 @@ getNonZeroBlocks(const S8* v, int nElem) {
         return mask;
     }
 #endif
-#ifdef HAS_SSSE3
+#ifdef USE_SSSE3
     if ((nElem % 8) == 0) {
         __m128i zero = _mm_setzero_si128();
         for (int e = 0; e < nElem; e += 4) {
@@ -206,7 +206,7 @@ getNonZeroBlocks(const S8* v, int nElem) {
         return mask;
     }
 #endif
-#if defined(HAS_NEON) || defined(HAS_NEON_DOT)
+#if defined(USE_NEON) || defined(USE_NEON_DOT)
     if ((nElem % 4) == 0) {
         uint32x4_t bits = {1, 2, 4, 8};
         for (int e = 0; e < nElem; e += 4) {
@@ -236,7 +236,7 @@ getNonZeroBlocks(const S8* v, int nElem) {
 template <bool sparse, int nIn, int nOut>
 inline void
 matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector<S8,nIn>& in) {
-#ifdef HAS_AVX512
+#ifdef USE_AVX512
     if ((nIn % 8 == 0) && (nOut % 32) == 0) {
         __m512i ones16 = _mm512_set1_epi16(1);
         for (int i = 0; i < nOut; i += 32) {
@@ -270,7 +270,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
         return;
     }
 #endif
-#ifdef HAS_AVX2
+#ifdef USE_AVX2
     if ((nIn % 8 == 0) && (nOut % 32) == 0) {
         __m256i ones16 = _mm256_set1_epi16(1);
         for (int i = 0; i < nOut; i += 32) {
@@ -327,7 +327,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
         return;
     }
 #endif
-#ifdef HAS_SSSE3
+#ifdef USE_SSSE3
     if ((nIn % 8 == 0) && (nOut % 16) == 0) {
         __m128i ones16 = _mm_set1_epi16(1);
         for (int i = 0; i < nOut; i += 16) {
@@ -386,7 +386,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
         return;
     }
 #endif
-#ifdef HAS_NEON_DOT
+#ifdef USE_NEON_DOT
     if ((nIn % 8 == 0) && (nOut % 16) == 0) {
         for (int i = 0; i < nOut; i += 16) {
             int32x4_t sum1 = vld1q_s32((const int32_t*)&result(i+4*0));
@@ -455,7 +455,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
         return;
     }
 #endif
-#ifdef HAS_NEON
+#ifdef USE_NEON
     if ((nIn % 8 == 0) && (nOut % 16) == 0) {
         for (int i = 0; i < nOut; i += 16) {
             int32x4_t sum1 = vld1q_s32((const int32_t*)&result(i+4*0));
@@ -531,7 +531,7 @@ template <typename T, int nEnts>
 inline void
 copyVec(Vector<T,nEnts>& dst, const Vector<T,nEnts>& src) {
     static_assert(std::is_integral<T>::value, "Unsupported type");
-#ifdef HAS_AVX512
+#ifdef USE_AVX512
     {
         constexpr int n = sizeof(T) * nEnts;
               U8* dstP = (      U8*)&dst(0);
@@ -551,7 +551,7 @@ copyVec(Vector<T,nEnts>& dst, const Vector<T,nEnts>& src) {
         }
     }
 #endif
-#ifdef HAS_AVX2
+#ifdef USE_AVX2
     {
         constexpr int n = sizeof(T) * nEnts;
               U8* dstP = (      U8*)&dst(0);
@@ -601,7 +601,7 @@ void
 addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1,
               const int* toAdd, int toAddLen,
               const int* toSub, int toSubLen) {
-#ifdef HAS_AVX512
+#ifdef USE_AVX512
     if (n1 % 256 == 0) {
         for (int i = 0; i < n1; i += 256) {
             __m512i s1 = _mm512_load_si512((const __m512i*)&l1Out(i+32*0));
@@ -646,7 +646,7 @@ addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1
         return;
     }
 #endif
-#ifdef HAS_AVX2
+#ifdef USE_AVX2
     if (n1 % 128 == 0) {
         for (int i = 0; i < n1; i += 128) {
             __m256i s1 = _mm256_load_si256((const __m256i*)&l1Out(i+16*0));
@@ -691,7 +691,7 @@ addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1
         return;
     }
 #endif
-#ifdef HAS_SSSE3
+#ifdef USE_SSSE3
     if (n1 % 64 == 0) {
         for (int i = 0; i < n1; i += 64) {
             __m128i s1 = _mm_load_si128((const __m128i*)&l1Out(i+8*0));
@@ -736,7 +736,7 @@ addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1
         return;
     }
 #endif
-#if defined(HAS_NEON) || defined(HAS_NEON_DOT)
+#if defined(USE_NEON) || defined(USE_NEON_DOT)
     if (n1 % 64 == 0) {
         for (int i = 0; i < n1; i += 64) {
             int16x8_t s1 = vld1q_s16((const int16_t*)&l1Out(i+8*0));
@@ -800,7 +800,7 @@ addSubWeights(Vector<S16, n1>& l1Out, const Matrix<S16, inFeatures, n1>& weight1
 template <int shift, int n1>
 inline void
 scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
-#ifdef HAS_AVX2
+#ifdef USE_AVX2
     if (n1 % 128 == 0) {
         __m256i zero = _mm256_set1_epi8(0);
         __m256i idx = _mm256_set_epi32(7, 6, 3, 2, 5, 4, 1, 0);
@@ -823,7 +823,7 @@ scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
         return;
     }
 #endif
-#ifdef HAS_SSSE3
+#ifdef USE_SSSE3
     if (n1 % 64 == 0) {
         __m128i zero = _mm_set1_epi16(0);
         for (int i = 0; i < n1; i += 64) {
@@ -845,7 +845,7 @@ scaleClipPack(S8* out, const Vector<S16, n1>& l1OutC) {
         return;
     }
 #endif
-#if defined(HAS_NEON) || defined(HAS_NEON_DOT)
+#if defined(USE_NEON) || defined(USE_NEON_DOT)
     if (n1 % 64 == 0) {
         int8x16_t zero = vdupq_n_s8(0);
         for (int i = 0; i < n1; i += 64) {

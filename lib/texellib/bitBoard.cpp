@@ -277,7 +277,7 @@ BitBoard::staticInitialize() {
         bPawnBlockerMaskTable[sq] = m;
     }
 
-#ifdef HAS_BMI2
+#ifdef USE_BMI2
     int tdSize = 0;
     for (Square sq : AllSquares()) {
         int x = sq.getX();

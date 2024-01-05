@@ -173,7 +173,7 @@ Evaluate::EvalHashData::EvalHashData()
 
 inline void
 Evaluate::prefetch(U64 key) {
-#ifdef HAS_PREFETCH
+#ifdef USE_PREFETCH
 #if _MSC_VER
     _mm_prefetch((const char*)&getEvalHashEntry(key), 3);
 #else

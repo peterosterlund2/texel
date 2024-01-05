@@ -462,7 +462,7 @@ TranspositionTable::probe(U64 key, TTEntry& result) {
 
 inline void
 TranspositionTable::prefetch(U64 key) {
-#ifdef HAS_PREFETCH
+#ifdef USE_PREFETCH
     key ^= contemptHash;
     size_t idx0 = getIndex(key);
 #if _MSC_VER

@@ -31,16 +31,16 @@
 #include "square.hpp"
 
 #if _MSC_VER
-#ifdef HAS_CTZ
+#ifdef USE_CTZ
 #include <intrin.h>
 #endif
-#ifdef HAS_POPCNT
+#ifdef USE_POPCNT
 #include <nmmintrin.h>
 #endif
 #endif
 
 
-#ifdef HAS_BMI2
+#ifdef USE_BMI2
 #include <immintrin.h>
 inline U64 pext(U64 value, U64 mask) {
     return _pext_u64(value, mask);
@@ -194,7 +194,7 @@ inline U64 operator<<(U64 b, Square s) {
 
 inline int
 BitUtil::firstBit(U64 mask) {
-#ifdef HAS_CTZ
+#ifdef USE_CTZ
 #if _MSC_VER
     unsigned long ret;
     _BitScanForward64(&ret, mask);
@@ -212,7 +212,7 @@ BitUtil::firstBit(U64 mask) {
 
 inline int
 BitUtil::lastBit(U64 mask) {
-#ifdef HAS_CTZ
+#ifdef USE_CTZ
 #if _MSC_VER
     unsigned long ret;
     _BitScanReverse64(&ret, mask);
@@ -243,7 +243,7 @@ BitUtil::extractBit(U64& mask) {
 
 inline int
 BitUtil::bitCount(U64 mask) {
-#ifdef HAS_POPCNT
+#ifdef USE_POPCNT
 #if _MSC_VER
     return _mm_popcnt_u64(mask);
 #else
@@ -292,7 +292,7 @@ BitBoard::mirrorY(U64 mask) {
 
 inline U64
 BitBoard::bishopAttacks(Square sq, U64 occupied) {
-#ifdef HAS_BMI2
+#ifdef USE_BMI2
     return bTables[sq][pext(occupied, bMasks[sq])];
 #else
     return bTables[sq][(int)(((occupied & bMasks[sq]) * bMagics[sq]) >> bBits[sq])];
@@ -301,7 +301,7 @@ BitBoard::bishopAttacks(Square sq, U64 occupied) {
 
 inline U64
 BitBoard::rookAttacks(Square sq, U64 occupied) {
-#ifdef HAS_BMI2
+#ifdef USE_BMI2
     return rTables[sq][pext(occupied, rMasks[sq])];
 #else
     return rTables[sq][(int)(((occupied & rMasks[sq]) * rMagics[sq]) >> rBits[sq])];
