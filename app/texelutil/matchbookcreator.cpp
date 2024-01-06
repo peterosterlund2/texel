@@ -108,7 +108,7 @@ MatchBookCreator::evaluateBookLines(std::vector<BookLine>& lines, int searchTime
 
     ThreadPool<int> pool(nWorkers);
     for (int i = 0; i < nLines; i++) {
-        auto func = [&lines,&tt,&comm,searchTime,&os,tdVec,&mutex,i](int workerNo) mutable {
+        auto func = [&lines,&comm,searchTime,&os,tdVec,&mutex,i](int workerNo) mutable {
             ThreadData& td = tdVec[workerNo];
             BookLine& bl = lines[i];
 
@@ -326,7 +326,6 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
             int bMoveSum = 0, bDepthSum = 0;
             int wTimeSum = 0, wTimeCnt = 0;
             int bTimeSum = 0, bTimeCnt = 0;
-            int ply = 0;
             int timeCnt = 0;
             while (true) {
                 if (gn.nChildren() == 0)
@@ -353,7 +352,6 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
                         bTimeCnt++;
                     }
                 }
-                ply++;
                 nMoves++;
             }
 

@@ -30,6 +30,8 @@
 #include "alignedAlloc.hpp"
 #include "square.hpp"
 
+#include <cstdlib>
+
 #if _MSC_VER
 #ifdef USE_CTZ
 #include <intrin.h>
@@ -204,6 +206,8 @@ BitUtil::firstBit(U64 mask) {
         return __builtin_ctzl(mask);
     else if (sizeof(U64) == sizeof(long long))
         return __builtin_ctzll(mask);
+    else
+        std::abort();
 #endif
 #else
     return trailingZ[(int)(((mask & -mask) * 0x07EDD5E59A4E28C2ULL) >> 58)];
@@ -222,6 +226,8 @@ BitUtil::lastBit(U64 mask) {
         return 63 - __builtin_clzl(mask);
     else if (sizeof(U64) == sizeof(long long))
         return 63 - __builtin_clzll(mask);
+    else
+        std::abort();
 #endif
 #else
     mask |= mask >> 1;
@@ -252,6 +258,8 @@ BitUtil::bitCount(U64 mask) {
     else if (sizeof(U64) == 2*sizeof(long))
         return __builtin_popcountl(mask >> 32) +
                __builtin_popcountl(mask & 0xffffffffULL);
+    else
+        std::abort();
 #endif
 #else
     const U64 k1 = 0x5555555555555555ULL;

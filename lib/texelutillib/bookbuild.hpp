@@ -563,7 +563,6 @@ public:
 
         // Output
         Move bestMove;         // Best move and corresponding score
-        int instNo;            // Instance number that ran this WorkUnit
 
         bool operator<(const WorkUnit& other) const { return id < other.id; }
     };

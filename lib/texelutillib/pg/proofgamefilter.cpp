@@ -70,7 +70,7 @@ ProofGameFilter::ProofGameFilter(int nWorkers, U64 rndSeed, bool rndKernel)
 
 void
 ProofGameFilter::filterFens(std::istream& is, std::ostream& os, bool retry) {
-    int maxNodes;
+    int maxNodes = 0;
     runOneIteration(is, os, true, false, retry, maxNodes);
 }
 

@@ -56,7 +56,7 @@ public:
         void removeListener(int id);
 
     protected:
-        ~Listener() = default;
+        virtual ~Listener() = default;
         void notify();
 
     private:
