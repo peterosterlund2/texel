@@ -82,8 +82,8 @@ public:
 
     /** Search related parameters. */
     struct Params {
-        int computationTime = 100000;  // Computation time in milliseconds.
-        int nThreads = 23;             // Maximum number of search threads to use.
+        int computationTime = 60000;   // Computation time in milliseconds.
+        int nThreads = 15;             // Maximum number of search threads to use.
         int bookDepthCost = 100;
         int ownPathErrorCost = 200;
         int otherPathErrorCost = 50;
