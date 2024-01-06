@@ -586,11 +586,14 @@ BookGui::openBookFile() {
     dialog.add_button("_Open", Gtk::RESPONSE_OK);
 
     std::string filename = bbControl.getBookFileName();
-    Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(filename);
-    if (file && !filename.empty())
+    if (filename.empty()) {
+        dialog.set_current_folder_file(Gio::File::create_for_path("."));
+    } else {
+        Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(filename);
         file = file->get_parent();
-    if (file)
-        dialog.set_current_folder_file(file);
+        if (file)
+            dialog.set_current_folder_file(file);
+    }
 
     auto bookFilter = Gtk::FileFilter::create();
     bookFilter->set_name("Texel book files");
@@ -633,11 +636,12 @@ BookGui::saveBookFileAs() {
     dialog.add_button("_Save", Gtk::RESPONSE_OK);
 
     std::string filename = bbControl.getBookFileName();
-    Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(filename);
-    if (file && !filename.empty())
+    if (filename.empty()) {
+        dialog.set_current_folder_file(Gio::File::create_for_path("."));
+    } else {
+        Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(filename);
         dialog.set_filename(filename);
-    else if (file)
-        dialog.set_current_folder_file(file);
+    }
 
     auto bookFilter = Gtk::FileFilter::create();
     bookFilter->set_name("Texel book files");
@@ -655,7 +659,7 @@ BookGui::saveBookFileAs() {
     if (filename.empty())
         return false;
 
-    file = Gio::File::create_for_path(filename);
+    Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(filename);
     if (file->get_basename().find('.') == std::string::npos)
         filename = filename + ".tbin";
 
@@ -838,11 +842,14 @@ BookGui::importPgn() {
     dialog.add_button("_Open", Gtk::RESPONSE_OK);
 
     std::string filename = pgnImportFilename;
-    Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(filename);
-    if (file && !filename.empty())
+    if (filename.empty()) {
+        dialog.set_current_folder_file(Gio::File::create_for_path("."));
+    } else {
+        Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(filename);
         file = file->get_parent();
-    if (file)
-        dialog.set_current_folder_file(file);
+        if (file)
+            dialog.set_current_folder_file(file);
+    }
 
     auto bookFilter = Gtk::FileFilter::create();
     bookFilter->set_name("PGN files");
