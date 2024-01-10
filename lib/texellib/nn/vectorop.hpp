@@ -238,7 +238,6 @@ inline void
 matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector<S8,nIn>& in) {
 #ifdef USE_AVX512
     if ((nIn % 8 == 0) && (nOut % 32) == 0) {
-        __m512i ones16 = _mm512_set1_epi16(1);
         for (int i = 0; i < nOut; i += 32) {
             __m512i sum1 = _mm512_load_si512((const __m512i*)&result(i+16*0));
             __m512i sum2 = _mm512_load_si512((const __m512i*)&result(i+16*1));
