@@ -23,6 +23,14 @@ mkdir -p build/Release
 ) &
 
 
+# Windows 64-bit for "old" CPU/OS
+mkdir -p build/win64_old
+(cd build/win64_old &&
+     cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64_clang.cmake \
+           -DUSE_CTZ=on \
+           -DUSE_PREFETCH=on
+) &
+
 # Windows 64-bit, SSSE3
 mkdir -p build/win64_ssse3
 (cd build/win64_ssse3 &&
@@ -132,6 +140,7 @@ wait
 # Build all
 para=16
 cmake --build build/Release       -j ${para} || exit 2
+cmake --build build/win64_old     -j ${para} || exit 2
 cmake --build build/win64_ssse3   -j ${para} || exit 2
 cmake --build build/win64_avx2    -j ${para} || exit 2
 cmake --build build/win64         -j ${para} || exit 2
@@ -147,6 +156,9 @@ mkdir -p bin
 
 cp build/Release/texel bin/texel64
 strip bin/texel64
+
+cp build/win64_old/texel.exe bin/texel64-old.exe
+x86_64-w64-mingw32-strip bin/texel64-old.exe
 
 cp build/win64_ssse3/texel.exe bin/texel64-ssse3.exe
 x86_64-w64-mingw32-strip bin/texel64-ssse3.exe

@@ -31,6 +31,9 @@ texel64-avx2.exe:
 texel64-ssse3.exe
   For Windows x86-64 systems with SSSE3 support.
 
+texel64-old.exe
+  For Windows x86-64 systems.
+
 texel64cl.exe:
   Cluster version of texel64-avx2-pop.exe.
   Requires Microsoft MPI to be installed.
