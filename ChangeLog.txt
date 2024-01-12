@@ -1,3 +1,18 @@
+2024-01-12: Texel 1.11 (ELO: +63)
+Neural network improvements:
+- Fewer non-incremental updates of the first layer state.
+- Implement quantization aware training.
+- Better GPU utilization by using separate data loading threads.
+- Efficiently handle training data that is too large to fit in RAM.
+- Train a new network based on new training data evaluated by Texel 1.10.
+- Optionally use AVX-512 instructions.
+Other:
+- Re-calibrate UCI_Elo for NNUE.
+- Fix a null-move verification problem.
+- Update GoogleTest code to version 1.14 to fix warnings when using new CMake
+  versions.
+- Add state to the Square class, i.e. make it contain the square number.
+
 2023-09-25: Texel 1.10 (ELO: +173)
 Speed up evaluation:
 - More handwritten code using compiler intrinsics.
