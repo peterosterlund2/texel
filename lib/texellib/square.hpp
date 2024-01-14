@@ -216,4 +216,4 @@ inline Square operator-(Square a, int b) {
 }
 
 
-#endif /* BITBOARD_HPP_ */
+#endif /* SQUARE_HPP_ */
