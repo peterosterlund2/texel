@@ -246,22 +246,36 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
                 __m512i a = _mm512_load_si512((const __m512i*)&weight(0, idx));
                 sum = _mm512_dpbusd_epi32(sum, b, a);
             };
-            auto process32x4 = [&](int j) {
+            auto process32x4 = [&](int j, __m512i& sum1, __m512i& sum2) {
                 __m512i b = _mm512_set1_epi32(*(int*)&in(j+4*0));
                 process16x4(b, i+16*0, j+4*0, sum1);
                 process16x4(b, i+16*1, j+4*0, sum2);
             };
             if (sparse) {
+                __m512i sum1b = _mm512_set1_epi32(0);
+                __m512i sum2b = _mm512_set1_epi32(0);
                 for (int j0 = 0; j0 < nIn; j0 += 64*4) {
                     U64 mask = getNonZeroBlocks(&in(j0), std::min(nIn - j0, 64));
-                    for (int k = BitUtil::bitCount(mask); k > 0; k--) {
+                    int nnz = BitUtil::bitCount(mask);
+                    if (nnz & 1) {
                         int j = j0 + BitUtil::extractBit(mask) * 4;
-                        process32x4(j);
+                        process32x4(j, sum1, sum2);
+                        nnz--;
+                    }
+                    for (int k = nnz; k > 0; k -= 2) {
+                        int b2 = BitUtil::lastBit(mask);
+                        int j1 = j0 + BitUtil::extractBit(mask) * 4;
+                        mask &= ~(1ULL << b2);
+                        int j2 = j0 + b2 * 4;
+                        process32x4(j1, sum1, sum2);
+                        process32x4(j2, sum1b, sum2b);
                     }
                 }
+                sum1 = _mm512_add_epi32(sum1, sum1b);
+                sum2 = _mm512_add_epi32(sum2, sum2b);
             } else {
                 for (int j = 0; j < nIn; j += 4)
-                    process32x4(j);
+                    process32x4(j, sum1, sum2);
             }
             _mm512_store_si512((__m512i*)&result(i+16*0), sum1);
             _mm512_store_si512((__m512i*)&result(i+16*1), sum2);
