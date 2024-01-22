@@ -314,7 +314,7 @@ EngineControl::startSearch(const Position& pos, const std::vector<Move>& moves, 
     ponder = false;
     infinite = (maxTimeLimit < 0) && (maxDepth < 0) && (maxNodes < 0);
     searchMoves = sPar.searchMoves;
-    startThread(minTimeLimit, maxTimeLimit, earlyStopPercentage, maxDepth, maxNodes);
+    startThread(minTimeLimit, maxTimeLimit, earlyStopPercentage, maxDepth, maxNodes, sPar.startTime);
 }
 
 void
@@ -324,7 +324,7 @@ EngineControl::startPonder(const Position& pos, const std::vector<Move>& moves, 
     computeTimeLimit(sPar);
     ponder = true;
     infinite = false;
-    startThread(-1, -1, -1, -1, -1);
+    startThread(-1, -1, -1, -1, -1, sPar.startTime);
 }
 
 void
@@ -448,7 +448,7 @@ int EngineControl::getWhiteContempt(bool whiteMove) {
 
 void
 EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPercentage,
-                           int maxDepth, int maxNodes) {
+                           int maxDepth, int maxNodes, S64 startTime) {
     Communicator* comm = engineThread.getCommunicator();
     Search::SearchTables st(comm->getCTT(), kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, *comm, treeLog);
@@ -472,7 +472,7 @@ EngineControl::startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPerc
             }
         }
     }
-    sc->timeLimit(minTimeLimit, maxTimeLimit, earlyStopPercentage);
+    sc->timeLimit(minTimeLimit, maxTimeLimit, earlyStopPercentage, startTime);
     bool ownBook = UciParams::ownBook->getBoolPar();
     bool analyseMode = UciParams::analyseMode->getBoolPar();
     int maxPV = UciParams::multiPV->getIntPar();

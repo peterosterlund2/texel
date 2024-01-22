@@ -106,7 +106,7 @@ public:
     /** Set which thread is owning this Search object. */
     void setThreadNo(int tNo);
 
-    void timeLimit(int minTimeLimit, int maxTimeLimit, int earlyStopPercent = -1);
+    void timeLimit(int minTimeLimit, int maxTimeLimit, int earlyStopPercent = -1, S64 startTime = -1);
 
     void setStrength(int strength, U64 randomSeed, int maxNPS);
     void setWhiteContempt(int contempt);

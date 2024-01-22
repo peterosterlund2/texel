@@ -164,7 +164,7 @@ private:
     int getWhiteContempt(bool whiteMove);
 
     void startThread(int minTimeLimit, int maxTimeLimit, int earlyStopPercentage,
-                     int maxDepth, int maxNodes);
+                     int maxDepth, int maxNodes, S64 startTime);
 
     void stopThread();
 

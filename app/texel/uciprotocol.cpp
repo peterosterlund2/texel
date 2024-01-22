@@ -161,6 +161,8 @@ UCIProtocol::mainLoop(bool autoStart) {
 
 void
 UCIProtocol::handleCommand(const std::string& cmdLine, std::ostream& os) {
+    S64 startTime = currentTimeMillis();
+
     std::vector<std::string> tokens;
     tokenize(cmdLine, tokens);
     const int nTok = (int)tokens.size();
@@ -232,7 +234,7 @@ UCIProtocol::handleCommand(const std::string& cmdLine, std::ostream& os) {
         } else if (cmd == "go") {
             initEngine(os);
             int idx = 1;
-            SearchParams sPar;
+            SearchParams sPar(startTime);
             bool ponder = false;
             while (idx < nTok) {
                 std::string subCmd = tokens[idx++];

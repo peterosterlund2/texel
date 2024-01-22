@@ -63,6 +63,7 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
     posHashList = posHashList0;
     posHashListSize = posHashListSize0;
     posHashFirstNew = posHashListSize;
+    tStart = -1;
     minTimeMillis = -1;
     maxTimeMillis = -1;
     earlyStopPercentage = minTimeUsage;
@@ -78,10 +79,12 @@ Search::init(const Position& pos0, const std::vector<U64>& posHashList0,
 }
 
 void
-Search::timeLimit(int minTimeLimit, int maxTimeLimit, int earlyStopPercent) {
+Search::timeLimit(int minTimeLimit, int maxTimeLimit, int earlyStopPercent, S64 startTime) {
     minTimeMillis = minTimeLimit;
     maxTimeMillis = maxTimeLimit;
     earlyStopPercentage = (earlyStopPercent > 0 ? earlyStopPercent : minTimeUsage);
+    if (startTime != -1)
+        tStart = startTime;
 }
 
 void
@@ -108,7 +111,8 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
                            int maxDepth, S64 initialMaxNodes,
                            int maxPV, bool onlyExact,
                            int minProbeDepth, bool clearHistory) {
-    tStart = currentTimeMillis();
+    if (tStart == -1)
+        tStart = currentTimeMillis();
     totalNodes = 0;
     tbHits = 0;
     nodesToGo = 0;

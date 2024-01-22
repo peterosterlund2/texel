@@ -44,10 +44,12 @@ public:
     int mate;                      // If >0, search for mate-in-x
     int moveTime;                  // If >0, search for exactly this amount of time, ms
     bool infinite;
+    S64 startTime;                 // Time when search command was received
 
-    SearchParams()
+    SearchParams(S64 startTime)
         : wTime(0), bTime(0), wInc(0), bInc(0), movesToGo(0),
-          depth(0), nodes(0), mate(0), moveTime(0), infinite(false)
+          depth(0), nodes(0), mate(0), moveTime(0), infinite(false),
+          startTime(startTime)
     { }
 };
 
