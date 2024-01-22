@@ -514,7 +514,9 @@ ChessTool::computeSearchScores(std::istream& is, const std::string& script) {
             for (int i = 0; i < nLines; i++) {
                 if (!str2Num(lines[i], r.scores[i])) {
                     error.store(true);
-                    std::cerr << "Not a number: " << lines[i] << std::endl;
+                    pos.deSerialize(positions[r.beginIdx + i].posData);
+                    std::string fen = TextIO::toFEN(pos);
+                    std::cerr << "Not a number: " << lines[i] << " fen: " << fen << std::endl;
                     return r;
                 }
             }
