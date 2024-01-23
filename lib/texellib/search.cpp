@@ -278,6 +278,10 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             if (tNow - tStart >= maxTimeMillis)
                 break;
         }
+        if (!knownLoss && rootMoves[maxPV - 1].knownLoss) {
+            depth = std::max(0, depth - 1);
+            knownLoss = true;
+        }
         if (depth >= maxDepth)
             break;
         if (maxNodes >= 0)
@@ -296,10 +300,6 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
         } else {
             // Moves that were hard to search should be searched early in the next iteration
             std::stable_sort(rootMoves.begin()+maxPV, rootMoves.end(), MoveInfo::SortByNodes());
-        }
-        if (!knownLoss && rootMoves[maxPV - 1].knownLoss) {
-            depth = std::max(0, depth - 1);
-            knownLoss = true;
         }
     }
     } catch (const StopSearch&) {

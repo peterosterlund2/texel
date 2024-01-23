@@ -317,9 +317,11 @@ TBTest::rtbTest() {
     pos = TextIO::readFEN("8/8/8/8/7B/8/3k4/K2B4 w - - 0 1");
     bool resDTM = TBProbe::gtbProbeDTM(pos, ply, dtm);
     EXPECT_TRUE(resDTM);
-    bool resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
+    bool resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent, false);
+    EXPECT_FALSE(resDTZ);
+    resDTZ = TBProbe::rtbProbeDTZ(pos, ply, dtz, ent);
     EXPECT_TRUE(resDTZ);
-    EXPECT_TRUE(SearchConst::isWinScore(dtz));
+    EXPECT_TRUE(SearchConst::isWinScore(dtz)) << "dtz:" << dtz;
     EXPECT_LE(dtz, dtm);
 
     pos = TextIO::readFEN("1R5Q/8/6k1/8/4q3/8/8/K7 b - - 0 1");
@@ -475,12 +477,12 @@ TBTest::rtbTest() {
 
     pos = TextIO::readFEN("6k1/8/5Q2/6K1/6Pp/8/8/7Q b - g3 0 1");
     int success;
-    dtz = Syzygy::probe_dtz(pos, &success);
+    dtz = Syzygy::probe_dtz(pos, &success, true);
     EXPECT_EQ(1, success);
     EXPECT_EQ(-2, dtz);
 
     pos = TextIO::readFEN("3K4/8/3k4/8/4p3/4B3/5P2/8 w - - 0 5");
-    dtz = Syzygy::probe_dtz(pos, &success);
+    dtz = Syzygy::probe_dtz(pos, &success, true);
     EXPECT_EQ(1, success);
     EXPECT_EQ(15, dtz);
 }
@@ -622,7 +624,16 @@ TBTest::testTbSearch() {
         std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
         Move m = SearchTest::idSearch(*sc, 1, 0);
         const int mated18 = -(mate0 - (18 * 2 + 2));
-        EXPECT_LE(m.score(), mated18);
+        EXPECT_LE(m.score(), -600); // DTZ has info for wrong side, so not probed
+        m = SearchTest::idSearch(*sc, 2, 0);
+        EXPECT_LE(m.score(), mated18); // DTZ probed on next ply, where side is correct
+    }
+    {
+        pos = TextIO::readFEN("8/8/8/8/7B/1B2Q3/3k4/K7 b - - 1 1");
+        std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+        Move m = SearchTest::idSearch(*sc, 1, 0);
+        const int mated20 = -(mate0 - (20 * 2 + 2));
+        EXPECT_EQ(m.score(), mated20); // DTZ has info for wrong side, so not probed, but WDL is probed
     }
 
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);

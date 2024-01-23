@@ -114,9 +114,12 @@ public:
      *              is computed by considering the DTZ value and the maximum number
      *              of zeroing moves before mate.
      * @param ent   For a frustrated win/loss, set ent.evalScore to +/-(maxHmc-100).
+     * @param allowExpensiveDTZ  Allow probing also for the wrong side of a
+     *                           single-sided DTZ table.
      */
     static bool rtbProbeDTZ(Position& pos, int ply, int& score,
-                            TranspositionTable::TTEntry& ent);
+                            TranspositionTable::TTEntry& ent,
+                            bool allowExpensiveDTZ = true);
 
     /**
      * Probe syzygy WDL tablebases.
@@ -138,7 +141,7 @@ private:
     static bool tbProbe(Position& pos, int ply, int alpha, int beta,
                         const TranspositionTable& tt,
                         TranspositionTable::TTEntry& ent,
-                        const int nPieces);
+                        const int nPieces, bool allowExpensiveDTZ);
 
     static void initWDLBounds();
 
@@ -184,7 +187,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
     const int nPieces = pos.nPieces();
     if (nPieces > TBProbeData::maxPieces)
         return false;
-    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces);
+    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, true);
 }
 
 inline bool
@@ -198,7 +201,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta, int depth,
         return false;
     if (nPieces == 6 && depth < UciParams::minProbeDepth6->getIntPar())
         return false;
-    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces);
+    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, false);
 }
 
 #endif /* TBPROBE_HPP_ */

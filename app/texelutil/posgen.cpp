@@ -447,7 +447,7 @@ PosGenerator::dtzStat(const std::vector<std::string>& tbTypes) {
         iteratePositions(tbType, [&](Position& pos) {
             nPos++;
             int success;
-            int dtz = Syzygy::probe_dtz(pos, &success);
+            int dtz = Syzygy::probe_dtz(pos, &success, true);
             if (!success)
                 throw ChessError("RTB probe failed, pos:" + TextIO::toFEN(pos));
             int wdl = Syzygy::probe_wdl(pos, &success);

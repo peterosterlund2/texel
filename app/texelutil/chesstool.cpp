@@ -1832,7 +1832,7 @@ ChessTool::probeDTZ(const std::string& fen) {
     setupTB();
     Position pos = TextIO::readFEN(fen);
     int success;
-    int dtz = Syzygy::probe_dtz(pos, &success);
+    int dtz = Syzygy::probe_dtz(pos, &success, true);
     std::cout << fen << " raw:";
     if (success)
         std::cout << dtz;

@@ -47,7 +47,10 @@ int probe_wdl(Position& pos, int *success);
 // In short, if a move is available resulting in dtz + 50-move-counter <= 99,
 // then do not accept moves leading to dtz + 50-move-counter == 100.
 //
-int probe_dtz(Position& pos, int *success);
+// If allowExpensiveDTZ is false, probing for a DTZ value is only attempted
+// if the side to move agrees with the side stored in the tablebase file.
+//
+int probe_dtz(Position& pos, int *success, bool allowExpensiveDTZ);
 
 }
 

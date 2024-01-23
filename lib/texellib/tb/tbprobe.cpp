@@ -115,7 +115,7 @@ static inline int rule50Margin(int dtmScore, int ply, int hmc,
 bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                  const TranspositionTable& tt, TranspositionTable::TTEntry& ent,
-                 const int nPieces) {
+                 const int nPieces, bool allowExpensiveDTZ) {
     // Probe on-demand TB
     const int hmc = pos.getHalfMoveClock();
     bool hasDtm = false;
@@ -205,7 +205,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
 
     // Try RTB DTZ probe
     int dtzScore;
-    if (nPieces <= Syzygy::TBLargest && rtbProbeDTZ(pos, ply, dtzScore, ent)) {
+    if (nPieces <= Syzygy::TBLargest && rtbProbeDTZ(pos, ply, dtzScore, ent, allowExpensiveDTZ)) {
         hasResult = true;
         ent.setScore(dtzScore, ply);
         if (dtzScore > 0) {
@@ -399,7 +399,8 @@ TBProbe::gtbProbeWDL(Position& pos, int ply, int& score) {
 
 bool
 TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score,
-                     TranspositionTable::TTEntry& ent) {
+                     TranspositionTable::TTEntry& ent,
+                     bool allowExpensiveDTZ) {
     const int nPieces = BitBoard::bitCount(pos.occupiedBB());
     if (nPieces > Syzygy::TBLargest)
         return false;
@@ -407,7 +408,7 @@ TBProbe::rtbProbeDTZ(Position& pos, int ply, int& score,
         return false;
 
     int success;
-    const int dtz = Syzygy::probe_dtz(pos, &success);
+    const int dtz = Syzygy::probe_dtz(pos, &success, allowExpensiveDTZ);
     if (!success)
         return false;
     if (dtz == 0) {

@@ -442,7 +442,7 @@ int Syzygy::probe_wdl(Position& pos, int *success)
 }
 
 // This routine treats a position with en passant captures as one without.
-static int probe_dtz_no_ep(Position& pos, int *success)
+static int probe_dtz_no_ep(Position& pos, int *success, bool allowExpensiveDTZ)
 {
     const int wdl = probe_ab(pos, -2, 2, success);
     if (*success == 0) return 0;
@@ -488,6 +488,11 @@ static int probe_dtz_no_ep(Position& pos, int *success)
         return wdl >= 0 ? dtz : -dtz;
     }
 
+    if (!allowExpensiveDTZ) {
+        *success = 0;
+        return 0;
+    }
+
     if (wdl > 0) {
         int best = 0xffff;
         for (int m = 0; m < moveList.size; m++) {
@@ -497,7 +502,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
                 !MoveGen::isLegal(pos, move, inCheck))
                 continue;
             pos.makeMove(move, ui);
-            int v = -Syzygy::probe_dtz(pos, success);
+            int v = -Syzygy::probe_dtz(pos, success, allowExpensiveDTZ);
             pos.unMakeMove(move, ui);
             if (*success == 0) return 0;
             if (v > 0 && v + 1 < best)
@@ -524,7 +529,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
                     v = (v == 2) ? 0 : -101;
                 }
             } else {
-                v = -Syzygy::probe_dtz(pos, success) - 1;
+                v = -Syzygy::probe_dtz(pos, success, allowExpensiveDTZ) - 1;
             }
             pos.unMakeMove(move, ui);
             if (*success == 0) return 0;
@@ -539,14 +544,19 @@ static int wdl_to_dtz[] = {
     -1, -101, 0, 101, 1
 };
 
-int Syzygy::probe_dtz(Position& pos, int *success)
+int Syzygy::probe_dtz(Position& pos, int *success, bool allowExpensiveDTZ)
 {
     *success = 1;
-    int v = probe_dtz_no_ep(pos, success);
+    int v = probe_dtz_no_ep(pos, success, allowExpensiveDTZ);
 
     if (!pos.getEpSquare().isValid())
         return v;
     if (*success == 0) return 0;
+
+    if (!allowExpensiveDTZ) {
+        *success = 0;
+        return 0;
+    }
 
     // Now handle en passant.
     int v1 = -3;
