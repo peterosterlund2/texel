@@ -92,7 +92,7 @@ public:
             this->defaultValue = def;
         }
 
-        bool getBoolPar() const override { return value; }
+        bool getBoolPar() const final { return value; }
         bool getDefaultValue() const { return defaultValue; }
 
         void set(const std::string& value) override {
@@ -115,7 +115,7 @@ public:
               value(def), defaultValue(def) {
         }
 
-        int getIntPar() const override { return value; }
+        int getIntPar() const final { return value; }
 
         void set(const std::string& value) override {
             int val;
