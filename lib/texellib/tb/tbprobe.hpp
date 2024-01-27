@@ -141,7 +141,7 @@ private:
     static bool tbProbe(Position& pos, int ply, int alpha, int beta,
                         const TranspositionTable& tt,
                         TranspositionTable::TTEntry& ent,
-                        const int nPieces, bool allowExpensiveDTZ);
+                        const int nPieces, bool allowDTZ, bool allowExpensiveDTZ);
 
     static void initWDLBounds();
 
@@ -187,7 +187,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
     const int nPieces = pos.nPieces();
     if (nPieces > TBProbeData::maxPieces)
         return false;
-    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, true);
+    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, true, true);
 }
 
 inline bool
@@ -197,11 +197,20 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta, int depth,
     const int nPieces = pos.nPieces();
     if (nPieces > TBProbeData::maxPieces)
         return false;
-    if (nPieces == 7 && depth < UciParams::minProbeDepth7->getIntPar())
-        return false;
-    if (nPieces == 6 && depth < UciParams::minProbeDepth6->getIntPar())
-        return false;
-    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, false);
+    bool allowDTZ = true;
+    if (nPieces == 7) {
+        if (depth < UciParams::minProbeDepth7->getIntPar())
+            return false;
+        if (depth < UciParams::minProbeDepth7dtz->getIntPar())
+            allowDTZ = false;
+    }
+    if (nPieces == 6) {
+        if (depth < UciParams::minProbeDepth6->getIntPar())
+            return false;
+        if (depth < UciParams::minProbeDepth6dtz->getIntPar())
+            allowDTZ = false;
+    }
+    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, allowDTZ, false);
 }
 
 #endif /* TBPROBE_HPP_ */

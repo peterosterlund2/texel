@@ -66,7 +66,9 @@ namespace UciParams {
     std::shared_ptr<StringParam> rtbPath(std::make_shared<StringParam>("SyzygyPath", ""));
     std::shared_ptr<SpinParam> minProbeDepth(std::make_shared<SpinParam>("MinProbeDepth", 0, 100, 1));
     std::shared_ptr<SpinParam> minProbeDepth6(std::make_shared<SpinParam>("MinProbeDepth6", 0, 100, 1));
+    std::shared_ptr<SpinParam> minProbeDepth6dtz(std::make_shared<SpinParam>("MinProbeDepth6dtz", 0, 100, 1));
     std::shared_ptr<SpinParam> minProbeDepth7(std::make_shared<SpinParam>("MinProbeDepth7", 0, 100, 12));
+    std::shared_ptr<SpinParam> minProbeDepth7dtz(std::make_shared<SpinParam>("MinProbeDepth7dtz", 0, 100, 12));
 }
 
 int pieceValue[Piece::nPieceTypes];
@@ -164,7 +166,9 @@ Parameters::Parameters() {
     addPar(UciParams::rtbPath);
     addPar(UciParams::minProbeDepth);
     addPar(UciParams::minProbeDepth6);
+    addPar(UciParams::minProbeDepth6dtz);
     addPar(UciParams::minProbeDepth7);
+    addPar(UciParams::minProbeDepth7dtz);
 
     // Evaluation parameters
     REGISTER_PARAM(pV, "PawnValue");

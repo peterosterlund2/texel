@@ -372,9 +372,11 @@ namespace UciParams {
     extern std::shared_ptr<Parameters::StringParam> gtbPath;
     extern std::shared_ptr<Parameters::SpinParam> gtbCache;
     extern std::shared_ptr<Parameters::StringParam> rtbPath;
-    extern std::shared_ptr<Parameters::SpinParam> minProbeDepth;  // Generic min TB probe depth
-    extern std::shared_ptr<Parameters::SpinParam> minProbeDepth6; // Min probe depth for 6-men
-    extern std::shared_ptr<Parameters::SpinParam> minProbeDepth7; // Min probe depth for 7-men
+    extern std::shared_ptr<Parameters::SpinParam> minProbeDepth;     // Generic min TB probe depth
+    extern std::shared_ptr<Parameters::SpinParam> minProbeDepth6;    // Min probe depth for 6-men
+    extern std::shared_ptr<Parameters::SpinParam> minProbeDepth6dtz; // Min probe depth for 6-men DTZ
+    extern std::shared_ptr<Parameters::SpinParam> minProbeDepth7;    // Min probe depth for 7-men
+    extern std::shared_ptr<Parameters::SpinParam> minProbeDepth7dtz; // Min probe depth for 7-men DTZ
 }
 
 // ----------------------------------------------------------------------------

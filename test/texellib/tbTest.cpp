@@ -635,6 +635,21 @@ TBTest::testTbSearch() {
         const int mated20 = -(mate0 - (20 * 2 + 2));
         EXPECT_EQ(m.score(), mated20); // DTZ has info for wrong side, so not probed, but WDL is probed
     }
+    {
+        int old6dtz = UciParams::minProbeDepth6dtz->getIntPar();
+        UciParams::minProbeDepth6dtz->set("2");
+        pos = TextIO::readFEN("8/2Q5/1P2kpq1/8/8/1K6/8/8 w - - 0 1");
+        std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+        Move m = SearchTest::idSearch(*sc, 2, 0);
+        int score1 = m.score();
+        EXPECT_GT(score1, mate0 - 1000); // DTZ not probed
+
+        UciParams::minProbeDepth6dtz->set("1");
+        m = SearchTest::idSearch(*sc, 2, 0);
+        int score2 = m.score();
+        EXPECT_GT(score2, score1); // DTZ probed
+        UciParams::minProbeDepth6dtz->set(std::to_string(old6dtz));
+    }
 
     initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
 }

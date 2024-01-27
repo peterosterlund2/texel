@@ -187,6 +187,13 @@ MinProbeDepth6, MinProbeDepth7
   MinProbeDepth can be useful if the larger tablebases are on slower disks than
   the smaller tablebases.
 
+MinProbeDepth6dtz, MinProbeDepth7dtz
+
+  Minimum remaining search depth required to probe 6-men and 7-men DTZ
+  tablebases. Values smaller than MinProbeDepth6, MinProbeDepth7 are ignored.
+  Values larger than MinProbeDepth6/7 can be useful if DTZ tables are on slower
+  disks than WDL tables.
+
 Clear Hash
 
   When activated, clears the hash table and the history heuristic table, so that

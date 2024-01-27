@@ -115,7 +115,7 @@ static inline int rule50Margin(int dtmScore, int ply, int hmc,
 bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                  const TranspositionTable& tt, TranspositionTable::TTEntry& ent,
-                 const int nPieces, bool allowExpensiveDTZ) {
+                 const int nPieces, bool allowDTZ, bool allowExpensiveDTZ) {
     // Probe on-demand TB
     const int hmc = pos.getHalfMoveClock();
     bool hasDtm = false;
@@ -205,7 +205,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
 
     // Try RTB DTZ probe
     int dtzScore;
-    if (nPieces <= Syzygy::TBLargest && rtbProbeDTZ(pos, ply, dtzScore, ent, allowExpensiveDTZ)) {
+    if (allowDTZ && nPieces <= Syzygy::TBLargest && rtbProbeDTZ(pos, ply, dtzScore, ent, allowExpensiveDTZ)) {
         hasResult = true;
         ent.setScore(dtzScore, ply);
         if (dtzScore > 0) {
