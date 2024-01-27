@@ -115,7 +115,17 @@ static inline int rule50Margin(int dtmScore, int ply, int hmc,
 bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
                  const TranspositionTable& tt, TranspositionTable::TTEntry& ent,
-                 const int nPieces, bool allowDTZ, bool allowExpensiveDTZ) {
+                 const int nPieces, bool allowDTZ, bool allowExpensiveDTZ,
+                 int& nodesToCheckStop) {
+    double t0 = currentTime();
+
+    auto timeAndReturn = [&](bool ret) {
+        double t1 = currentTime();
+        int probeCost = int((t1 - t0) * 1e6) + 1;
+        nodesToCheckStop -= probeCost;
+        return ret;
+    };
+
     // Probe on-demand TB
     const int hmc = pos.getHalfMoveClock();
     bool hasDtm = false;
@@ -124,7 +134,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
         if ((dtmScore == 0) || (rule50Margin(dtmScore, ply, hmc, ent) >= 0)) {
             ent.setScore(dtmScore, ply);
             ent.setType(TType::T_EXACT);
-            return true;
+            return timeAndReturn(true);
         }
         ent.setScore(0, ply);
         ent.setType(dtmScore > 0 ? TType::T_GE : TType::T_LE);
@@ -152,12 +162,12 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
         if ((wdlScore > 0) && (beta <= 0)) { // WDL says win but could be draw due to 50move rule
             ent.setScore(0, ply);
             ent.setType(TType::T_GE);
-            return true;
+            return timeAndReturn(true);
         }
         if ((wdlScore < 0) && (alpha >= 0)) { // WDL says loss but could be draw due to 50move rule
             ent.setScore(0, ply);
             ent.setType(TType::T_LE);
-            return true;
+            return timeAndReturn(true);
         }
     }
     bool frustrated = false;
@@ -166,23 +176,23 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
         if (wdlScore > 0) {
             ent.setType(TType::T_GE);
             if (wdlScore >= beta)
-                return true;
+                return timeAndReturn(true);
         } else if (wdlScore < 0) {
             ent.setType(TType::T_LE);
             if (wdlScore <= alpha)
-                return true;
+                return timeAndReturn(true);
         } else {
             ent.setType(TType::T_EXACT);
             int evScore = ent.getEvalScore();
             if (evScore == 0) {
-                return true;
+                return timeAndReturn(true);
             } else if (evScore > 0) {
                 if (beta <= SearchConst::minFrustrated)
-                    return true;
+                    return timeAndReturn(true);
                 frustrated = true;
             } else {
                 if (alpha >= -SearchConst::minFrustrated)
-                    return true;
+                    return timeAndReturn(true);
                 frustrated = true;
             }
         }
@@ -195,7 +205,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
             if ((dtmScore == 0) || (rule50Margin(dtmScore, ply, hmc, ent) >= 0)) {
                 ent.setScore(dtmScore, ply);
                 ent.setType(TType::T_EXACT);
-                return true;
+                return timeAndReturn(true);
             }
             ent.setScore(0, ply);
             ent.setType(dtmScore > 0 ? TType::T_GE : TType::T_LE);
@@ -211,14 +221,14 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
         if (dtzScore > 0) {
             ent.setType(TType::T_GE);
             if (dtzScore >= beta)
-                return true;
+                return timeAndReturn(true);
         } else if (dtzScore < 0) {
             ent.setType(TType::T_LE);
             if (dtzScore <= alpha)
-                return true;
+                return timeAndReturn(true);
         } else {
             ent.setType(TType::T_EXACT);
-            return true;
+            return timeAndReturn(true);
         }
     }
 
@@ -228,7 +238,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
             if ((dtmScore == 0) || (rule50Margin(dtmScore, ply, hmc, ent) >= 0)) {
                 ent.setScore(dtmScore, ply);
                 ent.setType(TType::T_EXACT);
-                return true;
+                return timeAndReturn(true);
             }
             ent.setScore(0, ply);
             ent.setType(dtmScore > 0 ? TType::T_GE : TType::T_LE);
@@ -236,7 +246,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
         }
     }
 
-    return hasResult || hasDtm;
+    return timeAndReturn(hasResult || hasDtm);
 }
 
 bool

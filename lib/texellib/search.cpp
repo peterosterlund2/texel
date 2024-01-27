@@ -562,9 +562,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
     // Probe endgame tablebases
     if (tb && depth >= minProbeDepth && !singularSearch) {
         TranspositionTable::TTEntry tbEnt;
-        if (TBProbe::tbProbe(pos, ply, alpha, beta, depth, tt.getTT(), tbEnt)) {
+        if (TBProbe::tbProbe(pos, ply, alpha, beta, depth, tt.getTT(), tbEnt, nodesToGo)) {
             tbHits++;
-            nodesToGo -= 100;
             int type = tbEnt.getType();
             int score = tbEnt.getScore(ply);
             bool cutOff = false;

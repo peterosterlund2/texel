@@ -65,7 +65,7 @@ public:
                         TranspositionTable::TTEntry& ent);
     static bool tbProbe(Position& pos, int ply, int alpha, int beta, int depth,
                         const TranspositionTable& tt,
-                        TranspositionTable::TTEntry& ent);
+                        TranspositionTable::TTEntry& ent, int& nodesToCheckStop);
 
     /** If some TB files are missing, it may be necessary to only search a subset
      * of the root moves in order to make progress. This might happen for example
@@ -141,7 +141,8 @@ private:
     static bool tbProbe(Position& pos, int ply, int alpha, int beta,
                         const TranspositionTable& tt,
                         TranspositionTable::TTEntry& ent,
-                        const int nPieces, bool allowDTZ, bool allowExpensiveDTZ);
+                        const int nPieces, bool allowDTZ, bool allowExpensiveDTZ,
+                        int& nodesToCheckStop);
 
     static void initWDLBounds();
 
@@ -187,13 +188,14 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
     const int nPieces = pos.nPieces();
     if (nPieces > TBProbeData::maxPieces)
         return false;
-    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, true, true);
+    int nodesToCheckStop = 0;
+    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, true, true, nodesToCheckStop);
 }
 
 inline bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta, int depth,
                  const TranspositionTable& tt,
-                 TranspositionTable::TTEntry& ent) {
+                 TranspositionTable::TTEntry& ent, int& nodesToCheckStop) {
     const int nPieces = pos.nPieces();
     if (nPieces > TBProbeData::maxPieces)
         return false;
@@ -210,7 +212,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta, int depth,
         if (depth < UciParams::minProbeDepth6dtz->getIntPar())
             allowDTZ = false;
     }
-    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, allowDTZ, false);
+    return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, allowDTZ, false, nodesToCheckStop);
 }
 
 #endif /* TBPROBE_HPP_ */
