@@ -495,8 +495,17 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
     sti.currentMove = emptyMove;
     sti.currentMoveNo = -1;
     int evalScore = UNKNOWN_SCORE;
+    const int illegalScore = -(MATE0-(ply+1));
+    int tbScore = illegalScore;
+    int tbScoreType = TType::T_EMPTY;
 
     auto logAndReturn = [&](int score, int tType) {
+        if (tb) {
+            if (tbScoreType == TType::T_GE)
+                score = std::max(score, tbScore);
+            if (tbScoreType == TType::T_LE)
+                score = std::min(score, tbScore);
+        }
         logFile.logNodeEnd(sti.nodeIdx, score, tType, evalScore, hKey);
         return score;
     };
@@ -551,8 +560,6 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
         hashMove = sti.singularMove;
 
     // Probe endgame tablebases
-    const int illegalScore = -(MATE0-(ply+1));
-    int tbScore = illegalScore;
     if (tb && depth >= minProbeDepth && !singularSearch) {
         TranspositionTable::TTEntry tbEnt;
         if (TBProbe::tbProbe(pos, ply, alpha, beta, depth, tt.getTT(), tbEnt)) {
@@ -599,7 +606,13 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
             }
             if ((type == TType::T_GE) && (score > alpha)) {
                 tbScore = score;
+                tbScoreType = type;
                 alpha = score - 1;
+            }
+            if ((type == TType::T_LE) && (score < beta)) {
+                tbScore = score;
+                tbScoreType = type;
+                beta = score + 1;
             }
         }
     }
@@ -848,7 +861,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
     int bestScore = illegalScore;
     int bestMove = -1;
     int lmrCount = 0;
-    if (tb && tbScore != illegalScore) {
+    if (tb && tbScoreType == TType::T_GE) {
         bestScore = tbScore - 1;
         bestMove = -2;
         sti.bestMove.setMove(A1,A1,0,0);
@@ -995,15 +1008,20 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
                                 ht.addFail(pos, m2, depth);
                     }
                 }
+                score = m.score();
+                if (tb && tbScoreType == TType::T_LE)
+                    score = std::min(score, tbScore);
                 int tType;
                 if (((ent.getType() == TType::T_EXACT || ent.getType() == TType::T_LE)) &&
-                        (ent.getScore(ply) < beta) && isLoseScore(ent.getScore(ply))) {
+                        (ent.getScore(ply) < score) && isLoseScore(ent.getScore(ply))) {
                     score = ent.getScore(ply);
                     emptyMove.setScore(score);
                     tType = TType::T_LE;
                     if (useTT) tt.insert(hKey, emptyMove, tType, ply, depth, evalScore);
                 } else {
                     tType = TType::T_GE;
+                    if (tb)
+                        m.setScore(score);
                     if (useTT) tt.insert(hKey, m, tType, ply, depth, evalScore);
                 }
                 return logAndReturn(alpha, tType);

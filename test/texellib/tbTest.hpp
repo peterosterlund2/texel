@@ -45,7 +45,9 @@ public:
     static void dtmTest();
     static void kpkTest();
     static void rtbTest();
+    /** Test TBProbe::tbProbe() function. */
     static void tbTest();
+    static void testTbSearch();
     static void testMissingTables();
     static void testMaxSubMate();
 };

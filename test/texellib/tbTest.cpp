@@ -489,7 +489,6 @@ TEST(TBTest, tbTest) {
     TBTest::tbTest();
 }
 
-/** Test TBProbe::tbProbe() function. */
 void
 TBTest::tbTest() {
     int ply = 29;
@@ -601,6 +600,33 @@ TBTest::tbTest() {
     }
 }
 
+TEST(TBTest, testTbSearch) {
+    TBTest::testTbSearch();
+}
+
+void
+TBTest::testTbSearch() {
+    initTB("", gtbDefaultCacheMB, rtbDefaultPath); // Disable GTB TBs
+    const int mate0 = SearchConst::MATE0;
+    Position pos;
+
+    {
+        pos = TextIO::readFEN("8/8/8/8/7B/8/3k4/K2B4 w - - 0 1");
+        std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+        Move m = SearchTest::idSearch(*sc, 1, 0);
+        const int mate19 = mate0 - (19 * 2 + 1);
+        EXPECT_GE(m.score(), mate19);
+    }
+    {
+        pos = TextIO::readFEN("8/8/8/8/7B/1B6/3k4/K7 b - - 1 1");
+        std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+        Move m = SearchTest::idSearch(*sc, 1, 0);
+        const int mated18 = -(mate0 - (18 * 2 + 2));
+        EXPECT_LE(m.score(), mated18);
+    }
+
+    initTB(gtbDefaultPath, gtbDefaultCacheMB, rtbDefaultPath);
+}
 
 static void getLegalMoves(Position& pos, MoveList& legalMoves) {
     legalMoves.clear();
