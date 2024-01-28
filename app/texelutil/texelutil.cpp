@@ -866,14 +866,8 @@ main(int argc, char* argv[]) {
                 !str2Num(argv[8], pc.nbb) ||
                 !str2Num(argv[9], pc.nbn))
                 usage();
-#if 1
                 VectorStorage vs;
                 TBGenerator<VectorStorage> tbGen(vs, pc);
-#else
-                TranspositionTable tt(19);
-                TTStorage tts(tt);
-                TBGenerator<TTStorage> tbGen(tts, pc);
-#endif
                 RelaxedShared<S64> maxTimeMillis(-1);
                 tbGen.generate(maxTimeMillis, true);
         } else if (cmd == "tbgentest") {
