@@ -539,11 +539,9 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
         evalScore = ent.getEvalScore();
         ent.getMove(hashMove);
         if (((beta == alpha + 1) || (depth*2 <= ply)) && ent.isCutOff(alpha, beta, ply, depth)) {
-            if (score >= beta) {
-                if (!hashMove.isEmpty())
-                    if (pos.getPiece(hashMove.to()) == Piece::EMPTY)
-                        kt.addKiller(ply, hashMove);
-            }
+            if (score >= beta && !hashMove.isEmpty())
+                if (pos.getPiece(hashMove.to()) == Piece::EMPTY)
+                    kt.addKiller(ply, hashMove);
             sti.bestMove = hashMove;
             return logAndReturn(score, ent.getType());
         }
@@ -1011,7 +1009,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
                 if (tb && tbScoreType == TType::T_LE)
                     score = std::min(score, tbScore);
                 int tType;
-                if (((ent.getType() == TType::T_EXACT || ent.getType() == TType::T_LE)) &&
+                if ((ent.getType() == TType::T_EXACT || ent.getType() == TType::T_LE) &&
                         (ent.getScore(ply) < score) && isLoseScore(ent.getScore(ply))) {
                     score = ent.getScore(ply);
                     emptyMove.setScore(score);
@@ -1023,7 +1021,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
                         m.setScore(score);
                     if (useTT) tt.insert(hKey, m, tType, ply, depth, evalScore);
                 }
-                return logAndReturn(alpha, tType);
+                return logAndReturn(score, tType);
             }
             b = alpha + 1;
         }
@@ -1046,7 +1044,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
         tType = TType::T_EXACT;
         if (useTT) tt.insert(hKey, moves[bestMove], tType, ply, depth, evalScore);
     } else {
-        if (((ent.getType() == TType::T_EXACT || ent.getType() == TType::T_GE)) &&
+        if ((ent.getType() == TType::T_EXACT || ent.getType() == TType::T_GE) &&
                 (ent.getScore(ply) > alpha) && isWinScore(ent.getScore(ply))) {
             bestScore = ent.getScore(ply);
             ent.getMove(hashMove);

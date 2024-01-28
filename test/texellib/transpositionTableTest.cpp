@@ -194,7 +194,7 @@ TEST(TranspositionTableTest, testMateDepth) {
 
     ent.setDepth(3);
     ASSERT_TRUE(ent.isCutOff(-mate0, mate0, ply, 3));
-    ASSERT_TRUE(ent.isCutOff(-mate0, mate0, ply, 4));
+    ASSERT_TRUE(!ent.isCutOff(-mate0, mate0, ply, 4));
 
     // A mate score outside the alpha/beta window should always cause a cutoff
     ply = 0;

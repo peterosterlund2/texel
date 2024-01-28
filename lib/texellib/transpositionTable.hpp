@@ -349,10 +349,9 @@ inline bool
 TranspositionTable::TTEntry::isCutOff(int alpha, int beta, int ply, int depth) const {
     using namespace SearchConst;
     const int score = getScore(ply);
-    const int plyToMate = MATE0 - std::abs(getScore(0));
     const int eDepth = getDepth();
     const int eType = getType();
-    if ((eDepth >= depth) || (eDepth >= plyToMate)) {
+    if (eDepth >= depth) {
         if ( (eType == TType::T_EXACT) ||
             ((eType == TType::T_GE) && (score >= beta)) ||
             ((eType == TType::T_LE) && (score <= alpha)))
