@@ -17,7 +17,6 @@ set(src_texelutillib
   posutil.cpp         posutil.hpp
   revmovegen.cpp      revmovegen.hpp
                       stloutput.hpp
-                      threadpool.hpp
   tbpath.cpp          tbpath.hpp
   )
 

@@ -83,6 +83,7 @@ set(src_texellib
                           searchUtil.hpp
                           square.hpp
   textio.cpp              textio.hpp
+                          threadpool.hpp
   transpositionTable.cpp  transpositionTable.hpp
   undoInfo.hpp
   )
