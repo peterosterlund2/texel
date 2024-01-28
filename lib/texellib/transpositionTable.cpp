@@ -29,9 +29,12 @@
 #include "textio.hpp"
 #include "largePageAlloc.hpp"
 #include "alignedAlloc.hpp"
+#include "threadpool.hpp"
+#include "numa.hpp"
 
 #include <iostream>
 #include <iomanip>
+#include <cstring>
 
 
 TranspositionTable::TranspositionTable(U64 numEntries)
@@ -83,9 +86,25 @@ TranspositionTable::clear() {
     setUsedSize(tableSize);
     tbGen.reset();
     notUsedCnt = 0;
-    TTEntry ent;
-    for (size_t i = 0; i < tableSize; i++)
-        ent.store(table[i]);
+
+    if (tableSize > 1024*1024 && (tableSize % 1024) == 0) {
+        int nThreads = 4;
+        int nChunks = 4;
+        ThreadPool<int> pool(nThreads);
+        U64 chunkSize = tableSize / nChunks;
+        for (U64 i = 0; i < tableSize; i += chunkSize) {
+            auto task = [this,chunkSize,i](int workerNo) {
+                Numa::instance().bindThread(0);
+                U64 len = std::min(chunkSize, tableSize - i);
+                std::memset((void*)&table[i], 0, len * sizeof(TTEntryStorage));
+                return 0;
+            };
+            pool.addTask(task);
+        }
+        pool.getAllResults([](int){});
+    } else {
+        std::memset((void*)&table[0], 0, tableSize * sizeof(TTEntryStorage));
+    }
 }
 
 void
