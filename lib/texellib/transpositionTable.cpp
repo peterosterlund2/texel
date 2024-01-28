@@ -28,6 +28,7 @@
 #include "moveGen.hpp"
 #include "textio.hpp"
 #include "largePageAlloc.hpp"
+#include "alignedAlloc.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -42,26 +43,27 @@ void
 TranspositionTable::reSize(U64 numEntries) {
     if (numEntries < 4)
         numEntries = 4;
+    numEntries &= ~3;
 
-    tableV.clear();
-    tableV.shrink_to_fit();
-    tableLP.reset();
+    if (numEntries == tableSize)
+        return;
+
+    tableP.reset();
     table = nullptr;
     tableSize = 0;
 
-    tableLP = LargePageAlloc::allocate<TTEntryStorage>(numEntries);
-    if (tableLP) {
-        table = tableLP.get();
-    } else {
-        tableV.resize(numEntries);
-        table = &tableV[0];
-    }
+    using TTE = TTEntryStorage;
+    tableP = LargePageAlloc::allocate<TTE>(numEntries);
+    if (!tableP)
+        tableP = std::shared_ptr<TTE>(AlignedAllocator<TTE>().allocate(numEntries),
+                                      [numEntries](TTE* p) {
+                                          AlignedAllocator<TTE>().deallocate(p, numEntries);
+                                      });
+    table = tableP.get();
     tableSize = numEntries;
 
     generation = 0;
-    setUsedSize(tableSize);
-    tbGen.reset();
-    notUsedCnt = 0;
+    clear();
 }
 
 void TranspositionTable::setUsedSize(U64 s) {

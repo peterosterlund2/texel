@@ -29,7 +29,6 @@
 #include "util.hpp"
 #include "move.hpp"
 #include "constants.hpp"
-#include "alignedAlloc.hpp"
 #include "tbgen.hpp"
 
 #include <memory>
@@ -212,7 +211,7 @@ private:
     size_t getIndex(U64 key) const;
 
 
-    TTEntryStorage* table; // Points to either tableV or tableLP
+    TTEntryStorage* table; // Points to data in tableP
 
     U64 usedSize = 0;        // Number of used entries. Smaller than tableSize when TB used
     int usedSizeTopBits = 0; // < 256, (usedSizeTopBits << usedSizeShift) <= usedSize
@@ -223,8 +222,7 @@ private:
     U64 contemptHash = 0;
     U64 tableSize = 0;     // Number of entries
 
-    vector_aligned<TTEntryStorage> tableV;
-    std::shared_ptr<TTEntryStorage> tableLP; // Large page allocation if used
+    std::shared_ptr<TTEntryStorage> tableP; // Large page allocation or aligned allocation
 
     // On-demand TB generation
     TTStorage ttStorage;
