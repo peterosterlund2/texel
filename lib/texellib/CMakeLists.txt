@@ -92,7 +92,8 @@ set(NNDATA_FILE ${texel_SOURCE_DIR}/nndata.tbin.compr)
 set(src_nndata ${CMAKE_CURRENT_BINARY_DIR}/nndata.cpp)
 configure_file(nn/nndata.cpp.in ${src_nndata})
 
-if(MSVC)
+if(MSVC OR (CMAKE_SYSTEM_NAME STREQUAL "Windows" AND
+            CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_32"))
   add_executable(incbin nn/incbin.c)
   set(nndata_gen ${CMAKE_CURRENT_BINARY_DIR}/nndata_gen.c)
   add_custom_command(
