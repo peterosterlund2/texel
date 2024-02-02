@@ -220,6 +220,7 @@ public:
         nScores++;
         scoreSum += score;
         scoreSum2 += score * score;
+        scoreStat[(int)rint(score*2)]++;
     }
 
     /** Add average search depth information for this player and the opponent player. */
@@ -239,6 +240,11 @@ public:
         w = nWin;
         d = nDraw;
         l = nLoss;
+    }
+
+    void getScoreStat(int (&stat)[5]) const {
+        for (int i = 0; i < 5; i++)
+            stat[i] = scoreStat[i];
     }
 
     double getMeanScore() const {
@@ -273,6 +279,8 @@ private:
     double scoreSum = 0;    // Sum of scores
     double scoreSum2 = 0;   // Sum of squared scores
 
+    int scoreStat[5] = {0, 0, 0, 0, 0}; // Number of scores with value 0, 0.5, 1.0, 1.5, 2.0
+
     int myMoveSum = 0;      // Number of moves with depth information for this player
     int myDepthSum = 0;     // Sum of search depth for this player
     int oppoMoveSum = 0;    // Number of moves with depth information for opponent player
@@ -284,17 +292,17 @@ private:
 };
 
 struct GameInfo {
-    int pw;
-    int pb;
-    double score; // Score for white player
-    int wMoveSum;
-    int wDepthSum;
-    int bMoveSum;
-    int bDepthSum;
-    int wTimeSum;
-    int wTimeCnt;
-    int bTimeSum;
-    int bTimeCnt;
+    int pw;        // White player number
+    int pb;        // Black player number
+    double score;  // Score for white player
+    int wMoveSum;  // Number of white moves
+    int wDepthSum; // Sum of search depth for white moves
+    int bMoveSum;  // Number of black moves
+    int bDepthSum; // Sum of search depth for black moves
+    int wTimeSum;  // Total thinking time for first up to 20 white moves
+    int wTimeCnt;  // Total white moves corresponding to wTimeSum
+    int bTimeSum;  // Total thinking time for first up to 20 black moves
+    int bTimeCnt;  // Total black moves corresponding to bTimeSum
 };
 }
 
@@ -433,8 +441,15 @@ MatchBookCreator::pgnStat(const std::string& pgnFile, bool pairMode, std::ostrea
             pi.getAvgTime(myTime, oppoTime);
             ss << " time: " << myTime << " - " << oppoTime;
             os << ss.str() << std::endl;
-            if (pairMode)
+            if (pairMode) {
+                int stat[5];
+                pi.getScoreStat(stat);
+                os << "            0.0 0.5 1.0 1.5 2.0 :";
+                for (int i = 0; i < 5; i++)
+                    os << ' ' << stat[i];
+                os << std::endl;
                 break;
+            }
         }
     } catch (...) {
         std::cerr << "Error parsing game " << nGames << std::endl;
