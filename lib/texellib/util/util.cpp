@@ -35,6 +35,19 @@ splitString(const std::string& str, std::vector<std::string>& out) {
         out.push_back(word);
 }
 
+std::vector<std::string>
+splitLines(const std::string& lines) {
+    std::vector<std::string> ret;
+    int start = 0;
+    for (int i = 0; i < (int)lines.size(); i++) {
+        if (lines[i] == '\n') {
+            ret.push_back(lines.substr(start, i - start));
+            start = i + 1;
+        }
+    }
+    return ret;
+}
+
 bool
 startsWith(const std::string& str, const std::string& startsWith) {
     size_t N = startsWith.length();

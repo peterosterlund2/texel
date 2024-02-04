@@ -83,6 +83,9 @@ clamp(T val, T min, T max) {
 /** Split a string using " " as delimiter. Append words to out. */
 void splitString(const std::string& str, std::vector<std::string>& out);
 
+/** Split a string into lines. Linux line endings assumed. */
+std::vector<std::string> splitLines(const std::string& lines);
+
 /** Convert a string to a number. */
 template <typename T>
 bool

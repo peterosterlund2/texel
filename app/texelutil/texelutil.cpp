@@ -26,6 +26,8 @@
 #include "chesstool.hpp"
 #include "posgen.hpp"
 #include "spsa.hpp"
+#include "gsprt.hpp"
+#include "matchrunner.hpp"
 #include "bookbuild.hpp"
 #include "proofgame.hpp"
 #include "proofgamefilter.hpp"
@@ -158,6 +160,10 @@ usage() {
     std::cerr << " countuniq pgnFile : Count number of unique positions as function of depth\n";
     std::cerr << " pgnstat pgnFile [-p] : Print statistics for games in a PGN file\n";
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
+    std::cerr << "\n";
+    std::cerr << " gsprt elo0 elo1 [-ab alpha beta] (w d l | n00 n05 n10 n15 n20)\n";
+    std::cerr << " match (-n nGames | -gsprt elo0 elo1 [-ab alpha beta]) \\\n";
+    std::cerr << "       engine1 tc1 engine2 tc2 script\n";
     std::cerr << "\n";
     std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-na] [-nokernel]\n";
     std::cerr << "           [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
@@ -403,6 +409,125 @@ doBookCmd(int argc, char* argv[]) {
     } else {
         usage();
     }
+}
+
+static void
+doGsprt(int argc, char* argv[]) {
+    Gsprt::InParams pars;
+    Gsprt::Sample sample;
+
+    if (argc < 4 || !str2Num(argv[2], pars.elo0) || !str2Num(argv[3], pars.elo1))
+        usage();
+
+    int arg = 4;
+    while (arg < argc) {
+        if (arg + 2 < argc && argv[arg] == std::string("-ab")) {
+            if (!str2Num(argv[arg+1], pars.alpha) ||
+                !str2Num(argv[arg+2], pars.beta))
+                usage();
+            pars.useBounds = true;
+            arg += 3;
+        } else {
+            break;
+        }
+    }
+
+    int nGames = 0;
+    if (arg + 3 == argc) {
+        pars.usePentanomial = false;
+        for (int i = 0; i < 3; i++) {
+            if (!str2Num(argv[arg+i], sample.stats[i]))
+                usage();
+            nGames += sample.stats[i];
+        }
+    } else if (arg + 5 == argc) {
+        pars.usePentanomial = true;
+        for (int i = 0; i < 5; i++) {
+            if (!str2Num(argv[arg+i], sample.stats[i]))
+                usage();
+            nGames += sample.stats[i];
+        }
+        nGames *= 2;
+    } else {
+        usage();
+    }
+
+    Gsprt::Result res;
+    Gsprt gsprt(pars);
+    gsprt.compute(sample, res);
+
+    std::cout << "score0      : " << res.expectedScore0 << std::endl;
+    std::cout << "score1      : " << res.expectedScore1 << std::endl;
+    std::cout << "Sample score: " << res.sampleScore
+              << " elo: " << Gsprt::score2Elo(res.sampleScore)
+              << " nGames: " << nGames << std::endl;
+
+    if (pars.useBounds) {
+        std::cout << "a   : " << res.a << std::endl;
+        std::cout << "b   : " << res.b << std::endl;
+        std::cout << "LLR : " << res.llr << std::endl;
+
+        if (res.llr < res.a) {
+            std::cout << "elo <= " << pars.elo0 << std::endl;
+        } else if (res.llr > res.b) {
+            std::cout << "elo >= " << pars.elo1 << std::endl;
+        } else {
+            std::cout << "elo unknown" << std::endl;
+        }
+    }
+}
+
+static void
+doMatch(int argc, char* argv[], int nWorkers) {
+    int numGames = 0;
+    bool fixedGames = false;
+    Gsprt::InParams gsprtParams;
+    gsprtParams.useBounds = true;
+    gsprtParams.usePentanomial = true;
+    bool gsprt = false;
+
+    int arg = 2;
+    while (arg < argc) {
+        if (arg+1 < argc && argv[arg] == std::string("-n")) {
+            if (!str2Num(argv[arg+1], numGames) || numGames <= 0)
+                usage();
+            fixedGames = true;
+            arg += 2;
+        } else if (arg+2 < argc && argv[arg] == std::string("-gsprt")) {
+            if (!str2Num(argv[arg+1], gsprtParams.elo0) ||
+                !str2Num(argv[arg+2], gsprtParams.elo1))
+                usage();
+            gsprt = true;
+            arg += 3;
+        } else if (arg+2 < argc && argv[arg] == std::string("-ab")) {
+            if (!str2Num(argv[arg+1], gsprtParams.alpha) ||
+                !str2Num(argv[arg+2], gsprtParams.beta))
+                usage();
+            arg += 3;
+        } else {
+            break;
+        }
+    }
+    if (fixedGames == gsprt)
+        usage();
+
+    if (argc - arg != 5)
+        usage();
+
+    MatchRunner::EngineParams engine1;
+    MatchRunner::EngineParams engine2;
+
+    engine1.name = argv[arg+0];
+    engine1.timeControl = argv[arg+1];
+    engine2.name = argv[arg+2];
+    engine2.timeControl = argv[arg+3];
+    std::string script = argv[arg+4];
+
+    MatchRunner mr(nWorkers, engine1, engine2);
+    if (fixedGames)
+        mr.runFixedNumGames(numGames, script);
+    else
+        mr.runGsprtGames(gsprtParams, script);
 }
 
 static void
@@ -907,6 +1032,10 @@ main(int argc, char* argv[]) {
             std::string pgnFile = argv[2];
             MatchBookCreator mbc(nWorkers);
             mbc.pgnStat(pgnFile, pairMode, std::cout);
+        } else if (cmd == "gsprt") {
+            doGsprt(argc, argv);
+        } else if (cmd == "match") {
+            doMatch(argc, argv, nWorkers);
         } else if (cmd == "proofgame") {
             doProofGameCmd(argc, argv, nWorkers);
         } else if (cmd == "proofkernel") {

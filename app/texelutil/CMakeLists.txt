@@ -1,6 +1,7 @@
 set(src_texelutil
   chesstool.cpp         chesstool.hpp
   matchbookcreator.cpp  matchbookcreator.hpp
+  matchrunner.cpp       matchrunner.hpp
   posgen.cpp            posgen.hpp
   spsa.cpp              spsa.hpp
   texelutil.cpp

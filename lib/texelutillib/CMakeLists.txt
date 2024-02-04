@@ -11,8 +11,10 @@ set(src_pg
 set(src_texelutillib
                       bitSet.hpp
   bookbuild.cpp       bookbuild.hpp
+                      dblvec.hpp
   gametree.cpp        gametree.hpp
                       gametreeutil.hpp
+  gsprt.cpp           gsprt.hpp
   nnutil.cpp          nnutil.hpp
   posutil.cpp         posutil.hpp
   revmovegen.cpp      revmovegen.hpp

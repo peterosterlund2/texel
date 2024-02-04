@@ -108,18 +108,6 @@ findLine(const std::string& start, const std::string& contain, const std::vector
     return -1;
 }
 
-static std::vector<std::string> splitLines(const std::string& lines) {
-    std::vector<std::string> ret;
-    int start = 0;
-    for (int i = 0; i < (int)lines.size(); i++) {
-        if (lines[i] == '\n') {
-            ret.push_back(lines.substr(start, i - start));
-            start = i + 1;
-        }
-    }
-    return ret;
-}
-
 static void
 splitString(const std::string& line, const std::string& delim, std::vector<std::string>& fields) {
     size_t start = 0;
