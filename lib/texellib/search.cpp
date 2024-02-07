@@ -278,7 +278,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             if (tNow - tStart >= maxTimeMillis)
                 break;
         }
-        if (!knownLoss && rootMoves[maxPV - 1].knownLoss) {
+        if (!firstIteration && !knownLoss && rootMoves[maxPV - 1].knownLoss) {
             depth = std::max(0, depth - 1);
             knownLoss = true;
         }
