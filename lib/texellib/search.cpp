@@ -499,13 +499,18 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
     int tbScore = illegalScore;
     int tbScoreType = TType::T_EMPTY;
 
-    auto logAndReturn = [&](int score, int tType) {
+    auto tbAdjust = [&](int score) {
         if (tb) {
             if (tbScoreType == TType::T_GE)
                 score = std::max(score, tbScore);
             if (tbScoreType == TType::T_LE)
                 score = std::min(score, tbScore);
         }
+        return score;
+    };
+
+    auto logAndReturn = [&](int score, int tType) {
+        score = tbAdjust(score);
         logFile.logNodeEnd(sti.nodeIdx, score, tType, evalScore, hKey);
         return score;
     };
@@ -619,6 +624,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
         q0Eval = evalScore;
         sti.bestMove.setMove(A1,A1,0,0);
         int score = quiesce(alpha, beta, ply, 0, inCheck);
+        score = tbAdjust(score);
         int type = TType::T_EXACT;
         if (score <= alpha) {
             type = TType::T_LE;

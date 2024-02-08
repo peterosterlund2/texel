@@ -625,8 +625,13 @@ TBTest::testTbSearch() {
         Move m = SearchTest::idSearch(*sc, 1, 0);
         const int mated18 = -(mate0 - (18 * 2 + 2));
         EXPECT_LE(m.score(), -600); // DTZ has info for wrong side, so not probed
-        m = SearchTest::idSearch(*sc, 2, 0);
-        EXPECT_LE(m.score(), mated18); // DTZ probed on next ply, where side is correct
+
+        TranspositionTable& tt = SearchTest::tt;
+        TranspositionTable::TTEntry ent;
+        int nodesToCheckStop = 0;
+        bool result = TBProbe::tbProbe(pos, 0, -mate0, mate0, 0, tt, ent, nodesToCheckStop);
+        EXPECT_TRUE(result);
+        EXPECT_LE(ent.getScore(0), mated18); // DTZ probed on previous ply, where side is correct
     }
     {
         pos = TextIO::readFEN("8/8/8/8/7B/1B2Q3/3k4/K7 b - - 1 1");
@@ -687,9 +692,9 @@ TBTest::testMissingTables() {
         std::vector<Move> movesToSearch;
         bool res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch, tt);
         EXPECT_EQ(true, res);
-        if (gtb)
+        if (gtb) {
             compareMoves(std::vector<std::string>{"e7e8q", "e7e8r", "e7e8b", "e7e8n"}, movesToSearch);
-        {
+
             std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
             Move m = SearchTest::idSearch(*sc, 4, 3);
             EXPECT_EQ("e7e8q", TextIO::moveToUCIString(m));
@@ -730,6 +735,38 @@ TBTest::testMissingTables() {
             movesToSearch.clear();
             res = TBProbe::getSearchMoves(pos, legalMoves, movesToSearch, tt);
             EXPECT_EQ(false, res);
+        }
+
+        if (!gtb) {
+            setupTBFiles(std::vector<std::string>{"KPvK.rtbw", "KPvK.rtbz", "KRvK.rtbw"});
+            pos = TextIO::readFEN("8/8/8/4k3/8/8/1R6/K7 w - - 0 1");
+            TranspositionTable::TTEntry ent;
+            const int mate0 = SearchConst::MATE0;
+            const int wdlWinScore = mate0 - 32 - 4;
+            int ply = 0;
+            bool res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
+            EXPECT_TRUE(res);
+            EXPECT_TRUE(ent.getType() == TType::T_EXACT || ent.getType() == TType::T_GE);
+            EXPECT_GE(ent.getScore(ply), wdlWinScore);
+
+            pos = TextIO::readFEN("8/8/8/4k3/8/8/1R6/K7 w - - 10 11");
+            ply = 0;
+            res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
+            EXPECT_TRUE(res);
+            EXPECT_TRUE(ent.getType() == TType::T_EXACT || ent.getType() == TType::T_GE);
+            EXPECT_GE(ent.getScore(ply), wdlWinScore);
+
+            pos = TextIO::readFEN("8/8/8/4k3/8/8/1R6/K7 w - - 66 11");
+            ply = 0;
+            res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
+            EXPECT_TRUE(res);
+            EXPECT_TRUE(ent.getType() == TType::T_EXACT || ent.getType() == TType::T_GE);
+            EXPECT_GE(ent.getScore(ply), wdlWinScore);
+
+            pos = TextIO::readFEN("8/8/8/4k3/8/8/1R6/K7 w - - 80 11");
+            ply = 0;
+            res = TBProbe::tbProbe(pos, ply, -mate0, mate0, tt, ent);
+            EXPECT_FALSE(res); // hmc too large for WDL probe
         }
     }
 

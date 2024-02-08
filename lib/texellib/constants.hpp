@@ -27,7 +27,7 @@
 #define CONSTANTS_HPP_
 
 namespace SearchConst {
-    const int MATE0 = 32000;
+    const int MATE0 = 32000; // 32000 = can take king, -31999 = is mated, 31998 = mate in one
     const int UNKNOWN_SCORE = -32767; // Represents unknown static eval score
     const int BUSY = -32766; // Represents a busy node in the ABDADA algorithm
 

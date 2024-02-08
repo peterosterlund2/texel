@@ -141,14 +141,26 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
         hasDtm = true;
     }
 
-    // Try WDL probe. If the result is not draw, it can only be trusted if hmc == 0.
+    // Return true if an RTB WDL score is guaranteed to be correct when taking
+    // the 50-move rule into account.
+    auto canUseRtbWdlScore = [](const Position& pos, int wdlScore) -> bool {
+        int hmc = pos.getHalfMoveClock();
+        if (wdlScore == 0 || hmc == 0)
+            return true;
+        int matId = pos.materialId();
+        int distToWin = hmc + getMaxDTZ(matId);
+        return distToWin <= 100;
+    };
+
+    // Try WDL probe. If the result is not draw, it can only be trusted if
+    // hmc is 0 (GTB) or low enough (RTB).
     // 5-men GTB WDL probes can only be trusted if the score is draw, because they
     // don't take the 50 move draw rule into account.
     bool hasResult = false;
     bool checkABBound = false;
     int wdlScore;
     if (nPieces <= Syzygy::TBLargest && rtbProbeWDL(pos, ply, wdlScore, ent)) {
-        if ((wdlScore == 0) || (hmc == 0))
+        if (canUseRtbWdlScore(pos, wdlScore))
             hasResult = true;
         else
             checkABBound = true;
@@ -310,7 +322,7 @@ TBProbe::extendPV(const Position& rootPos, std::vector<Move>& pv, const Transpos
         pos.makeMove(m, ui);
         if (dtmProbe(pos, ply, tt, score) && SearchConst::isWinScore(std::abs(score)) &&
             (SearchConst::MATE0 - 1 - abs(score) - ply <= 100 - pos.getHalfMoveClock())) {
-            // TB win, replace rest of PV since it may be inaccurate
+            // TB win, erase rest of PV since it may be inaccurate
             pv.erase(pv.begin()+i+1, pv.end());
             break;
         }
