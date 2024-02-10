@@ -738,7 +738,7 @@ TBTest::testMissingTables() {
         }
 
         if (!gtb) {
-            setupTBFiles(std::vector<std::string>{"KPvK.rtbw", "KPvK.rtbz", "KRvK.rtbw"});
+            setupTBFiles(std::vector<std::string>{"KRvK.rtbw"});
             pos = TextIO::readFEN("8/8/8/4k3/8/8/1R6/K7 w - - 0 1");
             TranspositionTable::TTEntry ent;
             const int mate0 = SearchConst::MATE0;

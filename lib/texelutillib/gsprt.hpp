@@ -41,6 +41,17 @@
  * from type 1 error frequency (alpha) and type 2 error frequency (beta).
  * A type 1 error means rejecting H0 when it is true.
  * A type 2 error means rejecting H1 when it is true.
+ *
+ * It might seem more natural to use the hypotheses H0' : "the elo is <= elo0",
+ * and H1' : "the elo is >= elo1", since H0 and H1 are typically both false,
+ * because it is extremely unlikely that the true elo has a particular exact
+ * value (other than 0, which would happen if you test a program against an
+ * exact copy of itself). However, H0/H1 has the advantage that the probability
+ * of accepting the wrong hypothesis (i.e. the one with the elo farthest away
+ * from the true elo) becomes much smaller than alpha/beta when the true elo is
+ * far away from elo0/elo1. If H0'/H1' would be used, in the case of elo0=0,
+ * elo1=1, true elo=100, the probability of making the wrong conclusion would
+ * still be "beta".
  */
 class Gsprt {
 public:
@@ -61,21 +72,27 @@ public:
         double expectedScore0 = 0; // Expected score in [0,1] corresponding to elo0
         double expectedScore1 = 0; // Expected score in [0,1] corresponding to elo1
         double sampleScore = 0; // Score of sample, in [0,1]
-        double a = 0; // The lower stopping limit, computed from alpha, beta
-        double b = 0; // The upper stopping limit, computed from alpha, beta
+        double a = 0; // The lower stopping limit, computed from alpha, beta if useBounds==true
+        double b = 0; // The upper stopping limit, computed from alpha, beta if useBounds==true
 
-        double llr = 0; // The computed log-likelyhood ratio
+        double llr = 0; // The computed log-likelihood ratio
     };
 
-    Gsprt(const InParams& pars);
+    /** Constructor. */
+    explicit Gsprt(const InParams& pars);
 
-    void compute(const Sample& sample, Result& res);
+    /** Compute LLR and optionally a,b for a sample. */
+    void compute(const Sample& sample, Result& res) const;
 
+    /** Convert a relative elo value to an expected game score in [0,1]. */
     static double elo2Score(double elo) { return 1 / (1 + std::pow(10, -elo / 400)); }
-    static double score2Elo(double score) { return -400 *log10(1 / score - 1); }
+    /** Convert an exepcted game score in [0,1] to a relative elo value. */
+    static double score2Elo(double score) { return -400 * std::log10(1 / score - 1); }
 
 private:
-    /** Compute log-likelihood for a sample, given multinomial probabilities p */
+    /** Compute log-likelihood for a sample "f", given multinomial probabilities "p",
+     * with multinomial values "a".
+     * For WDL, a=[0,0.5,1]. For pentanomial, a=[0,0.25,0.5,0.75,1]. */
     double computeLL(const DblVec& a, const DblVec& f, const DblVec& p) const;
 
     /** Compute p[0] and p[n] so that sum(p[i]) = 1 and sum(a[i]*p[i]) = s. */

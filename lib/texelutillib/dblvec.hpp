@@ -38,7 +38,7 @@
 class DblVec {
     friend std::ostream& operator<<(std::ostream& os, const DblVec& v);
 public:
-    DblVec(int n) : v(n) {}
+    explicit DblVec(int n) : v(n) {}
 
     size_t size() const { return v.size(); }
           double& operator[](int i)       { return v[i]; }

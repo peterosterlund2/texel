@@ -213,7 +213,7 @@ Gsprt::computeBestLL(const DblVec& a, double s, const DblVec& f, DblVec& p) cons
 }
 
 void
-Gsprt::compute(const Sample& sample, Result& res) {
+Gsprt::compute(const Sample& sample, Result& res) const {
     if (pars.elo0 >= pars.elo1)
         throw ChessError("elo0 must be < elo1");
     if (pars.alpha > 0.5 || pars.beta > 0.5)

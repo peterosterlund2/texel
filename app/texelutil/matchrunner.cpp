@@ -122,7 +122,6 @@ MatchRunner::runFixedNumGames(int numGames, const std::string& script) const {
         double score, elo;
         computeStats(r.stats, stats, nPlayed, score, elo);
 
-
         std::cout << "c:" << r.workerNo
                   << " n:" << nPlayed
                   << " t:" << (int)(t1 - t0)
@@ -143,7 +142,7 @@ MatchRunner::runGsprtGames(const Gsprt::InParams& gsprtParams, const std::string
     Gsprt::Sample sample;
     Gsprt::Result gsprtRes;
 
-    gsprt.compute(sample, gsprtRes); // Compute with 0 games to check in parameters
+    gsprt.compute(sample, gsprtRes); // Compute with 0 games to check parameters
 
     std::atomic<bool> error(false);
     struct Result {

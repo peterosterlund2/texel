@@ -162,7 +162,7 @@ usage() {
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
     std::cerr << " gsprt elo0 elo1 [-ab alpha beta] (w d l | n00 n05 n10 n15 n20)\n";
-    std::cerr << " match (-n nGames | -gsprt elo0 elo1 [-ab alpha beta]) \\\n";
+    std::cerr << " match (-n nGames | -gsprt elo0 elo1 [-ab alpha beta])\n";
     std::cerr << "       engine1 tc1 engine2 tc2 script\n";
     std::cerr << "\n";
     std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-na] [-nokernel]\n";
@@ -465,8 +465,9 @@ doGsprt(int argc, char* argv[]) {
     if (pars.useBounds) {
         std::cout << "a   : " << res.a << std::endl;
         std::cout << "b   : " << res.b << std::endl;
-        std::cout << "LLR : " << res.llr << std::endl;
-
+    }
+    std::cout << "LLR : " << res.llr << std::endl;
+    if (pars.useBounds) {
         if (res.llr < res.a) {
             std::cout << "elo <= " << pars.elo0 << std::endl;
         } else if (res.llr > res.b) {
@@ -508,9 +509,9 @@ doMatch(int argc, char* argv[], int nWorkers) {
             break;
         }
     }
+
     if (fixedGames == gsprt)
         usage();
-
     if (argc - arg != 5)
         usage();
 
