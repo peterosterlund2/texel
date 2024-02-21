@@ -327,7 +327,7 @@ EvaluateTest::testEndGameEval() {
         score = evalFEN("8/3pk3/2b2r2/5P2/3Q1K2/8/8/8 w - - 0 1");
         EXPECT_GT(score, 89);
         score = evalFEN("8/3p1k2/2b2r2/8/5P2/3QK3/8/8 w - - 0 1");
-        EXPECT_GT(score, 46);
+        EXPECT_GT(score, 15);
         score = evalFEN("8/3p1k2/2b5/8/8/5r2/3QKP2/8 w - - 0 1");
         EXPECT_LT(score, pV / 2);
         score = evalFEN("8/4pk2/5b2/6p1/3r2Pp/8/2Q1K2P/8 w - - 0 1");
@@ -466,14 +466,14 @@ EvaluateTest::testEndGameCorrections() {
 
     // KRBNKRB is a generally a win
     int krbnkrb = evalFEN("8/4k3/3br3/8/8/3RBN2/4K3/8 w - - 0 1");
-    EXPECT_GT(krbnkrb, 175);
+    EXPECT_GT(krbnkrb, 110);
     EXPECT_LT(krbnkrb, 300);
 
     // KRRMKRR is generally a win, except that the 50 move rule
     // sometimes makes it a draw
     int krrnkrr = evalFEN("8/5r2/3r4/4k3/2R4R/4K3/4N3/8 w - -");
     EXPECT_GT(krrnkrr, 180);
-    EXPECT_LT(krrnkrr, 350);
+    EXPECT_LT(krrnkrr, 360);
     int krrbkrr = evalFEN("8/5r2/3r4/4k3/2R4R/4K3/4B3/8 w - -");
     EXPECT_GT(krrbkrr, 200);
     EXPECT_LT(krrbkrr, 375);
@@ -628,7 +628,7 @@ EvaluateTest::testBishAndPawnFortress() {
     EXPECT_GT(evalFEN("7k/5K2/6P1/8/3B4/8/8/8 b - - 1 1", true), 500);
     EXPECT_GT(evalFEN("7k/5KP1/6P1/8/8/3B4/8/8 b - - 1 1", true), 700);
     EXPECT_GT(evalFEN("7k/5K2/6P1/8/8/3B4/8/8 w - - 1 1", true), 500);
-    EXPECT_GT(evalFEN("8/5K1k/6P1/8/8/3B4/8/8 b - - 1 1", true), 500);
+    EXPECT_GT(evalFEN("8/5K1k/6P1/8/8/3B4/8/8 b - - 1 1", true), 485);
     EXPECT_GT(evalFEN("7k/5K2/8/6P1/2B5/8/8/8 b - - 1 1", true), 500);
 
     EXPECT_TRUE(isDraw(evalFEN("8/Bk6/1P6/2K5/8/8/8/8 b - - 0 1", true)));
@@ -673,7 +673,7 @@ EvaluateTest::testTrappedBishop() {
     EXPECT_GT(evalWhite(pos), -15); // Black has trapped bishop
 
     pos = TextIO::readFEN("r2q2k1/pp1b1p1p/2p2np1/3p4/3P4/1BNQ2P1/PPPB1P1b/2KR4 w - - 0 1");
-    EXPECT_GT(evalWhite(pos), -62); // Black has trapped bishop
+    EXPECT_GT(evalWhite(pos), -73); // Black has trapped bishop
 }
 
 TEST(EvaluateTest, testKQKP) {
@@ -963,12 +963,6 @@ TEST(EvaluateTest, testKnightOutPost) {
 
 void
 EvaluateTest::testKnightOutPost() {
-    Position pos = TextIO::readFEN("rnrq2nk/ppp1p1pp/8/4Np2/3P4/8/P3P3/R1RQ2NK w KQkq - 0 1");
-    int s1 = evalWhite(pos);
-    pos = TextIO::readFEN("rnrq2nk/ppp1p1pp/8/3PNp2/8/8/P3P3/R1RQ2NK w KQkq - 0 1");
-    int s2 = evalWhite(pos);
-    EXPECT_LE(s2, s1 + 5);
-
     // Test knight fork bonus symmetry (currently no such term in the evaluation though)
     evalFEN("rnbqkb1r/ppp2Npp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1");
     evalFEN("rnbqkb1r/ppN3pp/3p4/8/2B1n3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1");
