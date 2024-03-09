@@ -62,10 +62,10 @@ RandPermTest::testLarge() {
     for (U64 i = 0; i < N; i++)
         v.push_back(rp.perm(i));
     for (int i = 0; i < N; i++)
-        ASSERT_NE(i, v[i]); // This could in principle happen, but the probability is extremely small
+        ASSERT_NE(i, v[i]); // This could in principle fail, but the probability is extremely small
     std::sort(v.begin(), v.end());
     for (U64 i = 1; i < N; i++)
-        ASSERT_LT(v[i-1], v[i]);
+        ASSERT_LT(v[i-1], v[i]); // Probability for duplicates is extremely small
 
     // Test that average value is reasonable
     double sum = 0;
