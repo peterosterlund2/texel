@@ -167,17 +167,23 @@ MatchBookCreator::countUniq(const std::string& pgnFile, std::ostream& os) {
     std::ifstream is(pgnFile);
     PgnReader reader(is);
     std::vector<std::unordered_set<U64>> uniqPositions;
+    std::vector<int> nGames;
     GameTree gt;
-    int nGames = 0;
+    int nGamesTot = 0;
+    U64 nPositions = 0;
     try {
         while (reader.readPGN(gt)) {
-            nGames++;
+            nGamesTot++;
             GameNode gn = gt.getRootNode();
             int ply = 0;
             while (true) {
                 while ((int)uniqPositions.size() <= ply)
                     uniqPositions.push_back(std::unordered_set<U64>());
+                while ((int)nGames.size() <= ply)
+                    nGames.push_back(0);
                 uniqPositions[ply].insert(gn.getPos().zobristHash());
+                nGames[ply]++;
+                nPositions++;
                 if (gn.nChildren() == 0)
                     break;
                 gn.goForward(0);
@@ -186,16 +192,19 @@ MatchBookCreator::countUniq(const std::string& pgnFile, std::ostream& os) {
         }
 
         std::unordered_set<U64> uniq;
-        if (uniqPositions.size() > 0)
-            uniq.insert(uniqPositions[0].begin(), uniqPositions[0].end());
-        for (size_t i = 1; i < uniqPositions.size(); i++) {
+        for (size_t i = 0; i < uniqPositions.size(); i++) {
             int u0 = uniq.size();
             uniq.insert(uniqPositions[i].begin(), uniqPositions[i].end());
             int u1 = uniq.size();
-            os << std::setw(3) << i << ' ' << u1 - u0 << std::endl;
+            os << std::setw(3) << i << ' ' << u1 - u0
+               << ' ' << nGames[i] << ' ' << ((u1 - u0) / (double)nGames[i])
+               << std::endl;
         }
+        os << "nGames: " << nGamesTot << " nPositions: " << nPositions
+           << " uniq: " << uniq.size() << " frac: " << (uniq.size() / (double)nPositions)
+           << std::endl;
     } catch (...) {
-        std::cerr << "Error parsing game " << nGames << std::endl;
+        std::cerr << "Error parsing game " << nGamesTot << std::endl;
         throw;
     }
 }
