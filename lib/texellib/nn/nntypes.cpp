@@ -104,7 +104,7 @@ NetData::computeHash() const {
 
 int
 NetData::computeSize() const {
-    U64 s = sizeof(U64) + sizeof(int); // header, ver
+    int s = sizeof(U64) + sizeof(int); // header, ver
     s += COUNT_OF(weight1.data) * sizeof(weight1.data[0]);
     s += COUNT_OF(bias1.data) * sizeof(bias1.data[0]);
     s += lin2.computeSize();
