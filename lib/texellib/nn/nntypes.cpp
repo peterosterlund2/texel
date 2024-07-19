@@ -31,6 +31,12 @@
 static const U64 magicHeader = 0xb3828c6bdf56c56cULL;
 static const int netVersion = 0;
 
+U8
+NetData::nPiecesToHead[33] = {
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+    0, 1, 1, 1,  1, 1, 1, 1,  2, 2, 2, 2,
+    2, 2, 3, 3,  3, 3, 3, 3,  3
+};
 
 std::shared_ptr<NetData>
 NetData::create() {
@@ -49,9 +55,8 @@ NetData::save(std::ostream& os) const {
 
     writer.writeArray(&weight1.data[0], COUNT_OF(weight1.data));
     writer.writeArray(&bias1.data[0], COUNT_OF(bias1.data));
-    lin2.save(writer);
-    lin3.save(writer);
-    lin4.save(writer);
+    for (const Head& h : head)
+        h.save(writer);
 
     writer.writeScalar(computeHash());
 }
@@ -72,9 +77,8 @@ NetData::load(std::istream& is) {
 
     reader.readArray(&weight1.data[0], COUNT_OF(weight1.data));
     reader.readArray(&bias1.data[0], COUNT_OF(bias1.data));
-    lin2.load(reader);
-    lin3.load(reader);
-    lin4.load(reader);
+    for (Head& h : head)
+        h.load(reader);
 
     U64 hash;
     reader.readScalar(hash);
@@ -86,9 +90,11 @@ NetData::load(std::istream& is) {
 
 void
 NetData::prepareMatMul() {
-    ::prepareMatMul(lin2.weight);
-    ::prepareMatMul(lin3.weight);
-    ::prepareMatMul(lin4.weight);
+    for (Head& h : head) {
+        ::prepareMatMul(h.lin2.weight);
+        ::prepareMatMul(h.lin3.weight);
+        ::prepareMatMul(h.lin4.weight);
+    }
 }
 
 U64
@@ -96,9 +102,8 @@ NetData::computeHash() const {
     U64 ret = hashU64(1);
     ret = hashU64(ret + weight1.computeHash());
     ret = hashU64(ret + bias1.computeHash());
-    ret = hashU64(ret + lin2.computeHash());
-    ret = hashU64(ret + lin3.computeHash());
-    ret = hashU64(ret + lin4.computeHash());
+    for (const Head& h : head)
+        ret = hashU64(ret + h.computeHash());
     return ret;
 }
 
@@ -107,9 +112,40 @@ NetData::computeSize() const {
     int s = sizeof(U64) + sizeof(int); // header, ver
     s += COUNT_OF(weight1.data) * sizeof(weight1.data[0]);
     s += COUNT_OF(bias1.data) * sizeof(bias1.data[0]);
+    for (const Head& h : head)
+        s += h.computeSize();
+    s += sizeof(U64); // hash
+    return s;
+}
+
+void
+NetData::Head::save(BinaryFileWriter& writer) const {
+    lin2.save(writer);
+    lin3.save(writer);
+    lin4.save(writer);
+}
+
+void
+NetData::Head::load(BinaryFileReader& reader) {
+    lin2.load(reader);
+    lin3.load(reader);
+    lin4.load(reader);
+}
+
+U64
+NetData::Head::computeHash() const {
+    U64 ret = hashU64(2);
+    ret = hashU64(ret + lin2.computeHash());
+    ret = hashU64(ret + lin3.computeHash());
+    ret = hashU64(ret + lin4.computeHash());
+    return ret;
+}
+
+int
+NetData::Head::computeSize() const {
+    int s = 0;
     s += lin2.computeSize();
     s += lin3.computeSize();
     s += lin4.computeSize();
-    s += sizeof(U64); // hash
     return s;
 }

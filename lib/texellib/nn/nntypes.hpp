@@ -135,7 +135,7 @@ public:
     struct Output {
         Vector<S32,nOut> linOutput;  // Result after applying weight and bias
         Vector<S8,nOut> output;      // Result after scaling, clipped ReLU and narrowing
-        S8 dummy[64 - nOut];         // To make size a multiple of 64 bytes
+        S8 dummy[64 - nOut*5 % 64];  // To make size a multiple of 64 bytes
     };
 
     /** Compute output from input. */
@@ -159,14 +159,29 @@ public:
     static constexpr int n1 = 256;
     static constexpr int n2 = 32;
     static constexpr int n3 = 32;
+    static constexpr int nHeads = 4;
 
     static constexpr int l1Shift = 2;
     Matrix<S16, inFeatures, n1> weight1;
     Vector<S16, n1> bias1;
 
-    LayerData<n1*2, n2> lin2;
-    LayerData<n2  , n3> lin3;
-    LayerData<n3  , 1 > lin4;
+    struct Head {
+        LayerData<n1*2, n2> lin2;
+        LayerData<n2  , n3> lin3;
+        LayerData<n3  , 1 > lin4;
+        S8 dummy[64 - sizeof(lin4)];
+
+        void save(BinaryFileWriter& writer) const;
+        void load(BinaryFileReader& reader);
+        U64 computeHash() const;
+        int computeSize() const;
+    };
+    static_assert(sizeof(Head) % 64 == 0, "Bad alignment");
+    Head head[nHeads];
+
+    /** Return the head corresponding to a position having nPieces pieces,
+     *  including kings. */
+    static int getHeadNo(int nPieces);
 
     /** Serialize this object to "os". */
     void save(std::ostream& os) const;
@@ -187,7 +202,13 @@ public:
 private:
     NetData() = default;
     NetData(const NetData& other) = delete;
+
+    static U8 nPiecesToHead[33];
 };
 
+inline int
+NetData::getHeadNo(int nPieces) {
+    return nPiecesToHead[nPieces];
+}
 
 #endif /* NNTYPES_HPP_ */

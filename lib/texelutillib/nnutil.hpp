@@ -47,6 +47,10 @@ public:
 
     /** Convert a Record to Position format. */
     static void recordToPos(const Record& r, Position& pos, int& searchScore);
+
+    /** Return number of pieces, including kings, in the position
+     *  corresponding to Record "r". */
+    static int nPieces(const Record& r);
 };
 
 #endif /* NNUTIL_HPP_ */

@@ -113,13 +113,20 @@ private:
     using Layer3 = Layer<n2  , n3, false>;
     using Layer4 = Layer<n3  , 1 , false>;
 
-    Layer2::Output layer2Out;
-    Layer3::Output layer3Out;
-    Layer4::Output layer4Out;
+    struct HeadOut {
+        Layer2::Output layer2;
+        Layer3::Output layer3;
+        Layer4::Output layer4;
+    };
+    HeadOut out[NetData::nHeads];
 
-    Layer2 layer2;
-    Layer3 layer3;
-    Layer4 layer4;
+    struct Head {
+        Layer2 layer2;
+        Layer3 layer3;
+        Layer4 layer4;
+        Head(const NetData::Head& headData);
+    };
+    Head head[NetData::nHeads];
 
     const Position* posP = nullptr; // Connected Position object
     const NetData& netData;         // Network weight/bias

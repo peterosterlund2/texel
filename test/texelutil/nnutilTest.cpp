@@ -41,6 +41,7 @@ NNUtilTest::testRecord() {
         Position pos = TextIO::readFEN(fen);
         bool wtm = pos.isWhiteMove();
         NNUtil::posToRecord(pos, score, r);
+        ASSERT_EQ(pos.nPieces(), NNUtil::nPieces(r));
         Position pos2;
         int score2;
         NNUtil::recordToPos(r, pos2, score2);

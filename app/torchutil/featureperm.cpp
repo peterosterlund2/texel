@@ -216,9 +216,11 @@ FeaturePerm::permuteNet(std::vector<int>& permutation) {
         for (int i = 0; i < NetData::inFeatures; i++)
             std::swap(net.weight1(i, newF), net.weight1(i, oldF));
         std::swap(net.bias1(newF), net.bias1(oldF));
-        for (int i = 0; i < NetData::n2; i++) {
-            std::swap(net.lin2.weight(i, newF+n1*0), net.lin2.weight(i, oldF+n1*0));
-            std::swap(net.lin2.weight(i, newF+n1*1), net.lin2.weight(i, oldF+n1*1));
+        for (NetData::Head& h : net.head) {
+            for (int i = 0; i < NetData::n2; i++) {
+                std::swap(h.lin2.weight(i, newF+n1*0), h.lin2.weight(i, oldF+n1*0));
+                std::swap(h.lin2.weight(i, newF+n1*1), h.lin2.weight(i, oldF+n1*1));
+            }
         }
         permutation[newF] = newF;
         for (int x = newF+1; x < n1; x++) {

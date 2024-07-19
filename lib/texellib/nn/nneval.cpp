@@ -59,16 +59,21 @@ NNEvaluator::create(const NetData& netData) {
 }
 
 NNEvaluator::NNEvaluator(const NetData& netData)
-    : layer2(netData.lin2),
-      layer3(netData.lin3),
-      layer4(netData.lin4),
+    : head{ netData.head[0], netData.head[1], netData.head[2], netData.head[3] },
       netData(netData) {
+    static_assert(NetData::nHeads == 4, "nHeads does not match constructor arguments");
     static_assert(sizeof(FirstLayerState) % 64 == 0, "Bad alignment");
     static_assert(sizeof(FirstLayerStack) % 64 == 0, "Bad alignment");
 }
 
 NNEvaluator::~NNEvaluator() {
     connectPosition(nullptr);
+}
+
+NNEvaluator::Head::Head(const NetData::Head& headData)
+    : layer2(headData.lin2),
+      layer3(headData.lin3),
+      layer4(headData.lin4) {
 }
 
 void
@@ -239,9 +244,15 @@ NNEvaluator::eval() {
     computeL1WB();
     computeL1Out();
 
-    layer2.forward(l1OutClipped, layer2Out);
-    layer3.forward(layer2Out.output, layer3Out);
-    layer4.evalLinear(layer3Out.output, layer4Out);
+    const int nPieces = posP->nPieces();
+    int hi = NetData::getHeadNo(nPieces);
 
-    return layer4Out.linOutput(0) * (100 * 2) / (127 * 64);
+    HeadOut& ho = out[hi];
+    Head& h = head[hi];
+
+    h.layer2.forward(l1OutClipped, ho.layer2);
+    h.layer3.forward(ho.layer2.output, ho.layer3);
+    h.layer4.evalLinear(ho.layer3.output, ho.layer4);
+
+    return ho.layer4.linOutput(0) * (100 * 2) / (127 * 64);
 }

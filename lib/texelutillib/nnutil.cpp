@@ -100,3 +100,12 @@ NNUtil::recordToPos(const Record& r, Position& pos, int& searchScore) {
 
     searchScore = r.searchScore;
 }
+
+int
+NNUtil::nPieces(const Record& r) {
+    int np = 2;
+    for (int sq : r.squares)
+        if (sq != -1)
+            np++;
+    return np;
+}

@@ -253,12 +253,14 @@ TEST(UtilTest, nnDataTest) {
     Random rnd;
     fillArray(net.weight1.data, rnd);
     fillArray(net.bias1.data, rnd);
-    fillArray(net.lin2.weight.data, rnd);
-    fillArray(net.lin2.bias.data, rnd);
-    fillArray(net.lin3.weight.data, rnd);
-    fillArray(net.lin3.bias.data, rnd);
-    fillArray(net.lin4.weight.data, rnd);
-    fillArray(net.lin4.bias.data, rnd);
+    for (NetData::Head& h : net.head) {
+        fillArray(h.lin2.weight.data, rnd);
+        fillArray(h.lin2.bias.data, rnd);
+        fillArray(h.lin3.weight.data, rnd);
+        fillArray(h.lin3.bias.data, rnd);
+        fillArray(h.lin4.weight.data, rnd);
+        fillArray(h.lin4.bias.data, rnd);
+    }
 
     std::stringstream ss;
     net.save(ss);

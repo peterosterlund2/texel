@@ -110,23 +110,30 @@ toSparse(const Record& r, std::vector<int>& idxVecW, std::vector<int>& idxVecB) 
 /** Get a batch of training data from ds[beg:end].
  * @param inW, inB: Shape (batchSize, inFeatures). The sparse binary inputs for
  *                  white/black corresponding to the training positions.
+ * @param headIdx   headIdx[i] = i * nHeads + hi[i], where hi[i] is the head
+ *                  to use for position i.
  * @param out:      Shape (batchSize, 1). The corresponding desired outputs
  *                  (position evaluation score). */
 template <typename DataSet>
 static void
 getData(DataSet& ds, size_t beg, size_t end,
-        torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out) {
+        torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& headIdx,
+        torch::Tensor& out) {
     int batchSize = end - beg;
     Record r;
     std::vector<int> idxVec1W; idxVec1W.reserve(batchSize * 30);
     std::vector<int> idxVec1B; idxVec1B.reserve(batchSize * 30);
     std::vector<int> idxVec2;  idxVec2.reserve(batchSize * 30);
+    headIdx = torch::empty({batchSize}, torch::kI64);
+    auto headIdxAcc = headIdx.accessor<S64,1>();
     out = torch::empty({batchSize, 1}, torch::kF32);
     for (int b = 0; b < batchSize; b++) {
         ds.getItem(beg + b, r);
         toSparse(r, idxVec1W, idxVec1B);
         idxVec2.resize(idxVec1W.size(), b);
         out[b][0] = r.searchScore * 1e-2;
+        int hi = NetData::getHeadNo(NNUtil::nPieces(r));
+        headIdxAcc[b] = b * NetData::nHeads + hi;
     }
     int nnz = idxVec1W.size();
 
@@ -152,7 +159,8 @@ public:
 
     /** Get tensor data for the next batch of training data.
      *  @return True if returned data is the last data for the current epoch. */
-    bool getData(torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out);
+    bool getData(torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& headIdx,
+                 torch::Tensor& out);
 
 private:
     void startGetData();
@@ -175,6 +183,7 @@ private:
     struct TensorResult {
         torch::Tensor inW;
         torch::Tensor inB;
+        torch::Tensor headIdx;
         torch::Tensor out;
     };
     ThreadPool<TensorResult> tensorWorker; // Converts a batch from trainDataChunk to tensors
@@ -198,12 +207,14 @@ DataLoader::DataLoader(SplitData& splitData, MemDataSet& validateData, int numEp
 }
 
 bool
-DataLoader::getData(torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& out) {
+DataLoader::getData(torch::Tensor& inW, torch::Tensor& inB, torch::Tensor& headIdx,
+                    torch::Tensor& out) {
     TensorResult r;
     if (!tensorWorker.getResult(r))
         throw ChessError("startGetData() not called");
     inW = r.inW;
     inB = r.inB;
+    headIdx = r.headIdx;
     out = r.out;
 
     beg += batchSize;
@@ -260,7 +271,7 @@ DataLoader::startGetData() {
 
         S64 end = std::min(beg + batchSize, trainDataChunk.getSize());
         TensorResult r;
-        ::getData(*shuffledTrainData, beg, end, r.inW, r.inB, r.out);
+        ::getData(*shuffledTrainData, beg, end, r.inW, r.inB, r.headIdx, r.out);
         return r;
     };
     tensorWorker.addTask(getNextData);
@@ -337,7 +348,8 @@ class Net : public torch::nn::Module {
 public:
     Net();
 
-    torch::Tensor forward(torch::Tensor xW, torch::Tensor xB);
+    torch::Tensor forward(torch::Tensor xW, torch::Tensor xB,
+                          torch::Tensor headIdx);
 
     /** Clamp weights to remain within a range that is compatible
      *  with later quantization. */
@@ -353,6 +365,10 @@ public:
     void quantize(NetData& qNet) const;
 
 private:
+    torch::Tensor fwdAndSelect(torch::nn::Linear lin, torch::Tensor x,
+                               torch::Tensor headIdx) const;
+
+    static constexpr int nHeads = NetData::nHeads;
     torch::nn::Linear lin1 = nullptr; const int n1 = 256;
     torch::nn::Linear lin2 = nullptr; const int n2 = 32;
     torch::nn::Linear lin3 = nullptr; const int n3 = 32;
@@ -361,21 +377,30 @@ private:
 
 Net::Net() {
     lin1 = register_module("lin1", torch::nn::Linear(inFeatures, n1));
-    lin2 = register_module("lin2", torch::nn::Linear(n1*2, n2));
-    lin3 = register_module("lin3", torch::nn::Linear(n2, n3));
-    lin4 = register_module("lin4", torch::nn::Linear(n3, 1));
+    lin2 = register_module("lin2", torch::nn::Linear(n1*2, n2*nHeads));
+    lin3 = register_module("lin3", torch::nn::Linear(n2, n3*nHeads));
+    lin4 = register_module("lin4", torch::nn::Linear(n3, 1*nHeads));
 }
 
 torch::Tensor
-Net::forward(torch::Tensor xW, torch::Tensor xB) {
+Net::forward(torch::Tensor xW, torch::Tensor xB, torch::Tensor idx) {
     xW = torch::clamp(lin1->forward(xW), 0.0f, 1.0f);
     xB = torch::clamp(lin1->forward(xB), 0.0f, 1.0f);
     torch::Tensor x = torch::hstack({xW, xB});
 
-    x = torch::clamp(lin2->forward(x), 0.0f, 1.0f);
-    x = torch::clamp(lin3->forward(x), 0.0f, 1.0f);
-    x = lin4->forward(x);
+    x = torch::clamp(fwdAndSelect(lin2, x, idx), 0.0f, 1.0f);
+    x = torch::clamp(fwdAndSelect(lin3, x, idx), 0.0f, 1.0f);
+    x = fwdAndSelect(lin4, x, idx);
     x *= 2;
+    return x;
+}
+
+torch::Tensor
+Net::fwdAndSelect(torch::nn::Linear lin, torch::Tensor x, torch::Tensor headIdx) const {
+    using namespace torch::indexing;
+    x = lin->forward(x);
+    x = x.view({-1, x.size(1)/nHeads});
+    x = x.index({headIdx, Slice()});
     return x;
 }
 
@@ -425,7 +450,7 @@ Net::printWeights(int epoch) const {
     auto printTensor = [](const std::string& filename, torch::Tensor x) {
         x = x.to(torch::kCPU);
         if (x.dim() == 1) {
-            x = x.reshape({x.size(0), 1});
+            x = x.view({x.size(0), 1});
         } else if (x.dim() == 2) {
             x = x.t();
         }
@@ -462,7 +487,7 @@ Net::printWeights(int epoch) const {
 static std::vector<float>
 toVec(torch::Tensor x) {
     if (x.dim() == 1)
-        x = x.reshape({x.size(0), 1});
+        x = x.view({x.size(0), 1});
     const int M = x.size(0);
     const int N = x.size(1);
     auto acc = x.accessor<float,2>();
@@ -524,20 +549,25 @@ Net::quantize(NetData& qNet) const {
     data = toVec(lin1B);
     scaleCopy(data, &qNet.bias1.data[0], l1Scale*127, l1Scale/2);
 
-    data = toVec(lin2->weight);
-    scaleCopy(data, &qNet.lin2.weight.data[0], 64, 0);
-    data = toVec(lin2->bias);
-    scaleCopy(data, &qNet.lin2.bias.data[0], 64*127, 32);
+    for (int hi = 0; hi < nHeads; hi++) {
+        NetData::Head& qHead = qNet.head[hi];
 
-    data = toVec(lin3->weight);
-    scaleCopy(data, &qNet.lin3.weight.data[0], 64, 0);
-    data = toVec(lin3->bias);
-    scaleCopy(data, &qNet.lin3.bias.data[0], 64*127, 32);
+        data = toVec(lin2->weight.narrow(0, hi * n2, n2));
+        scaleCopy(data, &qHead.lin2.weight.data[0], 64, 0);
+        data = toVec(lin2->bias.narrow(0, hi * n2, n2));
+        scaleCopy(data, &qHead.lin2.bias.data[0], 64*127, 32);
 
-    data = toVec(lin4->weight);
-    scaleCopy(data, &qNet.lin4.weight.data[0], 64, 0);
-    data = toVec(lin4->bias);
-    scaleCopy(data, &qNet.lin4.bias.data[0], 64*127, 32);
+        data = toVec(lin3->weight.narrow(0, hi * n3, n3));
+        scaleCopy(data, &qHead.lin3.weight.data[0], 64, 0);
+        data = toVec(lin3->bias.narrow(0, hi * n3, n3));
+        scaleCopy(data, &qHead.lin3.bias.data[0], 64*127, 32);
+
+        const int n4 = 1;
+        data = toVec(lin4->weight.narrow(0, hi * n4, n4));
+        scaleCopy(data, &qHead.lin4.weight.data[0], 64, 0);
+        data = toVec(lin4->bias.narrow(0, hi * n4, n4));
+        scaleCopy(data, &qHead.lin4.bias.data[0], 64*127, 32);
+    }
 }
 
 // ------------------------------------------------------------------------------
@@ -647,7 +677,7 @@ train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64
     std::cout << "nValidate: " << nValidate << " (" << (nValidate / batchSize) << " batches)" << std::endl;
 
     double lr = initialLR;
-    auto opts = torch::optim::AdamOptions(lr).weight_decay(1e-6);
+    auto opts = torch::optim::AdamOptions(lr).weight_decay(2.5e-7);
     torch::optim::Adam optimizer(net.parameters(), opts);
     net.printWeights(0);
     for (int epoch = 1; epoch <= nEpochs; epoch++) {
@@ -656,15 +686,16 @@ train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64
         torch::Tensor lossSum = torch::zeros({}, torch::kF32).to(dev);
         int lossNum = 0;
         for (size_t batch = 0; ; batch++) {
-            torch::Tensor inputW, inputB, target;
-            bool lastInEpoch = loader.getData(inputW, inputB, target);
+            torch::Tensor inputW, inputB, headIdx, target;
+            bool lastInEpoch = loader.getData(inputW, inputB, headIdx, target);
 
-            inputW = inputW.to(dev);
-            inputB = inputB.to(dev);
-            target = target.to(dev);
+            inputW  = inputW.to(dev);
+            inputB  = inputB.to(dev);
+            headIdx = headIdx.to(dev);
+            target  = target.to(dev);
 
             optimizer.zero_grad();
-            torch::Tensor output = net.forward(inputW, inputB);
+            torch::Tensor output = net.forward(inputW, inputB, headIdx);
 
             torch::Tensor loss = mse_loss(toProb(output), toProb(target));
             loss.backward();
@@ -694,14 +725,15 @@ train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64
                 for (size_t batch = 0, beg = 0; beg < nValidate; batch++, beg += batchSize) {
                     size_t end = std::min(beg + batchSize, nValidate);
 
-                    torch::Tensor inputW, inputB;
+                    torch::Tensor inputW, inputB, headIdx;
                     torch::Tensor target;
-                    getData(validateData, beg, end, inputW, inputB, target);
-                    inputW = inputW.to(dev);
-                    inputB = inputB.to(dev);
-                    target = target.to(dev);
+                    getData(validateData, beg, end, inputW, inputB, headIdx, target);
+                    inputW  = inputW.to(dev);
+                    inputB  = inputB.to(dev);
+                    headIdx = headIdx.to(dev);
+                    target  = target.to(dev);
 
-                    torch::Tensor output = net.forward(inputW, inputB);
+                    torch::Tensor output = net.forward(inputW, inputB, headIdx);
                     torch::Tensor loss = mse_loss(toProb(output), toProb(target));
                     lossSum += loss;
                     lossNum += 1;
@@ -804,20 +836,25 @@ printStats(const NetData& net) {
 
     int minV, maxV;
 
-    matMinMax(net.lin2.weight, minV, maxV);
-    std::cout << "L2 weights : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
-    vecMinMax(net.lin2.bias, minV, maxV);
-    std::cout << "L2 bias    : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+    for (int hi = 0; hi < NetData::nHeads; hi++) {
+        std::cout << "Head " << hi << std::endl;
+        const NetData::Head& head = net.head[hi];
 
-    matMinMax(net.lin3.weight, minV, maxV);
-    std::cout << "L3 weights : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
-    vecMinMax(net.lin3.bias, minV, maxV);
-    std::cout << "L3 bias    : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+        matMinMax(head.lin2.weight, minV, maxV);
+        std::cout << "L2 weights : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+        vecMinMax(head.lin2.bias, minV, maxV);
+        std::cout << "L2 bias    : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
 
-    matMinMax(net.lin4.weight, minV, maxV);
-    std::cout << "L4 weights : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
-    vecMinMax(net.lin4.bias, minV, maxV);
-    std::cout << "L4 bias    : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+        matMinMax(head.lin3.weight, minV, maxV);
+        std::cout << "L3 weights : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+        vecMinMax(head.lin3.bias, minV, maxV);
+        std::cout << "L3 bias    : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+
+        matMinMax(head.lin4.weight, minV, maxV);
+        std::cout << "L4 weights : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+        vecMinMax(head.lin4.bias, minV, maxV);
+        std::cout << "L4 bias    : " << std::setw(6) << minV << std::setw(6) << maxV << std::endl;
+    }
 }
 
 /** Permute first layer features to make the first layer output sparse. */
@@ -1029,6 +1066,7 @@ eval(const std::string& modelFile, const std::string& fen) {
         const int nnz = idxVecW.size();
 
         torch::Tensor inW, inB;
+        torch::Tensor headIdx = torch::empty({1}, torch::kI64);
 
         for (int c = 0; c < 2; c++) {
             torch::Tensor indices = torch::empty({2, nnz}, torch::kI64);
@@ -1040,8 +1078,9 @@ eval(const std::string& modelFile, const std::string& fen) {
             torch::Tensor values = torch::ones({nnz}, torch::kF32);
             (c == 0 ? inW : inB) = sparse_coo_tensor(indices, values, {1, inFeatures});
         }
+        headIdx.index_put_({0}, NetData::getHeadNo(pos.nPieces()));
 
-        torch::Tensor out = net.forward(inW, inB);
+        torch::Tensor out = net.forward(inW, inB, headIdx);
         double val = out.item<double>();
 
         qEval->connectPosition(&pos);
