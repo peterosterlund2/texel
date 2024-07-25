@@ -86,10 +86,10 @@ Evaluate::evalPos() {
     int score = nnEval.eval();
     if (!posP->isWhiteMove())
         score = -score;
-    if (print) std::cout << "info string eval nn     :" << score << std::endl;
+    if (print) std::cout << "info string eval nn      :" << score << std::endl;
 
     score += materialScore(print);
-    if (print) std::cout << "info string eval mtrl   :" << score << std::endl;
+    if (print) std::cout << "info string eval mtrl    :" << score << std::endl;
 
 #if 0
     pawnBonus();
@@ -97,7 +97,7 @@ Evaluate::evalPos() {
 
     if (mhd->endGame)
         score = EndGameEval::endGameEval<true>(*posP, score);
-    if (print) std::cout << "info string eval endgame:" << score << std::endl;
+    if (print) std::cout << "info string eval endgame :" << score << std::endl;
 
     if ((whiteContempt != 0) && !mhd->endGame) {
         int mtrlPawns = posP->wMtrlPawns() + posP->bMtrlPawns();
@@ -105,16 +105,16 @@ Evaluate::evalPos() {
         int hiMtrl = (rV + bV*2 + nV*2) * 2;
         int piecePlay = interpolate(mtrl - mtrlPawns, 0, 64, hiMtrl, 128);
         score += whiteContempt * piecePlay / 128;
-        if (print) std::cout << "info string eval contemp:" << score << ' ' << piecePlay << std::endl;
+        if (print) std::cout << "info string eval contempt:" << score << ' ' << piecePlay << std::endl;
     }
 
     if (posP->pieceTypeBB(Piece::WPAWN, Piece::BPAWN)) {
         int hmc = clamp(posP->getHalfMoveClock() / 10, 0, 9);
         score = score * halfMoveFactor[hmc] / 128;
     }
-#if 0
     if (print) std::cout << "info string eval halfmove:" << score << std::endl;
 
+#if 0
     if (score > 0) {
         int nStale = BitBoard::bitCount(BitBoard::southFill(phd->stalePawns & posP->pieceTypeBB(Piece::WPAWN)) & 0xff);
         score = score * stalePawnFactor[nStale] / 128;

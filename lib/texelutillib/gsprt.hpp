@@ -86,7 +86,7 @@ public:
 
     /** Convert a relative elo value to an expected game score in [0,1]. */
     static double elo2Score(double elo) { return 1 / (1 + std::pow(10, -elo / 400)); }
-    /** Convert an exepcted game score in [0,1] to a relative elo value. */
+    /** Convert an expected game score in [0,1] to a relative elo value. */
     static double score2Elo(double score) { return -400 * std::log10(1 / score - 1); }
 
 private:
