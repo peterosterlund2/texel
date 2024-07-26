@@ -1246,7 +1246,6 @@ ChessTool::printParams() {
     std::ostream& os = std::cout;
 
     printTable(halfMoveFactor, "halfMoveFactor", os);
-    printTable(stalePawnFactor, "stalePawnFactor", os);
 
     os << "pV : " << pV << std::endl;
     os << "nV : " << nV << std::endl;
@@ -1345,7 +1344,6 @@ ChessTool::patchParams(const std::string& directory) {
     std::vector<std::string> hppFile = readFile(directory + "/parameters.hpp");
 
     replaceTable(halfMoveFactor, "halfMoveFactor", cppFile);
-    replaceTable(stalePawnFactor, "stalePawnFactor", cppFile);
 
     replaceValue(pV, "pV", hppFile);
     replaceValue(nV, "nV", hppFile);

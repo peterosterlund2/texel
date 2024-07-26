@@ -126,11 +126,6 @@ ParamTable<10> halfMoveFactor { 0, 192, useUciParam,
     {  0,  0,  0,  0,  1,  2,  3,  4,  5,  6 }
 };
 
-ParamTable<9> stalePawnFactor { 0, 192, useUciParam,
-    {114,124,129,129,132,126,106, 73, 41 },
-    {  1,  2,  3,  4,  5,  6,  7,  8,  9 }
-};
-
 Parameters::Parameters() {
     std::string about = ComputerPlayer::engineName +
                         " by Peter Osterlund, see https://github.com/peterosterlund2/texel";
@@ -187,7 +182,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(krpknBonus, "RookPawnVsKnightBonus");
 
     halfMoveFactor.registerParams("HalfMoveFactor", *this);
-    stalePawnFactor.registerParams("StalePawnFactor", *this);
 
     // Search parameters
     REGISTER_PARAM(aspirationWindow, "AspirationWindow");

@@ -56,7 +56,6 @@ public:
     static void testUciParam();
     static void testUciParamTable();
     static void testSwindleScore();
-    static void testStalePawns();
 
 private:
     static int getNContactChecks(const std::string& fen);

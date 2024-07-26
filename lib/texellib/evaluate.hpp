@@ -40,13 +40,6 @@ class EvaluateTest;
 class Evaluate {
     friend class EvaluateTest;
 private:
-    struct PawnHashData {
-        PawnHashData();
-        U64 key;
-        S16 current;        // For hash replacement policy
-        U64 stalePawns;     // Pawns that can not be used for "pawn breaks"
-    };
-
     struct MaterialHashData {
         MaterialHashData();
         int id;
@@ -62,7 +55,6 @@ private:
 public:
     struct EvalHashTables {
         EvalHashTables();
-        std::vector<PawnHashData> pawnHash;
         std::vector<MaterialHashData> materialHash;
 
         using EvalHashType = std::array<EvalHashData,(1<<16)>;
@@ -129,20 +121,8 @@ private:
     /** Compute material score. */
     void computeMaterialScore(MaterialHashData& mhd, bool print) const;
 
-    PawnHashData& getPawnHashEntry(U64 key);
-    void pawnBonus();
-
-    /** Compute set of pawns that can not participate in "pawn breaks". */
-    static U64 computeStalePawns(const Position& pos);
-
-    /** Compute pawn hash data for pos. */
-    void computePawnHashData(PawnHashData& ph);
-
     /** Holds the position to evaluate. */
     const Position* posP = nullptr;
-
-    std::vector<PawnHashData>& pawnHash;
-    const PawnHashData* phd;
 
     std::vector<MaterialHashData>& materialHash;
     const MaterialHashData* mhd;
@@ -154,12 +134,6 @@ private:
     int whiteContempt; // Assume white is this many centipawns stronger than black
 };
 
-
-inline
-Evaluate::PawnHashData::PawnHashData()
-    : key((U64)-1), // Non-zero to avoid collision for positions with no pawns
-      current(0) {
-}
 
 inline
 Evaluate::MaterialHashData::MaterialHashData()
@@ -217,31 +191,6 @@ Evaluate::materialScore(bool print) {
         computeMaterialScore(newMhd, print);
     mhd = &newMhd;
     return newMhd.score;
-}
-
-inline Evaluate::PawnHashData&
-Evaluate::getPawnHashEntry(U64 key) {
-    int e0 = (int)key & (pawnHash.size() - 2);
-    int e1 = e0 + 1;
-    if (pawnHash[e0].key == key) {
-        pawnHash[e0].current = 1;
-        pawnHash[e1].current = 0;
-        return pawnHash[e0];
-    }
-    if (pawnHash[e1].key == key) {
-        pawnHash[e1].current = 1;
-        pawnHash[e0].current = 0;
-        return pawnHash[e1];
-    }
-    if (pawnHash[e0].current) {
-        pawnHash[e1].current = 1;
-        pawnHash[e0].current = 0;
-        return pawnHash[e1];
-    } else {
-        pawnHash[e0].current = 1;
-        pawnHash[e1].current = 0;
-        return pawnHash[e0];
-    }
 }
 
 inline Evaluate::EvalHashData&

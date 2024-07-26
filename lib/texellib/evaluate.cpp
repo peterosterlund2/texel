@@ -46,9 +46,7 @@ INCBIN_EXTERN(NNData);
 // const unsigned int gNNDataSize;
 
 Evaluate::Evaluate(EvalHashTables& et)
-    : pawnHash(et.pawnHash),
-      phd(nullptr),
-      materialHash(et.materialHash),
+    : materialHash(et.materialHash),
       mhd(nullptr),
       evalHash(et.evalHash),
       nnEval(*et.nnEval),
@@ -91,10 +89,6 @@ Evaluate::evalPos() {
     score += materialScore(print);
     if (print) std::cout << "info string eval mtrl    :" << score << std::endl;
 
-#if 0
-    pawnBonus();
-#endif
-
     if (mhd->endGame)
         score = EndGameEval::endGameEval<true>(*posP, score);
     if (print) std::cout << "info string eval endgame :" << score << std::endl;
@@ -113,17 +107,6 @@ Evaluate::evalPos() {
         score = score * halfMoveFactor[hmc] / 128;
     }
     if (print) std::cout << "info string eval halfmove:" << score << std::endl;
-
-#if 0
-    if (score > 0) {
-        int nStale = BitBoard::bitCount(BitBoard::southFill(phd->stalePawns & posP->pieceTypeBB(Piece::WPAWN)) & 0xff);
-        score = score * stalePawnFactor[nStale] / 128;
-    } else if (score < 0) {
-        int nStale = BitBoard::bitCount(BitBoard::southFill(phd->stalePawns & posP->pieceTypeBB(Piece::BPAWN)) & 0xff);
-        score = score * stalePawnFactor[nStale] / 128;
-    }
-    if (print) std::cout << "info string eval staleP :" << score << std::endl;
-#endif
 
     if (!posP->isWhiteMove())
         score = -score;
@@ -167,107 +150,12 @@ Evaluate::computeMaterialScore(MaterialHashData& mhd, bool print) const {
     mhd.endGame = EndGameEval::endGameEval<false>(*posP, 0);
 }
 
-void
-Evaluate::pawnBonus() {
-    U64 key = posP->pawnZobristHash();
-    PawnHashData& phd = getPawnHashEntry(key);
-    if (phd.key != key)
-        computePawnHashData(phd);
-    this->phd = &phd;
-}
-
-/** Compute subset of squares given by mask that white is in control over, ie
- *  squares that have at least as many white pawn guards as black has pawn
- *  attacks on the square. */
-static inline U64
-wPawnCtrlSquares(U64 mask, U64 wPawns, U64 bPawns) {
-    U64 wLAtks = (wPawns & BitBoard::maskBToHFiles) << 7;
-    U64 wRAtks = (wPawns & BitBoard::maskAToGFiles) << 9;
-    U64 bLAtks = (bPawns & BitBoard::maskBToHFiles) >> 9;
-    U64 bRAtks = (bPawns & BitBoard::maskAToGFiles) >> 7;
-    return ((mask & ~bLAtks & ~bRAtks) |
-            (mask & (bLAtks ^ bRAtks) & (wLAtks | wRAtks)) |
-            (mask & wLAtks & wRAtks));
-}
-
-static inline U64
-bPawnCtrlSquares(U64 mask, U64 wPawns, U64 bPawns) {
-    U64 wLAtks = (wPawns & BitBoard::maskBToHFiles) << 7;
-    U64 wRAtks = (wPawns & BitBoard::maskAToGFiles) << 9;
-    U64 bLAtks = (bPawns & BitBoard::maskBToHFiles) >> 9;
-    U64 bRAtks = (bPawns & BitBoard::maskAToGFiles) >> 7;
-    return ((mask & ~wLAtks & ~wRAtks) |
-            (mask & (wLAtks ^ wRAtks) & (bLAtks | bRAtks)) |
-            (mask & bLAtks & bRAtks));
-}
-
-U64
-Evaluate::computeStalePawns(const Position& pos) {
-    const U64 wPawns = pos.pieceTypeBB(Piece::WPAWN);
-    const U64 bPawns = pos.pieceTypeBB(Piece::BPAWN);
-
-    // Compute stale white pawns
-    U64 wStale;
-    {
-        U64 wPawnCtrl = wPawnCtrlSquares(wPawns, wPawns, bPawns);
-        for (int i = 0; i < 4; i++)
-            wPawnCtrl |= wPawnCtrlSquares((wPawnCtrl << 8) & ~bPawns, wPawnCtrl, bPawns);
-        wPawnCtrl &= ~BitBoard::maskRow8;
-        U64 wPawnCtrlLAtk = (wPawnCtrl & BitBoard::maskBToHFiles) << 7;
-        U64 wPawnCtrlRAtk = (wPawnCtrl & BitBoard::maskAToGFiles) << 9;
-
-        U64 bLAtks = (bPawns & BitBoard::maskBToHFiles) >> 9;
-        U64 bRAtks = (bPawns & BitBoard::maskAToGFiles) >> 7;
-        U64 wActive = ((bLAtks ^ bRAtks) |
-                       (bLAtks & bRAtks & (wPawnCtrlLAtk | wPawnCtrlRAtk)));
-        for (int i = 0; i < 4; i++)
-            wActive |= (wActive & ~(wPawns | bPawns)) >> 8;
-        wStale = wPawns & ~wActive;
-    }
-
-    // Compute stale black pawns
-    U64 bStale;
-    {
-        U64 bPawnCtrl = bPawnCtrlSquares(bPawns, wPawns, bPawns);
-        for (int i = 0; i < 4; i++)
-            bPawnCtrl |= bPawnCtrlSquares((bPawnCtrl >> 8) & ~wPawns, wPawns, bPawnCtrl);
-        bPawnCtrl &= ~BitBoard::maskRow1;
-        U64 bPawnCtrlLAtk = (bPawnCtrl & BitBoard::maskBToHFiles) >> 9;
-        U64 bPawnCtrlRAtk = (bPawnCtrl & BitBoard::maskAToGFiles) >> 7;
-
-        U64 wLAtks = (wPawns & BitBoard::maskBToHFiles) << 7;
-        U64 wRAtks = (wPawns & BitBoard::maskAToGFiles) << 9;
-        U64 bActive = ((wLAtks ^ wRAtks) |
-                       (wLAtks & wRAtks & (bPawnCtrlLAtk | bPawnCtrlRAtk)));
-        for (int i = 0; i < 4; i++)
-            bActive |= (bActive & ~(wPawns | bPawns)) << 8;
-        bStale = bPawns & ~bActive;
-    }
-
-    return wStale | bStale;
-}
-
-void
-Evaluate::computePawnHashData(PawnHashData& ph) {
-    const U64 wPawns = posP->pieceTypeBB(Piece::WPAWN);
-    const U64 bPawns = posP->pieceTypeBB(Piece::BPAWN);
-    U64 wPawnAttacks = BitBoard::wPawnAttacksMask(posP->pieceTypeBB(Piece::WPAWN));
-    U64 bPawnAttacks = BitBoard::bPawnAttacksMask(posP->pieceTypeBB(Piece::BPAWN));
-    U64 passedPawnsW = wPawns & ~BitBoard::southFill(bPawns | bPawnAttacks | (wPawns >> 8));
-    U64 passedPawnsB = bPawns & ~BitBoard::northFill(wPawns | wPawnAttacks | (bPawns << 8));
-    U64 stalePawns = computeStalePawns(*posP) & ~passedPawnsW & ~passedPawnsB;
-
-    ph.key = posP->pawnZobristHash();
-    ph.stalePawns = stalePawns;
-}
-
 std::unique_ptr<Evaluate::EvalHashTables>
 Evaluate::getEvalHashTables() {
     return make_unique<EvalHashTables>();
 }
 
 Evaluate::EvalHashTables::EvalHashTables() {
-    pawnHash.resize(1 << 16);
     materialHash.resize(1 << 14);
     nnEval = NNEvaluator::create(initNetData());
 }

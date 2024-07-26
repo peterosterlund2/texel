@@ -404,7 +404,6 @@ DECLARE_PARAM(krpkbPenalty,        69,  0, 128, useUciParam);
 DECLARE_PARAM(krpknBonus,          149, 0, 400, useUciParam);
 
 extern ParamTable<10> halfMoveFactor;
-extern ParamTable<9> stalePawnFactor;
 
 
 // Search parameters
