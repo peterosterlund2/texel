@@ -279,40 +279,6 @@ DataLoader::startGetData() {
 
 // ------------------------------------------------------------------------------
 
-/** A subset of the base data set. */
-template <typename Base>
-class SubDataSet {
-public:
-    SubDataSet(const Base& baseSet, U64 beg, U64 end);
-
-    S64 getSize() const;
-    void getItem(S64 idx, Record& r);
-
-private:
-    Base baseSet;
-    const U64 beg;
-    const U64 end;
-};
-
-template <typename Base>
-SubDataSet<Base>::SubDataSet(const Base& baseSet, U64 beg, U64 end)
-    : baseSet(baseSet), beg(beg), end(end) {
-}
-
-template <typename Base>
-inline S64
-SubDataSet<Base>::getSize() const {
-    return end - beg;
-}
-
-template <typename Base>
-inline void
-SubDataSet<Base>::getItem(S64 idx, Record& r) {
-    baseSet.getItem(beg + idx, r);
-}
-
-// ------------------------------------------------------------------------------
-
 /** Write the first "nPos" positions from "ds" to "outFile". */
 template <typename DataSet>
 static void
