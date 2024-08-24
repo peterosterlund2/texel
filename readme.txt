@@ -108,8 +108,9 @@ MaxNPS
 
 Threads
 
-  Texel can use multiple CPUs and cores using threads. Up to 64 threads are
-  supported.
+  Texel can use multiple CPUs and cores using threads. For best performance,
+  don't set this value higher than the number of cores or hyperthreads in the
+  computer.
 
 MultiPV
 
