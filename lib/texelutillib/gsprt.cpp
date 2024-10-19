@@ -200,7 +200,7 @@ Gsprt::computeBestLL(const DblVec& a, double s, const DblVec& f, DblVec& p) cons
 //            std::cout << "bestLL: " << bestLL << " step: " << step
 //                      << " stepSize: " << stepSize << " p: " << p << std::endl;
         } else {
-            std::cout << "Converged at iteration: " << step << std::endl;
+//            std::cout << "Converged at iteration: " << step << std::endl;
             converged = true;
             break;
         }
