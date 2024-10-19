@@ -30,7 +30,7 @@
 #include "position.hpp"
 
 /**
- * Implements the relative history heuristic.
+ * Implements the relative history heuristic and the counter move heuristic.
  */
 class History {
 public:
@@ -43,10 +43,14 @@ public:
     void reScale();
 
     /** Record move as a success. */
-    void addSuccess(const Position& pos, const Move& m, int depth);
+    void addSuccess(const Position& pos, const Move& prevM, const Move& m, int depth);
 
     /** Record move as a failure. */
     void addFail(const Position& pos, const Move& m, int depth);
+
+    /** Get the counter move corresponding to "prevM",
+     *  or empty move if no counter move has been stored. */
+    Move getCounterMove(const Position& pos, const Move& prevM) const;
 
     /** Get a score between 0 and 49, depending of the success/fail ratio of the move. */
     int getHistScore(const Position& pos, const Move& m) const;
@@ -69,6 +73,7 @@ private:
         U16 scaledScore; // histScore * scale
     };
     SqTbl<HTEntry> ht[Piece::nPieceTypes];
+    SqTbl<U16> cm[Piece::nPieceTypes];
 };
 
 
@@ -83,33 +88,44 @@ History::depthWeight(int depth) {
 }
 
 inline void
-History::addSuccess(const Position& pos, const Move& m, int depth) {
+History::addSuccess(const Position& pos, const Move& prevM, const Move& m, int depth) {
     int cnt = depthWeight(depth);
-    if (cnt != 0) {
-        int p = pos.getPiece(m.from());
-        HTEntry& e = ht[p][m.to()];
-        int fpHistVal = e.scaledScore;
-        int sum = e.nValues;
-        fpHistVal = (fpHistVal * sum + (maxVal * scale - 1) * cnt) / (sum + cnt);
-        sum = std::min(sum + cnt, maxSum);
-        e.nValues = sum;
-        e.scaledScore = fpHistVal;
-    }
+    if (cnt == 0)
+        return;
+
+    int p = pos.getPiece(m.from());
+    HTEntry& e = ht[p][m.to()];
+    int fpHistVal = e.scaledScore;
+    int sum = e.nValues;
+    fpHistVal = (fpHistVal * sum + (maxVal * scale - 1) * cnt) / (sum + cnt);
+    sum = std::min(sum + cnt, maxSum);
+    e.nValues = sum;
+    e.scaledScore = fpHistVal;
+
+    cm[pos.getPiece(prevM.to())][prevM.to()] = m.getCompressedMove();
 }
 
 inline void
 History::addFail(const Position& pos, const Move& m, int depth) {
     int cnt = depthWeight(depth);
-    if (cnt != 0) {
-        int p = pos.getPiece(m.from());
-        HTEntry& e = ht[p][m.to()];
-        int fpHistVal = e.scaledScore;
-        int sum = e.nValues;
-        fpHistVal = fpHistVal * sum / (sum + cnt);
-        sum = std::min(sum + cnt, maxSum);
-        e.nValues = sum;
-        e.scaledScore = fpHistVal;
-    }
+    if (cnt == 0)
+        return;
+
+    int p = pos.getPiece(m.from());
+    HTEntry& e = ht[p][m.to()];
+    int fpHistVal = e.scaledScore;
+    int sum = e.nValues;
+    fpHistVal = fpHistVal * sum / (sum + cnt);
+    sum = std::min(sum + cnt, maxSum);
+    e.nValues = sum;
+    e.scaledScore = fpHistVal;
+}
+
+inline Move
+History::getCounterMove(const Position& pos, const Move& prevM) const {
+    Move ret;
+    ret.setFromCompressed(cm[pos.getPiece(prevM.to())][prevM.to()]);
+    return ret;
 }
 
 inline int

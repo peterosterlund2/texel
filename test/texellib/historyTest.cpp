@@ -35,12 +35,13 @@ TEST(HistoryTest, testGetHistScore) {
     Move m1 = TextIO::stringToMove(pos, "e4");
     Move m2 = TextIO::stringToMove(pos, "d4");
     ASSERT_EQ(0, hs.getHistScore(pos, m1));
+    Move emptyM;
 
-    hs.addSuccess(pos, m1, 1);
+    hs.addSuccess(pos, emptyM, m1, 1);
     ASSERT_EQ(1 * 49 / 1, hs.getHistScore(pos, m1));
     ASSERT_EQ(0, hs.getHistScore(pos, m2));
 
-    hs.addSuccess(pos, m1, 1);
+    hs.addSuccess(pos, emptyM, m1, 1);
     ASSERT_EQ(1 * 49 / 1, hs.getHistScore(pos, m1));
     ASSERT_EQ(0, hs.getHistScore(pos, m2));
 
@@ -52,7 +53,24 @@ TEST(HistoryTest, testGetHistScore) {
     ASSERT_EQ(2 * 49 / 4, hs.getHistScore(pos, m1));
     ASSERT_EQ(0, hs.getHistScore(pos, m2));
 
-    hs.addSuccess(pos, m2, 1);
+    hs.addSuccess(pos, emptyM, m2, 1);
     ASSERT_EQ(2 * 49 / 4, hs.getHistScore(pos, m1));
     ASSERT_EQ(1 * 49 / 1, hs.getHistScore(pos, m2));
+}
+
+TEST(HistoryTest, testGetCounterMove) {
+    Position pos = TextIO::readFEN(TextIO::startPosFEN);
+    UndoInfo ui;
+    Move e4(TextIO::stringToMove(pos, "e4"));
+    Move d4(TextIO::stringToMove(pos, "d4"));
+    Move empty;
+
+    pos.makeMove(e4, ui);
+    Move e5(TextIO::stringToMove(pos, "e5"));
+
+    History hs;
+    ASSERT_EQ(empty, hs.getCounterMove(pos, e4));
+
+    hs.addSuccess(pos, e4, e5, 1);
+    ASSERT_EQ(e5, hs.getCounterMove(pos, e4));
 }

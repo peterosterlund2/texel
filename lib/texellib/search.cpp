@@ -1003,7 +1003,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
             if (alpha >= beta) {
                 if (pos.getPiece(m.to()) == Piece::EMPTY) {
                     kt.addKiller(ply, m);
-                    ht.addSuccess(pos, m, depth);
+                    const Move& prevMove = searchTreeInfo[ply-1].currentMove;
+                    ht.addSuccess(pos, prevMove, m, depth);
                     for (int mi2 = mi - 1; mi2 >= 0; mi2--) {
                         Move m2 = moves[mi2];
                         if (pos.getPiece(m2.to()) == Piece::EMPTY)
@@ -1553,6 +1554,8 @@ Search::SEE(Position& pos, const Move& m, int alpha, int beta) {
 
 void
 Search::scoreMoveList(MoveList& moves, int ply, int startIdx) {
+    Move cm;
+    bool cmComputed = false;
     for (int i = startIdx; i < moves.size; i++) {
         Move& m = moves[i];
         bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY) || (m.promoteTo() != Piece::EMPTY);
@@ -1572,10 +1575,19 @@ Search::scoreMoveList(MoveList& moves, int ply, int startIdx) {
         } else {
             int ks = kt.getKillerScore(ply, m);
             if (ks > 0) {
-                score += ks + 50;
+                score += ks + 60;
             } else {
-                int hs = ht.getHistScore(pos, m);
-                score += hs;
+                if (!cmComputed) {
+                    if (ply > 0)
+                        cm = ht.getCounterMove(pos, searchTreeInfo[ply - 1].currentMove);
+                    cmComputed = true;
+                }
+                if (cm == m) {
+                    score = 50;
+                } else {
+                    int hs = ht.getHistScore(pos, m);
+                    score += hs;
+                }
             }
         }
         m.setScore(score);

@@ -34,10 +34,12 @@ int History::depthTable[] = {
 
 void
 History::init() {
+    U16 empty = Move().getCompressedMove();
     for (int p = 0; p < Piece::nPieceTypes; p++) {
         for (Square sq : AllSquares()) {
             ht[p][sq].nValues = 0;
             ht[p][sq].scaledScore = 0;
+            cm[p][sq] = empty;
         }
     }
 }
