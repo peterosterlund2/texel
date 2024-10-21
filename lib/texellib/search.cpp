@@ -828,6 +828,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
         sti2.nodeIdx = savedNodeIdx2;
         if (singScore <= newBeta-1)
             singularExtend = true;
+        else if (newBeta >= beta)
+            return logAndReturn(newBeta, TType::T_GE);
     }
 
     sti.evalScore = evalScore;
