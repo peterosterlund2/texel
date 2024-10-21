@@ -818,7 +818,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
         const S64 savedNodeIdx = sti.nodeIdx;
         sti.singularMove = hashMove;
         int newDepth = depth / 2;
-        int newBeta = ent.getScore(ply) - depth * 2;
+        int newBeta = ent.getScore(ply) - depth;
         int singScore = negaScout(tb, newBeta-1, newBeta, ply, newDepth,
                                   recaptureSquare, inCheck);
         sti.singularMove.setMove(A1,A1,0,0);
