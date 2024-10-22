@@ -344,17 +344,13 @@ inline bool
 Search::passedPawnPush(const Position& pos, const Move& m) {
     int p = pos.getPiece(m.from());
     if (pos.isWhiteMove()) {
-        if (p != Piece::WPAWN)
+        if (p != Piece::WPAWN || m.to().asInt() < A6)
             return false;
-        if ((BitBoard::wPawnBlockerMask(m.to()) & pos.pieceTypeBB(Piece::BPAWN)) != 0)
-            return false;
-        return m.to().asInt() >= A6;
+        return (BitBoard::wPawnBlockerMask(m.to()) & pos.pieceTypeBB(Piece::BPAWN)) == 0;
     } else {
-        if (p != Piece::BPAWN)
+        if (p != Piece::BPAWN || m.to().asInt() > H3)
             return false;
-        if ((BitBoard::bPawnBlockerMask(m.to()) & pos.pieceTypeBB(Piece::WPAWN)) != 0)
-            return false;
-        return m.to().asInt() <= H3;
+        return (BitBoard::bPawnBlockerMask(m.to()) & pos.pieceTypeBB(Piece::WPAWN)) == 0;
     }
 }
 
