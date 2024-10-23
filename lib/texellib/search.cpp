@@ -914,12 +914,12 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
                     if (!MoveGen::isLegal(pos, m, inCheck))
                         continue;
                 }
-                int extend = givesCheck && ((depth <= 2) || !negSEE(m)) ? 1 : getMoveExtend(m, recaptureSquare);
+                int extend = givesCheck && ((depth <= 1) || !negSEE(m)) ? 1 : getMoveExtend(m, recaptureSquare);
                 if (singularExtend && (mi == 0))
                     extend = 1;
                 int lmr = 0;
                 if (pass == 0) {
-                    if ((depth >= 2) && mayReduce && (extend == 0) && !passedPawnPush(pos, m)) {
+                    if ((depth >= 2) && mayReduce && !passedPawnPush(pos, m)) {
                         lmrCount++;
                         if ((lmrCount > lmrMoveCountLimit2) && (depth >= 5) && !isCapture) {
                             lmr = 3;
