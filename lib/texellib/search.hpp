@@ -48,7 +48,7 @@ class History;
 class KillerTable;
 
 
-/** Implements the NegaScout search algorithm. */
+/** Implements the recursive search algorithm. */
 class Search {
     friend class SearchTest;
     friend class ChessTool;
@@ -124,11 +124,11 @@ public:
      * @return Score for the side to make a move, in position given by "pos".
      */
     template <bool tb>
-    int negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquare,
-                  const bool inCheck);
-    int negaScout(bool tb,
-                  int alpha, int beta, int ply, int depth, Square recaptureSquare,
-                  const bool inCheck);
+    int search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
+               const bool inCheck);
+    int search(bool tb,
+               int alpha, int beta, int ply, int depth, Square recaptureSquare,
+               const bool inCheck);
 
     /** Compute extension depth for a move. */
     int getMoveExtend(const Move& m, Square recaptureSquare);
@@ -167,7 +167,7 @@ private:
     void init(const Position& pos0, const std::vector<U64>& posHashList0,
               int posHashListSize0);
 
-    int negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
+    int searchRoot(bool tb, int alpha, int beta, int ply, int depth,
                       const bool inCheck);
 
     /** Information used for move ordering at root and for PV reporting. */
@@ -288,7 +288,7 @@ private:
     RelaxedShared<S64> minTimeMillis; // Minimum recommended thinking time
     RelaxedShared<S64> maxTimeMillis; // Maximum allowed thinking time
     RelaxedShared<int> earlyStopPercentage; // Can stop searching after this many percent of minTimeMillis
-    bool searchNeedMoreTime;   // True if negaScout should use up to maxTimeMillis time.
+    bool searchNeedMoreTime;   // True if search should use up to maxTimeMillis time.
     double hardFactor;         // How hard it seems to be to determine the best move.
     S64 maxNodes;              // Maximum number of nodes to search (approximately)
     int minProbeDepth;         // Minimum depth to probe endgame tablebases.
@@ -423,14 +423,14 @@ Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti,
 }
 
 inline int
-Search::negaScout(bool tb,
-                  int alpha, int beta, int ply, int depth, Square recaptureSquare,
-                  const bool inCheck) {
+Search::search(bool tb,
+               int alpha, int beta, int ply, int depth, Square recaptureSquare,
+               const bool inCheck) {
     bool tb2 = tb && depth >= minProbeDepth;
     if (tb2)
-        return negaScout<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+        return search<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
     else
-        return negaScout<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+        return search<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
 }
 
 inline bool

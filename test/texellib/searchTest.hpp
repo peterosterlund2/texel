@@ -39,7 +39,7 @@ public:
     static TranspositionTable tt;
     static std::shared_ptr<Search> getSearch(Position& pos);
 
-    static void testNegaScout();
+    static void testSearch();
     static void testDraw50();
     static void testDrawRep();
     static void testHashing();

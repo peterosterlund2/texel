@@ -193,9 +193,9 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
             sti.currentMoveNo = mi;
             sti.evalScore = evalScore;
             sti.nodeIdx = rootNodeIdx;
-            int score = -negaScoutRoot(true, -beta, -alpha, 1, depth - lmrS - 1, givesCheck);
+            int score = -searchRoot(true, -beta, -alpha, 1, depth - lmrS - 1, givesCheck);
             if ((lmrS > 0) && (score > alpha))
-                score = -negaScoutRoot(true, -beta, -alpha, 1, depth - 1, givesCheck);
+                score = -searchRoot(true, -beta, -alpha, 1, depth - 1, givesCheck);
             nodesThisMove += totalNodes;
             posHashListSize--;
             pos.unMakeMove(m, ui);
@@ -231,7 +231,7 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
                 pos.makeMove(m, ui);
                 totalNodes++;
                 nodesToGo--;
-                score = -negaScoutRoot(true, -beta, -alpha, 1, depth - 1, givesCheck);
+                score = -searchRoot(true, -beta, -alpha, 1, depth - 1, givesCheck);
                 nodesThisMove += totalNodes;
                 posHashListSize--;
                 pos.unMakeMove(m, ui);
@@ -320,7 +320,7 @@ private:
 };
 
 int
-Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
+Search::searchRoot(bool tb, int alpha, int beta, int ply, int depth,
                       const bool inCheck) {
     SearchTreeInfo sti = searchTreeInfo[ply-1];
     jobId++;
@@ -329,7 +329,7 @@ Search::negaScoutRoot(bool tb, int alpha, int beta, int ply, int depth,
     Position pos0(pos);
     int posHashListSize0 = posHashListSize;
     try {
-        return negaScout(tb, alpha, beta, ply, depth, Square(-1), inCheck);
+        return search(tb, alpha, beta, ply, depth, Square(-1), inCheck);
     } catch (const HelperThreadResult& res) {
         initSearchTreeInfo();
         searchTreeInfo[ply-1] = sti;
@@ -472,8 +472,8 @@ Search::shouldStop() {
 
 template <bool tb>
 int
-Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquare,
-                  const bool inCheck) {
+Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
+               const bool inCheck) {
     // Mate distance pruning
     beta = std::min(beta, MATE0-ply-1);
     if (alpha >= beta)
@@ -711,7 +711,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
                 searchTreeInfo[ply+1].bestMove.setMove(A1,A1,0,0);
                 const int hmc = pos.getHalfMoveClock();
                 pos.setHalfMoveClock(0);
-                score = -negaScout(tb, -beta, -(beta - 1), ply + 1, depth - R, Square(-1), false);
+                score = -search(tb, -beta, -(beta - 1), ply + 1, depth - R, Square(-1), false);
                 pos.setEpSquare(epSquare);
                 pos.setWhiteMove(!pos.isWhiteMove());
                 pos.setHalfMoveClock(hmc);
@@ -729,7 +729,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
                 sti2.nodeIdx = sti.nodeIdx;
                 const S64 savedNodeIdx = sti.nodeIdx;
                 sti.allowNullMove = false;
-                score = negaScout(tb, beta - 1, beta, ply, depth - R, recaptureSquare, inCheck);
+                score = search(tb, beta - 1, beta, ply, depth - R, recaptureSquare, inCheck);
                 sti.allowNullMove = true;
                 sti.nodeIdx = savedNodeIdx;
                 sti2.currentMove = savedMove;
@@ -773,7 +773,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
             sti2.nodeIdx = sti.nodeIdx;
             const S64 savedNodeIdx = sti.nodeIdx;
             int newDepth = isPv ? depth - 2 : depth * 3 / 8;
-            negaScout(tb, alpha, beta, ply, newDepth, Square(-1), inCheck);
+            search(tb, alpha, beta, ply, newDepth, Square(-1), inCheck);
             sti.nodeIdx = savedNodeIdx;
             sti2.currentMove = savedMove;
             sti2.currentMoveNo = savedMoveNo;
@@ -819,8 +819,8 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
         sti.singularMove = hashMove;
         int newDepth = depth / 2;
         int newBeta = ent.getScore(ply) - depth;
-        int singScore = negaScout(tb, newBeta-1, newBeta, ply, newDepth,
-                                  recaptureSquare, inCheck);
+        int singScore = search(tb, newBeta-1, newBeta, ply, newDepth,
+                               recaptureSquare, inCheck);
         sti.singularMove.setMove(A1,A1,0,0);
         sti.nodeIdx = savedNodeIdx;
         sti2.currentMove = savedMove;
@@ -969,7 +969,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
                 sti.currentMoveNo = mi;
 
                 searchTreeInfo[ply+1].abdadaExclusive = pass == 0 && haveLegalMoves;
-                score = -negaScout(tb, -b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+                score = -search(tb, -b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                 searchTreeInfo[ply+1].abdadaExclusive = false;
 
                 if (score == -BUSY) {
@@ -982,7 +982,7 @@ Search::negaScout(int alpha, int beta, int ply, int depth, Square recaptureSquar
                 if (((lmr > 0) && (score > alpha)) ||
                         ((score > alpha) && (score < beta) && (b != beta))) {
                     newDepth += lmr;
-                    score = -negaScout(tb, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+                    score = -search(tb, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
                 }
 
                 posHashListSize--;
