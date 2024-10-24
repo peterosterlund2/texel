@@ -570,10 +570,9 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
             int type = tbEnt.getType();
             int score = tbEnt.getScore(ply);
             bool cutOff = false;
-            const int drawSwindleReduction = 16;
             if (score == 0 && type == TType::T_EXACT) {
                 const int maxSwindle = maxFrustrated;
-                if (depth < drawSwindleReduction) {
+                if (depth < TBProbe::minSwindleSearchDepth()) {
                     if (evalScore == UNKNOWN_SCORE)
                         evalScore = eval.evalPos();
                     score = Evaluate::swindleScore(evalScore, tbEnt.getEvalScore());
@@ -590,7 +589,7 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
             } else {
                 bool checkCutOff = true;
                 if (score == 0) { // Draw or frustrated win/loss
-                    if (depth < drawSwindleReduction)
+                    if (depth < TBProbe::minSwindleSearchDepth())
                         score = Evaluate::swindleScore(0, tbEnt.getEvalScore());
                     else
                         checkCutOff = false;

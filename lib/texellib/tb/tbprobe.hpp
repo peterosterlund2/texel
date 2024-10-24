@@ -134,6 +134,9 @@ public:
     static bool rtbProbeWDL(Position& pos, int ply, int& score,
                             TranspositionTable::TTEntry& ent);
 
+    /** Minimum search depth required to perform "swindle search". */
+    static int minSwindleSearchDepth();
+
 private:
     /** Initialize */
     static void gtbInitialize(const std::string& path, int cacheMB, int wdlFraction);
@@ -213,6 +216,20 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta, int depth,
             allowDTZ = false;
     }
     return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, allowDTZ, false, nodesToCheckStop);
+}
+
+inline int
+TBProbe::minSwindleSearchDepth() {
+    int d = UciParams::minProbeDepth->getIntPar();
+    if (TBProbeData::maxPieces >= 6) {
+        d = std::max(d, UciParams::minProbeDepth6->getIntPar());
+        d = std::max(d, UciParams::minProbeDepth6dtz->getIntPar());
+    }
+    if (TBProbeData::maxPieces >= 7) {
+        d = std::max(d, UciParams::minProbeDepth7->getIntPar());
+        d = std::max(d, UciParams::minProbeDepth7dtz->getIntPar());
+    }
+    return 15 + d;
 }
 
 #endif /* TBPROBE_HPP_ */
