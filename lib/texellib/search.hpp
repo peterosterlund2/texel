@@ -124,14 +124,9 @@ public:
      * @return Score for the side to make a move, in position given by "pos".
      */
     template <bool tb>
-    int search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
-               const bool inCheck);
+    int search(int alpha, int beta, int ply, int depth, const bool inCheck);
     int search(bool tb,
-               int alpha, int beta, int ply, int depth, Square recaptureSquare,
-               const bool inCheck);
-
-    /** Compute extension depth for a move. */
-    int getMoveExtend(const Move& m, Square recaptureSquare);
+               int alpha, int beta, int ply, int depth, const bool inCheck);
 
     static bool canClaimDraw50(const Position& pos);
 
@@ -424,13 +419,12 @@ Search::setSearchTreeInfo(int ply, const SearchTreeInfo& sti,
 
 inline int
 Search::search(bool tb,
-               int alpha, int beta, int ply, int depth, Square recaptureSquare,
-               const bool inCheck) {
+               int alpha, int beta, int ply, int depth, const bool inCheck) {
     bool tb2 = tb && depth >= minProbeDepth;
     if (tb2)
-        return search<true>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+        return search<true>(alpha, beta, ply, depth, inCheck);
     else
-        return search<false>(alpha, beta, ply, depth, recaptureSquare, inCheck);
+        return search<false>(alpha, beta, ply, depth, inCheck);
 }
 
 inline bool

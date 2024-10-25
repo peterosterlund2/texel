@@ -329,7 +329,7 @@ Search::searchRoot(bool tb, int alpha, int beta, int ply, int depth,
     Position pos0(pos);
     int posHashListSize0 = posHashListSize;
     try {
-        return search(tb, alpha, beta, ply, depth, Square(-1), inCheck);
+        return search(tb, alpha, beta, ply, depth, inCheck);
     } catch (const HelperThreadResult& res) {
         initSearchTreeInfo();
         searchTreeInfo[ply-1] = sti;
@@ -472,8 +472,7 @@ Search::shouldStop() {
 
 template <bool tb>
 int
-Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
-               const bool inCheck) {
+Search::search(int alpha, int beta, int ply, int depth, const bool inCheck) {
     // Mate distance pruning
     beta = std::min(beta, MATE0-ply-1);
     if (alpha >= beta)
@@ -710,7 +709,7 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
                 searchTreeInfo[ply+1].bestMove.setMove(A1,A1,0,0);
                 const int hmc = pos.getHalfMoveClock();
                 pos.setHalfMoveClock(0);
-                score = -search(tb, -beta, -(beta - 1), ply + 1, depth - R, Square(-1), false);
+                score = -search(tb, -beta, -(beta - 1), ply + 1, depth - R, false);
                 pos.setEpSquare(epSquare);
                 pos.setWhiteMove(!pos.isWhiteMove());
                 pos.setHalfMoveClock(hmc);
@@ -728,7 +727,7 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
                 sti2.nodeIdx = sti.nodeIdx;
                 const S64 savedNodeIdx = sti.nodeIdx;
                 sti.allowNullMove = false;
-                score = search(tb, beta - 1, beta, ply, depth - R, recaptureSquare, inCheck);
+                score = search(tb, beta - 1, beta, ply, depth - R, inCheck);
                 sti.allowNullMove = true;
                 sti.nodeIdx = savedNodeIdx;
                 sti2.currentMove = savedMove;
@@ -772,7 +771,7 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
             sti2.nodeIdx = sti.nodeIdx;
             const S64 savedNodeIdx = sti.nodeIdx;
             int newDepth = isPv ? depth - 2 : depth * 3 / 8;
-            search(tb, alpha, beta, ply, newDepth, Square(-1), inCheck);
+            search(tb, alpha, beta, ply, newDepth, inCheck);
             sti.nodeIdx = savedNodeIdx;
             sti2.currentMove = savedMove;
             sti2.currentMoveNo = savedMoveNo;
@@ -804,7 +803,6 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
             (ent.getType() != TType::T_LE) &&
             (ent.getDepth() >= depth - 3) &&
             (!isWinScore(std::abs(ent.getScore(ply))) || !normalBound) &&
-            (getMoveExtend(hashMove, recaptureSquare) <= 0) &&
             (ply + depth < MAX_SEARCH_DEPTH) &&
             MoveGen::isLegal(pos, hashMove, inCheck)) {
         SearchTreeInfo& sti2 = searchTreeInfo[ply-1];
@@ -818,8 +816,7 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
         sti.singularMove = hashMove;
         int newDepth = depth / 2;
         int newBeta = ent.getScore(ply) - depth;
-        int singScore = search(tb, newBeta-1, newBeta, ply, newDepth,
-                               recaptureSquare, inCheck);
+        int singScore = search(tb, newBeta-1, newBeta, ply, newDepth, inCheck);
         sti.singularMove.setMove(A1,A1,0,0);
         sti.nodeIdx = savedNodeIdx;
         sti2.currentMove = savedMove;
@@ -913,7 +910,7 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
                     if (!MoveGen::isLegal(pos, m, inCheck))
                         continue;
                 }
-                int extend = givesCheck && ((depth <= 1) || !negSEE(m)) ? 1 : getMoveExtend(m, recaptureSquare);
+                int extend = givesCheck && ((depth <= 1) || !negSEE(m)) ? 1 : 0;
                 if (singularExtend && (mi == 0))
                     extend = 1;
                 int lmr = 0;
@@ -946,20 +943,6 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
                     lmr = BUSY - m.score();
                 }
                 int newDepth = depth - 1 + extend - lmr;
-                Square newCaptureSquare;
-                if (isCapture && (givesCheck || (depth + extend) > 1)) {
-                    // Compute recapture target square, but only if we are not going
-                    // into q-search at the next ply.
-                    int fVal = ::pieceValue[pos.getPiece(m.from())];
-                    int tVal = ::pieceValue[pos.getPiece(m.to())];
-                    const int pV = ::pV;
-                    if (std::abs(tVal - fVal) < pV / 2) {    // "Equal" capture
-                        int hp = pV / 2;
-                        sVal = SEE(m, -hp, hp);
-                        if (std::abs(sVal) < hp)
-                            newCaptureSquare = m.to();
-                    }
-                }
                 posHashList[posHashListSize++] = pos.zobristHash();
                 pos.makeMove(m, ui);
                 totalNodes++;
@@ -968,7 +951,7 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
                 sti.currentMoveNo = mi;
 
                 searchTreeInfo[ply+1].abdadaExclusive = pass == 0 && haveLegalMoves;
-                score = -search(tb, -b, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+                score = -search(tb, -b, -alpha, ply + 1, newDepth, givesCheck);
                 searchTreeInfo[ply+1].abdadaExclusive = false;
 
                 if (score == -BUSY) {
@@ -981,7 +964,7 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
                 if (((lmr > 0) && (score > alpha)) ||
                         ((score > alpha) && (score < beta) && (b != beta))) {
                     newDepth += lmr;
-                    score = -search(tb, -beta, -alpha, ply + 1, newDepth, newCaptureSquare, givesCheck);
+                    score = -search(tb, -beta, -alpha, ply + 1, newDepth, givesCheck);
                 }
 
                 posHashListSize--;
@@ -1066,30 +1049,6 @@ Search::search(int alpha, int beta, int ply, int depth, Square recaptureSquare,
         }
     }
     return logAndReturn(bestScore, tType);
-}
-
-int
-Search::getMoveExtend(const Move& m, Square recaptureSquare) {
-    if (m.to() == recaptureSquare) {
-        int tVal = ::pieceValue[pos.getPiece(m.to())];
-        int a = tVal - pV / 2;
-        int sVal = SEE(m, a, a + 1);
-        if (sVal > a)
-            return 1;
-    }
-    bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
-    if (isCapture && (pos.wMtrlPawns() + pos.bMtrlPawns() > pV)) {
-        // Extend if going into pawn endgame
-        int capVal = ::pieceValue[pos.getPiece(m.to())];
-        if (pos.isWhiteMove()) {
-            if ((pos.wMtrl() == pos.wMtrlPawns()) && (pos.bMtrl() - pos.bMtrlPawns() == capVal))
-                return 1;
-        } else {
-            if ((pos.bMtrl() == pos.bMtrlPawns()) && (pos.wMtrl() - pos.wMtrlPawns() == capVal))
-                return 1;
-        }
-    }
-    return 0;
 }
 
 void
