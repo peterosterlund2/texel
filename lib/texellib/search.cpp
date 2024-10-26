@@ -798,7 +798,7 @@ Search::search(int alpha, int beta, int ply, int depth, const bool inCheck) {
 
     // Handle singular extension
     bool singularExtend = false;
-    if ((depth > 6) &&
+    if ((depth > 5) &&
             hashMoveSelected && !singularSearch &&
             (ent.getType() != TType::T_LE) &&
             (ent.getDepth() >= depth - 3) &&
