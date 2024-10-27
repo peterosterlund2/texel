@@ -458,9 +458,20 @@ doGsprt(int argc, char* argv[]) {
 
     std::cout << "score0      : " << res.expectedScore0 << std::endl;
     std::cout << "score1      : " << res.expectedScore1 << std::endl;
-    std::cout << "Sample score: " << res.sampleScore
+
+    double mean = res.sampleScore;
+    double sDev = res.sampleStdDev;
+    std::cout << "Sample score: " << mean
               << " elo: " << Gsprt::score2Elo(res.sampleScore)
-              << " nGames: " << nGames << std::endl;
+              << " nGames: " << nGames
+              << " sd: " << sDev;
+    if (sDev > 0) {
+        std::stringstream ss;
+        ss.precision(2);
+        ss << std::fixed << (mean - 0.5) / sDev;
+        std::cout << " c: " << ss.str();
+    }
+    std::cout << std::endl;
 
     if (pars.useBounds) {
         std::cout << "a   : " << res.a << std::endl;

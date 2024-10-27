@@ -72,6 +72,7 @@ public:
         double expectedScore0 = 0; // Expected score in [0,1] corresponding to elo0
         double expectedScore1 = 0; // Expected score in [0,1] corresponding to elo1
         double sampleScore = 0; // Score of sample, in [0,1]
+        double sampleStdDev = 0; // Standard deviation of score in sample
         double a = 0; // The lower stopping limit, computed from alpha, beta if useBounds==true
         double b = 0; // The upper stopping limit, computed from alpha, beta if useBounds==true
 

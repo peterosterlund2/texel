@@ -34,7 +34,7 @@
 
 
 /** A vector of double elements that supports mathematical operations like
- *  addition and scalara multiplication. */
+ *  addition and scalar multiplication. */
 class DblVec {
     friend std::ostream& operator<<(std::ostream& os, const DblVec& v);
 public:
@@ -57,7 +57,7 @@ public:
         return *this;
     }
 
-    double dot(const DblVec b) const {
+    double dot(const DblVec& b) const {
         assert(size() == b.size());
         int n = size();
         double s = 0;

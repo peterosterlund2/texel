@@ -266,7 +266,12 @@ Gsprt::compute(const Sample& sample, Result& res) const {
     for (int i = 0; i < nProbs; i++)
         f[i] /= N;
 
-    res.sampleScore = a.dot(f);
+    double avg = a.dot(f);
+    double sum2 = 0;
+    for (int i = 0; i < nProbs; i++)
+        sum2 += (a[i]-avg)*(a[i]-avg)*f[i];
+    res.sampleScore = avg;
+    res.sampleStdDev = sqrt(sum2 / (N-1));
 
     DblVec p(nProbs);
     double ll0 = N * computeBestLL(a, res.expectedScore0, f, p);
