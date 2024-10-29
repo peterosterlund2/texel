@@ -156,7 +156,7 @@ public:
     static std::shared_ptr<NetData> create();
 
     static constexpr int inFeatures = 32 * 10 * 64;
-    static constexpr int n1 = 256;
+    static constexpr int n1 = 384;
     static constexpr int n2 = 32;
     static constexpr int n3 = 32;
     static constexpr int nHeads = 4;

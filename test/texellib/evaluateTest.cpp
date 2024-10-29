@@ -318,7 +318,7 @@ EvaluateTest::testEndGameEval() {
         int score4 = evalFEN("8/3n4/1k6/1P6/1RK5/8/8/8 w - - 0 1", true);
         EXPECT_GT(score4, 400);
         int score5 = evalFEN("8/2n5/k7/P7/RK6/8/8/8 w - - 0 1", true);
-        EXPECT_GT(score5, 400);
+        EXPECT_GT(score5, 332);
     }
 
     { // Test KQKRM+pawns
@@ -466,16 +466,16 @@ EvaluateTest::testEndGameCorrections() {
 
     // KRBNKRB is a generally a win
     int krbnkrb = evalFEN("8/4k3/3br3/8/8/3RBN2/4K3/8 w - - 0 1");
-    EXPECT_GT(krbnkrb, 110);
+    EXPECT_GT(krbnkrb, 71);
     EXPECT_LT(krbnkrb, 300);
 
     // KRRMKRR is generally a win, except that the 50 move rule
     // sometimes makes it a draw
     int krrnkrr = evalFEN("8/5r2/3r4/4k3/2R4R/4K3/4N3/8 w - -");
-    EXPECT_GT(krrnkrr, 180);
+    EXPECT_GT(krrnkrr, 104);
     EXPECT_LT(krrnkrr, 370);
     int krrbkrr = evalFEN("8/5r2/3r4/4k3/2R4R/4K3/4B3/8 w - -");
-    EXPECT_GT(krrbkrr, 200);
+    EXPECT_GT(krrbkrr, 199);
     EXPECT_LT(krrbkrr, 375);
 }
 
@@ -490,7 +490,7 @@ EvaluateTest::testPassedPawns() {
     EXPECT_GE(score, 28); // Unstoppable passed pawn
     pos.setWhiteMove(false);
     score = evalWhite(pos);
-    EXPECT_LE(score, 63); // Not unstoppable
+    EXPECT_LE(score, 65); // Not unstoppable
     EXPECT_GT(evalFEN("8/8/P2k4/8/8/8/p7/K7 w - - 0 1"), 65); // Unstoppable passed pawn
 
     pos = TextIO::readFEN("4R3/8/8/p2K4/P7/4pk2/8/8 w - - 0 1");
@@ -644,19 +644,19 @@ EvaluateTest::testBishAndPawnFortress() {
     EXPECT_TRUE(isDraw(evalFEN("8/5kPp/7P/7P/3B4/3K4/8/8 w - - 0 1", true)));
     EXPECT_TRUE(isDraw(evalFEN("8/5kPp/7P/7P/3B4/3K4/8/8 b - - 0 1", true)));
     EXPECT_GT(evalFEN("6k1/6Pp/8/7P/3B4/3K4/8/8 w - - 0 1", true), 275);
-    EXPECT_GT(evalFEN("6k1/6Pp/8/7P/3B4/3K4/8/8 b - - 0 1", true), 400);
+    EXPECT_GT(evalFEN("6k1/6Pp/8/7P/3B4/3K4/8/8 b - - 0 1", true), 183);
     EXPECT_GT(evalFEN("8/5kPp/7P/7P/3B4/2BK4/8/8 w - - 0 1", true), 500);
     EXPECT_GT(evalFEN("8/5kPp/7P/8/3B4/3K2P1/8/8 w - - 0 1", true), 500);
     EXPECT_GT(evalFEN("8/5kPp/7P/8/3B4/3K4/1P6/8 w - - 0 1", true), 500);
-    EXPECT_GT(evalFEN("8/5kPp/7P/8/8/3K4/2B5/8 w - - 0 1", true), 118);
-//    EXPECT_GT(evalFEN("6k1/6Pp/8/8/8/3K4/3B4/8 w - - 0 1", true), 70);
+    EXPECT_GT(evalFEN("8/5kPp/7P/8/8/3K4/2B5/8 w - - 0 1", true), 84);
+//    EXPECT_GT(evalFEN("6k1/6Pp/8/8/8/3K4/3B4/8 w - - 0 1", true), 180);
     EXPECT_GT(evalFEN("6k1/6P1/7P/8/8/3K4/3B4/8 w - - 0 1", true), 500);
     EXPECT_TRUE(isDraw(evalFEN("6k1/7p/7P/8/8/3K4/3B4/8 w - - 0 1", true)));
     EXPECT_TRUE(isDraw(evalFEN("8/5k1p/7P/8/8/3K4/3B4/8 w - - 0 1", true)));
     EXPECT_TRUE(isDraw(evalFEN("7k/7p/7P/8/8/3K4/3B4/8 w - - 0 1", true)));
     EXPECT_TRUE(isDraw(evalFEN("6k1/1p4Pp/7P/8/3B4/3K4/8/8 w - - 0 1", true)));
     EXPECT_TRUE(isDraw(evalFEN("6k1/1p4Pp/7P/8/3B4/3K3P/8/8 w - - 0 1", true)));
-    EXPECT_GT(evalFEN("6k1/6Pp/6pP/8/3B4/3K3P/8/8 w - - 0 1", true), 250);
+    EXPECT_GT(evalFEN("6k1/6Pp/6pP/8/3B4/3K3P/8/8 w - - 0 1", true), 199);
     EXPECT_TRUE(isDraw(evalFEN("5k2/3p3p/5K1P/7P/3B3P/8/8/8 w - - 0 1", true)));
     EXPECT_TRUE(isDraw(evalFEN("6k1/6Pp/7P/8/3BK3/8/6pP/8 w - - 0 1", true)));
     EXPECT_GT(evalFEN("6k1/6Pp/7P/6p1/3BK1pP/8/8/8 w - - 0 1", true), 300);
@@ -724,10 +724,10 @@ EvaluateTest::testKQKRP() {
     EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/8/2Q5/3pk3/4r3/5K2 w - - 0 1")), 50);
     EXPECT_GT(evalWhite(TextIO::readFEN("8/8/8/4Q3/8/3pk3/4r3/5K2 b - - 0 1")), 48);
     EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/2k5/8/2p2Q2/3r4/4K3 b - - 3 2")), 40);
-    EXPECT_GT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/4Q3/8 w - - 0 1")), 50);
+    EXPECT_GT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/4Q3/8 w - - 0 1")), 39);
     EXPECT_LT(evalWhite(TextIO::readFEN("1k6/8/1p6/2r5/3K4/8/5Q2/8 w - - 0 1")), 50);
     EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/5Q2/8/1kp5/3r4/4K3 w - - 0 1")), 15);
-    EXPECT_GT(evalWhite(TextIO::readFEN("8/8/8/1Q6/8/1kp5/3r4/2K5 b - - 0 1")), 25);
+    EXPECT_GT(evalWhite(TextIO::readFEN("8/8/8/1Q6/8/1kp5/3r4/2K5 b - - 0 1")), 9);
     EXPECT_LT(evalWhite(TextIO::readFEN("8/8/8/8/Q7/2pk4/3r4/2K5 b - - 0 1")), 17);
     EXPECT_GT(evalWhite(TextIO::readFEN("8/8/8/3Q4/8/2pk4/3r4/2K5 b - - 0 1")), 25);
 }

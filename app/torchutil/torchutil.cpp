@@ -335,7 +335,7 @@ private:
                                torch::Tensor headIdx) const;
 
     static constexpr int nHeads = NetData::nHeads;
-    torch::nn::Linear lin1 = nullptr; const int n1 = 256;
+    torch::nn::Linear lin1 = nullptr; const int n1 = 384;
     torch::nn::Linear lin2 = nullptr; const int n2 = 32;
     torch::nn::Linear lin3 = nullptr; const int n3 = 32;
     torch::nn::Linear lin4 = nullptr;
