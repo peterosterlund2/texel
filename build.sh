@@ -198,5 +198,5 @@ cp --parents -r \
    texel${VER}/
 rm texel${VER}/doc/.gitignore
 chmod -R ug+w texel${VER}
-7za a texel${VER}.7z texel${VER}
+7za a -mx=9 texel${VER}.7z texel${VER}
 rm -rf texel${VER}
