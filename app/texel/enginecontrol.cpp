@@ -590,8 +590,11 @@ EngineControl::printOptions(std::ostream& os) {
             break;
         case Parameters::STRING: {
             const Parameters::StringParam& sp = static_cast<const Parameters::StringParam&>(*p.get());
+            std::string defVal = sp.getDefaultValue();
+            if (defVal.empty())
+                defVal = "<empty>";
             os << "option name " << sp.getName() << " type string default "
-               << sp.getDefaultValue() << std::endl;
+               << defVal << std::endl;
             break;
         }
         }

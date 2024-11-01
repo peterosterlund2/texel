@@ -197,7 +197,10 @@ UCIProtocol::handleCommand(const std::string& cmdLine, std::ostream& os) {
                         optionValue += ' ';
                     }
                 }
-                engine->setOption(trim(optionName), trim(optionValue));
+                optionValue = trim(optionValue);
+                if (optionValue == "<empty>")
+                    optionValue.clear();
+                engine->setOption(trim(optionName), optionValue);
             }
         } else if (cmd == "ucinewgame") {
             if (engine)
