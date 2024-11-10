@@ -408,7 +408,7 @@ extern ParamTable<10> halfMoveFactor;
 
 // Search parameters
 
-DECLARE_PARAM(aspirationWindow, 15, 1, 100, useUciParam);
+DECLARE_PARAM(aspirationWindow, 9, 1, 100, useUciParam);
 DECLARE_PARAM(rootLMRMoveCount, 2, 0, 100, useUciParam);
 
 DECLARE_PARAM(razorMargin1, 86, 1, 500, useUciParam);
