@@ -157,36 +157,38 @@ mkdir -p bin
 cp build/Release/texel bin/texel64
 strip bin/texel64
 
+strip_win=x86_64-w64-mingw32-strip
 cp build/win64_old/texel.exe bin/texel64-old.exe
-x86_64-w64-mingw32-strip bin/texel64-old.exe
+${strip_win} bin/texel64-old.exe
 
 cp build/win64_ssse3/texel.exe bin/texel64-ssse3.exe
-x86_64-w64-mingw32-strip bin/texel64-ssse3.exe
+${strip_win} bin/texel64-ssse3.exe
 
 cp build/win64_avx2/texel.exe bin/texel64-avx2.exe
-x86_64-w64-mingw32-strip bin/texel64-avx2.exe
+${strip_win} bin/texel64-avx2.exe
 
 cp build/win64/texel.exe bin/texel64-avx2-pop.exe
-x86_64-w64-mingw32-strip bin/texel64-avx2-pop.exe
+${strip_win} bin/texel64-avx2-pop.exe
 cp build/win64/runcmd.exe bin/runcmd.exe
-x86_64-w64-mingw32-strip bin/runcmd.exe
+${strip_win} bin/runcmd.exe
 cp build/win64/texelutil.exe bin/texelutil.exe
-x86_64-w64-mingw32-strip bin/texelutil.exe
+${strip_win} bin/texelutil.exe
 
 cp build/win64_bmi/texel.exe bin/texel64-avx2-bmi.exe
-x86_64-w64-mingw32-strip bin/texel64-avx2-bmi.exe
+${strip_win} bin/texel64-avx2-bmi.exe
 
 cp build/win64_avx512/texel.exe bin/texel64-avx512.exe
-x86_64-w64-mingw32-strip bin/texel64-avx512.exe
+${strip_win} bin/texel64-avx512.exe
 
 cp build/win64cl/texel.exe bin/texel64cl.exe
-x86_64-w64-mingw32-strip bin/texel64cl.exe
+${strip_win} bin/texel64cl.exe
 
+strip_android=aarch64-linux-android-strip
 cp build/android64/texel bin/texel-arm64
-aarch64-linux-android-strip bin/texel-arm64
+${strip_android} bin/texel-arm64
 
 cp build/android64_dot/texel bin/texel-arm64-dot
-aarch64-linux-android-strip bin/texel-arm64-dot
+${strip_android} bin/texel-arm64-dot
 
 # Create archive
 VER=$(echo -e 'uci\nquit' | bin/texel64 | grep 'id name' | awk '{print $4}' | tr -d .)
