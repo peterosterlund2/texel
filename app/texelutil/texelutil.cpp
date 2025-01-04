@@ -162,8 +162,10 @@ usage() {
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
     std::cerr << " gsprt elo0 elo1 [-ab alpha beta] (w d l | n00 n05 n10 n15 n20)\n";
+#if !_MSC_VER
     std::cerr << " match (-n nGames | -gsprt elo0 elo1 [-ab alpha beta])\n";
     std::cerr << "       engine1 tc1 engine2 tc2 script\n";
+#endif
     std::cerr << "\n";
     std::cerr << " proofgame [-w a:b] [-d] [-m maxNodes] [-v] [-na] [-nokernel]\n";
     std::cerr << "           [-i \"initFen\"] [-ipgn \"initPgnFile\"] \"goalFen\"\n";
@@ -489,6 +491,7 @@ doGsprt(int argc, char* argv[]) {
     }
 }
 
+#if !_MSC_VER
 static void
 doMatch(int argc, char* argv[], int nWorkers) {
     int numGames = 0;
@@ -541,6 +544,7 @@ doMatch(int argc, char* argv[], int nWorkers) {
     else
         mr.runGsprtGames(gsprtParams, script);
 }
+#endif
 
 static void
 doProofGameCmd(int argc, char* argv[], int nWorkers) {
@@ -1046,8 +1050,10 @@ main(int argc, char* argv[]) {
             mbc.pgnStat(pgnFile, pairMode, std::cout);
         } else if (cmd == "gsprt") {
             doGsprt(argc, argv);
+#if !_MSC_VER
         } else if (cmd == "match") {
             doMatch(argc, argv, nWorkers);
+#endif
         } else if (cmd == "proofgame") {
             doProofGameCmd(argc, argv, nWorkers);
         } else if (cmd == "proofkernel") {

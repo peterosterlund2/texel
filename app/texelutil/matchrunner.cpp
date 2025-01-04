@@ -40,6 +40,9 @@ MatchRunner::MatchRunner(int nWorkers, const EngineParams& engine1, const Engine
 
 bool
 MatchRunner::runOneBatch(const std::string& script, int workerNo, int (&stats)[5]) const {
+#if _MSC_VER
+    return false;
+#else
     std::string cmdLine = "\"" + script + "\"";
     cmdLine += " " + num2Str(workerNo);
     cmdLine += " " + engine1Pars.name + " " + engine1Pars.timeControl;
@@ -71,6 +74,7 @@ MatchRunner::runOneBatch(const std::string& script, int workerNo, int (&stats)[5
     if (!ok)
         std::cerr << "Script failed: " << s << std::endl;
     return ok;
+#endif
 }
 
 static void
