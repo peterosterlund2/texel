@@ -389,16 +389,15 @@ EvaluateTest::testEndGameCorrections() {
     int kbbk = evalFEN("8/4k3/8/8/8/2BBK3/8/8 w - - 0 1");
     EXPECT_GE(kbbk, 750);
 
-//    EXPECT_GT(krk, kbbk);
-//    EXPECT_GT(kqkn, kbbk);
-//    EXPECT_GT(kqkb, kbbk);
+    EXPECT_GT(krk, kbbk);
+    EXPECT_GT(kqkn, kbbk);
+    EXPECT_GT(kqkb, kbbk);
 
     int kbnk = evalFEN("8/4k3/8/8/8/2BNK3/8/8 w - - 0 1");
     EXPECT_GT(kbnk, 475);
     EXPECT_LT(kbnk, 700);
     int kqkr = evalFEN("8/3rk3/8/8/8/3QK3/8/8 w - - 0 1");
     EXPECT_GT(kqkr, 475);
-//    EXPECT_LT(kqkr, 900);
 
     EXPECT_GT(kbbk, kbnk);
 
@@ -619,7 +618,7 @@ EvaluateTest::testBishAndPawnFortress() {
     EXPECT_TRUE(isDraw(evalFEN("8/4b3/4P3/8/7p/6p1/5kP1/7K w - - 1 2", true)));
     EXPECT_TRUE(isDraw(evalFEN("8/8/8/2b1k3/4P2p/6p1/6P1/7K w - - 1 1", true)));
 
-//    EXPECT_TRUE(isDraw(evalFEN("8/8/8/8/6p1/6p1/4k1P1/6K1 b - - 0 10", true)));
+    EXPECT_TRUE(isDraw(evalFEN("8/8/8/8/6p1/6p1/4k1P1/6K1 b - - 0 10", true)));
     EXPECT_TRUE(isDraw(evalFEN("8/6p1/6p1/8/6p1/8/4k1P1/6K1 b - - 0 1", true)));
     EXPECT_LT(evalFEN("8/6p1/6p1/8/6p1/6P1/4k1K1/8 b - - 0 1", true), 0);
 
@@ -788,7 +787,7 @@ void
 EvaluateTest::testKPKP() {
     EXPECT_TRUE(isDraw(evalFEN("1k6/1p6/1P6/3K4/8/8/8/8 w - - 0 1")));
     EXPECT_TRUE(isDraw(evalFEN("3k4/1p6/1P6/3K4/8/8/8/8 w - - 0 1")));
-//    EXPECT_GT(evalFEN("2k5/Kp6/1P6/8/8/8/8/8 w - - 0 1"), 0);
+    EXPECT_GT(evalFEN("2k5/Kp6/1P6/8/8/8/8/8 w - - 0 1"), 0);
 }
 
 TEST(EvaluateTest, testKBNK) {
