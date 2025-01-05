@@ -196,7 +196,7 @@ rm -rf texel${VER}.7z texel${VER}
 mkdir texel${VER}
 cp --parents -r \
    CMakeLists.txt build.sh app bin cmake lib test \
-   COPYING readme.txt doc texelbook.bin nndata.tbin.compr \
+   COPYING readme.txt ChangeLog.txt doc texelbook.bin nndata.tbin.compr \
    texel${VER}/
 rm texel${VER}/doc/.gitignore
 chmod -R ug+w texel${VER}
