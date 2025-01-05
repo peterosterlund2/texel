@@ -1,3 +1,33 @@
+2025-01-05: Texel 1.12 (ELO: +85)
+Neural network improvements:
+- Speed up matrix multiplication for AVX-512.
+- New network based on new training data.
+- Use 4 "heads" (all NN layers except the first) for evaluation. The active head
+  depends on the number of pieces on the board.
+- Increase NN layer 1 output size from 256 to 384.
+Tablebases:
+- Measure thinking time more accurately. Useful when TB files are on mechanical
+  disks.
+- Better handling of DTZ scores in search.
+- Avoid expensive (wrong side to move) DTZ probes in search.
+- Add UCI parameter to control required search depth for DTZ probes.
+- Measure time required to perform a TB probe instead of guessing. This avoids
+  time losses in fast games when TB files are on mechanical disks.
+- Allow RTB WDL probes in some cases even if hmc > 0.
+- Change TB swindle depth from 16 to "15+minProbeDepth", to avoid slowdown in
+  late middlegame/early endgame when TB files are on mechanical disks.
+Search:
+- Implement the counter move heuristic.
+- Implement multi-cut pruning based on singular search score.
+- Adjust singular extension search parameters.
+- Allow both extension and reduction in the same search node.
+- Remove no longer useful "recapture" and "going into pawn endgame" extensions.
+- Reduce aspiration window size.
+Other:
+- Use multiple threads to initialize the transposition table.
+- Better handling of mate scores in the transposition table.
+- Fix handling of empty strings in UCI string options.
+
 2024-01-12: Texel 1.11 (ELO: +63)
 Neural network improvements:
 - Fewer non-incremental updates of the first layer state.
