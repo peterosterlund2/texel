@@ -67,18 +67,26 @@ Convert the evaluated positions to a binary representation:
 ```cat evaluated.txt | texelutil fen2bin evaluated.bin```
 
 
+## Add game result data to the training data
+
+```
+cat games.txt | texelutil p2f 3 | texelutil fen2bin -useResult result.bin
+cat evaluated.bin result.bin >eval+result.bin
+```
+
+
 ## Train the neural network
 
 Perform the initial training by running:
 
-```OMP_NUM_THREADS=1 torchutil train evaluated.bin```
+```OMP_NUM_THREADS=1 torchutil train eval+result.bin```
 
 Perform quantization aware training by running:
 
 ```
 mkdir qat
 cd qat
-OMP_NUM_THREADS=1 torchutil train -i ../model40.pt -lr 6e-6 -epochs 10 -qat ../evaluated.bin
+OMP_NUM_THREADS=1 torchutil train -i ../model40.pt -lr 6e-6 -epochs 10 -qat ../eval+result.bin
 cd ..
 ```
 
