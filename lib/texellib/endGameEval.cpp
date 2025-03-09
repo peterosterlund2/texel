@@ -445,40 +445,6 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
     const int nWR = BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK));
     const int nBR = BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK));
 
-    // Give bonus/penalty if advantage is/isn't large enough to win
-    if ((wMtrlPawns == 0) && (wMtrlNoPawns <= bMtrlNoPawns + bV)) {
-        if (!doEval) return 1;
-        if (score > 0) {
-            if (wMtrlNoPawns < rV) {
-                return -pos.bMtrl() / 50;
-            } else {
-                int nMinor = nWN + nWB1 + nWB2;
-                if ((nMinor == 1) && (nWR == 2) && (nBR >= 2))
-                    return score;       // Often a win
-                if ((nMinor <= 1) || !pos.pieceTypeBB(Piece::WROOK, Piece::WQUEEN))
-                    return score / 8;   // Too little excess material, probably draw
-                else
-                    return score;       // May or may not be a win, TBs required
-            }
-        }
-    }
-    if ((bMtrlPawns == 0) && (bMtrlNoPawns <= wMtrlNoPawns + bV)) {
-        if (!doEval) return 1;
-        if (score < 0) {
-            if (bMtrlNoPawns < rV) {
-                return pos.wMtrl() / 50;
-            } else {
-                int nMinor = nBN + nBB1 + nBB2;
-                if ((nMinor == 1) && (nBR == 2) && (nWR >= 2))
-                    return score;       // Often a win
-                if ((nMinor <= 1) || !pos.pieceTypeBB(Piece::BROOK, Piece::BQUEEN))
-                    return score / 8;   // Too little excess material, probably draw
-                else
-                    return score;       // May or may not be a win, TBs required
-            }
-        }
-    }
-
     // KRKBNN is generally a draw
     if (!pos.pieceTypeBB(Piece::WQUEEN, Piece::WROOK, Piece::WPAWN) &&
         (nWN <= 2) && (nWB1 + nWB2 <= 1) && (nBR > 0)) {
@@ -491,15 +457,6 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
         if (!doEval) return 1;
         if (score < 0)
             return score / 8;
-    }
-
-    if ((bMtrlPawns == 0) && (wMtrlNoPawns - bMtrlNoPawns > bV)) {
-        if (!doEval) return 1;
-        return score + 300;       // Enough excess material, should win
-    }
-    if ((wMtrlPawns == 0) && (bMtrlNoPawns - wMtrlNoPawns > bV)) {
-        if (!doEval) return 1;
-        return score - 300;       // Enough excess material, should win
     }
 
     // Give bonus for advantage larger than KRKP, to avoid evaluation discontinuity

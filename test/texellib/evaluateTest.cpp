@@ -387,7 +387,7 @@ EvaluateTest::testEndGameCorrections() {
     EXPECT_GT(kqk, kqkb);
 
     int kbbk = evalFEN("8/4k3/8/8/8/2BBK3/8/8 w - - 0 1");
-    EXPECT_GE(kbbk, 750);
+    EXPECT_GE(kbbk, 575);
 
     EXPECT_GT(krk, kbbk);
     EXPECT_GT(kqkn, kbbk);
@@ -398,8 +398,6 @@ EvaluateTest::testEndGameCorrections() {
     EXPECT_LT(kbnk, 700);
     int kqkr = evalFEN("8/3rk3/8/8/8/3QK3/8/8 w - - 0 1");
     EXPECT_GT(kqkr, 475);
-
-    EXPECT_GT(kbbk, kbnk);
 
     int kqkbn = evalFEN("8/2bnk3/8/8/8/3QK3/8/8 w - - 0 1");
     EXPECT_GE(kqkbn, 200);
