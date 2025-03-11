@@ -84,9 +84,6 @@ DEFINE_PARAM(knightVsQueenBonus1);
 DEFINE_PARAM(knightVsQueenBonus2);
 DEFINE_PARAM(knightVsQueenBonus3);
 DEFINE_PARAM(krkpBonus);
-DEFINE_PARAM(krpkbBonus);
-DEFINE_PARAM(krpkbPenalty);
-DEFINE_PARAM(krpknBonus);
 
 DEFINE_PARAM(aspirationWindow);
 DEFINE_PARAM(rootLMRMoveCount);
@@ -177,9 +174,6 @@ Parameters::Parameters() {
     REGISTER_PARAM(knightVsQueenBonus2, "KnightVsQueenBonus2");
     REGISTER_PARAM(knightVsQueenBonus3, "KnightVsQueenBonus3");
     REGISTER_PARAM(krkpBonus, "RookVsPawnBonus");
-    REGISTER_PARAM(krpkbBonus, "RookPawnVsBishopBonus");
-    REGISTER_PARAM(krpkbPenalty, "RookPawnVsBishopPenalty");
-    REGISTER_PARAM(krpknBonus, "RookPawnVsKnightBonus");
 
     halfMoveFactor.registerParams("HalfMoveFactor", *this);
 

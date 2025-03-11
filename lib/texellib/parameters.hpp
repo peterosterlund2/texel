@@ -399,9 +399,6 @@ DECLARE_PARAM(knightVsQueenBonus1, 125, 0, 200, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus2, 380, 0, 600, useUciParam);
 DECLARE_PARAM(knightVsQueenBonus3, 405, 0, 800, useUciParam);
 DECLARE_PARAM(krkpBonus,           107, 0, 400, useUciParam);
-DECLARE_PARAM(krpkbBonus,          131, -200, 200, useUciParam);
-DECLARE_PARAM(krpkbPenalty,        69,  0, 128, useUciParam);
-DECLARE_PARAM(krpknBonus,          149, 0, 400, useUciParam);
 
 extern ParamTable<10> halfMoveFactor;
 

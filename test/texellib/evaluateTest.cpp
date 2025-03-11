@@ -318,7 +318,7 @@ EvaluateTest::testEndGameEval() {
         int score4 = evalFEN("8/3n4/1k6/1P6/1RK5/8/8/8 w - - 0 1", true);
         EXPECT_GT(score4, 400);
         int score5 = evalFEN("8/2n5/k7/P7/RK6/8/8/8 w - - 0 1", true);
-        EXPECT_GT(score5, 332);
+        EXPECT_GT(score5, 183);
     }
 
     { // Test KQKRM+pawns
