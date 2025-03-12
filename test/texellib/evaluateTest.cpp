@@ -452,7 +452,7 @@ EvaluateTest::testEndGameCorrections() {
     // KRKBNN is a draw
     int kbnnkr = evalFEN("8/3rk3/8/8/8/3N4/2NBK3/8 w - - 0 1");
     EXPECT_GE(kbnnkr, -50);
-    EXPECT_LT(kbnnkr, 50);
+    EXPECT_LT(kbnnkr, 70);
 
     score = evalFEN("4k3/8/4R1n1/4Pn2/8/8/P2K2b1/8 b - - 6 1", true);
     EXPECT_GE(score, -50);

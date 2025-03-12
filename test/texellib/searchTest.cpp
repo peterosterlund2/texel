@@ -316,7 +316,7 @@ SearchTest::testKQKRNullMove() {
     Position pos = TextIO::readFEN("7K/6R1/5k2/3q4/8/8/8/8 b - - 0 1");
     std::shared_ptr<Search> sc = getSearch(pos);
     sc->setMinProbeDepth(100);
-    Move bestM = idSearch(*sc, 13);
+    Move bestM = idSearch(*sc, 15);
     EXPECT_EQ(SearchConst::MATE0-18, bestM.score());
 }
 

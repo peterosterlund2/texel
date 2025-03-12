@@ -389,38 +389,6 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
             return (pos.wMtrl() - pos.bMtrl()) / 2 + mateEval(pos.getKingSq(true), pos.getKingSq(false));
     }
 
-    // Bonus for KRK
-    if ((pos.bMtrl() == 0) && pos.pieceTypeBB(Piece::WROOK)) {
-        if (!doEval) return 1;
-        return 450 + pos.wMtrl() - pos.bMtrl() + mateEval(pos.getKingSq(true), pos.getKingSq(false));
-    }
-    if ((pos.wMtrl() == 0) && pos.pieceTypeBB(Piece::BROOK)) {
-        if (!doEval) return 1;
-        return -(450 + pos.bMtrl() - pos.wMtrl() + mateEval(pos.getKingSq(false), pos.getKingSq(true)));
-    }
-
-    // Bonus for KQK[BN]
-    const int bV = ::bV;
-    const int nV = ::nV;
-    if (pos.pieceTypeBB(Piece::WQUEEN) && (bMtrlPawns == 0) && (pos.bMtrl() <= std::max(bV,nV))) {
-        if (!doEval) return 1;
-        return 235 + pos.wMtrl() - pos.bMtrl() + mateEval(pos.getKingSq(true), pos.getKingSq(false));
-    }
-    if (pos.pieceTypeBB(Piece::BQUEEN) && (wMtrlPawns == 0) && (pos.wMtrl() <= std::max(bV,nV))) {
-        if (!doEval) return 1;
-        return -(235 + pos.bMtrl() - pos.wMtrl() + mateEval(pos.getKingSq(false), pos.getKingSq(true)));
-    }
-
-    // Bonus for KQK
-    if ((pos.bMtrl() == 0) && pos.pieceTypeBB(Piece::WQUEEN)) {
-        if (!doEval) return 1;
-        return 100 + pos.wMtrl() - pos.bMtrl() + mateEval(pos.getKingSq(true), pos.getKingSq(false));
-    }
-    if ((pos.wMtrl() == 0) && pos.pieceTypeBB(Piece::BQUEEN)) {
-        if (!doEval) return 1;
-        return -(100 + pos.bMtrl() - pos.wMtrl() + mateEval(pos.getKingSq(false), pos.getKingSq(true)));
-    }
-
     if (pos.pieceTypeBB(Piece::WROOK, Piece::WKNIGHT, Piece::WQUEEN) == 0) {
         if (!doEval) return 1;
         if ((score > 0) && isBishopPawnDraw<true>(pos))
@@ -440,33 +408,6 @@ EndGameEval::endGameEval(const Position& pos, int oldScore) {
     if ((pos.bMtrl() == qV) && pos.pieceTypeBB(Piece::BQUEEN) && (nWN >= 4)) {
         if (!doEval) return 1;
         return score + 125 + mateEval(pos.getKingSq(true), pos.getKingSq(false));
-    }
-
-    const int nWR = BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK));
-    const int nBR = BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK));
-
-    // KRKBNN is generally a draw
-    if (!pos.pieceTypeBB(Piece::WQUEEN, Piece::WROOK, Piece::WPAWN) &&
-        (nWN <= 2) && (nWB1 + nWB2 <= 1) && (nBR > 0)) {
-        if (!doEval) return 1;
-        if (score > 0)
-            return score / 8;
-    }
-    if (!pos.pieceTypeBB(Piece::BQUEEN, Piece::BROOK, Piece::BPAWN) &&
-        (nBN <= 2) && (nBB1 + nBB2 <= 1) && (nWR > 0)) {
-        if (!doEval) return 1;
-        if (score < 0)
-            return score / 8;
-    }
-
-    // Give bonus for advantage larger than KRKP, to avoid evaluation discontinuity
-    if ((pos.bMtrl() == pV) && (nWR > 0) && (pos.wMtrl() > rV)) {
-        if (!doEval) return 1;
-        return score + krkpBonus;
-    }
-    if ((pos.wMtrl() == pV) && (nBR > 0) && (pos.bMtrl() > rV)) {
-        if (!doEval) return 1;
-        return score - krkpBonus;
     }
 
     if (!doEval) return 0;
