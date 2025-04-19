@@ -885,7 +885,6 @@ Search::search(int alpha, int beta, int ply, int depth, const bool inCheck) {
             Move& m = moves[mi];
             bool isCapture = (pos.getPiece(m.to()) != Piece::EMPTY);
             bool isPromotion = (m.promoteTo() != Piece::EMPTY);
-            int sVal = std::numeric_limits<int>::min();
             bool mayReduce = (m.score() < 30) && (!isCapture || m.score() < 0) && !isPromotion;
             bool givesCheck = MoveGen::givesCheck(pos, m);
             bool doFutility = false;
