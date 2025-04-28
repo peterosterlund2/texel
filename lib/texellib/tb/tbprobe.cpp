@@ -171,12 +171,12 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
             checkABBound = true;
     }
     if (checkABBound) {
-        if ((wdlScore > 0) && (beta <= 0)) { // WDL says win but could be draw due to 50move rule
+        if ((wdlScore > 0) && (beta <= 0)) { // WDL says win but could be draw due to 50 move rule
             ent.setScore(0, ply);
             ent.setType(TType::T_GE);
             return timeAndReturn(true);
         }
-        if ((wdlScore < 0) && (alpha >= 0)) { // WDL says loss but could be draw due to 50move rule
+        if ((wdlScore < 0) && (alpha >= 0)) { // WDL says loss but could be draw due to 50 move rule
             ent.setScore(0, ply);
             ent.setType(TType::T_LE);
             return timeAndReturn(true);

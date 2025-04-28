@@ -59,7 +59,7 @@ private:
 
 
 /**
- * Implements the main transposition table using Cuckoo hashing.
+ * Implements the main transposition table.
  */
 class TranspositionTable {
 private:
