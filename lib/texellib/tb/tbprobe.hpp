@@ -64,6 +64,7 @@ public:
                         const TranspositionTable& tt,
                         TranspositionTable::TTEntry& ent);
     static bool tbProbe(Position& pos, int ply, int alpha, int beta, int depth,
+                        int threadNo,
                         const TranspositionTable& tt,
                         TranspositionTable::TTEntry& ent, int& nodesToCheckStop);
 
@@ -197,6 +198,7 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta,
 
 inline bool
 TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta, int depth,
+                 int threadNo,
                  const TranspositionTable& tt,
                  TranspositionTable::TTEntry& ent, int& nodesToCheckStop) {
     const int nPieces = pos.nPieces();
@@ -206,13 +208,15 @@ TBProbe::tbProbe(Position& pos, int ply, int alpha, int beta, int depth,
     if (nPieces == 7) {
         if (depth < UciParams::minProbeDepth7->getIntPar())
             return false;
-        if (depth < UciParams::minProbeDepth7dtz->getIntPar())
+        if (depth < UciParams::minProbeDepth7dtz->getIntPar() ||
+            threadNo >= UciParams::max7dtzThreads->getIntPar())
             allowDTZ = false;
     }
     if (nPieces == 6) {
         if (depth < UciParams::minProbeDepth6->getIntPar())
             return false;
-        if (depth < UciParams::minProbeDepth6dtz->getIntPar())
+        if (depth < UciParams::minProbeDepth6dtz->getIntPar() ||
+            threadNo >= UciParams::max6dtzThreads->getIntPar())
             allowDTZ = false;
     }
     return tbProbe(pos, ply, alpha, beta, tt, ent, nPieces, allowDTZ, false, nodesToCheckStop);

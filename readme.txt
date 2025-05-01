@@ -195,6 +195,12 @@ MinProbeDepth6dtz, MinProbeDepth7dtz
   Values larger than MinProbeDepth6/7 can be useful if DTZ tables are on slower
   disks than WDL tables.
 
+Max6dtzThreads, Max7dtzThreads
+
+  Maximum number of threads that are allowed to probe 6-men and 7-men DTZ
+  tablebases. A smaller value than Threads may be needed to prevent time losses
+  if many search threads are used and the DTZ tables are on slow disks.
+
 Clear Hash
 
   When activated, clears the hash table and the history heuristic table, so that

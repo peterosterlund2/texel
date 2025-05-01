@@ -564,7 +564,7 @@ Search::search(int alpha, int beta, int ply, int depth, const bool inCheck) {
     // Probe endgame tablebases
     if (tb && depth >= minProbeDepth && !singularSearch) {
         TranspositionTable::TTEntry tbEnt;
-        if (TBProbe::tbProbe(pos, ply, alpha, beta, depth, tt.getTT(), tbEnt, nodesToGo)) {
+        if (TBProbe::tbProbe(pos, ply, alpha, beta, depth, threadNo, tt.getTT(), tbEnt, nodesToGo)) {
             tbHits++;
             int type = tbEnt.getType();
             int score = tbEnt.getScore(ply);

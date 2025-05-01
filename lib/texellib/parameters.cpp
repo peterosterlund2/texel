@@ -69,6 +69,8 @@ namespace UciParams {
     std::shared_ptr<SpinParam> minProbeDepth6dtz(std::make_shared<SpinParam>("MinProbeDepth6dtz", 0, 100, 1));
     std::shared_ptr<SpinParam> minProbeDepth7(std::make_shared<SpinParam>("MinProbeDepth7", 0, 100, 12));
     std::shared_ptr<SpinParam> minProbeDepth7dtz(std::make_shared<SpinParam>("MinProbeDepth7dtz", 0, 100, 12));
+    std::shared_ptr<SpinParam> max6dtzThreads(std::make_shared<SpinParam>("Max6dtzThreads", 0, maxThreads, maxThreads));
+    std::shared_ptr<SpinParam> max7dtzThreads(std::make_shared<SpinParam>("Max7dtzThreads", 0, maxThreads, maxThreads));
 }
 
 int pieceValue[Piece::nPieceTypes];
@@ -161,6 +163,8 @@ Parameters::Parameters() {
     addPar(UciParams::minProbeDepth6dtz);
     addPar(UciParams::minProbeDepth7);
     addPar(UciParams::minProbeDepth7dtz);
+    addPar(UciParams::max6dtzThreads);
+    addPar(UciParams::max7dtzThreads);
 
     // Evaluation parameters
     REGISTER_PARAM(pV, "PawnValue");

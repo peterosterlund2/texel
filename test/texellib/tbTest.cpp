@@ -629,7 +629,7 @@ TBTest::testTbSearch() {
         TranspositionTable& tt = SearchTest::tt;
         TranspositionTable::TTEntry ent;
         int nodesToCheckStop = 0;
-        bool result = TBProbe::tbProbe(pos, 0, -mate0, mate0, 0, tt, ent, nodesToCheckStop);
+        bool result = TBProbe::tbProbe(pos, 0, -mate0, mate0, 0, 0, tt, ent, nodesToCheckStop);
         EXPECT_TRUE(result);
         EXPECT_LE(ent.getScore(0), mated18); // DTZ probed on previous ply, where side is correct
     }

@@ -377,6 +377,8 @@ namespace UciParams {
     extern std::shared_ptr<Parameters::SpinParam> minProbeDepth6dtz; // Min probe depth for 6-men DTZ
     extern std::shared_ptr<Parameters::SpinParam> minProbeDepth7;    // Min probe depth for 7-men
     extern std::shared_ptr<Parameters::SpinParam> minProbeDepth7dtz; // Min probe depth for 7-men DTZ
+    extern std::shared_ptr<Parameters::SpinParam> max6dtzThreads;    // No of threads that can probe 6-men DTZ
+    extern std::shared_ptr<Parameters::SpinParam> max7dtzThreads;    // No of threads that can probe 7-men DTZ
 }
 
 // ----------------------------------------------------------------------------
