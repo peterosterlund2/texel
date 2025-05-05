@@ -85,8 +85,8 @@ LargePageAlloc::allocBytes(size_t numBytes) {
     const int prot = PROT_READ | PROT_WRITE;
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB;
     if (numBytes >= 1024 * 1024 * 1024) {
-        const int MAP_HUGE_1GB = 30 << MAP_HUGE_SHIFT;
-        void* mem = mmap(NULL, numBytes, prot, flags | MAP_HUGE_1GB, -1, 0);
+        const int map_huge_1gb = 30 << MAP_HUGE_SHIFT;
+        void* mem = mmap(NULL, numBytes, prot, flags | map_huge_1gb, -1, 0);
         if (mem != MAP_FAILED)
             return std::shared_ptr<void>(mem, deleter);
     }
