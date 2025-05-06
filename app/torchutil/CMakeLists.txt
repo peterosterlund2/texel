@@ -24,14 +24,12 @@ if(ENABLE_TORCHUTIL)
   add_library(torchutillib STATIC
     ${src_torchutil_lib}
     )
-  set_property(TARGET torchutillib PROPERTY CXX_STANDARD 14)
   target_link_libraries(torchutillib texellib texelutillib)
   target_include_directories(texelutillib
     PUBLIC . pg
     )
 
   add_executable(torchutil ${src_torchutil})
-  set_property(TARGET torchutil PROPERTY CXX_STANDARD 14)
   target_compile_options(torchutil PUBLIC ${TORCH_CXX_FLAGS})
   target_link_libraries(torchutil "${TORCH_LIBRARIES}")
   target_link_libraries(torchutil torchutillib)
