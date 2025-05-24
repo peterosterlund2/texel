@@ -107,9 +107,6 @@ public:
 
     static const int IPOLMAX = 1024;
 
-    /** Compute v1 + (v2-v1)*k/IPOLMAX */
-    static int interpolate(int v1, int v2, int k);
-
 private:
     template <bool print> int evalPos();
 
@@ -175,11 +172,6 @@ Evaluate::interpolate(int x, int x1, int y1, int x2, int y2) {
     } else {
         return (x - x1) * (y2 - y1) / (x2 - x1) + y1;
     }
-}
-
-inline int
-Evaluate::interpolate(int v1, int v2, int k) {
-    return v1 + (v2 - v1) * k / IPOLMAX;
 }
 
 inline int

@@ -321,7 +321,7 @@ private:
 
 int
 Search::searchRoot(bool tb, int alpha, int beta, int ply, int depth,
-                      const bool inCheck) {
+                   const bool inCheck) {
     SearchTreeInfo sti = searchTreeInfo[ply-1];
     jobId++;
     comm.sendStartSearch(jobId, sti, alpha, beta, depth);
