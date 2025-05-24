@@ -27,9 +27,12 @@
 #include "position.hpp"
 #include "textio.hpp"
 
+#include <string>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+
+using namespace std::string_literals;
 
 
 static void usage() {
@@ -44,7 +47,7 @@ int main(int argc, char* argv[]) {
         usage();
 
     int arg = 1;
-    if ((argc > 2) && (std::string(argv[1]) == "-ctg")) {
+    if ((argc > 2) && (argv[1] == "-ctg"s)) {
         bookFile = argv[2];
         arg = 3;
     } else if (startsWith(argv[1], "-"))

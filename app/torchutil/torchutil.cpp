@@ -39,6 +39,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <string>
 #include <cstdint>
 #include <bitset>
 #include <chrono>
@@ -48,6 +49,8 @@
 extern "C" {
 #include "tb/gtb/compression/lzma/Lzma86Enc.h"
 }
+
+using namespace std::string_literals;
 
 // ------------------------------------------------------------------------------
 
@@ -1246,7 +1249,7 @@ main(int argc, char* argv[]) {
     try {
         int nWorkers = std::thread::hardware_concurrency();
         while (true) {
-            if ((argc >= 3) && (std::string(argv[1]) == "-j")) {
+            if ((argc >= 3) && (argv[1] == "-j"s)) {
                 if (!str2Num(argv[2], nWorkers) || nWorkers <= 0)
                     usage();
                 argc -= 2;

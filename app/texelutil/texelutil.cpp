@@ -45,6 +45,8 @@
 #include <string>
 #include <thread>
 
+using namespace std::string_literals;
+
 void
 parseParValues(const std::string& fname, std::vector<ParamValue>& parValues) {
     Parameters& uciPars = Parameters::instance();
@@ -182,9 +184,9 @@ parseParamDomains(int argc, char* argv[], std::vector<ParamDomain>& params) {
     while (i + 3 < argc) {
         ParamDomain pd;
         pd.name = argv[i];
-        if (!str2Num(std::string(argv[i+1]), pd.minV) ||
-            !str2Num(std::string(argv[i+2]), pd.step) || (pd.step <= 0) ||
-            !str2Num(std::string(argv[i+3]), pd.maxV))
+        if (!str2Num(argv[i+1], pd.minV) ||
+            !str2Num(argv[i+2], pd.step) || (pd.step <= 0) ||
+            !str2Num(argv[i+3], pd.maxV))
             usage();
         if (!Parameters::instance().getParam(pd.name))
             throw ChessParseError("No such parameter:" + pd.name);
@@ -261,11 +263,11 @@ doFilterCmd(int argc, char* argv[], ChessTool& chessTool) {
     } else if (type == "mtrldiff") {
         if (argc != 8)
             usage();
-        bool minorEqual = std::string(argv[3]) == "-m";
+        bool minorEqual = argv[3] == "-m"s;
         int first = minorEqual ? 4 : 3;
         std::vector<std::pair<bool,int>> mtrlPattern;
         for (int i = first; i < 8; i++) {
-            if (std::string(argv[i]) == "x")
+            if (argv[i] == "x"s)
                 mtrlPattern.push_back(std::make_pair(false, 0));
             else {
                 int d;
@@ -278,13 +280,13 @@ doFilterCmd(int argc, char* argv[], ChessTool& chessTool) {
     } else if (type == "mtrl") {
         if (argc < 4)
             usage();
-        bool minorEqual = std::string(argv[3]) == "-m";
+        bool minorEqual = argv[3] == "-m"s;
         if (argc != (minorEqual ? 12 : 13))
             usage();
         int first = minorEqual ? 4 : 3;
         std::vector<std::pair<bool,int>> mtrlPattern;
         for (int i = first; i < argc; i++) {
-            if (std::string(argv[i]) == "x")
+            if (argv[i] == "x"s)
                 mtrlPattern.push_back(std::make_pair(false, 0));
             else {
                 int d;
@@ -382,9 +384,9 @@ doBookCmd(int argc, char* argv[]) {
         bool includeLeafNodes = true;
         std::string excludeFile;
         for (int i = 7; i < argc; i++) {
-            if (std::string(argv[i]) == "noleaf") {
+            if (argv[i] == "noleaf"s) {
                 includeLeafNodes = false;
-            } else if (std::string(argv[i]) == "-e" && i + 1 < argc) {
+            } else if (argv[i] == "-e"s && i + 1 < argc) {
                 excludeFile = argv[i+1];
                 i++;
             } else
@@ -423,7 +425,7 @@ doGsprt(int argc, char* argv[]) {
 
     int arg = 4;
     while (arg < argc) {
-        if (arg + 2 < argc && argv[arg] == std::string("-ab")) {
+        if (arg + 2 < argc && argv[arg] == "-ab"s) {
             if (!str2Num(argv[arg+1], pars.alpha) ||
                 !str2Num(argv[arg+2], pars.beta))
                 usage();
@@ -503,18 +505,18 @@ doMatch(int argc, char* argv[], int nWorkers) {
 
     int arg = 2;
     while (arg < argc) {
-        if (arg+1 < argc && argv[arg] == std::string("-n")) {
+        if (arg+1 < argc && argv[arg] == "-n"s) {
             if (!str2Num(argv[arg+1], numGames) || numGames <= 0)
                 usage();
             fixedGames = true;
             arg += 2;
-        } else if (arg+2 < argc && argv[arg] == std::string("-gsprt")) {
+        } else if (arg+2 < argc && argv[arg] == "-gsprt"s) {
             if (!str2Num(argv[arg+1], gsprtParams.elo0) ||
                 !str2Num(argv[arg+2], gsprtParams.elo1))
                 usage();
             gsprt = true;
             arg += 3;
-        } else if (arg+2 < argc && argv[arg] == std::string("-ab")) {
+        } else if (arg+2 < argc && argv[arg] == "-ab"s) {
             if (!str2Num(argv[arg+1], gsprtParams.alpha) ||
                 !str2Num(argv[arg+2], gsprtParams.beta))
                 usage();
@@ -568,7 +570,7 @@ doProofGameCmd(int argc, char* argv[], int nWorkers) {
 
     int arg = 2;
     while (arg < argc) {
-        if (arg+1 < argc && argv[arg] == std::string("-w")) {
+        if (arg+1 < argc && argv[arg] == "-w"s) {
             std::string s(argv[arg+1]);
             size_t idx = s.find(':');
             if ((idx == std::string::npos) ||
@@ -576,42 +578,42 @@ doProofGameCmd(int argc, char* argv[], int nWorkers) {
                     !str2Num(s.substr(idx+1), b))
                 usage();
             arg += 2;
-        } else  if (arg + 1 < argc && argv[arg] == std::string("-i")) {
+        } else  if (arg + 1 < argc && argv[arg] == "-i"s) {
             initFen = argv[arg+1];
             arg += 2;
-        } else if (arg + 1 < argc && argv[arg] == std::string("-ipgn")) {
+        } else if (arg + 1 < argc && argv[arg] == "-ipgn"s) {
             initPgnFile = argv[arg+1];
             arg += 2;
-        } else if (arg + 1 < argc && argv[arg] == std::string("-m")) {
+        } else if (arg + 1 < argc && argv[arg] == "-m"s) {
             if (!str2Num(argv[arg+1], maxNodes))
                 usage();
             arg += 2;
-        } else if (argv[arg] == std::string("-d")) {
+        } else if (argv[arg] == "-d"s) {
             dynamic = true;
             arg++;
-        } else if (argv[arg] == std::string("-v")) {
+        } else if (argv[arg] == "-v"s) {
             verbose = true;
             arg++;
-        } else if (argv[arg] == std::string("-nokernel")) {
+        } else if (argv[arg] == "-nokernel"s) {
             useKernel = false;
             arg++;
-        } else if (argv[arg] == std::string("-f")) {
+        } else if (argv[arg] == "-f"s) {
             filter = true;
             arg++;
-        } else if (arg + 1 < argc && argv[arg] == std::string("-o")) {
+        } else if (arg + 1 < argc && argv[arg] == "-o"s) {
             outFile = argv[arg+1];
             arg += 2;
-        } else if (argv[arg] == std::string("-retry")) {
+        } else if (argv[arg] == "-retry"s) {
             retry = true;
             arg++;
-        } else if (argv[arg] == std::string("-na")) {
+        } else if (argv[arg] == "-na"s) {
             useNonAdmissible = true;
             arg++;
-        } else if (arg + 1 < argc && argv[arg] == std::string("-rnd")) {
+        } else if (arg + 1 < argc && argv[arg] == "-rnd"s) {
             if (!str2Num(argv[arg+1], rndSeed))
                 usage();
             arg += 2;
-        } else if (argv[arg] == std::string("-rndkernel")) {
+        } else if (argv[arg] == "-rndkernel"s) {
             rndKernel = true;
             arg++;
         } else {
@@ -668,7 +670,7 @@ doProofKernelCmd(int argc, char* argv[], int nWorkers) {
     std::string initFen = TextIO::startPosFEN;
     int arg = 2;
     while (arg < argc) {
-        if (arg + 1 < argc && argv[arg] == std::string("-i")) {
+        if (arg + 1 < argc && argv[arg] == "-i"s) {
             initFen = argv[arg+1];
             arg += 2;
         } else {
@@ -721,24 +723,24 @@ main(int argc, char* argv[]) {
         bool optimizeMoveOrdering = false;
         bool useSearchScore = false;
         while (true) {
-            if ((argc >= 3) && (std::string(argv[1]) == "-iv")) {
+            if ((argc >= 3) && (argv[1] == "-iv"s)) {
                 setInitialValues(argv[2]);
                 argc -= 2;
                 argv += 2;
-            } else if ((argc >= 3) && (std::string(argv[1]) == "-j")) {
+            } else if ((argc >= 3) && (argv[1] == "-j"s)) {
                 if (!str2Num(argv[2], nWorkers) || nWorkers <= 0)
                     usage();
                 argc -= 2;
                 argv += 2;
-            } else if ((argc >= 2) && (std::string(argv[1]) == "-e")) {
+            } else if ((argc >= 2) && (argv[1] == "-e"s)) {
                 useEntropyErrorFunction = true;
                 argc -= 1;
                 argv += 1;
-            } else if ((argc >= 2) && (std::string(argv[1]) == "-s")) {
+            } else if ((argc >= 2) && (argv[1] == "-s"s)) {
                 useSearchScore = true;
                 argc -= 1;
                 argv += 1;
-            } else if ((argc >= 2) && (std::string(argv[1]) == "-moveorder")) {
+            } else if ((argc >= 2) && (argv[1] == "-moveorder"s)) {
                 optimizeMoveOrdering = true;
                 argc -= 1;
                 argv += 1;
@@ -760,7 +762,7 @@ main(int argc, char* argv[]) {
                     usage();
             bool includeUnScored = false;
             if (argc > 3)
-                includeUnScored = argv[3] == std::string("1");
+                includeUnScored = argv[3] == "1"s;
             chessTool.pgnToFen(std::cin, n, includeUnScored);
         } else if (cmd == "f2p") {
             chessTool.fenToPgn(std::cin);
@@ -843,7 +845,7 @@ main(int argc, char* argv[]) {
             if (argc != 4)
                 usage();
             std::string xTypeStr = argv[2];
-            bool includePosGameNr = (std::string(argv[3]) != "0");
+            bool includePosGameNr = (argv[3] != "0"s);
             chessTool.printResiduals(std::cin, xTypeStr, includePosGameNr);
         } else if (cmd == "genfen") {
             if ((argc < 3) || !PosGenerator::generate(argv[2]))
@@ -1040,7 +1042,7 @@ main(int argc, char* argv[]) {
                 usage();
             bool pairMode = false;
             if (argc == 4) {
-                if (argv[3] == std::string("-p"))
+                if (argv[3] == "-p"s)
                     pairMode = true;
                 else
                     usage();

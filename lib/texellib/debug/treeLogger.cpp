@@ -36,7 +36,7 @@
 
 void
 TreeLoggerWriter::open(const std::string& filename, int threadNo0) {
-    auto fn = filename + std::string(".") + num2Str(threadNo0);
+    auto fn = filename + "." + num2Str(threadNo0);
     os.open(fn.c_str(), std::ios_base::out |
                         std::ios_base::binary |
                         std::ios_base::trunc);

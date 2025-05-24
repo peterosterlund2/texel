@@ -30,15 +30,18 @@
 
 #include <iostream>
 #include <memory>
+#include <string>
 
 #include "gtest/gtest.h"
+
+using namespace std::string_literals;
 
 TEST(UtilTest, testUtil) {
     int arr1[10];
     EXPECT_EQ(10, COUNT_OF(arr1));
 
     std::vector<std::string> splitResult;
-    splitString(std::string("a b c def"), splitResult);
+    splitString("a b c def", splitResult);
     auto v = std::vector<std::string>{"a", "b", "c", "def"};
     EXPECT_EQ((std::vector<std::string>{"a", "b", "c", "def"}), splitResult);
 
@@ -72,8 +75,8 @@ TEST(UtilTest, testUtil) {
     EXPECT_TRUE(!contains((std::vector<int>{}), 0));
     EXPECT_TRUE(!contains((std::vector<int>{}), 1));
 
-    EXPECT_EQ(std::string("asdf  adf"), trim(std::string(" asdf  adf  ")));
-    EXPECT_EQ(std::string("asdf xyz"), trim(std::string("\t asdf xyz")));
+    EXPECT_EQ("asdf  adf", trim(" asdf  adf  "));
+    EXPECT_EQ("asdf xyz", trim("\t asdf xyz"));
 }
 
 TEST(UtilTest, testSampleStat) {

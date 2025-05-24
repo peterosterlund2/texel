@@ -32,21 +32,24 @@
 #include "cluster.hpp"
 
 #include <memory>
+#include <string>
+
+using namespace std::string_literals;
 
 /** Texel chess engine main function. */
 int main(int argc, char* argv[]) {
     Cluster::instance().init(&argc, &argv);
     ComputerPlayer::initEngine();
-    if ((argc == 2) && (std::string(argv[1]) == "txt")) {
+    if ((argc == 2) && (argv[1] == "txt"s)) {
         auto whitePlayer = make_unique<HumanPlayer>();
         auto blackPlayer = make_unique<ComputerPlayer>();
         blackPlayer->setTTSize(2*1024*1024);
         TUIGame game(std::move(whitePlayer), std::move(blackPlayer));
         game.play();
-    } else if ((argc == 3) && (std::string(argv[1]) == "tree")) {
+    } else if ((argc == 3) && (argv[1] == "tree"s)) {
         TreeLoggerReader::main(argv[2]);
     } else {
-        if ((argc == 2) && (std::string(argv[1]) == "-nonuma"))
+        if ((argc == 2) && (argv[1] == "-nonuma"s))
             Numa::instance().disable();
         UCIProtocol::main(false);
     }

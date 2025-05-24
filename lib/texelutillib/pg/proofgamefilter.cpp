@@ -33,9 +33,11 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <string>
 #include <climits>
 #include <mutex>
 
+using namespace std::string_literals;
 
 using PieceColor = ProofKernel::PieceColor;
 using PieceType = ProofKernel::PieceType;
@@ -939,7 +941,7 @@ ProofGameFilter::computeProofGame(const Position& startPos, Line& line,
         }
         std::vector<std::string>& info = line.tokenData(INFO);
         info.clear();
-        info.push_back(e.what() + std::string(","));
+        info.push_back(e.what() + ","s);
         if (result.smallestBound > 0) {
             info.push_back("bound=" + num2Str(result.smallestBound));
             info.push_back("moves");
@@ -1162,7 +1164,7 @@ MultiBoard::removePieceType(Square square, int piece) {
             return;
         }
     }
-    throw ChessError(std::string("No piece of type ") + num2Str(piece) + " on square " +
+    throw ChessError("No piece of type "s + num2Str(piece) + " on square " +
                      TextIO::squareToString(square));
 }
 
