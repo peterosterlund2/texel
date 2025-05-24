@@ -41,8 +41,8 @@ int main(int argc, char* argv[]) {
     Cluster::instance().init(&argc, &argv);
     ComputerPlayer::initEngine();
     if ((argc == 2) && (argv[1] == "txt"s)) {
-        auto whitePlayer = make_unique<HumanPlayer>();
-        auto blackPlayer = make_unique<ComputerPlayer>();
+        auto whitePlayer = std::make_unique<HumanPlayer>();
+        auto blackPlayer = std::make_unique<ComputerPlayer>();
         blackPlayer->setTTSize(2*1024*1024);
         TUIGame game(std::move(whitePlayer), std::move(blackPlayer));
         game.play();

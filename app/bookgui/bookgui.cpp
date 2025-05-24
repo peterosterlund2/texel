@@ -73,7 +73,7 @@ void
 BookGui::createChessBoard() {
     Gtk::DrawingArea* chessBoardArea;
     builder->get_widget("chessBoard", chessBoardArea);
-    chessBoard = make_unique<ChessBoard>(pos, chessBoardArea);
+    chessBoard = std::make_unique<ChessBoard>(pos, chessBoardArea);
     chessBoard->signal_move_made.connect(sigc::mem_fun(*this, &BookGui::chessBoardMoveMade));
 }
 

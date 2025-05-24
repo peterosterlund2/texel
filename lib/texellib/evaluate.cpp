@@ -152,7 +152,7 @@ Evaluate::computeMaterialScore(MaterialHashData& mhd, bool print) const {
 
 std::unique_ptr<Evaluate::EvalHashTables>
 Evaluate::getEvalHashTables() {
-    return make_unique<EvalHashTables>();
+    return std::make_unique<EvalHashTables>();
 }
 
 Evaluate::EvalHashTables::EvalHashTables() {

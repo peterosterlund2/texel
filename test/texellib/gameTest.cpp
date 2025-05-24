@@ -43,7 +43,7 @@ TEST(GameTest, testHaveDrawOffer) {
 
 void
 GameTest::testHaveDrawOffer() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_unique<HumanPlayer>(), std::make_unique<HumanPlayer>());
     EXPECT_EQ(false, game.haveDrawOffer());
 
     bool res = game.processString("e4");
@@ -136,7 +136,7 @@ TEST(GameTest, testDraw50) {
 
 void
 GameTest::testDraw50() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_unique<HumanPlayer>(), std::make_unique<HumanPlayer>());
     EXPECT_EQ(false, game.haveDrawOffer());
     bool res = game.processString("draw 50");
     ASSERT_EQ(true, res);
@@ -197,7 +197,7 @@ TEST(GameTest, testDrawRep) {
 
 void
 GameTest::testDrawRep() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_unique<HumanPlayer>(), std::make_unique<HumanPlayer>());
     EXPECT_EQ(false, game.haveDrawOffer());
     game.processString("Nc3");
     game.processString("Nc6");
@@ -271,7 +271,7 @@ TEST(GameTest, testResign) {
 
 void
 GameTest::testResign() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_unique<HumanPlayer>(), std::make_unique<HumanPlayer>());
     EXPECT_EQ(Game::ALIVE, game.getGameState());
     game.processString("f3");
     EXPECT_EQ(Game::ALIVE, game.getGameState());
@@ -298,7 +298,7 @@ TEST(GameTest, testProcessString) {
 
 void
 GameTest::testProcessString() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_unique<HumanPlayer>(), std::make_unique<HumanPlayer>());
     EXPECT_EQ(TextIO::startPosFEN, TextIO::toFEN(game.pos));
     bool res = game.processString("Nf3");
     ASSERT_EQ(true, res);
@@ -353,7 +353,7 @@ TEST(GameTest, testGetGameState) {
 
 void
 GameTest::testGetGameState() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_unique<HumanPlayer>(), std::make_unique<HumanPlayer>());
     EXPECT_EQ(Game::ALIVE, game.getGameState());
     game.processString("f3");
     game.processString("e5");
@@ -371,7 +371,7 @@ TEST(GameTest, testInsufficientMaterial) {
 
 void
 GameTest::testInsufficientMaterial() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_unique<HumanPlayer>(), std::make_unique<HumanPlayer>());
     EXPECT_EQ(Game::ALIVE, game.getGameState());
     game.processString("setpos 4k3/8/8/8/8/8/8/4K3 w - - 0 1");
     EXPECT_EQ(Game::DRAW_NO_MATE, game.getGameState());
@@ -416,7 +416,7 @@ TEST(GameTest, testPerfT) {
 
 void
 GameTest::testPerfT() {
-    Game game(make_unique<HumanPlayer>(), make_unique<HumanPlayer>());
+    Game game(std::make_unique<HumanPlayer>(), std::make_unique<HumanPlayer>());
     game.processString("new");
     U64 n1[] = { 20, 400, 8902, 197281, 4865609, 119060324, 3195901860ULL, 84998978956ULL};
     doTestPerfTFast(game.pos, 5, n1);

@@ -51,7 +51,7 @@
 EngineMainThread::EngineMainThread()
     : tt(256) {
     Communicator* clusterParent = Cluster::instance().createParentCommunicator(tt);
-    comm = make_unique<ThreadCommunicator>(clusterParent, tt, notifier, true);
+    comm = std::make_unique<ThreadCommunicator>(clusterParent, tt, notifier, true);
     Cluster::instance().createChildCommunicators(comm.get(), tt);
     Cluster::instance().connectAllReceivers(comm.get());
 }

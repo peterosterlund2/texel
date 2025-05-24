@@ -766,7 +766,7 @@ Book::extendBook(PositionSelector& selector, int searchTime, int numThreads,
         scheduler = std::make_shared<SearchScheduler>();
         searchScheduler = scheduler;
         for (int i = 0; i < numThreads; i++) {
-            auto sr = make_unique<SearchRunner>(i, tt);
+            auto sr = std::make_unique<SearchRunner>(i, tt);
             scheduler->addWorker(std::move(sr));
         }
     }
@@ -1499,7 +1499,7 @@ void
 SearchScheduler::startWorkers(Book::Listener* listener) {
     for (auto& w : workers) {
         SearchRunner& sr = *w;
-        auto thread = make_unique<std::thread>([this,&sr,listener]() {
+        auto thread = std::make_unique<std::thread>([this,&sr,listener]() {
             workerLoop(sr, listener);
         });
         threads.push_back(std::move(thread));

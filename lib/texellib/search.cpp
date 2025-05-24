@@ -51,7 +51,7 @@ Search::Search(const Position& pos0, const std::vector<U64>& posHashList0,
                TreeLogger& logFile)
     : eval(st.et), kt(st.kt), ht(st.ht), tt(st.tt), comm(comm), threadNo(0),
       logFile(logFile) {
-    stopHandler = make_unique<DefaultStopHandler>(*this);
+    stopHandler = std::make_unique<DefaultStopHandler>(*this);
     init(pos0, posHashList0, posHashListSize0);
 }
 

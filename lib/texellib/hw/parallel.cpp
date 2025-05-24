@@ -64,7 +64,7 @@ Notifier::wait(int timeOutMs) {
 // ----------------------------------------------------------------------------
 
 Communicator::Communicator(Communicator* parent, TranspositionTable& tt)
-    : parent(parent), ctt(make_unique<ClusterTT>(tt)) {
+    : parent(parent), ctt(std::make_unique<ClusterTT>(tt)) {
     if (parent)
         parent->addChild(this);
 }
@@ -398,13 +398,13 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
     CommandType type = (CommandType)tmpType;
     switch (type) {
     case ASSIGN_THREADS:
-        cmd = make_unique<AssignThreadsCommand>();
+        cmd = std::make_unique<AssignThreadsCommand>();
         break;
     case INIT_SEARCH:
-        cmd = make_unique<InitSearchCommand>();
+        cmd = std::make_unique<InitSearchCommand>();
         break;
     case START_SEARCH:
-        cmd = make_unique<StartSearchCommand>();
+        cmd = std::make_unique<StartSearchCommand>();
         break;
     case STOP_SEARCH:
     case QUIT:
@@ -413,13 +413,13 @@ Communicator::Command::createFromByteBuf(const U8* buffer) {
     case QUIT_ACK:
     case TT_DATA:
     case TT_ACK:
-        cmd = make_unique<Command>();
+        cmd = std::make_unique<Command>();
         break;
     case SET_PARAM:
-        cmd = make_unique<SetParamCommand>();
+        cmd = std::make_unique<SetParamCommand>();
         break;
     case REPORT_STATS:
-        cmd = make_unique<ReportStatsCommand>();
+        cmd = std::make_unique<ReportStatsCommand>();
         break;
     }
 
@@ -561,7 +561,7 @@ WorkerThread::WorkerThread(int threadNo, Communicator* parentComm,
         auto f = [this,parentComm]() {
             mainLoop(parentComm, false);
         };
-        thread = make_unique<std::thread>(f);
+        thread = std::make_unique<std::thread>(f);
     }
 }
 
@@ -616,7 +616,7 @@ void
 WorkerThread::mainLoop(Communicator* parentComm, bool cluster) {
     Numa::instance().bindThread(threadNo);
     if (!cluster) {
-        comm = make_unique<ThreadCommunicator>(parentComm, tt, threadNotifier, threadNo == 0);
+        comm = std::make_unique<ThreadCommunicator>(parentComm, tt, threadNotifier, threadNo == 0);
         Cluster::instance().connectClusterReceivers(comm.get());
         createWorkers(threadNo + 1, comm.get(), numWorkers - 1, tt, children);
     } else
@@ -662,7 +662,7 @@ WorkerThread::CommHandler::initSearch(const Position& pos,
     wt.whiteContempt = whiteContempt;
     wt.jobId = -1;
 
-    wt.logFile = make_unique<TreeLogger>();
+    wt.logFile = std::make_unique<TreeLogger>();
     wt.logFile->open("/home/petero/treelog.dmp", wt.threadNo);
     wt.rootNodeIdx = wt.logFile->logPosition(pos);
     if (wt.kt)
@@ -803,9 +803,9 @@ WorkerThread::doSearch(CommHandler& commHandler) {
     if (!et)
         et = Evaluate::getEvalHashTables();
     if (!kt)
-        kt = make_unique<KillerTable>();
+        kt = std::make_unique<KillerTable>();
     if (!ht)
-        ht = make_unique<History>();
+        ht = std::make_unique<History>();
 
     using namespace SearchConst;
     int initExtraDepth = 0;
@@ -825,7 +825,7 @@ WorkerThread::doSearch(CommHandler& commHandler) {
         const int minProbeDepth = TBProbe::tbEnabled() ? UciParams::minProbeDepth->getIntPar() : MAX_SEARCH_DEPTH;
         sc.setMinProbeDepth(minProbeDepth);
 
-        auto stopHandler = make_unique<ThreadStopHandler>(*this, jobId, sc, commHandler);
+        auto stopHandler = std::make_unique<ThreadStopHandler>(*this, jobId, sc, commHandler);
         sc.setStopHandler(std::move(stopHandler));
 
         int ply = 1;

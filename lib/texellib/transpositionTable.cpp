@@ -345,7 +345,7 @@ TranspositionTable::updateTB(const Position& pos, RelaxedShared<S64>& maxTimeMil
     pc.nbb = BitBoard::bitCount(pos.pieceTypeBB(Piece::BBISHOP));
     pc.nbn = BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT));
 
-    tbGen = make_unique<TBGenerator<TTStorage>>(ttStorage, pc);
+    tbGen = std::make_unique<TBGenerator<TTStorage>>(ttStorage, pc);
     if (!tbGen->generate(maxTimeMillis, false)) {
         // Increase requiredTime unless computation was aborted
         S64 maxT = maxTimeMillis;

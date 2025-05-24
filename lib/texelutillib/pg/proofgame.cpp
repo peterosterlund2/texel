@@ -306,7 +306,7 @@ ProofGame::search(const Options& opts, Result& result) {
     Position startPos = TextIO::readFEN(initialFen);
     {
         int N = opts.dynamic ? distLowerBound(startPos) * 2 : 0;
-        queue = make_unique<Queue>(TreeNodeCompare(nodes, opts.weightA, opts.weightB, N));
+        queue = std::make_unique<Queue>(TreeNodeCompare(nodes, opts.weightA, opts.weightB, N));
     }
 
     validatePieceCounts(startPos);

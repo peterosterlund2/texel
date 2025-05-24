@@ -71,18 +71,18 @@ BookBuildControl::notify(Change change) {
 void
 BookBuildControl::newBook() {
     filename.clear();
-    book = make_unique<BookBuild::Book>("emptybook.tbin.log", params.bookDepthCost,
-                                        params.ownPathErrorCost,
-                                        params.otherPathErrorCost);
+    book = std::make_unique<BookBuild::Book>("emptybook.tbin.log", params.bookDepthCost,
+                                             params.ownPathErrorCost,
+                                             params.otherPathErrorCost);
 }
 
 void
 BookBuildControl::readFromFile(const std::string& newFileName) {
     std::lock_guard<std::mutex> L(mutex);
     filename = newFileName;
-    book = ::make_unique<BookBuild::Book>(filename + ".log", params.bookDepthCost,
-                                          params.ownPathErrorCost,
-                                          params.otherPathErrorCost);
+    book = std::make_unique<BookBuild::Book>(filename + ".log", params.bookDepthCost,
+                                             params.ownPathErrorCost,
+                                             params.otherPathErrorCost);
     auto f = [this]() {
         book->readFromFile(filename);
         {
@@ -160,7 +160,7 @@ BookBuildControl::startSearch() {
     private:
         BookBuildControl& bbc;
     };
-    book->setListener(make_unique<BookListener>(*this));
+    book->setListener(std::make_unique<BookListener>(*this));
     stopFlag.store(false);
     nPendingBookTasks = 1;
 
@@ -326,7 +326,7 @@ BookBuildControl::startAnalysis(const std::vector<Move>& moves) {
 
     Search::SearchTables st(comm.getCTT(), kt, ht, *et);
     sc = std::make_shared<Search>(pos, posHashList, posHashListSize, st, comm, treeLog);
-    scListener = make_unique<SearchListener>(*this, pos);
+    scListener = std::make_unique<SearchListener>(*this, pos);
     sc->setListener(*scListener);
     std::shared_ptr<MoveList> moveList(std::make_shared<MoveList>());
     MoveGen::pseudoLegalMoves(pos, *moveList);

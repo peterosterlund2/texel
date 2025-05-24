@@ -65,7 +65,7 @@ private:
 
 NotifyCounter::NotifyCounter(Notifier& notifier)
     : notifier(notifier) {
-    thread = make_unique<std::thread>([this](){ mainLoop(); });
+    thread = std::make_unique<std::thread>([this](){ mainLoop(); });
 }
 
 NotifyCounter::~NotifyCounter() {

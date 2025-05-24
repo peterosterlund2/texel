@@ -418,7 +418,7 @@ GameScheduler::addWorker(const GameRunner& gr) {
 
 void
 GameScheduler::startWorkers() {
-    pool = make_unique<ThreadPool<WorkUnit>>(runners.size());
+    pool = std::make_unique<ThreadPool<WorkUnit>>(runners.size());
 }
 
 void

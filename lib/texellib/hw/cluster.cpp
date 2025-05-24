@@ -40,7 +40,7 @@ Cluster::instance() {
 std::unique_ptr<TTReceiver>
 Cluster::createLocalTTReceiver(TranspositionTable& tt) {
 #ifdef CLUSTER
-    return make_unique<LocalTTReceiver>(tt);
+    return std::make_unique<LocalTTReceiver>(tt);
 #else
     return nullptr;
 #endif
@@ -145,7 +145,7 @@ Communicator*
 Cluster::createParentCommunicator(TranspositionTable& tt) {
     if (getParentNode() == -1)
         return nullptr;
-    clusterParent = make_unique<MPICommunicator>(nullptr, tt, getNodeNumber(), getParentNode(), -1);
+    clusterParent = std::make_unique<MPICommunicator>(nullptr, tt, getNodeNumber(), getParentNode(), -1);
     return clusterParent.get();
 }
 
@@ -155,7 +155,7 @@ Cluster::createChildCommunicators(Communicator* mainThreadComm, TranspositionTab
     int n = childRanks.size();
     for (int i = 0; i < n; i++) {
         int peerRank = childRanks[i];
-        auto comm = make_unique<MPICommunicator>(mainThreadComm, tt, getNodeNumber(), peerRank, i);
+        auto comm = std::make_unique<MPICommunicator>(mainThreadComm, tt, getNodeNumber(), peerRank, i);
         clusterChildren.push_back(std::move(comm));
     }
 }
@@ -272,7 +272,7 @@ Cluster::assignThreads(int numThreads, int& threadsThisNode, std::vector<int>& t
 MPICommunicator::MPICommunicator(Communicator* parent, TranspositionTable& tt,
                                  int myRank, int peerRank, int childNo)
     : Communicator(parent, tt), myRank(myRank), peerRank(peerRank), childNo(childNo),
-      ttReceiver(make_unique<ClusterTTReceiver>(CommandType::TT_DATA, peerRank, getCTT())) {
+      ttReceiver(std::make_unique<ClusterTTReceiver>(CommandType::TT_DATA, peerRank, getCTT())) {
 }
 
 TTReceiver*
