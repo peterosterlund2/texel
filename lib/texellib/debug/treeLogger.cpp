@@ -135,10 +135,10 @@ TreeLoggerReader::computeForwardPointers() {
         readEntry(i, entry);
         if (entry.type == EntryType::NODE_END) {
             U64 idx = entry.ee.startIndex;
-            toWrite.push_back(std::make_pair(idx, i));
+            toWrite.push_back(std::pair(idx, i));
         } else if (entry.type == EntryType::POSITION_PART0) {
             if (i > prevPosIdx)
-                toWrite.push_back(std::make_pair(prevPosIdx, i));
+                toWrite.push_back(std::pair(prevPosIdx, i));
             prevPosIdx = i;
         }
         if (toWrite.size() >= batchSize) {

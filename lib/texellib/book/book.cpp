@@ -200,8 +200,8 @@ void
 Book::addToBook(const Position& pos, const Move& moveToAdd) {
     BookMap::iterator it = bookMap.find(pos.zobristHash());
     if (it == bookMap.end())
-        it = bookMap.insert(std::make_pair(pos.zobristHash(),
-                                           std::vector<BookEntry>())).first;
+        it = bookMap.insert(std::pair(pos.zobristHash(),
+                                      std::vector<BookEntry>())).first;
 
     std::vector<BookEntry>& ent = it->second;
     for (size_t i = 0; i < ent.size(); i++) {

@@ -268,12 +268,12 @@ doFilterCmd(int argc, char* argv[], ChessTool& chessTool) {
         std::vector<std::pair<bool,int>> mtrlPattern;
         for (int i = first; i < 8; i++) {
             if (argv[i] == "x"s)
-                mtrlPattern.push_back(std::make_pair(false, 0));
+                mtrlPattern.push_back(std::pair(false, 0));
             else {
                 int d;
                 if (!str2Num(argv[i], d))
                     usage();
-                mtrlPattern.push_back(std::make_pair(true, d));
+                mtrlPattern.push_back(std::pair(true, d));
             }
         }
         chessTool.filterMtrlBalance(std::cin, minorEqual, mtrlPattern);
@@ -287,12 +287,12 @@ doFilterCmd(int argc, char* argv[], ChessTool& chessTool) {
         std::vector<std::pair<bool,int>> mtrlPattern;
         for (int i = first; i < argc; i++) {
             if (argv[i] == "x"s)
-                mtrlPattern.push_back(std::make_pair(false, 0));
+                mtrlPattern.push_back(std::pair(false, 0));
             else {
                 int d;
                 if (!str2Num(argv[i], d))
                     usage();
-                mtrlPattern.push_back(std::make_pair(true, d));
+                mtrlPattern.push_back(std::pair(true, d));
             }
         }
         chessTool.filterTotalMaterial(std::cin, minorEqual, mtrlPattern);

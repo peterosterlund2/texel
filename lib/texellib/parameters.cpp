@@ -278,7 +278,7 @@ ParamTableBase::registerParamsN(const std::string& name, Parameters& pars,
         maxParIdx = std::max(maxParIdx, pn);
         auto it = parNoToVal.find(pn);
         if (it == parNoToVal.end())
-            parNoToVal.insert(std::make_pair(pn, sign*table[i]));
+            parNoToVal.insert(std::pair(pn, sign*table[i]));
         else
             assert(it->second == sign*table[i]);
     }

@@ -467,7 +467,7 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
         U64 hash = pos.bookHash();
         U16 cMove = move.getCompressedMove();
         return std::binary_search(excludedMoves.begin(), excludedMoves.end(),
-                                  std::make_pair(hash, cMove));
+                                  std::pair(hash, cMove));
     };
 
     Position pos;
@@ -1127,7 +1127,7 @@ Book::computeWeights(int maxErrSelf, double errOtherExpConst, WeightInfo& weight
     for (const auto& e : bookNodes) {
         const U64 hKey = e.first;
         if (weights.find(hKey) == weights.end())
-            weights.insert(std::make_pair(hKey, BookWeight(0, 0)));
+            weights.insert(std::pair(hKey, BookWeight(0, 0)));
     }
 }
 
@@ -1387,8 +1387,8 @@ Book::getOrderedChildMoves(const BookNode& node, std::vector<Move>& moves) const
         childMove.setFromCompressed(e.first);
         const BookNode* child = e.second;
         int score = -BookNode::negateScore(child->getNegaMaxScore());
-        childMoves.push_back(std::make_pair(score,
-                                            childMove.getCompressedMove()));
+        childMoves.push_back(std::pair(score,
+                                       childMove.getCompressedMove()));
     }
     std::sort(childMoves.begin(), childMoves.end());
     moves.clear();

@@ -1297,7 +1297,7 @@ Search::quiescePos(int alpha, int beta, int ply, int depth, const bool inCheck) 
     Position::SerializeData bestPos;
     pos.serialize(bestPos);
     if (score >= beta)
-        return std::make_pair(bestScore, bestPos);
+        return std::pair(bestScore, bestPos);
     const int evalScore = score;
     if (score > alpha)
         alpha = score;
@@ -1392,11 +1392,11 @@ Search::quiescePos(int alpha, int beta, int ply, int depth, const bool inCheck) 
                 }
                 alpha = score;
                 if (alpha >= beta)
-                    return std::make_pair(bestScore, bestPos);
+                    return std::pair(bestScore, bestPos);
             }
         }
     }
-    return std::make_pair(bestScore, bestPos);
+    return std::pair(bestScore, bestPos);
 }
 
 int

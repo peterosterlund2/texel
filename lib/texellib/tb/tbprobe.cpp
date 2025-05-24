@@ -711,7 +711,7 @@ TBProbe::getMaxSubMate(const Position& pos) {
     int maxPawnMoves = getMaxPawnMoves(pos);
     int matId = pos.materialId();
     matId = std::min(matId, MatId::mirror(matId));
-    auto it = maxSubDTM.find(std::make_pair(matId,maxPawnMoves));
+    auto it = maxSubDTM.find(std::pair(matId,maxPawnMoves));
     if (it != maxSubDTM.end())
         return it->second;
 
@@ -733,7 +733,7 @@ TBProbe::getMaxSubMate(std::vector<int>& pieces, int pawnMoves) {
         matId.addPieceCnt(p, pieces[p]);
 
     const int matIdMin = std::min(matId(), MatId::mirror(matId()));
-    auto it = maxSubDTM.find(std::make_pair(matIdMin, pawnMoves));
+    auto it = maxSubDTM.find(std::pair(matIdMin, pawnMoves));
     if (it != maxSubDTM.end())
         return it->second;
 
@@ -792,7 +792,7 @@ TBProbe::getMaxSubMate(std::vector<int>& pieces, int pawnMoves) {
               << " bP:" << pieces[Piece::BPAWN]
               << " pMoves:" << pawnMoves << " : " << maxSubMate << std::endl;
 #endif
-    maxSubDTM[std::make_pair(matIdMin, pawnMoves)] = maxSubMate;
+    maxSubDTM[std::pair(matIdMin, pawnMoves)] = maxSubMate;
     return maxSubMate;
 }
 
