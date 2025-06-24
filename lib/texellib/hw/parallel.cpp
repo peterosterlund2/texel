@@ -219,7 +219,7 @@ Communicator::poll(CommandHandler& handler) {
         std::unique_lock<std::mutex> L(mutex);
         if (cmdQueue.empty())
             break;
-        std::shared_ptr<Command> cmd = cmdQueue.front();
+        std::unique_ptr<Command> cmd = std::move(cmdQueue.front());
         cmdQueue.pop_front();
         L.unlock();
 
@@ -452,7 +452,7 @@ ThreadCommunicator::setNotifier(Notifier& notifier) {
 void
 ThreadCommunicator::doSendAssignThreads(int nThreads, int firstThreadNo) {
     std::lock_guard<std::mutex> L(mutex);
-    cmdQueue.push_back(std::make_shared<AssignThreadsCommand>(nThreads, firstThreadNo));
+    cmdQueue.push_back(std::make_unique<AssignThreadsCommand>(nThreads, firstThreadNo));
     notifier->notify();
 }
 
@@ -461,7 +461,7 @@ ThreadCommunicator::doSendInitSearch(const Position& pos,
                                      const std::vector<U64>& posHashList, int posHashListSize,
                                      bool clearHistory, int whiteContempt) {
     std::lock_guard<std::mutex> L(mutex);
-    cmdQueue.push_back(std::make_shared<InitSearchCommand>(pos, posHashList, posHashListSize,
+    cmdQueue.push_back(std::make_unique<InitSearchCommand>(pos, posHashList, posHashListSize,
                                                            clearHistory, whiteContempt));
     notifier->notify();
 }
@@ -471,13 +471,13 @@ ThreadCommunicator::doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                                       int alpha, int beta, int depth) {
     std::lock_guard<std::mutex> L(mutex);
     cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
-                                  [](const std::shared_ptr<Command>& cmd) {
+                                  [](const std::unique_ptr<Command>& cmd) {
                                       return cmd->type == CommandType::START_SEARCH ||
                                              cmd->type == CommandType::STOP_SEARCH ||
                                              cmd->type == CommandType::REPORT_RESULT;
                                   }),
                    cmdQueue.end());
-    cmdQueue.push_back(std::make_shared<StartSearchCommand>(jobId, sti, alpha, beta, depth));
+    cmdQueue.push_back(std::make_unique<StartSearchCommand>(jobId, sti, alpha, beta, depth));
     notifier->notify();
 }
 
@@ -485,34 +485,34 @@ void
 ThreadCommunicator::doSendStopSearch() {
     std::lock_guard<std::mutex> L(mutex);
     cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
-                                  [](const std::shared_ptr<Command>& cmd) {
+                                  [](const std::unique_ptr<Command>& cmd) {
                                       return cmd->type == CommandType::START_SEARCH ||
                                              cmd->type == CommandType::STOP_SEARCH ||
                                              cmd->type == CommandType::REPORT_RESULT;
                                   }),
                    cmdQueue.end());
-    cmdQueue.push_back(std::make_shared<Command>(CommandType::STOP_SEARCH));
+    cmdQueue.push_back(std::make_unique<Command>(CommandType::STOP_SEARCH));
     notifier->notify();
 }
 
 void
 ThreadCommunicator::doSendSetParam(const std::string& name, const std::string& value) {
     std::lock_guard<std::mutex> L(mutex);
-    cmdQueue.push_back(std::make_shared<SetParamCommand>(name, value));
+    cmdQueue.push_back(std::make_unique<SetParamCommand>(name, value));
     notifier->notify();
 }
 
 void
 ThreadCommunicator::doSendQuit() {
     std::lock_guard<std::mutex> L(mutex);
-    cmdQueue.push_back(std::make_shared<Command>(CommandType::QUIT));
+    cmdQueue.push_back(std::make_unique<Command>(CommandType::QUIT));
     notifier->notify();
 }
 
 void
 ThreadCommunicator::doSendReportResult(int jobId, int score) {
     std::lock_guard<std::mutex> L(mutex);
-    cmdQueue.push_back(std::make_shared<Command>(CommandType::REPORT_RESULT, jobId, score));
+    cmdQueue.push_back(std::make_unique<Command>(CommandType::REPORT_RESULT, jobId, score));
     notifier->notify();
 }
 
@@ -535,14 +535,14 @@ ThreadCommunicator::retrieveStats(S64& nodesSearched, S64& tbHits) {
 void
 ThreadCommunicator::doSendStopAck() {
     std::lock_guard<std::mutex> L(mutex);
-    cmdQueue.push_back(std::make_shared<Command>(CommandType::STOP_ACK));
+    cmdQueue.push_back(std::make_unique<Command>(CommandType::STOP_ACK));
     notifier->notify();
 }
 
 void
 ThreadCommunicator::doSendQuitAck() {
     std::lock_guard<std::mutex> L(mutex);
-    cmdQueue.push_back(std::make_shared<Command>(CommandType::QUIT_ACK));
+    cmdQueue.push_back(std::make_unique<Command>(CommandType::QUIT_ACK));
     notifier->notify();
 }
 

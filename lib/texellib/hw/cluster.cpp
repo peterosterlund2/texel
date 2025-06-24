@@ -283,7 +283,7 @@ MPICommunicator::getTTReceiver() {
 void
 MPICommunicator::doSendAssignThreads(int nThreads, int firstThreadNo) {
     ttReceiver->setDisabled(nThreads == 0);
-    cmdQueue.push_back(std::make_shared<AssignThreadsCommand>(nThreads, firstThreadNo));
+    cmdQueue.push_back(std::make_unique<AssignThreadsCommand>(nThreads, firstThreadNo));
     mpiSend();
 }
 
@@ -291,7 +291,7 @@ void
 MPICommunicator::doSendInitSearch(const Position& pos,
                                   const std::vector<U64>& posHashList, int posHashListSize,
                                   bool clearHistory, int whiteContempt) {
-    cmdQueue.push_back(std::make_shared<InitSearchCommand>(pos, posHashList, posHashListSize,
+    cmdQueue.push_back(std::make_unique<InitSearchCommand>(pos, posHashList, posHashListSize,
                                                            clearHistory, whiteContempt));
     mpiSend();
 }
@@ -300,26 +300,26 @@ void
 MPICommunicator::doSendStartSearch(int jobId, const SearchTreeInfo& sti,
                                    int alpha, int beta, int depth) {
     cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
-                                  [](const std::shared_ptr<Command>& cmd) {
+                                  [](const std::unique_ptr<Command>& cmd) {
                                       return cmd->type == CommandType::START_SEARCH ||
                                              cmd->type == CommandType::STOP_SEARCH ||
                                              cmd->type == CommandType::REPORT_RESULT;
                                   }),
                    cmdQueue.end());
-    cmdQueue.push_back(std::make_shared<StartSearchCommand>(jobId, sti, alpha, beta, depth));
+    cmdQueue.push_back(std::make_unique<StartSearchCommand>(jobId, sti, alpha, beta, depth));
     mpiSend();
 }
 
 void
 MPICommunicator::doSendStopSearch() {
     cmdQueue.erase(std::remove_if(cmdQueue.begin(), cmdQueue.end(),
-                                  [](const std::shared_ptr<Command>& cmd) {
+                                  [](const std::unique_ptr<Command>& cmd) {
                                       return cmd->type == CommandType::START_SEARCH ||
                                              cmd->type == CommandType::STOP_SEARCH ||
                                              cmd->type == CommandType::REPORT_RESULT;
                                   }),
                    cmdQueue.end());
-    cmdQueue.push_back(std::make_shared<Command>(CommandType::STOP_SEARCH));
+    cmdQueue.push_back(std::make_unique<Command>(CommandType::STOP_SEARCH));
     mpiSend();
 }
 
@@ -327,27 +327,27 @@ void
 MPICommunicator::doSendSetParam(const std::string& name, const std::string& value) {
     int s = name.length() + value.length() + 2 * sizeof(int);
     if (s + sizeof(Communicator::Command) < SearchConst::MAX_CLUSTER_BUF_SIZE) {
-        cmdQueue.push_back(std::make_shared<SetParamCommand>(name, value));
+        cmdQueue.push_back(std::make_unique<SetParamCommand>(name, value));
         mpiSend();
     }
 }
 
 void
 MPICommunicator::doSendQuit() {
-    cmdQueue.push_back(std::make_shared<Command>(CommandType::QUIT));
+    cmdQueue.push_back(std::make_unique<Command>(CommandType::QUIT));
     mpiSend();
 }
 
 void
 MPICommunicator::doSendReportResult(int jobId, int score) {
-    cmdQueue.push_back(std::make_shared<Command>(CommandType::REPORT_RESULT, jobId, score));
+    cmdQueue.push_back(std::make_unique<Command>(CommandType::REPORT_RESULT, jobId, score));
     mpiSend();
 }
 
 void
 MPICommunicator::doSendReportStats(S64 nodesSearched, S64 tbHits) {
     bool done = false;
-    for (std::shared_ptr<Command>& c : cmdQueue) {
+    for (std::unique_ptr<Command>& c : cmdQueue) {
         if (c->type == CommandType::REPORT_STATS) {
             ReportStatsCommand* rCmd = static_cast<ReportStatsCommand*>(c.get());
             rCmd->nodesSearched += nodesSearched;
@@ -357,7 +357,7 @@ MPICommunicator::doSendReportStats(S64 nodesSearched, S64 tbHits) {
         }
     }
     if (!done)
-        cmdQueue.push_back(std::make_shared<ReportStatsCommand>(nodesSearched, tbHits));
+        cmdQueue.push_back(std::make_unique<ReportStatsCommand>(nodesSearched, tbHits));
     mpiSend();
 }
 
@@ -368,13 +368,13 @@ MPICommunicator::retrieveStats(S64& nodesSearched, S64& tbHits) {
 
 void
 MPICommunicator::doSendStopAck() {
-    cmdQueue.push_back(std::make_shared<Command>(CommandType::STOP_ACK));
+    cmdQueue.push_back(std::make_unique<Command>(CommandType::STOP_ACK));
     mpiSend();
 }
 
 void
 MPICommunicator::doSendQuitAck() {
-    cmdQueue.push_back(std::make_shared<Command>(CommandType::QUIT_ACK));
+    cmdQueue.push_back(std::make_unique<Command>(CommandType::QUIT_ACK));
     mpiSend();
 }
 
@@ -390,7 +390,7 @@ MPICommunicator::mpiSend() {
         }
         if (cmdQueue.empty())
             break;
-        std::shared_ptr<Command> cmd = cmdQueue.front();
+        std::unique_ptr<Command> cmd = std::move(cmdQueue.front());
         cmdQueue.pop_front();
         U8* buf = cmd->toByteBuf(&sendBuf[0]);
         int count = (int)(buf - &sendBuf[0]);
@@ -491,7 +491,7 @@ MPICommunicator::mpiRecv() {
         }
     }
     if (nTTReceives > 0)
-        cmdQueue.push_back(std::make_shared<Command>(CommandType::TT_ACK, -1, nTTReceives));
+        cmdQueue.push_back(std::make_unique<Command>(CommandType::TT_ACK, -1, nTTReceives));
 }
 
 void

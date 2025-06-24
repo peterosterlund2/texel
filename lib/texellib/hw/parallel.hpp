@@ -272,7 +272,7 @@ protected:
         S64 nodesSearched = 0;
         S64 tbHits = 0;
     };
-    std::deque<std::shared_ptr<Command>> cmdQueue;
+    std::deque<std::unique_ptr<Command>> cmdQueue;
 
     std::mutex mutex;
 
