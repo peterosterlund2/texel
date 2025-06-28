@@ -226,8 +226,8 @@ getParams(int argc, char* argv[], std::vector<ParamDomain>& params1,
             throw ChessParseError("No such parameter:" + parName);
     }
     auto setParamInfo = [&uciPars](ParamDomain& pd) {
-        std::shared_ptr<Parameters::ParamBase> p = uciPars.getParam(pd.name);
-        const Parameters::SpinParam& sp = dynamic_cast<const Parameters::SpinParam&>(*p.get());
+        const Parameters::ParamBase* p = uciPars.getParam(pd.name);
+        const Parameters::SpinParam& sp = dynamic_cast<const Parameters::SpinParam&>(*p);
         pd.minV = sp.getMinValue();
         pd.step = 1;
         pd.maxV = sp.getMaxValue();
@@ -350,17 +350,17 @@ doBookCmd(int argc, char* argv[]) {
         if (!str2Num(argv[4], searchTime) || (searchTime <= 0) ||
             !str2Num(argv[5], numThreads) || (numThreads <= 0))
             usage();
-        std::shared_ptr<BookBuild::Book> book;
+        std::unique_ptr<BookBuild::Book> book;
         if (argc == 10) {
             int bookDepthCost, ownPErrCost, otherPErrCost;
             if (!str2Num(argv[7], bookDepthCost) || (bookDepthCost <= 0) ||
                 !str2Num(argv[8], ownPErrCost)   || (ownPErrCost   <= 0) ||
                 !str2Num(argv[9], otherPErrCost) || (otherPErrCost <= 0))
                 usage();
-            book = std::make_shared<BookBuild::Book>(logFile, bookDepthCost,
+            book = std::make_unique<BookBuild::Book>(logFile, bookDepthCost,
                                                      ownPErrCost, otherPErrCost);
         } else {
-            book = std::make_shared<BookBuild::Book>(logFile);
+            book = std::make_unique<BookBuild::Book>(logFile);
         }
         book->improve(bookFile, searchTime, numThreads, startMoves);
     } else if (bookCmd == "import") {

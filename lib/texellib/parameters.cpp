@@ -228,12 +228,12 @@ Parameters::getParamNames(std::vector<std::string>& parNames) {
     parNames = paramNames;
 }
 
-std::shared_ptr<Parameters::ParamBase>
+const Parameters::ParamBase*
 Parameters::getParam(const std::string& name) const {
     auto it = params.find(toLowerCase(name));
     if (it == params.end())
         return nullptr;
-    return it->second;
+    return it->second.get();
 }
 
 void

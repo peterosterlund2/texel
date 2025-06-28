@@ -590,13 +590,13 @@ TBTest::tbTest() {
 
     {
         pos = TextIO::readFEN("2R5/4k3/Q7/8/8/8/8/K7 w - - 98 1");
-        std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+        std::unique_ptr<Search> sc = SearchTest::getSearch(pos);
         Move m = SearchTest::idSearch(*sc, 4, 0);
         EXPECT_EQ("a6e6", TextIO::moveToUCIString(m));
     }
     {
         pos = TextIO::readFEN("2R5/4k3/Q7/8/8/8/8/K7 w - - 97 1");
-        std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+        std::unique_ptr<Search> sc = SearchTest::getSearch(pos);
         Move m = SearchTest::idSearch(*sc, 4, 1);
         EXPECT_EQ("c8c7", TextIO::moveToUCIString(m));
     }
@@ -614,14 +614,14 @@ TBTest::testTbSearch() {
 
     {
         pos = TextIO::readFEN("8/8/8/8/7B/8/3k4/K2B4 w - - 0 1");
-        std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+        std::unique_ptr<Search> sc = SearchTest::getSearch(pos);
         Move m = SearchTest::idSearch(*sc, 1, 0);
         const int mate19 = mate0 - (19 * 2 + 1);
         EXPECT_GE(m.score(), mate19);
     }
     {
         pos = TextIO::readFEN("8/8/8/8/7B/1B6/3k4/K7 b - - 1 1");
-        std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+        std::unique_ptr<Search> sc = SearchTest::getSearch(pos);
         Move m = SearchTest::idSearch(*sc, 1, 0);
         const int mated18 = -(mate0 - (18 * 2 + 2));
         EXPECT_LE(m.score(), -600); // DTZ has info for wrong side, so not probed
@@ -635,7 +635,7 @@ TBTest::testTbSearch() {
     }
     {
         pos = TextIO::readFEN("8/8/8/8/7B/1B2Q3/3k4/K7 b - - 1 1");
-        std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+        std::unique_ptr<Search> sc = SearchTest::getSearch(pos);
         Move m = SearchTest::idSearch(*sc, 1, 0);
         const int mated20 = -(mate0 - (20 * 2 + 2));
         EXPECT_EQ(m.score(), mated20); // DTZ has info for wrong side, so not probed, but WDL is probed
@@ -644,7 +644,7 @@ TBTest::testTbSearch() {
         int old6dtz = UciParams::minProbeDepth6dtz->getIntPar();
         UciParams::minProbeDepth6dtz->set("2");
         pos = TextIO::readFEN("8/2Q5/1P2kpq1/8/8/1K6/8/8 w - - 0 1");
-        std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+        std::unique_ptr<Search> sc = SearchTest::getSearch(pos);
         Move m = SearchTest::idSearch(*sc, 2, 0);
         int score1 = m.score();
         EXPECT_GT(score1, mate0 - 1000); // DTZ not probed
@@ -695,7 +695,7 @@ TBTest::testMissingTables() {
         if (gtb) {
             compareMoves(std::vector<std::string>{"e7e8q", "e7e8r", "e7e8b", "e7e8n"}, movesToSearch);
 
-            std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+            std::unique_ptr<Search> sc = SearchTest::getSearch(pos);
             Move m = SearchTest::idSearch(*sc, 4, 3);
             EXPECT_EQ("e7e8q", TextIO::moveToUCIString(m));
         }

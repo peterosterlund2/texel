@@ -181,7 +181,7 @@ private:
     S64 beg = 0;               // Start of batch in trainDataChunk to be returned by
                                // next call to getData()
 
-    std::shared_ptr<ShuffledDataSet<MemDataSet>> shuffledTrainData; // Shuffled version of trainDataChunk
+    std::unique_ptr<ShuffledDataSet<MemDataSet>> shuffledTrainData; // Shuffled version of trainDataChunk
 
     struct TensorResult {
         torch::Tensor inW;
@@ -269,7 +269,7 @@ DataLoader::startGetData() {
         if (!shuffledTrainData) {
             U64 seed2 = hashU64(hashU64(seed) + epoch) + part;
             shuffledTrainData =
-                std::make_shared<ShuffledDataSet<MemDataSet>>(trainDataChunk, seed2);
+                std::make_unique<ShuffledDataSet<MemDataSet>>(trainDataChunk, seed2);
         }
 
         S64 end = std::min(beg + batchSize, trainDataChunk.getSize());
@@ -572,9 +572,9 @@ getQLoss(MemDataSet& ds, const NetData& qNet, int nWorkers) {
             qEval->connectPosition(&pos);
         }
     };
-    std::vector<std::shared_ptr<ThreadData>> tdVec(nWorkers);
+    std::vector<std::unique_ptr<ThreadData>> tdVec(nWorkers);
     for (int i = 0; i < nWorkers; i++)
-        tdVec[i] = std::make_shared<ThreadData>(qNet);
+        tdVec[i] = std::make_unique<ThreadData>(qNet);
 
     S64 nPos = ds.getSize();
     double qLoss = 0;
@@ -849,9 +849,9 @@ permuteFeatures(NetData& net, MemDataSet& ds, bool useLocalSearch, U64 rndSeed,
                 qEval->connectPosition(&pos);
             }
         };
-        std::vector<std::shared_ptr<ThreadData>> tdVec(nWorkers);
+        std::vector<std::unique_ptr<ThreadData>> tdVec(nWorkers);
         for (int i = 0; i < nWorkers; i++)
-            tdVec[i] = std::make_shared<ThreadData>(copyNet);
+            tdVec[i] = std::make_unique<ThreadData>(copyNet);
 
         const int batchSize = 32*1024;
         ThreadPool<int> pool(nWorkers);

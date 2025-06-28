@@ -531,10 +531,10 @@ SpsaConfig::SpsaConfig(const std::string& filename)
                     error();
             } else {
                 Parameters& uciPars = Parameters::instance();
-                std::shared_ptr<Parameters::ParamBase> par = uciPars.getParam(pd.parName);
+                const Parameters::ParamBase* par = uciPars.getParam(pd.parName);
                 if (!par)
                     throw ChessParseError("No such parameter: " + pd.parName);
-                auto sPar = dynamic_cast<Parameters::SpinParam*>(par.get());
+                auto sPar = dynamic_cast<const Parameters::SpinParam*>(par);
                 if (!sPar)
                     throw ChessParseError("Incorrect parameter type: " + pd.parName);
                 pd.value = sPar->getDefaultValue();

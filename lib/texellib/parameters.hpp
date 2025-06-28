@@ -200,7 +200,7 @@ public:
     /** Retrieve list of all parameters. */
     void getParamNames(std::vector<std::string>& parNames);
 
-    std::shared_ptr<ParamBase> getParam(const std::string& name) const;
+    const ParamBase* getParam(const std::string& name) const;
 
     bool getBoolPar(const std::string& name) const;
     int getIntPar(const std::string& name) const;

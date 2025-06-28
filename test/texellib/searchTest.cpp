@@ -44,7 +44,7 @@
 std::vector<U64> SearchTest::nullHist(SearchConst::MAX_SEARCH_DEPTH * 2);
 TranspositionTable SearchTest::tt(512*1024);
 
-std::shared_ptr<Search> SearchTest::getSearch(Position& pos) {
+std::unique_ptr<Search> SearchTest::getSearch(Position& pos) {
     static Notifier notifier;
     static ThreadCommunicator comm(nullptr, SearchTest::tt, notifier, false);
     static KillerTable kt;
@@ -52,7 +52,7 @@ std::shared_ptr<Search> SearchTest::getSearch(Position& pos) {
     static auto et = Evaluate::getEvalHashTables();
     static Search::SearchTables st(comm.getCTT(), kt, ht, *et);
     static TreeLogger treeLog;
-    return std::make_shared<Search>(pos, nullHist, 0, st, comm, treeLog);
+    return std::make_unique<Search>(pos, nullHist, 0, st, comm, treeLog);
 }
 
 Move
@@ -77,7 +77,7 @@ SearchTest::testSearch() {
     const int mate0 = SearchConst::MATE0;
 
     Position pos = TextIO::readFEN("3k4/8/3K2R1/8/8/8/8/8 w - - 0 1");
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     sc->setMinProbeDepth(100);
     int score = sc->search(false, -mate0, mate0, ply, 2, MoveGen::inCheck(pos)) + ply;
     ASSERT_EQ(mate0 - 2, score);     // depth 2 is enough to find mate in 1
@@ -135,7 +135,7 @@ SearchTest::testDraw50() {
     const int mateInThree = mate0 - 6;
 
     Position pos = TextIO::readFEN("8/1R2k3/R7/8/8/8/8/1K6 b - - 0 1");
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     sc->maxTimeMillis = -1;
     sc->setMinProbeDepth(100);
     int score = sc->search(false, -mate0, mate0, ply, 2, MoveGen::inCheck(pos));
@@ -214,7 +214,7 @@ SearchTest::testDrawRep() {
     const int ply = 1;
     const int mate0 = SearchConst::MATE0;
     Position pos = TextIO::readFEN("7k/5RR1/8/8/8/8/q3q3/2K5 w - - 0 1");
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     sc->maxTimeMillis = -1;
     sc->setMinProbeDepth(100);
     int score = sc->search(false, -mate0, mate0, ply, 3, MoveGen::inCheck(pos));
@@ -256,7 +256,7 @@ TEST(SearchTest, testHashing) {
 void
 SearchTest::testHashing() {
     Position pos = TextIO::readFEN("/k/3p/p2P1p/P2P1P///K w - -");  // Fine #70
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     sc->setMinProbeDepth(100);
     Move bestM = idSearch(*sc, 28);
     EXPECT_EQ(TextIO::stringToMove(pos, "Kb1"), bestM);
@@ -269,7 +269,7 @@ TEST(SearchTest, testLMP) {
 void
 SearchTest::testLMP() {
     Position pos(TextIO::readFEN("2r2rk1/6p1/p3pq1p/1p1b1p2/3P1n2/PP3N2/3N1PPP/1Q2RR1K b"));  // WAC 174
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     sc->setMinProbeDepth(100);
     Move bestM = idSearch(*sc, 2);
     EXPECT_FALSE(SearchConst::isWinScore(bestM.score()));
@@ -282,7 +282,7 @@ TEST(SearchTest, testCheckEvasion) {
 void
 SearchTest::testCheckEvasion() {
     Position pos = TextIO::readFEN("6r1/R5PK/2p5/1k6/8/8/p7/8 b - - 0 62");
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     Move bestM = idSearch(*sc, 3);
     EXPECT_LT(bestM.score(), 0);
 
@@ -301,7 +301,7 @@ TEST(SearchTest, testStalemateTrap) {
 void
 SearchTest::testStalemateTrap() {
     Position pos = TextIO::readFEN("7k/1P3R1P/6r1/5K2/8/8/6R1/8 b - - 98 194");
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     sc->setMinProbeDepth(100);
     Move bestM = idSearch(*sc, 3);
     EXPECT_EQ(0, bestM.score());
@@ -314,7 +314,7 @@ TEST(SearchTest, testKQKRNullMove) {
 void
 SearchTest::testKQKRNullMove() {
     Position pos = TextIO::readFEN("7K/6R1/5k2/3q4/8/8/8/8 b - - 0 1");
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     sc->setMinProbeDepth(100);
     Move bestM = idSearch(*sc, 15);
     EXPECT_EQ(SearchConst::MATE0-18, bestM.score());
@@ -327,7 +327,7 @@ TEST(SearchTest, testNullMoveVerification) {
 void
 SearchTest::testNullMoveVerification() {
     Position pos = TextIO::readFEN("n1N3br/2p1Bpkr/1pP2R1b/pP3Pp1/P5P1/1P1p4/p2P4/K7 w - - 0 1");
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     sc->setMinProbeDepth(100);
     Move bestM = idSearch(*sc, 12);
     EXPECT_EQ("Ba3", TextIO::moveToString(pos, bestM, false));
@@ -380,7 +380,7 @@ SearchTest::testSEE() {
 
     // Basic tests
     Position pos = TextIO::readFEN("r2qk2r/ppp2ppp/1bnp1nb1/1N2p3/3PP3/1PP2N2/1P3PPP/R1BQRBK1 w kq - 0 1");
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     EXPECT_EQ(0, getSEE(*sc, TextIO::stringToMove(pos, "dxe5")));
     EXPECT_EQ(pV - nV, getSEE(*sc, TextIO::stringToMove(pos, "Nxe5")));
     EXPECT_EQ(pV - rV, getSEE(*sc, TextIO::stringToMove(pos, "Rxa7")));
@@ -521,7 +521,7 @@ TEST(SearchTest, testScoreMoveList) {
 void
 SearchTest::testScoreMoveList() {
     Position pos = TextIO::readFEN("r2qk2r/ppp2ppp/1bnp1nb1/1N2p3/3PP3/1PP2N2/1P3PPP/R1BQRBK1 w kq - 0 1");
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     MoveList moves;
     MoveGen::pseudoLegalMoves(pos, moves);
     sc->scoreMoveList(moves, 0);
@@ -568,7 +568,7 @@ void
 SearchTest::testTBSearch() {
     const int mate0 = SearchConst::MATE0;
     Position pos = TextIO::readFEN("R5Q1/8/6k1/8/4q3/8/8/K7 b - - 0 1"); // DTM path wins
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     int score = idSearch(*sc, 4, 2).score();
     EXPECT_EQ(-(mate0 - 23), score);
 
@@ -612,7 +612,7 @@ SearchTest::testTBSearch() {
 void
 SearchTest::testFortress() {
     Position pos = TextIO::readFEN("3B4/1r2p3/r2p1p2/bkp1P1p1/1p1P1PPp/p1P4P/PPB1K3/8 w - - 0 1");
-    std::shared_ptr<Search> sc = getSearch(pos);
+    std::unique_ptr<Search> sc = getSearch(pos);
     Move bestM = idSearch(*sc, 10);
     EXPECT_EQ(TextIO::moveToUCIString(bestM), "c2a4");
     EXPECT_GT(bestM.score(), -600);

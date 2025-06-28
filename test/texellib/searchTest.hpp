@@ -37,7 +37,7 @@ public:
 
     static std::vector<U64> nullHist;
     static TranspositionTable tt;
-    static std::shared_ptr<Search> getSearch(Position& pos);
+    static std::unique_ptr<Search> getSearch(Position& pos);
 
     static void testSearch();
     static void testDraw50();

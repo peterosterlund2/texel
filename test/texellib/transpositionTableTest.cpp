@@ -172,7 +172,7 @@ TEST(TranspositionTableTest, testInsert) {
 TEST(TranspositionTableTest, testMateDepth) {
     TranspositionTable& tt(SearchTest::tt);
     Position pos = TextIO::readFEN("rnbqkbnr/pppp1ppp/8/4p3/8/5P1P/PPPPP1P1/RNBQKBNR b KQkq - 0 2");
-    std::shared_ptr<Search> sc = SearchTest::getSearch(pos);
+    std::unique_ptr<Search> sc = SearchTest::getSearch(pos);
     Move m = SearchTest::idSearch(*sc, 2, 100);
     ASSERT_EQ("d8h4", TextIO::moveToUCIString(m));
     UndoInfo ui;
