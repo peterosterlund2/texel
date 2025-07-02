@@ -44,7 +44,7 @@ private:
         MaterialHashData();
         int id;
         int score;
-        U8 endGame;
+        U8 endGame; // Used as boolean
     };
 
     struct EvalHashData {
@@ -134,7 +134,7 @@ private:
 
 inline
 Evaluate::MaterialHashData::MaterialHashData()
-    : id(-1), score(0) {
+    : id(-1), score(0), endGame(0) {
 }
 
 inline
