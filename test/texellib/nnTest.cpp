@@ -113,6 +113,31 @@ NNTest::testMatMul() {
     }
 }
 
+TEST(NNTest, testNonZeroBlocks) {
+    NNTest::testNonZeroBlocks();
+}
+
+void
+NNTest::testNonZeroBlocks() {
+    const int N = 64*4;
+    alignas(64) Vector<S8,N> v;
+    for (int i = 0; i < N*8; i++) {
+        int byteIdx = i / 8;
+        int bitIdx =  i % 8;
+
+        if (bitIdx == 7)
+            continue; // Negative values not supported
+
+        for (int j = 0; j < N; j++)
+            v(j) = 0;
+        v(byteIdx) = 1 << bitIdx;
+
+        U64 m = getNonZeroBlocks(&v(0), N/4);
+        U64 expected = 1ULL << (i / 32);
+        EXPECT_EQ(expected, m) << "i:" << i;
+    }
+}
+
 namespace {
     class Evaluator {
     public:

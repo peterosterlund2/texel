@@ -31,6 +31,9 @@ public:
     /** Test Matrix/Vector classes. */
     static void testMatMul();
 
+    /** Test getNonZeroBlocks() function. */
+    static void testNonZeroBlocks();
+
     /** Test incremental NN evaluation. */
     static void testIncremental();
 };

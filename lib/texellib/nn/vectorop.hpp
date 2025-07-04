@@ -167,7 +167,8 @@ prepareMatMul(Matrix<S8,nOut,nIn>& weight) {
 
 /** Return a bitmask describing which 4-byte blocks of "v" contain at least one
  *  non-zero element.
- *  "nElem" is the number of 4-byte blocks to check. 0 < nElem <= 64. */
+ *  "nElem" is the number of 4-byte blocks to check. 0 < nElem <= 64.
+ *  Note that the AVX512/AVX2/SSSE3 implementations assume all bytes in "v" are >= 0. */
 inline U64
 getNonZeroBlocks(const S8* v, int nElem) {
     U64 mask = 0;
