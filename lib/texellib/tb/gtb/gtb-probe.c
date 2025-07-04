@@ -125,7 +125,7 @@ enum Loading_status {
 
 struct endgamekey {
 	int 		id;
-	const char *str;
+	const char str[8];
 	index_t 	maxindex;
 	index_t 	slice_n;
 	void   		(*itopc) (index_t, SQUARE *, SQUARE *);
@@ -823,47 +823,42 @@ mySHARED struct endgamekey egkey[] = {
 {143,"kppkp", MAX_kppkp, 24*MAX_PP48_INDEX, kppkp_indextopc, kppkp_pctoindex, NULL ,  NULL   ,NULL ,0, 0 },
 {144,"kpppk", MAX_kpppk, MAX_PPP48_INDEX, kpppk_indextopc, kpppk_pctoindex, NULL ,  NULL   ,NULL ,0, 0 },
 
-{MAX_EGKEYS, NULL,  0,        1, NULL,           NULL,           NULL,   NULL   ,NULL ,0 ,0}
+{MAX_EGKEYS, "",  0,        1, NULL,           NULL,           NULL,   NULL   ,NULL ,0 ,0}
 
 };
 
 #define EGKEY_HASH_SIZE 512
 static tbkey_t egkey_hash[EGKEY_HASH_SIZE];
 
-static size_t
+static int
 str_hash_func_1 (const char * str)
 {
-	size_t h = 5381;
-	int c;
-	while ((c = *str++))
-		h = h * 31 + c;
-	return h;
-}
+	unsigned int h = 0;
+	int i, c;
 
-static size_t
-str_hash_func_2 (const char * str)
-{
-	size_t h = 0;
-	int c;
-	while ((c = *str++))
-		h = h * 65599 + c;
-	return 2 * h + 1;
+	str++; // First char is always 'k'
+	for (i = 0; i < 4; i++) {
+		c = *str++;
+		h += c << (i * 8);
+	}
+	h += 0x11eb62;
+	h *= 0x1ffdb59a;
+	h ^= h >> 21;
+	return h;
 }
 
 static void
 init_egkey_hash (void)
 {
-	size_t h1, h2;
-	int i;
+	int i, h1;
 
 	for (i = 0; i < EGKEY_HASH_SIZE; i++)
 		egkey_hash[i] = -1;
 
 	for (i = 0; i < MAX_EGKEYS; i++) {
 		h1 = str_hash_func_1 (egkey[i].str) & (EGKEY_HASH_SIZE - 1);
-		h2 = str_hash_func_2 (egkey[i].str);
 		while (egkey_hash[h1] >= 0)
-			h1 = (h1 + h2) & (EGKEY_HASH_SIZE - 1);
+			h1 = (h1 + 1) & (EGKEY_HASH_SIZE - 1);
 		egkey_hash[h1] = egkey[i].id;
 	}
 }
@@ -1248,7 +1243,7 @@ static void
 RAM_egtbfree (void)
 {
 	int i;
-	for (i = 0; egkey[i].str != NULL; i++) {
+	for (i = 0; egkey[i].str[0] != 0; i++) {
 		egtb_freemem (i);
 	}
 }
@@ -2075,8 +2070,7 @@ egtb_get_id (SQ_CONTENT *w, SQ_CONTENT *b, tbkey_t *id)
 	char *t;
 	bool_t found;
 	tbkey_t i;
-	static _Thread_local tbkey_t cache_i = 0;
-	size_t h1, h2;
+	size_t h1;
 
 	assert (PAWN == 1 && KNIGHT == 2 && BISHOP == 3 && ROOK == 4 && QUEEN == 5 && KING == 6);
 
@@ -2089,16 +2083,11 @@ egtb_get_id (SQ_CONTENT *w, SQ_CONTENT *b, tbkey_t *id)
 	while (NOPIECE != *s)
 		*t++ = pctoch[*s++];
 
-	*t = '\0';
+        while (t - pcstr < 6)
+            *t++ = 0;
 
-	found = (0 == strcmp(pcstr, egkey[cache_i].str));
-	if (found) {
-		*id = cache_i;
-		return found;
-	}
-
+	found = FALSE;
 	h1 = str_hash_func_1 (pcstr) & (EGKEY_HASH_SIZE - 1);
-	h2 = str_hash_func_2 (pcstr);
 	while (1) {
 		i = egkey_hash[h1];
 		if (i < 0)
@@ -2106,10 +2095,10 @@ egtb_get_id (SQ_CONTENT *w, SQ_CONTENT *b, tbkey_t *id)
 		found = (0 == strcmp(pcstr, egkey[i].str));
 		if (found)
 			break;
-		h1 = (h1 + h2) & (EGKEY_HASH_SIZE - 1);
+		h1 = (h1 + 1) & (EGKEY_HASH_SIZE - 1);
 	}
 	if (found) {
-		cache_i = *id = i;
+		*id = i;
 	}
 
 	return found;
