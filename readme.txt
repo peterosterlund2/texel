@@ -279,7 +279,7 @@ Texel can run on computer clusters by using the MPI system. It has only been
 tested using MPICH in Linux and MS-MPI in Windows but should work with other MPI
 implementations as well.
 
-The pre-compiled windows executable texel64cl.exe is compiled and linked against
+The pre-compiled Windows executable texel64cl.exe is compiled and linked against
 MS-MPI version 8.1. It requires the MS-MPI redistributable package to be
 installed and configured on all computers in the cluster.
 

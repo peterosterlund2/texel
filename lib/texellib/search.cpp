@@ -1233,7 +1233,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
                 if (optimisticScore < alpha) { // Delta pruning
                     if ((pos.wMtrlPawns() > 0) && (pos.wMtrl() > capt + pos.wMtrlPawns()) &&
                         (pos.bMtrlPawns() > 0) && (pos.bMtrl() > capt + pos.bMtrlPawns())) {
-                        if (depth -1 > -2) {
+                        if (depth - 1 > -2) {
                             givesCheck = MoveGen::givesCheck(pos, m);
                             givesCheckComputed = true;
                         }
@@ -1351,7 +1351,7 @@ Search::quiescePos(int alpha, int beta, int ply, int depth, const bool inCheck) 
                 if (optimisticScore < alpha) { // Delta pruning
                     if ((pos.wMtrlPawns() > 0) && (pos.wMtrl() > capt + pos.wMtrlPawns()) &&
                         (pos.bMtrlPawns() > 0) && (pos.bMtrl() > capt + pos.bMtrlPawns())) {
-                        if (depth -1 > -2) {
+                        if (depth - 1 > -2) {
                             givesCheck = MoveGen::givesCheck(pos, m);
                             givesCheckComputed = true;
                         }
