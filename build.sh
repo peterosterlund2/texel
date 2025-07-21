@@ -71,8 +71,8 @@ mkdir -p build/win64
 ) &
 
 # Windows 64-bit with AVX2 + POPCNT + BMI2
-mkdir -p build/win64_bmi
-(cd build/win64_bmi &&
+mkdir -p build/win64_bmi2
+(cd build/win64_bmi2 &&
      cmake ../.. -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/win64_clang.cmake \
            -DUSE_WIN7=on \
            -DUSE_AVX2=on \
@@ -144,7 +144,7 @@ cmake --build build/win64_old     -j ${para} || exit 2
 cmake --build build/win64_ssse3   -j ${para} || exit 2
 cmake --build build/win64_avx2    -j ${para} || exit 2
 cmake --build build/win64         -j ${para} || exit 2
-cmake --build build/win64_bmi     -j ${para} || exit 2
+cmake --build build/win64_bmi2    -j ${para} || exit 2
 cmake --build build/win64_avx512  -j ${para} || exit 2
 cmake --build build/win64cl       -j ${para} || exit 2
 cmake --build build/android64     -j ${para} || exit 2
@@ -174,8 +174,8 @@ ${strip_win} bin/runcmd.exe
 cp build/win64/texelutil.exe bin/texelutil.exe
 ${strip_win} bin/texelutil.exe
 
-cp build/win64_bmi/texel.exe bin/texel64-avx2-bmi.exe
-${strip_win} bin/texel64-avx2-bmi.exe
+cp build/win64_bmi2/texel.exe bin/texel64-avx2-bmi2.exe
+${strip_win} bin/texel64-avx2-bmi2.exe
 
 cp build/win64_avx512/texel.exe bin/texel64-avx512.exe
 ${strip_win} bin/texel64-avx512.exe

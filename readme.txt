@@ -18,7 +18,7 @@ texel64-avx512.exe
   For Windows 7 or later x86-64 systems using AVX-512, VNNI, POPCOUNT and BMI2
   instructions.
 
-texel64-avx2-bmi.exe:
+texel64-avx2-bmi2.exe:
   For Windows 7 or later x86-64 systems using AVX2, POPCOUNT and BMI2
   instructions.
 
