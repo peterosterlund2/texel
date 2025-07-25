@@ -807,7 +807,7 @@ The following options are supported:
 
 * `-w a:b`
 
-  Specify the weight ratio for the weight A* search. The default is 1:5. Using
+  Specify the weight ratio for the weighted A* search. The default is 1:5. Using
   1:1 would always find a shortest solution first, but the program may run out
   of memory before a solution is found.
 
