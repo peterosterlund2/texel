@@ -120,7 +120,7 @@ set_source_files_properties(${src_nndata}
 check_cxx_compiler_flag("-fno-lto" supported_no_lto)
 if(supported_no_lto)
   set_source_files_properties(${src_nndata}
-    PROPERTIES COMPILE_OPTIONS -fno-lto)
+    PROPERTIES COMPILE_OPTIONS "-fno-lto")
 endif()
 
 if(UNIX AND NOT ANDROID)
