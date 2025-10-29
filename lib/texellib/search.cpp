@@ -759,7 +759,7 @@ Search::search(int alpha, int beta, int ply, int depth, const bool inCheck) {
             futilityPrune = true;
     }
 
-    // Internal iterative deepening
+    // Internal iterative deepening and internal iterative reduction
     if ((depth > 4) && hashMove.isEmpty() && !inCheck) {
         bool isPv = beta > alpha + 1;
         if (isPv || (depth > 8)) {
@@ -781,6 +781,7 @@ Search::search(int alpha, int beta, int ply, int depth, const bool inCheck) {
             if (ent.getType() != TType::T_EMPTY)
                 ent.getMove(hashMove);
         }
+        depth--;
     }
 
     // Generate move list
