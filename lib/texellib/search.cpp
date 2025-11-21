@@ -287,14 +287,16 @@ Search::iterativeDeepening(const MoveList& scMovesIn,
         if (maxNodes >= 0)
             if (getTotalNodes() >= maxNodes)
                 break;
-        bool enoughDepth = true;
-        for (int i = 0; i < maxPV; i++) {
-            int plyToMate = MATE0 - std::abs(rootMoves[i].score());
-            if (depth < plyToMate)
-                enoughDepth = false;
+        if (maxTimeMillis >= 0) {
+            bool enoughDepth = true;
+            for (int i = 0; i < maxPV; i++) {
+                int plyToMate = MATE0 - std::abs(rootMoves[i].score());
+                if (depth < plyToMate)
+                    enoughDepth = false;
+            }
+            if (enoughDepth)
+                break;
         }
-        if (enoughDepth)
-            break;
         if (firstIteration) {
             std::stable_sort(rootMoves.begin()+maxPV, rootMoves.end(), MoveInfo::SortByScore());
         } else {
