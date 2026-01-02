@@ -39,7 +39,7 @@
 #include <sys/wait.h>
 
 
-inline bool
+static inline bool
 startsWith(const std::string& str, const std::string& startsWith) {
     size_t N = startsWith.length();
     if (str.length() < N)
@@ -51,7 +51,7 @@ startsWith(const std::string& str, const std::string& startsWith) {
 }
 
 /** Split a string using " " as delimiter. Append words to out. */
-inline void
+static inline void
 splitString(const std::string& str, std::vector<std::string>& out)
 {
     std::string word;
