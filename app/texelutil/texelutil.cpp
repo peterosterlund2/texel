@@ -1009,10 +1009,10 @@ main(int argc, char* argv[]) {
                 !str2Num(argv[8], pc.nbb) ||
                 !str2Num(argv[9], pc.nbn))
                 usage();
-                VectorStorage vs;
-                TBGenerator<VectorStorage> tbGen(vs, pc);
-                RelaxedShared<S64> maxTimeMillis(-1);
-                tbGen.generate(maxTimeMillis, true);
+            VectorStorage vs;
+            TBGenerator<VectorStorage> tbGen(vs, pc);
+            RelaxedShared<S64> maxTimeMillis(-1);
+            tbGen.generate(maxTimeMillis, true);
         } else if (cmd == "tbgentest") {
             if (argc < 3)
                 usage();
