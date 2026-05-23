@@ -154,7 +154,7 @@ A state in the proof kernel space is defined as follows:
    the state, but the position of the non-pawn pieces are not included in the
    state (not even the file).
    1. Light-squared bishops and dark-squared bishops are considered to be
-      different pieces types, represented by LB and DB respectively.
+      different piece types, represented by LB and DB respectively.
    2. Kings are not included, since each side always has exactly one king.
 
 Legal moves in the proof kernel space are all types of captures (including
@@ -262,7 +262,7 @@ complete. There are some tricks available to speed up the search though:
       pawn columns can be made complete by a move. The details are explained in
       the `ProofKernel::minMovesToGoal()` function in the source code.
 
-   2. If the number of remaining pawns for one color are too few to allow
+   2. If the number of remaining pawns for one color is too few to allow
       promotions to create enough pieces of all types, the node can be pruned.
 
    3. If a pawn column contains too few pawns, additional captures are needed,
@@ -480,7 +480,7 @@ position. This is done in two steps:
 2. Perform A* search to try to find a sequence of moves from the position at the
    end of the initial path to the goal position.
 
-Since A* search is also used to solve sub problems encountered in step 1, A* is
+Since A* search is also used to solve subproblems encountered in step 1, A* is
 described first.
 
 ### A* search
@@ -526,7 +526,7 @@ For the proof game problem, the relaxed problem is constructed by assuming that
 pieces do not interfere with each other. For example, if a piece needs to move
 from a2 in the start position to c8 in the goal position, a shortest path from
 a2 to c8 is computed assuming that no other pieces (except for blocked squares)
-are present on the board. There are well known algorithms for solving such
+are present on the board. There are well-known algorithms for solving such
 shortest path problems efficiently.
 
 In many cases it is not a given which piece in the start position should go to
@@ -658,10 +658,10 @@ additional methods are used to improve its reliability:
      moving, so getting them close to their targets early should simplify
      finding a solution.
 
-  3. Pawn promotions are tried early. The idea being that such moves reduce the
+  3. Pawn promotions are tried early. The idea is that such moves reduce the
      number of choices later in the search.
 
-  4. Pawn moves are tried early. The idea being that such moves reduce the
+  4. Pawn moves are tried early. The idea is that such moves reduce the
      number of choices later in the search.
 
   5. Otherwise, pick a move randomly.
@@ -694,8 +694,8 @@ additional methods are used to improve its reliability:
   regular search and using a different non-admissible heuristic. This heuristic
   also considers pieces that are blocking sliding pieces from getting to their
   target squares and estimates the number of moves required to move the blocking
-  pieces away and to move them back in case they already were on their target
-  squares. This heuristic might over-estimate the number of required moves, but
+  pieces away and to move them back in case they were already on their target
+  squares. This heuristic might overestimate the number of required moves, but
   this is not a problem since it is not important to find the shortest solution.
 
   For this example the alternative heuristic makes the search find a solution
@@ -827,12 +827,12 @@ The following options are supported:
   found that is "closer" to the goal than the previously best found position,
   the corresponding move sequence is printed. This can be useful for positions
   that are too hard for the program to solve. Having the best attempt available
-  can make it easier to a human to construct a proof game.
+  can make it easier for a human to construct a proof game.
 
 * `-na`
 
   Use a special non-admissible heuristic function for the A* search that
-  attempts to resolve position where one or a few pieces need to move past a
+  attempts to resolve positions where one or a few pieces need to move past a
   large number of other pieces to reach their target positions. This flag
   sometimes helps if the search gets stuck.
 
@@ -894,7 +894,7 @@ The following options are supported:
 
 * `-o outfile`
 
-   Run multiple passes over the data. The result of a pass is written to the
+   Run multiple passes over the data. The result of each pass is written to the
    file outfileNN, where NN = 00, 01, 02, etc. The result for one pass is used
    as input to the next pass.
 
