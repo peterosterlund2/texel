@@ -25,7 +25,7 @@ complement each other. This document describes how the tablebase probing works.
 * Always play game-theoretically optimal moves when the root position is a
   tablebase position, even if the half-move clock is non-zero.
 
-  In order to be a useful analysis tool Texel should be able to find optimal
+  In order to be a useful analysis tool, Texel should be able to find optimal
   moves (i.e. preserving a win or draw) in tablebase positions even if the
   half-move clock is larger than 0 and even if sub-optimal moves have been
   played in order to reach the current position.
@@ -40,13 +40,13 @@ complement each other. This document describes how the tablebase probing works.
 * Small probe overhead before a TB position is reached in a game.
 
   Retrieving tablebase information during game play and during analysis should
-  be as efficient as possible, both for single threaded and multi-threaded
+  be as efficient as possible, both for single-threaded and multi-threaded
   search. This implies that the algorithm should intelligently decide which
   tablebase type (WDL, DTZ, DTM) to probe.
 
 * Swindle mode to improve practical chances against imperfect opponents.
 
-  "Reasonable" moves should be played in order for the engine to not look stupid
+  "Reasonable" moves should be played in order for the engine not to look stupid
   to a human observer and to improve winning chances when playing against
   opponents that do not have tablebase information available. For example, in a
   drawn KRBKR endgame the side with the bishop should not give up its rook even
@@ -72,7 +72,7 @@ for a won/lost position. Note that there is no "TB win" constant in Texel.
   maximum number of remaining pawn moves. This table is computed using a dynamic
   programming algorithm when the engine starts.
 
-* For a Syzygy DTZ probe a mate score bound is obtained by a look-up from the
+* For a Syzygy DTZ probe a mate score bound is obtained by a lookup from the
   same table as in the Syzygy WDL case, but the DTZ value is used for the
   current position instead of assuming the largest possible DTZ value for the
   given tablebase class.
@@ -85,8 +85,8 @@ based on imperfect search. In the recursive search function tablebases are
 probed directly after probing the transposition table.
 
 If a tablebase probe returns a mate bound, but the bound is not good enough to
-cause a cut off, the search continues to recursively explore this node, just
-like if a transposition table probe would produce a not good enough bound. It is
+cause a cutoff, the search continues to recursively explore this node, just
+like if a transposition table probe would produce a bound that is not good enough. It is
 likely that the recursive search is not able to find a mate score in this
 case. However, since the tablebase probe always returns absolute truths the
 tablebase bound can nevertheless be returned as the score for this node.
@@ -115,8 +115,8 @@ There are several other details that the implementation has to handle:
   deliberate design choice that improves compression of the tablebase
   files. This has to be taken into account to provide correct mate score bounds
   and to get correct results when a position is on the edge of being drawn by
-  the 50-move rule. In some such positions the Syzygy tablebase probe result can
-  not be used. This happens for example in the following position:
+  the 50-move rule. In some such positions the Syzygy tablebase probe result
+  cannot be used. This happens for example in the following position:
 
   | 7q/3N2k1/8/8/8/7Q/8/1K6 w - - 70 1 |
   | :---: |
@@ -131,8 +131,8 @@ There are several other details that the implementation has to handle:
   * If the probe returns draw the position is a draw regardless of the half-move
     clock.
 
-  * If the probe result is mate in X and X and the half-move clock are small
-    enough to ensure the 50-move rule is irrelevant, the position is mate in X.
+  * If the probe result is mate in X, and X and the half-move clock are small
+    enough to ensure that the 50-move rule is irrelevant, the position is mate in X.
 
   * If the probe result is mate in X, the value of the position is at least draw
     regardless of the half-move clock.
@@ -142,8 +142,8 @@ There are several other details that the implementation has to handle:
   factored into the hash signature for all positions having few enough pieces to
   be potential tablebase positions.
 
-* The Syzygy probing code has been modified to make DTZ probes thread safe in
-  the same way WDL probes are already thread safe. This is needed in the Texel
+* The Syzygy probing code has been modified to make DTZ probes thread-safe in
+  the same way WDL probes are already thread-safe. This is needed in the Texel
   implementation because all search threads can perform DTZ probes anywhere in
   the search tree. In the Syzygy reference implementation this is not needed
   because DTZ tables are only probed at the root position before the search
@@ -159,10 +159,10 @@ There are several other details that the implementation has to handle:
 * When probing the tablebases for a position the code tries to obtain the
   required information by probing the "most promising" tablebase first. For
   example, if the alpha/beta bounds are not mate scores, there is no need to
-  probe a DTZ or DTM table since a WDL probe will be good enough to cause a cut
-  off. If the alpha/beta bounds are mate scores a WDL probe is tried first
+  probe a DTZ or DTM table since a WDL probe will be good enough to cause a
+  cutoff. If the alpha/beta bounds are mate scores, a WDL probe is tried first
   anyway, because such a probe is cheaper than a DTZ/DTM probe and it might be
-  enough to cause a cut off, for example if the probe result is a draw.
+  enough to cause a cutoff, for example if the probe result is a draw.
 
 * A tablebase draw probe returns a 0 score. Since the engine is in constant
   "tablebase swindle mode", this 0 is converted to a score close to 0 in a way
@@ -183,7 +183,7 @@ There are several other details that the implementation has to handle:
   16 condition is applied in order to not spend too much time on "swindle nodes"
   when other parts of the search tree do not involve tablebase positions.
 
-* If the root position is a pawn-less 4 man position, no Gaviota or Syzygy
+* If the root position is a pawnless 4-man position, no Gaviota or Syzygy
   tablebases are available, the available thinking time is large enough, and the
   transposition table is large enough, Texel will automatically generate a
   tablebase for the position and store it in the main transposition table. This
@@ -205,7 +205,7 @@ Texel quickly finds mate in 70:
 info depth 28 score mate -70 time 17424 nodes 12316365 nps 706862 tbhits 2235112 pv e2e8 a8a7 f8c5 a7a6 a2a3 g4h5 e8e6 a6b5 c5e3 b5c4 e6c6 c4d3 e3b6 h5b5 c6h6 d3c2 h6h2 c2d1 h2h1 d1e2 h1h2 e2f1 h2h1 f1g2 h1h6 b5d3 a3a4 d3d7 a4a3 g2g3 b6g1 d7e7 a3b3 e7f7 b3c2 f7c4 c2b2 g3g2 h6g6 g2f1 g6g7 c4b4 b2c2 f1e2 g7g2 e2e1 g2g7 b4c4 c2b2 c4c6 g7g3 e1d2 g1e3 d2d1 e3g1 c6c2 b2a3 c2c4 a3b2 c4e2 b2b3 e2b5 b3a3 d1c2 g3g2 c2b1 g2g4 b5a5 a3b3 a5e1 g4g7 e1e6 b3b4 e6e4 b4a3 e4c4 g7b7 b1c2 b7b6 c4c3 a3a4 c3a1 a4b4 a1g1 b6c6 c2d3 c6d6 d3e4 b4c4 g1c1 c4b5 c1b1 b5c4 b1c2 c4b4 c2c7 d6d1 c7b6 b4c4 b6c6 c4b3 c6b5 b3c3 b5a5 c3c2 a5a4 c2d2 a4b4 d2c2 b4c4 c2b1 e4e3 d1c1 c4b3 b1a1 e3d3 c1h1 b3a4 a1b2 a4d4 b2a3 d4a7 a3b4 a7b7 b4c5 b7h1 c5d6 h1e1 d6c6 e1e6 c6b7 e6d7 b7a6 d3c3 a6b6 c3b4 b6a6 b4c5 a6a5 d7b5
 ```
 
-In this similar position (only the half-move clock is different), texel finds
+In this similar position (only the half-move clock is different), Texel finds
 mate in 72:
 
 | k4B2/8/8/8/6q1/8/K3R3/8 w - - 11 1 |
@@ -283,7 +283,7 @@ This position is a mate in 23 moves according to Lomonosov tablebases:
 | :---: |
 | ![Image](svg/tb_kbppkr.svg) |
 
-In this position the search is more successful in finding a forced conversions
+In this position the search is more successful in finding forced conversions
 to simpler tablebase classes. Using Syzygy and Gaviota TBs, 2GB hash, 1 thread:
 
 ```
@@ -315,10 +315,10 @@ info depth 23 score mate 44 time 1169744 nodes 15462366908 nps 13218590 tbhits 9
 It could make sense to make the swindle scores asymmetric since Texel has
 perfect tablebase information even though its opponent might not. Handling this
 would be similar to handling contempt, and would require a strategy to deal with
-transposition table data consistency when the engine switches side, and in
+transposition table data consistency when the engine switches sides and in
 analysis mode. The idea is that a tablebase -69 score (blessed loss on the edge
 of being a real loss) is a guaranteed draw if Texel plays the defending side
-(assuming the implementation is bug free), so a -69 TB score would be preferable
+(assuming the implementation is bug-free), so a -69 TB score would be preferable
 over a -30 non-TB score, since the non-TB score indicates a small disadvantage
 that could lead to a loss.
 
