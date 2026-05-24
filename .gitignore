@@ -7,3 +7,5 @@
 /.settings
 /.vscode
 /_build/
+/.cache/
+/Testing/
