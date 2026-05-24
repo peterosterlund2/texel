@@ -77,7 +77,7 @@ setInitialValues(const std::string& fname) {
         uciPars.set(pv.name, num2Str(pv.value));
 }
 
-void
+[[noreturn]] void
 usage() {
     std::cerr << "Usage: texelutil [-iv file] [-e] [-moveorder] cmd params\n";
     std::cerr << " -iv file : Set initial parameter values\n";

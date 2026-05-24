@@ -153,7 +153,8 @@ Process::waitFor(const std::string& s) {
 
 // ------------------------------------------------------------
 
-static void usage() {
+[[noreturn]] static void
+usage() {
     std::cerr << "Usage: syncengine engine" << std::endl;
     ::exit(2);
 }

@@ -169,7 +169,6 @@ private:
     void startGetData();
 
     SplitData& splitData;
-    MemDataSet& validateData;
     const int numEpochs;
     const int batchSize;
     const U64 seed;
@@ -196,7 +195,7 @@ private:
 
 inline
 DataLoader::DataLoader(SplitData& splitData, MemDataSet& validateData, int numEpochs, U64 seed)
-    : splitData(splitData), validateData(validateData), numEpochs(numEpochs),
+    : splitData(splitData), numEpochs(numEpochs),
       batchSize(splitData.getBatchSize()),
       seed(seed), tensorWorker(1), chunkLoader(1) {
     splitData.getData(seed, 0, &trainDataChunk, 1, &nextChunk, &validateData);
@@ -691,7 +690,7 @@ train(const std::string& inFile, int nEpochs, bool useQAT, double initialLR, U64
                 c10::InferenceMode guard;
                 lossSum *= 0;
                 lossNum = 0;
-                for (size_t batch = 0, beg = 0; beg < nValidate; batch++, beg += batchSize) {
+                for (size_t beg = 0; beg < nValidate; beg += batchSize) {
                     size_t end = std::min(beg + batchSize, nValidate);
 
                     torch::Tensor inputW, inputB, headIdx;
@@ -1119,7 +1118,7 @@ featureStats(const std::string& inFile) {
 // ------------------------------------------------------------------------------
 
 /** Print usage information to standard error and exit program. */
-static void
+[[noreturn]] static void
 usage() {
     std::cerr << "Usage: torchutil [-j n] cmd params\n";
     std::cerr << " -j n : Use n worker threads\n";

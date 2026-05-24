@@ -38,12 +38,7 @@ using namespace SearchConst;
 static std::mutex mutex;
 
 void
-SearchTreeSamplerReal::doSample(const Position& pos, Evaluate& eval, int q0Eval) {
-    if (q0Eval == UNKNOWN_SCORE)
-        q0Eval = eval.evalPos();
-    if (!pos.isWhiteMove())
-        q0Eval = -q0Eval;
-
+SearchTreeSamplerReal::doSample(const Position& pos, Evaluate& eval) {
     Data d;
     pos.serialize(d.pos);
     std::lock_guard<std::mutex> L(mutex);

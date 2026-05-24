@@ -42,13 +42,13 @@ public:
     SearchTreeSamplerReal() {}
     /** With probability 2^-16, store "pos" along with the corresponding
      *  q-search score, for later writing to a file. */
-    void sample(const Position& pos, Evaluate& eval, int q0Eval, U64 seed);
+    void sample(const Position& pos, Evaluate& eval, U64 seed);
     /** Write positions previously logged by calls to sample() to the file
      *  "positions.txt". */
     void writeToFile(int searchScore);
 
 private:
-    void doSample(const Position& pos, Evaluate& eval, int q0Eval);
+    void doSample(const Position& pos, Evaluate& eval);
 
     struct Data {
         Position::SerializeData pos;
@@ -59,14 +59,14 @@ private:
 class SearchTreeSamplerDummy {
 public:
     SearchTreeSamplerDummy() {}
-    void sample(const Position& pos, Evaluate& eval, int q0Eval, U64 seed) {}
+    void sample(const Position& pos, Evaluate& eval, U64 seed) {}
     void writeToFile(int searchScore) {}
 };
 
 inline void
-SearchTreeSamplerReal::sample(const Position& pos, Evaluate& eval, int q0Eval, U64 seed) {
+SearchTreeSamplerReal::sample(const Position& pos, Evaluate& eval, U64 seed) {
     if ((hashU64(seed) & ((1<<16)-1)) == 0)
-        doSample(pos, eval, q0Eval);
+        doSample(pos, eval);
 }
 
 #endif /* SEARCHTREESAMPLER_HPP_ */

@@ -1180,7 +1180,7 @@ Search::quiesce(int alpha, int beta, int ply, int depth, const bool inCheck) {
         }
     }
     if (depth == 0)
-        sampler.sample(pos, eval, q0Eval, randomSeed + totalNodes);
+        sampler.sample(pos, eval, randomSeed + totalNodes);
     if (score >= beta)
         return score;
     const int evalScore = score;

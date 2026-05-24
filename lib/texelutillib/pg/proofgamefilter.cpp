@@ -258,7 +258,7 @@ getMovePath(const Position& startPos, std::vector<Move>& movePath) {
 void
 ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line,
                                        std::ostream& log) const {
-    auto setIllegal = [this,&line](const std::string& reason) {
+    auto setIllegal = [&line](const std::string& reason) {
         std::vector<std::string>& illegal = line.tokenData(ILLEGAL);
         illegal.clear();
         illegal.push_back(reason);

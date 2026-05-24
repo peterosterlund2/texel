@@ -383,7 +383,7 @@ ProofKernel::PawnColumn::calcBishopPromotions(const Position& initialPos,
     auto isBlocked = [blocked](int x, int y) -> bool {
         return blocked & (1ULL << Square(x, y));
     };
-    auto promBlocked = [blocked,x,&isBlocked](int y) -> bool {
+    auto promBlocked = [x,&isBlocked](int y) -> bool {
         return (x == 0 || isBlocked(x-1, y)) && (x == 7 || isBlocked(x+1, y));
     };
     auto getPiece = [](const Position& pos, int x, int y) {

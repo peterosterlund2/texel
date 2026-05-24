@@ -35,7 +35,7 @@
 using namespace std::string_literals;
 
 
-static void usage() {
+[[noreturn]] static void usage() {
     std::cerr << "Usage: uciadapter [-ctg ctgbookfile] program arg1 arg2 ..." << std::endl;
     exit(1);
 }

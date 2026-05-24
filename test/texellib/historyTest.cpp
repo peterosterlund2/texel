@@ -62,7 +62,6 @@ TEST(HistoryTest, testGetCounterMove) {
     Position pos = TextIO::readFEN(TextIO::startPosFEN);
     UndoInfo ui;
     Move e4(TextIO::stringToMove(pos, "e4"));
-    Move d4(TextIO::stringToMove(pos, "d4"));
     Move empty;
 
     pos.makeMove(e4, ui);

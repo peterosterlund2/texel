@@ -111,7 +111,7 @@ ExtProofKernel::findExtKernel(const std::vector<PkMove>& path,
     };
 
     std::vector<ExtMove> varExtPath;
-    auto addExtMove = [this,&varExtPath](ExtMove&& move) {
+    auto addExtMove = [&varExtPath](ExtMove&& move) {
          LOG("extMove: " << move);
          varExtPath.push_back(std::move(move));
     };
