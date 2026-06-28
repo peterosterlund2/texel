@@ -601,16 +601,16 @@ TreeLoggerReader::findChildren(S64 index, std::vector<U64>& childs) {
         switch (entry.type) {
         case EntryType::NODE_END:
             index = entry.ee.startIndex;
-            // Fall through
+            [[fallthrough]];
         case EntryType::NODE_START:
             child = index + 1;
             break;
         case EntryType::POSITION_PART2:
             index--;
-            // Fall through
+            [[fallthrough]];
         case EntryType::POSITION_PART1:
             index--;
-            // Fall through
+            [[fallthrough]];
         case EntryType::POSITION_PART0:
             child = index + 3;
             break;
