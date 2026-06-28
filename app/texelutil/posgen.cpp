@@ -587,17 +587,15 @@ PosGenerator::egStat(const std::string& tbType, const std::vector<std::string>& 
     int nDigits = 1;
     {
         U64 maxVal = 0;
-        for (const auto& s : stat)
-            maxVal = std::max({maxVal, s.second.whiteWin, s.second.draw, s.second.blackWin});
+        for (const auto& [key, ss] : stat)
+            maxVal = std::max({maxVal, ss.whiteWin, ss.draw, ss.blackWin});
         while (maxVal >= 10) {
             nDigits++;
             maxVal /= 10;
         }
     }
 
-    for (const auto& p : stat) {
-        const std::vector<int>& key = p.first;
-        const ScoreStat& ss = p.second;
+    for (const auto& [key, ss] : stat) {
         for (size_t i = 0; i < key.size(); i++) {
             if (i > 0)
                 std::cout << ' ';

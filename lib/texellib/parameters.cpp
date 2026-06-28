@@ -260,8 +260,8 @@ Parameters::Listener::removeListener(int id) {
 
 void
 Parameters::Listener::notify() {
-    for (auto& e : listeners)
-        (e.second)();
+    for (auto& [id, listener] : listeners)
+        listener();
 }
 
 void
@@ -285,11 +285,11 @@ ParamTableBase::registerParamsN(const std::string& name, Parameters& pars,
     if (!uci)
         return;
     params.resize(maxParIdx+1);
-    for (const auto& p : parNoToVal) {
-        std::string pName = name + num2Str(p.first);
-        params[p.first] = std::make_shared<Parameters::SpinParam>(pName, minValue, maxValue, p.second);
-        pars.addPar(params[p.first]);
-        params[p.first]->addListener([=]() { modifiedN(table, parNo, N); }, false);
+    for (const auto& [parIdx, value] : parNoToVal) {
+        std::string pName = name + num2Str(parIdx);
+        params[parIdx] = std::make_shared<Parameters::SpinParam>(pName, minValue, maxValue, value);
+        pars.addPar(params[parIdx]);
+        params[parIdx]->addListener([=]() { modifiedN(table, parNo, N); }, false);
     }
     modifiedN(table, parNo, N);
 }

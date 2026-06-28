@@ -263,9 +263,7 @@ EngineMainThread::setOptions() {
         }
 
         Parameters& params = Parameters::instance();
-        for (auto& p : options) {
-            const std::string& optionName = p.first;
-            std::string optionValue = p.second;
+        for (auto& [optionName, optionValue] : options) {
             const Parameters::ParamBase* par = params.getParam(optionName);
             if (par && par->getType() == Parameters::STRING && optionValue == "<empty>")
                 optionValue.clear();

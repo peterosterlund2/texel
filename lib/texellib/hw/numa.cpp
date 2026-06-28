@@ -206,8 +206,8 @@ Numa::getNodeInfo(std::vector<NodeInfo>& nodes) {
 #ifdef CLUSTER
     std::map<int, NodeInfo> nodeInfo;
     getNodeInfoMap(-1, nodeInfo);
-    for (auto& e : nodeInfo)
-        nodes.push_back(e.second);
+    for (auto& [node, info] : nodeInfo)
+        nodes.push_back(info);
 #endif
 #endif
 }

@@ -54,13 +54,13 @@ BookNode::updateScores(const BookData& bookData) {
         if (!updateThis && (node->negaMaxScore != INVALID_SCORE))
             return;
         if (updateChildren) {
-            for (auto& e : node->children)
-                updateNegaMax(e.second, false, true, false);
+            for (auto& [cm, child] : node->children)
+                updateNegaMax(child, false, true, false);
         }
         bool propagate = node->computeNegaMax(bookData);
         if (propagate)
-            for (auto& e : node->children)
-                toUpdate.insert(e.second);
+            for (auto& [cm, child] : node->children)
+                toUpdate.insert(child);
         if (updateParents && (propagate || node == startNode)) {
             for (auto& e : node->parents) {
                 BookNode* parent = e.parent;
@@ -75,8 +75,8 @@ BookNode::updateScores(const BookData& bookData) {
         [&updatePathErrors,&bookData](BookNode* node) {
         bool modified = node->computePathError(bookData);
         if (modified)
-            for (auto& e : node->children)
-                updatePathErrors(e.second);
+            for (auto& [cm, child] : node->children)
+                updatePathErrors(child);
     };
     for (BookNode* n : toUpdate)
         updatePathErrors(n);
@@ -96,8 +96,8 @@ BookNode::computeNegaMax(const BookData& bookData) {
             negaMaxScore = IGNORE_SCORE;
     }
     if (negaMaxScore != INVALID_SCORE)
-        for (const auto& e : children)
-            negaMaxScore = std::max(negaMaxScore, negateScore(e.second->negaMaxScore));
+        for (const auto& [cm, child] : children)
+            negaMaxScore = std::max(negaMaxScore, negateScore(child->negaMaxScore));
 
     expansionCostWhite = IGNORE_SCORE;
     expansionCostBlack = IGNORE_SCORE;
@@ -110,15 +110,14 @@ BookNode::computeNegaMax(const BookData& bookData) {
             expansionCostBlack = getExpansionCost(bookData, nullptr, false);
         }
     }
-    for (const auto& e : children) {
-        if (e.second->expansionCostWhite == INVALID_SCORE)
+    for (const auto& [cm, child] : children) {
+        if (child->expansionCostWhite == INVALID_SCORE)
             expansionCostWhite = INVALID_SCORE;
-        if (e.second->expansionCostBlack == INVALID_SCORE)
+        if (child->expansionCostBlack == INVALID_SCORE)
             expansionCostBlack = INVALID_SCORE;
     }
 
-    for (const auto& e : children) {
-        BookNode* child = e.second;
+    for (const auto& [cm, child] : children) {
         if ((expansionCostWhite != INVALID_SCORE) &&
             (child->expansionCostWhite != IGNORE_SCORE)) {
             int cost = getExpansionCost(bookData, child, true);
@@ -241,8 +240,8 @@ BookNode::updateDepth() {
         }
     }
     if (updated)
-        for (auto& e : children)
-            e.second->updateDepth();
+        for (auto& [cm, child] : children)
+            child->updateDepth();
 }
 
 // ----------------------------------------------------------------------------
@@ -278,8 +277,7 @@ public:
             if (cost == IGNORE_SCORE)
                 return false;
             std::vector<BookNode*> goodChildren;
-            for (const auto& e : ptr->getChildren()) {
-                BookNode* child = e.second;
+            for (const auto& [cm, child] : ptr->getChildren()) {
                 int childCost = ptr->getExpansionCost(book.bookData, child, whiteBook);
                 if (cost == childCost)
                     goodChildren.push_back(child);
@@ -472,8 +470,8 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
 
     Position pos;
     std::vector<Move> moveList;
-    for (auto& e : bookNodes) {
-        const BookNode* node = e.second.get();
+    for (auto& [hKey, nodePtr] : bookNodes) {
+        const BookNode* node = nodePtr.get();
         moveList.clear();
         if (!getPosition(node->getHashKey(), pos, moveList))
             assert(false);
@@ -484,9 +482,7 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
 
         const bool wtm = pos.isWhiteMove();
         BookMoves& bm = pgBook[PolyglotBook::getHashKey(pos)];
-        for (auto& c : node->getChildren()) {
-            U16 cMove = c.first;
-            BookNode* child = c.second;
+        for (auto& [cMove, child] : node->getChildren()) {
             if (bookMoveOk(*node, cMove, maxErrSelf)) {
                 Move move;
                 move.setFromCompressed(cMove);
@@ -523,9 +519,7 @@ Book::exportPolyglot(const std::string& bookFile, const std::string& polyglotFil
                                   std::ios_base::trunc);
     os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     PolyglotBook::PGEntry ent;
-    for (auto& e : pgBook) {
-        U64 pgHash = e.first;
-        BookMoves& bm = e.second;
+    for (auto& [pgHash, bm] : pgBook) {
         bm.scaleWeights();
         for (int i = 0; i < bm.nMoves(); i++) {
             assert(bm.getWeight(i) > 0);
@@ -670,8 +664,8 @@ Book::statistics(const std::string& bookFile) {
     readFromFile(bookFile);
     const int maxPly = 1000;
     Histogram<0, maxPly> hist;
-    for (auto& bn : bookNodes)
-        hist.add(bn.second->getDepth());
+    for (auto& [hKey, node] : bookNodes)
+        hist.add(node->getDepth());
 
     int maxNonZero = 0;
     for (int i = 1; i < maxPly; i++)
@@ -749,8 +743,7 @@ Book::writeToFile(const std::string& filename) {
                               std::ios_base::trunc);
     os.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
-    for (const auto& e : bookNodes) {
-        auto& node = e.second;
+    for (const auto& [hKey, node] : bookNodes) {
         BookNode::BookSerializeData bsd;
         node->serialize(bsd);
         os.write((const char*)&bsd.data[0], sizeof(bsd.data));
@@ -1030,11 +1023,11 @@ Book::initPositions(Position& pos) {
         return;
 
     setChildRefs(pos);
-    for (auto& e : node->getChildren()) {
-        if (e.second->getState() == BookNode::DESERIALIZED) {
+    for (auto& [cMove, child] : node->getChildren()) {
+        if (child->getState() == BookNode::DESERIALIZED) {
             UndoInfo ui;
             Move m;
-            m.setFromCompressed(e.first);
+            m.setFromCompressed(cMove);
             pos.makeMove(m, ui);
             initPositions(pos);
             pos.unMakeMove(m, ui);
@@ -1105,8 +1098,8 @@ Book::computeWeights(int maxErrSelf, double errOtherExpConst, WeightInfo& weight
     };
 
     WeightInfo w;
-    for (const auto& e : bookNodes) {
-        const BookNode* node = e.second.get();
+    for (const auto& [hKey, nodePtr] : bookNodes) {
+        const BookNode* node = nodePtr.get();
         auto it = node->getChildren().find(node->getBestNonBookMove().getCompressedMove());
         if ((it != node->getChildren().end()) &&
             (it->second->getNegaMaxScore() != INVALID_SCORE))
@@ -1120,12 +1113,11 @@ Book::computeWeights(int maxErrSelf, double errOtherExpConst, WeightInfo& weight
         w.clear();
         propagateWeights(node, w, errW, errB);
 
-        for (const auto& e2 : w)
-            weights[e2.first] += e2.second;
+        for (const auto& [childHash, weight] : w)
+            weights[childHash] += weight;
     }
 
-    for (const auto& e : bookNodes) {
-        const U64 hKey = e.first;
+    for (const auto& [hKey, node] : bookNodes) {
         if (weights.find(hKey) == weights.end())
             weights.insert(std::pair(hKey, BookWeight(0, 0)));
     }
@@ -1382,10 +1374,9 @@ Book::getTreeData(const Position& pos, TreeData& treeData) const {
 void
 Book::getOrderedChildMoves(const BookNode& node, std::vector<Move>& moves) const {
     std::vector<std::pair<int,U16>> childMoves;
-    for (const auto& e : node.getChildren()) {
+    for (const auto& [cMove, child] : node.getChildren()) {
         Move childMove;
-        childMove.setFromCompressed(e.first);
-        const BookNode* child = e.second;
+        childMove.setFromCompressed(cMove);
         int score = -BookNode::negateScore(child->getNegaMaxScore());
         childMoves.push_back(std::pair(score,
                                        childMove.getCompressedMove()));
@@ -1634,8 +1625,8 @@ SearchScheduler::workerLoop(SearchRunner& sr, Book::Listener* listener) {
 void
 SearchScheduler::getQueueData(Book::QueueData& queueData) const {
     std::lock_guard<std::mutex> L(mutex);
-    for (auto& e : runningItems)
-        queueData.items.push_back(e.second);
+    for (auto& [id, item] : runningItems)
+        queueData.items.push_back(item);
     std::sort(queueData.items.begin(), queueData.items.end(),
               [](const QueueItem& a, const QueueItem& b) { return a.startTime < b.startTime; });
     queueData.items.insert(queueData.items.begin(), finishedItems.begin(), finishedItems.end());

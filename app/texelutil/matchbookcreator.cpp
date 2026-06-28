@@ -46,8 +46,8 @@ MatchBookCreator::createBook(int depth, int searchTime, std::ostream& os) {
     createBookLines(depth);
 
     std::vector<BookLine> lines;
-    for (const auto& bl : bookLines)
-        lines.push_back(bl.second);
+    for (const auto& [hash, bookLine] : bookLines)
+        lines.push_back(bookLine);
     auto r = std::random_device()();
     std::mt19937 rndGen(r);
     std::shuffle(lines.begin(), lines.end(), rndGen);
@@ -62,9 +62,9 @@ MatchBookCreator::createBookLines(int depth) {
 
 #if 0
     int i = 0;
-    for (const auto& bl : bookLines) {
+    for (const auto& [hash, bookLine] : bookLines) {
         std::cout << std::setw(5) << i;
-        for (Move m : bl.second.moves)
+        for (Move m : bookLine.moves)
             std::cout << ' ' << TextIO::moveToUCIString(m);
         std::cout << std::endl;
         i++;
