@@ -39,7 +39,7 @@ public:
     /** Write a scalar value. */
     template <typename Type>
     void writeScalar(Type value) {
-        static_assert(std::is_integral<Type>::value, "Unsupported type");
+        static_assert(std::is_integral_v<Type>, "Unsupported type");
         const int s = sizeof(Type);
         U8 buf[s];
         toBytes(buf, value);
@@ -49,7 +49,7 @@ public:
     /** Write an array of known size. */
     template <typename Type>
     void writeArray(const Type* arr, int nElem) {
-        static_assert(std::is_integral<Type>::value, "Unsupported type");
+        static_assert(std::is_integral_v<Type>, "Unsupported type");
         const int s = sizeof(Type);
         const int nBytes = s * nElem;
         std::vector<U8> buf(nBytes);
@@ -62,7 +62,7 @@ private:
     /** Convert a value to a sequence of bytes. */
     template <typename Type>
     void toBytes(U8* buf, Type value) {
-        using UType = typename std::make_unsigned<Type>::type;
+        using UType = typename std::make_unsigned_t<Type>;
         UType tmp = static_cast<UType>(value);
         for (size_t i = 0; i < sizeof(UType); i++) {
             *buf++ = tmp & 0xff;
@@ -88,7 +88,7 @@ public:
     /** Read a scalar value. */
     template <typename Type>
     void readScalar(Type& value) {
-        static_assert(std::is_integral<Type>::value, "Unsupported type");
+        static_assert(std::is_integral_v<Type>, "Unsupported type");
         const int s = sizeof(Type);
         U8 buf[s];
         readBytes(buf, s);
@@ -98,7 +98,7 @@ public:
     /** Read an array of known size. */
     template <typename Type>
     void readArray(Type* arr, int nElem) {
-        static_assert(std::is_integral<Type>::value, "Unsupported type");
+        static_assert(std::is_integral_v<Type>, "Unsupported type");
         const int s = sizeof(Type);
         const int nBytes = s * nElem;
         std::vector<U8> buf(nBytes);
@@ -111,7 +111,7 @@ private:
     /** Convert a sequence of bytes to a value. */
     template <typename Type>
     Type fromBytes(const U8* buf) {
-        using UType = typename std::make_unsigned<Type>::type;
+        using UType = typename std::make_unsigned_t<Type>;
         UType tmp = 0;
         for (size_t i = 0; i < sizeof(UType); i++)
             tmp += static_cast<UType>(buf[i]) << (i * 8);

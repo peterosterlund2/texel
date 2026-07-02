@@ -47,7 +47,7 @@ class Position;
 
 namespace Serializer {
     template <typename Type>
-    typename std::enable_if<std::is_integral<Type>::value, U8*>::type
+    typename std::enable_if_t<std::is_integral_v<Type>, U8*>
     putBytes(U8* buffer, Type value) {
         int s = sizeof(value);
         memcpy(buffer, &value, s);
@@ -69,7 +69,7 @@ namespace Serializer {
     }
 
     template <typename Type>
-    typename std::enable_if<std::is_integral<Type>::value, const U8*>::type
+    typename std::enable_if_t<std::is_integral_v<Type>, const U8*>
     getBytes(const U8* buffer, Type& value) {
         int s = sizeof(value);
         memcpy(&value, buffer, s);
@@ -213,7 +213,7 @@ protected:
 
         void serialize(U8 buffer[bufSize]) const {
             U8* ptr = buffer;
-            using UType = std::underlying_type<EntryType>::type;
+            using UType = std::underlying_type_t<EntryType>;
             const int su = sizeof(UType);
             UType uType = static_cast<UType>(type);
             ptr = Serializer::serialize<bufSize>(ptr, uType);
@@ -229,7 +229,7 @@ protected:
 
         void deSerialize(U8 buffer[bufSize]) {
             const U8* ptr = buffer;
-            using UType = std::underlying_type<EntryType>::type;
+            using UType = std::underlying_type_t<EntryType>;
             const int su = sizeof(UType);
             UType uType;
             ptr = Serializer::deSerialize<bufSize>(ptr, uType);

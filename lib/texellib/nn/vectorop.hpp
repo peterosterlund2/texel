@@ -544,7 +544,7 @@ matMul(Vector<S32,nOut>& result, const Matrix<S8,nOut,nIn>& weight, const Vector
 template <typename T, int nEnts>
 inline void
 copyVec(Vector<T,nEnts>& dst, const Vector<T,nEnts>& src) {
-    static_assert(std::is_integral<T>::value, "Unsupported type");
+    static_assert(std::is_integral_v<T>, "Unsupported type");
 #ifdef USE_AVX512
     {
         constexpr int n = sizeof(T) * nEnts;
