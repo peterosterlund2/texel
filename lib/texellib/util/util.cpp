@@ -49,7 +49,7 @@ splitLines(const std::string& lines) {
 }
 
 bool
-startsWith(const std::string& str, const std::string& startsWith) {
+startsWith(std::string_view str, std::string_view startsWith) {
     size_t N = startsWith.length();
     if (str.length() < N)
         return false;
@@ -60,7 +60,7 @@ startsWith(const std::string& str, const std::string& startsWith) {
 }
 
 bool
-endsWith(const std::string& str, const std::string& endsWith) {
+endsWith(std::string_view str, std::string_view endsWith) {
     size_t N = endsWith.length();
     size_t sN = str.length();
     if (sN < N)

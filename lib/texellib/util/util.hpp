@@ -144,10 +144,10 @@ toLowerCase(std::string str) {
 }
 
 /** Return true if "str" starts with "startsWith". */
-bool startsWith(const std::string& str, const std::string& startsWith);
+bool startsWith(std::string_view str, std::string_view startsWith);
 
 /** Return true if "str" ends with "endsWith". */
-bool endsWith(const std::string& str, const std::string& endsWith);
+bool endsWith(std::string_view str, std::string_view endsWith);
 
 /** Return true if vector v contains element e. */
 template <typename T>
