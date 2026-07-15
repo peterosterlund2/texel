@@ -225,6 +225,7 @@ template <int defaultValue, int minValue, int maxValue, bool uci> class Param;
 
 template <int defaultValue, int minValue, int maxValue>
 class Param<defaultValue, minValue, maxValue, false> {
+    static_assert(minValue <= maxValue, "Invalid min/max range");
 public:
     Param() {}
     operator int() const { return defaultValue; }
@@ -234,6 +235,7 @@ public:
 
 template <int defaultValue, int minValue, int maxValue>
 class Param<defaultValue, minValue, maxValue, true> {
+    static_assert(minValue <= maxValue, "Invalid min/max range");
 public:
     Param() : value(0) {}
     operator int() const { return value; }
