@@ -188,7 +188,7 @@ ProofGameFilter::runOneIteration(std::istream& is, std::ostream& os,
             if (!allFinished) {
                 Result r;
                 if (pool.getResult(r)) {
-                    nonRetired.insert({r.id, r});
+                    nonRetired.emplace(r.id, r);
                 } else {
                     allFinished = true;
                 }

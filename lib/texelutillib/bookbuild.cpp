@@ -1117,10 +1117,8 @@ Book::computeWeights(int maxErrSelf, double errOtherExpConst, WeightInfo& weight
             weights[childHash] += weight;
     }
 
-    for (const auto& [hKey, node] : bookNodes) {
-        if (weights.find(hKey) == weights.end())
-            weights.insert(std::pair(hKey, BookWeight(0, 0)));
-    }
+    for (const auto& [hKey, node] : bookNodes)
+        weights.emplace(hKey, BookWeight(0, 0));
 }
 
 void

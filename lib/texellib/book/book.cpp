@@ -198,10 +198,8 @@ Book::initBook() {
 /** Add a move to a position in the opening book. */
 void
 Book::addToBook(const Position& pos, const Move& moveToAdd) {
-    BookMap::iterator it = bookMap.find(pos.zobristHash());
-    if (it == bookMap.end())
-        it = bookMap.insert(std::pair(pos.zobristHash(),
-                                      std::vector<BookEntry>())).first;
+    BookMap::iterator it = bookMap.emplace(pos.zobristHash(),
+                                           std::vector<BookEntry>()).first;
 
     std::vector<BookEntry>& ent = it->second;
     for (size_t i = 0; i < ent.size(); i++) {

@@ -514,15 +514,15 @@ GameTree::getResult() const {
 
 void
 GameTree::getHeaders(std::map<std::string, std::string>& headers) {
-    headers.insert(std::pair("Event", event));
-    headers.insert(std::pair("Site",  site));
-    headers.insert(std::pair("Date",  date));
-    headers.insert(std::pair("Round", round));
-    headers.insert(std::pair("White", white));
-    headers.insert(std::pair("Black", black));
+    headers.emplace("Event", event);
+    headers.emplace("Site",  site);
+    headers.emplace("Date",  date);
+    headers.emplace("Round", round);
+    headers.emplace("White", white);
+    headers.emplace("Black", black);
     for (size_t i = 0; i < tagPairs.size(); i++) {
         TagPair tp = tagPairs[i];
-        headers.insert(std::pair(tp.tagName, tp.tagValue));
+        headers.emplace(tp.tagName, tp.tagValue);
     }
 }
 

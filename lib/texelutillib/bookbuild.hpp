@@ -679,7 +679,7 @@ BookNode::setRootNode() {
 
 inline void
 BookNode::addChild(U16 move, BookNode* child) {
-    children.insert(std::pair(move, child));
+    children.emplace(move, child);
 }
 
 inline void
