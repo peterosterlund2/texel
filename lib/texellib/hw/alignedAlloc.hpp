@@ -36,7 +36,6 @@ template <typename T>
 class AlignedAllocator {
 private:
     enum { ALIGN = 64 };
-    using U64 = uint64_t;
 public:
     using value_type = T;
 
@@ -44,19 +43,11 @@ public:
     template <typename U> AlignedAllocator(const AlignedAllocator<U>& other) {}
 
     T* allocate(size_t n) {
-        size_t needed_size = n*sizeof(T) + sizeof(U64) + ALIGN;
-        void* mem = malloc(needed_size);
-        if (!mem)
-            throw std::bad_alloc();
-        U64 ret = ((U64)mem) + sizeof(U64);
-        ret = (ret + ALIGN - 1) & ~(ALIGN - 1);
-        *(U64*)(ret - sizeof(U64)) = (U64)mem;
-        return (T*)ret;
+        return (T*)(::operator new(n * sizeof(T), std::align_val_t{ALIGN}));
     }
 
     void deallocate(T* p, size_t n) {
-        U64 mem = *(U64*)(((U64)p) - sizeof(U64));
-        free((void*)mem);
+        return ::operator delete(p, std::align_val_t{ALIGN});
     }
 
     template <typename U>
