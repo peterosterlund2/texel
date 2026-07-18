@@ -274,10 +274,14 @@ Gsprt::compute(const Sample& sample, Result& res) const {
     res.sampleStdDev = sqrt(sum2 / (N-1));
 
     DblVec p(nProbs);
-    double ll0 = N * computeBestLL(a, res.expectedScore0, f, p);
+    double s0 = res.expectedScore0;
+//    s0 = std::min(s0, avg);
+    double ll0 = N * computeBestLL(a, s0, f, p);
 //    std::cout << "ll0: " << ll0 << std::endl;
 
-    double ll1 = N * computeBestLL(a, res.expectedScore1, f, p);
+    double s1 = res.expectedScore1;
+//    s1 = std::max(s1, avg);
+    double ll1 = N * computeBestLL(a, s1, f, p);
 //    std::cout << "ll1: " << ll1 << std::endl;
 
     res.llr = ll1 - ll0;

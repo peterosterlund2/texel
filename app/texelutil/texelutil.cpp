@@ -164,6 +164,7 @@ usage() {
     std::cerr << "           -p : Consider game pairs when computing standard deviation\n";
     std::cerr << "\n";
     std::cerr << " gsprt elo0 elo1 [-ab alpha beta] (w d l | n00 n05 n10 n15 n20)\n";
+    std::cerr << " gsprtsim elo0 elo1 [-ab alpha beta] nSim n00 n05 n10 n15 n20\n";
 #if !_MSC_VER
     std::cerr << " match (-n nGames | -gsprt elo0 elo1 [-ab alpha beta])\n";
     std::cerr << "       engine1 tc1 engine2 tc2 script\n";
@@ -491,6 +492,95 @@ doGsprt(int argc, char* argv[]) {
             std::cout << "elo unknown" << std::endl;
         }
     }
+}
+
+static void
+doGsprtSim(int argc, char* argv[]) {
+    Gsprt::InParams pars;
+
+    if (argc < 4 || !str2Num(argv[2], pars.elo0) || !str2Num(argv[3], pars.elo1))
+        usage();
+
+    pars.useBounds = true;
+    int arg = 4;
+    while (arg < argc) {
+        if (arg + 2 < argc && argv[arg] == "-ab"s) {
+            if (!str2Num(argv[arg+1], pars.alpha) ||
+                !str2Num(argv[arg+2], pars.beta))
+                usage();
+            arg += 3;
+        } else {
+            break;
+        }
+    }
+
+    int nSim;          // Number of simulated GSPRT runs
+    if (arg < argc) {
+        if (!str2Num(argv[arg], nSim))
+            usage();
+        arg++;
+    } else {
+        usage();
+    }
+
+    Gsprt::Sample distr;  // Result probability distribution
+    int distrSum = 0;
+    if (arg + 5 == argc) {
+        pars.usePentanomial = true;
+        for (int i = 0; i < 5; i++) {
+            if (!str2Num(argv[arg+i], distr.stats[i]))
+                usage();
+            distrSum += distr.stats[i];
+        }
+    } else {
+        usage();
+    }
+
+    Random rnd(currentTimeMillis(), 0);
+    int low = 0, high = 0;
+    int totalGames = 0;
+    for (int run = 0; run < nSim; run++) {
+        Gsprt::Sample sample;
+        auto simulateGames = [&](int nGames) {
+            for (int g = 0; g < nGames; g += 2) {
+                int r = rnd.nextInt(distrSum);
+                for (int i = 0; i < 5; i++) {
+                    int freq = distr.stats[i];
+                    if (r < freq) {
+                        sample.stats[i]++;
+                        break;
+                    }
+                    r -= freq;
+                }
+            }
+        };
+
+        while (true) {
+            simulateGames(100);
+            totalGames += 100;
+
+            Gsprt::Result res;
+            Gsprt gsprt(pars);
+            gsprt.compute(sample, res);
+
+            if (res.llr < res.a) {
+                low++;
+                break;
+            } else if (res.llr > res.b) {
+                high++;
+                break;
+            }
+        }
+        if ((run + 1) % 1000 == 0) {
+            std::cout << "runs: " << (run + 1)
+                      << " low: " << low << " high: " << high
+                      << " games: " << totalGames
+                      << std::endl;
+        }
+    }
+    std::cout << "low: " << low << " high: " << high
+              << " games: " << totalGames
+              << std::endl;
 }
 
 #if !_MSC_VER
@@ -1052,6 +1142,8 @@ main(int argc, char* argv[]) {
             mbc.pgnStat(pgnFile, pairMode, std::cout);
         } else if (cmd == "gsprt") {
             doGsprt(argc, argv);
+        } else if (cmd == "gsprtsim") {
+            doGsprtSim(argc, argv);
 #if !_MSC_VER
         } else if (cmd == "match") {
             doMatch(argc, argv, nWorkers);
