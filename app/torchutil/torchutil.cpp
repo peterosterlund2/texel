@@ -30,6 +30,7 @@
 #include "nnutil.hpp"
 #include "nneval.hpp"
 #include "square.hpp"
+#include "computerPlayer.hpp"
 #include "threadpool.hpp"
 #include "featureperm.hpp"
 #include "dataset.hpp"
@@ -991,6 +992,36 @@ bin2Fen(const std::string& inFile, std::ostream& os) {
     });
 }
 
+static void
+binEval(const std::string& inFile, std::ostream& os) {
+    ComputerPlayer::initEngine();
+
+    static auto et = Evaluate::getEvalHashTables();
+    Evaluate eval(*et);
+
+    FileDataSet ds(inFile);
+    Position pos;
+    ds.forEach([&](Record& r) {
+        int score;
+        NNUtil::recordToPos(r, pos, score);
+        eval.connectPosition(pos);
+        score = eval.evalPos();
+
+        int wMtrl =
+                1 * BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN)) +
+                3 * BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT, Piece::WBISHOP)) +
+                5 * BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK)) +
+                9 * BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN));
+        int bMtrl =
+                1 * BitBoard::bitCount(pos.pieceTypeBB(Piece::BPAWN)) +
+                3 * BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT, Piece::BBISHOP)) +
+                5 * BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK)) +
+                9 * BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN));
+
+        std::cout << (wMtrl - bMtrl) << ' ' << score << '\n';
+    });
+}
+
 // ------------------------------------------------------------------------------
 
 /** Evaluate one or more chess positions using both a floating point network
@@ -1141,6 +1172,8 @@ usage() {
     std::cerr << "   Extract validation data in binary format\n";
     std::cerr << " featstat infile\n";
     std::cerr << "   Print feature activation stats from training data\n";
+    std::cerr << " bineval infile\n";
+    std::cerr << "   For each position report material score and texel evaluation\n";
 
     std::cerr << std::flush;
     ::exit(2);
@@ -1300,6 +1333,12 @@ main(int argc, char* argv[]) {
             std::string inFile = argv[2];
             checkFileExists(inFile);
             featureStats(inFile);
+        } else if (cmd == "bineval") {
+            if (argc != 3)
+                usage();
+            std::string inFile = argv[2];
+            checkFileExists(inFile);
+            binEval(inFile, std::cout);
         } else {
             usage();
         }
