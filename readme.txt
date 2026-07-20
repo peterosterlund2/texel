@@ -123,6 +123,15 @@ UseNullMove
   When set to true, the null move search heuristic is disabled. This can be
   beneficial when analyzing positions where zugzwang is an important factor.
 
+Materialistic
+
+  When set to true, the evaluation function is modified so that Texel always
+  prefers winning material over positional advantages. The evaluation score is
+  reported as 100 * M + corr, where abs(corr) < 50 and M is the material
+  balance, using the common 1,3,3,5,9 piece values. This setting makes Texel
+  play hundreds of Elo weaker, but can be useful when trying to determine if a
+  suboptimal move was primarily a tactical or positional mistake.
+
 Contempt
 
   When playing a game this value specifies how big an advantage, measured in
@@ -204,7 +213,9 @@ Max6dtzThreads, Max7dtzThreads
 Clear Hash
 
   When activated, clears the hash table and the history heuristic table, so that
-  the next search behaves as if the engine had just been started.
+  the next search behaves as if the engine had just been started. This is useful
+  when changing parameters that modify how the search or evaluation behaves,
+  like "UseNullMove" or "Materialistic".
 
 AnalysisAgeHash
 

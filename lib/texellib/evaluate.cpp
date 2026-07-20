@@ -59,6 +59,69 @@ Evaluate::connectPosition(const Position& pos) {
     nnEval.connectPosition(&pos);
 }
 
+/** Convert a score (white perspective) to a materialistic score.
+ * If a position has material balance M, for piece values P=1, N=B=3, R=5, Q=9,
+ * the materialistic score is 100*M + corr, where -49 <= corr <= 49. */
+static inline int toMaterialistic(const Position& pos, int score) {
+    int wMtrl =
+            1 * BitBoard::bitCount(pos.pieceTypeBB(Piece::WPAWN)) +
+            3 * BitBoard::bitCount(pos.pieceTypeBB(Piece::WKNIGHT, Piece::WBISHOP)) +
+            5 * BitBoard::bitCount(pos.pieceTypeBB(Piece::WROOK)) +
+            9 * BitBoard::bitCount(pos.pieceTypeBB(Piece::WQUEEN));
+    int bMtrl =
+            1 * BitBoard::bitCount(pos.pieceTypeBB(Piece::BPAWN)) +
+            3 * BitBoard::bitCount(pos.pieceTypeBB(Piece::BKNIGHT, Piece::BBISHOP)) +
+            5 * BitBoard::bitCount(pos.pieceTypeBB(Piece::BROOK)) +
+            9 * BitBoard::bitCount(pos.pieceTypeBB(Piece::BQUEEN));
+    int M = wMtrl - bMtrl;
+
+    static int meanTable[21] = {
+        0, 131, 373, 536, 702, 803, 913, 973, 946, 931, 1041, 1158, 1211, 1320, 1383, 1438, 1504, 1549, 1649, 1677, 1695
+    };
+    static int stdDevTable[21] = {
+        198, 127, 87, 87, 81, 83, 84, 81, 93, 97, 89, 91, 92, 90, 89, 97, 102, 105, 116, 118, 135
+    };
+    static S8 compressTable[346] = {
+         0,  0,  1,  1,  2,  3,  3,  4,  4,  5,  5,  6,  6,  7,  8,  8,  9, 10, 10, 11,
+        11, 12, 12, 13, 14, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 20,
+        21, 21, 22, 22, 23, 23, 23, 24, 24, 25, 25, 25, 26, 26, 26, 27, 27, 27, 28, 28,
+        29, 29, 29, 30, 30, 30, 31, 31, 32, 32, 32, 32, 33, 33, 33, 33, 34, 34, 34, 34,
+        35, 35, 35, 35, 35, 36, 36, 36, 36, 36, 37, 37, 37, 37, 37, 38, 38, 38, 38, 38,
+        38, 39, 39, 39, 39, 39, 39, 39, 40, 40, 40, 40, 40, 40, 40, 41, 41, 41, 41, 41,
+        41, 41, 41, 42, 42, 42, 42, 42, 42, 42, 42, 43, 43, 43, 43, 43, 43, 43, 43, 43,
+        43, 43, 43, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 45, 45, 45,
+        45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 46, 46, 46, 46, 46,
+        46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 47, 47,
+        47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47,
+        47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47,
+        48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+        48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+        48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+        48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+        48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+        48, 48, 48, 48, 48, 49
+    };
+
+    int idx = std::min(std::abs(M), 20);
+    int mean = meanTable[idx];
+    int stdDev = stdDevTable[idx];
+
+    if (M < 0)
+        mean = -mean;
+    {
+        int corr = (score - mean) * stdDev / 256;
+        bool neg = corr < 0;
+        if (neg)
+            corr = -corr;
+        corr = compressTable[std::min(corr, 345)];
+        if (neg)
+            corr = -corr;
+        score = M * 100 + corr;
+    }
+
+    return score;
+}
+
 int
 Evaluate::evalPos() {
     return evalPos<false>();
@@ -107,6 +170,10 @@ Evaluate::evalPos() {
         score = score * halfMoveFactor[hmc] / 128;
     }
     if (print) std::cout << "info string eval halfmove:" << score << std::endl;
+
+    if (UciParams::materialistic->getBoolPar()) {
+        score = toMaterialistic(*posP, score);
+    }
 
     if (!posP->isWhiteMove())
         score = -score;

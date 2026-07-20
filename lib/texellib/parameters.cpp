@@ -47,6 +47,7 @@ namespace UciParams {
     std::shared_ptr<StringParam> bookFile(std::make_shared<StringParam>("BookFile", ""));
 
     std::shared_ptr<CheckParam> useNullMove(std::make_shared<CheckParam>("UseNullMove", true));
+    std::shared_ptr<CheckParam> materialistic(std::make_shared<CheckParam>("Materialistic", false));
     std::shared_ptr<CheckParam> analysisAgeHash(std::make_shared<CheckParam>("AnalysisAgeHash", true));
     std::shared_ptr<ButtonParam> clearHash(std::make_shared<ButtonParam>("Clear Hash"));
 
@@ -141,6 +142,7 @@ Parameters::Parameters() {
     addPar(UciParams::bookFile);
 
     addPar(UciParams::useNullMove);
+    addPar(UciParams::materialistic);
     addPar(UciParams::analysisAgeHash);
     addPar(UciParams::clearHash);
 

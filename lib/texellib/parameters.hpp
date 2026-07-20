@@ -357,6 +357,7 @@ namespace UciParams {
     extern std::shared_ptr<Parameters::StringParam> bookFile;
 
     extern std::shared_ptr<Parameters::CheckParam> useNullMove;
+    extern std::shared_ptr<Parameters::CheckParam> materialistic;
     extern std::shared_ptr<Parameters::CheckParam> analysisAgeHash;
     extern std::shared_ptr<Parameters::ButtonParam> clearHash;
 
