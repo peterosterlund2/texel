@@ -78,7 +78,7 @@ static inline int toMaterialistic(const Position& pos, int score) {
     static int meanTable[21] = {
         0, 131, 373, 536, 702, 803, 913, 973, 946, 931, 1041, 1158, 1211, 1320, 1383, 1438, 1504, 1549, 1649, 1677, 1695
     };
-    static int stdDevTable[21] = {
+    static int invStdDevTable[21] = {
         198, 127, 87, 87, 81, 83, 84, 81, 93, 97, 89, 91, 92, 90, 89, 97, 102, 105, 116, 118, 135
     };
     static S8 compressTable[346] = {
@@ -104,21 +104,20 @@ static inline int toMaterialistic(const Position& pos, int score) {
 
     int idx = std::min(std::abs(M), 20);
     int mean = meanTable[idx];
-    int stdDev = stdDevTable[idx];
-
+    int invStdDev = invStdDevTable[idx];
     if (M < 0)
         mean = -mean;
-    {
-        int corr = (score - mean) * stdDev / 256;
-        bool neg = corr < 0;
-        if (neg)
-            corr = -corr;
-        corr = compressTable[std::min(corr, 345)];
-        if (neg)
-            corr = -corr;
-        score = M * 100 + corr;
-    }
 
+    int corr = (score - mean) * invStdDev / 256;
+
+    bool neg = corr < 0;
+    if (neg)
+        corr = -corr;
+    corr = compressTable[std::min(corr, 345)];
+    if (neg)
+        corr = -corr;
+
+    score = M * 100 + corr;
     return score;
 }
 
