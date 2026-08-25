@@ -23,7 +23,7 @@
  *      Author: petero
  */
 
-#include "proofkernelTest.hpp"
+#include "proofkernel.hpp"
 #include "proofgame.hpp"
 #include "extproofkernel.hpp"
 #include "position.hpp"
@@ -33,6 +33,25 @@
 #include "stloutput.hpp"
 
 #include "gtest/gtest.h"
+
+class ProofKernelTest {
+public:
+    static void testPawnColumn();
+    static void testPawnColPromotion();
+    static void testGoal();
+    static void testGoalPossible();
+    static void testMoveToString();
+    static void testMoveGen();
+    static void testMakeMove();
+    static void testSearch();
+    static void testExtMoveToString();
+    static void testExtKernel();
+    static void testListKernels();
+
+private:
+    static void testMove(const Position& pos, const ProofKernel& pk,
+                         const ProofKernel::PkMove& m);
+};
 
 
 TEST(ProofKernelTest, testPawnColumn) {

@@ -23,11 +23,20 @@
  *      Author: petero
  */
 
-#include "bookBuildTest.hpp"
 #include "bookbuild.hpp"
 #include "textio.hpp"
 
 #include "gtest/gtest.h"
+
+class BookBuildTest {
+public:
+    static void testBookNode();
+    static void testShortestDepth();
+    static void testBookNodeDAG();
+    static void testAddPosToBook();
+    static void testAddPosToBookConnectToChild();
+    static void testSelector();
+};
 
 using namespace BookBuild;
 

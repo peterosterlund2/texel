@@ -23,8 +23,6 @@
  *      Author: petero
  */
 
-#include "nnTest.hpp"
-
 #include "nntypes.hpp"
 #include "vectorop.hpp"
 #include "textio.hpp"
@@ -35,6 +33,13 @@
 #include <string>
 
 #include "gtest/gtest.h"
+
+class NNTest {
+public:
+    static void testMatMul();
+    static void testNonZeroBlocks();
+    static void testIncremental();
+};
 
 TEST(NNTest, testMatMul) {
     NNTest::testMatMul();

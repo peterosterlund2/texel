@@ -23,7 +23,6 @@
  *      Author: petero
  */
 
-#include "randpermTest.hpp"
 #include "randperm.hpp"
 #include "stloutput.hpp"
 
@@ -31,6 +30,12 @@
 #include <algorithm>
 
 #include "gtest/gtest.h"
+
+class RandPermTest {
+public:
+    static void testUnique();
+    static void testLarge();
+};
 
 TEST(RandPermTest, testUnique) {
     RandPermTest::testUnique();

@@ -23,7 +23,6 @@
  *      Author: petero
  */
 
-#include "revmovegenTest.hpp"
 #include "revmovegen.hpp"
 #include "textio.hpp"
 #include "posutil.hpp"
@@ -31,6 +30,17 @@
 #include <set>
 
 #include "gtest/gtest.h"
+
+class RevMoveGenTest {
+public:
+    static void testMoves();
+    static void testCastleMask();
+    static void testEpSquare();
+    static void testInvalidMoves();
+
+private:
+    static void genMoves(const Position& pos, std::vector<UnMove>& unMoves, bool includeEpSquare);
+};
 
 class UnMoveCompare {
 public:

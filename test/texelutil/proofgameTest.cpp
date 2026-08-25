@@ -23,7 +23,6 @@
  *      Author: petero
  */
 
-#include "proofgameTest.hpp"
 #include "proofgame.hpp"
 #include "proofkernel.hpp"
 #include "proofgamefilter.hpp"
@@ -34,6 +33,48 @@
 #include <climits>
 
 #include "gtest/gtest.h"
+
+class ProofGameTest {
+public:
+    static void testMaterial();
+    static void testNeighbors();
+    static void testShortestPath();
+    static void testValidPieceCount();
+    static void testPawnReachable();
+    static void testBlocked();
+    static void testCastling();
+    static void testReachable();
+    static void testRemainingMoves();
+    static void testNonAdmissible();
+    static void testSearch();
+    static void testInitPath();
+    static void testLastMove();
+    static void testEnPassant();
+    static void testCaptureSquares();
+    static void testDeadlockedPieces();
+    static void testFilter1a();
+    static void testFilter1b();
+    static void testFilter1c();
+    static void testFilter2();
+    static void testFilter3a();
+    static void testFilter3b();
+    static void testFilter4a();
+    static void testFilter4b();
+    static void testFilter5();
+    static void testFilter6();
+    static void testFilter7();
+    static void testFilterPath();
+    static void testPkSequence();
+    static void testMultiBoard();
+    static void testAttackedSq();
+
+private:
+    static void checkBlockedConsistency(ProofGame& ps, Position& pos);
+    static int hScore(const std::string& initFen, const std::string& goalFen,
+                      bool useNonAdmissible = false, bool testMirrorY = true);
+    static void comparePaths(Piece::Type p, Square sq, U64 blocked, int maxMoves,
+                             const std::vector<int>& expected, bool testColorReversed = true);
+};
 
 // Enable to also run slow tests
 //#define RUN_SLOW_TESTS

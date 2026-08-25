@@ -1,11 +1,11 @@
 set(src_texelutiltest
-  bookBuildTest.cpp   bookBuildTest.hpp
-  cspsolverTest.cpp   cspsolverTest.hpp
+  bookBuildTest.cpp
+  cspsolverTest.cpp
   gameTreeTest.cpp
-  nnutilTest.cpp      nnutilTest.hpp
-  proofgameTest.cpp   proofgameTest.hpp
-  proofkernelTest.cpp proofkernelTest.hpp
-  revmovegenTest.cpp  revmovegenTest.hpp
+  nnutilTest.cpp
+  proofgameTest.cpp
+  proofkernelTest.cpp
+  revmovegenTest.cpp
   texelutiltest.cpp
   )
 

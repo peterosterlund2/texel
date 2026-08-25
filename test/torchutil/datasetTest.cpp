@@ -23,13 +23,20 @@
  *      Author: petero
  */
 
-#include "datasetTest.hpp"
 #include "dataset.hpp"
 #include "square.hpp"
 
 #include <cstdio>
 
 #include "gtest/gtest.h"
+
+class DataSetTest {
+public:
+    static void testMemDS();
+    static void testFileDS();
+    static void testShuffledDS();
+    static void testSplitData();
+};
 
 static void initRecord(Record& r, int score) {
     r.wKing = E1;

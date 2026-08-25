@@ -23,13 +23,24 @@
  *      Author: petero
  */
 
-#include "tbgenTest.hpp"
 #include "tbgen.hpp"
 #include "moveGen.hpp"
 #include "textio.hpp"
 #include "tbprobe.hpp"
 
 #include "gtest/gtest.h"
+
+class TBGenTest {
+public:
+    static void testPositionValue();
+    static void testTBIndex();
+    static void testTBPosition();
+    static void testMoveGen();
+    static void testGenerate();
+
+private:
+    static void testGenerateInternal(const PieceCount& pc);
+};
 
 TEST(TBGenTest, testPositionValue) {
     TBGenTest::testPositionValue();

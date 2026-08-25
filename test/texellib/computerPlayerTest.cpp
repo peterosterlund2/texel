@@ -23,7 +23,6 @@
  *      Author: petero
  */
 
-#include "computerPlayerTest.hpp"
 #include "computerPlayer.hpp"
 #include "humanPlayer.hpp"
 #include "textio.hpp"
@@ -32,6 +31,12 @@
 #include <memory>
 
 #include "gtest/gtest.h"
+
+class ComputerPlayerTest {
+public:
+    static void testGetCommand();
+    static void testDrawRep();
+};
 
 
 TEST(ComputerPlayerTest, testGetCommand) {

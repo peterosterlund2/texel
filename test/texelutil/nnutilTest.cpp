@@ -23,12 +23,16 @@
  *      Author: petero
  */
 
-#include "nnutilTest.hpp"
 #include "textio.hpp"
 #include "posutil.hpp"
 #include "nnutil.hpp"
 
 #include "gtest/gtest.h"
+
+class NNUtilTest {
+public:
+    static void testRecord();
+};
 
 TEST(NNUtilTest, testRecord) {
     NNUtilTest::testRecord();

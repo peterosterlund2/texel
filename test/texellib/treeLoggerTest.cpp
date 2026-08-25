@@ -23,7 +23,6 @@
  *      Author: petero
  */
 
-#include "treeLoggerTest.hpp"
 #include "treeLogger.hpp"
 #include "position.hpp"
 #include "textio.hpp"
@@ -31,6 +30,12 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
+
+class TreeLoggerTest {
+public:
+    static void testSerialize();
+    static void testLoggerData();
+};
 
 
 TEST(TreeLoggerTest, testSerialize) {

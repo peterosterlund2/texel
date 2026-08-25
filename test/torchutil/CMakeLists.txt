@@ -1,6 +1,6 @@
 set(src_torchutiltest
-  datasetTest.cpp   datasetTest.hpp
-  randpermTest.cpp  randpermTest.hpp
+  datasetTest.cpp
+  randpermTest.cpp
   torchutiltest.cpp
   )
 

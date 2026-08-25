@@ -23,11 +23,19 @@
  *      Author: petero
  */
 
-#include "cspsolverTest.hpp"
 #include "cspsolver.hpp"
 #include "stloutput.hpp"
 
 #include "gtest/gtest.h"
+
+class CspSolverTest {
+public:
+    static void testBitSet();
+    static void basicTests();
+    static void testPrefVal();
+    static void testEvenOdd();
+    static void testProofKernel();
+};
 
 const CspSolver::Oper LE = CspSolver::LE;
 const CspSolver::Oper GE = CspSolver::GE;

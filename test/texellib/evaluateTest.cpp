@@ -33,6 +33,38 @@
 
 #include "gtest/gtest.h"
 
+class EvaluateTest {
+public:
+    static void testEvalPos();
+    static void testMaterial();
+    static void testKingSafety();
+    static void testEndGameEval();
+    static void testEndGameCorrections();
+    static void testPassedPawns();
+    static void testBishAndRookPawns();
+    static void testBishAndPawnFortress();
+    static void testTrappedBishop();
+    static void testKQKP();
+    static void testKQKRP();
+    static void testKRKP();
+    static void testKRPKR();
+    static void testKPK();
+    static void testKPKP();
+    static void testKBNK();
+    static void testKBPKB();
+    static void testKBPKN();
+    static void testKNPKB();
+    static void testKNPK();
+    static void testCantWin();
+    static void testKnightOutPost();
+    static void testUciParam();
+    static void testUciParamTable();
+    static void testSwindleScore();
+
+private:
+    static int getNContactChecks(const std::string& fen);
+};
+
 /** Evaluation position and check position serialization. */
 static int
 evalPos(Evaluate& eval, const Position& pos, bool evalMirror, bool testMirror) {

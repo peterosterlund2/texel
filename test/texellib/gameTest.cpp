@@ -23,7 +23,6 @@
  *      Author: petero
  */
 
-#include "gameTest.hpp"
 #include "game.hpp"
 #include "humanPlayer.hpp"
 #include "evaluate.hpp"
@@ -35,6 +34,23 @@
 #include <iostream>
 
 #include "gtest/gtest.h"
+
+class GameTest {
+public:
+    static void testHaveDrawOffer();
+    static void testDraw50();
+    static void testDrawRep();
+    static void testResign();
+    static void testProcessString();
+    static void testGetGameState();
+    static void testInsufficientMaterial();
+    static void testPerfT();
+
+private:
+    static void doTestPerfTFast(Position& pos, int maxDepth, U64 expectedNodeCounts[]);
+    static void doTestPerfTExtensive(Position& pos, int maxDepth, U64 expectedNodeCounts[]);
+    static U64 perfT(Position& pos, int depth, Evaluate& eval);
+};
 
 
 TEST(GameTest, testHaveDrawOffer) {

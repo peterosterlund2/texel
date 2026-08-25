@@ -1,25 +1,25 @@
 set(src_texellibtest
   bitBoardTest.cpp
   bookTest.cpp
-  computerPlayerTest.cpp      computerPlayerTest.hpp
+  computerPlayerTest.cpp
   evaluateTest.cpp            evaluateTest.hpp
-  gameTest.cpp                gameTest.hpp
+  gameTest.cpp
   historyTest.cpp
   killerTableTest.cpp
   moveGenTest.cpp
   moveTest.cpp
-  nnTest.cpp                  nnTest.hpp
+  nnTest.cpp
   parallelTest.cpp
   pieceTest.cpp
   polyglotTest.cpp
   positionTest.cpp            positionTest.hpp
   searchTest.cpp              searchTest.hpp
-  tbgenTest.cpp               tbgenTest.hpp
+  tbgenTest.cpp
   tbTest.cpp                  tbTest.hpp
   texelTest.cpp
   textioTest.cpp
   transpositionTableTest.cpp
-  treeLoggerTest.cpp          treeLoggerTest.hpp
+  treeLoggerTest.cpp
   utilTest.cpp
   )
 
