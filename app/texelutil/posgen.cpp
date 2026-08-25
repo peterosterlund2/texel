@@ -1030,7 +1030,7 @@ PosGenerator::randomLegalSlowPath(const Position& startPos, Position& pos,
             return;
 
         U64 blocked;
-        if (!pg.computeBlocked(pos, blocked))
+        if (!pg.computeBlocked(startPos, blocked))
             return;
         ProofKernel pk(startPos, pos, blocked, ss);
         if (!pk.isGoalPossible())
