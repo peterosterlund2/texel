@@ -309,18 +309,25 @@ ProofKernel::PawnColumn::PawnColumn(int x) {
 
 void
 ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
-    const int goalPawns = goal.nPawns();
-    const U8 oldData = data;
-    for (int d = 1; d < nPawnConfigs; d++) {
-        data = d;
-        const int pawns = nPawns();
+    int canPromForwardMask = canProm[WHITE][(int)Direction::FORWARD] ? 1 : 0;
+    if (canProm[BLACK][(int)Direction::FORWARD])
+        canPromForwardMask |= 2;
+    goalData = &getGoalDataCache().entries[canPromForwardMask][goal.data];
+}
+
+ProofKernel::PawnColumn::GoalData
+ProofKernel::PawnColumn::computeGoalData(int goalData, int canPromForwardMask) {
+    GoalData result {};
+    const int goalPawns = nPawns(goalData);
+    for (int data = 1; data < nPawnConfigs; data++) {
+        const int pawns = nPawns(data);
 
         // Compute number of possible white/black promotions if the pawns
         // starting at "offs" match the goal pawns.
-        auto computePromotions = [this,&goal,goalPawns,pawns](int offs, int& wp, int& bp) {
+        auto computePromotions = [data,goalData,goalPawns,pawns](int offs, int& wp, int& bp) {
             bool match = true;
             for (int i = 0; i < goalPawns; i++) {
-                if (getPawn(offs + i) != goal.getPawn(i)) {
+                if (getPawn(data, offs + i) != getPawn(goalData, i)) {
                     match = false;
                     break;
                 }
@@ -328,13 +335,13 @@ ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
             if (match) {
                 wp = 0;
                 for (int i = pawns - 1; i >= offs + goalPawns; i--) {
-                    if (getPawn(i) == BLACK)
+                    if (getPawn(data, i) == BLACK)
                         break;
                     wp++;
                 }
                 bp = 0;
                 for (int i = 0; i < offs; i++) {
-                    if (getPawn(i) == WHITE)
+                    if (getPawn(data, i) == WHITE)
                         break;
                     bp++;
                 }
@@ -343,6 +350,8 @@ ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
                 bp = -1;
             }
         };
+        const int maxWhiteProm = nPromotions(data, WHITE, canPromForwardMask & 1);
+        const int maxBlackProm = nPromotions(data, BLACK, canPromForwardMask & 2);
 
         int whiteProm = -1;
         int blackProm = -1;
@@ -355,7 +364,7 @@ ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
                 blackProm = bp;
             }
             if (wp >= 0 && bp >= 0 &&
-                std::min(wp, nPromotions(WHITE)) + std::min(bp, nPromotions(BLACK)) + goalPawns == pawns)
+                std::min(wp, maxWhiteProm) + std::min(bp, maxBlackProm) + goalPawns == pawns)
                 isComplete = true;
         }
         bool uniqueBest = true;
@@ -367,13 +376,26 @@ ProofKernel::PawnColumn::setGoal(const PawnColumn& goal) {
                 break;
             }
         }
-        whiteProm = std::min(whiteProm, nPromotions(WHITE));
-        blackProm = std::min(blackProm, nPromotions(BLACK));
-        nProm[WHITE][false][data] = uniqueBest ? whiteProm : -1;
-        nProm[BLACK][false][data] = uniqueBest ? blackProm : -1;
-        complete[data] = isComplete;
+        whiteProm = std::min(whiteProm, maxWhiteProm);
+        blackProm = std::min(blackProm, maxBlackProm);
+        result.nProm[WHITE][data] = uniqueBest ? whiteProm : -1;
+        result.nProm[BLACK][data] = uniqueBest ? blackProm : -1;
+        result.complete[data] = isComplete;
     }
-    data = oldData;
+    return result;
+}
+
+ProofKernel::PawnColumn::GoalDataCache::GoalDataCache() {
+    for (int canPromForwardMask = 0; canPromForwardMask < 4; canPromForwardMask++)
+        for (int goalData = 1; goalData < nPawnConfigs; goalData++)
+            entries[canPromForwardMask][goalData] =
+                    PawnColumn::computeGoalData(goalData, canPromForwardMask);
+}
+
+const ProofKernel::PawnColumn::GoalDataCache&
+ProofKernel::PawnColumn::getGoalDataCache() {
+    static const GoalDataCache cache;
+    return cache;
 }
 
 void
@@ -412,22 +434,25 @@ ProofKernel::PawnColumn::calcBishopPromotions(const Position& initialPos,
         }
     }
 
-    for (int d = 1; d < nPawnConfigs; d++) {
-        nProm[WHITE][true][d] = std::min(nProm[WHITE][false][d], nWhiteBishopProm);
-        nProm[BLACK][true][d] = std::min(nProm[BLACK][false][d], nBlackBishopProm);
-    }
+    bishopPromLimit[WHITE] = nWhiteBishopProm;
+    bishopPromLimit[BLACK] = nBlackBishopProm;
 }
 
 int
 ProofKernel::PawnColumn::nPromotions(PieceColor c) const {
-    if (!canPromote(c, Direction::FORWARD))
+    return nPromotions(data, c, canPromote(c, Direction::FORWARD));
+}
+
+int
+ProofKernel::PawnColumn::nPromotions(int data, PieceColor c, bool canPromoteForward) {
+    if (!canPromoteForward)
         return 0;
 
-    int np = nPawns();
+    int np = nPawns(data);
     if (c == WHITE) {
         int cnt = 0;
         for (int i = np - 1; i >= 0; i--) {
-            if (getPawn(i) == BLACK)
+            if (getPawn(data, i) == BLACK)
                 break;
             cnt++;
         }
@@ -435,7 +460,7 @@ ProofKernel::PawnColumn::nPromotions(PieceColor c) const {
     } else {
         int cnt = 0;
         for (int i = 0; i < np; i++) {
-            if (getPawn(i) == WHITE)
+            if (getPawn(data, i) == WHITE)
                 break;
             cnt++;
         }

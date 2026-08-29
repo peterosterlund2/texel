@@ -249,14 +249,31 @@ private:
         void setData(U8 d) { data = d; }
 
     private:
+        struct GoalData {
+            std::array<S8,nPawnConfigs> nProm[2];   // [color][pawnPattern]
+            std::array<bool,nPawnConfigs> complete; // [pawnPattern]
+        };
+        struct GoalDataCache {
+            GoalDataCache();
+            std::array<std::array<GoalData,nPawnConfigs>,4> entries {};
+        };
+
+        static int nPawns(int data);
+        static PieceColor getPawn(int data, int i);
+        static int nPromotions(int data, PieceColor c, bool canPromoteForward);
+        /** Compute one cache entry from its cache key. */
+        static GoalData computeGoalData(int goalData, int canPromForwardMask);
+        /** Return all goal data, indexed by forward promotion mask and goal pawn pattern. */
+        static const GoalDataCache& getGoalDataCache();
+
         U8 data = 1;
         SquareColor promSquare[2]; // Color of promotion square for white/black
         bool canProm[2][3] { { true, true, true}, {true, true, true} }; // [color][dir]
         bool canRQProm[2] { true, true };                               // [color]
-        std::array<S8,nPawnConfigs> nProm[2][2];                        // [color][toBishop][pawnPattern]
+        const GoalData* goalData = nullptr;
+        S8 bishopPromLimit[2] = { maxPawns, maxPawns };                 // [color]
         bool bishopPromRequired[2] = { false, false };                  // [color]
         bool firstPCanMove[2] = { true, true };                         // [color]
-        std::array<bool,nPawnConfigs> complete;                         // [pawnPattern]
     };
     std::array<PawnColumn, 8> columns;
     std::array<PawnColumn, 8> goalColumns;
@@ -508,6 +525,11 @@ ProofKernel::PawnColumn::operator!=(const ProofKernel::PawnColumn& other) const 
 
 inline int
 ProofKernel::PawnColumn::nPawns() const {
+    return nPawns(data);
+}
+
+inline int
+ProofKernel::PawnColumn::nPawns(int data) {
     return BitUtil::lastBit(data);
 }
 
@@ -519,6 +541,11 @@ ProofKernel::PawnColumn::nPawns(PieceColor c) const {
 
 inline ProofKernel::PieceColor
 ProofKernel::PawnColumn::getPawn(int i) const {
+    return getPawn(data, i);
+}
+
+inline ProofKernel::PieceColor
+ProofKernel::PawnColumn::getPawn(int data, int i) {
     return (data & (1 << i)) ? BLACK : WHITE;
 }
 
@@ -573,7 +600,8 @@ ProofKernel::PawnColumn::promotionSquareType(PieceColor c) const {
 
 inline int
 ProofKernel::PawnColumn::nAllowedPromotions(PieceColor c, bool toBishop) const {
-    return nProm[c][toBishop][data];
+    S8 ret = goalData->nProm[c][data];
+    return toBishop ? std::min(ret, bishopPromLimit[c]) : ret;
 }
 
 inline bool
@@ -583,7 +611,7 @@ ProofKernel::PawnColumn::bishopPromotionRequired(PieceColor c) const {
 
 inline bool
 ProofKernel::PawnColumn::isComplete() const {
-    return complete[data];
+    return goalData->complete[data];
 }
 
 inline U64
