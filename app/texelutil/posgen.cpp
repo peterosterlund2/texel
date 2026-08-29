@@ -868,33 +868,47 @@ PosGenerator::randomLegal(int n, U64 rndSeed, int nWorkers, std::ostream& os) {
             Position pos;
             int pieces[64] = {0}; // Piece/color for each square
             Random rand(rndSeed, seed2);
-            for (U64 i = 0; i < stop; i++) {
-                U64 r = rand.nextU64();
+            U64 i = 0;
+            while (i < stop) {
+                bool haveCandidate = false;
+                bool wtm;
+                U64 occupied;
+                U64 whitePieces;
+                while (i < stop) {
+                    i++;
 
-                bool wtm = (r & 1) != 0;
-                U64 occupied = r >> 2;                     // 62 occupied bits
-                int nPieces = BitUtil::bitCount(occupied); // Not counting kings
-                const int maxPieces = 30;  // Max number of pieces, excluding kings
-                if (nPieces > maxPieces)
-                    continue; // Too many pieces
+                    U64 r = rand.nextU64();
 
-                r = rand.nextU64() & ((1 << maxPieces) - 1);
-                U64 whitePieces = r & ((1 << nPieces) - 1);
-                if (whitePieces != r)
-                    continue; // Non-existing pieces must have color 0
+                    wtm = (r & 1) != 0;
+                    occupied = r >> 2;                         // 62 occupied bits
+                    int nPieces = BitUtil::bitCount(occupied); // Not counting kings
+                    const int maxPieces = 30;  // Max number of pieces, excluding kings
+                    if (nPieces > maxPieces)
+                        continue; // Too many pieces
 
-                int nWhite = BitUtil::bitCount(whitePieces);
-                if (nWhite > 15 || nPieces - nWhite > 15)
-                    continue; // Too many white/black pieces
+                    r = rand.nextU64() & ((1 << maxPieces) - 1);
+                    whitePieces = r & ((1 << nPieces) - 1);
+                    if (whitePieces != r)
+                        continue; // Non-existing pieces must have color 0
 
-                bool fail = false;
-                for (int p = nPieces; p < maxPieces; p++)
-                    if (rand.nextInt<5>() != pawn) {
-                        fail = true;
-                        break; // Non-existing pieces must have type pawn
-                    }
-                if (fail)
-                    continue;
+                    int nWhite = BitUtil::bitCount(whitePieces);
+                    if (nWhite > 15 || nPieces - nWhite > 15)
+                        continue; // Too many white/black pieces
+
+                    bool fail = false;
+                    for (int p = nPieces; p < maxPieces; p++)
+                        if (rand.nextInt<5>() != pawn) {
+                            fail = true;
+                            break; // Non-existing pieces must have type pawn
+                        }
+                    if (fail)
+                        continue;
+
+                    haveCandidate = true;
+                    break;
+                }
+                if (!haveCandidate)
+                    break;
 
                 const int kingCombIdx = rand.nextInt<nKingCombs>();
                 const int wk = kingTable[kingCombIdx].wKing;
@@ -904,6 +918,7 @@ PosGenerator::randomLegal(int n, U64 rndSeed, int nWorkers, std::ostream& os) {
 
                 U64 mask = occupied;
                 occupied = 0; // Re-compute occupied to take king squares into account
+                bool fail = false;
                 while (mask) {
                     int sq = BitBoard::extractSquare(mask).asInt();
                     if (sq >= k1) {
