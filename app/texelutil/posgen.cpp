@@ -1023,12 +1023,6 @@ PosGenerator::randomLegalSlowPath(const Position& startPos, Position& pos,
     try {
         std::stringstream ss;
         ProofGame pg(TextIO::startPosFEN, fen, false, {}, false, ss);
-        auto opts = ProofGame::Options().setSmallCache(true).setMaxNodes(2);
-        ProofGame::Result result;
-        int minCost = pg.search(opts, result);
-        if (minCost == INT_MAX)
-            return;
-
         U64 blocked;
         if (!pg.computeBlocked(startPos, blocked))
             return;
