@@ -128,6 +128,7 @@ usage() {
     std::cerr << " genfen qvsn : Generate all positions of a given type\n";
     std::cerr << " rndfen n [seed] : Generate about n random legal (and some illegal) positions\n";
     std::cerr << " rndtest [seed1 [seed2]] : Write random binary data to standard output\n";
+    std::cerr << " sample n [seed] : Read lines from stdin, echo n random lines to stdout\n";
     std::cerr << "\n";
     std::cerr << " tblist nPieces : Print all tablebase types\n";
     std::cerr << " dtmstat type1 [type2 ...] : Generate tablebase DTM statistics\n";
@@ -414,6 +415,27 @@ doBookCmd(int argc, char* argv[]) {
     } else {
         usage();
     }
+}
+
+static void reservoirSample(int sampleSize, U64 rndSeed,
+                            std::istream& is, std::ostream& os) {
+    Random rnd(rndSeed, 0);
+    std::vector<std::string> kept;
+    std::string line;
+
+    while ((int)kept.size() < sampleSize && std::getline(is, line))
+        kept.push_back(line);
+
+    for (int n = sampleSize + 1; std::getline(is, line); n++) {
+        if (n > (1<<30))
+            throw ChessError("Too many input lines");
+        int j = rnd.nextInt(n);
+        if (j < sampleSize)
+            kept[j] = line;
+    }
+
+    for (const auto& s : kept)
+        os << s << '\n';
 }
 
 static void
@@ -962,6 +984,16 @@ main(int argc, char* argv[]) {
                 U64 r = rnd.nextU64();
                 std::cout.write((const char*)&r, sizeof(r));
             }
+        } else if (cmd == "sample") {
+            if (argc < 3 || argc > 4)
+                usage();
+            int sampleSize;
+            if (!str2Num(argv[2], sampleSize) || sampleSize <= 0)
+                usage();
+            U64 rndSeed = currentTimeMillis();
+            if (argc == 4 && !str2Num(argv[3], rndSeed))
+                usage();
+            reservoirSample(sampleSize, rndSeed, std::cin, std::cout);
         } else if (cmd == "tblist") {
             int nPieces;
             if ((argc != 3) || !str2Num(argv[2], nPieces) || nPieces < 2)
