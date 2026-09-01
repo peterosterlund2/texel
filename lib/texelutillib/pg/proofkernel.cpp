@@ -179,7 +179,9 @@ ProofKernel::operator==(const ProofKernel& other) const {
 
 ProofKernel::SearchResult
 ProofKernel::findProofKernel(std::vector<PkMove>& proofKernel,
-                             std::vector<ExtPkMove>& extProofKernel) {
+                             std::vector<ExtPkMove>& extProofKernel,
+                             U64 maxNodes) {
+    this->maxNodes = maxNodes;
     findFirst = true;
     proofKernel.clear();
     extProofKernel.clear();
@@ -248,6 +250,8 @@ ProofKernel::search(int ply) {
     if ((nodes & ((1ULL << 26) - 1)) == 0 && findFirst) {
         log << "nodes:" << nodes << " csp:" << nCSPs << std::endl;
         log << "path:" << path << std::endl;
+        if (nodes >= maxNodes)
+            return ABORT;
     }
 
     if (remainingMoves == 0 && isGoal()) {
@@ -291,6 +295,8 @@ ProofKernel::search(int ply) {
         }
         if (res == PROOF_KERNEL)
             hasProofKernel = true;
+        if (res == ABORT)
+            return res;
 
         path.pop_back();
     }

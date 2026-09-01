@@ -296,7 +296,7 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line,
 
                 std::vector<PkMove> kernel;
                 std::vector<ExtPkMove> extKernel;
-                auto res = pk.findProofKernel(kernel, extKernel);
+                auto res = pk.findProofKernel(kernel, extKernel, 8 * (1ULL << 30));
                 if (res == ProofKernel::FAIL) {
                     setIllegal("No proof kernel");
                     if (!kernel.empty()) {
@@ -306,6 +306,8 @@ ProofGameFilter::computeExtProofKernel(const Position& startPos, Line& line,
                     }
                 } else if (res == ProofKernel::PROOF_KERNEL) {
                     setIllegal("No extended proof kernel");
+                } else if (res == ProofKernel::ABORT) {
+                    throw NotImplementedError("aborted");
                 } else {
                     line.tokenData(UNKNOWN).clear();
                     std::vector<std::string>& kernelInfo = line.tokenData(KERNEL);

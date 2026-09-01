@@ -851,7 +851,7 @@ ProofKernelTest::testSearch() {
 
         std::vector<PkMove> moves;
         std::vector<ExtPkMove> extMoves;
-        bool found = pk.findProofKernel(moves, extMoves) == ProofKernel::EXT_PROOF_KERNEL;
+        bool found = pk.findProofKernel(moves, extMoves, -1) == ProofKernel::EXT_PROOF_KERNEL;
         ASSERT_EQ(expectedSolution, found) << "start: " << start << " goal: " << goal;
 
         std::string path;
@@ -878,7 +878,7 @@ ProofKernelTest::testSearch() {
             startPos = PosUtil::swapColors(startPos);
             goalPos = PosUtil::swapColors(goalPos);
             ProofKernel pk2(startPos, goalPos, computeBlocked(startPos, goalPos));
-            found = pk2.findProofKernel(moves, extMoves) == ProofKernel::EXT_PROOF_KERNEL;
+            found = pk2.findProofKernel(moves, extMoves, -1) == ProofKernel::EXT_PROOF_KERNEL;
             ASSERT_EQ(expectedSolution, found) << "start: " << start << " goal: " << goal;
             for (const ExtPkMove& m : extMoves) {
                 ASSERT_EQ(toString(m), toString(strToExtPkMove(toString(m))));

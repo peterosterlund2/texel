@@ -151,6 +151,7 @@ public:
         FAIL,             // No proof kernel exists
         PROOF_KERNEL,     // Proof kernel exists, but no extended proof kernel exists
         EXT_PROOF_KERNEL, // Proof kernel and extended proof kernel exist
+        ABORT,            // The search was stopped before it finished
     };
 
     /** Computes a proof kernel, as a sequence of PkMoves, for the given initial and goal positions.
@@ -159,7 +160,8 @@ public:
      *  be performed to get the same number of pieces as the goal position for each piece type.
      *  An extended proof kernel is also computed if it exists. */
     SearchResult findProofKernel(std::vector<PkMove>& proofKernel,
-                                 std::vector<ExtPkMove>& extProofKernel);
+                                 std::vector<ExtPkMove>& extProofKernel,
+                                 U64 maxNodes);
 
     /** Find all proof kernels. Print result to log stream. */
     void findAll();
@@ -287,6 +289,7 @@ private:
 
     U64 deadBishops;  // Mask of bishops initially trapped on first/last row and not present in goal position
 
+    U64 maxNodes = (U64)-1;                     // Maximum number of nodes to search
     bool findFirst = true;                      // If true, stop after finding one valid proof kernel
     std::vector<PkMove> path;                   // Current path during search
     std::vector<std::vector<PkMove>> moveStack; // Move list storage for each ply during search

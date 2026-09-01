@@ -201,7 +201,8 @@ ProofGame::computeLastMoves(const Position& startPos, Position& goalPos,
             ProofKernel pk(startPos, tmpPos, blocked, log);
             std::vector<ProofKernel::PkMove> kernel;
             std::vector<ProofKernel::ExtPkMove> extKernel;
-            if (pk.findProofKernel(kernel, extKernel) != ProofKernel::EXT_PROOF_KERNEL)
+            auto searchRes = pk.findProofKernel(kernel, extKernel, -1);
+            if (searchRes != ProofKernel::EXT_PROOF_KERNEL && searchRes != ProofKernel::ABORT)
                 return true;
 
             bool ret;
