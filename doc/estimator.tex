@@ -1,0 +1,231 @@
+\documentclass[a4paper,10pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage[pdfpagemode=UseNone]{hyperref}
+
+\DeclareMathOperator{\SD}{SD}
+\DeclareMathOperator{\Var}{Var}
+\DeclarePairedDelimiter\bracket{[}{]}
+\newcommand{\E}[1]{\mathbb{E}\bracket*{#1}}
+
+\begin{document}
+
+% --------------------------------------------------------------------------------
+\section*{Definitions}
+
+As before, we have the following quantities:
+
+\begin{verbatim}
+S = The set that contains all legal chess positions as a subset
+N = The size of S (2.19645e53)
+S_sample = A random sample from S
+N1 = The size of S_sample (2.746e15)
+S_n1_candidates = The computed subset of S_sample containing
+                  all potentially legal positions
+N_n1_candidates = The size of S_n1_candidates (6030640)
+S_2 = A random sample from S_n1_candidates
+N2 = The size of S_2 (1e5)
+N_s2_legal = The number of legal positions in S_2 (99983)
+N_s2_illegal = The number of illegal positions in S_2 (17)
+S_n1_legal = The set of legal positions in S_sample
+N_n1_legal = The size of S_n1_legal (not computed exactly)
+N_n1_legal_est = Estimated number of legal positions
+                 in S_sample (6029615)
+N_legal_est = Estimated number of legal chess positions
+              (4.823692e44)
+\end{verbatim}
+
+We introduce the following unknown parameters:
+
+\begin{itemize}
+
+  \item $N_{\text{legal}}$ = The number of positions in $S$ that are legal chess
+    positions. $S_{\text{legal}}$ is the corresponding set. This is the main
+    unknown parameter to be estimated, $\approx 4.8 \cdot 10^{44}$.
+
+  \item $N_{\text{candidates}}$ = The number of positions in $S$ that are
+    potentially legal according to the first automatic analysis.
+    $S_{\text{candidates}}$ is the corresponding set. This is the nuisance
+    parameter, $\approx 4.8 \cdot 10^{44}, > N_{\text{legal}}$.
+
+\end{itemize}
+
+Introduce the following variables:
+
+\begin{align}
+n &= N_1                                                          \\
+m &= N_2                                                          \\
+C &= N_{\text{n1\_candidates}}                                    \\
+L &= N_{\text{n1\_legal}}                                         \\
+H &= N_{\text{s2\_legal}}                                         \\
+p &= \frac{N_{\text{candidates}}}{N}                              \\
+q &= \frac{N_{\text{legal}}}{N_{\text{candidates}}}
+\end{align}
+
+That is, $n$ is the size of the first sample, $m$ is the size of the second
+sample, $p$ is the fraction of positions in $S$ that are potentially
+legal and $q$ is the fraction of positions in $S_{\text{candidates}}$ that are legal.
+
+Since $p$ can be estimated by $\frac{C}{n}$ and $q$ by $\frac{H}{m}$, the
+estimate $\hat{N}_{\text{legal}}$ of the number of legal chess positions is:
+
+\begin{equation}
+  \hat{N}_{\text{legal}} = N \frac{C}{n} \frac{H}{m}
+\end{equation}
+
+% --------------------------------------------------------------------------------
+\section*{Expected value}
+
+Because of the way the sampling procedure is defined, $C$, $L$ and $H$ are
+random variables with the following distributions:
+
+\begin{align}
+  C & \sim \operatorname{Binomial}(n, p)                     \\
+  L \mid C & \sim \operatorname{Binomial}(C, q)              \\
+  H \mid C,L & \sim \operatorname{HyperGeometric}(C, L, m)
+\end{align}
+
+For the distributions, we have~\cite{wiki:binomial,wiki:hypergeom}:
+
+\begin{align}
+  \E{C} &= np                           \\
+  \E{L \mid C} &= Cq                    \\
+  \E{H \mid C,L} &= m \frac{L}{C}
+\end{align}
+
+so
+
+\begin{align}
+  \E{\hat{N}_{\text{legal}} \mid C,L} & = \E{N \frac{C}{n} \frac{H}{m} \mid C,L}   \\
+    &= \frac{N}{n} \frac{C}{m} \E{H \mid C,L}                                      \\
+    &= \frac{N}{n} \frac{C}{m} m \frac{L}{C} = \frac{N}{n} L
+\end{align}
+
+Taking expectations again and using the law of iterated
+expectations~\cite{wiki:totalexpect},
+
+\begin{equation}
+  \E{\hat{N}_{\text{legal}} \mid C} = \frac{N}{n} \E{L \mid C} = \frac{N}{n} Cq
+\end{equation}
+
+Taking expectations once more,
+
+\begin{align}
+  \E{\hat{N}_{\text{legal}}} &= \frac{N}{n} q \E{C} = \frac{N}{n} qnp = Npq              \\
+    &= N \frac{N_{\text{candidates}}}{N} \frac{N_{\text{legal}}}{N_{\text{candidates}}}  \\
+    &= N_{\text{legal}} \label{eq:unbiased}
+\end{align}
+
+Therefore the estimator is unbiased.
+
+% --------------------------------------------------------------------------------
+\section*{Variance}
+
+The variance of a product of two independent random variables $X$, $Y$,
+is~\cite{wiki:productvariance}:
+
+\begin{equation}
+  \Var(XY) = \E{X}^2\Var(Y) + \E{Y}^2\Var(X) + \Var(X)\Var(Y)
+\end{equation}
+
+which can be written
+
+\begin{equation}
+  \label{eq:rel.var}
+  \frac{\Var(XY)}{\E{XY}^2} = a + b + ab
+\end{equation}
+
+where
+
+\begin{equation}
+  \label{eq:rel.ab}
+  a = \frac{\Var(X)}{\E{X}^2}, \qquad b = \frac{\Var(Y)}{\E{Y}^2}
+\end{equation}
+
+The estimator is
+
+\begin{equation}
+  \label{eq:nhat}
+  \hat{N}_{\text{legal}} = N \frac{C}{n} \frac{H}{m}
+\end{equation}
+
+Let
+
+\begin{equation}
+  X = \frac{C}{n}, \qquad Y = \frac{H}{m} \label{eq:xy}
+\end{equation}
+
+Although H is obtained by sampling from the C candidates, the legality of each
+candidate is an independent Bernoulli~\cite{wiki:bernoulli} random variable with
+probability q, so\footnote{
+  Assuming $C \ge m$. For sample sizes of interest, $\Pr(C < m)$ is extremely
+  small. If $C < m$, all $C$ candidates can instead be analyzed and the
+  estimator $\frac{NL}{n}$ used, with value zero when $C = 0$. This preserves
+  unbiasedness, but the variance formula~\ref{eq:nhat.variance} does not cover
+  that fallback.
+}
+
+\begin{equation}
+  H \mid C \sim \operatorname{Binomial}(m, q)
+\end{equation}
+
+which does not depend on $C$. Since $n$ and $m$ are just constants, this means
+that $X$ and $Y$ are also independent, so~\ref{eq:rel.var} and \ref{eq:rel.ab}
+are applicable. We have
+
+\begin{align}
+  a &= \frac{np(1-p)}{(np)^2} = \frac{1-p}{np}  \\
+  b &= \frac{mq(1-q)}{(mq)^2} = \frac{1-q}{mq}
+\end{align}
+
+Using~\ref{eq:nhat}, \ref{eq:xy}, \ref{eq:rel.var}, \ref{eq:unbiased}
+
+\begin{align}
+  \Var(\hat{N}_{\text{legal}}) &= \Var(NXY) = N^2\Var(XY)  \\
+    &= N^2 \E{XY}^2 (a + b + ab) = \E{NXY}^2 (a + b + ab)  \\
+    &= \E{\hat{N}_{\text{legal}}}^2 (a + b + ab)           \\
+    &= N_{\text{legal}}^2 (a + b + ab)
+\end{align}
+
+Finally, taking square roots:
+\begin{equation}
+  \label{eq:nhat.variance}
+  \SD(\hat{N}_{\text{legal}}) = N_{\text{legal}} \sqrt{a + b + ab}
+\end{equation}
+
+
+% --------------------------------------------------------------------------------
+\begin{thebibliography}{9}
+
+\bibitem{wiki:binomial}
+  \emph{Binomial distribution, Wikipedia, The Free Encyclopedia}, 2026.
+  \url{https://en.wikipedia.org/wiki/Binomial_distribution}
+      [Online; accessed 24-Sept-2026].
+
+\bibitem{wiki:hypergeom}
+  \emph{Hypergeometric distribution, Wikipedia, The Free Encyclopedia}, 2026.
+  \url{https://en.wikipedia.org/wiki/Hypergeometric_distribution}
+      [Online; accessed 24-Sept-2026].
+
+\bibitem{wiki:totalexpect}
+  \emph{Law of total expectation, Wikipedia, The Free Encyclopedia}, 2026.
+  \url{https://en.wikipedia.org/wiki/Law_of_total_expectation}
+      [Online; accessed 24-Sept-2026].
+
+\bibitem{wiki:productvariance}
+  \emph{Variance algebra for random variables, Wikipedia, The Free Encyclopedia}, 2026.
+  \url{https://en.wikipedia.org/wiki/Algebra_of_random_variables#Variance_algebra_for_random_variables}
+      [Online; accessed 24-Sept-2026].
+
+\bibitem{wiki:bernoulli}
+  \emph{Bernoulli distribution, Wikipedia, The Free Encyclopedia}, 2026.
+  \url{https://en.wikipedia.org/wiki/Bernoulli_distribution}
+      [Online; accessed 24-Sept-2026].
+
+\end{thebibliography}
+
+\end{document}

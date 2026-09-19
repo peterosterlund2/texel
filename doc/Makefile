@@ -1,3 +1,6 @@
+# Use bash to support curly brace expansion
+SHELL := /bin/bash
+
 all	: pdf
 
 TBPROBE_SVGS = tb_off_by_one tb_kbnk tb_kppkp tb_kqkrb_1 tb_kqkrb_2 \
@@ -17,18 +20,24 @@ PROOFGAME_SVG_FILES = $(patsubst %,svg/%.svg,$(PROOFGAME_SVGS))
 
 SVG_FILES = $(TBPROBE_SVG_FILES) $(PROOFGAME_SVG_FILES)
 
-PDFS = tbprobe proofgame
+CUSTOM_SVGS = numlegal_sets
+CUSTOM_SVG_FILES = $(patsubst %,svg/%.svg,$(CUSTOM_SVGS))
+
+PDFS = tbprobe proofgame numlegal estimator
 PDF_FILES = $(patsubst %,%.pdf,$(PDFS))
 
-svgs	: $(SVG_FILES)
+svgs	: $(SVG_FILES) $(CUSTOM_SVG_FILES)
 pdf	: svgs
 pdf	: $(PDF_FILES)
 
 svg	:
 	mkdir -p svg
 
-$(subst .,%,$(SVG_FILES))	: gensvg.py svg
+$(subst .,%,$(SVG_FILES))	: gensvg.py | svg
 	./gensvg.py
+
+$(CUSTOM_SVG_FILES): svg/%.svg	: customsvgs.py | svg
+	./customsvgs.py $*
 
 proofgame.pdf : proofgame.md $(PROOFGAME_SVG_FILES) Makefile
 	pandoc -f gfm -t context -N $< -o $@
@@ -36,7 +45,13 @@ proofgame.pdf : proofgame.md $(PROOFGAME_SVG_FILES) Makefile
 tbprobe.pdf : tbprobe.md $(TBPROBE_SVG_FILES) Makefile
 	pandoc -f gfm -t context -N $< -o $@
 
+numlegal.pdf : numlegal.md $(CUSTOM_SVG_FILES) Makefile
+	pandoc -f gfm -t context -N $< -o $@
+
+estimator.pdf : estimator.tex Makefile
+	pdflatex $<
+
 clean	:
-	rm -rf svg $(PDF_FILES)
+	rm -rf svg $(PDF_FILES) estimator.{aux,fdb_latexmk,fls,log,out}
 
 .PHONY : clean
